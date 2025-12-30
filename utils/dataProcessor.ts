@@ -1,3 +1,4 @@
+
 import { GameData, SalesDataPoint, TicketZone, SalesChannel } from '../types';
 
 // Helper to clean currency string and parse to float
@@ -47,7 +48,7 @@ const parseCSV = (text: string): string[][] => {
   return result;
 };
 
-// Standard capacities (defaults)
+// Standard capacities (Corrected based on user input)
 const BASE_ZONE_CAPACITIES: Record<TicketZone, number> = {
   [TicketZone.PAR_O]: 465,
   [TicketZone.PAR_E]: 220,
@@ -57,9 +58,8 @@ const BASE_ZONE_CAPACITIES: Record<TicketZone, number> = {
   [TicketZone.GALL_G]: 389,
   [TicketZone.CURVA]: 458,
   [TicketZone.OSPITI]: 233,
-  [TicketZone.PAR_EX]: 128,
-  // These vary:
-  [TicketZone.COURTSIDE]: 44, 
+  [TicketZone.PAR_EX]: 0, // Merged into Par O typically
+  [TicketZone.COURTSIDE]: 44,
   [TicketZone.SKYBOX]: 60,
 };
 
@@ -73,7 +73,7 @@ export const processGameData = (csvContent: string): GameData[] => {
   // Map zone names to their prefix in CSV
   const zonePrefixes: Record<string, TicketZone> = {
     'Par O': TicketZone.PAR_O,
-    'Par EX': TicketZone.PAR_EX,
+    'Par EX': TicketZone.PAR_O, 
     'Par E': TicketZone.PAR_E,
     'Trib G': TicketZone.TRIB_G,
     'Trib S': TicketZone.TRIB_S,
@@ -122,25 +122,16 @@ export const processGameData = (csvContent: string): GameData[] => {
 
     const zoneCapacities = { ...BASE_ZONE_CAPACITIES };
 
-    // Rule 1: Skyboxes not available until game 6 of last season (23-24)
+    // Apply specific capacity changes per season
+    // For 23-24, Skyboxes opened partway through the season
     if (season === '23-24') {
-      if (gameIndex < 6) {
-        zoneCapacities[TicketZone.SKYBOX] = 0;
-      } else {
-        zoneCapacities[TicketZone.SKYBOX] = 60;
-      }
-    } else {
-        // Assume available for future seasons
-        zoneCapacities[TicketZone.SKYBOX] = 60;
-    }
-
-    // Rule 2: Courtside only 32 until last season (23-24), then 44 (24-25+)
-    if (season === '23-24') {
-      zoneCapacities[TicketZone.COURTSIDE] = 32;
-    } else {
-      zoneCapacities[TicketZone.COURTSIDE] = 44;
-    }
-
+        if (gameIndex < 6) {
+            zoneCapacities[TicketZone.SKYBOX] = 0;
+        }
+        // Otherwise use base capacity (60)
+    } 
+    // For other seasons (24-25, 25-26), the base capacities apply.
+    
     // Calculate total capacity for this specific game
     const currentTotalCapacity = Object.values(zoneCapacities).reduce((acc, cap) => acc + cap, 0);
 

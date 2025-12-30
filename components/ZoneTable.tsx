@@ -64,21 +64,21 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
   if (data.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-8">
-      <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
+      <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 flex-shrink-0">
         <h3 className="text-lg font-semibold text-gray-800">Zone Efficiency Matrix</h3>
-        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Avg per game</span>
+        <span className="text-xs text-gray-500 bg-white border border-gray-200 px-2 py-1 rounded">Avg per game</span>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-auto flex-1">
         <table className="w-full text-sm text-left text-gray-600">
-          <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+          <thead className="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0 z-10">
             <tr>
-              <th className="px-6 py-3">Zone</th>
-              <th className="px-6 py-3 text-right">Avg Sold / Cap</th>
-              <th className="px-6 py-3 text-right">Avg Price (Yield)</th>
-              <th className="px-6 py-3 text-right">Avg Revenue</th>
-              <th className="px-6 py-3 text-right">Rev Share</th>
-              <th className="px-6 py-3 w-32">Fill Rate %</th>
+              <th className="px-6 py-3 bg-gray-50">Zone</th>
+              <th className="px-6 py-3 text-right bg-gray-50">Avg Sold / Cap</th>
+              <th className="px-6 py-3 text-right bg-gray-50">Avg Price (Yield)</th>
+              <th className="px-6 py-3 text-right bg-gray-50">Avg Revenue</th>
+              <th className="px-6 py-3 text-right bg-gray-50">Rev Share</th>
+              <th className="px-6 py-3 w-32 bg-gray-50">Fill Rate %</th>
             </tr>
           </thead>
           <tbody>

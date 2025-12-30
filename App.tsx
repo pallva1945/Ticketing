@@ -1,13 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Bell, Filter, X } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
+import { ArenaMap } from './components/ArenaMap'; // Imported ArenaMap
 import { ChatInterface } from './components/ChatInterface';
 import { MultiSelect } from './components/MultiSelect';
-import { TEAM_NAME, APP_NAME, MAX_CAPACITY } from './constants';
+import { TEAM_NAME, APP_NAME, MAX_CAPACITY, GOOGLE_SHEET_CSV_URL } from './constants';
 import { GameData, DashboardStats, TicketZone } from './types';
-import { CSV_CONTENT } from './data/csvData';
+import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { processGameData } from './utils/dataProcessor';
 
 const getDayName = (dateStr: string) => {
@@ -19,6 +20,8 @@ const getDayName = (dateStr: string) => {
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'chat'>('dashboard');
   const [data, setData] = useState<GameData[]>([]);
+  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [dataSource, setDataSource] = useState<'live' | 'local'>('local');
   
   // Filters (Arrays for Multi-Select)
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>(['25-26']);
@@ -28,10 +31,70 @@ const App: React.FC = () => {
   const [selectedTiers, setSelectedTiers] = useState<string[]>(['All']);
   const [selectedDays, setSelectedDays] = useState<string[]>(['All']);
 
+  const loadData = async () => {
+    setIsLoadingData(true);
+    let loadedData: GameData[] = [];
+    let source: 'live' | 'local' = 'local';
+
+    try {
+      if (GOOGLE_SHEET_CSV_URL) {
+        // Strategy 1: Direct Fetch with Cache Busting
+        try {
+          const cacheBuster = `&t=${Date.now()}`;
+          const response = await fetch(GOOGLE_SHEET_CSV_URL + cacheBuster);
+          if (response.ok) {
+            const csvText = await response.text();
+            loadedData = processGameData(csvText);
+            if (loadedData.length > 0) {
+                source = 'live';
+                console.log("Successfully loaded LIVE data (Direct)");
+            }
+          } else {
+             throw new Error("Direct fetch returned " + response.status);
+          }
+        } catch (directError) {
+          console.warn("Direct fetch failed, attempting CORS proxy...", directError);
+          
+          // Strategy 2: CORS Proxy Fallback
+          try {
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(GOOGLE_SHEET_CSV_URL)}`;
+            const response = await fetch(proxyUrl);
+            if (response.ok) {
+                const csvText = await response.text();
+                loadedData = processGameData(csvText);
+                if (loadedData.length > 0) {
+                    source = 'live';
+                    console.log("Successfully loaded LIVE data (Proxy)");
+                }
+            }
+          } catch (proxyError) {
+             console.error("All fetch strategies failed", proxyError);
+          }
+        }
+      }
+
+      // Fallback if no live data loaded
+      if (loadedData.length === 0) {
+        console.log("Using LOCAL fallback data");
+        loadedData = processGameData(FALLBACK_CSV_CONTENT);
+        source = 'local';
+      }
+
+      setData(loadedData);
+      setDataSource(source);
+
+    } catch (error) {
+      console.error("Critical error processing data:", error);
+      // Last resort
+      setData(processGameData(FALLBACK_CSV_CONTENT));
+      setDataSource('local');
+    } finally {
+      setIsLoadingData(false);
+    }
+  };
+
   useEffect(() => {
-    // Process the CSV data on mount
-    const processed = processGameData(CSV_CONTENT);
-    setData(processed);
+    loadData();
   }, []);
 
   // Extract unique filtering options
@@ -287,11 +350,34 @@ const App: React.FC = () => {
         </nav>
 
         <div className="p-4 border-t border-gray-100 hidden lg:block">
+           <button 
+              onClick={loadData}
+              disabled={isLoadingData}
+              className="w-full mb-4 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
+           >
+              {isLoadingData ? <Loader2 size={14} className="animate-spin"/> : <RefreshCw size={14} />}
+              Refresh Data
+           </button>
            <div className="bg-gray-100 rounded-xl p-4">
-             <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Data Status</h4>
-             <div className="flex items-center gap-2 text-sm text-gray-700">
-               <span className="w-2 h-2 rounded-full bg-green-500"></span>
-               {viewData.length} Matches in View
+             <div className="flex justify-between items-center mb-2">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase">Data Status</h4>
+                {dataSource === 'live' ? (
+                    <Wifi size={14} className="text-green-600" />
+                ) : (
+                    <WifiOff size={14} className="text-gray-400" />
+                )}
+             </div>
+             
+             <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                    <span className={`w-2 h-2 rounded-full ${isLoadingData ? 'bg-yellow-500 animate-pulse' : (dataSource === 'live' ? 'bg-green-500' : 'bg-gray-400')}`}></span>
+                    {isLoadingData ? 'Updating...' : (dataSource === 'live' ? 'Connected (Live)' : 'Local Data')}
+                </div>
+                {!isLoadingData && (
+                    <p className="text-[10px] text-gray-400">
+                        {viewData.length} Matches Loaded
+                    </p>
+                )}
              </div>
            </div>
         </div>
@@ -307,14 +393,8 @@ const App: React.FC = () => {
             </h2>
           </div>
           
-          <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
-            <button className="p-2 text-gray-400 hover:text-red-600 transition-colors relative">
-              <Bell size={20} />
-              <span className="absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-            </button>
-            <div className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white shadow-sm overflow-hidden">
-               <img src="https://picsum.photos/100/100" alt="User" className="w-full h-full object-cover" />
-            </div>
+          <div className="hidden sm:block">
+              {/* Spacer or future elements could go here. Bell/User removed as requested. */}
           </div>
         </header>
 
@@ -394,108 +474,130 @@ const App: React.FC = () => {
                </div>
             </div>
           </div>
-
-          {activeTab === 'dashboard' ? (
-            <div className="animate-fade-in space-y-6">
-              <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-900">{TEAM_NAME}</h1>
-                <p className="text-gray-500 mt-1 font-medium">
-                  {getFilterSummary()}
-                </p>
-              </div>
-              
-              <StatsCards 
-                stats={stats} 
-                data={viewData} 
-                fullDataset={data} 
-                filters={{ 
-                  season: selectedSeasons, 
-                  league: selectedLeagues, 
-                  zone: selectedZones, 
-                  opponent: selectedOpponents,
-                  tier: selectedTiers 
-                }} 
-              />
-
-              {/* Table / List Section */}
-              <div className="mb-8">
-                 <div className="flex flex-col gap-6">
-                    {selectedZones.includes('All') ? (
-                      <ZoneTable data={viewData} onZoneClick={handleZoneClick} />
-                    ) : (
-                      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full">
-                        <div className="p-4 border-b border-gray-100 font-semibold text-gray-700 flex justify-between items-center">
-                          <div className="flex items-center gap-2">
-                             <span>Detailed Games Log (Filtered Zone)</span>
-                             <button onClick={() => setSelectedZones(['All'])} className="text-xs text-red-600 hover:underline ml-2">(Show All Zones)</button>
-                          </div>
-                          <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-500">{viewData.length} Games</span>
-                        </div>
-                        <div className="divide-y divide-gray-50 overflow-y-auto max-h-[500px]">
-                          {[...viewData].reverse().map((game) => (
-                            <div key={game.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                              <div>
-                                <p className="font-medium text-gray-900">{game.opponent}</p>
-                                <p className="text-xs text-gray-400">{game.date} • {game.season}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-bold text-gray-900">€{(game.totalRevenue/1000).toFixed(1)}k</p>
-                                <p className="text-xs text-gray-500">
-                                  {game.attendance} Sold
-                                </p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                 </div>
-              </div>
-              
-              <div className="mb-8">
-                 <h2 className="text-xl font-bold text-gray-800 mb-4">
-                   Trend & Performance Analysis
-                 </h2>
-                 <p className="text-xs text-gray-400 mb-4">Click on charts to filter data</p>
-                 <DashboardChart data={viewData} onFilterChange={handleChartFilterChange} />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 {/* Quick Insight Card */}
-                 <div className="bg-gradient-to-br from-red-600 to-red-800 rounded-xl p-6 text-white shadow-lg">
-                    <h3 className="font-bold text-lg mb-2">Director's Note</h3>
-                    <p className="text-red-100 text-sm leading-relaxed mb-4">
-                      {viewData.length > 0 ? (
-                        <>
-                          Analyzing <strong>{viewData.length} games</strong> matching your criteria.
-                          {!selectedOpponents.includes('All') && selectedSeasons.length > 1 
-                            ? ` You are currently viewing a YoY comparison for ${selectedOpponents.length === 1 ? selectedOpponents[0] : 'selected opponents'}. Analyze the revenue variance across seasons.` 
-                            : ` The general trend shows a variance in attendance. Monitor the Yield KPI across different zones.`
-                          }
-                        </>
-                      ) : (
-                        "No data matches your current filter selection."
-                      )}
-                    </p>
-                    <button 
-                      onClick={() => setActiveTab('chat')}
-                      className="bg-white text-red-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors"
-                    >
-                      Ask AI for Strategy
-                    </button>
-                 </div>
-              </div>
-            </div>
+          
+          {isLoadingData && data.length === 0 ? (
+             <div className="flex flex-col items-center justify-center h-96">
+                <Loader2 size={40} className="text-red-600 animate-spin mb-4" />
+                <p className="text-gray-500 font-medium">Loading sales data...</p>
+             </div>
           ) : (
-            <div className="h-full animate-fade-in max-w-4xl mx-auto">
-              <div className="mb-6 text-center">
-                 <h2 className="text-2xl font-bold text-gray-900">Strategy Assistant</h2>
-                 <p className="text-gray-500">
-                   Analyze "What If" scenarios for the current selection
-                 </p>
-              </div>
-              <ChatInterface contextData={aiContext} />
-            </div>
+            <>
+              {activeTab === 'dashboard' ? (
+                <div className="animate-fade-in space-y-6">
+                  <div className="mb-6">
+                    <h1 className="text-3xl font-bold text-gray-900">{TEAM_NAME}</h1>
+                    <p className="text-gray-500 mt-1 font-medium">
+                      {getFilterSummary()}
+                    </p>
+                  </div>
+                  
+                  <StatsCards 
+                    stats={stats} 
+                    data={viewData} 
+                    fullDataset={data} 
+                    filters={{ 
+                      season: selectedSeasons, 
+                      league: selectedLeagues, 
+                      zone: selectedZones, 
+                      opponent: selectedOpponents,
+                      tier: selectedTiers 
+                    }} 
+                  />
+
+                  {/* Visual Analytics Section - Fixed Layout Overlap */}
+                  <div className="mb-8">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">Venue Intelligence</h2>
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                        {/* Map Column - Fixed Height to prevent stretch */}
+                        <div className="xl:col-span-5 h-[500px]">
+                            <ArenaMap 
+                                data={viewData} 
+                                onZoneClick={handleZoneClick} 
+                                selectedZone={selectedZones.includes('All') ? 'All' : selectedZones[0]} 
+                            />
+                        </div>
+
+                        {/* Table Column - Fixed Height matching map, with scroll */}
+                        <div className="xl:col-span-7 h-[500px] flex flex-col">
+                            {selectedZones.includes('All') ? (
+                              <ZoneTable data={viewData} onZoneClick={handleZoneClick} />
+                            ) : (
+                              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
+                                <div className="p-4 border-b border-gray-100 font-semibold text-gray-700 flex justify-between items-center bg-gray-50 flex-shrink-0">
+                                  <div className="flex items-center gap-2">
+                                    <span>Detailed Games Log ({selectedZones[0]})</span>
+                                    <button onClick={() => setSelectedZones(['All'])} className="text-xs text-red-600 hover:underline ml-2 bg-white px-2 py-1 rounded border border-red-200">Reset View</button>
+                                  </div>
+                                  <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-gray-500">{viewData.length} Matches</span>
+                                </div>
+                                <div className="divide-y divide-gray-50 overflow-y-auto flex-1 p-2">
+                                  {[...viewData].reverse().map((game) => (
+                                    <div key={game.id} className="p-3 flex items-center justify-between hover:bg-gray-50 transition-colors rounded-lg">
+                                      <div>
+                                        <p className="font-bold text-gray-900 text-sm">{game.opponent}</p>
+                                        <p className="text-xs text-gray-400">{game.date} • {game.season}</p>
+                                      </div>
+                                      <div className="text-right">
+                                        <p className="font-bold text-gray-900 text-sm">€{(game.totalRevenue/1000).toFixed(1)}k</p>
+                                        <p className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-1">
+                                          {game.attendance} Sold
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                        </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-8 relative z-0">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">
+                      Trend & Performance Analysis
+                    </h2>
+                    <p className="text-xs text-gray-400 mb-4">Click on charts to filter data</p>
+                    <DashboardChart data={viewData} onFilterChange={handleChartFilterChange} />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Quick Insight Card */}
+                    <div className="bg-gradient-to-br from-red-600 to-red-800 rounded-xl p-6 text-white shadow-lg">
+                        <h3 className="font-bold text-lg mb-2">Director's Note</h3>
+                        <p className="text-red-100 text-sm leading-relaxed mb-4">
+                          {viewData.length > 0 ? (
+                            <>
+                              Analyzing <strong>{viewData.length} games</strong> matching your criteria.
+                              {!selectedOpponents.includes('All') && selectedSeasons.length > 1 
+                                ? ` You are currently viewing a YoY comparison for ${selectedOpponents.length === 1 ? selectedOpponents[0] : 'selected opponents'}. Analyze the revenue variance across seasons.` 
+                                : ` The general trend shows a variance in attendance. Monitor the Yield KPI across different zones.`
+                              }
+                            </>
+                          ) : (
+                            "No data matches your current filter selection."
+                          )}
+                        </p>
+                        <button 
+                          onClick={() => setActiveTab('chat')}
+                          className="bg-white text-red-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors"
+                        >
+                          Ask AI for Strategy
+                        </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-full animate-fade-in max-w-4xl mx-auto">
+                  <div className="mb-6 text-center">
+                    <h2 className="text-2xl font-bold text-gray-900">Strategy Assistant</h2>
+                    <p className="text-gray-500">
+                      Analyze "What If" scenarios for the current selection
+                    </p>
+                  </div>
+                  <ChatInterface contextData={aiContext} />
+                </div>
+              )}
+            </>
           )}
         </div>
       </main>

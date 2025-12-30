@@ -1,15 +1,16 @@
+
 export enum TicketZone {
   SKYBOX = 'Skyboxes',
   COURTSIDE = 'Courtside',
-  PAR_EX = 'Parterre Exclusive',
-  PAR_O = 'Parterre Ovest',
-  PAR_E = 'Parterre Est',
+  PAR_O = 'Parterre Ovest', // Wraps 3 sides
+  PAR_E = 'Parterre Est',   // Bench side
   TRIB_G = 'Tribuna Gold',
   TRIB_S = 'Tribuna Silver',
   GALL_G = 'Galleria Gold',
   GALL_S = 'Galleria Silver',
   CURVA = 'Curva',
-  OSPITI = 'Ospiti'
+  OSPITI = 'Ospiti',
+  PAR_EX = 'Parterre Exclusive' // Kept for data mapping, usually merged into Par O in visual if needed, but distinct in data
 }
 
 export enum SalesChannel {
