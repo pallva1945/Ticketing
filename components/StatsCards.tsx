@@ -1,9 +1,10 @@
+
 import React, { useMemo } from 'react';
 import { DollarSign, Users, Briefcase, Ticket, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { DashboardStats, GameData, SalesChannel, StatsCardsProps } from '../types';
 
 // Helper to calculate raw KPIs for any set of games
-const calculateKPIs = (games: GameData[]) => {
+export const calculateKPIs = (games: GameData[]) => {
   if (games.length === 0) return null;
 
   const gameCount = games.length;
@@ -33,7 +34,16 @@ const calculateKPIs = (games: GameData[]) => {
   const corpShare = totalRevenue > 0 ? (totalCorpRev / totalRevenue) * 100 : 0;
   const occupancy = totalCapacity > 0 ? (totalAttendance / totalCapacity) * 100 : 0;
 
-  return { arpg, yield_atp, revPas, corpShare, occupancy };
+  return { 
+      arpg, 
+      yield_atp, 
+      revPas, 
+      corpShare, 
+      occupancy,
+      totalRevenue,     // Added
+      totalAttendance,  // Added
+      gameCount         // Added
+  };
 };
 
 const MetricCard = ({ 

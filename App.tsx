@@ -1,10 +1,12 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, RefreshCw, Wifi, WifiOff, ArrowLeftRight } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
 import { ArenaMap } from './components/ArenaMap'; // Imported ArenaMap
 import { ChatInterface } from './components/ChatInterface';
+import { ComparisonView } from './components/ComparisonView';
 import { MultiSelect } from './components/MultiSelect';
 import { TEAM_NAME, APP_NAME, MAX_CAPACITY, GOOGLE_SHEET_CSV_URL } from './constants';
 import { GameData, DashboardStats, TicketZone } from './types';
@@ -18,7 +20,7 @@ const getDayName = (dateStr: string) => {
 };
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'chat'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'chat'>('dashboard');
   const [data, setData] = useState<GameData[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [dataSource, setDataSource] = useState<'live' | 'local'>('local');
@@ -97,41 +99,55 @@ const App: React.FC = () => {
     loadData();
   }, []);
 
-  // Extract unique filtering options
-  const seasons = useMemo(() => {
-    const s = Array.from(new Set(data.map(d => d.season))).sort().reverse();
-    return s;
-  }, [data]);
+  // --- Cascading Filter Options Logic ---
+  const getAvailableOptions = (targetField: 'season' | 'league' | 'opponent' | 'tier' | 'day' | 'zone') => {
+      const filtered = data.filter(d => {
+        // We filter by every field EXCEPT the target field to determine availability
+        const matchSeason = targetField === 'season' || selectedSeasons.includes('All') || selectedSeasons.includes(d.season);
+        const matchLeague = targetField === 'league' || selectedLeagues.includes('All') || selectedLeagues.includes(d.league);
+        const matchOpponent = targetField === 'opponent' || selectedOpponents.includes('All') || selectedOpponents.includes(d.opponent);
+        const matchTier = targetField === 'tier' || selectedTiers.includes('All') || selectedTiers.includes(String(d.tier));
+        const matchDay = targetField === 'day' || selectedDays.includes('All') || selectedDays.includes(getDayName(d.date));
+        
+        // Note: selectedZones is treated as a View Slice, not a row filter for game availability, 
+        // so we do not filter rows by selectedZones when calculating options for other fields.
+        
+        return matchSeason && matchLeague && matchOpponent && matchTier && matchDay;
+      });
 
-  const leagues = useMemo(() => {
-    const l = Array.from(new Set(data.map(d => d.league))).sort();
-    return l;
-  }, [data]);
+      const unique = new Set<string>();
+      filtered.forEach(d => {
+          if (targetField === 'season') unique.add(d.season);
+          if (targetField === 'league') unique.add(d.league);
+          if (targetField === 'opponent') unique.add(d.opponent);
+          if (targetField === 'tier') unique.add(String(d.tier));
+          if (targetField === 'day') unique.add(getDayName(d.date));
+          if (targetField === 'zone') {
+               d.salesBreakdown.forEach(s => unique.add(s.zone));
+          }
+      });
 
-  const zones = useMemo(() => {
-    // Get all unique zones present in the sales breakdown across all games
-    const allZones = new Set<string>();
-    data.forEach(g => g.salesBreakdown.forEach(s => allZones.add(s.zone)));
-    return Array.from(allZones).sort();
-  }, [data]);
+      const arr = Array.from(unique);
 
-  const opponents = useMemo(() => {
-    const o = Array.from(new Set(data.map(d => d.opponent))).sort();
-    return o;
-  }, [data]);
+      if (targetField === 'season') return arr.sort().reverse();
+      if (targetField === 'tier') return arr.sort((a,b) => Number(a)-Number(b));
+      if (targetField === 'day') {
+          const order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+          return arr.sort((a,b) => order.indexOf(a) - order.indexOf(b));
+      }
+      return arr.sort();
+  };
 
-  const tiers = useMemo(() => {
-    // Tiers are numbers in data, convert to string for the filter
-    const t = Array.from(new Set(data.map(d => d.tier)))
-        .filter((t: number) => t > 0) // Filter out 0/Unknown if relevant, or keep them
-        .sort((a: number, b: number) => a - b)
-        .map(String);
-    return t;
-  }, [data]);
+  // Memoized Options
+  const seasons = useMemo(() => getAvailableOptions('season'), [data, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
+  const leagues = useMemo(() => getAvailableOptions('league'), [data, selectedSeasons, selectedOpponents, selectedTiers, selectedDays]);
+  const opponents = useMemo(() => getAvailableOptions('opponent'), [data, selectedSeasons, selectedLeagues, selectedTiers, selectedDays]);
+  const tiers = useMemo(() => getAvailableOptions('tier'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedDays]);
+  const days = useMemo(() => getAvailableOptions('day'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers]);
+  const zones = useMemo(() => getAvailableOptions('zone'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
 
-  const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  // Filter AND Transform Data
+  // Filter AND Transform Data (View Data)
   const viewData = useMemo(() => {
     // 1. Filter Games by Season, League, Opponent, Tier, and Day
     const filteredGames = data.filter(d => {
@@ -214,7 +230,7 @@ const App: React.FC = () => {
       context_filter: { 
         seasons: selectedSeasons, 
         leagues: selectedLeagues, 
-        zones: selectedZones,
+        zones: selectedZones, 
         opponents: selectedOpponents,
         tiers: selectedTiers,
         days: selectedDays
@@ -306,6 +322,17 @@ const App: React.FC = () => {
      }
   };
 
+  // Provide initial full options for ComparisonView independently of dashboard cascading
+  const allSeasons = useMemo(() => Array.from(new Set(data.map(d => d.season))).sort().reverse(), [data]);
+  const allLeagues = useMemo(() => Array.from(new Set(data.map(d => d.league))).sort(), [data]);
+  const allOpponents = useMemo(() => Array.from(new Set(data.map(d => d.opponent))).sort(), [data]);
+  const allTiers = useMemo(() => Array.from(new Set(data.map(d => d.tier))).filter((t: any) => t > 0).map(String).sort((a,b)=>Number(a)-Number(b)), [data]);
+  const allZones = useMemo(() => {
+     const z = new Set<string>();
+     data.forEach(g => g.salesBreakdown.forEach(s => z.add(s.zone)));
+     return Array.from(z).sort();
+  }, [data]);
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       {/* Sidebar Navigation */}
@@ -335,6 +362,17 @@ const App: React.FC = () => {
           >
             <LayoutDashboard size={20} />
             <span className="hidden lg:inline">Dashboard</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('comparison')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+              activeTab === 'comparison' 
+                ? 'bg-red-50 text-red-700 font-medium shadow-sm' 
+                : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <ArrowLeftRight size={20} />
+            <span className="hidden lg:inline">Comparison</span>
           </button>
           <button 
             onClick={() => setActiveTab('chat')}
@@ -389,7 +427,7 @@ const App: React.FC = () => {
         <header className="bg-white border-b border-gray-200 py-4 px-6 flex flex-col sm:flex-row items-center justify-between sticky top-0 z-10 gap-4">
           <div className="flex items-center gap-4 w-full sm:w-auto">
             <h2 className="text-xl font-bold text-gray-800">
-              {activeTab === 'dashboard' ? 'Season Overview' : 'Strategic Planning'}
+              {activeTab === 'dashboard' ? 'Season Overview' : (activeTab === 'comparison' ? 'Scenario Comparison' : 'Strategic Planning')}
             </h2>
           </div>
           
@@ -400,89 +438,89 @@ const App: React.FC = () => {
 
         {/* View Content */}
         <div className="p-6 max-w-7xl mx-auto">
-          {/* Filters Bar */}
-          <div className="mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-               <div className="flex items-center gap-2 text-gray-500">
-                  <Filter size={18} />
-                  <span className="text-sm font-medium">Data Filters</span>
-               </div>
-               {hasActiveFilters && (
-                  <button 
-                    onClick={clearFilters}
-                    className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-800 transition-colors"
-                  >
-                    <X size={14} />
-                    Clear All
-                  </button>
-               )}
-            </div>
-            
-            <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-               <div>
-                  <MultiSelect 
-                    label="Season" 
-                    options={seasons} 
-                    selected={selectedSeasons} 
-                    onChange={setSelectedSeasons} 
-                  />
-               </div>
-               
-               <div>
-                  <MultiSelect 
-                    label="League" 
-                    options={leagues} 
-                    selected={selectedLeagues} 
-                    onChange={setSelectedLeagues} 
-                  />
-               </div>
-
-               <div>
-                  <MultiSelect 
-                    label="Tier" 
-                    options={tiers} 
-                    selected={selectedTiers} 
-                    onChange={setSelectedTiers} 
-                  />
-               </div>
-
-               <div>
-                  <MultiSelect 
-                    label="Opponent" 
-                    options={opponents} 
-                    selected={selectedOpponents} 
-                    onChange={setSelectedOpponents} 
-                  />
-               </div>
-               
-               <div>
-                  <MultiSelect 
-                    label="Day" 
-                    options={days} 
-                    selected={selectedDays} 
-                    onChange={setSelectedDays} 
-                  />
-               </div>
-
-               <div>
-                  <MultiSelect 
-                    label="Zone" 
-                    options={zones} 
-                    selected={selectedZones} 
-                    onChange={setSelectedZones} 
-                  />
-               </div>
-            </div>
-          </div>
-          
-          {isLoadingData && data.length === 0 ? (
-             <div className="flex flex-col items-center justify-center h-96">
-                <Loader2 size={40} className="text-red-600 animate-spin mb-4" />
-                <p className="text-gray-500 font-medium">Loading sales data...</p>
-             </div>
-          ) : (
+          {activeTab === 'dashboard' && (
             <>
-              {activeTab === 'dashboard' ? (
+              {/* Filters Bar */}
+              <div className="mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2 text-gray-500">
+                      <Filter size={18} />
+                      <span className="text-sm font-medium">Data Filters</span>
+                  </div>
+                  {hasActiveFilters && (
+                      <button 
+                        onClick={clearFilters}
+                        className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-800 transition-colors"
+                      >
+                        <X size={14} />
+                        Clear All
+                      </button>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+                  <div>
+                      <MultiSelect 
+                        label="Season" 
+                        options={seasons} 
+                        selected={selectedSeasons} 
+                        onChange={setSelectedSeasons} 
+                      />
+                  </div>
+                  
+                  <div>
+                      <MultiSelect 
+                        label="League" 
+                        options={leagues} 
+                        selected={selectedLeagues} 
+                        onChange={setSelectedLeagues} 
+                      />
+                  </div>
+
+                  <div>
+                      <MultiSelect 
+                        label="Tier" 
+                        options={tiers} 
+                        selected={selectedTiers} 
+                        onChange={setSelectedTiers} 
+                      />
+                  </div>
+
+                  <div>
+                      <MultiSelect 
+                        label="Opponent" 
+                        options={opponents} 
+                        selected={selectedOpponents} 
+                        onChange={setSelectedOpponents} 
+                      />
+                  </div>
+                  
+                  <div>
+                      <MultiSelect 
+                        label="Day" 
+                        options={days} 
+                        selected={selectedDays} 
+                        onChange={setSelectedDays} 
+                      />
+                  </div>
+
+                  <div>
+                      <MultiSelect 
+                        label="Zone" 
+                        options={zones} 
+                        selected={selectedZones} 
+                        onChange={setSelectedZones} 
+                      />
+                  </div>
+                </div>
+              </div>
+              
+              {isLoadingData && data.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-96">
+                    <Loader2 size={40} className="text-red-600 animate-spin mb-4" />
+                    <p className="text-gray-500 font-medium">Loading sales data...</p>
+                </div>
+              ) : (
                 <div className="animate-fade-in space-y-6">
                   <div className="mb-6">
                     <h1 className="text-3xl font-bold text-gray-900">{TEAM_NAME}</h1>
@@ -586,18 +624,33 @@ const App: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ) : (
-                <div className="h-full animate-fade-in max-w-4xl mx-auto">
-                  <div className="mb-6 text-center">
-                    <h2 className="text-2xl font-bold text-gray-900">Strategy Assistant</h2>
-                    <p className="text-gray-500">
-                      Analyze "What If" scenarios for the current selection
-                    </p>
-                  </div>
-                  <ChatInterface contextData={aiContext} />
-                </div>
               )}
             </>
+          )}
+
+          {activeTab === 'comparison' && (
+            <ComparisonView 
+              fullData={data} 
+              options={{
+                seasons: allSeasons,
+                leagues: allLeagues,
+                opponents: allOpponents,
+                tiers: allTiers,
+                zones: allZones
+              }} 
+            />
+          )}
+
+          {activeTab === 'chat' && (
+             <div className="h-full animate-fade-in max-w-4xl mx-auto">
+                <div className="mb-6 text-center">
+                  <h2 className="text-2xl font-bold text-gray-900">Strategy Assistant</h2>
+                  <p className="text-gray-500">
+                    Analyze "What If" scenarios for the current selection
+                  </p>
+                </div>
+                <ChatInterface contextData={aiContext} />
+             </div>
           )}
         </div>
       </main>

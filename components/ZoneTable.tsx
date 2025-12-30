@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { GameData, TicketZone } from '../types';
 
@@ -47,6 +48,9 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
       // Fill rate is based on the total potential seats vs total sold seats in the period
       // (Total Sold / Total Capacity) * 100
       const fillRate = val.totalCapacity > 0 ? (val.sold / val.totalCapacity) * 100 : 0;
+      
+      // RevPAS: Revenue Per Available Seat
+      const revPas = val.totalCapacity > 0 ? val.revenue / val.totalCapacity : 0;
 
       return {
         zone,
@@ -55,6 +59,7 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
         avgRevenue: val.revenue / gameCount,
         avgSold: avgSold,
         avgPrice: val.sold > 0 ? val.revenue / val.sold : 0,
+        revPas: revPas,
         revShare: totalRev > 0 ? (val.revenue / totalRev) * 100 : 0,
         fillRate: fillRate
       };
@@ -76,6 +81,7 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
               <th className="px-6 py-3 bg-gray-50">Zone</th>
               <th className="px-6 py-3 text-right bg-gray-50">Avg Sold / Cap</th>
               <th className="px-6 py-3 text-right bg-gray-50">Avg Price (Yield)</th>
+              <th className="px-6 py-3 text-right bg-gray-50">RevPAS</th>
               <th className="px-6 py-3 text-right bg-gray-50">Avg Revenue</th>
               <th className="px-6 py-3 text-right bg-gray-50">Rev Share</th>
               <th className="px-6 py-3 w-32 bg-gray-50">Fill Rate %</th>
@@ -109,6 +115,7 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
                     <span className="text-gray-500">{row.capacity || '-'}</span>
                   </td>
                   <td className="px-6 py-4 text-right font-medium text-gray-900">€{row.avgPrice.toFixed(1)}</td>
+                  <td className="px-6 py-4 text-right font-medium text-blue-600">€{row.revPas.toFixed(1)}</td>
                   <td className="px-6 py-4 text-right">€{row.avgRevenue.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
                   <td className="px-6 py-4 text-right">{row.revShare.toFixed(1)}%</td>
                   <td className="px-6 py-4">
