@@ -1,0 +1,307 @@
+import React from 'react';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  LineChart, Line, PieChart, Pie, Cell, ComposedChart, ReferenceLine
+} from 'recharts';
+import { GameData, SalesChannel } from '../types';
+
+interface DashboardChartProps {
+  data: GameData[];
+  onFilterChange: (type: 'opponent' | 'tier' | 'day', value: string) => void;
+}
+
+const COLORS = ['#DC2626', '#1F2937', '#4B5563', '#9CA3AF', '#F87171', '#EF4444'];
+const CHANNEL_COLORS: Record<string, string> = {
+  [SalesChannel.ABB]: '#1F2937', // Dark Gray
+  [SalesChannel.TIX]: '#DC2626', // PV Red
+  [SalesChannel.CORP]: '#2563EB', // Blue
+  [SalesChannel.MP]: '#F59E0B', // Amber
+  [SalesChannel.VB]: '#10B981', // Green
+  [SalesChannel.GIVEAWAY]: '#E5E7EB', // Light Gray
+};
+
+const TIER_COLORS: Record<string, string> = {
+  '1': '#DC2626', // Tier 1: Red (High Value)
+  '2': '#EA580C', // Tier 2: Orange
+  '3': '#CA8A04', // Tier 3: Yellow/Gold
+  '4': '#64748B', // Tier 4: Slate
+  'Unknown': '#94A3B8'
+};
+
+export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterChange }) => {
+  
+  // 1. Revenue & Attendance Trend (Composed)
+  const uniqueOpponents = new Set(data.map(d => d.opponent));
+  const isComparisonMode = uniqueOpponents.size < data.length * 0.5;
+
+  const trendData = data
+    .sort((a, b) => {
+        // Sort chronologically
+        const dateA = a.date.split('/').reverse().join('');
+        const dateB = b.date.split('/').reverse().join('');
+        return dateA.localeCompare(dateB);
+    })
+    .map(game => ({
+        name: isComparisonMode 
+            ? `${game.season}`
+            : (uniqueOpponents.size <= 3 ? `${game.season} ${game.opponent}` : game.opponent.substring(0, 8)),
+        fullLabel: `${game.opponent} (${game.season})`,
+        date: game.date,
+        revenue: game.totalRevenue,
+        attendance: game.attendance,
+        opponent: game.opponent
+    }));
+
+  // 2. Channel Breakdown (Pie)
+  const channelStats: Record<string, number> = {};
+  data.forEach(game => {
+    game.salesBreakdown.forEach(s => {
+      // Exclude Giveaways from Revenue Pie
+      if (s.channel !== SalesChannel.GIVEAWAY) {
+        channelStats[s.channel] = (channelStats[s.channel] || 0) + s.revenue;
+      }
+    });
+  });
+
+  const pieData = Object.keys(channelStats).map(key => ({
+    name: key,
+    value: channelStats[key]
+  })).sort((a, b) => b.value - a.value);
+
+  // 3. Tier Analysis (Bar Chart)
+  const tierStats: Record<string, { revenue: number; count: number }> = {};
+  
+  data.forEach(game => {
+    const tierKey = game.tier && game.tier > 0 ? game.tier.toString() : 'Unknown';
+    if (!tierStats[tierKey]) tierStats[tierKey] = { revenue: 0, count: 0 };
+    tierStats[tierKey].revenue += game.totalRevenue;
+    tierStats[tierKey].count += 1;
+  });
+
+  const tierData = Object.entries(tierStats)
+    .map(([tier, val]) => ({
+      name: tier === 'Unknown' ? 'Unknown' : `Tier ${tier}`,
+      tierKey: tier,
+      avgRevenue: val.revenue / val.count,
+      totalRevenue: val.revenue,
+      gameCount: val.count
+    }))
+    .sort((a, b) => {
+      if (a.tierKey === 'Unknown') return 1;
+      if (b.tierKey === 'Unknown') return -1;
+      return parseInt(a.tierKey) - parseInt(b.tierKey);
+    });
+
+  const avgRevenueTotal = data.length > 0 ? data.reduce((acc, curr) => acc + curr.totalRevenue, 0) / data.length : 0;
+
+  // 4. Day of Week Analysis
+  const dayStats: Record<string, { revenue: number, count: number }> = {};
+  data.forEach(game => {
+    const [day, month, year] = game.date.split('/');
+    const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+    
+    if (!dayStats[dayName]) dayStats[dayName] = { revenue: 0, count: 0 };
+    dayStats[dayName].revenue += game.totalRevenue;
+    dayStats[dayName].count += 1;
+  });
+
+  const dayData = Object.entries(dayStats).map(([day, val]) => ({
+    name: day,
+    avgRevenue: val.revenue / val.count
+  })).sort((a, b) => b.avgRevenue - a.avgRevenue);
+
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Revenue Trend - Takes up 2 columns */}
+        <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+             {uniqueOpponents.size === 1 
+                ? `YoY History: ${Array.from(uniqueOpponents)[0]}` 
+                : 'Revenue vs Attendance Pacing'}
+          </h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                    dataKey="name" 
+                    tick={{fontSize: 10}} 
+                    interval={0} 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={50} 
+                />
+                <YAxis yAxisId="left" tick={{fontSize: 11}} tickFormatter={(val) => `€${val/1000}k`} />
+                <YAxis yAxisId="right" orientation="right" tick={{fontSize: 11}} domain={[0, 'auto']} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                  labelFormatter={(label, payload) => payload[0]?.payload.fullLabel || label}
+                />
+                <Legend />
+                <Bar 
+                  yAxisId="left" 
+                  dataKey="revenue" 
+                  name="Revenue (€)" 
+                  fill="#DC2626" 
+                  radius={[4, 4, 0, 0]} 
+                  barSize={20} 
+                  cursor="pointer"
+                  onClick={(data) => {
+                    if (data && data.opponent) {
+                      onFilterChange('opponent', data.opponent);
+                    }
+                  }}
+                />
+                <Line 
+                  yAxisId="right" 
+                  type="monotone" 
+                  dataKey="attendance" 
+                  name="Attendance" 
+                  stroke="#1F2937" 
+                  strokeWidth={2} 
+                  dot={{r: 3}} 
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Channel Mix - Takes up 1 column */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Revenue Mix</h3>
+          <div className="h-64 flex-1">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={CHANNEL_COLORS[entry.name] || COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: number) => `€${value.toLocaleString()}`} />
+                <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{fontSize: '10px'}} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-4 text-center">
+             <p className="text-xs text-gray-400">Excludes Giveaways/Protocol</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Opponent Tier Analysis (Bar Chart) */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="flex items-center justify-between mb-4">
+             <div>
+                <h3 className="text-lg font-semibold text-gray-800">Revenue by Opponent Tier</h3>
+                <p className="text-xs text-gray-400">Average Revenue per Tier</p>
+             </div>
+          </div>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart 
+                data={tierData} 
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tick={{fontSize: 12}} />
+                <YAxis 
+                   tickFormatter={(val) => `€${(val/1000).toFixed(0)}k`} 
+                   tick={{fontSize: 11}}
+                />
+                <Tooltip 
+                  cursor={{fill: 'transparent'}}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const d = payload[0].payload;
+                      return (
+                        <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg text-xs">
+                          <p className="font-bold text-sm mb-1">{d.name}</p>
+                          <div className="space-y-1">
+                             <div className="flex justify-between gap-4">
+                               <span className="text-gray-500">Avg Revenue:</span>
+                               <span className="font-bold">€{(d.avgRevenue || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}</span>
+                             </div>
+                             <div className="flex justify-between gap-4">
+                               <span className="text-gray-500">Games Played:</span>
+                               <span className="font-mono">{d.gameCount || 0}</span>
+                             </div>
+                             <div className="flex justify-between gap-4">
+                               <span className="text-gray-500">Total Rev:</span>
+                               <span className="font-mono text-gray-400">€{((d.totalRevenue || 0)/1000).toFixed(1)}k</span>
+                             </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <ReferenceLine y={avgRevenueTotal} stroke="#9CA3AF" strokeDasharray="3 3" label={{ value: 'Avg', position: 'right', fontSize: 10, fill: '#9CA3AF' }} />
+                <Bar 
+                    dataKey="avgRevenue" 
+                    radius={[4, 4, 0, 0]} 
+                    barSize={40} 
+                    cursor="pointer"
+                    onClick={(data) => {
+                        if (data && data.tierKey) {
+                            onFilterChange('tier', data.tierKey);
+                        }
+                    }}
+                >
+                  {tierData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={TIER_COLORS[entry.tierKey] || TIER_COLORS['Unknown']} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Day of Week Analysis */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Avg Revenue by Day</h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart 
+                data={dayData} 
+                layout="vertical"
+              >
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" width={40} tick={{fontSize: 12}} />
+                <Tooltip 
+                   cursor={{fill: 'transparent'}}
+                   formatter={(value: number) => [`€${Math.round(value).toLocaleString()}`, 'Avg Revenue']}
+                />
+                <Bar 
+                    dataKey="avgRevenue" 
+                    fill="#4B5563" 
+                    radius={[0, 4, 4, 0]} 
+                    barSize={24} 
+                    cursor="pointer"
+                    onClick={(data) => {
+                        if (data && data.name) {
+                            onFilterChange('day', data.name);
+                        }
+                    }}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
