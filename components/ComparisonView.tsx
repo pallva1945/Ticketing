@@ -1,10 +1,10 @@
 
 import React, { useState, useMemo } from 'react';
-import { GameData } from '../types';
+import { GameData, TicketZone } from '../types';
 import { MultiSelect } from './MultiSelect';
 import { calculateKPIs } from './StatsCards';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { ArrowLeftRight, TrendingUp, TrendingDown, Minus, Filter, AlertCircle } from 'lucide-react';
+import { ArrowLeftRight, TrendingUp, TrendingDown, Minus, Filter, AlertCircle, UserX } from 'lucide-react';
 
 interface ComparisonViewProps {
   fullData: GameData[];
@@ -29,6 +29,7 @@ interface FilterState {
     dates: string[];
     pvRanks: string[];
     oppRanks: string[];
+    ignoreOspiti: boolean;
 }
 
 const INITIAL_FILTERS: FilterState = {
@@ -40,7 +41,8 @@ const INITIAL_FILTERS: FilterState = {
     times: ['All'],
     dates: ['All'],
     pvRanks: ['All'],
-    oppRanks: ['All']
+    oppRanks: ['All'],
+    ignoreOspiti: false,
 };
 
 // --- Helper: Filter Data based on State ---
@@ -51,22 +53,7 @@ const getFilteredData = (allGames: GameData[], filters: FilterState) => {
       const matchLeague = filters.leagues.includes('All') || filters.leagues.includes(d.league);
       const matchOpponent = filters.opponents.includes('All') || filters.opponents.includes(d.opponent);
       const matchTier = filters.tiers.includes('All') || filters.tiers.includes(String(d.tier));
-      const matchTime = filters.times.includes('All') || filters.times.includes(d.id.split('-')[3] ? `${d.id.split('-')[3].slice(0,2)}:${d.id.split('-')[3].slice(2)}` : '') || filters.times.includes(d.date) || true; // Check logic below
       
-      // Fix Time matching: The ID construction in dataProcessor is roughly YYYY-MM-DD-HHMM-Opp.
-      // But let's look at the raw data fields. d.date and d.time are not explicitly on GameData interface in previous files?
-      // Wait, they ARE in GameData interface in types.ts.
-      // d.time from CSV is like "20.30".
-      const dTime = (d as any).time || ''; // Access raw time if available or reconstruct
-      // Actually, let's assume the dataProcessor added `time` to GameData or we parse it from ID?
-      // Looking at `types.ts`, `GameData` has `date`. It doesn't explicitly have `time`.
-      // However, `dataProcessor.ts` creates `id` using time. 
-      // Let's rely on the fact that we will extract available options from the data objects themselves.
-      // If `time` isn't on GameData, we need to extract it.
-      // Let's assume we extract it from `id` or add it to GameData. 
-      // For now, I will use a safe access assuming it might be added or derived.
-      
-      // Let's assume `d.date` is DD/MM/YYYY.
       const matchDate = filters.dates.includes('All') || filters.dates.includes(d.date);
       
       // For Time, let's extract from ID since it's reliable: YYYY-MM-DD-HHMM-Opp
@@ -80,27 +67,45 @@ const getFilteredData = (allGames: GameData[], filters: FilterState) => {
       return matchSeason && matchLeague && matchOpponent && matchTier && matchDate && matchTimeDerived && matchPvRank && matchOppRank;
     });
 
-    // 2. Zone Transform
-    if (filters.zones.includes('All')) {
-      return filteredGames;
-    }
-
     return filteredGames.map(game => {
-      const zoneSales = game.salesBreakdown.filter(s => filters.zones.includes(s.zone));
+      // Clone breakdown
+      let zoneSales = game.salesBreakdown;
+
+      // Filter 1: Ignore Ospiti
+      if (filters.ignoreOspiti) {
+          zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
+      }
+
+      // Filter 2: Zone Selection
+      if (!filters.zones.includes('All')) {
+          zoneSales = zoneSales.filter(s => filters.zones.includes(s.zone));
+      }
+
       const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
       const zoneAttendance = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
+      
       let zoneCapacity = 0;
+      const filteredZoneCapacities = { ...game.zoneCapacities };
+      
+      if (filters.ignoreOspiti) {
+          delete filteredZoneCapacities[TicketZone.OSPITI];
+      }
+
       if (game.zoneCapacities) {
-        filters.zones.forEach((z: string) => {
-             zoneCapacity += (game.zoneCapacities[z] || 0);
+        Object.entries(filteredZoneCapacities).forEach(([z, cap]) => {
+             if (filters.zones.includes('All') || filters.zones.includes(z)) {
+                 zoneCapacity += (cap as number);
+             }
         });
       }
+
       return {
         ...game,
         attendance: zoneAttendance,
         totalRevenue: zoneRevenue,
         capacity: zoneCapacity,
-        salesBreakdown: zoneSales
+        salesBreakdown: zoneSales,
+        zoneCapacities: filteredZoneCapacities
       };
     });
 };
@@ -111,12 +116,6 @@ const getFilteredData = (allGames: GameData[], filters: FilterState) => {
 const getAvailableOptions = (allGames: GameData[], currentFilters: FilterState, targetField: keyof FilterState): string[] => {
     
     // Create a temporary filter state that ignores the target field
-    // (e.g. if I want available Opponents, I shouldn't restrict by the Opponent I just selected, 
-    // unless I want to narrow down lists progressively? 
-    // Usually "cascading" means Filter A restricts B. B restricts C. 
-    // But if I change A, B updates. 
-    // A standard "Excel Slicer" behavior is: The options shown are those compatible with ALL OTHER active filters.
-    
     const relevantData = allGames.filter(d => {
         const timePart = d.id.split('-')[3]; 
         const formattedTime = timePart ? `${timePart.slice(0,2)}.${timePart.slice(2)}` : '00.00';
@@ -125,8 +124,6 @@ const getAvailableOptions = (allGames: GameData[], currentFilters: FilterState, 
         if (targetField !== 'leagues' && !currentFilters.leagues.includes('All') && !currentFilters.leagues.includes(d.league)) return false;
         if (targetField !== 'opponents' && !currentFilters.opponents.includes('All') && !currentFilters.opponents.includes(d.opponent)) return false;
         if (targetField !== 'tiers' && !currentFilters.tiers.includes('All') && !currentFilters.tiers.includes(String(d.tier))) return false;
-        // Zones is a transformation filter, usually doesn't filter the existence of a game, so we ignore it for "game availability" logic usually, 
-        // but here we can include it if needed. Let's skip zones for row filtering.
         
         if (targetField !== 'dates' && !currentFilters.dates.includes('All') && !currentFilters.dates.includes(d.date)) return false;
         if (targetField !== 'times' && !currentFilters.times.includes('All') && !currentFilters.times.includes(formattedTime)) return false;
@@ -151,8 +148,6 @@ const getAvailableOptions = (allGames: GameData[], currentFilters: FilterState, 
              uniqueValues.add(formattedTime);
         }
         if (targetField === 'zones') {
-             // Zones are within the game, not a property of the game row itself (mostly).
-             // We can just return all zones or those with > 0 sales.
              d.salesBreakdown.forEach(s => uniqueValues.add(s.zone));
         }
     });
@@ -243,12 +238,12 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
       { name: 'Total Revenue', A: statsA?.totalRevenue || 0, B: statsB?.totalRevenue || 0 },
   ];
 
-  const updateFilter = (set: 'A'|'B', field: keyof FilterState, value: string[]) => {
+  const updateFilter = (set: 'A'|'B', field: keyof FilterState, value: any) => {
       const setter = set === 'A' ? setFiltersA : setFiltersB;
       setter(prev => ({ ...prev, [field]: value }));
   };
 
-  const FilterColumn = ({ label, filters, setFilter }: { label: string, filters: FilterState, setFilter: (f: keyof FilterState, v: string[]) => void }) => {
+  const FilterColumn = ({ label, filters, setFilter }: { label: string, filters: FilterState, setFilter: (f: keyof FilterState, v: any) => void }) => {
       // Dynamic Options Calculation
       const availSeasons = useMemo(() => getAvailableOptions(fullData, filters, 'seasons'), [filters]);
       const availLeagues = useMemo(() => getAvailableOptions(fullData, filters, 'leagues'), [filters]);
@@ -273,6 +268,18 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
           </div>
           
           <div className="overflow-y-auto space-y-4 flex-1 pr-2 custom-scrollbar">
+            <button 
+                onClick={() => setFilter('ignoreOspiti', !filters.ignoreOspiti)}
+                className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors border ${
+                    filters.ignoreOspiti 
+                    ? 'bg-red-50 text-red-700 border-red-200' 
+                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                }`}
+            >
+                <UserX size={14} />
+                {filters.ignoreOspiti ? 'Guests Excluded' : 'Ignore Guests'}
+            </button>
+
             <MultiSelect label="Season" options={availSeasons} selected={filters.seasons} onChange={(v) => setFilter('seasons', v)} />
             <MultiSelect label="League" options={availLeagues} selected={filters.leagues} onChange={(v) => setFilter('leagues', v)} />
             <MultiSelect label="Opponent" options={availOpponents} selected={filters.opponents} onChange={(v) => setFilter('opponents', v)} />
@@ -313,7 +320,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
            {/* Filters Left */}
            <div className="lg:col-span-1">
-               <FilterColumn label="A" filters={filtersA} setFilter={(f: keyof FilterState, v: string[]) => updateFilter('A', f, v)} />
+               <FilterColumn label="A" filters={filtersA} setFilter={(f: keyof FilterState, v: any) => updateFilter('A', f, v)} />
            </div>
 
            {/* Results Middle */}
@@ -361,7 +368,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
 
            {/* Filters Right */}
            <div className="lg:col-span-1">
-               <FilterColumn label="B" filters={filtersB} setFilter={(f: keyof FilterState, v: string[]) => updateFilter('B', f, v)} />
+               <FilterColumn label="B" filters={filtersB} setFilter={(f: keyof FilterState, v: any) => updateFilter('B', f, v)} />
            </div>
        </div>
     </div>

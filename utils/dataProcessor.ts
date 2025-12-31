@@ -69,18 +69,49 @@ const parseCSV = (text: string): string[][] => {
   return result;
 };
 
-const BASE_ZONE_CAPACITIES: Record<TicketZone, number> = {
+// --- SEASONAL CAPACITY CONFIGURATIONS ---
+
+// Gall 1058 total split estimated as 389 Gold / 669 Silver based on 25-26 data
+const CAPACITIES_23_24: Record<TicketZone, number> = {
   [TicketZone.PAR_O]: 465,
+  [TicketZone.PAR_E]: 220,
+  [TicketZone.TRIB_G]: 1815,
+  [TicketZone.TRIB_S]: 705,
+  [TicketZone.CURVA]: 458,
+  [TicketZone.GALL_G]: 389, 
+  [TicketZone.GALL_S]: 669,
+  [TicketZone.COURTSIDE]: 32,
+  [TicketZone.OSPITI]: 233,
+  [TicketZone.PAR_EX]: 0, 
+  [TicketZone.SKYBOX]: 0
+};
+
+const CAPACITIES_24_25: Record<TicketZone, number> = {
+  [TicketZone.PAR_O]: 465,
+  [TicketZone.PAR_E]: 220,
+  [TicketZone.TRIB_G]: 1815,
+  [TicketZone.TRIB_S]: 735,
+  [TicketZone.CURVA]: 458,
+  [TicketZone.GALL_G]: 389,
+  [TicketZone.GALL_S]: 669,
+  [TicketZone.COURTSIDE]: 42,
+  [TicketZone.OSPITI]: 233,
+  [TicketZone.PAR_EX]: 0,
+  [TicketZone.SKYBOX]: 60
+};
+
+const CAPACITIES_25_26: Record<TicketZone, number> = {
+  [TicketZone.PAR_O]: 382,
+  [TicketZone.PAR_EX]: 83, // Carved out of Par O
   [TicketZone.PAR_E]: 220,
   [TicketZone.TRIB_G]: 2209,
   [TicketZone.TRIB_S]: 367,
-  [TicketZone.GALL_S]: 669,
   [TicketZone.GALL_G]: 389,
+  [TicketZone.GALL_S]: 669,
   [TicketZone.CURVA]: 458,
-  [TicketZone.OSPITI]: 233,
-  [TicketZone.PAR_EX]: 0, 
   [TicketZone.COURTSIDE]: 44,
-  [TicketZone.SKYBOX]: 60,
+  [TicketZone.OSPITI]: 233,
+  [TicketZone.SKYBOX]: 60
 };
 
 export const processGameData = (csvContent: string): GameData[] => {
@@ -109,7 +140,7 @@ export const processGameData = (csvContent: string): GameData[] => {
 
   const zonePrefixes: Record<string, TicketZone> = {
     'Par O': TicketZone.PAR_O,
-    'Par EX': TicketZone.PAR_O, 
+    'Par EX': TicketZone.PAR_EX, // Updated to separate zone
     'Par E': TicketZone.PAR_E,
     'Trib G': TicketZone.TRIB_G,
     'Trib S': TicketZone.TRIB_S,
@@ -122,10 +153,21 @@ export const processGameData = (csvContent: string): GameData[] => {
 
   const seasonGameCounters: Record<string, number> = {};
 
-  // Columns for Ticket Types
+  // Columns for Ticket Types (Paid Discounts)
   const discountCols = ['Sponsor', 'Disabili', 'LBA', 'Promotion', 'Special', 'Staff', 'Team', 'Under 18', 'Under 30', 'VNC'];
-  // Giveaway Cols
-  const giveawayCols = ['InstitutionalGA', 'VIPGA', 'TeamGA', 'SponsorGA', 'DisabileGA', 'StaffGA', 'AutoritiesGA', 'Agent/SponsorGA', 'PromotionGA'];
+  
+  // Giveaway Mapping: Label -> Possible CSV Column Names
+  const giveawayMap: Record<string, string[]> = {
+    'Institutional': ['InstitutionalGA'],
+    'VIP': ['VIPGA'],
+    'Team': ['TeamGA'],
+    'Sponsor': ['SponsorGA'],
+    'Disabili': ['DisabileGA', 'DisabiliGA'],
+    'Staff': ['StaffGA'],
+    'Authorities': ['AutoritiesGA', 'AuthoritiesGA'],
+    'Agent': ['Agent/SponsorGA', 'AgentGA', 'Agent'], // Explicitly mapping Agent/SponsorGA to "Agent"
+    'Promotion': ['PromotionGA']
+  };
 
   const games: GameData[] = dataRows.map(row => {
     // Helper to extract value safely
@@ -191,15 +233,11 @@ export const processGameData = (csvContent: string): GameData[] => {
 
     const giveawayDetails: Record<string, number> = {};
     let giveawaySum = 0;
-    giveawayCols.forEach(col => {
-      const val = parseInteger(getValue([col]));
+    
+    Object.entries(giveawayMap).forEach(([label, keys]) => {
+      const val = parseInteger(getValue(keys));
       if (val > 0) {
-        let key = col;
-        key = key.replace(/GA$/i, '');
-        if (col === 'DisabileGA') key = 'Disabili';
-        if (col === 'AutoritiesGA') key = 'Authorities';
-        
-        giveawayDetails[key] = (giveawayDetails[key] || 0) + val;
+        giveawayDetails[label] = (giveawayDetails[label] || 0) + val;
         giveawaySum += val;
       }
     });
@@ -217,10 +255,16 @@ export const processGameData = (csvContent: string): GameData[] => {
     seasonGameCounters[season]++;
     const gameIndex = seasonGameCounters[season];
 
-    const zoneCapacities = { ...BASE_ZONE_CAPACITIES };
-    if (season === '23-24' && gameIndex < 6) {
-        zoneCapacities[TicketZone.SKYBOX] = 0;
+    // Determine Season Capacity
+    let zoneCapacities = { ...CAPACITIES_25_26 }; // Default to latest
+    if (season === '23-24') {
+        zoneCapacities = { ...CAPACITIES_23_24 };
+        // Specific override: Skybox was 0 for early games in 23-24
+        if (gameIndex < 6) zoneCapacities[TicketZone.SKYBOX] = 0;
+    } else if (season === '24-25') {
+        zoneCapacities = { ...CAPACITIES_24_25 };
     }
+
     const currentTotalCapacity = Object.values(zoneCapacities).reduce((acc, cap) => acc + cap, 0);
 
     const salesBreakdown: SalesDataPoint[] = [];

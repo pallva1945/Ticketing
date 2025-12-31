@@ -11,6 +11,9 @@ interface DashboardChartProps {
 }
 
 const COLORS = ['#DC2626', '#1F2937', '#4B5563', '#9CA3AF', '#F87171', '#EF4444'];
+// Distinct colors for seasons: Oldest (Light Slate) -> Recent Past (Dark Slate) -> Current (Red)
+const SEASON_COLORS = ['#CBD5E1', '#334155', '#DC2626', '#7F1D1D']; 
+
 const CHANNEL_COLORS: Record<string, string> = {
   [SalesChannel.ABB]: '#1F2937', // Dark Gray
   [SalesChannel.TIX]: '#DC2626', // PV Red
@@ -124,7 +127,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
 
   // 5. Monthly PnL Analysis (Multi-Season)
   const seasonMonthOrder = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
-  const uniqueSeasons: string[] = Array.from(new Set(data.map(d => d.season))).sort();
+  const uniqueSeasons: string[] = Array.from(new Set<string>(data.map(d => d.season))).sort();
   
   const monthlyPnlData = seasonMonthOrder.map(mIndex => {
       const monthName = MONTH_NAMES[mIndex - 1];
@@ -384,9 +387,14 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
               <BarChart 
                 data={dayData} 
                 layout="vertical"
+                margin={{top: 5, right: 30, left: 0, bottom: 5}}
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis type="number" hide />
+                <XAxis 
+                    type="number" 
+                    tickFormatter={(val) => `€${(val/1000).toFixed(0)}k`} 
+                    tick={{fontSize: 10}} 
+                />
                 <YAxis dataKey="name" type="category" width={40} tick={{fontSize: 12}} />
                 <Tooltip 
                    cursor={{fill: 'transparent'}}
@@ -431,7 +439,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                         <Bar 
                             key={season} 
                             dataKey={season} 
-                            fill={index === uniqueSeasons.length - 1 ? '#DC2626' : '#9CA3AF'} 
+                            fill={SEASON_COLORS[index % SEASON_COLORS.length]} 
                             radius={[4, 4, 0, 0]} 
                             barSize={uniqueSeasons.length > 1 ? 20 : 40}
                         >

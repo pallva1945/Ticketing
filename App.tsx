@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2 } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -9,7 +9,7 @@ import { ChatInterface } from './components/ChatInterface';
 import { ComparisonView } from './components/ComparisonView';
 import { MultiSelect } from './components/MultiSelect';
 import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL } from './constants';
-import { GameData, DashboardStats, SalesChannel } from './types';
+import { GameData, DashboardStats, SalesChannel, TicketZone } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { processGameData } from './utils/dataProcessor';
 
@@ -36,6 +36,9 @@ const App: React.FC = () => {
   const [selectedOpponents, setSelectedOpponents] = useState<string[]>(['All']);
   const [selectedTiers, setSelectedTiers] = useState<string[]>(['All']);
   const [selectedDays, setSelectedDays] = useState<string[]>(['All']);
+  
+  // Strategy Filters
+  const [ignoreOspiti, setIgnoreOspiti] = useState(false);
 
   const loadData = async () => {
     setIsLoadingData(true);
@@ -188,9 +191,6 @@ const App: React.FC = () => {
         const matchTier = targetField === 'tier' || selectedTiers.includes('All') || selectedTiers.includes(String(d.tier));
         const matchDay = targetField === 'day' || selectedDays.includes('All') || selectedDays.includes(getDayName(d.date));
         
-        // Note: selectedZones is treated as a View Slice, not a row filter for game availability, 
-        // so we do not filter rows by selectedZones when calculating options for other fields.
-        
         return matchSeason && matchLeague && matchOpponent && matchTier && matchDay;
       });
 
@@ -238,16 +238,19 @@ const App: React.FC = () => {
       return matchSeason && matchLeague && matchOpponent && matchTier && matchDay;
     });
 
-    // 2. Transform Data based on Selected Zones
-    // If 'All' zones selected, use the game as is.
-    // If specific zones selected, transform the game to only sum those zones.
-    if (selectedZones.includes('All')) {
-      return filteredGames;
-    }
-
     return filteredGames.map(game => {
-      // Filter the breakdown for selected zones
-      const zoneSales = game.salesBreakdown.filter(s => selectedZones.includes(s.zone));
+      // Create a shallow copy of salesBreakdown to filter
+      let zoneSales = game.salesBreakdown;
+
+      // Filter 1: Exclude Ospiti if toggle is ON
+      if (ignoreOspiti) {
+          zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
+      }
+
+      // Filter 2: Specific Zone Selection (Slice)
+      if (!selectedZones.includes('All')) {
+          zoneSales = zoneSales.filter(s => selectedZones.includes(s.zone));
+      }
       
       // Recalculate totals for this slice
       const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
@@ -255,9 +258,21 @@ const App: React.FC = () => {
 
       // Recalculate Capacity for this slice
       let zoneCapacity = 0;
+      
+      // We also need to filter the capacity map itself for the ZoneTable/ArenaMap components
+      const filteredZoneCapacities = { ...game.zoneCapacities };
+      
+      if (ignoreOspiti) {
+          delete filteredZoneCapacities[TicketZone.OSPITI];
+      }
+
       if (game.zoneCapacities) {
-        selectedZones.forEach(z => {
-             zoneCapacity += (game.zoneCapacities[z] || 0);
+        Object.entries(filteredZoneCapacities).forEach(([z, cap]) => {
+             // If All zones selected, sum everything available (excluding Ospiti if ignored)
+             // If specific zones selected, only sum those
+             if (selectedZones.includes('All') || selectedZones.includes(z)) {
+                 zoneCapacity += (cap as number);
+             }
         });
       }
 
@@ -267,10 +282,11 @@ const App: React.FC = () => {
         attendance: zoneAttendance,
         totalRevenue: zoneRevenue,
         capacity: zoneCapacity, // Important override for occupancy calculation
-        salesBreakdown: zoneSales
+        salesBreakdown: zoneSales,
+        zoneCapacities: filteredZoneCapacities // Use the filtered capacity map
       };
     });
-  }, [data, selectedSeasons, selectedLeagues, selectedZones, selectedOpponents, selectedTiers, selectedDays]);
+  }, [data, selectedSeasons, selectedLeagues, selectedZones, selectedOpponents, selectedTiers, selectedDays, ignoreOspiti]);
 
   // Calculate Statistics based on View Data
   const stats: DashboardStats = useMemo(() => {
@@ -355,6 +371,8 @@ const App: React.FC = () => {
        summary.push('Entire Arena');
     }
     
+    if (ignoreOspiti) summary.push('(No Guests)');
+
     return summary.join(' • ');
   };
   
@@ -373,6 +391,7 @@ const App: React.FC = () => {
     setSelectedOpponents(['All']);
     setSelectedTiers(['All']);
     setSelectedDays(['All']);
+    setIgnoreOspiti(false);
   };
 
   const handleChartFilterChange = (type: 'opponent' | 'tier' | 'day', value: string) => {
@@ -540,15 +559,30 @@ const App: React.FC = () => {
                       <Filter size={18} />
                       <span className="text-sm font-medium">Data Filters</span>
                   </div>
-                  {hasActiveFilters && (
+                  <div className="flex items-center gap-3">
+                      {/* Ignore Ospiti Toggle */}
                       <button 
-                        onClick={clearFilters}
-                        className="flex items-center gap-1 text-xs font-medium text-red-600 hover:text-red-800 transition-colors"
+                        onClick={() => setIgnoreOspiti(!ignoreOspiti)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${
+                            ignoreOspiti 
+                            ? 'bg-red-50 text-red-700 border-red-200' 
+                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                        }`}
                       >
-                        <X size={14} />
-                        Clear All
+                        <UserX size={14} />
+                        {ignoreOspiti ? 'Guests Excluded' : 'Ignore Guests'}
                       </button>
-                  )}
+
+                      {(hasActiveFilters || ignoreOspiti) && (
+                          <button 
+                            onClick={clearFilters}
+                            className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-700 transition-colors ml-2"
+                          >
+                            <X size={14} />
+                            Clear All
+                          </button>
+                      )}
+                  </div>
                 </div>
                 
                 <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
