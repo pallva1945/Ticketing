@@ -4,8 +4,40 @@ import { GameData, SalesDataPoint, TicketZone, SalesChannel } from '../types';
 // Helper to clean currency string and parse to float
 const parseCurrency = (val: string): number => {
   if (!val || val === '#DIV/0!' || val.trim() === '') return 0;
-  // Remove "€", remove thousands separator ".", replace decimal "," with "."
-  const clean = val.replace(/€/g, '').replace(/\./g, '').replace(/,/g, '.').trim();
+  
+  // Remove currency symbols, whitespace, and non-breaking spaces
+  let clean = val.replace(/[€$£\s\u00A0]/g, '');
+  
+  // Heuristic: If it contains "," and the part after comma is 2 digits, assume Euro format (1.000,00)
+  // If it contains "." and the part after dot is 2 digits, assume US format (1,000.00)
+  // Be careful with "1,000" (US) vs "1,000" (Euro 1.0) -> usually Euro uses 1.000,00
+  
+  if (clean.includes(',') && !clean.includes('.')) {
+      // Ambiguous: 100,50 (Euro float) or 100,000 (US int)
+      // If comma is near the end (2 chars), assume decimal
+      const parts = clean.split(',');
+      if (parts[parts.length-1].length === 2) {
+          clean = clean.replace(',', '.');
+      } else {
+          // Assume thousand separator if 3 digits, but typically currency has decimals.
+          // Let's assume Euro format default for this specific Italian context if ambiguous
+          clean = clean.replace(',', '.'); // Treat 1,23 as 1.23
+      }
+  } else if (clean.includes('.') && !clean.includes(',')) {
+      // US style simple: 100.50 -> No change
+  } else if (clean.includes(',') && clean.includes('.')) {
+      // Mixed: Determine which is last
+      const lastComma = clean.lastIndexOf(',');
+      const lastDot = clean.lastIndexOf('.');
+      if (lastComma > lastDot) {
+          // Euro style: 1.000,00
+          clean = clean.replace(/\./g, '').replace(',', '.');
+      } else {
+          // US style: 1,000.00
+          clean = clean.replace(/,/g, '');
+      }
+  }
+
   const num = parseFloat(clean);
   return isNaN(num) ? 0 : num;
 };
@@ -13,13 +45,14 @@ const parseCurrency = (val: string): number => {
 // Helper to parse integer
 const parseInteger = (val: string): number => {
   if (!val || val === '#DIV/0!' || val.trim() === '') return 0;
-  // Handle case where int might have thousands separator or similar junk
-  const clean = val.replace(/\./g, '').trim();
+  // Remove potential thousands separators and decimals
+  // Simply remove non-digits (except maybe minus)
+  const clean = val.replace(/[^\d-]/g, ''); 
   const num = parseInt(clean, 10);
   return isNaN(num) ? 0 : num;
 };
 
-// Simple CSV parser that handles quoted fields containing commas
+// Simple CSV parser
 const parseCSV = (text: string): string[][] => {
   const result: string[][] = [];
   const lines = text.split(/\r?\n/);
@@ -34,7 +67,12 @@ const parseCSV = (text: string): string[][] => {
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
       if (char === '"') {
-        inQuotes = !inQuotes;
+        if (inQuotes && line[i+1] === '"') {
+            current += '"';
+            i++;
+        } else {
+            inQuotes = !inQuotes;
+        }
       } else if (char === ',' && !inQuotes) {
         row.push(current);
         current = '';
@@ -48,7 +86,6 @@ const parseCSV = (text: string): string[][] => {
   return result;
 };
 
-// Standard capacities (Corrected based on user input)
 const BASE_ZONE_CAPACITIES: Record<TicketZone, number> = {
   [TicketZone.PAR_O]: 465,
   [TicketZone.PAR_E]: 220,
@@ -58,7 +95,7 @@ const BASE_ZONE_CAPACITIES: Record<TicketZone, number> = {
   [TicketZone.GALL_G]: 389,
   [TicketZone.CURVA]: 458,
   [TicketZone.OSPITI]: 233,
-  [TicketZone.PAR_EX]: 0, // Merged into Par O typically
+  [TicketZone.PAR_EX]: 0, 
   [TicketZone.COURTSIDE]: 44,
   [TicketZone.SKYBOX]: 60,
 };
@@ -67,10 +104,29 @@ export const processGameData = (csvContent: string): GameData[] => {
   const rows = parseCSV(csvContent);
   if (rows.length < 2) return [];
 
-  const header = rows[0].map(h => h.trim());
-  const dataRows = rows.slice(1);
+  // 1. DYNAMIC HEADER DETECTION
+  // Look for a row that looks like a header (contains key columns)
+  // This handles cases where there are title rows or metadata before the table.
+  let headerRowIndex = 0;
+  const keywords = ['season', 'stagione', 'opponent', 'contro', 'date', 'data', 'league', 'liga'];
+  
+  for(let i=0; i<Math.min(rows.length, 20); i++) {
+     const rowStr = rows[i].join(' ').toLowerCase();
+     // Count matches of keywords
+     const matchCount = keywords.filter(k => rowStr.includes(k)).length;
+     if (matchCount >= 3) { // Require at least 3 matches to be confident
+        headerRowIndex = i;
+        break;
+     }
+  }
 
-  // Map zone names to their prefix in CSV
+  // Normalize header: trim, remove quotes, remove BOM, lowercase
+  const header = rows[headerRowIndex].map(h => 
+      h.trim().replace(/^"|"$/g, '').replace(/^\uFEFF/, '').toLowerCase()
+  );
+  
+  const dataRows = rows.slice(headerRowIndex + 1);
+
   const zonePrefixes: Record<string, TicketZone> = {
     'Par O': TicketZone.PAR_O,
     'Par EX': TicketZone.PAR_O, 
@@ -84,62 +140,60 @@ export const processGameData = (csvContent: string): GameData[] => {
     'SkyBoxes': TicketZone.SKYBOX,
   };
 
-  // Helper to track game index per season for "Game 6" rule
   const seasonGameCounters: Record<string, number> = {};
 
   const games: GameData[] = dataRows.map(row => {
-    const getValue = (colName: string): string => {
-      const idx = header.indexOf(colName);
-      return idx !== -1 ? row[idx] : '';
+    // Helper to extract value safely by checking multiple possible header names
+    const getValue = (possibleNames: string[]): string => {
+      const idx = header.findIndex(h => possibleNames.map(n => n.toLowerCase()).includes(h));
+      if (idx === -1 || !row[idx]) return '';
+      let val = row[idx].trim();
+      if (val.startsWith('"') && val.endsWith('"')) {
+          val = val.slice(1, -1);
+      }
+      return val;
     };
 
-    // Basic Info
-    const league = getValue('Liga') || 'LBA';
-    const season = getValue('Season') || 'Unknown';
-    const date = getValue('Data') || '';
-    const time = getValue('Time') || '';
-    const opponent = getValue('Contro') || 'Unknown';
+    // --- CORE FIELDS ---
+    const league = getValue(['Liga', 'League']) || 'LBA';
+    const season = getValue(['Season', 'Stagione']) || 'Unknown';
+    // Support 'Data', 'Date', 'Match Date', 'Giorno'
+    const date = getValue(['Data', 'Date', 'Match Date', 'Giorno']) || '';
+    const time = getValue(['Time', 'Ora']) || '';
+    const opponent = getValue(['Contro', 'Opponent', 'Team B', 'Avversario']) || 'Unknown';
     
-    // New Fields
-    const oppRank = parseInteger(getValue('Opp Rank'));
-    const pvRank = parseInteger(getValue('PV Rank'));
-    const tier = parseInteger(getValue('Tier'));
+    // --- NUMERIC FIELDS ---
+    const oppRank = parseInteger(getValue(['Opp Rank', 'Ranking Opp', 'Opponent Rank']));
+    const pvRank = parseInteger(getValue(['PV Rank', 'Ranking PV']));
+    const tier = parseInteger(getValue(['Tier']));
     
-    // Construct simplified ID: YYYYMMDD-Opponent
-    const dateParts = date.split('/'); // DD/MM/YYYY
-    const isoDate = dateParts.length === 3 ? `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}` : date;
+    // ID Construction
+    let isoDate = date;
+    if (date.includes('/')) {
+        const parts = date.split('/');
+        if (parts.length === 3) isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
     const cleanTime = time.replace('.', ':');
     const id = `${isoDate}-${cleanTime.replace(':', '')}-${opponent.replace(/\s+/g, '')}`;
 
-    const attendance = parseInteger(getValue('Tot pay Num')); 
-    const totalAttendance = parseInteger(getValue('Total num'));
-    const totalRevenue = parseCurrency(getValue('Tot Eur'));
+    const attendance = parseInteger(getValue(['Tot pay Num', 'Total Pay Num'])); 
+    const totalAttendance = parseInteger(getValue(['Total num', 'Total Attendance']));
+    const totalRevenue = parseCurrency(getValue(['Tot Eur', 'Total Revenue']));
 
-    // --- Dynamic Capacity Logic ---
+    // --- LOGIC ---
     if (!seasonGameCounters[season]) seasonGameCounters[season] = 0;
     seasonGameCounters[season]++;
-    const gameIndex = seasonGameCounters[season]; // 1-based index
+    const gameIndex = seasonGameCounters[season];
 
     const zoneCapacities = { ...BASE_ZONE_CAPACITIES };
-
-    // Apply specific capacity changes per season
-    // For 23-24, Skyboxes opened partway through the season
-    if (season === '23-24') {
-        if (gameIndex < 6) {
-            zoneCapacities[TicketZone.SKYBOX] = 0;
-        }
-        // Otherwise use base capacity (60)
-    } 
-    // For other seasons (24-25, 25-26), the base capacities apply.
-    
-    // Calculate total capacity for this specific game
+    if (season === '23-24' && gameIndex < 6) {
+        zoneCapacities[TicketZone.SKYBOX] = 0;
+    }
     const currentTotalCapacity = Object.values(zoneCapacities).reduce((acc, cap) => acc + cap, 0);
 
     const salesBreakdown: SalesDataPoint[] = [];
 
-    // Process standard zones
     Object.entries(zonePrefixes).forEach(([prefix, zone]) => {
-      // Channels
       const channels = [
         { key: 'Abb', type: SalesChannel.ABB },
         { key: 'Corp', type: SalesChannel.CORP },
@@ -149,49 +203,34 @@ export const processGameData = (csvContent: string): GameData[] => {
       ];
 
       channels.forEach(ch => {
-        const qty = parseInteger(getValue(`${prefix} ${ch.key} Num`));
-        const rev = parseCurrency(getValue(`${prefix} ${ch.key} Eur`));
+        const qty = parseInteger(getValue([`${prefix} ${ch.key} Num`]));
+        const rev = parseCurrency(getValue([`${prefix} ${ch.key} Eur`]));
         if (qty > 0 || rev > 0) {
           salesBreakdown.push({ zone, channel: ch.type, quantity: qty, revenue: rev });
         }
       });
 
-      // Giveaways / Protocol (Revenue usually 0)
-      const protQty = parseInteger(getValue(`${prefix} Prot`));
-      if (protQty > 0) {
-        salesBreakdown.push({ zone, channel: SalesChannel.GIVEAWAY, quantity: protQty, revenue: 0 });
-      }
+      const protQty = parseInteger(getValue([`${prefix} Prot`]));
+      if (protQty > 0) salesBreakdown.push({ zone, channel: SalesChannel.GIVEAWAY, quantity: protQty, revenue: 0 });
       
-      const freeQty = parseInteger(getValue(`${prefix} Free Num`));
-      if (freeQty > 0) {
-        salesBreakdown.push({ zone, channel: SalesChannel.GIVEAWAY, quantity: freeQty, revenue: 0 });
-      }
+      const freeQty = parseInteger(getValue([`${prefix} Free Num`]));
+      if (freeQty > 0) salesBreakdown.push({ zone, channel: SalesChannel.GIVEAWAY, quantity: freeQty, revenue: 0 });
     });
 
-    // Process Ospiti (Guests) - Only Tix usually
-    const ospitiQty = parseInteger(getValue('Ospiti Tix Num'));
-    const ospitiRev = parseCurrency(getValue('Ospiti Tix Eur'));
+    const ospitiQty = parseInteger(getValue(['Ospiti Tix Num', 'Guests Num']));
+    const ospitiRev = parseCurrency(getValue(['Ospiti Tix Eur', 'Guests Rev']));
     if (ospitiQty > 0 || ospitiRev > 0) {
       salesBreakdown.push({ zone: TicketZone.OSPITI, channel: SalesChannel.TIX, quantity: ospitiQty, revenue: ospitiRev });
     }
 
     return {
-      id,
-      opponent,
-      date,
-      attendance: totalAttendance || attendance,
-      capacity: currentTotalCapacity,
-      zoneCapacities,
-      totalRevenue,
-      salesBreakdown,
-      league,
-      season,
-      oppRank,
-      pvRank,
-      tier
+      id, opponent, date, attendance: totalAttendance || attendance,
+      capacity: currentTotalCapacity, zoneCapacities, totalRevenue,
+      salesBreakdown, league, season, oppRank, pvRank, tier
     };
   });
 
-  // Filter out invalid rows
-  return games.filter(g => g.opponent && g.opponent !== 'Unknown');
+  // Filter out truly invalid rows
+  // If opponent is unknown AND date is empty, it's likely an empty row.
+  return games.filter(g => g.date && g.date.length > 5);
 };

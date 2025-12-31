@@ -1,6 +1,6 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, RefreshCw, Wifi, WifiOff, ArrowLeftRight } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -8,8 +8,8 @@ import { ArenaMap } from './components/ArenaMap'; // Imported ArenaMap
 import { ChatInterface } from './components/ChatInterface';
 import { ComparisonView } from './components/ComparisonView';
 import { MultiSelect } from './components/MultiSelect';
-import { TEAM_NAME, APP_NAME, MAX_CAPACITY, GOOGLE_SHEET_CSV_URL } from './constants';
-import { GameData, DashboardStats, TicketZone } from './types';
+import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL } from './constants';
+import { GameData, DashboardStats } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { processGameData } from './utils/dataProcessor';
 
@@ -24,6 +24,7 @@ const App: React.FC = () => {
   const [data, setData] = useState<GameData[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [dataSource, setDataSource] = useState<'live' | 'local'>('local');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Filters (Arrays for Multi-Select)
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>(['25-26']);
@@ -98,6 +99,50 @@ const App: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsLoadingData(true);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      if (text) {
+        try {
+          const loadedData = processGameData(text);
+          if (loadedData.length > 0) {
+            setData(loadedData);
+            setDataSource('local');
+          }
+        } catch (error) {
+          console.error("Error parsing uploaded CSV", error);
+        } finally {
+          setIsLoadingData(false);
+        }
+      }
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be selected again
+    event.target.value = '';
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Identify the latest game in the dataset (most recent date)
+  const lastGame = useMemo(() => {
+    if (data.length === 0) return null;
+    // Clone and sort descending by date
+    const sorted = [...data].sort((a, b) => {
+         const [da, ma, ya] = a.date.split('/').map(Number);
+         const [db, mb, yb] = b.date.split('/').map(Number);
+         // Compare dates: B - A for descending
+         return new Date(yb, mb-1, db).getTime() - new Date(ya, ma-1, da).getTime();
+    });
+    return sorted[0];
+  }, [data]);
 
   // --- Cascading Filter Options Logic ---
   const getAvailableOptions = (targetField: 'season' | 'league' | 'opponent' | 'tier' | 'day' | 'zone') => {
@@ -388,36 +433,32 @@ const App: React.FC = () => {
         </nav>
 
         <div className="p-4 border-t border-gray-100 hidden lg:block">
+           <input 
+             type="file" 
+             ref={fileInputRef} 
+             onChange={handleFileUpload} 
+             accept=".csv" 
+             className="hidden" 
+           />
            <button 
-              onClick={loadData}
+              onClick={triggerFileUpload}
               disabled={isLoadingData}
               className="w-full mb-4 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
            >
-              {isLoadingData ? <Loader2 size={14} className="animate-spin"/> : <RefreshCw size={14} />}
-              Refresh Data
+              {isLoadingData ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+              Upload CSV
            </button>
-           <div className="bg-gray-100 rounded-xl p-4">
-             <div className="flex justify-between items-center mb-2">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase">Data Status</h4>
-                {dataSource === 'live' ? (
-                    <Wifi size={14} className="text-green-600" />
-                ) : (
-                    <WifiOff size={14} className="text-gray-400" />
-                )}
-             </div>
-             
-             <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                    <span className={`w-2 h-2 rounded-full ${isLoadingData ? 'bg-yellow-500 animate-pulse' : (dataSource === 'live' ? 'bg-green-500' : 'bg-gray-400')}`}></span>
-                    {isLoadingData ? 'Updating...' : (dataSource === 'live' ? 'Connected (Live)' : 'Local Data')}
+           
+           {/* Last Game Info Only */}
+           {!isLoadingData && lastGame && (
+             <div className="bg-gray-100 rounded-xl p-4">
+                <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Latest Update</p>
+                <div className="flex flex-col">
+                    <span className="text-xs font-bold text-gray-800 truncate">{lastGame.opponent}</span>
+                    <span className="text-[10px] text-gray-500">{lastGame.season} • {lastGame.date}</span>
                 </div>
-                {!isLoadingData && (
-                    <p className="text-[10px] text-gray-400">
-                        {viewData.length} Matches Loaded
-                    </p>
-                )}
              </div>
-           </div>
+           )}
         </div>
       </aside>
 
