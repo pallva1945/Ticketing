@@ -124,13 +124,13 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
 
   // 5. Monthly PnL Analysis (Multi-Season)
   const seasonMonthOrder = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
-  const uniqueSeasons = Array.from(new Set(data.map(d => d.season))).sort();
+  const uniqueSeasons: string[] = Array.from(new Set(data.map(d => d.season))).sort();
   
   const monthlyPnlData = seasonMonthOrder.map(mIndex => {
       const monthName = MONTH_NAMES[mIndex - 1];
       const row: any = { name: monthName, monthIndex: mIndex };
       
-      uniqueSeasons.forEach(season => {
+      uniqueSeasons.forEach((season: string) => {
           // Sum PnL for this season and month
           const seasonTotal = data
               .filter(d => d.season === season)

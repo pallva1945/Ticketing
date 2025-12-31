@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2 } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -19,11 +19,14 @@ const getDayName = (dateStr: string) => {
   return date.toLocaleDateString('en-US', { weekday: 'short' });
 };
 
+const STORAGE_KEY = 'pv_app_csv_data';
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'chat'>('dashboard');
   const [data, setData] = useState<GameData[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [dataSource, setDataSource] = useState<'live' | 'local'>('local');
+  const [hasStoredData, setHasStoredData] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Filters (Arrays for Multi-Select)
@@ -40,6 +43,26 @@ const App: React.FC = () => {
     let source: 'live' | 'local' = 'local';
 
     try {
+      // 1. Priority: Check Local Storage (Persistence)
+      const storedCsv = localStorage.getItem(STORAGE_KEY);
+      if (storedCsv) {
+        try {
+          loadedData = processGameData(storedCsv);
+          if (loadedData.length > 0) {
+            console.log("Loaded data from Local Storage");
+            setData(loadedData);
+            setDataSource('local');
+            setHasStoredData(true);
+            setIsLoadingData(false);
+            return; // Stop here, do not fetch live
+          }
+        } catch (e) {
+          console.error("Stored data corrupted, clearing...", e);
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+      setHasStoredData(false);
+
       if (GOOGLE_SHEET_CSV_URL) {
         // Strategy 1: Direct Fetch with Cache Busting
         try {
@@ -114,6 +137,9 @@ const App: React.FC = () => {
           if (loadedData.length > 0) {
             setData(loadedData);
             setDataSource('local');
+            // Persist to local storage
+            localStorage.setItem(STORAGE_KEY, text);
+            setHasStoredData(true);
           }
         } catch (error) {
           console.error("Error parsing uploaded CSV", error);
@@ -125,6 +151,14 @@ const App: React.FC = () => {
     reader.readAsText(file);
     // Reset input so same file can be selected again
     event.target.value = '';
+  };
+
+  const handleResetData = () => {
+    if (window.confirm("Are you sure you want to clear the uploaded data and revert to the default/live feed?")) {
+      localStorage.removeItem(STORAGE_KEY);
+      setHasStoredData(false);
+      loadData();
+    }
   };
 
   const triggerFileUpload = () => {
@@ -451,11 +485,21 @@ const App: React.FC = () => {
            <button 
               onClick={triggerFileUpload}
               disabled={isLoadingData}
-              className="w-full mb-4 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
+              className="w-full mb-3 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
            >
               {isLoadingData ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
               Upload CSV
            </button>
+
+           {hasStoredData && (
+             <button 
+                onClick={handleResetData}
+                className="w-full mb-4 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+             >
+                <Trash2 size={14} />
+                Reset to Default
+             </button>
+           )}
            
            {/* Last Game Info Only */}
            {!isLoadingData && lastGame && (
