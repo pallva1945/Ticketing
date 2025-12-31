@@ -1,6 +1,6 @@
 
 import React, { useMemo } from 'react';
-import { DollarSign, Users, Briefcase, Ticket, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { DollarSign, Users, Briefcase, Ticket, TrendingUp, TrendingDown, Minus, Gift } from 'lucide-react';
 import { DashboardStats, GameData, SalesChannel, StatsCardsProps } from '../types';
 
 // Helper to calculate raw KPIs for any set of games
@@ -15,6 +15,7 @@ export const calculateKPIs = (games: GameData[]) => {
   // Calculate Corporate Share specifically
   let totalCorpRev = 0;
   let totalSold = 0; // For Yield calculation
+  let totalGiveaways = 0; // For Giveaway Rate
   
   games.forEach(g => {
     g.salesBreakdown.forEach(s => {
@@ -23,6 +24,9 @@ export const calculateKPIs = (games: GameData[]) => {
       totalSold += s.quantity;
       if (s.channel === SalesChannel.CORP) {
         totalCorpRev += s.revenue;
+      }
+      if (s.channel === SalesChannel.GIVEAWAY) {
+        totalGiveaways += s.quantity;
       }
     });
   });
@@ -33,6 +37,7 @@ export const calculateKPIs = (games: GameData[]) => {
   const revPas = totalCapacity > 0 ? totalRevenue / totalCapacity : 0;
   const corpShare = totalRevenue > 0 ? (totalCorpRev / totalRevenue) * 100 : 0;
   const occupancy = totalCapacity > 0 ? (totalAttendance / totalCapacity) * 100 : 0;
+  const giveawayRate = totalAttendance > 0 ? (totalGiveaways / totalAttendance) * 100 : 0;
 
   return { 
       arpg, 
@@ -40,6 +45,7 @@ export const calculateKPIs = (games: GameData[]) => {
       revPas, 
       corpShare, 
       occupancy,
+      giveawayRate,
       totalRevenue,     // Added
       totalAttendance,  // Added
       gameCount         // Added
@@ -172,7 +178,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
   if (!currentKPIs) return null;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
       <MetricCard 
         label="Avg Rev/Game" 
         value={currentKPIs.arpg} 
@@ -214,6 +220,16 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
         icon={Users} 
         colorClass="border-gray-600" 
         isPercentage={true}
+      />
+      <MetricCard 
+        label="Giveaway %" 
+        value={currentKPIs.giveawayRate} 
+        prevValue={prevKPIs?.giveawayRate}
+        subValue="Tickets %"
+        icon={Gift} 
+        colorClass="border-orange-500" 
+        isPercentage={true}
+        inverse={true}
       />
     </div>
   );

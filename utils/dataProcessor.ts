@@ -1,42 +1,21 @@
 
-import { GameData, SalesDataPoint, TicketZone, SalesChannel } from '../types';
+import { GameData, SalesDataPoint, TicketZone, SalesChannel, TicketTypeBreakdown } from '../types';
 
 // Helper to clean currency string and parse to float
+// ADAPTED FOR ITALIAN FORMAT (Dot = Thousands, Comma = Decimals)
 const parseCurrency = (val: string): number => {
   if (!val || val === '#DIV/0!' || val.trim() === '') return 0;
   
-  // Remove currency symbols, whitespace, and non-breaking spaces
-  let clean = val.replace(/[€$£\s\u00A0]/g, '');
+  // Remove currency symbols, whitespace, non-breaking spaces, and quotes
+  let clean = val.replace(/[€$£\s\u00A0"]/g, '');
   
-  // Heuristic: If it contains "," and the part after comma is 2 digits, assume Euro format (1.000,00)
-  // If it contains "." and the part after dot is 2 digits, assume US format (1,000.00)
-  // Be careful with "1,000" (US) vs "1,000" (Euro 1.0) -> usually Euro uses 1.000,00
-  
-  if (clean.includes(',') && !clean.includes('.')) {
-      // Ambiguous: 100,50 (Euro float) or 100,000 (US int)
-      // If comma is near the end (2 chars), assume decimal
-      const parts = clean.split(',');
-      if (parts[parts.length-1].length === 2) {
-          clean = clean.replace(',', '.');
-      } else {
-          // Assume thousand separator if 3 digits, but typically currency has decimals.
-          // Let's assume Euro format default for this specific Italian context if ambiguous
-          clean = clean.replace(',', '.'); // Treat 1,23 as 1.23
-      }
-  } else if (clean.includes('.') && !clean.includes(',')) {
-      // US style simple: 100.50 -> No change
-  } else if (clean.includes(',') && clean.includes('.')) {
-      // Mixed: Determine which is last
-      const lastComma = clean.lastIndexOf(',');
-      const lastDot = clean.lastIndexOf('.');
-      if (lastComma > lastDot) {
-          // Euro style: 1.000,00
-          clean = clean.replace(/\./g, '').replace(',', '.');
-      } else {
-          // US style: 1,000.00
-          clean = clean.replace(/,/g, '');
-      }
-  }
+  // Check if it's potentially US format (1,000.00) vs Italian (1.000,00)
+  // We assume Italian primarily for this dataset.
+  // Italian: 1.234,56
+  // Remove all dots (thousands separators)
+  clean = clean.replace(/\./g, '');
+  // Replace comma with dot (decimal separator)
+  clean = clean.replace(/,/g, '.');
 
   const num = parseFloat(clean);
   return isNaN(num) ? 0 : num;
@@ -45,9 +24,13 @@ const parseCurrency = (val: string): number => {
 // Helper to parse integer
 const parseInteger = (val: string): number => {
   if (!val || val === '#DIV/0!' || val.trim() === '') return 0;
-  // Remove potential thousands separators and decimals
-  // Simply remove non-digits (except maybe minus)
-  const clean = val.replace(/[^\d-]/g, ''); 
+  // Remove non-digits (except minus)
+  // For Italian format like 1.000, we want 1000.
+  let clean = val.replace(/[^\d-,.]/g, ''); 
+  
+  // Normalize Italian: Remove dots, replace comma with dot (though integers usually don't have decimals)
+  clean = clean.replace(/\./g, '').replace(/,/g, '.');
+  
   const num = parseInt(clean, 10);
   return isNaN(num) ? 0 : num;
 };
@@ -105,16 +88,13 @@ export const processGameData = (csvContent: string): GameData[] => {
   if (rows.length < 2) return [];
 
   // 1. DYNAMIC HEADER DETECTION
-  // Look for a row that looks like a header (contains key columns)
-  // This handles cases where there are title rows or metadata before the table.
   let headerRowIndex = 0;
   const keywords = ['season', 'stagione', 'opponent', 'contro', 'date', 'data', 'league', 'liga'];
   
   for(let i=0; i<Math.min(rows.length, 20); i++) {
      const rowStr = rows[i].join(' ').toLowerCase();
-     // Count matches of keywords
      const matchCount = keywords.filter(k => rowStr.includes(k)).length;
-     if (matchCount >= 3) { // Require at least 3 matches to be confident
+     if (matchCount >= 3) {
         headerRowIndex = i;
         break;
      }
@@ -142,8 +122,13 @@ export const processGameData = (csvContent: string): GameData[] => {
 
   const seasonGameCounters: Record<string, number> = {};
 
+  // Columns for Ticket Types
+  const discountCols = ['Sponsor', 'Disabili', 'LBA', 'Promotion', 'Special', 'Staff', 'Team', 'Under 18', 'Under 30', 'VNC'];
+  // Giveaway Cols
+  const giveawayCols = ['InstitutionalGA', 'VIPGA', 'TeamGA', 'SponsorGA', 'DisabileGA', 'StaffGA', 'AutoritiesGA', 'Agent/SponsorGA', 'PromotionGA'];
+
   const games: GameData[] = dataRows.map(row => {
-    // Helper to extract value safely by checking multiple possible header names
+    // Helper to extract value safely
     const getValue = (possibleNames: string[]): string => {
       const idx = header.findIndex(h => possibleNames.map(n => n.toLowerCase()).includes(h));
       if (idx === -1 || !row[idx]) return '';
@@ -157,7 +142,6 @@ export const processGameData = (csvContent: string): GameData[] => {
     // --- CORE FIELDS ---
     const league = getValue(['Liga', 'League']) || 'LBA';
     const season = getValue(['Season', 'Stagione']) || 'Unknown';
-    // Support 'Data', 'Date', 'Match Date', 'Giorno'
     const date = getValue(['Data', 'Date', 'Match Date', 'Giorno']) || '';
     const time = getValue(['Time', 'Ora']) || '';
     const opponent = getValue(['Contro', 'Opponent', 'Team B', 'Avversario']) || 'Unknown';
@@ -179,6 +163,54 @@ export const processGameData = (csvContent: string): GameData[] => {
     const attendance = parseInteger(getValue(['Tot pay Num', 'Total Pay Num'])); 
     const totalAttendance = parseInteger(getValue(['Total num', 'Total Attendance']));
     const totalRevenue = parseCurrency(getValue(['Tot Eur', 'Total Revenue']));
+
+    // --- PnL Data (Columns 1-12) ---
+    const pnlBreakdown: Record<number, number> = {};
+    for (let m = 1; m <= 12; m++) {
+        // Look for headers like "1", "€ 1,00", "€ 1.00"
+        pnlBreakdown[m] = parseCurrency(getValue([
+            String(m), 
+            `€ ${m},00`, 
+            `€ ${m}.00`,
+            `€${m},00`
+        ]));
+    }
+
+    // --- Ticket Type Breakdown Logic ---
+    const fullPrice = parseInteger(getValue(['Full Price']));
+    
+    const discountDetails: Record<string, number> = {};
+    let discountSum = 0;
+    discountCols.forEach(col => {
+      const val = parseInteger(getValue([col]));
+      if (val > 0) {
+        discountDetails[col] = val;
+        discountSum += val;
+      }
+    });
+
+    const giveawayDetails: Record<string, number> = {};
+    let giveawaySum = 0;
+    giveawayCols.forEach(col => {
+      const val = parseInteger(getValue([col]));
+      if (val > 0) {
+        let key = col;
+        key = key.replace(/GA$/i, '');
+        if (col === 'DisabileGA') key = 'Disabili';
+        if (col === 'AutoritiesGA') key = 'Authorities';
+        
+        giveawayDetails[key] = (giveawayDetails[key] || 0) + val;
+        giveawaySum += val;
+      }
+    });
+
+    const ticketTypeBreakdown: TicketTypeBreakdown = {
+      full: fullPrice,
+      discount: discountSum,
+      giveaway: giveawaySum,
+      discountDetails,
+      giveawayDetails
+    };
 
     // --- LOGIC ---
     if (!seasonGameCounters[season]) seasonGameCounters[season] = 0;
@@ -226,11 +258,10 @@ export const processGameData = (csvContent: string): GameData[] => {
     return {
       id, opponent, date, attendance: totalAttendance || attendance,
       capacity: currentTotalCapacity, zoneCapacities, totalRevenue,
-      salesBreakdown, league, season, oppRank, pvRank, tier
+      salesBreakdown,
+      league, season, oppRank, pvRank, tier, pnlBreakdown, ticketTypeBreakdown
     };
   });
 
-  // Filter out truly invalid rows
-  // If opponent is unknown AND date is empty, it's likely an empty row.
-  return games.filter(g => g.date && g.date.length > 5);
+  return games;
 };

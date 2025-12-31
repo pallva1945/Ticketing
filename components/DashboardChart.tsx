@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell, ComposedChart, ReferenceLine
+  LineChart, Line, PieChart, Pie, Cell, ComposedChart, ReferenceLine, LabelList
 } from 'recharts';
 import { GameData, SalesChannel } from '../types';
 
@@ -20,6 +20,11 @@ const CHANNEL_COLORS: Record<string, string> = {
   [SalesChannel.GIVEAWAY]: '#E5E7EB', // Light Gray
 };
 
+const GIVEAWAY_COLORS = [
+  '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', 
+  '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#f43f5e'
+];
+
 const TIER_COLORS: Record<string, string> = {
   '1': '#DC2626', // Tier 1: Red (High Value)
   '2': '#EA580C', // Tier 2: Orange
@@ -27,6 +32,8 @@ const TIER_COLORS: Record<string, string> = {
   '4': '#64748B', // Tier 4: Slate
   'Unknown': '#94A3B8'
 };
+
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterChange }) => {
   
@@ -49,7 +56,11 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
         date: game.date,
         revenue: game.totalRevenue,
         attendance: game.attendance,
-        opponent: game.opponent
+        opponent: game.opponent,
+        // Ticket Type Breakdown for Stacked Bar
+        typeFull: game.ticketTypeBreakdown?.full || 0,
+        typeDiscount: game.ticketTypeBreakdown?.discount || 0,
+        typeGiveaway: game.ticketTypeBreakdown?.giveaway || 0
     }));
 
   // 2. Channel Breakdown (Pie)
@@ -82,7 +93,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
     .map(([tier, val]) => ({
       name: tier === 'Unknown' ? 'Unknown' : `Tier ${tier}`,
       tierKey: tier,
-      avgRevenue: val.revenue / val.count,
+      avgRevenue: val.count > 0 ? val.revenue / val.count : 0,
       totalRevenue: val.revenue,
       gameCount: val.count
     }))
@@ -111,6 +122,50 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
     avgRevenue: val.revenue / val.count
   })).sort((a, b) => b.avgRevenue - a.avgRevenue);
 
+  // 5. Monthly PnL Analysis (Multi-Season)
+  const seasonMonthOrder = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
+  const uniqueSeasons = Array.from(new Set(data.map(d => d.season))).sort();
+  
+  const monthlyPnlData = seasonMonthOrder.map(mIndex => {
+      const monthName = MONTH_NAMES[mIndex - 1];
+      const row: any = { name: monthName, monthIndex: mIndex };
+      
+      uniqueSeasons.forEach(season => {
+          // Sum PnL for this season and month
+          const seasonTotal = data
+              .filter(d => d.season === season)
+              .reduce((acc, game) => acc + (game.pnlBreakdown?.[mIndex] || 0), 0);
+          row[season] = seasonTotal;
+      });
+      return row;
+  });
+
+  // 6. Discount and Giveaway Details (Aggregated)
+  const aggDiscount: Record<string, number> = {};
+  const aggGiveaway: Record<string, number> = {};
+  
+  data.forEach(g => {
+       if (g.ticketTypeBreakdown && g.ticketTypeBreakdown.discountDetails) {
+           const details = g.ticketTypeBreakdown.discountDetails;
+           Object.keys(details).forEach((k) => {
+               aggDiscount[k] = (aggDiscount[k] || 0) + details[k];
+           });
+       }
+       if (g.ticketTypeBreakdown && g.ticketTypeBreakdown.giveawayDetails) {
+           const details = g.ticketTypeBreakdown.giveawayDetails;
+           Object.keys(details).forEach((k) => {
+               aggGiveaway[k] = (aggGiveaway[k] || 0) + details[k];
+           });
+       }
+  });
+
+  const discountDetailData = Object.entries(aggDiscount)
+     .map(([name, value]) => ({ name, value }))
+     .sort((a,b) => b.value - a.value);
+
+  const giveawayDetailData = Object.entries(aggGiveaway)
+     .map(([name, value]) => ({ name, value }))
+     .sort((a,b) => b.value - a.value);
 
   return (
     <div className="space-y-6">
@@ -199,6 +254,54 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
         </div>
       </div>
 
+      {/* NEW: Detailed Breakdown Charts */}
+      { (discountDetailData.length > 0 || giveawayDetailData.length > 0) && (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+             <h3 className="text-lg font-semibold text-gray-800 mb-4">Discount Type Analysis</h3>
+             <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                   <BarChart data={discountDetailData} layout="vertical" margin={{ left: 20, right: 30 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" hide />
+                      <YAxis dataKey="name" type="category" width={80} tick={{fontSize: 11}} />
+                      <Tooltip formatter={(value: number) => [value, 'Tickets']} />
+                      <Bar dataKey="value" fill="#eab308" radius={[0, 4, 4, 0]} barSize={20}>
+                         <LabelList dataKey="value" position="right" fontSize={11} fill="#666" />
+                      </Bar>
+                   </BarChart>
+                </ResponsiveContainer>
+             </div>
+         </div>
+
+         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+             <h3 className="text-lg font-semibold text-gray-800 mb-4">Giveaway Breakdown</h3>
+             <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                   <PieChart>
+                      <Pie
+                        data={giveawayDetailData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="value"
+                        label={({name, value}) => `${value}`} 
+                      >
+                        {giveawayDetailData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={GIVEAWAY_COLORS[index % GIVEAWAY_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => [value, 'Tickets']} />
+                      <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{fontSize: '10px'}} />
+                   </PieChart>
+                </ResponsiveContainer>
+             </div>
+         </div>
+      </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Opponent Tier Analysis (Bar Chart) */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -226,20 +329,24 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                     if (active && payload && payload.length) {
                       const d = payload[0].payload;
                       return (
-                        <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg text-xs">
-                          <p className="font-bold text-sm mb-1">{d.name}</p>
-                          <div className="space-y-1">
-                             <div className="flex justify-between gap-4">
+                        <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg text-xs z-50">
+                          <p className="font-bold text-sm mb-2 text-gray-900">{d.name}</p>
+                          <div className="space-y-1.5">
+                             <div className="flex justify-between items-center gap-6">
                                <span className="text-gray-500">Avg Revenue:</span>
-                               <span className="font-bold">€{(d.avgRevenue || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}</span>
+                               <span className="font-bold text-gray-900">
+                                 €{(d.avgRevenue || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}
+                               </span>
                              </div>
-                             <div className="flex justify-between gap-4">
+                             <div className="flex justify-between items-center gap-6">
                                <span className="text-gray-500">Games Played:</span>
-                               <span className="font-mono">{d.gameCount || 0}</span>
+                               <span className="font-mono text-gray-900 font-semibold">{d.gameCount}</span>
                              </div>
-                             <div className="flex justify-between gap-4">
+                             <div className="flex justify-between items-center gap-6 border-t border-gray-100 pt-1 mt-1">
                                <span className="text-gray-500">Total Rev:</span>
-                               <span className="font-mono text-gray-400">€{((d.totalRevenue || 0)/1000).toFixed(1)}k</span>
+                               <span className="font-mono text-gray-600">
+                                 €{((d.totalRevenue || 0)/1000).toFixed(1)}k
+                               </span>
                              </div>
                           </div>
                         </div>
@@ -301,6 +408,48 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
             </ResponsiveContainer>
           </div>
         </div>
+      </div>
+
+      {/* Monthly PnL Analysis */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Monthly Revenue PnL (Season Cycle)</h3>
+          <div className="h-64">
+             <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyPnlData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" tick={{fontSize: 12}} />
+                    <YAxis 
+                        tickFormatter={(val) => val === 0 ? '0' : `€${(val/1000).toFixed(0)}k`} 
+                        tick={{fontSize: 11}} 
+                    />
+                    <Tooltip 
+                       cursor={{fill: 'transparent'}}
+                       formatter={(value: number, name: string) => [`€${value.toLocaleString()}`, name]}
+                    />
+                    <Legend />
+                    {uniqueSeasons.map((season, index) => (
+                        <Bar 
+                            key={season} 
+                            dataKey={season} 
+                            fill={index === uniqueSeasons.length - 1 ? '#DC2626' : '#9CA3AF'} 
+                            radius={[4, 4, 0, 0]} 
+                            barSize={uniqueSeasons.length > 1 ? 20 : 40}
+                        >
+                             <LabelList 
+                                dataKey={season} 
+                                position="top" 
+                                formatter={(val: number) => {
+                                    if (!val) return '';
+                                    if (val >= 1000) return `€${(val/1000).toFixed(0)}k`;
+                                    return `€${val.toFixed(0)}`;
+                                }}
+                                style={{ fontSize: '10px', fill: '#666' }}
+                            />
+                        </Bar>
+                    ))}
+                </BarChart>
+             </ResponsiveContainer>
+          </div>
       </div>
     </div>
   );

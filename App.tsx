@@ -9,7 +9,7 @@ import { ChatInterface } from './components/ChatInterface';
 import { ComparisonView } from './components/ComparisonView';
 import { MultiSelect } from './components/MultiSelect';
 import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL } from './constants';
-import { GameData, DashboardStats } from './types';
+import { GameData, DashboardStats, SalesChannel } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { processGameData } from './utils/dataProcessor';
 
@@ -245,6 +245,14 @@ const App: React.FC = () => {
     const totalCapacity = viewData.reduce((sum, game) => sum + game.capacity, 0);
     const avgAttendance = viewData.length > 0 ? totalAttendance / viewData.length : 0;
     
+    // Calculate Total Giveaways for Rate
+    const totalGiveaways = viewData.reduce((sum, game) => {
+       const ga = game.salesBreakdown.filter(s => s.channel === SalesChannel.GIVEAWAY);
+       return sum + ga.reduce((acc, curr) => acc + curr.quantity, 0);
+    }, 0);
+
+    const giveawayRate = totalAttendance > 0 ? (totalGiveaways / totalAttendance) * 100 : 0;
+    
     // Find top zone (simplified calculation based on the visible slice)
     const zoneCounts: Record<string, number> = {};
     viewData.forEach(game => {
@@ -258,7 +266,7 @@ const App: React.FC = () => {
     // Occupancy relative to dynamic capacity
     const occupancyRate = totalCapacity > 0 ? (totalAttendance / totalCapacity) * 100 : 0;
 
-    return { totalRevenue, avgAttendance, topPerformingZone: topZone, occupancyRate };
+    return { totalRevenue, avgAttendance, topPerformingZone: topZone, occupancyRate, giveawayRate };
   }, [viewData]);
 
   // Prepare context string for AI

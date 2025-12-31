@@ -289,8 +289,7 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
              {/* Center Logo */}
              <image href="https://i.imgur.com/r1fWDF1.png" x="-20" y="-20" width="40" height="40" opacity="0.5" />
 
-             {/* Center Circle */}
-             <circle cx="0" cy="0" r="12" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
+             {/* Center Line Only - Circle removed */}
              <line x1="0" y1="-45" x2="0" y2="45" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
 
              {/* Left Area (Home) */}

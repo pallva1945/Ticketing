@@ -29,6 +29,14 @@ export interface SalesDataPoint {
   revenue: number;
 }
 
+export interface TicketTypeBreakdown {
+  full: number;
+  discount: number;
+  giveaway: number;
+  discountDetails: Record<string, number>;
+  giveawayDetails: Record<string, number>;
+}
+
 export interface GameData {
   id: string; // Date + Time + Opponent
   opponent: string;
@@ -43,6 +51,8 @@ export interface GameData {
   oppRank: number;
   pvRank: number;
   tier: number;
+  pnlBreakdown: Record<number, number>; // Monthly PnL columns 1-12
+  ticketTypeBreakdown?: TicketTypeBreakdown; // Detailed breakdown of ticket types
 }
 
 export interface ChatMessage {
@@ -56,6 +66,7 @@ export interface DashboardStats {
   avgAttendance: number;
   topPerformingZone: string;
   occupancyRate: number;
+  giveawayRate: number;
 }
 
 export interface StatsCardsProps {

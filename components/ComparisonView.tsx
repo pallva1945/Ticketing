@@ -282,10 +282,9 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
             
             <MultiSelect label="Date" options={availDates} selected={filters.dates} onChange={(v) => setFilter('dates', v)} />
             <MultiSelect label="Time" options={availTimes} selected={filters.times} onChange={(v) => setFilter('times', v)} />
-            <div className="grid grid-cols-2 gap-2">
-                <MultiSelect label="PV Rank" options={availPvRanks} selected={filters.pvRanks} onChange={(v) => setFilter('pvRanks', v)} />
-                <MultiSelect label="Opp Rank" options={availOppRanks} selected={filters.oppRanks} onChange={(v) => setFilter('oppRanks', v)} />
-            </div>
+            
+            <MultiSelect label="PV Rank" options={availPvRanks} selected={filters.pvRanks} onChange={(v) => setFilter('pvRanks', v)} />
+            <MultiSelect label="Opp Rank" options={availOppRanks} selected={filters.oppRanks} onChange={(v) => setFilter('oppRanks', v)} />
 
             <div className="border-t border-gray-100 my-2"></div>
 
