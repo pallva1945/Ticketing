@@ -1,10 +1,10 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
-import { ArenaMap } from './components/ArenaMap'; // Imported ArenaMap
+import { ArenaMap } from './components/ArenaMap'; 
 import { ChatInterface } from './components/ChatInterface';
 import { ComparisonView } from './components/ComparisonView';
 import { MultiSelect } from './components/MultiSelect';
@@ -12,6 +12,8 @@ import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL } from './constants';
 import { GameData, DashboardStats, SalesChannel, TicketZone } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { processGameData } from './utils/dataProcessor';
+import { getCsvFromFirebase, saveCsvToFirebase } from './services/dbService';
+import { isFirebaseConfigured } from './firebaseConfig';
 
 const getDayName = (dateStr: string) => {
   const [day, month, year] = dateStr.split('/');
@@ -19,14 +21,150 @@ const getDayName = (dateStr: string) => {
   return date.toLocaleDateString('en-US', { weekday: 'short' });
 };
 
-const STORAGE_KEY = 'pv_app_csv_data';
+const SetupModal = ({ onClose }: { onClose: () => void }) => {
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden">
+        <div className="bg-slate-900 p-6 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="bg-red-600 p-2 rounded-lg">
+              <Database className="text-white" size={24} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">Connect Database</h2>
+              <p className="text-slate-400 text-sm">Enable cloud storage for team collaboration</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
+            <X size={24} />
+          </button>
+        </div>
+        
+        <div className="p-8 space-y-6">
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 font-bold flex items-center justify-center flex-shrink-0">1</div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Create a Firebase Project</h3>
+                <p className="text-sm text-gray-500 mt-1">Go to the <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-blue-600 hover:underline inline-flex items-center gap-1">Firebase Console <ExternalLink size={12}/></a>, create a project (e.g. "pv-sales"), and disable Analytics.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 font-bold flex items-center justify-center flex-shrink-0">2</div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Create the Database</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  In the left sidebar, go to <strong>Build &gt; Firestore Database</strong>. Click "Create Database", choose a location (eur3), and select <strong>"Start in Test Mode"</strong>.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 font-bold flex items-center justify-center flex-shrink-0">3</div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Get Config & Paste</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Click the <strong>Project Overview (Gear Icon)</strong> &gt; Project Settings. Scroll down to "Your apps", click the Web icon <code>&lt;/&gt;</code>, register app, and copy the <code>firebaseConfig</code> object.
+                </p>
+                <div className="mt-3 bg-slate-50 p-3 rounded-lg border border-slate-200 font-mono text-xs text-slate-600">
+                  Paste it into <span className="font-bold text-slate-900">firebaseConfig.ts</span> in your project files.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex gap-3">
+            <Settings className="text-yellow-600 flex-shrink-0" size={20} />
+            <p className="text-xs text-yellow-800">
+              <strong>Tip:</strong> Without this setup, data uploads will only save to your browser's temporary memory or fail silently.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+            <button 
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              Continue Offline
+            </button>
+            <button 
+              onClick={() => window.open('https://console.firebase.google.com/', '_blank')}
+              className="px-4 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+            >
+              Open Console <ExternalLink size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RulesErrorModal = ({ onClose }: { onClose: () => void }) => (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+      <div className="bg-orange-600 p-6 flex justify-between items-center">
+        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+          <ShieldAlert size={24} />
+          Database Access Denied
+        </h2>
+        <button onClick={onClose} className="text-white/80 hover:text-white transition-colors">
+          <X size={24} />
+        </button>
+      </div>
+      <div className="p-6">
+        <div className="bg-orange-50 border-l-4 border-orange-500 p-4 mb-4">
+          <p className="text-sm text-orange-800">
+            <strong>Permission Blocked:</strong> Firebase is rejecting your request. This usually happens if "Test Mode" wasn't selected or has expired.
+          </p>
+        </div>
+        
+        <p className="text-sm font-bold text-gray-800 mb-2">How to unlock your database:</p>
+        <ol className="list-decimal list-inside space-y-3 text-sm text-gray-600 mb-5">
+          <li>Go to <a href="https://console.firebase.google.com/" target="_blank" className="text-blue-600 underline font-medium inline-flex items-center gap-1">Firebase Console <ExternalLink size={10}/></a> &gt; Firestore Database.</li>
+          <li>Click the <strong>Rules</strong> tab at the top.</li>
+          <li>Delete the existing code and paste the code below.</li>
+          <li>Click <strong>Publish</strong>.</li>
+        </ol>
+        
+        <div className="bg-slate-900 p-4 rounded-lg border border-slate-700 relative group">
+          <code className="text-green-400 font-mono text-xs whitespace-pre">
+{`rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}`}
+          </code>
+        </div>
+        
+        <div className="mt-6 flex justify-end">
+           <button 
+              onClick={onClose}
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-semibold hover:bg-orange-700 transition-colors"
+           >
+             I've Updated The Rules
+           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'chat'>('dashboard');
   const [data, setData] = useState<GameData[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
-  const [dataSource, setDataSource] = useState<'live' | 'local'>('local');
-  const [hasStoredData, setHasStoredData] = useState(false);
+  const [dataSource, setDataSource] = useState<'live' | 'cloud' | 'local'>('local');
+  const [rawCsv, setRawCsv] = useState<string>(''); // Store raw CSV for syncing
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [showSetupModal, setShowSetupModal] = useState(!isFirebaseConfigured);
+  const [showRulesError, setShowRulesError] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Filters (Arrays for Multi-Select)
@@ -43,31 +181,43 @@ const App: React.FC = () => {
   const loadData = async () => {
     setIsLoadingData(true);
     let loadedData: GameData[] = [];
-    let source: 'live' | 'local' = 'local';
+    let source: 'live' | 'cloud' | 'local' = 'local';
+    let loadedRaw = '';
 
     try {
-      // 1. Priority: Check Local Storage (Persistence)
-      const storedCsv = localStorage.getItem(STORAGE_KEY);
-      if (storedCsv) {
+      // 1. Priority: Check Firebase Cloud Database (Only if configured)
+      if (isFirebaseConfigured) {
+        console.log("Checking Firebase...");
         try {
-          loadedData = processGameData(storedCsv);
-          if (loadedData.length > 0) {
-            console.log("Loaded data from Local Storage");
-            setData(loadedData);
-            setDataSource('local');
-            setHasStoredData(true);
-            setIsLoadingData(false);
-            return; // Stop here, do not fetch live
+          const cloudCsv = await getCsvFromFirebase();
+          if (cloudCsv) {
+            try {
+              loadedData = processGameData(cloudCsv);
+              if (loadedData.length > 0) {
+                console.log("Loaded data from Firebase Cloud");
+                setData(loadedData);
+                setDataSource('cloud');
+                setRawCsv(cloudCsv);
+                setIsLoadingData(false);
+                return; // Stop here
+              }
+            } catch (e) {
+              console.error("Cloud data parsing error", e);
+            }
           }
-        } catch (e) {
-          console.error("Stored data corrupted, clearing...", e);
-          localStorage.removeItem(STORAGE_KEY);
+        } catch (dbError: any) {
+          if (dbError.message === 'permission-denied') {
+             setShowRulesError(true);
+          } else {
+             console.error("Unknown DB Error", dbError);
+          }
         }
+      } else {
+        console.log("Firebase not configured, skipping cloud check.");
       }
-      setHasStoredData(false);
 
+      // 2. Fallback: Google Sheets (if configured)
       if (GOOGLE_SHEET_CSV_URL) {
-        // Strategy 1: Direct Fetch with Cache Busting
         try {
           const cacheBuster = `&t=${Date.now()}`;
           const response = await fetch(GOOGLE_SHEET_CSV_URL + cacheBuster);
@@ -76,47 +226,32 @@ const App: React.FC = () => {
             loadedData = processGameData(csvText);
             if (loadedData.length > 0) {
                 source = 'live';
+                loadedRaw = csvText;
                 console.log("Successfully loaded LIVE data (Direct)");
             }
-          } else {
-             throw new Error("Direct fetch returned " + response.status);
           }
         } catch (directError) {
-          console.warn("Direct fetch failed, attempting CORS proxy...", directError);
-          
-          // Strategy 2: CORS Proxy Fallback
-          try {
-            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(GOOGLE_SHEET_CSV_URL)}`;
-            const response = await fetch(proxyUrl);
-            if (response.ok) {
-                const csvText = await response.text();
-                loadedData = processGameData(csvText);
-                if (loadedData.length > 0) {
-                    source = 'live';
-                    console.log("Successfully loaded LIVE data (Proxy)");
-                }
-            }
-          } catch (proxyError) {
-             console.error("All fetch strategies failed", proxyError);
-          }
+          console.warn("Direct fetch failed", directError);
         }
       }
 
-      // Fallback if no live data loaded
+      // 3. Fallback: Hardcoded Data
       if (loadedData.length === 0) {
         console.log("Using LOCAL fallback data");
         loadedData = processGameData(FALLBACK_CSV_CONTENT);
+        loadedRaw = FALLBACK_CSV_CONTENT;
         source = 'local';
       }
 
       setData(loadedData);
       setDataSource(source);
+      setRawCsv(loadedRaw);
 
     } catch (error) {
       console.error("Critical error processing data:", error);
-      // Last resort
       setData(processGameData(FALLBACK_CSV_CONTENT));
       setDataSource('local');
+      setRawCsv(FALLBACK_CSV_CONTENT);
     } finally {
       setIsLoadingData(false);
     }
@@ -130,24 +265,46 @@ const App: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsLoadingData(true);
+    if (!isFirebaseConfigured) {
+        alert("Cannot upload: Database is not connected. Please configure Firebase first.");
+        setShowSetupModal(true);
+        event.target.value = ''; // Reset
+        return;
+    }
+
+    setIsUploading(true);
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const text = e.target?.result as string;
       if (text) {
         try {
-          const loadedData = processGameData(text);
-          if (loadedData.length > 0) {
-            setData(loadedData);
-            setDataSource('local');
-            // Persist to local storage
-            localStorage.setItem(STORAGE_KEY, text);
-            setHasStoredData(true);
+          // 1. Validate data locally first
+          const testData = processGameData(text);
+          if (testData.length > 0) {
+            
+            // 2. Save to Firebase
+            try {
+              await saveCsvToFirebase(text);
+              // 3. Update State
+              setData(testData);
+              setDataSource('cloud');
+              setRawCsv(text);
+              alert("Success! This file is now the default data for all users.");
+            } catch (dbError: any) {
+              if (dbError.message === 'permission-denied') {
+                setShowRulesError(true);
+              } else {
+                alert("Database Error: " + dbError.message);
+              }
+            }
+          } else {
+            alert("Error: The CSV file format seems invalid.");
           }
         } catch (error) {
           console.error("Error parsing uploaded CSV", error);
+          alert("Failed to upload data to the cloud. Check console.");
         } finally {
-          setIsLoadingData(false);
+          setIsUploading(false);
         }
       }
     };
@@ -156,16 +313,42 @@ const App: React.FC = () => {
     event.target.value = '';
   };
 
-  const handleResetData = () => {
-    if (window.confirm("Are you sure you want to clear the uploaded data and revert to the default/live feed?")) {
-      localStorage.removeItem(STORAGE_KEY);
-      setHasStoredData(false);
-      loadData();
+  const handleSyncToCloud = async () => {
+    if (!isFirebaseConfigured) {
+        setShowSetupModal(true);
+        return;
+    }
+    
+    if (!rawCsv) {
+        alert("No data to sync.");
+        return;
+    }
+
+    setIsSyncing(true);
+    try {
+        await saveCsvToFirebase(rawCsv);
+        setDataSource('cloud');
+        alert("Synced successfully! This data is now stored in the cloud.");
+    } catch (dbError: any) {
+        if (dbError.message === 'permission-denied') {
+            setShowRulesError(true);
+        } else {
+            alert("Failed to sync: " + dbError.message);
+        }
+    } finally {
+        setIsSyncing(false);
     }
   };
 
   const triggerFileUpload = () => {
-    fileInputRef.current?.click();
+    if (!isFirebaseConfigured) {
+        setShowSetupModal(true);
+        return;
+    }
+    // Basic confirmation since this affects everyone
+    if (window.confirm("Uploading a file will update the database for ALL users. Continue?")) {
+        fileInputRef.current?.click();
+    }
   };
 
   // Identify the latest game in the dataset (most recent date)
@@ -175,7 +358,6 @@ const App: React.FC = () => {
     const sorted = [...data].sort((a, b) => {
          const [da, ma, ya] = a.date.split('/').map(Number);
          const [db, mb, yb] = b.date.split('/').map(Number);
-         // Compare dates: B - A for descending
          return new Date(yb, mb-1, db).getTime() - new Date(ya, ma-1, da).getTime();
     });
     return sorted[0];
@@ -184,7 +366,6 @@ const App: React.FC = () => {
   // --- Cascading Filter Options Logic ---
   const getAvailableOptions = (targetField: 'season' | 'league' | 'opponent' | 'tier' | 'day' | 'zone') => {
       const filtered = data.filter(d => {
-        // We filter by every field EXCEPT the target field to determine availability
         const matchSeason = targetField === 'season' || selectedSeasons.includes('All') || selectedSeasons.includes(d.season);
         const matchLeague = targetField === 'league' || selectedLeagues.includes('All') || selectedLeagues.includes(d.league);
         const matchOpponent = targetField === 'opponent' || selectedOpponents.includes('All') || selectedOpponents.includes(d.opponent);
@@ -217,7 +398,6 @@ const App: React.FC = () => {
       return arr.sort();
   };
 
-  // Memoized Options
   const seasons = useMemo(() => getAvailableOptions('season'), [data, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
   const leagues = useMemo(() => getAvailableOptions('league'), [data, selectedSeasons, selectedOpponents, selectedTiers, selectedDays]);
   const opponents = useMemo(() => getAvailableOptions('opponent'), [data, selectedSeasons, selectedLeagues, selectedTiers, selectedDays]);
@@ -225,10 +405,7 @@ const App: React.FC = () => {
   const days = useMemo(() => getAvailableOptions('day'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers]);
   const zones = useMemo(() => getAvailableOptions('zone'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
 
-
-  // Filter AND Transform Data (View Data)
   const viewData = useMemo(() => {
-    // 1. Filter Games by Season, League, Opponent, Tier, and Day
     const filteredGames = data.filter(d => {
       const matchSeason = selectedSeasons.includes('All') || selectedSeasons.includes(d.season);
       const matchLeague = selectedLeagues.includes('All') || selectedLeagues.includes(d.league);
@@ -239,27 +416,20 @@ const App: React.FC = () => {
     });
 
     return filteredGames.map(game => {
-      // Create a shallow copy of salesBreakdown to filter
       let zoneSales = game.salesBreakdown;
 
-      // Filter 1: Exclude Ospiti if toggle is ON
       if (ignoreOspiti) {
           zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
       }
 
-      // Filter 2: Specific Zone Selection (Slice)
       if (!selectedZones.includes('All')) {
           zoneSales = zoneSales.filter(s => selectedZones.includes(s.zone));
       }
       
-      // Recalculate totals for this slice
       const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
       const zoneAttendance = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
 
-      // Recalculate Capacity for this slice
       let zoneCapacity = 0;
-      
-      // We also need to filter the capacity map itself for the ZoneTable/ArenaMap components
       const filteredZoneCapacities = { ...game.zoneCapacities };
       
       if (ignoreOspiti) {
@@ -268,34 +438,29 @@ const App: React.FC = () => {
 
       if (game.zoneCapacities) {
         Object.entries(filteredZoneCapacities).forEach(([z, cap]) => {
-             // If All zones selected, sum everything available (excluding Ospiti if ignored)
-             // If specific zones selected, only sum those
              if (selectedZones.includes('All') || selectedZones.includes(z)) {
                  zoneCapacity += (cap as number);
              }
         });
       }
 
-      // Return a new game object that looks like the original but represents only the zone slice
       return {
         ...game,
         attendance: zoneAttendance,
         totalRevenue: zoneRevenue,
-        capacity: zoneCapacity, // Important override for occupancy calculation
+        capacity: zoneCapacity,
         salesBreakdown: zoneSales,
-        zoneCapacities: filteredZoneCapacities // Use the filtered capacity map
+        zoneCapacities: filteredZoneCapacities
       };
     });
   }, [data, selectedSeasons, selectedLeagues, selectedZones, selectedOpponents, selectedTiers, selectedDays, ignoreOspiti]);
 
-  // Calculate Statistics based on View Data
   const stats: DashboardStats = useMemo(() => {
     const totalRevenue = viewData.reduce((sum, game) => sum + game.totalRevenue, 0);
     const totalAttendance = viewData.reduce((sum, game) => sum + game.attendance, 0);
     const totalCapacity = viewData.reduce((sum, game) => sum + game.capacity, 0);
     const avgAttendance = viewData.length > 0 ? totalAttendance / viewData.length : 0;
     
-    // Calculate Total Giveaways for Rate
     const totalGiveaways = viewData.reduce((sum, game) => {
        const ga = game.salesBreakdown.filter(s => s.channel === SalesChannel.GIVEAWAY);
        return sum + ga.reduce((acc, curr) => acc + curr.quantity, 0);
@@ -303,7 +468,6 @@ const App: React.FC = () => {
 
     const giveawayRate = totalAttendance > 0 ? (totalGiveaways / totalAttendance) * 100 : 0;
     
-    // Find top zone (simplified calculation based on the visible slice)
     const zoneCounts: Record<string, number> = {};
     viewData.forEach(game => {
       game.salesBreakdown.forEach(pt => {
@@ -312,14 +476,11 @@ const App: React.FC = () => {
     });
     
     const topZone = Object.entries(zoneCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
-    
-    // Occupancy relative to dynamic capacity
     const occupancyRate = totalCapacity > 0 ? (totalAttendance / totalCapacity) * 100 : 0;
 
     return { totalRevenue, avgAttendance, topPerformingZone: topZone, occupancyRate, giveawayRate };
   }, [viewData]);
 
-  // Prepare context string for AI
   const aiContext = useMemo(() => {
     const recentGames = viewData.slice(-5).map(g => ({
       opponent: g.opponent,
@@ -396,24 +557,23 @@ const App: React.FC = () => {
 
   const handleChartFilterChange = (type: 'opponent' | 'tier' | 'day', value: string) => {
     if (!value) return;
-
     if (type === 'opponent') {
        if (selectedOpponents.includes(value) && selectedOpponents.length === 1) {
-           setSelectedOpponents(['All']); // Toggle off
+           setSelectedOpponents(['All']);
        } else {
            setSelectedOpponents([value]);
        }
     }
     if (type === 'tier') {
        if (selectedTiers.includes(value) && selectedTiers.length === 1) {
-           setSelectedTiers(['All']); // Toggle off
+           setSelectedTiers(['All']);
        } else {
            setSelectedTiers([value]);
        }
     }
     if (type === 'day') {
        if (selectedDays.includes(value) && selectedDays.length === 1) {
-           setSelectedDays(['All']); // Toggle off
+           setSelectedDays(['All']);
        } else {
            setSelectedDays([value]);
        }
@@ -428,7 +588,6 @@ const App: React.FC = () => {
      }
   };
 
-  // Provide initial full options for ComparisonView independently of dashboard cascading
   const allSeasons = useMemo(() => Array.from(new Set(data.map(d => d.season))).sort().reverse(), [data]);
   const allLeagues = useMemo(() => Array.from(new Set(data.map(d => d.league))).sort(), [data]);
   const allOpponents = useMemo(() => Array.from(new Set(data.map(d => d.opponent))).sort(), [data]);
@@ -441,7 +600,9 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
-      {/* Sidebar Navigation */}
+      {showSetupModal && <SetupModal onClose={() => setShowSetupModal(false)} />}
+      {showRulesError && <RulesErrorModal onClose={() => { setShowRulesError(false); window.location.reload(); }} />}
+      
       <aside className="bg-white border-r border-gray-200 w-full md:w-20 lg:w-64 flex-shrink-0 flex flex-col sticky top-0 md:h-screen z-20">
         <div className="p-6 flex items-center gap-3 border-b border-gray-100">
            <div className="w-12 h-12 flex-shrink-0">
@@ -494,6 +655,13 @@ const App: React.FC = () => {
         </nav>
 
         <div className="p-4 border-t border-gray-100 hidden lg:block">
+           <div className="flex items-center gap-2 mb-4 text-xs font-semibold uppercase text-gray-400">
+              {dataSource === 'cloud' && <Cloud size={14} className="text-blue-500" />}
+              {dataSource === 'local' && <CloudOff size={14} className="text-gray-500" />}
+              {dataSource === 'live' && <span className="w-2 h-2 rounded-full bg-green-500"></span>}
+              <span>Source: {dataSource}</span>
+           </div>
+
            <input 
              type="file" 
              ref={fileInputRef} 
@@ -501,26 +669,41 @@ const App: React.FC = () => {
              accept=".csv" 
              className="hidden" 
            />
-           <button 
-              onClick={triggerFileUpload}
-              disabled={isLoadingData}
-              className="w-full mb-3 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
-           >
-              {isLoadingData ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-              Upload CSV
-           </button>
-
-           {hasStoredData && (
+           
+           {!isFirebaseConfigured ? (
              <button 
-                onClick={handleResetData}
-                className="w-full mb-4 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg transition-colors"
+                onClick={() => setShowSetupModal(true)}
+                className="w-full mb-3 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-white bg-red-600 hover:bg-red-700 border border-transparent rounded-lg transition-colors shadow-sm animate-pulse"
              >
-                <Trash2 size={14} />
-                Reset to Default
+                <Database size={14} />
+                Connect Database
              </button>
+           ) : (
+             <div className="space-y-2 mb-4">
+                 {/* 1. SYNC BUTTON (Only if using local/live data) */}
+                 {dataSource !== 'cloud' && (
+                     <button
+                        onClick={handleSyncToCloud}
+                        disabled={isSyncing}
+                        className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 border border-transparent rounded-lg transition-colors shadow-sm"
+                     >
+                        {isSyncing ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                        Sync Data to Cloud
+                     </button>
+                 )}
+
+                 {/* 2. UPLOAD BUTTON */}
+                 <button 
+                    onClick={triggerFileUpload}
+                    disabled={isUploading}
+                    className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
+                 >
+                    {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                    Upload CSV
+                 </button>
+             </div>
            )}
            
-           {/* Last Game Info Only */}
            {!isLoadingData && lastGame && (
              <div className="bg-gray-100 rounded-xl p-4">
                 <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Latest Update</p>
@@ -533,26 +716,18 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="flex-1 overflow-x-hidden">
-        {/* Top Header */}
         <header className="bg-white border-b border-gray-200 py-4 px-6 flex flex-col sm:flex-row items-center justify-between sticky top-0 z-10 gap-4">
           <div className="flex items-center gap-4 w-full sm:w-auto">
             <h2 className="text-xl font-bold text-gray-800">
               {activeTab === 'dashboard' ? 'Season Overview' : (activeTab === 'comparison' ? 'Scenario Comparison' : 'Strategic Planning')}
             </h2>
           </div>
-          
-          <div className="hidden sm:block">
-              {/* Spacer or future elements could go here. Bell/User removed as requested. */}
-          </div>
         </header>
 
-        {/* View Content */}
         <div className="p-6 max-w-7xl mx-auto">
           {activeTab === 'dashboard' && (
             <>
-              {/* Filters Bar */}
               <div className="mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2 text-gray-500">
@@ -560,7 +735,6 @@ const App: React.FC = () => {
                       <span className="text-sm font-medium">Data Filters</span>
                   </div>
                   <div className="flex items-center gap-3">
-                      {/* Ignore Ospiti Toggle */}
                       <button 
                         onClick={() => setIgnoreOspiti(!ignoreOspiti)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${
@@ -586,59 +760,12 @@ const App: React.FC = () => {
                 </div>
                 
                 <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-                  <div>
-                      <MultiSelect 
-                        label="Season" 
-                        options={seasons} 
-                        selected={selectedSeasons} 
-                        onChange={setSelectedSeasons} 
-                      />
-                  </div>
-                  
-                  <div>
-                      <MultiSelect 
-                        label="League" 
-                        options={leagues} 
-                        selected={selectedLeagues} 
-                        onChange={setSelectedLeagues} 
-                      />
-                  </div>
-
-                  <div>
-                      <MultiSelect 
-                        label="Tier" 
-                        options={tiers} 
-                        selected={selectedTiers} 
-                        onChange={setSelectedTiers} 
-                      />
-                  </div>
-
-                  <div>
-                      <MultiSelect 
-                        label="Opponent" 
-                        options={opponents} 
-                        selected={selectedOpponents} 
-                        onChange={setSelectedOpponents} 
-                      />
-                  </div>
-                  
-                  <div>
-                      <MultiSelect 
-                        label="Day" 
-                        options={days} 
-                        selected={selectedDays} 
-                        onChange={setSelectedDays} 
-                      />
-                  </div>
-
-                  <div>
-                      <MultiSelect 
-                        label="Zone" 
-                        options={zones} 
-                        selected={selectedZones} 
-                        onChange={setSelectedZones} 
-                      />
-                  </div>
+                  <div><MultiSelect label="Season" options={seasons} selected={selectedSeasons} onChange={setSelectedSeasons} /></div>
+                  <div><MultiSelect label="League" options={leagues} selected={selectedLeagues} onChange={setSelectedLeagues} /></div>
+                  <div><MultiSelect label="Tier" options={tiers} selected={selectedTiers} onChange={setSelectedTiers} /></div>
+                  <div><MultiSelect label="Opponent" options={opponents} selected={selectedOpponents} onChange={setSelectedOpponents} /></div>
+                  <div><MultiSelect label="Day" options={days} selected={selectedDays} onChange={setSelectedDays} /></div>
+                  <div><MultiSelect label="Zone" options={zones} selected={selectedZones} onChange={setSelectedZones} /></div>
                 </div>
               </div>
               
@@ -660,20 +787,12 @@ const App: React.FC = () => {
                     stats={stats} 
                     data={viewData} 
                     fullDataset={data} 
-                    filters={{ 
-                      season: selectedSeasons, 
-                      league: selectedLeagues, 
-                      zone: selectedZones, 
-                      opponent: selectedOpponents,
-                      tier: selectedTiers 
-                    }} 
+                    filters={{ season: selectedSeasons, league: selectedLeagues, zone: selectedZones, opponent: selectedOpponents, tier: selectedTiers }} 
                   />
 
-                  {/* Visual Analytics Section - Fixed Layout Overlap */}
                   <div className="mb-8">
                     <h2 className="text-xl font-bold text-gray-800 mb-4">Venue Intelligence</h2>
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                        {/* Map Column - Fixed Height to prevent stretch */}
                         <div className="xl:col-span-5 h-[500px]">
                             <ArenaMap 
                                 data={viewData} 
@@ -682,7 +801,6 @@ const App: React.FC = () => {
                             />
                         </div>
 
-                        {/* Table Column - Fixed Height matching map, with scroll */}
                         <div className="xl:col-span-7 h-[500px] flex flex-col">
                             {selectedZones.includes('All') ? (
                               <ZoneTable data={viewData} onZoneClick={handleZoneClick} />
@@ -726,7 +844,6 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Quick Insight Card */}
                     <div className="bg-gradient-to-br from-red-600 to-red-800 rounded-xl p-6 text-white shadow-lg">
                         <h3 className="font-bold text-lg mb-2">Director's Note</h3>
                         <p className="text-red-100 text-sm leading-relaxed mb-4">
