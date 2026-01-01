@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { GameData, TicketZone } from '../types';
 import { MultiSelect } from './MultiSelect';
@@ -277,7 +276,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
                 }`}
             >
                 <UserX size={14} />
-                {filters.ignoreOspiti ? 'Guests Excluded' : 'Ignore Guests'}
+                {filters.ignoreOspiti ? 'Zona Ospiti Excluded' : 'Ignore Zona Ospiti'}
             </button>
 
             <MultiSelect label="Season" options={availSeasons} selected={filters.seasons} onChange={(v) => setFilter('seasons', v)} />

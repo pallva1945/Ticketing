@@ -3,6 +3,7 @@ import { GameData, SalesChannel, TicketZone } from './types';
 export const APP_NAME = "PV Strategy AI";
 export const TEAM_NAME = "Pallacanestro Varese";
 export const MAX_CAPACITY = 5113;
+export const PV_LOGO_URL = "https://i.imgur.com/r1fWDF1.png";
 
 // --- GOOGLE SHEETS CONFIGURATION ---
 // 1. Open your Google Sheet.

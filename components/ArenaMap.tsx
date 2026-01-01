@@ -1,6 +1,6 @@
-
 import React, { useMemo, useState } from 'react';
 import { GameData, TicketZone } from '../types';
+import { PV_LOGO_URL } from '../constants';
 
 interface ArenaMapProps {
   data: GameData[];
@@ -287,7 +287,7 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
              <rect x="-80" y="-45" width="160" height="90" fill="#1c1917" stroke="#444" strokeWidth="1" rx="2" />
              
              {/* Center Logo */}
-             <image href="https://i.imgur.com/r1fWDF1.png" x="-20" y="-20" width="40" height="40" opacity="0.5" />
+             <image href={PV_LOGO_URL} x="-20" y="-20" width="40" height="40" opacity="0.5" />
 
              {/* Center Line Only - Circle removed */}
              <line x1="0" y1="-45" x2="0" y2="45" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />

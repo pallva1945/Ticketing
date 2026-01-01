@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { DollarSign, Users, Briefcase, Ticket, TrendingUp, TrendingDown, Minus, Gift } from 'lucide-react';
 import { DashboardStats, GameData, SalesChannel, StatsCardsProps } from '../types';
@@ -58,30 +57,36 @@ const MetricCard = ({
   subValue, 
   icon: Icon, 
   colorClass, 
-  prevValue, 
+  targetValue, // Renamed from prevValue
   isPercentage = false,
-  inverse = false // If true, lower is better (not used for these revenue metrics usually)
+  inverse = false // If true, lower is better (e.g., Giveaway Rate)
 }: any) => {
   
-  // Calculate Variance
+  // Calculate Variance vs Target
   let variance = 0;
-  let hasHistory = prevValue !== null && prevValue !== undefined && prevValue !== 0;
+  let hasTarget = targetValue !== null && targetValue !== undefined && targetValue !== 0;
   
-  if (hasHistory) {
-    variance = ((value - prevValue) / prevValue) * 100;
+  if (hasTarget) {
+    variance = ((value - targetValue) / targetValue) * 100;
   }
 
   // Determine Color
   let trendColor = 'text-gray-400';
   let TrendIcon = Minus;
   
-  if (hasHistory && Math.abs(variance) > 0.5) { // 0.5% threshold for neutrality
-    if (variance > 0) {
-      trendColor = inverse ? 'text-red-600' : 'text-green-600';
-      TrendIcon = TrendingUp;
-    } else {
-      trendColor = inverse ? 'text-green-600' : 'text-red-600';
-      TrendIcon = TrendingDown;
+  if (hasTarget) { 
+    const isGood = inverse ? variance < 0 : variance > 0;
+    
+    if (Math.abs(variance) > 0.1) { // 0.1% threshold
+        if (isGood) {
+            trendColor = 'text-green-600';
+            TrendIcon = TrendingUp; // Or TrendingDown if inverse, but standard icon implies direction
+            if (inverse) TrendIcon = TrendingDown; 
+        } else {
+            trendColor = 'text-red-600';
+            TrendIcon = TrendingDown;
+            if (inverse) TrendIcon = TrendingUp;
+        }
     }
   }
 
@@ -94,13 +99,13 @@ const MetricCard = ({
             {isPercentage ? `${value.toFixed(1)}%` : (value >= 1000 ? `€${(value / 1000).toFixed(1)}k` : `€${value.toFixed(2)}`)}
           </p>
         </div>
-        <div className={`p-2 rounded-full ${colorClass.replace('border-', 'bg-').replace('600', '50').replace('800', '100')} ${colorClass.replace('border-', 'text-')}`}>
+        <div className={`p-2 rounded-full ${colorClass.replace('border-', 'bg-').replace('600', '50').replace('800', '100').replace('500', '50')} ${colorClass.replace('border-', 'text-')}`}>
           <Icon size={18} />
         </div>
       </div>
       
       <div className="flex items-center gap-2">
-        {hasHistory ? (
+        {hasTarget ? (
           <div className={`flex items-center text-xs font-semibold ${trendColor}`}>
             <TrendIcon size={12} className="mr-1" />
             {Math.abs(variance).toFixed(1)}%
@@ -109,21 +114,21 @@ const MetricCard = ({
           <span className="text-xs text-gray-300">-</span>
         )}
         <p className="text-[10px] text-gray-400 truncate">
-          {hasHistory ? 'vs baseline' : subValue}
+          {hasTarget ? 'vs KPIs' : subValue}
         </p>
       </div>
     </div>
   );
 };
 
-export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset, filters }) => {
+export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset, filters, kpiConfig }) => {
   
   // 1. Calculate Current KPIs (based on the filtered `data` passed in)
   const currentKPIs = useMemo(() => calculateKPIs(data), [data]);
 
-  // 2. Calculate Comparison KPIs
-  const prevKPIs = useMemo(() => {
-    // Only support direct previous season comparison if exactly one season is selected
+  // 2. Calculate Comparison/Target KPIs based on KPI Config
+  const targetKPIs = useMemo(() => {
+    // Only support direct comparison if exactly one season is selected
     const isSingleSeason = filters.season.length === 1 && filters.season[0] !== 'All';
     
     if (!isSingleSeason) return null;
@@ -132,27 +137,36 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
     const allSeasons = Array.from(new Set(fullDataset.map(d => d.season))).sort().reverse();
     const currentIndex = allSeasons.indexOf(currentSeason);
     
-    // If not found or it's the last one (oldest), no history
-    if (currentIndex === -1 || currentIndex === allSeasons.length - 1) return null;
+    // Baseline determination
+    let baselineSeasons = [];
+    if (kpiConfig.baselineMode === 'prev_season') {
+       if (currentIndex !== -1 && currentIndex < allSeasons.length - 1) {
+           baselineSeasons.push(allSeasons[currentIndex + 1]);
+       }
+    } else {
+        // TODO: Implement multi-season avg if needed
+        if (currentIndex !== -1 && currentIndex < allSeasons.length - 1) {
+           baselineSeasons.push(allSeasons[currentIndex + 1]);
+       }
+    }
 
-    const prevSeason = allSeasons[currentIndex + 1];
+    if (baselineSeasons.length === 0) return null;
 
-    // Filter full dataset for the Baseline Group (Previous Season + Same League/Opponent/Zone Filters)
+    // Fetch Baseline Data
     let baselineGames = fullDataset.filter(d => 
-      d.season === prevSeason && 
+      baselineSeasons.includes(d.season) && 
       (filters.league.includes('All') || filters.league.includes(d.league)) &&
       (filters.opponent.includes('All') || filters.opponent.includes(d.opponent)) &&
       (filters.tier.includes('All') || filters.tier.includes(String(d.tier)))
     );
 
-    // Apply Zone Transformation if needed
+    // Apply Zone Transformation if needed to Baseline Data
     if (!filters.zone.includes('All')) {
       baselineGames = baselineGames.map(game => {
         const zoneSales = game.salesBreakdown.filter(s => filters.zone.includes(s.zone));
         const zoneRev = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
         const zoneAtt = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
         
-        // Calculate partial capacity for the selected zones
         let partialCapacity = 0;
         if (game.zoneCapacities) {
              filters.zone.forEach(z => {
@@ -164,15 +178,37 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
           ...game,
           attendance: zoneAtt,
           totalRevenue: zoneRev,
-          capacity: partialCapacity, // Update capacity for correct occupancy calc
+          capacity: partialCapacity,
           salesBreakdown: zoneSales
         };
       });
     }
 
-    return calculateKPIs(baselineGames);
+    const baselineKPIs = calculateKPIs(baselineGames);
+    if (!baselineKPIs) return null;
 
-  }, [fullDataset, filters]);
+    // Apply Growth Targets
+    // Target Rev = Baseline Rev * (1 + Growth%)
+    const growthRev = 1 + (kpiConfig.revenueGrowth / 100);
+    const growthAtt = 1 + (kpiConfig.attendanceGrowth / 100);
+
+    return {
+        // Revenue derived metrics affected by Rev Growth
+        totalRevenue: baselineKPIs.totalRevenue * growthRev,
+        arpg: baselineKPIs.arpg * growthRev,
+        yield_atp: baselineKPIs.yield_atp * growthRev, 
+        revPas: baselineKPIs.revPas * growthRev,
+        
+        // Attendance derived metrics affected by Att Growth
+        totalAttendance: baselineKPIs.totalAttendance * growthAtt,
+        occupancy: Math.min(baselineKPIs.occupancy * growthAtt, 100), // Cap at 100%
+
+        // Special Rules
+        corpShare: baselineKPIs.corpShare, // Target is simply to match last season
+        giveawayRate: kpiConfig.giveawayTarget, // Fixed target
+    };
+
+  }, [fullDataset, filters, kpiConfig]);
 
 
   if (!currentKPIs) return null;
@@ -182,7 +218,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
       <MetricCard 
         label="Avg Rev/Game" 
         value={currentKPIs.arpg} 
-        prevValue={prevKPIs?.arpg}
+        targetValue={targetKPIs?.arpg}
         subValue="Total Average"
         icon={DollarSign} 
         colorClass="border-red-600" 
@@ -190,7 +226,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
       <MetricCard 
         label="Yield (ATP)" 
         value={currentKPIs.yield_atp} 
-        prevValue={prevKPIs?.yield_atp}
+        targetValue={targetKPIs?.yield_atp}
         subValue="Per sold seat"
         icon={Ticket} 
         colorClass="border-gray-800" 
@@ -198,7 +234,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
       <MetricCard 
         label="RevPAS" 
         value={currentKPIs.revPas} 
-        prevValue={prevKPIs?.revPas}
+        targetValue={targetKPIs?.revPas}
         subValue="Rev/Avail Seat"
         icon={TrendingUp} 
         colorClass="border-purple-600" 
@@ -206,7 +242,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
       <MetricCard 
         label="B2B Share" 
         value={currentKPIs.corpShare} 
-        prevValue={prevKPIs?.corpShare}
+        targetValue={targetKPIs?.corpShare}
         subValue="Corp %"
         icon={Briefcase} 
         colorClass="border-blue-600" 
@@ -215,7 +251,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
       <MetricCard 
         label="Load Factor" 
         value={currentKPIs.occupancy} 
-        prevValue={prevKPIs?.occupancy}
+        targetValue={targetKPIs?.occupancy}
         subValue="Occupancy"
         icon={Users} 
         colorClass="border-gray-600" 
@@ -224,7 +260,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
       <MetricCard 
         label="Giveaway %" 
         value={currentKPIs.giveawayRate} 
-        prevValue={prevKPIs?.giveawayRate}
+        targetValue={targetKPIs?.giveawayRate}
         subValue="Tickets %"
         icon={Gift} 
         colorClass="border-orange-500" 

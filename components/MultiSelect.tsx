@@ -34,8 +34,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
     let newSelected: string[];
     
     if (option === 'All') {
-      // If clicking All, clear everything else and set All
-      // If All is already selected and clicked, strictly keep All (don't allow deselecting everything to empty)
+      // If clicking All (if it exists in options), set to All
       newSelected = ['All'];
     } else {
       // If clicking a specific option
@@ -49,18 +48,15 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
           newSelected = [...selected, option];
         }
       }
-
-      // If nothing selected, default back to All
-      if (newSelected.length === 0) {
-        newSelected = ['All'];
-      }
     }
     onChange(newSelected);
   };
 
   const displayText = selected.includes('All') 
     ? 'All' 
-    : `${selected.length} selected`;
+    : selected.length === 0 
+      ? 'None' 
+      : selected.join(', ');
 
   return (
     <div className="relative" ref={containerRef}>
@@ -70,13 +66,29 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
         className="w-full bg-white border border-gray-300 hover:border-red-500 text-gray-900 text-sm rounded-lg p-2.5 flex items-center justify-between min-w-[140px] transition-colors"
       >
         <span className="truncate pr-2 block max-w-[120px] text-left">
-          {selected.includes('All') ? 'All' : selected.join(', ')}
+          {displayText}
         </span>
         <ChevronDown size={16} className={`text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
         <div className="absolute z-50 w-full min-w-[200px] mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+          {/* Select All / None Controls */}
+          <div className="sticky top-0 bg-white p-2 border-b border-gray-100 flex gap-2 z-10">
+            <button
+              onClick={() => onChange(['All'])}
+              className="flex-1 text-xs font-bold text-center py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors"
+            >
+              Select All
+            </button>
+            <button
+              onClick={() => onChange([])}
+              className="flex-1 text-xs font-bold text-center py-1 bg-gray-50 text-gray-600 rounded hover:bg-gray-100 transition-colors"
+            >
+              None
+            </button>
+          </div>
+          
           <div className="p-1">
             {options.map((option) => {
               const isSelected = selected.includes(option);

@@ -69,6 +69,13 @@ export interface DashboardStats {
   giveawayRate: number;
 }
 
+export interface KPIConfig {
+  revenueGrowth: number; // Percentage (e.g., 10 for 10%)
+  attendanceGrowth: number; // Percentage
+  giveawayTarget: number; // Fixed percentage target (e.g., 7%)
+  baselineMode: 'prev_season' | 'avg_2_seasons';
+}
+
 export interface StatsCardsProps {
   stats: DashboardStats;
   data: GameData[];
@@ -80,4 +87,5 @@ export interface StatsCardsProps {
     opponent: string[];
     tier: string[];
   };
+  kpiConfig: KPIConfig;
 }

@@ -4,6 +4,11 @@ import { db } from "../firebaseConfig";
 const COLLECTION_NAME = "appData";
 const DOC_ID = "masterFile";
 
+export interface DBData {
+  content: string;
+  updatedAt: string;
+}
+
 /**
  * Saves the CSV string to Firebase Firestore.
  * This overwrites the existing master file, making this the new source of truth for all users.
@@ -31,7 +36,7 @@ export const saveCsvToFirebase = async (csvContent: string): Promise<void> => {
  * Fetches the CSV string from Firebase Firestore.
  * Returns null if no file exists yet.
  */
-export const getCsvFromFirebase = async (): Promise<string | null> => {
+export const getCsvFromFirebase = async (): Promise<DBData | null> => {
   if (!db) {
     console.warn("Firebase is not configured. Skipping cloud fetch.");
     return null;
@@ -42,7 +47,10 @@ export const getCsvFromFirebase = async (): Promise<string | null> => {
 
     if (docSnap.exists()) {
       const data = docSnap.data();
-      return data.content as string;
+      return {
+          content: data.content as string,
+          updatedAt: data.updatedAt as string
+      };
     } else {
       console.log("No such document in Firebase!");
       return null;

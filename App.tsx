@@ -1,15 +1,15 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Goal } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
 import { ArenaMap } from './components/ArenaMap'; 
-import { ChatInterface } from './components/ChatInterface';
+import { ChatInterface, AIAvatar } from './components/ChatInterface';
 import { ComparisonView } from './components/ComparisonView';
 import { MultiSelect } from './components/MultiSelect';
-import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL } from './constants';
-import { GameData, DashboardStats, SalesChannel, TicketZone } from './types';
+import { TargetSettingsModal } from './components/TargetSettingsModal';
+import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL } from './constants';
+import { GameData, DashboardStats, SalesChannel, TicketZone, KPIConfig } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { processGameData } from './utils/dataProcessor';
 import { getCsvFromFirebase, saveCsvToFirebase } from './services/dbService';
@@ -160,11 +160,21 @@ const App: React.FC = () => {
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [dataSource, setDataSource] = useState<'live' | 'cloud' | 'local'>('local');
   const [rawCsv, setRawCsv] = useState<string>(''); // Store raw CSV for syncing
+  const [lastUploadTime, setLastUploadTime] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(!isFirebaseConfigured);
   const [showRulesError, setShowRulesError] = useState(false);
   
+  // KPI Configuration
+  const [showKpiModal, setShowKpiModal] = useState(false);
+  const [kpiConfig, setKpiConfig] = useState<KPIConfig>({
+    revenueGrowth: 10,
+    attendanceGrowth: 10,
+    giveawayTarget: 7,
+    baselineMode: 'prev_season'
+  });
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Filters (Arrays for Multi-Select)
@@ -189,15 +199,16 @@ const App: React.FC = () => {
       if (isFirebaseConfigured) {
         console.log("Checking Firebase...");
         try {
-          const cloudCsv = await getCsvFromFirebase();
-          if (cloudCsv) {
+          const cloudData = await getCsvFromFirebase();
+          if (cloudData) {
             try {
-              loadedData = processGameData(cloudCsv);
+              loadedData = processGameData(cloudData.content);
               if (loadedData.length > 0) {
                 console.log("Loaded data from Firebase Cloud");
                 setData(loadedData);
                 setDataSource('cloud');
-                setRawCsv(cloudCsv);
+                setRawCsv(cloudData.content);
+                setLastUploadTime(cloudData.updatedAt);
                 setIsLoadingData(false);
                 return; // Stop here
               }
@@ -246,6 +257,7 @@ const App: React.FC = () => {
       setData(loadedData);
       setDataSource(source);
       setRawCsv(loadedRaw);
+      setLastUploadTime(null); // No explicit upload time for local/live fallback
 
     } catch (error) {
       console.error("Critical error processing data:", error);
@@ -289,6 +301,7 @@ const App: React.FC = () => {
               setData(testData);
               setDataSource('cloud');
               setRawCsv(text);
+              setLastUploadTime(new Date().toISOString());
               alert("Success! This file is now the default data for all users.");
             } catch (dbError: any) {
               if (dbError.message === 'permission-denied') {
@@ -328,6 +341,7 @@ const App: React.FC = () => {
     try {
         await saveCsvToFirebase(rawCsv);
         setDataSource('cloud');
+        setLastUploadTime(new Date().toISOString());
         alert("Synced successfully! This data is now stored in the cloud.");
     } catch (dbError: any) {
         if (dbError.message === 'permission-denied') {
@@ -602,12 +616,13 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       {showSetupModal && <SetupModal onClose={() => setShowSetupModal(false)} />}
       {showRulesError && <RulesErrorModal onClose={() => { setShowRulesError(false); window.location.reload(); }} />}
+      {showKpiModal && <TargetSettingsModal currentConfig={kpiConfig} onSave={setKpiConfig} onClose={() => setShowKpiModal(false)} />}
       
       <aside className="bg-white border-r border-gray-200 w-full md:w-20 lg:w-64 flex-shrink-0 flex flex-col sticky top-0 md:h-screen z-20">
         <div className="p-6 flex items-center gap-3 border-b border-gray-100">
            <div className="w-12 h-12 flex-shrink-0">
              <img 
-               src="https://i.imgur.com/r1fWDF1.png" 
+               src={PV_LOGO_URL}
                alt="Pallacanestro Varese" 
                className="w-full h-full object-contain"
              />
@@ -704,12 +719,29 @@ const App: React.FC = () => {
              </div>
            )}
            
-           {!isLoadingData && lastGame && (
+           {!isLoadingData && (
              <div className="bg-gray-100 rounded-xl p-4">
-                <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Latest Update</p>
+                <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Data Version</p>
                 <div className="flex flex-col">
-                    <span className="text-xs font-bold text-gray-800 truncate">{lastGame.opponent}</span>
-                    <span className="text-[10px] text-gray-500">{lastGame.season} • {lastGame.date}</span>
+                    {dataSource === 'cloud' && lastUploadTime ? (
+                        <>
+                            <span className="text-xs font-bold text-gray-800">
+                                {new Date(lastUploadTime).toLocaleDateString()}
+                            </span>
+                            <span className="text-[10px] text-gray-500">
+                                {new Date(lastUploadTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </span>
+                        </>
+                    ) : (
+                        lastGame ? (
+                            <>
+                                <span className="text-xs font-bold text-gray-800 truncate">{lastGame.opponent}</span>
+                                <span className="text-[10px] text-gray-500">{lastGame.season} • {lastGame.date}</span>
+                            </>
+                        ) : (
+                             <span className="text-xs text-gray-500">No data loaded</span>
+                        )
+                    )}
                 </div>
              </div>
            )}
@@ -735,6 +767,14 @@ const App: React.FC = () => {
                       <span className="text-sm font-medium">Data Filters</span>
                   </div>
                   <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setShowKpiModal(true)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
+                      >
+                        <Goal size={14} />
+                        Set KPIs
+                      </button>
+
                       <button 
                         onClick={() => setIgnoreOspiti(!ignoreOspiti)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${
@@ -744,7 +784,7 @@ const App: React.FC = () => {
                         }`}
                       >
                         <UserX size={14} />
-                        {ignoreOspiti ? 'Guests Excluded' : 'Ignore Guests'}
+                        {ignoreOspiti ? 'Zona Ospiti Excluded' : 'Ignore Zona Ospiti'}
                       </button>
 
                       {(hasActiveFilters || ignoreOspiti) && (
@@ -788,6 +828,7 @@ const App: React.FC = () => {
                     data={viewData} 
                     fullDataset={data} 
                     filters={{ season: selectedSeasons, league: selectedLeagues, zone: selectedZones, opponent: selectedOpponents, tier: selectedTiers }} 
+                    kpiConfig={kpiConfig}
                   />
 
                   <div className="mb-8">
@@ -844,27 +885,39 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-gradient-to-br from-red-600 to-red-800 rounded-xl p-6 text-white shadow-lg">
-                        <h3 className="font-bold text-lg mb-2">Director's Note</h3>
-                        <p className="text-red-100 text-sm leading-relaxed mb-4">
-                          {viewData.length > 0 ? (
-                            <>
-                              Analyzing <strong>{viewData.length} games</strong> matching your criteria.
-                              {!selectedOpponents.includes('All') && selectedSeasons.length > 1 
-                                ? ` You are currently viewing a YoY comparison for ${selectedOpponents.length === 1 ? selectedOpponents[0] : 'selected opponents'}. Analyze the revenue variance across seasons.` 
-                                : ` The general trend shows a variance in attendance. Monitor the Yield KPI across different zones.`
-                              }
-                            </>
-                          ) : (
-                            "No data matches your current filter selection."
-                          )}
-                        </p>
-                        <button 
-                          onClick={() => setActiveTab('chat')}
-                          className="bg-white text-red-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors"
-                        >
-                          Ask AI for Strategy
-                        </button>
+                    <div className="relative bg-gradient-to-br from-red-600 to-red-800 rounded-xl p-6 text-white shadow-lg overflow-hidden group">
+                        {/* Avatar Positioning */}
+                        <div className="absolute top-6 right-6 opacity-90 group-hover:scale-105 transition-transform duration-500">
+                          <AIAvatar size="md" />
+                        </div>
+                        
+                        <div className="relative z-10 pr-20">
+                            <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+                               Director's Note
+                            </h3>
+                            <p className="text-red-100 text-sm leading-relaxed mb-4">
+                              {viewData.length > 0 ? (
+                                <>
+                                  Analyzing <strong>{viewData.length} games</strong> matching your criteria.
+                                  {!selectedOpponents.includes('All') && selectedSeasons.length > 1 
+                                    ? ` You are currently viewing a YoY comparison for ${selectedOpponents.length === 1 ? selectedOpponents[0] : 'selected opponents'}. Analyze the revenue variance across seasons.` 
+                                    : ` The general trend shows a variance in attendance. Monitor the Yield KPI across different zones.`
+                                  }
+                                </>
+                              ) : (
+                                "No data matches your current filter selection."
+                              )}
+                            </p>
+                            <button 
+                              onClick={() => setActiveTab('chat')}
+                              className="bg-white text-red-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors shadow-sm"
+                            >
+                              Consult AI Strategist
+                            </button>
+                        </div>
+                        
+                        {/* Decorative Background Mesh */}
+                        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
                     </div>
                   </div>
                 </div>

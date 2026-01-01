@@ -1,5 +1,5 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
+import { getFirestore, Firestore } from "firebase/firestore";
 
 // Configuration from pv-sales-dashboard
 const firebaseConfig = {
@@ -17,6 +17,24 @@ export const isFirebaseConfigured =
   firebaseConfig.apiKey !== "YOUR_API_KEY" && 
   firebaseConfig.projectId !== "YOUR_PROJECT_ID";
 
-// Only initialize if configured to prevent crashes
-const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
-export const db = app ? getFirestore(app) : null;
+let app: FirebaseApp | null = null;
+let dbInstance: Firestore | null = null;
+
+if (isFirebaseConfigured) {
+  try {
+    // Check if app is already initialized to prevent HMR errors
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    
+    // Initialize Firestore safely
+    try {
+        dbInstance = getFirestore(app);
+    } catch (fsError) {
+        console.warn("Firestore service initialization failed:", fsError);
+        // We do not throw here to allow the rest of the app to load with local data
+    }
+  } catch (error) {
+    console.error("Firebase App initialization error:", error);
+  }
+}
+
+export const db = dbInstance;

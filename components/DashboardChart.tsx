@@ -11,8 +11,9 @@ interface DashboardChartProps {
 }
 
 const COLORS = ['#DC2626', '#1F2937', '#4B5563', '#9CA3AF', '#F87171', '#EF4444'];
-// Distinct colors for seasons: Oldest (Light Slate) -> Recent Past (Dark Slate) -> Current (Red)
-const SEASON_COLORS = ['#CBD5E1', '#334155', '#DC2626', '#7F1D1D']; 
+
+// STYLISH PALETTE: Oldest (Slate 500) -> Mid (Slate 800) -> Current (PV Red) -> Future/Alt (Dark Red)
+const SEASON_COLORS = ['#64748B', '#1E293B', '#DC2626', '#991B1B']; 
 
 const CHANNEL_COLORS: Record<string, string> = {
   [SalesChannel.ABB]: '#1F2937', // Dark Gray
@@ -37,6 +38,22 @@ const TIER_COLORS: Record<string, string> = {
 };
 
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// Helper for consistent currency formatting
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('it-IT', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+};
+
+// Helper for compact axis formatting (e.g. 10k)
+const formatAxisCurrency = (value: number) => {
+  if (value >= 1000) return `€${(value / 1000).toFixed(0)}k`;
+  return `€${value}`;
+};
 
 export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterChange }) => {
   
@@ -192,11 +209,15 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                     textAnchor="end" 
                     height={50} 
                 />
-                <YAxis yAxisId="left" tick={{fontSize: 11}} tickFormatter={(val) => `€${val/1000}k`} />
+                <YAxis yAxisId="left" tick={{fontSize: 11}} tickFormatter={formatAxisCurrency} />
                 <YAxis yAxisId="right" orientation="right" tick={{fontSize: 11}} domain={[0, 'auto']} />
                 <Tooltip 
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                   labelFormatter={(label, payload) => payload[0]?.payload.fullLabel || label}
+                  formatter={(value: number, name: string) => [
+                      name === 'Revenue (€)' ? formatCurrency(value) : value, 
+                      name
+                  ]}
                 />
                 <Legend />
                 <Bar 
@@ -246,7 +267,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                     <Cell key={`cell-${index}`} fill={CHANNEL_COLORS[entry.name] || COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => `€${value.toLocaleString()}`} />
+                <Tooltip formatter={(value: number) => formatCurrency(value)} />
                 <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{fontSize: '10px'}} />
               </PieChart>
             </ResponsiveContainer>
@@ -268,7 +289,8 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                       <XAxis type="number" hide />
                       <YAxis dataKey="name" type="category" width={80} tick={{fontSize: 11}} />
-                      <Tooltip formatter={(value: number) => [value, 'Tickets']} />
+                      {/* Using props.payload.name to explicitly show the category name */}
+                      <Tooltip formatter={(value: number, name: string, props: any) => [value, props.payload.name]} />
                       <Bar dataKey="value" fill="#eab308" radius={[0, 4, 4, 0]} barSize={20}>
                          <LabelList dataKey="value" position="right" fontSize={11} fill="#666" />
                       </Bar>
@@ -296,7 +318,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                           <Cell key={`cell-${index}`} fill={GIVEAWAY_COLORS[index % GIVEAWAY_COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value: number) => [value, 'Tickets']} />
+                      <Tooltip formatter={(value: number, name: string) => [value, name]} />
                       <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{fontSize: '10px'}} />
                    </PieChart>
                 </ResponsiveContainer>
@@ -323,7 +345,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" tick={{fontSize: 12}} />
                 <YAxis 
-                   tickFormatter={(val) => `€${(val/1000).toFixed(0)}k`} 
+                   tickFormatter={formatAxisCurrency}
                    tick={{fontSize: 11}}
                 />
                 <Tooltip 
@@ -338,7 +360,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                              <div className="flex justify-between items-center gap-6">
                                <span className="text-gray-500">Avg Revenue:</span>
                                <span className="font-bold text-gray-900">
-                                 €{(d.avgRevenue || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}
+                                 {formatCurrency(d.avgRevenue || 0)}
                                </span>
                              </div>
                              <div className="flex justify-between items-center gap-6">
@@ -348,7 +370,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                              <div className="flex justify-between items-center gap-6 border-t border-gray-100 pt-1 mt-1">
                                <span className="text-gray-500">Total Rev:</span>
                                <span className="font-mono text-gray-600">
-                                 €{((d.totalRevenue || 0)/1000).toFixed(1)}k
+                                 {formatAxisCurrency(d.totalRevenue || 0)}
                                </span>
                              </div>
                           </div>
@@ -392,13 +414,13 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                 <XAxis 
                     type="number" 
-                    tickFormatter={(val) => `€${(val/1000).toFixed(0)}k`} 
+                    tickFormatter={formatAxisCurrency} 
                     tick={{fontSize: 10}} 
                 />
                 <YAxis dataKey="name" type="category" width={40} tick={{fontSize: 12}} />
                 <Tooltip 
                    cursor={{fill: 'transparent'}}
-                   formatter={(value: number) => [`€${Math.round(value).toLocaleString()}`, 'Avg Revenue']}
+                   formatter={(value: number) => [formatCurrency(value), 'Avg Revenue']}
                 />
                 <Bar 
                     dataKey="avgRevenue" 
@@ -427,12 +449,12 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis dataKey="name" tick={{fontSize: 12}} />
                     <YAxis 
-                        tickFormatter={(val) => val === 0 ? '0' : `€${(val/1000).toFixed(0)}k`} 
+                        tickFormatter={(val) => val === 0 ? '0' : formatAxisCurrency(val)} 
                         tick={{fontSize: 11}} 
                     />
                     <Tooltip 
                        cursor={{fill: 'transparent'}}
-                       formatter={(value: number, name: string) => [`€${value.toLocaleString()}`, name]}
+                       formatter={(value: number, name: string) => [formatCurrency(value), name]}
                     />
                     <Legend />
                     {uniqueSeasons.map((season, index) => (
@@ -448,8 +470,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                                 position="top" 
                                 formatter={(val: number) => {
                                     if (!val) return '';
-                                    if (val >= 1000) return `€${(val/1000).toFixed(0)}k`;
-                                    return `€${val.toFixed(0)}`;
+                                    return formatAxisCurrency(val);
                                 }}
                                 style={{ fontSize: '10px', fill: '#666' }}
                             />
