@@ -61,7 +61,8 @@ const MetricCard = ({
   colorClass, 
   targetValue, // Renamed from prevValue
   isPercentage = false,
-  inverse = false // If true, lower is better (e.g., Giveaway Rate)
+  inverse = false, // If true, lower is better (e.g., Giveaway Rate)
+  comparisonLabel = "vs KPIs"
 }: any) => {
   
   // Calculate Variance vs Target
@@ -116,7 +117,7 @@ const MetricCard = ({
           <span className="text-xs text-gray-300">-</span>
         )}
         <p className="text-[10px] text-gray-400 truncate">
-          {hasTarget ? 'vs KPIs' : subValue}
+          {hasTarget ? comparisonLabel : subValue}
         </p>
       </div>
     </div>
@@ -162,9 +163,6 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
     );
 
     // --- CRITICAL FIX: APPLY GAME DAY FILTERING TO BASELINE ---
-    // If the main view is in "Game Day Mode", we must transform the baseline data
-    // to also be "Game Day Mode" (exclude fixed seats/rev) so we compare apples to apples.
-    
     baselineGames = baselineGames.map(game => {
         let zoneSales = game.salesBreakdown;
 
@@ -210,24 +208,23 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
     const baselineKPIs = calculateKPIs(baselineGames);
     if (!baselineKPIs) return null;
 
-    // Apply Growth Targets
-    const growthRev = 1 + (kpiConfig.revenueGrowth / 100);
-    const growthAtt = 1 + (kpiConfig.attendanceGrowth / 100);
+    // Calculate Targets by applying specific growth factors to baseline
+    const growthArpg = 1 + (kpiConfig.arpgGrowth / 100);
+    const growthYield = 1 + (kpiConfig.yieldGrowth / 100);
+    const growthRevPas = 1 + (kpiConfig.revPasGrowth / 100);
+    const growthOcc = 1 + (kpiConfig.occupancyGrowth / 100);
 
     return {
-        // Revenue derived metrics affected by Rev Growth
-        totalRevenue: baselineKPIs.totalRevenue * growthRev,
-        arpg: baselineKPIs.arpg * growthRev,
-        yield_atp: baselineKPIs.yield_atp * growthRev, 
-        revPas: baselineKPIs.revPas * growthRev,
+        // Apply specific growth factors
+        arpg: baselineKPIs.arpg * growthArpg,
+        yield_atp: baselineKPIs.yield_atp * growthYield,
+        revPas: baselineKPIs.revPas * growthRevPas,
         
-        // Attendance derived metrics affected by Att Growth
-        totalAttendance: baselineKPIs.totalAttendance * growthAtt,
-        occupancy: Math.min(baselineKPIs.occupancy * growthAtt, 100), // Cap at 100%
+        // Attendance logic
+        occupancy: Math.min(baselineKPIs.occupancy * growthOcc, 100), 
 
         // Special Rules
-        corpShare: baselineKPIs.corpShare, // Target is simply to match last season
-        giveawayRate: kpiConfig.giveawayTarget, // Fixed target
+        giveawayRate: kpiConfig.giveawayTarget, // Fixed target remains
     };
 
   }, [fullDataset, filters, kpiConfig, viewMode]);
@@ -236,7 +233,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
   if (!currentKPIs) return null;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
       <MetricCard 
         label="Avg Rev/Game" 
         value={currentKPIs.arpg} 
@@ -262,15 +259,6 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
         colorClass="border-purple-600" 
       />
       <MetricCard 
-        label="B2B Share" 
-        value={currentKPIs.corpShare} 
-        targetValue={targetKPIs?.corpShare}
-        subValue="Corp %"
-        icon={Briefcase} 
-        colorClass="border-blue-600" 
-        isPercentage={true}
-      />
-      <MetricCard 
         label="Load Factor" 
         value={currentKPIs.occupancy} 
         targetValue={targetKPIs?.occupancy}
@@ -288,6 +276,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
         colorClass="border-orange-500" 
         isPercentage={true}
         inverse={true}
+        comparisonLabel="vs Max Target"
       />
     </div>
   );

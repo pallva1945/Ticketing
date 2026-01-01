@@ -71,8 +71,10 @@ export interface DashboardStats {
 }
 
 export interface KPIConfig {
-  revenueGrowth: number; // Percentage (e.g., 10 for 10%)
-  attendanceGrowth: number; // Percentage
+  arpgGrowth: number; // Avg Rev Per Game Growth %
+  yieldGrowth: number; // Yield (ATP) Growth %
+  revPasGrowth: number; // RevPAS Growth %
+  occupancyGrowth: number; // Occupancy Growth %
   giveawayTarget: number; // Fixed percentage target (e.g., 7%)
   baselineMode: 'prev_season' | 'avg_2_seasons';
 }

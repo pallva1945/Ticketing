@@ -77,6 +77,8 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
         revenue: game.totalRevenue,
         attendance: game.attendance,
         opponent: game.opponent,
+        season: game.season,
+        tier: game.tier,
         // Ticket Type Breakdown for Stacked Bar
         typeFull: game.ticketTypeBreakdown?.full || 0,
         typeDiscount: game.ticketTypeBreakdown?.discount || 0,
@@ -126,20 +128,23 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
   const avgRevenueTotal = data.length > 0 ? data.reduce((acc, curr) => acc + curr.totalRevenue, 0) / data.length : 0;
 
   // 4. Day of Week Analysis
-  const dayStats: Record<string, { revenue: number, count: number }> = {};
+  const dayStats: Record<string, { revenue: number, count: number, tierSum: number }> = {};
   data.forEach(game => {
     const [day, month, year] = game.date.split('/');
     const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
     const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
     
-    if (!dayStats[dayName]) dayStats[dayName] = { revenue: 0, count: 0 };
+    if (!dayStats[dayName]) dayStats[dayName] = { revenue: 0, count: 0, tierSum: 0 };
     dayStats[dayName].revenue += game.totalRevenue;
     dayStats[dayName].count += 1;
+    dayStats[dayName].tierSum += (game.tier || 0);
   });
 
   const dayData = Object.entries(dayStats).map(([day, val]) => ({
     name: day,
-    avgRevenue: val.revenue / val.count
+    avgRevenue: val.revenue / val.count,
+    gameCount: val.count,
+    avgTier: val.count > 0 ? val.tierSum / val.count : 0 // Calculate Avg Tier
   })).sort((a, b) => b.avgRevenue - a.avgRevenue);
 
   // 5. Monthly PnL Analysis (Multi-Season)
@@ -211,14 +216,44 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                 />
                 <YAxis yAxisId="left" tick={{fontSize: 11}} tickFormatter={formatAxisCurrency} />
                 <YAxis yAxisId="right" orientation="right" tick={{fontSize: 11}} domain={[0, 'auto']} />
+                
+                {/* Custom Tooltip for detailed Game info */}
                 <Tooltip 
-                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                  labelFormatter={(label, payload) => payload[0]?.payload.fullLabel || label}
-                  formatter={(value: number, name: string) => [
-                      name === 'Revenue (€)' ? formatCurrency(value) : value, 
-                      name
-                  ]}
+                  cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '3 3' }}
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const d = payload[0].payload;
+                      return (
+                        <div className="bg-white p-3 border border-gray-200 shadow-xl rounded-lg text-xs z-50 min-w-[180px]">
+                          <div className="mb-2 border-b border-gray-100 pb-2">
+                            <p className="font-bold text-sm text-gray-900 truncate">{d.opponent}</p>
+                            <p className="text-gray-500">{d.date}</p>
+                          </div>
+                          <div className="space-y-1.5">
+                             <div className="flex justify-between items-center gap-4">
+                               <span className="text-gray-500">Season:</span>
+                               <span className="font-medium text-gray-900">{d.season}</span>
+                             </div>
+                             <div className="flex justify-between items-center gap-4">
+                               <span className="text-gray-500">Tier:</span>
+                               <span className="font-medium text-gray-900">{d.tier || 'N/A'}</span>
+                             </div>
+                             <div className="flex justify-between items-center gap-4 border-t border-gray-50 pt-1 mt-1">
+                               <span className="text-gray-500">Revenue:</span>
+                               <span className="font-bold text-red-600">{formatCurrency(d.revenue)}</span>
+                             </div>
+                             <div className="flex justify-between items-center gap-4">
+                               <span className="text-gray-500">Attendance:</span>
+                               <span className="font-bold text-gray-900">{d.attendance}</span>
+                             </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
                 />
+                
                 <Legend />
                 <Bar 
                   yAxisId="left" 
@@ -420,7 +455,33 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                 <YAxis dataKey="name" type="category" width={40} tick={{fontSize: 12}} />
                 <Tooltip 
                    cursor={{fill: 'transparent'}}
-                   formatter={(value: number) => [formatCurrency(value), 'Avg Revenue']}
+                   content={({ active, payload }) => {
+                     if (active && payload && payload.length) {
+                       const d = payload[0].payload;
+                       return (
+                         <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg text-xs z-50">
+                           <p className="font-bold text-sm mb-2 text-gray-900">{d.name}</p>
+                           <div className="space-y-1.5">
+                              <div className="flex justify-between items-center gap-6">
+                                <span className="text-gray-500">Avg Revenue:</span>
+                                <span className="font-bold text-gray-900">
+                                  {formatCurrency(d.avgRevenue || 0)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center gap-6">
+                                <span className="text-gray-500">Games Played:</span>
+                                <span className="font-mono text-gray-900 font-semibold">{d.gameCount}</span>
+                              </div>
+                              <div className="flex justify-between items-center gap-6 border-t border-gray-100 pt-1 mt-1">
+                                <span className="text-gray-500">Avg Opp Tier:</span>
+                                <span className="font-bold text-blue-600">{d.avgTier ? d.avgTier.toFixed(1) : '-'}</span>
+                              </div>
+                           </div>
+                         </div>
+                       );
+                     }
+                     return null;
+                   }}
                 />
                 <Bar 
                     dataKey="avgRevenue" 

@@ -172,8 +172,10 @@ const App: React.FC = () => {
   // KPI Configuration
   const [showKpiModal, setShowKpiModal] = useState(false);
   const [kpiConfig, setKpiConfig] = useState<KPIConfig>({
-    revenueGrowth: 10,
-    attendanceGrowth: 10,
+    arpgGrowth: 10,
+    yieldGrowth: 10,
+    revPasGrowth: 10,
+    occupancyGrowth: 10,
     giveawayTarget: 7,
     baselineMode: 'prev_season'
   });

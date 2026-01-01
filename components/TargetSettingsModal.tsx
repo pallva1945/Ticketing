@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Target, TrendingUp, Users, Gift, History } from 'lucide-react';
+import { X, Target, TrendingUp, Users, Gift, History, DollarSign, Ticket } from 'lucide-react';
 import { KPIConfig } from '../types';
 
 interface TargetSettingsModalProps {
@@ -25,7 +25,7 @@ export const TargetSettingsModal: React.FC<TargetSettingsModalProps> = ({ curren
             </div>
             <div>
               <h2 className="text-xl font-bold text-white">KPI Configuration</h2>
-              <p className="text-slate-400 text-sm">Set performance benchmarks</p>
+              <p className="text-slate-400 text-sm">Set specific performance targets</p>
             </div>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
@@ -33,49 +33,81 @@ export const TargetSettingsModal: React.FC<TargetSettingsModalProps> = ({ curren
           </button>
         </div>
         
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-4">
           
-          {/* Revenue Growth */}
+          {/* ARPG Growth */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
+                <DollarSign size={16} className="text-blue-600" />
+                ARPG Growth (Avg Rev/Game)
+            </label>
+            <div className="flex items-center gap-2">
+                <input 
+                    type="number" 
+                    value={config.arpgGrowth}
+                    onChange={(e) => handleChange('arpgGrowth', Number(e.target.value))}
+                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <span className="text-gray-500 font-bold">%</span>
+            </div>
+          </div>
+
+          {/* Yield Growth */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
+                <Ticket size={16} className="text-blue-600" />
+                Yield Growth (Avg Ticket Price)
+            </label>
+            <div className="flex items-center gap-2">
+                <input 
+                    type="number" 
+                    value={config.yieldGrowth}
+                    onChange={(e) => handleChange('yieldGrowth', Number(e.target.value))}
+                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <span className="text-gray-500 font-bold">%</span>
+            </div>
+          </div>
+
+          {/* RevPAS Growth */}
           <div>
             <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
                 <TrendingUp size={16} className="text-blue-600" />
-                Revenue Growth KPI
+                RevPAS Growth
             </label>
             <div className="flex items-center gap-2">
                 <input 
                     type="number" 
-                    value={config.revenueGrowth}
-                    onChange={(e) => handleChange('revenueGrowth', Number(e.target.value))}
+                    value={config.revPasGrowth}
+                    onChange={(e) => handleChange('revPasGrowth', Number(e.target.value))}
                     className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 />
                 <span className="text-gray-500 font-bold">%</span>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Target increase vs Baseline</p>
           </div>
 
-          {/* Attendance Growth */}
+          {/* Occupancy Growth */}
           <div>
             <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
                 <Users size={16} className="text-blue-600" />
-                Attendance Growth KPI
+                Occupancy Growth
             </label>
             <div className="flex items-center gap-2">
                 <input 
                     type="number" 
-                    value={config.attendanceGrowth}
-                    onChange={(e) => handleChange('attendanceGrowth', Number(e.target.value))}
+                    value={config.occupancyGrowth}
+                    onChange={(e) => handleChange('occupancyGrowth', Number(e.target.value))}
                     className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                 />
                 <span className="text-gray-500 font-bold">%</span>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Target increase vs Baseline</p>
           </div>
 
           {/* Giveaway Cap */}
           <div>
             <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
                 <Gift size={16} className="text-blue-600" />
-                Max Giveaway Rate (KPI)
+                Max Giveaway Rate (Limit)
             </label>
             <div className="flex items-center gap-2">
                 <input 
@@ -86,14 +118,13 @@ export const TargetSettingsModal: React.FC<TargetSettingsModalProps> = ({ curren
                 />
                 <span className="text-gray-500 font-bold">%</span>
             </div>
-            <p className="text-xs text-gray-400 mt-1">Rates above this will be flagged red</p>
           </div>
 
           {/* Baseline Configuration */}
-          <div className="pt-4 border-t border-gray-100">
+          <div className="pt-2 border-t border-gray-100">
              <label className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-2">
                 <History size={16} className="text-gray-500" />
-                Baseline Comparison Logic
+                Baseline Comparison
             </label>
             <select 
                 value={config.baselineMode}
