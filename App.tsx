@@ -606,7 +606,7 @@ const App: React.FC = () => {
           </div>
           
           {/* Global View Toggle (Total vs Game Day) */}
-          {activeTab === 'dashboard' && (
+          {(activeTab === 'dashboard' || activeTab === 'comparison') && (
             <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
                 <button 
                     onClick={() => setViewMode('total')}
@@ -628,7 +628,7 @@ const App: React.FC = () => {
                     }`}
                 >
                     <Calendar size={14} />
-                    Game Day Only
+                    GameDay Only
                 </button>
             </div>
           )}
@@ -681,7 +681,7 @@ const App: React.FC = () => {
                             <h1 className="text-3xl font-bold text-gray-900">{TEAM_NAME}</h1>
                             {viewMode === 'gameday' && (
                                 <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold uppercase rounded border border-red-200 tracking-wider">
-                                    Game Day View
+                                    GameDay View
                                 </span>
                             )}
                         </div>
@@ -791,7 +791,7 @@ const App: React.FC = () => {
           )}
 
           {activeTab === 'comparison' && (
-            <ComparisonView fullData={data} options={{ seasons: allSeasons, leagues: allLeagues, opponents: allOpponents, tiers: allTiers, zones: allZones }} />
+            <ComparisonView fullData={data} options={{ seasons: allSeasons, leagues: allLeagues, opponents: allOpponents, tiers: allTiers, zones: allZones }} viewMode={viewMode} />
           )}
 
           {activeTab === 'chat' && (

@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { GameData, TicketZone } from '../types';
+import { GameData, TicketZone, SalesChannel } from '../types';
 import { MultiSelect } from './MultiSelect';
 import { calculateKPIs } from './StatsCards';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { ArrowLeftRight, TrendingUp, TrendingDown, Minus, Filter, AlertCircle, UserX } from 'lucide-react';
+import { FIXED_CAPACITY_25_26 } from '../constants';
 
 interface ComparisonViewProps {
   fullData: GameData[];
@@ -16,6 +17,7 @@ interface ComparisonViewProps {
     // We ignore the passed static options for cascading logic, 
     // but keep the prop signature compatible with App.tsx
   };
+  viewMode: 'total' | 'gameday';
 }
 
 interface FilterState {
@@ -45,7 +47,7 @@ const INITIAL_FILTERS: FilterState = {
 };
 
 // --- Helper: Filter Data based on State ---
-const getFilteredData = (allGames: GameData[], filters: FilterState) => {
+const getFilteredData = (allGames: GameData[], filters: FilterState, viewMode: 'total' | 'gameday') => {
     // 1. Filter
     const filteredGames = allGames.filter(d => {
       const matchSeason = filters.seasons.includes('All') || filters.seasons.includes(d.season);
@@ -80,6 +82,13 @@ const getFilteredData = (allGames: GameData[], filters: FilterState) => {
           zoneSales = zoneSales.filter(s => filters.zones.includes(s.zone));
       }
 
+      // Filter 3: GameDay Mode (Exclude fixed channels)
+      if (viewMode === 'gameday') {
+          zoneSales = zoneSales.filter(s => 
+              [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel)
+          );
+      }
+
       const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
       const zoneAttendance = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
       
@@ -88,6 +97,14 @@ const getFilteredData = (allGames: GameData[], filters: FilterState) => {
       
       if (filters.ignoreOspiti) {
           delete filteredZoneCapacities[TicketZone.OSPITI];
+      }
+
+      // Apply GameDay Capacity Reduction
+      if (viewMode === 'gameday') {
+          Object.keys(filteredZoneCapacities).forEach(z => {
+              const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
+              filteredZoneCapacities[z] = Math.max(0, filteredZoneCapacities[z] - fixedDeduction);
+          });
       }
 
       if (game.zoneCapacities) {
@@ -208,7 +225,7 @@ const ComparisonMetric = ({ label, valA, valB, isCurrency = false, isPercent = f
     );
 };
 
-export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, options }) => {
+export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, options, viewMode }) => {
   // Default Filters
   const [filtersA, setFiltersA] = useState<FilterState>({
      ...INITIAL_FILTERS,
@@ -220,8 +237,8 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
      seasons: [options.seasons[0]],
   });
 
-  const dataA = useMemo(() => getFilteredData(fullData, filtersA), [fullData, filtersA]);
-  const dataB = useMemo(() => getFilteredData(fullData, filtersB), [fullData, filtersB]);
+  const dataA = useMemo(() => getFilteredData(fullData, filtersA, viewMode), [fullData, filtersA, viewMode]);
+  const dataB = useMemo(() => getFilteredData(fullData, filtersB, viewMode), [fullData, filtersB, viewMode]);
 
   const statsA = calculateKPIs(dataA);
   const statsB = calculateKPIs(dataB);
@@ -312,7 +329,11 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
            </div>
            <div>
                <h1 className="text-2xl font-bold text-gray-900">Comparative Analysis</h1>
-               <p className="text-gray-500 text-sm">Analyze performance variance between two distinct datasets.</p>
+               <p className="text-gray-500 text-sm">
+                   {viewMode === 'gameday' 
+                    ? 'Analyzing GameDay revenue only (Variable)' 
+                    : 'Analyze performance variance between two distinct datasets.'}
+               </p>
            </div>
        </div>
 
