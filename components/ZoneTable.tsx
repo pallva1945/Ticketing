@@ -66,6 +66,23 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
     }).sort((a, b) => b.totalRevenue - a.totalRevenue);
   }, [data]);
 
+  const totals = useMemo(() => {
+    if (zoneStats.length === 0) return null;
+    const sumAvgRevenue = zoneStats.reduce((acc, curr) => acc + curr.avgRevenue, 0);
+    const sumAvgSold = zoneStats.reduce((acc, curr) => acc + curr.avgSold, 0);
+    const sumCapacity = zoneStats.reduce((acc, curr) => acc + curr.capacity, 0);
+
+    return {
+        avgSold: sumAvgSold,
+        capacity: sumCapacity,
+        avgPrice: sumAvgSold > 0 ? sumAvgRevenue / sumAvgSold : 0,
+        revPas: sumCapacity > 0 ? sumAvgRevenue / sumCapacity : 0,
+        avgRevenue: sumAvgRevenue,
+        revShare: 100,
+        fillRate: sumCapacity > 0 ? (sumAvgSold / sumCapacity) * 100 : 0
+    };
+  }, [zoneStats]);
+
   if (data.length === 0) return null;
 
   return (
@@ -135,6 +152,35 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
               );
             })}
           </tbody>
+          {totals && (
+            <tfoot className="bg-gray-100 text-gray-900 font-bold sticky bottom-0 z-10 border-t-2 border-gray-200">
+              <tr>
+                <td className="px-6 py-4 uppercase text-xs">TOTAL / AVERAGE</td>
+                <td className="px-6 py-4 text-right font-mono text-xs">
+                  <span>{Math.round(totals.avgSold)}</span>
+                  <span className="text-gray-400 mx-1">/</span>
+                  <span className="text-gray-600">{totals.capacity}</span>
+                </td>
+                <td className="px-6 py-4 text-right">€{totals.avgPrice.toFixed(1)}</td>
+                <td className="px-6 py-4 text-right text-blue-800">€{totals.revPas.toFixed(1)}</td>
+                <td className="px-6 py-4 text-right">€{totals.avgRevenue.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                <td className="px-6 py-4 text-right">100%</td>
+                <td className="px-6 py-4">
+                  <div className="flex flex-col gap-1">
+                      <div className="flex justify-between text-[10px] font-bold text-gray-600">
+                          <span>{totals.fillRate.toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-300 rounded-full h-2">
+                          <div 
+                          className="h-2 rounded-full bg-gray-800 transition-all duration-500" 
+                          style={{ width: `${Math.min(totals.fillRate, 100)}%` }}
+                          ></div>
+                      </div>
+                  </div>
+                </td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
     </div>
