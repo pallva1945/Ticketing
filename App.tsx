@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Goal } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Goal, Calendar, Briefcase } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -8,7 +8,7 @@ import { ChatInterface, AIAvatar } from './components/ChatInterface';
 import { ComparisonView } from './components/ComparisonView';
 import { MultiSelect } from './components/MultiSelect';
 import { TargetSettingsModal } from './components/TargetSettingsModal';
-import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL } from './constants';
+import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26 } from './constants';
 import { GameData, DashboardStats, SalesChannel, TicketZone, KPIConfig } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { processGameData } from './utils/dataProcessor';
@@ -159,13 +159,16 @@ const App: React.FC = () => {
   const [data, setData] = useState<GameData[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [dataSource, setDataSource] = useState<'live' | 'cloud' | 'local'>('local');
-  const [rawCsv, setRawCsv] = useState<string>(''); // Store raw CSV for syncing
+  const [rawCsv, setRawCsv] = useState<string>(''); 
   const [lastUploadTime, setLastUploadTime] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(!isFirebaseConfigured);
   const [showRulesError, setShowRulesError] = useState(false);
   
+  // New State: View Mode (Total vs Game Day)
+  const [viewMode, setViewMode] = useState<'total' | 'gameday'>('total');
+
   // KPI Configuration
   const [showKpiModal, setShowKpiModal] = useState(false);
   const [kpiConfig, setKpiConfig] = useState<KPIConfig>({
@@ -195,39 +198,25 @@ const App: React.FC = () => {
     let loadedRaw = '';
 
     try {
-      // 1. Priority: Check Firebase Cloud Database (Only if configured)
       if (isFirebaseConfigured) {
-        console.log("Checking Firebase...");
         try {
           const cloudData = await getCsvFromFirebase();
           if (cloudData) {
-            try {
-              loadedData = processGameData(cloudData.content);
-              if (loadedData.length > 0) {
-                console.log("Loaded data from Firebase Cloud");
-                setData(loadedData);
-                setDataSource('cloud');
-                setRawCsv(cloudData.content);
-                setLastUploadTime(cloudData.updatedAt);
-                setIsLoadingData(false);
-                return; // Stop here
-              }
-            } catch (e) {
-              console.error("Cloud data parsing error", e);
+            loadedData = processGameData(cloudData.content);
+            if (loadedData.length > 0) {
+              setData(loadedData);
+              setDataSource('cloud');
+              setRawCsv(cloudData.content);
+              setLastUploadTime(cloudData.updatedAt);
+              setIsLoadingData(false);
+              return; 
             }
           }
         } catch (dbError: any) {
-          if (dbError.message === 'permission-denied') {
-             setShowRulesError(true);
-          } else {
-             console.error("Unknown DB Error", dbError);
-          }
+          if (dbError.message === 'permission-denied') setShowRulesError(true);
         }
-      } else {
-        console.log("Firebase not configured, skipping cloud check.");
       }
 
-      // 2. Fallback: Google Sheets (if configured)
       if (GOOGLE_SHEET_CSV_URL) {
         try {
           const cacheBuster = `&t=${Date.now()}`;
@@ -238,7 +227,6 @@ const App: React.FC = () => {
             if (loadedData.length > 0) {
                 source = 'live';
                 loadedRaw = csvText;
-                console.log("Successfully loaded LIVE data (Direct)");
             }
           }
         } catch (directError) {
@@ -246,9 +234,7 @@ const App: React.FC = () => {
         }
       }
 
-      // 3. Fallback: Hardcoded Data
       if (loadedData.length === 0) {
-        console.log("Using LOCAL fallback data");
         loadedData = processGameData(FALLBACK_CSV_CONTENT);
         loadedRaw = FALLBACK_CSV_CONTENT;
         source = 'local';
@@ -257,7 +243,7 @@ const App: React.FC = () => {
       setData(loadedData);
       setDataSource(source);
       setRawCsv(loadedRaw);
-      setLastUploadTime(null); // No explicit upload time for local/live fallback
+      setLastUploadTime(null); 
 
     } catch (error) {
       console.error("Critical error processing data:", error);
@@ -278,9 +264,9 @@ const App: React.FC = () => {
     if (!file) return;
 
     if (!isFirebaseConfigured) {
-        alert("Cannot upload: Database is not connected. Please configure Firebase first.");
+        alert("Cannot upload: Database is not connected.");
         setShowSetupModal(true);
-        event.target.value = ''; // Reset
+        event.target.value = ''; 
         return;
     }
 
@@ -290,134 +276,59 @@ const App: React.FC = () => {
       const text = e.target?.result as string;
       if (text) {
         try {
-          // 1. Validate data locally first
           const testData = processGameData(text);
           if (testData.length > 0) {
-            
-            // 2. Save to Firebase
             try {
               await saveCsvToFirebase(text);
-              // 3. Update State
               setData(testData);
               setDataSource('cloud');
               setRawCsv(text);
               setLastUploadTime(new Date().toISOString());
-              alert("Success! This file is now the default data for all users.");
+              alert("Success! This file is now the default data.");
             } catch (dbError: any) {
-              if (dbError.message === 'permission-denied') {
-                setShowRulesError(true);
-              } else {
-                alert("Database Error: " + dbError.message);
-              }
+              if (dbError.message === 'permission-denied') setShowRulesError(true);
+              else alert("Database Error: " + dbError.message);
             }
           } else {
             alert("Error: The CSV file format seems invalid.");
           }
         } catch (error) {
-          console.error("Error parsing uploaded CSV", error);
-          alert("Failed to upload data to the cloud. Check console.");
+          alert("Failed to upload data.");
         } finally {
           setIsUploading(false);
         }
       }
     };
     reader.readAsText(file);
-    // Reset input so same file can be selected again
     event.target.value = '';
   };
 
   const handleSyncToCloud = async () => {
-    if (!isFirebaseConfigured) {
-        setShowSetupModal(true);
-        return;
-    }
-    
-    if (!rawCsv) {
-        alert("No data to sync.");
-        return;
-    }
+    if (!isFirebaseConfigured) { setShowSetupModal(true); return; }
+    if (!rawCsv) { alert("No data to sync."); return; }
 
     setIsSyncing(true);
     try {
         await saveCsvToFirebase(rawCsv);
         setDataSource('cloud');
         setLastUploadTime(new Date().toISOString());
-        alert("Synced successfully! This data is now stored in the cloud.");
+        alert("Synced successfully!");
     } catch (dbError: any) {
-        if (dbError.message === 'permission-denied') {
-            setShowRulesError(true);
-        } else {
-            alert("Failed to sync: " + dbError.message);
-        }
+        if (dbError.message === 'permission-denied') setShowRulesError(true);
+        else alert("Failed to sync: " + dbError.message);
     } finally {
         setIsSyncing(false);
     }
   };
 
   const triggerFileUpload = () => {
-    if (!isFirebaseConfigured) {
-        setShowSetupModal(true);
-        return;
-    }
-    // Basic confirmation since this affects everyone
+    if (!isFirebaseConfigured) { setShowSetupModal(true); return; }
     if (window.confirm("Uploading a file will update the database for ALL users. Continue?")) {
         fileInputRef.current?.click();
     }
   };
 
-  // Identify the latest game in the dataset (most recent date)
-  const lastGame = useMemo(() => {
-    if (data.length === 0) return null;
-    // Clone and sort descending by date
-    const sorted = [...data].sort((a, b) => {
-         const [da, ma, ya] = a.date.split('/').map(Number);
-         const [db, mb, yb] = b.date.split('/').map(Number);
-         return new Date(yb, mb-1, db).getTime() - new Date(ya, ma-1, da).getTime();
-    });
-    return sorted[0];
-  }, [data]);
-
-  // --- Cascading Filter Options Logic ---
-  const getAvailableOptions = (targetField: 'season' | 'league' | 'opponent' | 'tier' | 'day' | 'zone') => {
-      const filtered = data.filter(d => {
-        const matchSeason = targetField === 'season' || selectedSeasons.includes('All') || selectedSeasons.includes(d.season);
-        const matchLeague = targetField === 'league' || selectedLeagues.includes('All') || selectedLeagues.includes(d.league);
-        const matchOpponent = targetField === 'opponent' || selectedOpponents.includes('All') || selectedOpponents.includes(d.opponent);
-        const matchTier = targetField === 'tier' || selectedTiers.includes('All') || selectedTiers.includes(String(d.tier));
-        const matchDay = targetField === 'day' || selectedDays.includes('All') || selectedDays.includes(getDayName(d.date));
-        
-        return matchSeason && matchLeague && matchOpponent && matchTier && matchDay;
-      });
-
-      const unique = new Set<string>();
-      filtered.forEach(d => {
-          if (targetField === 'season') unique.add(d.season);
-          if (targetField === 'league') unique.add(d.league);
-          if (targetField === 'opponent') unique.add(d.opponent);
-          if (targetField === 'tier') unique.add(String(d.tier));
-          if (targetField === 'day') unique.add(getDayName(d.date));
-          if (targetField === 'zone') {
-               d.salesBreakdown.forEach(s => unique.add(s.zone));
-          }
-      });
-
-      const arr = Array.from(unique);
-
-      if (targetField === 'season') return arr.sort().reverse();
-      if (targetField === 'tier') return arr.sort((a,b) => Number(a)-Number(b));
-      if (targetField === 'day') {
-          const order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-          return arr.sort((a,b) => order.indexOf(a) - order.indexOf(b));
-      }
-      return arr.sort();
-  };
-
-  const seasons = useMemo(() => getAvailableOptions('season'), [data, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
-  const leagues = useMemo(() => getAvailableOptions('league'), [data, selectedSeasons, selectedOpponents, selectedTiers, selectedDays]);
-  const opponents = useMemo(() => getAvailableOptions('opponent'), [data, selectedSeasons, selectedLeagues, selectedTiers, selectedDays]);
-  const tiers = useMemo(() => getAvailableOptions('tier'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedDays]);
-  const days = useMemo(() => getAvailableOptions('day'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers]);
-  const zones = useMemo(() => getAvailableOptions('zone'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
+  // --- Filtering & Logic ---
 
   const viewData = useMemo(() => {
     const filteredGames = data.filter(d => {
@@ -432,31 +343,50 @@ const App: React.FC = () => {
     return filteredGames.map(game => {
       let zoneSales = game.salesBreakdown;
 
+      // 1. FILTER: Ignore Ospiti
       if (ignoreOspiti) {
           zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
       }
 
+      // 2. FILTER: Zone Selection
       if (!selectedZones.includes('All')) {
           zoneSales = zoneSales.filter(s => selectedZones.includes(s.zone));
+      }
+
+      // 3. FILTER: Game Day Mode 
+      // Exclude: Season Tickets (Abb), Corporate (Corp), Protocol (Fixed)
+      // Include: Single (Tix), Mini Plans (MP), Youth (VB), Giveaways (Dynamic)
+      if (viewMode === 'gameday') {
+          zoneSales = zoneSales.filter(s => 
+              [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel)
+          );
       }
       
       const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
       const zoneAttendance = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
 
+      // --- Capacity Calculation ---
       let zoneCapacity = 0;
       const filteredZoneCapacities = { ...game.zoneCapacities };
       
-      if (ignoreOspiti) {
-          delete filteredZoneCapacities[TicketZone.OSPITI];
+      if (ignoreOspiti) delete filteredZoneCapacities[TicketZone.OSPITI];
+
+      // Step A: Apply Capacity Reductions (Game Day) to ALL zones first
+      // This ensures components like ArenaMap receiving the object get the full picture
+      if (viewMode === 'gameday') {
+          Object.keys(filteredZoneCapacities).forEach(z => {
+              const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
+              filteredZoneCapacities[z] = Math.max(0, filteredZoneCapacities[z] - fixedDeduction);
+          });
       }
 
-      if (game.zoneCapacities) {
-        Object.entries(filteredZoneCapacities).forEach(([z, cap]) => {
-             if (selectedZones.includes('All') || selectedZones.includes(z)) {
-                 zoneCapacity += (cap as number);
-             }
-        });
-      }
+      // Step B: Calculate Aggregate Capacity for the selected filters
+      Object.entries(filteredZoneCapacities).forEach(([z, cap]) => {
+           // Only count zone towards Total Capacity if it matches Zone filter
+           if (selectedZones.includes('All') || selectedZones.includes(z)) {
+               zoneCapacity += (cap as number);
+           }
+      });
 
       return {
         ...game,
@@ -467,7 +397,7 @@ const App: React.FC = () => {
         zoneCapacities: filteredZoneCapacities
       };
     });
-  }, [data, selectedSeasons, selectedLeagues, selectedZones, selectedOpponents, selectedTiers, selectedDays, ignoreOspiti]);
+  }, [data, selectedSeasons, selectedLeagues, selectedZones, selectedOpponents, selectedTiers, selectedDays, ignoreOspiti, viewMode]);
 
   const stats: DashboardStats = useMemo(() => {
     const totalRevenue = viewData.reduce((sum, game) => sum + game.totalRevenue, 0);
@@ -475,8 +405,11 @@ const App: React.FC = () => {
     const totalCapacity = viewData.reduce((sum, game) => sum + game.capacity, 0);
     const avgAttendance = viewData.length > 0 ? totalAttendance / viewData.length : 0;
     
+    // Count both types of giveaways based on view mode
     const totalGiveaways = viewData.reduce((sum, game) => {
-       const ga = game.salesBreakdown.filter(s => s.channel === SalesChannel.GIVEAWAY);
+       const ga = game.salesBreakdown.filter(s => 
+           s.channel === SalesChannel.GIVEAWAY || s.channel === SalesChannel.PROTOCOL
+       );
        return sum + ga.reduce((acc, curr) => acc + curr.quantity, 0);
     }, 0);
 
@@ -495,70 +428,64 @@ const App: React.FC = () => {
     return { totalRevenue, avgAttendance, topPerformingZone: topZone, occupancyRate, giveawayRate };
   }, [viewData]);
 
-  const aiContext = useMemo(() => {
-    const recentGames = viewData.slice(-5).map(g => ({
-      opponent: g.opponent,
-      date: g.date,
-      revenue: g.totalRevenue,
-      attendance: g.attendance,
-      yield: g.attendance > 0 ? (g.totalRevenue / g.attendance).toFixed(2) : 0
-    }));
+  // Rest of app logic (Filters, Options, etc) remains the same
+  const getAvailableOptions = (targetField: 'season' | 'league' | 'opponent' | 'tier' | 'day' | 'zone') => {
+      const filtered = data.filter(d => {
+        const matchSeason = targetField === 'season' || selectedSeasons.includes('All') || selectedSeasons.includes(d.season);
+        const matchLeague = targetField === 'league' || selectedLeagues.includes('All') || selectedLeagues.includes(d.league);
+        const matchOpponent = targetField === 'opponent' || selectedOpponents.includes('All') || selectedOpponents.includes(d.opponent);
+        const matchTier = targetField === 'tier' || selectedTiers.includes('All') || selectedTiers.includes(String(d.tier));
+        const matchDay = targetField === 'day' || selectedDays.includes('All') || selectedDays.includes(getDayName(d.date));
+        return matchSeason && matchLeague && matchOpponent && matchTier && matchDay;
+      });
 
-    return JSON.stringify({
-      context_filter: { 
-        seasons: selectedSeasons, 
-        leagues: selectedLeagues, 
-        zones: selectedZones, 
-        opponents: selectedOpponents,
-        tiers: selectedTiers,
-        days: selectedDays
-      },
-      games_in_view: viewData.length,
-      totals: stats,
-      recent_performance: recentGames,
-    });
-  }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, selectedOpponents, selectedTiers, selectedDays]);
+      const unique = new Set<string>();
+      filtered.forEach(d => {
+          if (targetField === 'season') unique.add(d.season);
+          if (targetField === 'league') unique.add(d.league);
+          if (targetField === 'opponent') unique.add(d.opponent);
+          if (targetField === 'tier') unique.add(String(d.tier));
+          if (targetField === 'day') unique.add(getDayName(d.date));
+          if (targetField === 'zone') d.salesBreakdown.forEach(s => unique.add(s.zone));
+      });
 
-  const getFilterSummary = () => {
-    let summary = [];
-    if (!selectedSeasons.includes('All')) summary.push(`${selectedSeasons.length} Seasons`);
-    else summary.push('All Seasons');
-
-    if (!selectedLeagues.includes('All')) summary.push(`${selectedLeagues.length} Leagues`);
-    
-    if (!selectedOpponents.includes('All')) {
-        if (selectedOpponents.length === 1) summary.push(selectedOpponents[0]);
-        else summary.push(`${selectedOpponents.length} Opponents`);
-    }
-
-    if (!selectedTiers.includes('All')) {
-        summary.push(`Tier ${selectedTiers.join(', ')}`);
-    }
-    
-    if (!selectedDays.includes('All')) {
-        summary.push(`${selectedDays.join(', ')}`);
-    }
-
-    if (!selectedZones.includes('All')) {
-       if (selectedZones.length === 1) summary.push(selectedZones[0]);
-       else summary.push(`${selectedZones.length} Zones`);
-    } else {
-       summary.push('Entire Arena');
-    }
-    
-    if (ignoreOspiti) summary.push('(No Guests)');
-
-    return summary.join(' • ');
+      const arr = Array.from(unique);
+      if (targetField === 'season') return arr.sort().reverse();
+      if (targetField === 'tier') return arr.sort((a,b) => Number(a)-Number(b));
+      if (targetField === 'day') {
+          const order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+          return arr.sort((a,b) => order.indexOf(a) - order.indexOf(b));
+      }
+      return arr.sort();
   };
-  
-  const hasActiveFilters = 
-    !selectedSeasons.includes('All') || 
-    !selectedLeagues.includes('All') || 
-    !selectedZones.includes('All') || 
-    !selectedOpponents.includes('All') || 
-    !selectedTiers.includes('All') || 
-    !selectedDays.includes('All');
 
+  const seasons = useMemo(() => getAvailableOptions('season'), [data, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
+  const leagues = useMemo(() => getAvailableOptions('league'), [data, selectedSeasons, selectedOpponents, selectedTiers, selectedDays]);
+  const opponents = useMemo(() => getAvailableOptions('opponent'), [data, selectedSeasons, selectedLeagues, selectedTiers, selectedDays]);
+  const tiers = useMemo(() => getAvailableOptions('tier'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedDays]);
+  const days = useMemo(() => getAvailableOptions('day'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers]);
+  const zones = useMemo(() => getAvailableOptions('zone'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
+
+  const aiContext = useMemo(() => {
+    return JSON.stringify({
+      context_filter: { seasons: selectedSeasons, leagues: selectedLeagues, zones: selectedZones },
+      view_mode: viewMode,
+      totals: stats,
+      games_in_view: viewData.length
+    });
+  }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, viewMode]);
+
+  const lastGame = useMemo(() => {
+    if (data.length === 0) return null;
+    const sorted = [...data].sort((a, b) => {
+         const [da, ma, ya] = a.date.split('/').map(Number);
+         const [db, mb, yb] = b.date.split('/').map(Number);
+         return new Date(yb, mb-1, db).getTime() - new Date(ya, ma-1, da).getTime();
+    });
+    return sorted[0];
+  }, [data]);
+
+  // Filter change handlers...
   const clearFilters = () => {
     setSelectedSeasons(['25-26']);
     setSelectedLeagues(['All']);
@@ -571,35 +498,13 @@ const App: React.FC = () => {
 
   const handleChartFilterChange = (type: 'opponent' | 'tier' | 'day', value: string) => {
     if (!value) return;
-    if (type === 'opponent') {
-       if (selectedOpponents.includes(value) && selectedOpponents.length === 1) {
-           setSelectedOpponents(['All']);
-       } else {
-           setSelectedOpponents([value]);
-       }
-    }
-    if (type === 'tier') {
-       if (selectedTiers.includes(value) && selectedTiers.length === 1) {
-           setSelectedTiers(['All']);
-       } else {
-           setSelectedTiers([value]);
-       }
-    }
-    if (type === 'day') {
-       if (selectedDays.includes(value) && selectedDays.length === 1) {
-           setSelectedDays(['All']);
-       } else {
-           setSelectedDays([value]);
-       }
-    }
+    if (type === 'opponent') setSelectedOpponents(selectedOpponents.includes(value) && selectedOpponents.length === 1 ? ['All'] : [value]);
+    if (type === 'tier') setSelectedTiers(selectedTiers.includes(value) && selectedTiers.length === 1 ? ['All'] : [value]);
+    if (type === 'day') setSelectedDays(selectedDays.includes(value) && selectedDays.length === 1 ? ['All'] : [value]);
   };
 
   const handleZoneClick = (zone: string) => {
-     if (selectedZones.includes(zone) && selectedZones.length === 1) {
-         setSelectedZones(['All']);
-     } else {
-         setSelectedZones([zone]);
-     }
+     setSelectedZones(selectedZones.includes(zone) && selectedZones.length === 1 ? ['All'] : [zone]);
   };
 
   const allSeasons = useMemo(() => Array.from(new Set(data.map(d => d.season))).sort().reverse(), [data]);
@@ -618,14 +523,11 @@ const App: React.FC = () => {
       {showRulesError && <RulesErrorModal onClose={() => { setShowRulesError(false); window.location.reload(); }} />}
       {showKpiModal && <TargetSettingsModal currentConfig={kpiConfig} onSave={setKpiConfig} onClose={() => setShowKpiModal(false)} />}
       
+      {/* Sidebar */}
       <aside className="bg-white border-r border-gray-200 w-full md:w-20 lg:w-64 flex-shrink-0 flex flex-col sticky top-0 md:h-screen z-20">
         <div className="p-6 flex items-center gap-3 border-b border-gray-100">
            <div className="w-12 h-12 flex-shrink-0">
-             <img 
-               src={PV_LOGO_URL}
-               alt="Pallacanestro Varese" 
-               className="w-full h-full object-contain"
-             />
+             <img src={PV_LOGO_URL} alt="Pallacanestro Varese" className="w-full h-full object-contain" />
            </div>
            <div className="hidden lg:block">
              <h1 className="font-bold text-gray-900">{APP_NAME}</h1>
@@ -634,41 +536,21 @@ const App: React.FC = () => {
         </div>
 
         <nav className="p-4 space-y-2 flex-1">
-          <button 
-            onClick={() => setActiveTab('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-              activeTab === 'dashboard' 
-                ? 'bg-red-50 text-red-700 font-medium shadow-sm' 
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
+          <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'dashboard' ? 'bg-red-50 text-red-700 font-medium shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}>
             <LayoutDashboard size={20} />
             <span className="hidden lg:inline">Dashboard</span>
           </button>
-          <button 
-            onClick={() => setActiveTab('comparison')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-              activeTab === 'comparison' 
-                ? 'bg-red-50 text-red-700 font-medium shadow-sm' 
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
+          <button onClick={() => setActiveTab('comparison')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'comparison' ? 'bg-red-50 text-red-700 font-medium shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}>
             <ArrowLeftRight size={20} />
             <span className="hidden lg:inline">Comparison</span>
           </button>
-          <button 
-            onClick={() => setActiveTab('chat')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
-              activeTab === 'chat' 
-                ? 'bg-red-50 text-red-700 font-medium shadow-sm' 
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
+          <button onClick={() => setActiveTab('chat')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'chat' ? 'bg-red-50 text-red-700 font-medium shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}>
             <MessageSquare size={20} />
             <span className="hidden lg:inline">AI Strategist</span>
           </button>
         </nav>
 
+        {/* Data Source Controls */}
         <div className="p-4 border-t border-gray-100 hidden lg:block">
            <div className="flex items-center gap-2 mb-4 text-xs font-semibold uppercase text-gray-400">
               {dataSource === 'cloud' && <Cloud size={14} className="text-blue-500" />}
@@ -676,71 +558,38 @@ const App: React.FC = () => {
               {dataSource === 'live' && <span className="w-2 h-2 rounded-full bg-green-500"></span>}
               <span>Source: {dataSource}</span>
            </div>
-
-           <input 
-             type="file" 
-             ref={fileInputRef} 
-             onChange={handleFileUpload} 
-             accept=".csv" 
-             className="hidden" 
-           />
-           
+           <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden" />
            {!isFirebaseConfigured ? (
-             <button 
-                onClick={() => setShowSetupModal(true)}
-                className="w-full mb-3 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-white bg-red-600 hover:bg-red-700 border border-transparent rounded-lg transition-colors shadow-sm animate-pulse"
-             >
-                <Database size={14} />
-                Connect Database
+             <button onClick={() => setShowSetupModal(true)} className="w-full mb-3 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-white bg-red-600 hover:bg-red-700 border border-transparent rounded-lg transition-colors shadow-sm animate-pulse">
+                <Database size={14} /> Connect Database
              </button>
            ) : (
              <div className="space-y-2 mb-4">
-                 {/* 1. SYNC BUTTON (Only if using local/live data) */}
                  {dataSource !== 'cloud' && (
-                     <button
-                        onClick={handleSyncToCloud}
-                        disabled={isSyncing}
-                        className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 border border-transparent rounded-lg transition-colors shadow-sm"
-                     >
-                        {isSyncing ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                        Sync Data to Cloud
+                     <button onClick={handleSyncToCloud} disabled={isSyncing} className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 border border-transparent rounded-lg transition-colors shadow-sm">
+                        {isSyncing ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Sync Data
                      </button>
                  )}
-
-                 {/* 2. UPLOAD BUTTON */}
-                 <button 
-                    onClick={triggerFileUpload}
-                    disabled={isUploading}
-                    className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
-                 >
-                    {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                    Upload CSV
+                 <button onClick={triggerFileUpload} disabled={isUploading} className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors">
+                    {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} Upload CSV
                  </button>
              </div>
            )}
            
-           {!isLoadingData && (
+           {!isLoadingData && lastGame && (
              <div className="bg-gray-100 rounded-xl p-4">
                 <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Data Version</p>
                 <div className="flex flex-col">
                     {dataSource === 'cloud' && lastUploadTime ? (
                         <>
-                            <span className="text-xs font-bold text-gray-800">
-                                {new Date(lastUploadTime).toLocaleDateString()}
-                            </span>
-                            <span className="text-[10px] text-gray-500">
-                                {new Date(lastUploadTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </span>
+                            <span className="text-xs font-bold text-gray-800">{new Date(lastUploadTime).toLocaleDateString()}</span>
+                            <span className="text-[10px] text-gray-500">{new Date(lastUploadTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                         </>
                     ) : (
-                        lastGame ? (
-                            <>
-                                <span className="text-xs font-bold text-gray-800 truncate">{lastGame.opponent}</span>
-                                <span className="text-[10px] text-gray-500">{lastGame.season} • {lastGame.date}</span>
-                            </>
-                        ) : (
-                             <span className="text-xs text-gray-500">No data loaded</span>
-                        )
+                        <>
+                            <span className="text-xs font-bold text-gray-800 truncate">{lastGame.opponent}</span>
+                            <span className="text-[10px] text-gray-500">{lastGame.season} • {lastGame.date}</span>
+                        </>
                     )}
                 </div>
              </div>
@@ -755,11 +604,40 @@ const App: React.FC = () => {
               {activeTab === 'dashboard' ? 'Season Overview' : (activeTab === 'comparison' ? 'Scenario Comparison' : 'Strategic Planning')}
             </h2>
           </div>
+          
+          {/* Global View Toggle (Total vs Game Day) */}
+          {activeTab === 'dashboard' && (
+            <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+                <button 
+                    onClick={() => setViewMode('total')}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                        viewMode === 'total' 
+                        ? 'bg-white text-gray-900 shadow-sm' 
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                >
+                    <Briefcase size={14} />
+                    Total View
+                </button>
+                <button 
+                    onClick={() => setViewMode('gameday')}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                        viewMode === 'gameday' 
+                        ? 'bg-white text-red-600 shadow-sm' 
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                >
+                    <Calendar size={14} />
+                    Game Day Only
+                </button>
+            </div>
+          )}
         </header>
 
         <div className="p-6 max-w-7xl mx-auto">
           {activeTab === 'dashboard' && (
             <>
+              {/* Filter Bar */}
               <div className="mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2 text-gray-500">
@@ -767,38 +645,19 @@ const App: React.FC = () => {
                       <span className="text-sm font-medium">Data Filters</span>
                   </div>
                   <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => setShowKpiModal(true)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
-                      >
-                        <Goal size={14} />
-                        Set KPIs
+                      <button onClick={() => setShowKpiModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors">
+                        <Goal size={14} /> Set KPIs
                       </button>
-
-                      <button 
-                        onClick={() => setIgnoreOspiti(!ignoreOspiti)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${
-                            ignoreOspiti 
-                            ? 'bg-red-50 text-red-700 border-red-200' 
-                            : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        <UserX size={14} />
-                        {ignoreOspiti ? 'Zona Ospiti Excluded' : 'Ignore Zona Ospiti'}
+                      <button onClick={() => setIgnoreOspiti(!ignoreOspiti)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${ignoreOspiti ? 'bg-red-50 text-red-700 border-red-200' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>
+                        <UserX size={14} /> {ignoreOspiti ? 'Zona Ospiti Excluded' : 'Ignore Zona Ospiti'}
                       </button>
-
-                      {(hasActiveFilters || ignoreOspiti) && (
-                          <button 
-                            onClick={clearFilters}
-                            className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-700 transition-colors ml-2"
-                          >
-                            <X size={14} />
-                            Clear All
+                      {(selectedSeasons.length > 1 || !selectedSeasons.includes('25-26') || !selectedLeagues.includes('All') || !selectedZones.includes('All') || !selectedOpponents.includes('All') || !selectedTiers.includes('All') || !selectedDays.includes('All') || ignoreOspiti) && (
+                          <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-700 transition-colors ml-2">
+                            <X size={14} /> Clear All
                           </button>
                       )}
                   </div>
                 </div>
-                
                 <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
                   <div><MultiSelect label="Season" options={seasons} selected={selectedSeasons} onChange={setSelectedSeasons} /></div>
                   <div><MultiSelect label="League" options={leagues} selected={selectedLeagues} onChange={setSelectedLeagues} /></div>
@@ -816,11 +675,23 @@ const App: React.FC = () => {
                 </div>
               ) : (
                 <div className="animate-fade-in space-y-6">
-                  <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-gray-900">{TEAM_NAME}</h1>
-                    <p className="text-gray-500 mt-1 font-medium">
-                      {getFilterSummary()}
-                    </p>
+                  <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-3xl font-bold text-gray-900">{TEAM_NAME}</h1>
+                            {viewMode === 'gameday' && (
+                                <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold uppercase rounded border border-red-200 tracking-wider">
+                                    Game Day View
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-gray-500 mt-1 font-medium">
+                        {viewMode === 'gameday' 
+                            ? 'Analyzing variable revenue (excluding Season Tickets/Corporate fixed inventory).'
+                            : 'Analyzing total revenue performance (Including Season Tickets & Corporate).'
+                        }
+                        </p>
+                    </div>
                   </div>
                   
                   <StatsCards 
@@ -829,6 +700,7 @@ const App: React.FC = () => {
                     fullDataset={data} 
                     filters={{ season: selectedSeasons, league: selectedLeagues, zone: selectedZones, opponent: selectedOpponents, tier: selectedTiers }} 
                     kpiConfig={kpiConfig}
+                    viewMode={viewMode}
                   />
 
                   <div className="mb-8">
@@ -886,11 +758,9 @@ const App: React.FC = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="relative bg-gradient-to-br from-red-600 to-red-800 rounded-xl p-6 text-white shadow-lg overflow-hidden group">
-                        {/* Avatar Positioning */}
                         <div className="absolute top-6 right-6 opacity-90 group-hover:scale-105 transition-transform duration-500">
                           <AIAvatar size="md" />
                         </div>
-                        
                         <div className="relative z-10 pr-20">
                             <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
                                Director's Note
@@ -908,15 +778,10 @@ const App: React.FC = () => {
                                 "No data matches your current filter selection."
                               )}
                             </p>
-                            <button 
-                              onClick={() => setActiveTab('chat')}
-                              className="bg-white text-red-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors shadow-sm"
-                            >
+                            <button onClick={() => setActiveTab('chat')} className="bg-white text-red-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors shadow-sm">
                               Consult AI Strategist
                             </button>
                         </div>
-                        
-                        {/* Decorative Background Mesh */}
                         <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
                     </div>
                   </div>
@@ -926,25 +791,14 @@ const App: React.FC = () => {
           )}
 
           {activeTab === 'comparison' && (
-            <ComparisonView 
-              fullData={data} 
-              options={{
-                seasons: allSeasons,
-                leagues: allLeagues,
-                opponents: allOpponents,
-                tiers: allTiers,
-                zones: allZones
-              }} 
-            />
+            <ComparisonView fullData={data} options={{ seasons: allSeasons, leagues: allLeagues, opponents: allOpponents, tiers: allTiers, zones: allZones }} />
           )}
 
           {activeTab === 'chat' && (
              <div className="h-full animate-fade-in max-w-4xl mx-auto">
                 <div className="mb-6 text-center">
                   <h2 className="text-2xl font-bold text-gray-900">Strategy Assistant</h2>
-                  <p className="text-gray-500">
-                    Analyze "What If" scenarios for the current selection
-                  </p>
+                  <p className="text-gray-500">Analyze "What If" scenarios for the current selection</p>
                 </div>
                 <ChatInterface contextData={aiContext} />
              </div>

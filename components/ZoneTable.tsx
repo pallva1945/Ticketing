@@ -28,6 +28,8 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
     const stats: Record<string, { revenue: number; sold: number; totalCapacity: number }> = {};
     
     data.forEach(game => {
+      // The game.zoneCapacities object here has already been modified by App.tsx
+      // to reflect the View Mode (Total vs Game Day), so we just sum it up.
       if (game.zoneCapacities) {
         Object.entries(game.zoneCapacities).forEach(([zoneName, cap]) => {
            if (!stats[zoneName]) {
@@ -100,7 +102,6 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
     return sortConfig.direction === 'asc' ? <ArrowUp size={12} className="ml-1 inline" /> : <ArrowDown size={12} className="ml-1 inline" />;
   };
 
-  // Removed whitespace-nowrap and reduced horizontal padding from px-6 to px-2/px-3
   const thClass = "px-2 py-3 cursor-pointer hover:bg-gray-100 transition-colors select-none text-xs font-bold text-gray-600 align-bottom";
 
   if (data.length === 0) return null;

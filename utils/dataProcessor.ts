@@ -286,9 +286,11 @@ export const processGameData = (csvContent: string): GameData[] => {
         }
       });
 
+      // Protocol (Fixed Giveaway)
       const protQty = parseInteger(getValue([`${prefix} Prot`]));
-      if (protQty > 0) salesBreakdown.push({ zone, channel: SalesChannel.GIVEAWAY, quantity: protQty, revenue: 0 });
+      if (protQty > 0) salesBreakdown.push({ zone, channel: SalesChannel.PROTOCOL, quantity: protQty, revenue: 0 });
       
+      // Free (Dynamic Giveaway)
       const freeQty = parseInteger(getValue([`${prefix} Free Num`]));
       if (freeQty > 0) salesBreakdown.push({ zone, channel: SalesChannel.GIVEAWAY, quantity: freeQty, revenue: 0 });
     });

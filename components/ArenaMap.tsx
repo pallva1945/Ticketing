@@ -85,6 +85,8 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
   const [hoveredZone, setHoveredZone] = useState<string | null>(null);
   const [metric, setMetric] = useState<MapMetric>('revenue');
 
+  const gameCount = data.length || 1;
+
   const getColor = (zone: string) => {
     if (selectedZone !== 'All' && selectedZone !== zone) return '#1e293b'; // Very dark/dimmed
 
@@ -341,8 +343,11 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
                   <span className="text-white">€{(stats[hoveredZone].revenue || 0).toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
-                  <span>Sold</span>
-                  <span className="text-white">{stats[hoveredZone].sold} <span className="text-slate-600">/ {stats[hoveredZone].capacity}</span></span>
+                  <span>Sold (Avg)</span>
+                  <span className="text-white">
+                    {Math.round(stats[hoveredZone].sold / gameCount)} 
+                    <span className="text-slate-600"> / {Math.round(stats[hoveredZone].capacity / gameCount)}</span>
+                  </span>
                 </div>
                 <div className="w-full bg-slate-800 h-1 mt-1 rounded-full overflow-hidden">
                    <div 

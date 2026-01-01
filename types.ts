@@ -19,7 +19,8 @@ export enum SalesChannel {
   TIX = 'Single Game (Tix)',
   VB = 'Varese Basketball (Youth)',
   CORP = 'Corporate',
-  GIVEAWAY = 'Giveaway/Protocol'
+  PROTOCOL = 'Protocol (Fixed)',
+  GIVEAWAY = 'Giveaway (Dynamic)'
 }
 
 export interface SalesDataPoint {
@@ -88,4 +89,5 @@ export interface StatsCardsProps {
     tier: string[];
   };
   kpiConfig: KPIConfig;
+  viewMode: 'total' | 'gameday';
 }

@@ -40,5 +40,22 @@ When analyzing, prioritize:
 Always answer with the tone of a senior sports executive. Be concise but insightful.
 `;
 
+// PRE-SOLD CAPACITY (Summer Sales: Abb + Corp + Protocol)
+// Used to calculate "Game Day Availability"
+// Galleria total 352 split estimated 37/63 based on capacity ratio
+export const FIXED_CAPACITY_25_26: Record<string, number> = {
+  [TicketZone.PAR_O]: 309,
+  [TicketZone.PAR_E]: 94,
+  [TicketZone.TRIB_G]: 1230,
+  [TicketZone.TRIB_S]: 261,
+  [TicketZone.GALL_G]: 130, // Estimated split of 352
+  [TicketZone.GALL_S]: 222, // Estimated split of 352
+  [TicketZone.CURVA]: 314,
+  [TicketZone.COURTSIDE]: 38,
+  [TicketZone.SKYBOX]: 60,
+  [TicketZone.OSPITI]: 0, // Usually 0 fixed
+  [TicketZone.PAR_EX]: 0 // Assuming included in Par O number or 0 for now
+};
+
 // Initial empty state, data is loaded from CSV in App.tsx
 export const MOCK_GAMES: GameData[] = [];

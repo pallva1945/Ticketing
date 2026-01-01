@@ -1,6 +1,8 @@
+
 import React, { useMemo } from 'react';
 import { DollarSign, Users, Briefcase, Ticket, TrendingUp, TrendingDown, Minus, Gift } from 'lucide-react';
 import { DashboardStats, GameData, SalesChannel, StatsCardsProps } from '../types';
+import { FIXED_CAPACITY_25_26 } from '../constants';
 
 // Helper to calculate raw KPIs for any set of games
 export const calculateKPIs = (games: GameData[]) => {
@@ -24,7 +26,7 @@ export const calculateKPIs = (games: GameData[]) => {
       if (s.channel === SalesChannel.CORP) {
         totalCorpRev += s.revenue;
       }
-      if (s.channel === SalesChannel.GIVEAWAY) {
+      if (s.channel === SalesChannel.GIVEAWAY || s.channel === SalesChannel.PROTOCOL) {
         totalGiveaways += s.quantity;
       }
     });
@@ -121,7 +123,7 @@ const MetricCard = ({
   );
 };
 
-export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset, filters, kpiConfig }) => {
+export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset, filters, kpiConfig, viewMode }) => {
   
   // 1. Calculate Current KPIs (based on the filtered `data` passed in)
   const currentKPIs = useMemo(() => calculateKPIs(data), [data]);
@@ -144,10 +146,9 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
            baselineSeasons.push(allSeasons[currentIndex + 1]);
        }
     } else {
-        // TODO: Implement multi-season avg if needed
         if (currentIndex !== -1 && currentIndex < allSeasons.length - 1) {
            baselineSeasons.push(allSeasons[currentIndex + 1]);
-       }
+        }
     }
 
     if (baselineSeasons.length === 0) return null;
@@ -160,17 +161,40 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
       (filters.tier.includes('All') || filters.tier.includes(String(d.tier)))
     );
 
-    // Apply Zone Transformation if needed to Baseline Data
-    if (!filters.zone.includes('All')) {
-      baselineGames = baselineGames.map(game => {
-        const zoneSales = game.salesBreakdown.filter(s => filters.zone.includes(s.zone));
+    // --- CRITICAL FIX: APPLY GAME DAY FILTERING TO BASELINE ---
+    // If the main view is in "Game Day Mode", we must transform the baseline data
+    // to also be "Game Day Mode" (exclude fixed seats/rev) so we compare apples to apples.
+    
+    baselineGames = baselineGames.map(game => {
+        let zoneSales = game.salesBreakdown;
+
+        // Apply Zone Filter first
+        if (!filters.zone.includes('All')) {
+            zoneSales = zoneSales.filter(s => filters.zone.includes(s.zone));
+        }
+
+        // Apply Game Day Logic if needed
+        if (viewMode === 'gameday') {
+            zoneSales = zoneSales.filter(s => 
+                [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel)
+            );
+        }
+
         const zoneRev = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
         const zoneAtt = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
         
         let partialCapacity = 0;
         if (game.zoneCapacities) {
-             filters.zone.forEach(z => {
-                 partialCapacity += (game.zoneCapacities[z] || 0);
+             Object.entries(game.zoneCapacities).forEach(([z, cap]) => {
+                 if (filters.zone.includes('All') || filters.zone.includes(z)) {
+                     let effectiveCap = cap as number;
+                     // Deduct fixed capacity if in Game Day Mode
+                     if (viewMode === 'gameday') {
+                         const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
+                         effectiveCap = Math.max(0, effectiveCap - fixedDeduction);
+                     }
+                     partialCapacity += effectiveCap;
+                 }
              });
         }
 
@@ -181,14 +205,12 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
           capacity: partialCapacity,
           salesBreakdown: zoneSales
         };
-      });
-    }
+    });
 
     const baselineKPIs = calculateKPIs(baselineGames);
     if (!baselineKPIs) return null;
 
     // Apply Growth Targets
-    // Target Rev = Baseline Rev * (1 + Growth%)
     const growthRev = 1 + (kpiConfig.revenueGrowth / 100);
     const growthAtt = 1 + (kpiConfig.attendanceGrowth / 100);
 
@@ -208,7 +230,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset
         giveawayRate: kpiConfig.giveawayTarget, // Fixed target
     };
 
-  }, [fullDataset, filters, kpiConfig]);
+  }, [fullDataset, filters, kpiConfig, viewMode]);
 
 
   if (!currentKPIs) return null;
