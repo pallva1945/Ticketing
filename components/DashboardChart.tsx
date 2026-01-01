@@ -1,33 +1,14 @@
 import React from 'react';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell, ComposedChart, ReferenceLine, LabelList
+  BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  LineChart, Line, ComposedChart, AreaChart, Area
 } from 'recharts';
-import { GameData, SalesChannel } from '../types';
+import { GameData } from '../types';
 
 interface DashboardChartProps {
   data: GameData[];
   onFilterChange: (type: 'opponent' | 'tier' | 'day', value: string) => void;
 }
-
-const COLORS = ['#DC2626', '#1F2937', '#4B5563', '#9CA3AF', '#F87171', '#EF4444'];
-
-// STYLISH PALETTE: Oldest (Slate 500) -> Mid (Slate 800) -> Current (PV Red) -> Future/Alt (Dark Red)
-const SEASON_COLORS = ['#64748B', '#1E293B', '#DC2626', '#991B1B']; 
-
-const CHANNEL_COLORS: Record<string, string> = {
-  [SalesChannel.ABB]: '#1F2937', // Dark Gray
-  [SalesChannel.TIX]: '#DC2626', // PV Red
-  [SalesChannel.CORP]: '#2563EB', // Blue
-  [SalesChannel.MP]: '#F59E0B', // Amber
-  [SalesChannel.VB]: '#10B981', // Green
-  [SalesChannel.GIVEAWAY]: '#E5E7EB', // Light Gray
-};
-
-const GIVEAWAY_COLORS = [
-  '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', 
-  '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#d946ef', '#f43f5e'
-];
 
 const TIER_COLORS: Record<string, string> = {
   '1': '#DC2626', // Tier 1: Red (High Value)
@@ -36,8 +17,6 @@ const TIER_COLORS: Record<string, string> = {
   '4': '#64748B', // Tier 4: Slate
   'Unknown': '#94A3B8'
 };
-
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // Helper for consistent currency formatting
 const formatCurrency = (value: number) => {
@@ -61,14 +40,13 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
   const uniqueOpponents = new Set(data.map(d => d.opponent));
   const isComparisonMode = uniqueOpponents.size < data.length * 0.5;
 
-  const trendData = data
-    .sort((a, b) => {
-        // Sort chronologically
+  const sortedData = [...data].sort((a, b) => {
         const dateA = a.date.split('/').reverse().join('');
         const dateB = b.date.split('/').reverse().join('');
         return dateA.localeCompare(dateB);
-    })
-    .map(game => ({
+  });
+
+  const trendData = sortedData.map(game => ({
         name: isComparisonMode 
             ? `${game.season}`
             : (uniqueOpponents.size <= 3 ? `${game.season} ${game.opponent}` : game.opponent.substring(0, 8)),
@@ -79,31 +57,10 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
         opponent: game.opponent,
         season: game.season,
         tier: game.tier,
-        // Ticket Type Breakdown for Stacked Bar
-        typeFull: game.ticketTypeBreakdown?.full || 0,
-        typeDiscount: game.ticketTypeBreakdown?.discount || 0,
-        typeGiveaway: game.ticketTypeBreakdown?.giveaway || 0
     }));
 
-  // 2. Channel Breakdown (Pie)
-  const channelStats: Record<string, number> = {};
-  data.forEach(game => {
-    game.salesBreakdown.forEach(s => {
-      // Exclude Giveaways from Revenue Pie
-      if (s.channel !== SalesChannel.GIVEAWAY) {
-        channelStats[s.channel] = (channelStats[s.channel] || 0) + s.revenue;
-      }
-    });
-  });
-
-  const pieData = Object.keys(channelStats).map(key => ({
-    name: key,
-    value: channelStats[key]
-  })).sort((a, b) => b.value - a.value);
-
-  // 3. Tier Analysis (Bar Chart)
+  // 2. Tier Analysis (Bar Chart)
   const tierStats: Record<string, { revenue: number; count: number }> = {};
-  
   data.forEach(game => {
     const tierKey = game.tier && game.tier > 0 ? game.tier.toString() : 'Unknown';
     if (!tierStats[tierKey]) tierStats[tierKey] = { revenue: 0, count: 0 };
@@ -125,9 +82,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
       return parseInt(a.tierKey) - parseInt(b.tierKey);
     });
 
-  const avgRevenueTotal = data.length > 0 ? data.reduce((acc, curr) => acc + curr.totalRevenue, 0) / data.length : 0;
-
-  // 4. Day of Week Analysis
+  // 3. Day of Week Analysis with Avg Tier
   const dayStats: Record<string, { revenue: number, count: number, tierSum: number }> = {};
   data.forEach(game => {
     const [day, month, year] = game.date.split('/');
@@ -144,58 +99,31 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
     name: day,
     avgRevenue: val.revenue / val.count,
     gameCount: val.count,
-    avgTier: val.count > 0 ? val.tierSum / val.count : 0 // Calculate Avg Tier
+    avgTier: val.count > 0 ? val.tierSum / val.count : 0
   })).sort((a, b) => b.avgRevenue - a.avgRevenue);
 
-  // 5. Monthly PnL Analysis (Multi-Season)
-  const seasonMonthOrder = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
-  const uniqueSeasons: string[] = Array.from(new Set<string>(data.map(d => d.season))).sort();
-  
-  const monthlyPnlData = seasonMonthOrder.map(mIndex => {
-      const monthName = MONTH_NAMES[mIndex - 1];
-      const row: any = { name: monthName, monthIndex: mIndex };
-      
-      uniqueSeasons.forEach((season: string) => {
-          // Sum PnL for this season and month
-          const seasonTotal = data
-              .filter(d => d.season === season)
-              .reduce((acc, game) => acc + (game.pnlBreakdown?.[mIndex] || 0), 0);
-          row[season] = seasonTotal;
-      });
-      return row;
+  // 4. Moving Average (Last 3 Games)
+  const movingAvgData = sortedData.map((game, index) => {
+      const windowStart = Math.max(0, index - 2);
+      const windowGames = sortedData.slice(windowStart, index + 1);
+      const sumRev = windowGames.reduce((acc, g) => acc + g.totalRevenue, 0);
+      const avgRev = sumRev / windowGames.length;
+
+      return {
+          name: game.opponent.substring(0, 10),
+          fullLabel: `${game.opponent} (${game.date})`,
+          actualRevenue: game.totalRevenue,
+          movingAvg: avgRev,
+          season: game.season
+      };
   });
-
-  // 6. Discount and Giveaway Details (Aggregated)
-  const aggDiscount: Record<string, number> = {};
-  const aggGiveaway: Record<string, number> = {};
-  
-  data.forEach(g => {
-       if (g.ticketTypeBreakdown && g.ticketTypeBreakdown.discountDetails) {
-           const details = g.ticketTypeBreakdown.discountDetails;
-           Object.keys(details).forEach((k) => {
-               aggDiscount[k] = (aggDiscount[k] || 0) + details[k];
-           });
-       }
-       if (g.ticketTypeBreakdown && g.ticketTypeBreakdown.giveawayDetails) {
-           const details = g.ticketTypeBreakdown.giveawayDetails;
-           Object.keys(details).forEach((k) => {
-               aggGiveaway[k] = (aggGiveaway[k] || 0) + details[k];
-           });
-       }
-  });
-
-  const discountDetailData = Object.entries(aggDiscount)
-     .map(([name, value]) => ({ name, value }))
-     .sort((a,b) => b.value - a.value);
-
-  const giveawayDetailData = Object.entries(aggGiveaway)
-     .map(([name, value]) => ({ name, value }))
-     .sort((a,b) => b.value - a.value);
 
   return (
     <div className="space-y-6">
+      {/* Top Row: Trend & Tier */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Revenue Trend - Takes up 2 columns */}
+        
+        {/* Main Revenue Trend */}
         <div className="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
              {uniqueOpponents.size === 1 
@@ -216,8 +144,6 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                 />
                 <YAxis yAxisId="left" tick={{fontSize: 11}} tickFormatter={formatAxisCurrency} />
                 <YAxis yAxisId="right" orientation="right" tick={{fontSize: 11}} domain={[0, 'auto']} />
-                
-                {/* Custom Tooltip for detailed Game info */}
                 <Tooltip 
                   cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '3 3' }}
                   content={({ active, payload }) => {
@@ -234,10 +160,6 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                                <span className="text-gray-500">Season:</span>
                                <span className="font-medium text-gray-900">{d.season}</span>
                              </div>
-                             <div className="flex justify-between items-center gap-4">
-                               <span className="text-gray-500">Tier:</span>
-                               <span className="font-medium text-gray-900">{d.tier || 'N/A'}</span>
-                             </div>
                              <div className="flex justify-between items-center gap-4 border-t border-gray-50 pt-1 mt-1">
                                <span className="text-gray-500">Revenue:</span>
                                <span className="font-bold text-red-600">{formatCurrency(d.revenue)}</span>
@@ -253,7 +175,6 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                     return null;
                   }}
                 />
-                
                 <Legend />
                 <Bar 
                   yAxisId="left" 
@@ -283,163 +204,85 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
           </div>
         </div>
 
-        {/* Channel Mix - Takes up 1 column */}
+        {/* Tier Analysis (Smaller) */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Revenue Mix</h3>
-          <div className="h-64 flex-1">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Value by Tier</h3>
+          <div className="h-72 flex-1">
             <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={CHANNEL_COLORS[entry.name] || COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{fontSize: '10px'}} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 text-center">
-             <p className="text-xs text-gray-400">Excludes Giveaways/Protocol</p>
-          </div>
-        </div>
-      </div>
-
-      {/* NEW: Detailed Breakdown Charts */}
-      { (discountDetailData.length > 0 || giveawayDetailData.length > 0) && (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-             <h3 className="text-lg font-semibold text-gray-800 mb-4">Discount Type Analysis</h3>
-             <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                   <BarChart data={discountDetailData} layout="vertical" margin={{ left: 20, right: 30 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                      <XAxis type="number" hide />
-                      <YAxis dataKey="name" type="category" width={80} tick={{fontSize: 11}} />
-                      {/* Using props.payload.name to explicitly show the category name */}
-                      <Tooltip formatter={(value: number, name: string, props: any) => [value, props.payload.name]} />
-                      <Bar dataKey="value" fill="#eab308" radius={[0, 4, 4, 0]} barSize={20}>
-                         <LabelList dataKey="value" position="right" fontSize={11} fill="#666" />
-                      </Bar>
-                   </BarChart>
-                </ResponsiveContainer>
-             </div>
-         </div>
-
-         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-             <h3 className="text-lg font-semibold text-gray-800 mb-4">Giveaway Breakdown</h3>
-             <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                   <PieChart>
-                      <Pie
-                        data={giveawayDetailData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={80}
-                        paddingAngle={2}
-                        dataKey="value"
-                        label={({name, value}) => `${value}`} 
-                      >
-                        {giveawayDetailData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={GIVEAWAY_COLORS[index % GIVEAWAY_COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value: number, name: string) => [value, name]} />
-                      <Legend layout="vertical" verticalAlign="middle" align="right" wrapperStyle={{fontSize: '10px'}} />
-                   </PieChart>
-                </ResponsiveContainer>
-             </div>
-         </div>
-      </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Opponent Tier Analysis (Bar Chart) */}
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-             <div>
-                <h3 className="text-lg font-semibold text-gray-800">Revenue by Opponent Tier</h3>
-                <p className="text-xs text-gray-400">Average Revenue per Tier</p>
-             </div>
-          </div>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
-                data={tierData} 
-                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              >
+              <BarChart data={tierData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tick={{fontSize: 12}} />
-                <YAxis 
-                   tickFormatter={formatAxisCurrency}
-                   tick={{fontSize: 11}}
-                />
+                <XAxis dataKey="name" tick={{fontSize: 11}} interval={0} />
+                <YAxis tickFormatter={formatAxisCurrency} tick={{fontSize: 11}} width={40} />
                 <Tooltip 
                   cursor={{fill: 'transparent'}}
                   content={({ active, payload }) => {
                     if (active && payload && payload.length) {
                       const d = payload[0].payload;
                       return (
-                        <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg text-xs z-50">
-                          <p className="font-bold text-sm mb-2 text-gray-900">{d.name}</p>
-                          <div className="space-y-1.5">
-                             <div className="flex justify-between items-center gap-6">
-                               <span className="text-gray-500">Avg Revenue:</span>
-                               <span className="font-bold text-gray-900">
-                                 {formatCurrency(d.avgRevenue || 0)}
-                               </span>
-                             </div>
-                             <div className="flex justify-between items-center gap-6">
-                               <span className="text-gray-500">Games Played:</span>
-                               <span className="font-mono text-gray-900 font-semibold">{d.gameCount}</span>
-                             </div>
-                             <div className="flex justify-between items-center gap-6 border-t border-gray-100 pt-1 mt-1">
-                               <span className="text-gray-500">Total Rev:</span>
-                               <span className="font-mono text-gray-600">
-                                 {formatAxisCurrency(d.totalRevenue || 0)}
-                               </span>
-                             </div>
-                          </div>
+                        <div className="bg-white p-2 border border-gray-200 shadow-lg rounded-lg text-xs z-50">
+                          <p className="font-bold text-gray-900 mb-1">{d.name}</p>
+                          <p className="text-red-600 font-bold">{formatCurrency(d.avgRevenue)} <span className="text-gray-400 font-normal">avg</span></p>
+                          <p className="text-gray-500">{d.gameCount} Games Played</p>
                         </div>
                       );
                     }
                     return null;
                   }}
                 />
-                <ReferenceLine y={avgRevenueTotal} stroke="#9CA3AF" strokeDasharray="3 3" label={{ value: 'Avg', position: 'right', fontSize: 10, fill: '#9CA3AF' }} />
                 <Bar 
                     dataKey="avgRevenue" 
                     radius={[4, 4, 0, 0]} 
-                    barSize={40} 
+                    barSize={30} 
                     cursor="pointer"
-                    onClick={(data) => {
-                        if (data && data.tierKey) {
-                            onFilterChange('tier', data.tierKey);
-                        }
-                    }}
+                    onClick={(data) => data.tierKey && onFilterChange('tier', data.tierKey)}
                 >
                   {tierData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={TIER_COLORS[entry.tierKey] || TIER_COLORS['Unknown']} />
+                    <Cell key={`cell-${index}`} fill={TIER_COLORS[entry.tierKey] || '#94A3B8'} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
+      </div>
 
-        {/* Day of Week Analysis */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Moving Average Chart (Replaces Monthly PnL) */}
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Avg Revenue by Day</h3>
-          <div className="h-72">
+          <div className="flex justify-between items-center mb-4">
+             <h3 className="text-lg font-semibold text-gray-800">Revenue Trend (Moving Avg)</h3>
+             <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">Last 3 Games Smoothing</span>
+          </div>
+          <div className="h-64">
+             <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={movingAvgData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <defs>
+                        <linearGradient id="colorMa" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#2563EB" stopOpacity={0.1}/>
+                        <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" tick={{fontSize: 10}} />
+                    <YAxis tickFormatter={formatAxisCurrency} tick={{fontSize: 11}} />
+                    <Tooltip 
+                        contentStyle={{fontSize: '12px'}}
+                        formatter={(val: number, name: string) => [formatCurrency(val), name === 'movingAvg' ? '3-Game Avg' : 'Actual Rev']}
+                        labelFormatter={(label) => `Opponent: ${label}`}
+                    />
+                    <Legend wrapperStyle={{fontSize: '11px'}} />
+                    <Area type="monotone" dataKey="movingAvg" stroke="#2563EB" fillOpacity={1} fill="url(#colorMa)" strokeWidth={2} name="3-Game Avg" />
+                    <Line type="monotone" dataKey="actualRevenue" stroke="#DC2626" strokeWidth={1} strokeDasharray="3 3" dot={{r:2}} name="Actual" />
+                </AreaChart>
+             </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Day of Week (Refined) */}
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Day Performance & Tier</h3>
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={dayData} 
@@ -447,11 +290,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                 margin={{top: 5, right: 30, left: 0, bottom: 5}}
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                <XAxis 
-                    type="number" 
-                    tickFormatter={formatAxisCurrency} 
-                    tick={{fontSize: 10}} 
-                />
+                <XAxis type="number" tickFormatter={formatAxisCurrency} tick={{fontSize: 10}} />
                 <YAxis dataKey="name" type="category" width={40} tick={{fontSize: 12}} />
                 <Tooltip 
                    cursor={{fill: 'transparent'}}
@@ -464,13 +303,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                            <div className="space-y-1.5">
                               <div className="flex justify-between items-center gap-6">
                                 <span className="text-gray-500">Avg Revenue:</span>
-                                <span className="font-bold text-gray-900">
-                                  {formatCurrency(d.avgRevenue || 0)}
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center gap-6">
-                                <span className="text-gray-500">Games Played:</span>
-                                <span className="font-mono text-gray-900 font-semibold">{d.gameCount}</span>
+                                <span className="font-bold text-gray-900">{formatCurrency(d.avgRevenue)}</span>
                               </div>
                               <div className="flex justify-between items-center gap-6 border-t border-gray-100 pt-1 mt-1">
                                 <span className="text-gray-500">Avg Opp Tier:</span>
@@ -489,57 +322,13 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, onFilterCh
                     radius={[0, 4, 4, 0]} 
                     barSize={24} 
                     cursor="pointer"
-                    onClick={(data) => {
-                        if (data && data.name) {
-                            onFilterChange('day', data.name);
-                        }
-                    }}
+                    onClick={(data) => data.name && onFilterChange('day', data.name)}
                 />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
 
-      {/* Monthly PnL Analysis */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Monthly Revenue PnL (Season Cycle)</h3>
-          <div className="h-64">
-             <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyPnlData} margin={{ top: 20, right: 30, left: 10, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="name" tick={{fontSize: 12}} />
-                    <YAxis 
-                        tickFormatter={(val) => val === 0 ? '0' : formatAxisCurrency(val)} 
-                        tick={{fontSize: 11}} 
-                    />
-                    <Tooltip 
-                       cursor={{fill: 'transparent'}}
-                       formatter={(value: number, name: string) => [formatCurrency(value), name]}
-                    />
-                    <Legend />
-                    {uniqueSeasons.map((season, index) => (
-                        <Bar 
-                            key={season} 
-                            dataKey={season} 
-                            fill={SEASON_COLORS[index % SEASON_COLORS.length]} 
-                            radius={[4, 4, 0, 0]} 
-                            barSize={uniqueSeasons.length > 1 ? 20 : 40}
-                        >
-                             <LabelList 
-                                dataKey={season} 
-                                position="top" 
-                                formatter={(val: number) => {
-                                    if (!val) return '';
-                                    return formatAxisCurrency(val);
-                                }}
-                                style={{ fontSize: '10px', fill: '#666' }}
-                            />
-                        </Bar>
-                    ))}
-                </BarChart>
-             </ResponsiveContainer>
-          </div>
       </div>
     </div>
   );

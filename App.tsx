@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Goal, Calendar, Briefcase } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Goal, Calendar, Briefcase, Calculator } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
 import { ArenaMap } from './components/ArenaMap'; 
 import { ChatInterface, AIAvatar } from './components/ChatInterface';
 import { ComparisonView } from './components/ComparisonView';
+import { Simulator } from './components/Simulator';
 import { MultiSelect } from './components/MultiSelect';
 import { TargetSettingsModal } from './components/TargetSettingsModal';
 import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26 } from './constants';
@@ -155,7 +156,7 @@ service cloud.firestore {
 );
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'chat'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'simulator' | 'chat'>('dashboard');
   const [data, setData] = useState<GameData[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [dataSource, setDataSource] = useState<'live' | 'cloud' | 'local'>('local');
@@ -374,7 +375,6 @@ const App: React.FC = () => {
       if (ignoreOspiti) delete filteredZoneCapacities[TicketZone.OSPITI];
 
       // Step A: Apply Capacity Reductions (Game Day) to ALL zones first
-      // This ensures components like ArenaMap receiving the object get the full picture
       if (viewMode === 'gameday') {
           Object.keys(filteredZoneCapacities).forEach(z => {
               const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
@@ -546,6 +546,10 @@ const App: React.FC = () => {
             <ArrowLeftRight size={20} />
             <span className="hidden lg:inline">Comparison</span>
           </button>
+          <button onClick={() => setActiveTab('simulator')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'simulator' ? 'bg-red-50 text-red-700 font-medium shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}>
+            <Calculator size={20} />
+            <span className="hidden lg:inline">Simulator</span>
+          </button>
           <button onClick={() => setActiveTab('chat')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'chat' ? 'bg-red-50 text-red-700 font-medium shadow-sm' : 'text-gray-600 hover:bg-gray-50'}`}>
             <MessageSquare size={20} />
             <span className="hidden lg:inline">AI Strategist</span>
@@ -603,7 +607,7 @@ const App: React.FC = () => {
         <header className="bg-white border-b border-gray-200 py-4 px-6 flex flex-col sm:flex-row items-center justify-between sticky top-0 z-10 gap-4">
           <div className="flex items-center gap-4 w-full sm:w-auto">
             <h2 className="text-xl font-bold text-gray-800">
-              {activeTab === 'dashboard' ? 'Season Overview' : (activeTab === 'comparison' ? 'Scenario Comparison' : 'Strategic Planning')}
+              {activeTab === 'dashboard' ? 'Season Overview' : (activeTab === 'comparison' ? 'Scenario Comparison' : (activeTab === 'simulator' ? 'Strategy Simulator' : 'Strategic Planning'))}
             </h2>
           </div>
           
@@ -794,6 +798,10 @@ const App: React.FC = () => {
 
           {activeTab === 'comparison' && (
             <ComparisonView fullData={data} options={{ seasons: allSeasons, leagues: allLeagues, opponents: allOpponents, tiers: allTiers, zones: allZones }} viewMode={viewMode} />
+          )}
+
+          {activeTab === 'simulator' && (
+             <Simulator data={viewData} />
           )}
 
           {activeTab === 'chat' && (

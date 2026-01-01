@@ -2,8 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { GameData, TicketZone, SalesChannel } from '../types';
 import { MultiSelect } from './MultiSelect';
 import { calculateKPIs } from './StatsCards';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
-import { ArrowLeftRight, TrendingUp, TrendingDown, Minus, Filter, AlertCircle, UserX } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ArrowLeftRight, TrendingUp, TrendingDown, Minus, AlertCircle, UserX } from 'lucide-react';
 import { FIXED_CAPACITY_25_26 } from '../constants';
 
 interface ComparisonViewProps {
@@ -14,8 +14,6 @@ interface ComparisonViewProps {
     opponents: string[];
     tiers: string[];
     zones: string[];
-    // We ignore the passed static options for cascading logic, 
-    // but keep the prop signature compatible with App.tsx
   };
   viewMode: 'total' | 'gameday';
 }
@@ -28,8 +26,6 @@ interface FilterState {
     zones: string[];
     times: string[];
     dates: string[];
-    pvRanks: string[];
-    oppRanks: string[];
     ignoreOspiti: boolean;
 }
 
@@ -41,14 +37,10 @@ const INITIAL_FILTERS: FilterState = {
     zones: ['All'],
     times: ['All'],
     dates: ['All'],
-    pvRanks: ['All'],
-    oppRanks: ['All'],
     ignoreOspiti: false,
 };
 
-// --- Helper: Filter Data based on State ---
 const getFilteredData = (allGames: GameData[], filters: FilterState, viewMode: 'total' | 'gameday') => {
-    // 1. Filter
     const filteredGames = allGames.filter(d => {
       const matchSeason = filters.seasons.includes('All') || filters.seasons.includes(d.season);
       const matchLeague = filters.leagues.includes('All') || filters.leagues.includes(d.league);
@@ -57,32 +49,24 @@ const getFilteredData = (allGames: GameData[], filters: FilterState, viewMode: '
       
       const matchDate = filters.dates.includes('All') || filters.dates.includes(d.date);
       
-      // For Time, let's extract from ID since it's reliable: YYYY-MM-DD-HHMM-Opp
       const timePart = d.id.split('-')[3]; 
       const formattedTime = timePart ? `${timePart.slice(0,2)}.${timePart.slice(2)}` : '00.00';
       const matchTimeDerived = filters.times.includes('All') || filters.times.includes(formattedTime);
 
-      const matchPvRank = filters.pvRanks.includes('All') || filters.pvRanks.includes(String(d.pvRank));
-      const matchOppRank = filters.oppRanks.includes('All') || filters.oppRanks.includes(String(d.oppRank));
-
-      return matchSeason && matchLeague && matchOpponent && matchTier && matchDate && matchTimeDerived && matchPvRank && matchOppRank;
+      return matchSeason && matchLeague && matchOpponent && matchTier && matchDate && matchTimeDerived;
     });
 
     return filteredGames.map(game => {
-      // Clone breakdown
       let zoneSales = game.salesBreakdown;
 
-      // Filter 1: Ignore Ospiti
       if (filters.ignoreOspiti) {
           zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
       }
 
-      // Filter 2: Zone Selection
       if (!filters.zones.includes('All')) {
           zoneSales = zoneSales.filter(s => filters.zones.includes(s.zone));
       }
 
-      // Filter 3: GameDay Mode (Exclude fixed channels)
       if (viewMode === 'gameday') {
           zoneSales = zoneSales.filter(s => 
               [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel)
@@ -99,7 +83,6 @@ const getFilteredData = (allGames: GameData[], filters: FilterState, viewMode: '
           delete filteredZoneCapacities[TicketZone.OSPITI];
       }
 
-      // Apply GameDay Capacity Reduction
       if (viewMode === 'gameday') {
           Object.keys(filteredZoneCapacities).forEach(z => {
               const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
@@ -126,12 +109,8 @@ const getFilteredData = (allGames: GameData[], filters: FilterState, viewMode: '
     });
 };
 
-// --- Helper: Cascading Options Logic ---
-// This calculates unique values for a specific dropdown (targetField)
-// based on the data filtered by *all other* currently active filters.
 const getAvailableOptions = (allGames: GameData[], currentFilters: FilterState, targetField: keyof FilterState): string[] => {
     
-    // Create a temporary filter state that ignores the target field
     const relevantData = allGames.filter(d => {
         const timePart = d.id.split('-')[3]; 
         const formattedTime = timePart ? `${timePart.slice(0,2)}.${timePart.slice(2)}` : '00.00';
@@ -143,8 +122,6 @@ const getAvailableOptions = (allGames: GameData[], currentFilters: FilterState, 
         
         if (targetField !== 'dates' && !currentFilters.dates.includes('All') && !currentFilters.dates.includes(d.date)) return false;
         if (targetField !== 'times' && !currentFilters.times.includes('All') && !currentFilters.times.includes(formattedTime)) return false;
-        if (targetField !== 'pvRanks' && !currentFilters.pvRanks.includes('All') && !currentFilters.pvRanks.includes(String(d.pvRank))) return false;
-        if (targetField !== 'oppRanks' && !currentFilters.oppRanks.includes('All') && !currentFilters.oppRanks.includes(String(d.oppRank))) return false;
 
         return true;
     });
@@ -156,8 +133,6 @@ const getAvailableOptions = (allGames: GameData[], currentFilters: FilterState, 
         if (targetField === 'opponents') uniqueValues.add(d.opponent);
         if (targetField === 'tiers') uniqueValues.add(String(d.tier));
         if (targetField === 'dates') uniqueValues.add(d.date);
-        if (targetField === 'pvRanks') uniqueValues.add(String(d.pvRank));
-        if (targetField === 'oppRanks') uniqueValues.add(String(d.oppRank));
         if (targetField === 'times') {
              const timePart = d.id.split('-')[3]; 
              const formattedTime = timePart ? `${timePart.slice(0,2)}.${timePart.slice(2)}` : '00.00';
@@ -168,11 +143,9 @@ const getAvailableOptions = (allGames: GameData[], currentFilters: FilterState, 
         }
     });
 
-    // Special sort for numeric strings
-    if (['tiers', 'pvRanks', 'oppRanks'].includes(targetField)) {
+    if (targetField === 'tiers') {
         return Array.from(uniqueValues).sort((a, b) => Number(a) - Number(b));
     }
-    // Sort Dates
     if (targetField === 'dates') {
          return Array.from(uniqueValues).sort((a, b) => {
              const [da, ma, ya] = a.split('/').map(Number);
@@ -189,8 +162,6 @@ const ComparisonMetric = ({ label, valA, valB, isCurrency = false, isPercent = f
     let diff = valA > 0 ? ((valB - valA) / valA) * 100 : 0;
     if (valA === 0 && valB > 0) diff = 100;
     
-    // Inverse: If True, a Lower B is Better (e.g. Rank 1 is better than Rank 10)
-    // Diff > 0 means B is Higher (Worse if inverse).
     let isPositive = diff > 0; 
     if (inverse) isPositive = diff < 0;
 
@@ -199,7 +170,7 @@ const ComparisonMetric = ({ label, valA, valB, isCurrency = false, isPercent = f
     const format = (v: number) => {
         if (isCurrency) return `€${v >= 1000 ? (v/1000).toFixed(1) + 'k' : v.toFixed(0)}`;
         if (isPercent) return `${v.toFixed(1)}%`;
-        if (inverse) return `#${v.toFixed(1)}`; // Rank formatting
+        if (inverse) return `#${v.toFixed(1)}`;
         return v.toLocaleString(undefined, { maximumFractionDigits: 1 });
     };
 
@@ -226,7 +197,6 @@ const ComparisonMetric = ({ label, valA, valB, isCurrency = false, isPercent = f
 };
 
 export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, options, viewMode }) => {
-  // Default Filters
   const [filtersA, setFiltersA] = useState<FilterState>({
      ...INITIAL_FILTERS,
      seasons: [options.seasons.length > 1 ? options.seasons[1] : options.seasons[0]], 
@@ -243,13 +213,6 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
   const statsA = calculateKPIs(dataA);
   const statsB = calculateKPIs(dataB);
   
-  // Calculate Rank Averages
-  const avgRankA = dataA.length > 0 ? dataA.reduce((sum, g) => sum + g.pvRank, 0) / dataA.length : 0;
-  const avgRankB = dataB.length > 0 ? dataB.reduce((sum, g) => sum + g.pvRank, 0) / dataB.length : 0;
-  const avgOppRankA = dataA.length > 0 ? dataA.reduce((sum, g) => sum + g.oppRank, 0) / dataA.length : 0;
-  const avgOppRankB = dataB.length > 0 ? dataB.reduce((sum, g) => sum + g.oppRank, 0) / dataB.length : 0;
-
-
   const chartData = [
       { name: 'Total Revenue', A: statsA?.totalRevenue || 0, B: statsB?.totalRevenue || 0 },
   ];
@@ -260,18 +223,13 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
   };
 
   const FilterColumn = ({ label, filters, setFilter }: { label: string, filters: FilterState, setFilter: (f: keyof FilterState, v: any) => void }) => {
-      // Dynamic Options Calculation
       const availSeasons = useMemo(() => getAvailableOptions(fullData, filters, 'seasons'), [filters]);
       const availLeagues = useMemo(() => getAvailableOptions(fullData, filters, 'leagues'), [filters]);
       const availOpponents = useMemo(() => getAvailableOptions(fullData, filters, 'opponents'), [filters]);
       const availTiers = useMemo(() => getAvailableOptions(fullData, filters, 'tiers'), [filters]);
       const availZones = useMemo(() => getAvailableOptions(fullData, filters, 'zones'), [filters]);
-      
-      // New Options
       const availDates = useMemo(() => getAvailableOptions(fullData, filters, 'dates'), [filters]);
       const availTimes = useMemo(() => getAvailableOptions(fullData, filters, 'times'), [filters]);
-      const availPvRanks = useMemo(() => getAvailableOptions(fullData, filters, 'pvRanks'), [filters]);
-      const availOppRanks = useMemo(() => getAvailableOptions(fullData, filters, 'oppRanks'), [filters]);
 
       return (
       <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col h-[calc(100vh-200px)] sticky top-6">
@@ -306,9 +264,6 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
             <MultiSelect label="Date" options={availDates} selected={filters.dates} onChange={(v) => setFilter('dates', v)} />
             <MultiSelect label="Time" options={availTimes} selected={filters.times} onChange={(v) => setFilter('times', v)} />
             
-            <MultiSelect label="PV Rank" options={availPvRanks} selected={filters.pvRanks} onChange={(v) => setFilter('pvRanks', v)} />
-            <MultiSelect label="Opp Rank" options={availOppRanks} selected={filters.oppRanks} onChange={(v) => setFilter('oppRanks', v)} />
-
             <div className="border-t border-gray-100 my-2"></div>
 
             <MultiSelect label="Zone" options={availZones} selected={filters.zones} onChange={(v) => setFilter('zones', v)} />
@@ -338,12 +293,10 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
        </div>
 
        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-           {/* Filters Left */}
            <div className="lg:col-span-1">
                <FilterColumn label="A" filters={filtersA} setFilter={(f: keyof FilterState, v: any) => updateFilter('A', f, v)} />
            </div>
 
-           {/* Results Middle */}
            <div className="lg:col-span-2 space-y-6">
                {(!statsA || !statsB) ? (
                    <div className="flex flex-col items-center justify-center h-full bg-white rounded-xl border border-gray-200 p-10 text-center">
@@ -359,13 +312,8 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
                          <ComparisonMetric label="Yield (ATP)" valA={statsA.yield_atp} valB={statsB.yield_atp} isCurrency />
                          <ComparisonMetric label="RevPAS" valA={statsA.revPas} valB={statsB.revPas} isCurrency />
                          <ComparisonMetric label="Load Factor" valA={statsA.occupancy} valB={statsB.occupancy} isPercent />
-                         
-                         {/* New Rank Metrics */}
-                         <ComparisonMetric label="Avg PV Rank" valA={avgRankA} valB={avgRankB} inverse={true} />
-                         <ComparisonMetric label="Avg Opp Rank" valA={avgOppRankA} valB={avgOppRankB} inverse={true} />
                      </div>
                      
-                     {/* Mini Charts */}
                      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                          <h4 className="font-bold text-gray-800 mb-4">Revenue Comparison (Total)</h4>
                          <div className="h-40">
@@ -386,7 +334,6 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
                )}
            </div>
 
-           {/* Filters Right */}
            <div className="lg:col-span-1">
                <FilterColumn label="B" filters={filtersB} setFilter={(f: keyof FilterState, v: any) => updateFilter('B', f, v)} />
            </div>
