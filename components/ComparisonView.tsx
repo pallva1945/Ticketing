@@ -31,7 +31,7 @@ interface FilterState {
 
 const INITIAL_FILTERS: FilterState = {
     seasons: ['All'],
-    leagues: ['All'],
+    leagues: ['LBA'],
     opponents: ['All'],
     tiers: ['All'],
     zones: ['All'],

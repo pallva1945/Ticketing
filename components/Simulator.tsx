@@ -166,6 +166,9 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
   
   const previewImpact = (previewNewPrice * previewFinalVol) - currentZoneBaseline.avgRev;
   const isCapped = previewCalculatedVol > previewAvailableCap;
+  
+  // Calculate percentage of bar to be "capped" (red)
+  const capOverflowWidth = isCapped ? Math.min(((previewCalculatedVol - previewAvailableCap) / previewAvailableCap) * 100, 100) : 0;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in pb-12">
@@ -260,22 +263,38 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                             />
                         </div>
 
-                        <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-                            <div className="flex justify-between items-center text-sm mb-1">
+                        <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300 relative overflow-hidden">
+                            <div className="flex justify-between items-center text-sm mb-1 relative z-10">
                                 <span className="text-gray-500">Current Yield:</span>
                                 <span className="font-mono text-gray-700">€{currentZoneBaseline.avgPrice.toFixed(1)}</span>
                             </div>
-                            <div className="flex justify-between items-center text-sm font-bold">
+                            <div className="flex justify-between items-center text-sm font-bold relative z-10">
                                 <span className="text-gray-800">Proj. Impact:</span>
                                 <span className={`${previewImpact >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                     {previewImpact > 0 ? '+' : ''}€{Math.round(previewImpact).toLocaleString()}
                                 </span>
                             </div>
+                            
                             {isCapped && (
-                                <div className="mt-2 text-[10px] text-orange-600 bg-orange-50 px-2 py-1 rounded font-medium text-center border border-orange-100">
-                                    ⚠️ Capacity Cap Hit ({Math.round(previewAvailableCap)} seats max)
+                                <div className="mt-2 text-[10px] text-white bg-red-500 px-2 py-1 rounded font-bold text-center border border-red-600 relative z-10 animate-pulse">
+                                    UNFULFILLED DEMAND: {Math.round(previewCalculatedVol - previewAvailableCap)} SEATS LOST
                                 </div>
                             )}
+
+                            {/* Visual Bar for Capacity */}
+                            <div className="mt-3 h-2 bg-gray-200 rounded-full overflow-hidden flex relative">
+                                <div className="h-full bg-indigo-500" style={{ width: `${Math.min((previewFinalVol / previewAvailableCap) * 100, 100)}%` }}></div>
+                                {isCapped && (
+                                    <div 
+                                      className="h-full bg-[repeating-linear-gradient(45deg,red,red_5px,white_5px,white_10px)] opacity-70"
+                                      style={{ width: '100%' }} // Fill remaining space implies overflow
+                                    ></div>
+                                )}
+                            </div>
+                            <div className="flex justify-between text-[9px] text-gray-400 mt-1">
+                                <span>0</span>
+                                <span>Cap: {Math.round(previewAvailableCap)}</span>
+                            </div>
                         </div>
 
                         <button 

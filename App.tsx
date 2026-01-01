@@ -9,7 +9,10 @@ import { ComparisonView } from './components/ComparisonView';
 import { Simulator } from './components/Simulator';
 import { MultiSelect } from './components/MultiSelect';
 import { TargetSettingsModal } from './components/TargetSettingsModal';
-import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26 } from './constants';
+import { PacingWidget } from './components/PacingWidget';
+import { DistressedZones } from './components/DistressedZones';
+import { CompKillerWidget } from './components/CompKillerWidget';
+import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY } from './constants';
 import { GameData, DashboardStats, SalesChannel, TicketZone, KPIConfig } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { processGameData } from './utils/dataProcessor';
@@ -185,7 +188,7 @@ const App: React.FC = () => {
   
   // Filters (Arrays for Multi-Select)
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>(['25-26']);
-  const [selectedLeagues, setSelectedLeagues] = useState<string[]>(['All']);
+  const [selectedLeagues, setSelectedLeagues] = useState<string[]>(['LBA']);
   const [selectedZones, setSelectedZones] = useState<string[]>(['All']);
   const [selectedOpponents, setSelectedOpponents] = useState<string[]>(['All']);
   const [selectedTiers, setSelectedTiers] = useState<string[]>(['All']);
@@ -333,8 +336,9 @@ const App: React.FC = () => {
 
   // --- Filtering & Logic ---
 
-  const viewData = useMemo(() => {
-    const filteredGames = data.filter(d => {
+  // Common filter logic
+  const getFilteredGames = () => {
+    return data.filter(d => {
       const matchSeason = selectedSeasons.includes('All') || selectedSeasons.includes(d.season);
       const matchLeague = selectedLeagues.includes('All') || selectedLeagues.includes(d.league);
       const matchOpponent = selectedOpponents.includes('All') || selectedOpponents.includes(d.opponent);
@@ -342,23 +346,17 @@ const App: React.FC = () => {
       const matchDay = selectedDays.includes('All') || selectedDays.includes(getDayName(d.date));
       return matchSeason && matchLeague && matchOpponent && matchTier && matchDay;
     });
+  };
 
+  const filteredGames = useMemo(() => getFilteredGames(), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
+
+  const viewData = useMemo(() => {
     return filteredGames.map(game => {
       let zoneSales = game.salesBreakdown;
 
-      // 1. FILTER: Ignore Ospiti
-      if (ignoreOspiti) {
-          zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
-      }
+      if (ignoreOspiti) zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
+      if (!selectedZones.includes('All')) zoneSales = zoneSales.filter(s => selectedZones.includes(s.zone));
 
-      // 2. FILTER: Zone Selection
-      if (!selectedZones.includes('All')) {
-          zoneSales = zoneSales.filter(s => selectedZones.includes(s.zone));
-      }
-
-      // 3. FILTER: Game Day Mode 
-      // Exclude: Season Tickets (Abb), Corporate (Corp), Protocol (Fixed)
-      // Include: Single (Tix), Mini Plans (MP), Youth (VB), Giveaways (Dynamic)
       if (viewMode === 'gameday') {
           zoneSales = zoneSales.filter(s => 
               [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel)
@@ -368,13 +366,18 @@ const App: React.FC = () => {
       const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
       const zoneAttendance = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
 
-      // --- Capacity Calculation ---
       let zoneCapacity = 0;
-      const filteredZoneCapacities = { ...game.zoneCapacities };
-      
+      let filteredZoneCapacities = { ...game.zoneCapacities };
       if (ignoreOspiti) delete filteredZoneCapacities[TicketZone.OSPITI];
+      
+      if (!selectedZones.includes('All')) {
+          const newCapMap: Record<string, number> = {};
+          Object.keys(filteredZoneCapacities).forEach(z => {
+              if (selectedZones.includes(z)) newCapMap[z] = filteredZoneCapacities[z];
+          });
+          filteredZoneCapacities = newCapMap;
+      }
 
-      // Step A: Apply Capacity Reductions (Game Day) to ALL zones first
       if (viewMode === 'gameday') {
           Object.keys(filteredZoneCapacities).forEach(z => {
               const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
@@ -382,13 +385,7 @@ const App: React.FC = () => {
           });
       }
 
-      // Step B: Calculate Aggregate Capacity for the selected filters
-      Object.entries(filteredZoneCapacities).forEach(([z, cap]) => {
-           // Only count zone towards Total Capacity if it matches Zone filter
-           if (selectedZones.includes('All') || selectedZones.includes(z)) {
-               zoneCapacity += (cap as number);
-           }
-      });
+      Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
 
       return {
         ...game,
@@ -399,7 +396,51 @@ const App: React.FC = () => {
         zoneCapacities: filteredZoneCapacities
       };
     });
-  }, [data, selectedSeasons, selectedLeagues, selectedZones, selectedOpponents, selectedTiers, selectedDays, ignoreOspiti, viewMode]);
+  }, [filteredGames, selectedZones, ignoreOspiti, viewMode]);
+
+  // Dedicated Data for Efficiency Matrix (Always LOCKED to GameDay view logic)
+  const efficiencyData = useMemo(() => {
+    return filteredGames.map(game => {
+      let zoneSales = game.salesBreakdown.filter(s => 
+          [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel)
+      );
+
+      if (ignoreOspiti) zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
+      if (!selectedZones.includes('All')) zoneSales = zoneSales.filter(s => selectedZones.includes(s.zone));
+
+      const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
+      const zoneAttendance = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
+
+      let zoneCapacity = 0;
+      let filteredZoneCapacities = { ...game.zoneCapacities };
+      if (ignoreOspiti) delete filteredZoneCapacities[TicketZone.OSPITI];
+      
+      if (!selectedZones.includes('All')) {
+          const newCapMap: Record<string, number> = {};
+          Object.keys(filteredZoneCapacities).forEach(z => {
+              if (selectedZones.includes(z)) newCapMap[z] = filteredZoneCapacities[z];
+          });
+          filteredZoneCapacities = newCapMap;
+      }
+
+      // Always deduct fixed capacity for this view
+      Object.keys(filteredZoneCapacities).forEach(z => {
+          const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
+          filteredZoneCapacities[z] = Math.max(0, filteredZoneCapacities[z] - fixedDeduction);
+      });
+
+      Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
+
+      return {
+        ...game,
+        attendance: zoneAttendance,
+        totalRevenue: zoneRevenue,
+        capacity: zoneCapacity,
+        salesBreakdown: zoneSales,
+        zoneCapacities: filteredZoneCapacities
+      };
+    });
+  }, [filteredGames, selectedZones, ignoreOspiti]);
 
   const stats: DashboardStats = useMemo(() => {
     const totalRevenue = viewData.reduce((sum, game) => sum + game.totalRevenue, 0);
@@ -490,7 +531,7 @@ const App: React.FC = () => {
   // Filter change handlers...
   const clearFilters = () => {
     setSelectedSeasons(['25-26']);
-    setSelectedLeagues(['All']);
+    setSelectedLeagues(['LBA']);
     setSelectedZones(['All']);
     setSelectedOpponents(['All']);
     setSelectedTiers(['All']);
@@ -643,6 +684,49 @@ const App: React.FC = () => {
         <div className="p-6 max-w-7xl mx-auto">
           {activeTab === 'dashboard' && (
             <>
+              {/* DIRECTOR'S NOTE - MOVED TO TOP */}
+              {!isLoadingData && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    <div className="lg:col-span-2 relative bg-gradient-to-br from-red-700 to-slate-900 rounded-xl p-6 text-white shadow-lg overflow-hidden group border border-red-900">
+                        <div className="absolute top-4 right-4 opacity-50 group-hover:opacity-100 transition-opacity duration-500">
+                          <AIAvatar size="sm" />
+                        </div>
+                        <div className="relative z-10 pr-20">
+                            <h3 className="font-bold text-lg mb-2 flex items-center gap-2 text-red-100 uppercase tracking-wide">
+                               AI Director's Briefing
+                            </h3>
+                            <p className="text-white/90 text-sm leading-relaxed mb-4">
+                              {viewData.length > 0 ? (
+                                <>
+                                  Analyzing <strong>{viewData.length} games</strong> matching criteria. 
+                                  {!selectedOpponents.includes('All') && selectedSeasons.length > 1 
+                                    ? ` You are reviewing a YoY comparison for ${selectedOpponents.length === 1 ? selectedOpponents[0] : 'selected opponents'}. Note the variance in Yield.` 
+                                    : ` Trend analysis indicates fluctuations in attendance efficiency. Review the Distressed Inventory report below.`
+                                  }
+                                </>
+                              ) : (
+                                "No data matches your current filter selection."
+                              )}
+                            </p>
+                            <button onClick={() => setActiveTab('chat')} className="bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-red-500 transition-colors shadow-lg border border-red-500">
+                              OPEN STRATEGY CHAT
+                            </button>
+                        </div>
+                        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-red-600/20 rounded-full blur-3xl"></div>
+                    </div>
+
+                    <div className="lg:col-span-1 h-full">
+                        {/* PACING WIDGET */}
+                        <PacingWidget 
+                            currentRevenue={stats.totalRevenue} 
+                            gamesPlayed={viewData.length} 
+                            seasonTarget={viewMode === 'gameday' ? SEASON_TARGET_GAMEDAY : SEASON_TARGET_TOTAL} 
+                            totalGamesInSeason={15} // Approx
+                        />
+                    </div>
+                </div>
+              )}
+
               {/* Filter Bar */}
               <div className="mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
                 <div className="flex items-center justify-between mb-3">
@@ -657,7 +741,7 @@ const App: React.FC = () => {
                       <button onClick={() => setIgnoreOspiti(!ignoreOspiti)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${ignoreOspiti ? 'bg-red-50 text-red-700 border-red-200' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>
                         <UserX size={14} /> {ignoreOspiti ? 'Zona Ospiti Excluded' : 'Ignore Zona Ospiti'}
                       </button>
-                      {(selectedSeasons.length > 1 || !selectedSeasons.includes('25-26') || !selectedLeagues.includes('All') || !selectedZones.includes('All') || !selectedOpponents.includes('All') || !selectedTiers.includes('All') || !selectedDays.includes('All') || ignoreOspiti) && (
+                      {(selectedSeasons.length > 1 || !selectedSeasons.includes('25-26') || !selectedLeagues.includes('LBA') || !selectedZones.includes('All') || !selectedOpponents.includes('All') || !selectedTiers.includes('All') || !selectedDays.includes('All') || ignoreOspiti) && (
                           <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-700 transition-colors ml-2">
                             <X size={14} /> Clear All
                           </button>
@@ -681,24 +765,6 @@ const App: React.FC = () => {
                 </div>
               ) : (
                 <div className="animate-fade-in space-y-6">
-                  <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-3xl font-bold text-gray-900">{TEAM_NAME}</h1>
-                            {viewMode === 'gameday' && (
-                                <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold uppercase rounded border border-red-200 tracking-wider">
-                                    GameDay View
-                                </span>
-                            )}
-                        </div>
-                        <p className="text-gray-500 mt-1 font-medium">
-                        {viewMode === 'gameday' 
-                            ? 'Analyzing variable revenue (excluding Season Tickets/Corporate fixed inventory).'
-                            : 'Analyzing total revenue performance (Including Season Tickets & Corporate).'
-                        }
-                        </p>
-                    </div>
-                  </div>
                   
                   <StatsCards 
                     stats={stats} 
@@ -710,8 +776,12 @@ const App: React.FC = () => {
                   />
 
                   <div className="mb-8">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">Venue Intelligence</h2>
+                    <div className="flex justify-between items-end mb-4">
+                        <h2 className="text-xl font-bold text-gray-800">Venue Intelligence</h2>
+                    </div>
+                    
                     <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                        {/* Map Area */}
                         <div className="xl:col-span-5 h-[500px]">
                             <ArenaMap 
                                 data={viewData} 
@@ -720,36 +790,45 @@ const App: React.FC = () => {
                             />
                         </div>
 
-                        <div className="xl:col-span-7 h-[500px] flex flex-col">
-                            {selectedZones.includes('All') ? (
-                              <ZoneTable data={viewData} onZoneClick={handleZoneClick} />
-                            ) : (
-                              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
-                                <div className="p-4 border-b border-gray-100 font-semibold text-gray-700 flex justify-between items-center bg-gray-50 flex-shrink-0">
-                                  <div className="flex items-center gap-2">
-                                    <span>Detailed Games Log ({selectedZones[0]})</span>
-                                    <button onClick={() => setSelectedZones(['All'])} className="text-xs text-red-600 hover:underline ml-2 bg-white px-2 py-1 rounded border border-red-200">Reset View</button>
-                                  </div>
-                                  <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-gray-500">{viewData.length} Matches</span>
-                                </div>
-                                <div className="divide-y divide-gray-50 overflow-y-auto flex-1 p-2">
-                                  {[...viewData].reverse().map((game) => (
-                                    <div key={game.id} className="p-3 flex items-center justify-between hover:bg-gray-50 transition-colors rounded-lg">
-                                      <div>
-                                        <p className="font-bold text-gray-900 text-sm">{game.opponent}</p>
-                                        <p className="text-xs text-gray-400">{game.date} • {game.season}</p>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="font-bold text-gray-900 text-sm">€{(game.totalRevenue/1000).toFixed(1)}k</p>
-                                        <p className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-1">
-                                          {game.attendance} Sold
-                                        </p>
-                                      </div>
+                        {/* Distressed Zones & Comp Killer & Table Area */}
+                        <div className="xl:col-span-7 h-[500px] flex flex-col gap-4">
+                            {/* Top Row: Distress & Comp Killer (Side by Side) */}
+                            <div className="flex-shrink-0 grid grid-cols-1 md:grid-cols-2 gap-4 h-40">
+                                <DistressedZones data={viewData} />
+                                <CompKillerWidget data={viewData} />
+                            </div>
+
+                            <div className="flex-1 overflow-hidden min-h-0">
+                                {selectedZones.includes('All') ? (
+                                <ZoneTable data={viewData} onZoneClick={handleZoneClick} />
+                                ) : (
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
+                                    <div className="p-4 border-b border-gray-100 font-semibold text-gray-700 flex justify-between items-center bg-gray-50 flex-shrink-0">
+                                    <div className="flex items-center gap-2">
+                                        <span>Detailed Games Log ({selectedZones[0]})</span>
+                                        <button onClick={() => setSelectedZones(['All'])} className="text-xs text-red-600 hover:underline ml-2 bg-white px-2 py-1 rounded border border-red-200">Reset View</button>
                                     </div>
-                                  ))}
+                                    <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-gray-500">{viewData.length} Matches</span>
+                                    </div>
+                                    <div className="divide-y divide-gray-50 overflow-y-auto flex-1 p-2">
+                                    {[...viewData].reverse().map((game) => (
+                                        <div key={game.id} className="p-3 flex items-center justify-between hover:bg-gray-50 transition-colors rounded-lg">
+                                        <div>
+                                            <p className="font-bold text-gray-900 text-sm">{game.opponent}</p>
+                                            <p className="text-xs text-gray-400">{game.date} • {game.season}</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="font-bold text-gray-900 text-sm">€{(game.totalRevenue/1000).toFixed(1)}k</p>
+                                            <p className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-1">
+                                            {game.attendance} Sold
+                                            </p>
+                                        </div>
+                                        </div>
+                                    ))}
+                                    </div>
                                 </div>
-                              </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
                   </div>
@@ -758,38 +837,11 @@ const App: React.FC = () => {
                     <h2 className="text-xl font-bold text-gray-800 mb-4">
                       Trend & Performance Analysis
                     </h2>
-                    <p className="text-xs text-gray-400 mb-4">Click on charts to filter data</p>
-                    <DashboardChart data={viewData} onFilterChange={handleChartFilterChange} />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="relative bg-gradient-to-br from-red-600 to-red-800 rounded-xl p-6 text-white shadow-lg overflow-hidden group">
-                        <div className="absolute top-6 right-6 opacity-90 group-hover:scale-105 transition-transform duration-500">
-                          <AIAvatar size="md" />
-                        </div>
-                        <div className="relative z-10 pr-20">
-                            <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-                               Director's Note
-                            </h3>
-                            <p className="text-red-100 text-sm leading-relaxed mb-4">
-                              {viewData.length > 0 ? (
-                                <>
-                                  Analyzing <strong>{viewData.length} games</strong> matching your criteria.
-                                  {!selectedOpponents.includes('All') && selectedSeasons.length > 1 
-                                    ? ` You are currently viewing a YoY comparison for ${selectedOpponents.length === 1 ? selectedOpponents[0] : 'selected opponents'}. Analyze the revenue variance across seasons.` 
-                                    : ` The general trend shows a variance in attendance. Monitor the Yield KPI across different zones.`
-                                  }
-                                </>
-                              ) : (
-                                "No data matches your current filter selection."
-                              )}
-                            </p>
-                            <button onClick={() => setActiveTab('chat')} className="bg-white text-red-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-100 transition-colors shadow-sm">
-                              Consult AI Strategist
-                            </button>
-                        </div>
-                        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/5 rounded-full blur-3xl"></div>
-                    </div>
+                    <DashboardChart 
+                        data={viewData} 
+                        efficiencyData={efficiencyData}
+                        onFilterChange={handleChartFilterChange} 
+                    />
                   </div>
                 </div>
               )}

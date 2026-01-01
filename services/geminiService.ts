@@ -52,16 +52,14 @@ export const sendMessageToGemini = async (
   contextData: string
 ): Promise<string> => {
   try {
-    // Access the API key dynamically to avoid top-level failures if missing
-    const apiKey = process.env.API_KEY;
-
-    if (!apiKey) {
+    // Access the API key dynamically
+    if (!process.env.API_KEY) {
       console.warn("API_KEY is missing in process.env. Using Offline Fallback.");
       return generateMockResponse(userMessage, contextData);
     }
 
-    // Initialize client for each request to ensure valid key usage and avoid stale instances
-    const ai = new GoogleGenAI({ apiKey });
+    // Initialize client for each request using process.env.API_KEY directly as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const model = 'gemini-3-flash-preview'; 
     
     // Combine system instruction with current data context

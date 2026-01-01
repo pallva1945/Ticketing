@@ -81,6 +81,13 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
 
   const gameCount = data.length || 1;
 
+  // Determine if a zone is "Critical" (Low Occupancy)
+  const isCritical = (zone: string) => {
+      const zoneData = stats[zone];
+      if (!zoneData || zoneData.capacity === 0) return false;
+      return (zoneData.sold / zoneData.capacity) < 0.50; // Under 50%
+  };
+
   const getColor = (zone: string) => {
     if (selectedZone !== 'All' && selectedZone !== zone) return '#1e293b'; 
 
@@ -101,10 +108,10 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
     } else {
         // Occupancy Scale
         const occupancy = zoneData.capacity > 0 ? zoneData.sold / zoneData.capacity : 0;
+        if (occupancy < 0.50) return '#dc2626'; // Red 600 (Critical)
         if (occupancy >= 0.90) return '#22c55e'; // Green
         if (occupancy >= 0.75) return '#84cc16'; // Lime
-        if (occupancy >= 0.50) return '#eab308'; // Yellow
-        return '#ef4444'; // Red
+        return '#eab308'; // Yellow
     }
   };
   
@@ -135,6 +142,16 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
   return (
     <div className="bg-[#0f172a] p-4 rounded-xl shadow-lg border border-gray-800 flex flex-col items-center h-full relative overflow-hidden group">
       <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-800/50 via-[#0f172a] to-[#0f172a]"></div>
+
+      <style>{`
+        @keyframes pulse-red {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.4; }
+        }
+        .critical-zone {
+          animation: pulse-red 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+      `}</style>
 
       <div className="w-full flex justify-between items-center mb-2 z-10 px-4 absolute top-4 left-0 right-0">
         <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2 drop-shadow-md">
@@ -179,25 +196,28 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
              <path d="M 80,-42 L 47,-42 A 50 50 0 0 0 47,42 L 80,42" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" />
           </g>
 
-          {stadiumZones.map((shape, idx) => (
-            <g key={idx}>
-              <path
-                d={shape.path}
-                fill={getColor(shape.id)}
-                stroke="#0f172a"
-                strokeWidth="1.5"
-                className="transition-all duration-200 cursor-pointer hover:opacity-100"
-                style={{
-                  filter: hoveredZone === shape.id ? 'url(#glow)' : 'none',
-                  opacity: selectedZone !== 'All' && selectedZone !== shape.id ? 0.2 : 1,
-                }}
-                onClick={() => shape.isZone && onZoneClick(shape.id === selectedZone ? 'All' : shape.id)}
-                onMouseEnter={() => setHoveredZone(shape.id)}
-                onMouseLeave={() => setHoveredZone(null)}
-              />
-              <path d={shape.path} fill="url(#grid)" className="pointer-events-none opacity-50" />
-            </g>
-          ))}
+          {stadiumZones.map((shape, idx) => {
+            const isPulse = metric === 'occupancy' && isCritical(shape.id);
+            return (
+                <g key={idx}>
+                <path
+                    d={shape.path}
+                    fill={getColor(shape.id)}
+                    stroke="#0f172a"
+                    strokeWidth="1.5"
+                    className={`transition-all duration-200 cursor-pointer hover:opacity-100 ${isPulse ? 'critical-zone' : ''}`}
+                    style={{
+                    filter: hoveredZone === shape.id ? 'url(#glow)' : 'none',
+                    opacity: selectedZone !== 'All' && selectedZone !== shape.id ? 0.2 : 1,
+                    }}
+                    onClick={() => shape.isZone && onZoneClick(shape.id === selectedZone ? 'All' : shape.id)}
+                    onMouseEnter={() => setHoveredZone(shape.id)}
+                    onMouseLeave={() => setHoveredZone(null)}
+                />
+                <path d={shape.path} fill="url(#grid)" className="pointer-events-none opacity-50" />
+                </g>
+            );
+          })}
         </svg>
 
         {hoveredZone && stats[hoveredZone] && (
@@ -251,7 +271,7 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
              </div>
          ) : (
              <div className="flex items-center gap-4 text-[9px] text-slate-400 font-bold uppercase">
-                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-red-500 shadow-sm"></div>&lt;50%</div>
+                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-red-600 animate-pulse"></div>Critical &lt;50%</div>
                 <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-yellow-500 shadow-sm"></div>50-75%</div>
                 <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-green-500 shadow-sm"></div>75-90%</div>
                 <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-green-500 shadow-sm"></div>&gt;90%</div>
