@@ -84,8 +84,6 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
   // 3. Ticket Type Breakdown (Stacked Bar)
   const ticketTypeData = sortedData.map(game => {
       const breakdown = game.ticketTypeBreakdown || { full: 0, discount: 0, giveaway: 0 };
-      // Fallback logic if breakdown is empty but we have salesBreakdown
-      // Note: processGameData calculates ticketTypeBreakdown, so it should be there.
       return {
           name: isComparisonMode ? `${game.season}` : game.opponent.substring(0, 8),
           fullLabel: game.opponent,
@@ -94,6 +92,50 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
           free: breakdown.giveaway
       };
   });
+
+  // 4. Tier Analysis Data
+  const tierStats: Record<string, { revenue: number, count: number, rankSum: number, attendSum: number }> = {};
+  data.forEach(g => {
+      const t = String(g.tier || 'Unknown');
+      if (!tierStats[t]) tierStats[t] = { revenue: 0, count: 0, rankSum: 0, attendSum: 0 };
+      tierStats[t].revenue += g.totalRevenue;
+      tierStats[t].rankSum += (g.pvRank || 0); // Sum ranks
+      tierStats[t].attendSum += g.attendance;
+      tierStats[t].count += 1;
+  });
+
+  const tierData = Object.entries(tierStats)
+      .filter(([t]) => t !== 'Unknown' && t !== '0')
+      .map(([tier, stats]) => ({
+          tier: `Tier ${tier}`,
+          avgRevenue: stats.revenue / stats.count,
+          avgRank: stats.rankSum / stats.count,
+          avgAttend: stats.attendSum / stats.count,
+          rawTier: tier
+      }))
+      .sort((a, b) => Number(a.rawTier) - Number(b.rawTier));
+
+  // 5. Day of Week Data
+  const dayStats: Record<string, { revenue: number, count: number, attendance: number }> = {};
+  data.forEach(g => {
+      const [day, month, year] = g.date.split('/');
+      const dateObj = new Date(Number(year), Number(month) - 1, Number(day));
+      const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+      
+      if (!dayStats[dayName]) dayStats[dayName] = { revenue: 0, count: 0, attendance: 0 };
+      dayStats[dayName].revenue += g.totalRevenue;
+      dayStats[dayName].attendance += g.attendance;
+      dayStats[dayName].count += 1;
+  });
+
+  const dayOrder = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const dayData = Object.entries(dayStats).map(([day, stats]) => ({
+      day,
+      avgRevenue: stats.revenue / stats.count,
+      avgAttend: stats.attendance / stats.count,
+      totalRevenue: stats.revenue
+  })).sort((a, b) => dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day));
+
 
   return (
     <div className="space-y-6">
@@ -207,7 +249,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
           </div>
       </div>
 
-      {/* Main Revenue Trend (Kept from before) */}
+      {/* ROW 2: Main Revenue Trend (Kept from before) */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
              {uniqueOpponents.size === 1 
@@ -285,6 +327,72 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                 />
               </ComposedChart>
             </ResponsiveContainer>
+          </div>
+      </div>
+
+      {/* ROW 3: Tier Analysis & Day of Week */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Tier Analysis with Rank Line */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Tier Performance Analysis</h3>
+              <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={tierData} margin={{ top: 20, right: 50, left: 0, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="tier" tick={{fontSize: 11}} />
+                          <YAxis yAxisId="left" tickFormatter={formatAxisCurrency} tick={{fontSize: 10}} label={{ value: 'Avg Revenue', angle: -90, position: 'insideLeft', style:{fontSize:10} }} />
+                          <YAxis yAxisId="right" orientation="right" reversed domain={[0, 17]} label={{ value: 'Avg PV Rank', angle: 90, position: 'right', offset: 10, style:{fontSize:10} }} />
+                          <Tooltip 
+                            formatter={(value: any, name: string) => {
+                                if (name.includes('Rank')) return value.toFixed(1);
+                                if (name.includes('Revenue')) return formatCurrency(value);
+                                return value;
+                            }}
+                          />
+                          <Legend wrapperStyle={{fontSize: '11px'}} />
+                          <Bar yAxisId="left" dataKey="avgRevenue" name="Avg Revenue" fill="#475569" barSize={30} radius={[4, 4, 0, 0]} 
+                               onClick={(d) => onFilterChange('tier', d.rawTier)} cursor="pointer"
+                          />
+                          <Line yAxisId="right" type="monotone" dataKey="avgRank" name="Avg PV Rank" stroke="#DC2626" strokeWidth={2} dot={{r: 4}} />
+                      </ComposedChart>
+                  </ResponsiveContainer>
+              </div>
+          </div>
+
+          {/* Day of Week Analysis */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">Day of Week Performance</h3>
+              <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={dayData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                          <XAxis dataKey="day" tick={{fontSize: 11}} />
+                          <YAxis yAxisId="left" tickFormatter={formatAxisCurrency} tick={{fontSize: 10}} />
+                          <YAxis yAxisId="right" orientation="right" tick={{fontSize: 10}} />
+                          <Tooltip 
+                             cursor={{fill: '#f3f4f6'}}
+                             content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                    const d = payload[0].payload;
+                                    return (
+                                        <div className="bg-white p-2 border border-gray-200 shadow-xl rounded text-xs z-50 relative" style={{zIndex: 100}}>
+                                            <p className="font-bold mb-1 text-gray-900">{d.day}</p>
+                                            <p className="text-gray-600">Avg Rev: <strong className="text-green-600">{formatCurrency(d.avgRevenue)}</strong></p>
+                                            <p className="text-gray-600">Avg Att: <strong className="text-blue-600">{Math.round(d.avgAttend)}</strong></p>
+                                        </div>
+                                    )
+                                }
+                                return null;
+                             }}
+                          />
+                          <Legend wrapperStyle={{fontSize: '11px'}} />
+                          <Bar yAxisId="left" dataKey="avgRevenue" name="Avg Revenue" fill="#16a34a" barSize={20} radius={[4, 4, 0, 0]} 
+                               onClick={(d) => onFilterChange('day', d.day)} cursor="pointer"
+                          />
+                          <Bar yAxisId="right" dataKey="avgAttend" name="Avg Attendance" fill="#93c5fd" barSize={20} radius={[4, 4, 0, 0]} cursor="pointer" />
+                      </BarChart>
+                  </ResponsiveContainer>
+              </div>
           </div>
       </div>
     </div>

@@ -58,7 +58,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
           if (g.zoneCapacities) {
               Object.entries(g.zoneCapacities).forEach(([z, cap]) => {
                   if (!stats[z]) stats[z] = { totalRev: 0, totalSold: 0, maxCapacity: 0 };
-                  if (cap > stats[z].maxCapacity) stats[z].maxCapacity = cap as number;
+                  if ((cap as number) > stats[z].maxCapacity) stats[z].maxCapacity = cap as number;
               });
           }
       });

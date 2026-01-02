@@ -68,7 +68,7 @@ export const CompKillerWidget: React.FC<CompKillerWidgetProps> = ({ data }) => {
         <div className="flex items-center justify-between z-10">
             <div className="flex items-center gap-2">
                 <AlertOctagon size={16} className="text-orange-600" />
-                <h3 className="text-xs font-bold text-orange-800 uppercase tracking-widest">Revenue Leakage (Comps)</h3>
+                <h3 className="text-xs font-bold text-orange-800 uppercase tracking-widest">Revenue Leakage (Giveaways)</h3>
             </div>
             <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded border border-orange-200">
                 {analysis.compRate.toFixed(1)}% of Vol
