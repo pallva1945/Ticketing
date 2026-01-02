@@ -1,5 +1,5 @@
 
-import { GameData, SalesDataPoint, TicketZone, SalesChannel, TicketTypeBreakdown } from '../types';
+import { GameData, SalesDataPoint, TicketZone, SalesChannel, TicketTypeBreakdown, GameDayData } from '../types';
 
 // Helper to clean currency string and parse to float
 // ADAPTED FOR ITALIAN FORMAT (Dot = Thousands, Comma = Decimals)
@@ -310,4 +310,61 @@ export const processGameData = (csvContent: string): GameData[] => {
   });
 
   return games;
+};
+
+export const processGameDayData = (csvContent: string): GameDayData[] => {
+  const rows = parseCSV(csvContent);
+  if (rows.length < 2) return [];
+
+  // Simple column index mapping (based on provided CSV structure)
+  // Date,Season,League,Game,Game ID,Tix %,Tix Avg,Tix $,Merch %,Merch Avg,Merch $,Hospitality %,Hospitality Avg,Hospitality $,Park %,Park Avg,Park $,F&B %,F&B Avg,F&B $,Sponsorship %,Sponsorship,TV %,TV,Exp %,Exp Avg,Exp $,Total #,Total
+  
+  // To make it robust, let's map headers to indices
+  const header = rows[0].map(h => h.trim().toLowerCase());
+  
+  const getIndex = (keys: string[]) => header.findIndex(h => keys.includes(h));
+  
+  const dateIdx = getIndex(['date', 'data']);
+  const seasonIdx = getIndex(['season']);
+  const leagueIdx = getIndex(['league', 'liga']);
+  const gameIdx = getIndex(['game', 'contro']);
+  
+  const tixRevIdx = getIndex(['tix $', 'tix revenue']);
+  const merchRevIdx = getIndex(['merch $', 'merchandising']);
+  const hospRevIdx = getIndex(['hospitality $', 'hospitality']);
+  const parkRevIdx = getIndex(['park $', 'parking']);
+  const fbRevIdx = getIndex(['f&b $', 'f&b']);
+  const sponsRevIdx = getIndex(['sponsorship', 'sponsorship %', 'sponsorship $']); // Careful, 'Sponsorship' might be the amount column if % is separate
+  // Actually, header is "Sponsorship %,Sponsorship". So we want "Sponsorship".
+  const sponsValIdx = header.indexOf('sponsorship'); // Strict match preferred if array logic fails
+  
+  const tvRevIdx = getIndex(['tv', 'tv $']);
+  const expRevIdx = getIndex(['exp $', 'experience']);
+  const totalNumIdx = getIndex(['total #', 'attendance']);
+  const totalRevIdx = getIndex(['total', 'total revenue']);
+
+  // Manual override for Sponsorship/TV if fuzzy match fails due to duplicate prefixes
+  // The provided CSV has "Sponsorship %" then "Sponsorship".
+  
+  return rows.slice(1).map(row => {
+      // Helper to get raw string
+      const getVal = (idx: number) => (idx >= 0 && row[idx]) ? row[idx] : '';
+      
+      return {
+          date: getVal(dateIdx),
+          season: getVal(seasonIdx),
+          league: getVal(leagueIdx),
+          opponent: getVal(gameIdx),
+          attendance: parseInteger(getVal(totalNumIdx)),
+          totalRevenue: parseCurrency(getVal(totalRevIdx)),
+          tixRevenue: parseCurrency(getVal(tixRevIdx)),
+          merchRevenue: parseCurrency(getVal(merchRevIdx)),
+          hospitalityRevenue: parseCurrency(getVal(hospRevIdx)),
+          parkingRevenue: parseCurrency(getVal(parkRevIdx)),
+          fbRevenue: parseCurrency(getVal(fbRevIdx)),
+          sponsorshipRevenue: parseCurrency(getVal(sponsValIdx)),
+          tvRevenue: parseCurrency(getVal(tvRevIdx)),
+          expRevenue: parseCurrency(getVal(expRevIdx)),
+      };
+  });
 };

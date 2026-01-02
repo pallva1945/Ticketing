@@ -23,6 +23,8 @@ export enum SalesChannel {
   GIVEAWAY = 'Giveaway (Dynamic)'
 }
 
+export type RevenueModule = 'home' | 'ticketing' | 'gameday' | 'sponsorship' | 'merchandising' | 'venue_ops' | 'bops' | 'sg';
+
 export interface SalesDataPoint {
   zone: TicketZone;
   channel: SalesChannel;
@@ -54,6 +56,25 @@ export interface GameData {
   tier: number;
   pnlBreakdown: Record<number, number>; // Monthly PnL columns 1-12
   ticketTypeBreakdown?: TicketTypeBreakdown; // Detailed breakdown of ticket types
+}
+
+export interface GameDayData {
+  date: string;
+  season: string;
+  league: string;
+  opponent: string;
+  attendance: number;
+  totalRevenue: number;
+  
+  // Revenue Streams
+  tixRevenue: number;
+  merchRevenue: number;
+  hospitalityRevenue: number;
+  parkingRevenue: number;
+  fbRevenue: number;
+  sponsorshipRevenue: number;
+  tvRevenue: number;
+  expRevenue: number;
 }
 
 export interface ChatMessage {
