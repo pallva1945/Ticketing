@@ -6,8 +6,9 @@ export const MAX_CAPACITY = 5113;
 export const PV_LOGO_URL = "https://i.imgur.com/r1fWDF1.png";
 
 // --- TARGET CONFIGURATION ---
-export const SEASON_TARGET_TOTAL = 1650000;   // €1.65M Total Budget
-export const SEASON_TARGET_GAMEDAY = 750000;  // €750k Variable Target (approx 45% of total)
+export const SEASON_TARGET_TOTAL = 1650000;   // €1.65M Total Budget (Ticketing Core)
+export const SEASON_TARGET_GAMEDAY = 1650000;  // €1.65M Variable Target (Ancillary)
+export const SEASON_TARGET_GAMEDAY_TOTAL = 3300000; // €3.3M Total GameDay (Tix + Variable)
 
 // --- GOOGLE SHEETS CONFIGURATION ---
 // 1. Open your Google Sheet.

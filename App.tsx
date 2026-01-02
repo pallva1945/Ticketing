@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, ChevronRight, PieChart, TrendingUp, DollarSign, ArrowRight, Menu, Clock } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, ChevronRight, PieChart, TrendingUp, DollarSign, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -12,7 +12,7 @@ import { PacingWidget } from './components/PacingWidget';
 import { DistressedZones } from './components/DistressedZones';
 import { CompKillerWidget } from './components/CompKillerWidget';
 import { GameDayDashboard } from './components/GameDayDashboard';
-import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY } from './constants';
+import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL } from './constants';
 import { GameData, GameDayData, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { GAMEDAY_CSV_CONTENT } from './data/gameDayData';
@@ -363,6 +363,7 @@ const App: React.FC = () => {
   
   // View Mode
   const [viewMode, setViewMode] = useState<'total' | 'gameday'>('total');
+  const [gameDayIncludeTicketing, setGameDayIncludeTicketing] = useState(false);
 
   // KPI Configuration (Hardcoded)
   const [kpiConfig] = useState<KPIConfig>({
@@ -714,15 +715,23 @@ const App: React.FC = () => {
     return { totalRevenue, avgAttendance, topPerformingZone: topZone, occupancyRate, giveawayRate };
   }, [viewData]);
 
-  // Aggregate Game Day Revenue (Net of Tix)
+  // Aggregate Game Day Revenue (Calculated based on toggle)
   const gameDayRevenueNet = useMemo(() => {
-      return gameDayData.reduce((acc, game) => acc + (game.totalRevenue - game.tixRevenue), 0);
-  }, [gameDayData]);
+      return filteredGameDayData.reduce((acc, game) => {
+          // Calculate variable parts
+          const variableSum = game.merchRevenue + game.fbRevenue + game.hospitalityRevenue + game.parkingRevenue + game.expRevenue;
+          const displaySum = gameDayIncludeTicketing ? (variableSum + game.tixRevenue) : variableSum;
+          return acc + displaySum;
+      }, 0);
+  }, [filteredGameDayData, gameDayIncludeTicketing]);
 
-  // Filtered Game Day Revenue for Dashboard Header
-  const filteredGameDayNetRev = useMemo(() => {
-      return filteredGameDayData.reduce((acc, game) => acc + (game.totalRevenue - game.tixRevenue), 0);
-  }, [filteredGameDayData]);
+  // Filtered Game Day Revenue for Dashboard Header - Used for Pacing
+  const filteredGameDayRevForPacing = useMemo(() => {
+      return filteredGameDayData.reduce((acc, game) => {
+          const variableSum = game.merchRevenue + game.fbRevenue + game.hospitalityRevenue + game.parkingRevenue + game.expRevenue;
+          return acc + variableSum + (gameDayIncludeTicketing ? game.tixRevenue : 0);
+      }, 0);
+  }, [filteredGameDayData, gameDayIncludeTicketing]);
 
   const getAvailableOptions = (targetField: 'season' | 'league' | 'opponent' | 'tier' | 'day' | 'zone') => {
       const filtered = data.filter(d => {
@@ -771,7 +780,7 @@ const App: React.FC = () => {
             sg: { target: 200000, current: 180000 },
         };
         const totalLiveTix = stats.totalRevenue; // Uses filtered data
-        const totalLiveGD = filteredGameDayNetRev; // Uses filtered data
+        const totalLiveGD = filteredGameDayRevForPacing; // Uses filtered data
         const totalMock = Object.values(verticalData).reduce((acc, v) => acc + v.current, 0);
         const totalRev = totalLiveTix + totalLiveGD + totalMock;
 
@@ -814,7 +823,7 @@ const App: React.FC = () => {
       totals: stats,
       games_in_view: viewData.length
     });
-  }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, viewMode, activeModule, filteredGameDayData, filteredGameDayNetRev]);
+  }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, viewMode, activeModule, filteredGameDayData, filteredGameDayRevForPacing]);
 
   const lastGame = useMemo(() => {
     if (data.length === 0) return null;
@@ -956,9 +965,20 @@ const App: React.FC = () => {
             {activeModule === 'gameday' && (
                 <div className="animate-in slide-in-from-left-2 duration-300 space-y-1">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">GameDay Tools</p>
-                    <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 text-indigo-700 font-bold border border-indigo-100">
+                    <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 text-indigo-700 font-bold border border-indigo-100 mb-4">
                         <LayoutDashboard size={18} /> <span className="hidden lg:inline text-sm">Dashboard</span>
                     </button>
+                    
+                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">View Configuration</p>
+                        <button 
+                            onClick={() => setGameDayIncludeTicketing(!gameDayIncludeTicketing)}
+                            className={`w-full flex items-center justify-between p-2 rounded-lg text-xs font-bold transition-all ${gameDayIncludeTicketing ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-500 border border-gray-200'}`}
+                        >
+                            <span>Include Ticketing</span>
+                            {gameDayIncludeTicketing ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -1093,7 +1113,7 @@ const App: React.FC = () => {
               <RevenueHome 
                 modules={MODULES} 
                 ticketingRevenue={stats.totalRevenue} 
-                gameDayRevenue={filteredGameDayNetRev} 
+                gameDayRevenue={filteredGameDayRevForPacing} 
                 onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
                 filterBar={<FilterBar />}
                 onAiClick={() => {
@@ -1118,7 +1138,11 @@ const App: React.FC = () => {
                                 {filteredGameDayData.length > 0 ? (
                                     <>
                                     Monitoring <strong>{filteredGameDayData.length} GameDay events</strong>. 
-                                    Ancillary spend per head (SPH) is tracking against the €{SEASON_TARGET_GAMEDAY/1000}k target.
+                                    {gameDayIncludeTicketing ? (
+                                        <>Total Revenue (Variable + Ticketing) is tracking against the <strong>€3.3M overall budget</strong>.</>
+                                    ) : (
+                                        <>Ancillary spend per head (SPH) is tracking against the <strong>€{(SEASON_TARGET_GAMEDAY/1000).toFixed(1)}k variable target</strong>.</>
+                                    )}
                                     Look for correlations between Merchandising spikes and specific opponents.
                                     </>
                                 ) : (
@@ -1134,9 +1158,9 @@ const App: React.FC = () => {
 
                         <div className="lg:col-span-1 h-full">
                             <PacingWidget 
-                                currentRevenue={filteredGameDayNetRev} 
+                                currentRevenue={filteredGameDayRevForPacing} 
                                 gamesPlayed={filteredGameDayData.length} 
-                                seasonTarget={SEASON_TARGET_GAMEDAY} 
+                                seasonTarget={gameDayIncludeTicketing ? SEASON_TARGET_GAMEDAY_TOTAL : SEASON_TARGET_GAMEDAY} 
                                 totalGamesInSeason={15} 
                             />
                         </div>
@@ -1145,7 +1169,7 @@ const App: React.FC = () => {
                 
                 <FilterBar />
                 
-                <GameDayDashboard data={filteredGameDayData} />
+                <GameDayDashboard data={filteredGameDayData} includeTicketing={gameDayIncludeTicketing} />
               </div>
           ) : activeModule === 'ticketing' ? (
             <>
