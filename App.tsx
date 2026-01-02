@@ -64,15 +64,19 @@ const RevenueHome = ({
     gamesPlayed: number
 }) => {
     // Mock Data for other verticals to show the dashboard concept
+    // STRICT ALIGNMENT: Total Targets must equal €7,000,000
+    // Tix (1.65) + GD Var (1.65) + Sponsorship (2.65) + Other (1.05) = 7.00
     const verticalData = {
-        sponsorship: { target: 2500000, current: 2100000 },
-        merchandising: { target: 400000, current: 310000 },
+        sponsorship: { target: 2650000, current: 2100000 },
+        merchandising: { target: 400000, current: 310000 }, // E-commerce / Non-Gameday
         venue_ops: { target: 150000, current: 85000 },
         bops: { target: 300000, current: 120000 },
         sg: { target: 200000, current: 180000 },
     };
 
     const totalRevenue = ticketingRevenue + gameDayRevenue + Object.values(verticalData).reduce((acc, v) => acc + v.current, 0);
+    // Note: ticketingRevenue target is SEASON_TARGET_TOTAL (1.65M)
+    // gameDayRevenue (Variable only for this specific aggregate view) target is SEASON_TARGET_GAMEDAY (1.65M Variable)
     const totalTarget = SEASON_TARGET_TOTAL + SEASON_TARGET_GAMEDAY + Object.values(verticalData).reduce((acc, v) => acc + v.target, 0);
     const totalProgress = (totalRevenue / totalTarget) * 100;
 
@@ -157,6 +161,7 @@ const RevenueHome = ({
                             metric = { current: ticketingRevenue, target: SEASON_TARGET_TOTAL };
                             isLive = true;
                         } else if (module.id === 'gameday') {
+                            // Use Variable Target only for this card summary to be consistent with 7M breakdown
                             metric = { current: gameDayRevenue, target: SEASON_TARGET_GAMEDAY };
                             isLive = true;
                         } else {
@@ -715,21 +720,28 @@ const App: React.FC = () => {
     return { totalRevenue, avgAttendance, topPerformingZone: topZone, occupancyRate, giveawayRate };
   }, [viewData]);
 
-  // Aggregate Game Day Revenue (Calculated based on toggle)
+  // Aggregate Game Day Revenue (For Home Screen Card - Pure Variable)
   const gameDayRevenueNet = useMemo(() => {
       return filteredGameDayData.reduce((acc, game) => {
-          // Calculate variable parts
+          // Calculate variable parts only
           const variableSum = game.merchRevenue + game.fbRevenue + game.hospitalityRevenue + game.parkingRevenue + game.expRevenue;
-          const displaySum = gameDayIncludeTicketing ? (variableSum + game.tixRevenue) : variableSum;
-          return acc + displaySum;
+          // Note: Ticketing is separate vertical in Home
+          return acc + variableSum;
       }, 0);
-  }, [filteredGameDayData, gameDayIncludeTicketing]);
+  }, [filteredGameDayData]);
 
-  // Filtered Game Day Revenue for Dashboard Header - Used for Pacing
+  // Filtered Game Day Revenue for PACING WIDGET in GameDay Module
+  // STRICTLY follows the "Budget is 3.3M (Full) or 1.65M (Net minus Tix)" rule.
   const filteredGameDayRevForPacing = useMemo(() => {
       return filteredGameDayData.reduce((acc, game) => {
-          const variableSum = game.merchRevenue + game.fbRevenue + game.hospitalityRevenue + game.parkingRevenue + game.expRevenue;
-          return acc + variableSum + (gameDayIncludeTicketing ? game.tixRevenue : 0);
+          // If Toggle ON: Everything (Total Revenue from CSV includes Tix+Spons+TV+Variable)
+          if (gameDayIncludeTicketing) {
+              return acc + game.totalRevenue; 
+          } 
+          // If Toggle OFF: Everything MINUS Ticketing
+          else {
+              return acc + (game.totalRevenue - game.tixRevenue);
+          }
       }, 0);
   }, [filteredGameDayData, gameDayIncludeTicketing]);
 
@@ -773,7 +785,7 @@ const App: React.FC = () => {
   const aiContext = useMemo(() => {
     if (activeModule === 'home') {
         const verticalData = {
-            sponsorship: { target: 2500000, current: 2100000 },
+            sponsorship: { target: 2650000, current: 2100000 },
             merchandising: { target: 400000, current: 310000 },
             venue_ops: { target: 150000, current: 85000 },
             bops: { target: 300000, current: 120000 },
@@ -1113,7 +1125,7 @@ const App: React.FC = () => {
               <RevenueHome 
                 modules={MODULES} 
                 ticketingRevenue={stats.totalRevenue} 
-                gameDayRevenue={filteredGameDayRevForPacing} 
+                gameDayRevenue={gameDayRevenueNet} 
                 onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
                 filterBar={<FilterBar />}
                 onAiClick={() => {
@@ -1139,9 +1151,9 @@ const App: React.FC = () => {
                                     <>
                                     Monitoring <strong>{filteredGameDayData.length} GameDay events</strong>. 
                                     {gameDayIncludeTicketing ? (
-                                        <>Total Revenue (Variable + Ticketing) is tracking against the <strong>€3.3M overall budget</strong>.</>
+                                        <>Tracking <strong>Total Net Revenue</strong> against the <strong>€3.3M Budget</strong> (Includes Tix + Spons + TV + Variable).</>
                                     ) : (
-                                        <>Ancillary spend per head (SPH) is tracking against the <strong>€{(SEASON_TARGET_GAMEDAY/1000).toFixed(1)}k variable target</strong>.</>
+                                        <>Tracking <strong>Net Revenue (Excl. Tix)</strong> against the <strong>€1.65M Budget</strong> (Includes Spons + TV + Variable).</>
                                     )}
                                     Look for correlations between Merchandising spikes and specific opponents.
                                     </>

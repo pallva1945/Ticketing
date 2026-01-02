@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { GameDayData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { ShoppingBag, Coffee, Car, Crown, DollarSign, Users, Ticket, Tv, Flag, Sparkles, AlertCircle } from 'lucide-react';
+import { ShoppingBag, Coffee, Car, Crown, DollarSign, Users, Ticket, Tv, Flag, Sparkles, AlertCircle, Coins } from 'lucide-react';
 
 interface GameDayDashboardProps {
   data: GameDayData[];
@@ -34,13 +34,19 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
           attendance: 0, tix: 0, merch: 0, fb: 0, hospitality: 0, parking: 0, exp: 0, sponsorship: 0, tv: 0
       });
 
-      // Net GameDay (Variable Only: Excludes Ticketing, Sponsorship, TV)
-      const totalNetGameDay = totals.merch + totals.fb + totals.hospitality + totals.parking + totals.exp;
+      // Net GameDay Variable (Merch + F&B + Hosp + Park + Exp)
+      const totalVariable = totals.merch + totals.fb + totals.hospitality + totals.parking + totals.exp;
       
       const gameCount = sortedData.length || 1;
 
-      // Determine Displayed Total based on Toggle
-      const displayedTotal = includeTicketing ? (totalNetGameDay + totals.tix) : totalNetGameDay;
+      // "Budget Revenue" / "GameDay Net Revenue" logic
+      // According to requirement:
+      // If Toggle ON: 3.3M Target -> Measures Everything (Total Revenue including Tix)
+      // If Toggle OFF: 1.65M Target -> Measures Everything minus Tix (Variable + Spons + TV)
+      
+      const revenueForBudget = includeTicketing 
+          ? (totalVariable + totals.tix + totals.sponsorship + totals.tv)
+          : (totalVariable + totals.sponsorship + totals.tv);
 
       return {
           gameCount,
@@ -53,11 +59,13 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
           exp: totals.exp / gameCount,
           sponsorship: totals.sponsorship / gameCount,
           tv: totals.tv / gameCount,
-          netGameDay: totalNetGameDay / gameCount,
           
-          // Displayed KPIs (Total or Variable based on toggle)
-          avgDisplayedTotal: displayedTotal / gameCount,
-          netSph: totals.attendance > 0 ? displayedTotal / totals.attendance : 0,
+          // Calculated Averages for Cards
+          avgBudgetRev: revenueForBudget / gameCount,
+          avgVariableOps: totalVariable / gameCount, // Pure operational variable (Merch/F&B)
+          
+          // SPH Calculation (Based on the revenue being tracked)
+          commercialSph: totals.attendance > 0 ? revenueForBudget / totals.attendance : 0,
       };
   }, [sortedData, includeTicketing]);
 
@@ -92,8 +100,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
 
   // Bottom Row Breakdown Component
   const BreakdownCard = ({ label, value, colorClass, icon: Icon, totalForMix, attendance }: any) => {
-      // Calculate share relative to the DISPLAYED Total (Card 1)
-      // If Tix included, percentages of Merch etc will drop.
+      // Calculate share relative to the Tracked Total
       const share = totalForMix > 0 ? (value / totalForMix) * 100 : 0;
       const sph = attendance > 0 ? value / attendance : 0;
       const colorBase = colorClass.split('-')[1]; // extract 'orange', 'purple' etc
@@ -148,54 +155,73 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                 <DollarSign size={16} /> Financial Overview (Per Game Avg)
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                
+                {/* 1. Primary Tracking Metric */}
                 <KPICard 
-                    label={includeTicketing ? "Total GameDay Rev" : "Net GameDay Rev"}
-                    value={stats.avgDisplayedTotal}
-                    subLabel={includeTicketing ? "Variable + Ticketing" : "Variable Rev / Game"}
-                    icon={DollarSign}
+                    label="Total GameDay Rev"
+                    value={stats.avgBudgetRev}
+                    subLabel={includeTicketing ? "Total Net (Target 3.3M)" : "Net excl. Tix (Target 1.65M)"}
+                    icon={Coins}
+                    color="text-emerald-600 border-emerald-100"
+                    borderTop
+                />
+
+                {/* 2. Operational/Variable Component */}
+                <KPICard 
+                    label="Variable Ops (Merch/F&B)"
+                    value={stats.avgVariableOps}
+                    subLabel="Pure Commercial Ops"
+                    icon={Sparkles}
                     color="text-indigo-600 border-indigo-100"
                     borderTop
                 />
+
+                {/* 3. SPH */}
                 <KPICard 
-                    label={includeTicketing ? "Total Spend Per Head" : "Net Spend Per Head"}
-                    value={`€${stats.netSph.toFixed(2)}`}
-                    subLabel={`Avg SPH (${includeTicketing ? 'Total' : 'Variable'})`}
+                    label="Rev Per Head"
+                    value={`€${stats.commercialSph.toFixed(2)}`}
+                    subLabel={`Based on Total Tracked`}
                     icon={Users}
                     color="text-teal-600 border-teal-100"
                     borderTop
                 />
-                {/* Fixed Cards */}
-                <KPICard 
-                    label="Avg Ticketing"
-                    value={stats.tix}
-                    subLabel="Gate Receipts / Game"
-                    icon={Ticket}
-                    color="text-red-600 border-red-100"
-                    borderTop
-                />
+
+                {/* 4. Sponsorship Allocation */}
                 <KPICard 
                     label="Avg Sponsorship"
                     value={stats.sponsorship}
-                    subLabel="Allocation / Game"
+                    subLabel="Allocated / Game"
                     icon={Flag}
                     color="text-blue-600 border-blue-100"
                     borderTop
                 />
-                <KPICard 
-                    label="Avg TV Rights"
-                    value={stats.tv}
-                    subLabel="Allocation / Game"
-                    icon={Tv}
-                    color="text-purple-600 border-purple-100"
-                    borderTop
-                />
+
+                {/* 5. Fixed Context (Ticketing or TV based on toggle) */}
+                {includeTicketing ? (
+                    <KPICard 
+                        label="Avg TV Rights"
+                        value={stats.tv}
+                        subLabel="Allocated / Game"
+                        icon={Tv}
+                        color="text-purple-600 border-purple-100"
+                        borderTop
+                    />
+                ) : (
+                    <KPICard 
+                        label="Avg Ticketing"
+                        value={stats.tix}
+                        subLabel="Excluded from this View"
+                        icon={Ticket}
+                        color="text-gray-400 border-gray-200"
+                    />
+                )}
             </div>
         </div>
 
         {/* MIDDLE: Breakdown Chart */}
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-[400px] flex flex-col">
             <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4">
-                {includeTicketing ? 'Total Revenue Mix by Match (Incl. Tix)' : 'Variable Revenue Mix by Match'}
+                {includeTicketing ? 'Total Revenue Mix by Match (Incl. Tix)' : 'Revenue Mix by Match (Excl. Tix)'}
             </h3>
             <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
@@ -230,13 +256,13 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
         {/* BOTTOM ROW: Variable Stream Breakdown */}
         <div>
             <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Sparkles size={16} /> Variable Revenue Mix (Avg Per Game)
+                <Sparkles size={16} /> Operational Variable Mix (Avg Per Game)
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <BreakdownCard 
                     label="Hospitality"
                     value={stats.hospitality}
-                    totalForMix={stats.avgDisplayedTotal}
+                    totalForMix={stats.avgBudgetRev}
                     attendance={stats.attendance}
                     icon={Crown}
                     colorClass="text-emerald-600"
@@ -244,7 +270,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                 <BreakdownCard 
                     label="Parking"
                     value={stats.parking}
-                    totalForMix={stats.avgDisplayedTotal}
+                    totalForMix={stats.avgBudgetRev}
                     attendance={stats.attendance}
                     icon={Car}
                     colorClass="text-slate-600"
@@ -252,7 +278,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                 <BreakdownCard 
                     label="Experiences"
                     value={stats.exp}
-                    totalForMix={stats.avgDisplayedTotal}
+                    totalForMix={stats.avgBudgetRev}
                     attendance={stats.attendance}
                     icon={Sparkles}
                     colorClass="text-pink-600"
@@ -260,7 +286,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                 <BreakdownCard 
                     label="Merchandising"
                     value={stats.merch}
-                    totalForMix={stats.avgDisplayedTotal}
+                    totalForMix={stats.avgBudgetRev}
                     attendance={stats.attendance}
                     icon={ShoppingBag}
                     colorClass="text-orange-600"
@@ -268,7 +294,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                 <BreakdownCard 
                     label="Food & Beverage"
                     value={stats.fb}
-                    totalForMix={stats.avgDisplayedTotal}
+                    totalForMix={stats.avgBudgetRev}
                     attendance={stats.attendance}
                     icon={Coffee}
                     colorClass="text-purple-600"
