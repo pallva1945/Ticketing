@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Goal, Calendar, Briefcase, Calculator } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Calendar, Briefcase, Calculator } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -8,7 +8,6 @@ import { ChatInterface, AIAvatar } from './components/ChatInterface';
 import { ComparisonView } from './components/ComparisonView';
 import { Simulator } from './components/Simulator';
 import { MultiSelect } from './components/MultiSelect';
-import { TargetSettingsModal } from './components/TargetSettingsModal';
 import { PacingWidget } from './components/PacingWidget';
 import { DistressedZones } from './components/DistressedZones';
 import { CompKillerWidget } from './components/CompKillerWidget';
@@ -173,14 +172,13 @@ const App: React.FC = () => {
   // New State: View Mode (Total vs Game Day)
   const [viewMode, setViewMode] = useState<'total' | 'gameday'>('total');
 
-  // KPI Configuration
-  const [showKpiModal, setShowKpiModal] = useState(false);
-  const [kpiConfig, setKpiConfig] = useState<KPIConfig>({
+  // KPI Configuration (Hardcoded)
+  const [kpiConfig] = useState<KPIConfig>({
     arpgGrowth: 10,
     yieldGrowth: 10,
     revPasGrowth: 10,
     occupancyGrowth: 10,
-    giveawayTarget: 7,
+    giveawayTarget: 10, // Hardcoded to 10% as requested
     baselineMode: 'prev_season'
   });
 
@@ -564,7 +562,6 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       {showSetupModal && <SetupModal onClose={() => setShowSetupModal(false)} />}
       {showRulesError && <RulesErrorModal onClose={() => { setShowRulesError(false); window.location.reload(); }} />}
-      {showKpiModal && <TargetSettingsModal currentConfig={kpiConfig} onSave={setKpiConfig} onClose={() => setShowKpiModal(false)} />}
       
       {/* Sidebar */}
       <aside className="bg-white border-r border-gray-200 w-full md:w-20 lg:w-64 flex-shrink-0 flex flex-col sticky top-0 md:h-screen z-20">
@@ -735,9 +732,6 @@ const App: React.FC = () => {
                       <span className="text-sm font-medium">Data Filters</span>
                   </div>
                   <div className="flex items-center gap-3">
-                      <button onClick={() => setShowKpiModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors">
-                        <Goal size={14} /> Set KPIs
-                      </button>
                       <button onClick={() => setIgnoreOspiti(!ignoreOspiti)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${ignoreOspiti ? 'bg-red-50 text-red-700 border-red-200' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>
                         <UserX size={14} /> {ignoreOspiti ? 'Zona Ospiti Excluded' : 'Ignore Zona Ospiti'}
                       </button>
