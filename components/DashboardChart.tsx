@@ -156,7 +156,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                           <XAxis type="number" dataKey="x" name="Occupancy" unit="%" domain={[25, 100]} tick={{fontSize: 10}}>
                              <Label value="Occupancy % (Game Day Inventory)" offset={-10} position="insideBottom" style={{ fontSize: '10px', fill: '#64748b' }} />
                           </XAxis>
-                          <YAxis type="number" dataKey="y" name="Yield" unit="€" tick={{fontSize: 10}}>
+                          <YAxis type="number" dataKey="y" name="Yield" unit="€" tick={{fontSize: 10}} domain={[10, 'auto']}>
                              <Label value="Yield / Avg Price (€)" angle={-90} position="insideLeft" style={{ fontSize: '10px', fill: '#64748b' }} />
                           </YAxis>
                           <ZAxis type="number" dataKey="z" range={[50, 400]} name="Revenue" />
