@@ -62,7 +62,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
           
           // Calculated Averages for Cards
           avgBudgetRev: revenueForBudget / gameCount,
-          avgVariableOps: totalVariable / gameCount, // Pure operational variable (Merch/F&B)
+          avgVariableOps: totalVariable / gameCount, // Pure operational variable (Merch/F&B/Hosp/Park/Exp)
           
           // SPH Calculation (Based on the revenue being tracked)
           commercialSph: totals.attendance > 0 ? revenueForBudget / totals.attendance : 0,
@@ -168,9 +168,9 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
 
                 {/* 2. Operational/Variable Component */}
                 <KPICard 
-                    label="Variable Ops (Merch/F&B)"
+                    label="Variable Ops (Total)"
                     value={stats.avgVariableOps}
-                    subLabel="Pure Commercial Ops"
+                    subLabel="Merch, F&B, Hosp, Park, Exp"
                     icon={Sparkles}
                     color="text-indigo-600 border-indigo-100"
                     borderTop
