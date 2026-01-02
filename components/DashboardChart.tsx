@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
-  BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  LineChart, Line, ComposedChart, ScatterChart, Scatter, ReferenceLine, ZAxis, Label
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  LineChart, Line, ComposedChart, ScatterChart, Scatter, ReferenceLine, ZAxis, Label, ReferenceArea
 } from 'recharts';
 import { GameData } from '../types';
 
@@ -11,12 +11,11 @@ interface DashboardChartProps {
   onFilterChange: (type: 'opponent' | 'tier' | 'day', value: string) => void;
 }
 
-const TIER_COLORS: Record<string, string> = {
-  '1': '#DC2626', // Tier 1: Red (High Value)
-  '2': '#EA580C', // Tier 2: Orange
-  '3': '#CA8A04', // Tier 3: Yellow/Gold
-  '4': '#64748B', // Tier 4: Slate
-  'Unknown': '#94A3B8'
+const SEASON_COLORS: Record<string, string> = {
+  '23-24': '#94a3b8', // Slate (Historical)
+  '24-25': '#3b82f6', // Blue (Previous)
+  '25-26': '#dc2626', // Red (Current)
+  'Unknown': '#cbd5e1'
 };
 
 // Helper for consistent currency formatting
@@ -33,6 +32,18 @@ const formatCurrency = (value: number) => {
 const formatAxisCurrency = (value: number) => {
   if (value >= 1000) return `€${(value / 1000).toFixed(0)}k`;
   return `€${value}`;
+};
+
+// Helper for Day of Week
+const getDayOfWeek = (dateStr: string) => {
+    if (!dateStr) return '';
+    try {
+        const [day, month, year] = dateStr.split('/').map(Number);
+        const date = new Date(year, month - 1, day);
+        return date.toLocaleDateString('en-US', { weekday: 'short' });
+    } catch (e) {
+        return '';
+    }
 };
 
 export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiencyData, onFilterChange }) => {
@@ -60,26 +71,69 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
         tier: game.tier,
     }));
 
-  // 2. Yield vs Occupancy (Scatter Quadrant) - Uses efficiencyData if provided
+  // 2. Yield vs Occupancy (Scatter Quadrant)
   const sourceDataForScatter = efficiencyData || data;
+  
+  // Calculate averages for quadrants
+  const rawScatterData = sourceDataForScatter.map(game => ({
+      x: game.capacity > 0 ? (game.attendance / game.capacity) * 100 : 0,
+      y: game.attendance > 0 ? game.totalRevenue / game.attendance : 0
+  }));
+  const avgOccupancy = rawScatterData.reduce((acc, d) => acc + d.x, 0) / (rawScatterData.length || 1);
+  const avgYield = rawScatterData.reduce((acc, d) => acc + d.y, 0) / (rawScatterData.length || 1);
+
+  // Process data for chart
   const scatterData = sourceDataForScatter.map(game => {
       const occupancy = game.capacity > 0 ? (game.attendance / game.capacity) * 100 : 0;
       const yieldVal = game.attendance > 0 ? game.totalRevenue / game.attendance : 0;
+      
+      // Calculate Z (Size) based on Tier. 
+      // Tier 1 (High) -> Big Bubble. Tier 4 (Low) -> Small Bubble.
+      // Inverting logic: 5 - Tier.
+      const tierVal = Math.max(1, Math.min(game.tier || 4, 4));
+      const zScore = (5 - tierVal) * 100; // 1->400, 4->100
+
       return {
           name: game.opponent,
           x: occupancy,
           y: yieldVal,
-          z: game.totalRevenue, // Bubble size
+          z: zScore, 
+          tier: game.tier,
           season: game.season,
           date: game.date,
           attendance: game.attendance,
-          capacity: game.capacity
+          capacity: game.capacity,
+          revenue: game.totalRevenue
       };
   });
   
-  // Calculate averages for quadrants
-  const avgOccupancy = scatterData.reduce((acc, d) => acc + d.x, 0) / (scatterData.length || 1);
-  const avgYield = scatterData.reduce((acc, d) => acc + d.y, 0) / (scatterData.length || 1);
+  // Group by Season for Coloring
+  const seasonsInView = Array.from(new Set(scatterData.map(d => d.season))).sort().reverse() as string[];
+
+  // Calculate Symmetrical Domains to Center the Averages
+  const xValues = scatterData.map(d => d.x);
+  const yValues = scatterData.map(d => d.y);
+  
+  const minX = Math.min(...xValues, avgOccupancy);
+  const maxX = Math.max(...xValues, avgOccupancy);
+  const minY = Math.min(...yValues, avgYield);
+  const maxY = Math.max(...yValues, avgYield);
+
+  // Determine spread needed to center the average
+  const xSpread = Math.max(avgOccupancy - minX, maxX - avgOccupancy, 10) * 1.1; 
+  const xDomainMin = Math.max(0, avgOccupancy - xSpread); 
+  const xDomainMax = Math.min(100, avgOccupancy + xSpread); 
+  
+  const ySpread = Math.max(avgYield - minY, maxY - avgYield, 5) * 1.1;
+  let yDomainMin = avgYield - ySpread;
+  let yDomainMax = avgYield + ySpread;
+  
+  if (yDomainMin < 10) {
+      yDomainMin = 10;
+      if (minY < 10) yDomainMin = Math.floor(minY); 
+  }
+  if (yDomainMax < maxY) yDomainMax = maxY * 1.05;
+
 
   // 3. Ticket Type Breakdown (Stacked Bar)
   const ticketTypeData = sortedData.map(game => {
@@ -144,22 +198,39 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
           {/* Yield vs Occupancy Quadrant */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-between">
-                  <span>GameDay Efficiency Matrix</span>
-                  <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-1 rounded">Locked: Game Day View</span>
-              </h3>
-              <div className="h-72">
+          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col h-[520px]">
+              <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-lg font-semibold text-gray-800">GameDay Efficiency Matrix</h3>
+              </div>
+              
+              <div className="flex-1 min-h-0 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 10 }}>
+                      <ScatterChart margin={{ top: 10, right: 10, bottom: 20, left: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis type="number" dataKey="x" name="Occupancy" unit="%" domain={[25, 100]} tick={{fontSize: 10}}>
-                             <Label value="Occupancy % (Game Day Inventory)" offset={-10} position="insideBottom" style={{ fontSize: '10px', fill: '#64748b' }} />
+                          <XAxis 
+                            type="number" 
+                            dataKey="x" 
+                            name="Occupancy" 
+                            unit="%" 
+                            domain={[xDomainMin, xDomainMax]} 
+                            tick={{fontSize: 10}}
+                            tickFormatter={(val) => `${val.toFixed(0)}%`}
+                          >
+                             <Label value="Occupancy %" offset={-10} position="insideBottom" style={{ fontSize: '10px', fill: '#64748b' }} />
                           </XAxis>
-                          <YAxis type="number" dataKey="y" name="Yield" unit="€" tick={{fontSize: 10}} domain={[10, 'auto']}>
-                             <Label value="Yield / Avg Price (€)" angle={-90} position="insideLeft" style={{ fontSize: '10px', fill: '#64748b' }} />
+                          <YAxis 
+                            type="number" 
+                            dataKey="y" 
+                            name="Yield" 
+                            unit="€" 
+                            tick={{fontSize: 10}} 
+                            domain={[yDomainMin, yDomainMax]}
+                            tickFormatter={(val) => `€${val.toFixed(2)}`}
+                          >
+                             <Label value="Yield (€)" angle={-90} position="insideLeft" style={{ fontSize: '10px', fill: '#64748b' }} />
                           </YAxis>
-                          <ZAxis type="number" dataKey="z" range={[50, 400]} name="Revenue" />
+                          <ZAxis type="number" dataKey="z" range={[60, 450]} name="Tier Weight" />
+                          
                           <Tooltip cursor={{ strokeDasharray: '3 3' }} content={({ active, payload }) => {
                               if (active && payload && payload.length) {
                                   const d = payload[0].payload;
@@ -167,20 +238,26 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                                       <div className="bg-white p-3 border border-gray-200 shadow-xl rounded-lg text-xs z-50 min-w-[150px]">
                                           <div className="mb-2 border-b border-gray-100 pb-1">
                                               <p className="font-bold text-gray-900 text-sm">{d.name}</p>
-                                              <p className="text-[10px] text-gray-500">{d.date} • {d.season}</p>
+                                              <p className="text-[10px] text-gray-500">
+                                                  {d.date} <span className="font-bold text-gray-400">({getDayOfWeek(d.date)})</span> • {d.season}
+                                              </p>
                                           </div>
                                           <div className="space-y-1">
                                               <div className="flex justify-between">
+                                                  <span className="text-gray-500">Tier:</span>
+                                                  <span className="font-bold text-gray-800">{d.tier}</span>
+                                              </div>
+                                              <div className="flex justify-between">
                                                   <span className="text-gray-500">Occupancy:</span>
-                                                  <span className="font-bold text-gray-800">{d.x.toFixed(1)}% <span className="text-[9px] font-normal text-gray-400">({d.attendance}/{d.capacity})</span></span>
+                                                  <span className="font-bold text-gray-800">{d.x.toFixed(1)}%</span>
                                               </div>
                                               <div className="flex justify-between">
                                                   <span className="text-gray-500">Yield (ATP):</span>
-                                                  <span className="font-bold text-blue-600">€{d.y.toFixed(1)}</span>
+                                                  <span className="font-bold text-blue-600">€{d.y.toFixed(2)}</span>
                                               </div>
                                               <div className="flex justify-between border-t border-gray-50 pt-1 mt-1">
                                                   <span className="text-gray-500">Revenue:</span>
-                                                  <span className="font-bold text-green-600">€{(d.z / 1000).toFixed(1)}k</span>
+                                                  <span className="font-bold text-green-600">€{(d.revenue / 1000).toFixed(1)}k</span>
                                               </div>
                                           </div>
                                       </div>
@@ -188,48 +265,105 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                               }
                               return null;
                           }} />
-                          {/* Quadrant Lines */}
-                          <ReferenceLine x={avgOccupancy} stroke="#94a3b8" strokeDasharray="3 3" />
-                          <ReferenceLine y={avgYield} stroke="#94a3b8" strokeDasharray="3 3" />
                           
-                          {/* Quadrant Labels */}
-                          <ReferenceLine y={avgYield * 1.5} stroke="none" label={{ value: 'Premium', position: 'insideTopLeft', fontSize: 10, fill: '#DC2626', fontWeight: 'bold' }} />
-                          <ReferenceLine y={avgYield * 1.5} stroke="none" label={{ value: 'Cash Cows', position: 'insideTopRight', fontSize: 10, fill: '#16a34a', fontWeight: 'bold' }} />
-                          <ReferenceLine y={avgYield * 0.5} stroke="none" label={{ value: 'Kill Zone', position: 'insideBottomLeft', fontSize: 10, fill: '#94a3b8', fontWeight: 'bold' }} />
-                          <ReferenceLine y={avgYield * 0.5} stroke="none" label={{ value: 'Discount Trap', position: 'insideBottomRight', fontSize: 10, fill: '#ea580c', fontWeight: 'bold' }} />
+                          <ReferenceArea x1={xDomainMin} x2={avgOccupancy} y1={avgYield} y2={yDomainMax} fill="transparent" label={{ value: 'Premium', position: 'center', fill: '#94a3b8', fontSize: 10, fontWeight: 'bold', opacity: 0.3 }} />
+                          <ReferenceArea x1={avgOccupancy} x2={xDomainMax} y1={avgYield} y2={yDomainMax} fill="transparent" label={{ value: 'Cash Cows', position: 'center', fill: '#16a34a', fontSize: 10, fontWeight: 'bold', opacity: 0.3 }} />
+                          <ReferenceArea x1={xDomainMin} x2={avgOccupancy} y1={yDomainMin} y2={avgYield} fill="transparent" label={{ value: 'Kill Zone', position: 'center', fill: '#DC2626', fontSize: 10, fontWeight: 'bold', opacity: 0.3 }} />
+                          <ReferenceArea x1={avgOccupancy} x2={xDomainMax} y1={yDomainMin} y2={avgYield} fill="transparent" label={{ value: 'Discount Trap', position: 'center', fill: '#ea580c', fontSize: 10, fontWeight: 'bold', opacity: 0.3 }} />
 
-                          <Scatter name="Games" data={scatterData} fill="#8884d8">
-                              {scatterData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={entry.y > avgYield ? (entry.x > avgOccupancy ? '#16a34a' : '#DC2626') : (entry.x > avgOccupancy ? '#ea580c' : '#94a3b8')} />
-                              ))}
-                          </Scatter>
+                          <ReferenceLine x={avgOccupancy} stroke="#94a3b8" strokeDasharray="3 3" strokeWidth={1} />
+                          <ReferenceLine y={avgYield} stroke="#94a3b8" strokeDasharray="3 3" strokeWidth={1} />
+
+                          {seasonsInView.map(season => (
+                              <Scatter 
+                                  key={season}
+                                  name={season} 
+                                  data={scatterData.filter(d => d.season === season)} 
+                                  fill={SEASON_COLORS[season] || '#000'} 
+                                  stroke="#fff"
+                                  strokeWidth={1.5}
+                              />
+                          ))}
                       </ScatterChart>
                   </ResponsiveContainer>
+              </div>
+
+              {/* Bottom Legends Panel */}
+              <div className="mt-4 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-4">
+                  
+                  {/* Group 1: View Mode */}
+                  <div className="flex flex-col gap-1">
+                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">View Mode</span>
+                      <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100 font-semibold w-fit">
+                          Game Day
+                      </span>
+                  </div>
+
+                  {/* Group 2: Season */}
+                  <div className="flex flex-col gap-1">
+                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Season</span>
+                      <div className="flex items-center gap-3">
+                          {seasonsInView.map(s => (
+                              <div key={s} className="flex items-center gap-1.5">
+                                  <div className="w-2.5 h-2.5 rounded-full shadow-sm flex-shrink-0 border border-white" style={{ backgroundColor: SEASON_COLORS[s] || '#94a3b8' }}></div>
+                                  <span className="text-[10px] text-gray-600 font-medium">{s}</span>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+
+                  {/* Group 3: Tier */}
+                  <div className="flex flex-col gap-1">
+                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Tier Size</span>
+                      <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5">
+                              <div className="w-3.5 h-3.5 rounded-full bg-gray-300 border border-white"></div>
+                              <span className="text-[10px] text-gray-600">T1</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                              <div className="w-2.5 h-2.5 rounded-full bg-gray-300 border border-white"></div>
+                              <span className="text-[10px] text-gray-600">T2</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                              <div className="w-2 h-2 rounded-full bg-gray-300 border border-white"></div>
+                              <span className="text-[10px] text-gray-600">T3</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-gray-300 border border-white"></div>
+                              <span className="text-[10px] text-gray-600">T4</span>
+                          </div>
+                      </div>
+                  </div>
               </div>
           </div>
 
           {/* Ticket Type Breakdown */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-[520px]">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Ticket Type Breakdown</h3>
-              <div className="h-72">
+              <div className="flex-1 min-h-0">
                   <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={ticketTypeData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} />
                           <XAxis dataKey="name" tick={{fontSize: 10}} interval={0} angle={-45} textAnchor="end" height={60} />
                           <YAxis tick={{fontSize: 10}} />
-                          <Tooltip content={({ active, payload, label }) => {
+                          <Tooltip content={({ active, payload, label }: any) => {
                               if (active && payload && payload.length) {
-                                  // @ts-ignore
-                                  const total = payload.reduce((sum, p) => sum + (p.value as number), 0);
+                                  const total = payload.reduce((sum: number, p: any) => sum + (Number(p.value) || 0), 0);
                                   return (
                                       <div className="bg-white p-2 border border-gray-200 shadow-lg rounded-lg text-xs z-50">
                                           <p className="font-bold text-gray-900 mb-1">{payload[0].payload.fullLabel}</p>
-                                          {payload.map((p: any) => (
-                                              <div key={p.name} className="flex justify-between gap-4" style={{color: p.color}}>
-                                                  <span>{p.name}:</span>
-                                                  <span className="font-bold">{p.value}</span>
-                                              </div>
-                                          ))}
+                                          {payload.map((p: any) => {
+                                              const val = Number(p.value) || 0;
+                                              const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
+                                              return (
+                                                  <div key={p.name} className="flex justify-between gap-4" style={{color: p.color}}>
+                                                      <span>{p.name}:</span>
+                                                      <span className="font-bold">
+                                                          {val} <span className="text-[10px] opacity-80 font-normal">({pct}%)</span>
+                                                      </span>
+                                                  </div>
+                                              );
+                                          })}
                                           <div className="border-t border-gray-100 mt-1 pt-1 font-bold flex justify-between gap-4">
                                               <span>Total:</span>
                                               <span>{total}</span>
@@ -242,7 +376,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                           <Legend wrapperStyle={{fontSize: '11px'}} />
                           <Bar dataKey="full" name="Full Price" stackId="a" fill="#16a34a" />
                           <Bar dataKey="discount" name="Discounted" stackId="a" fill="#eab308" />
-                          <Bar dataKey="free" name="Comp/Free" stackId="a" fill="#dc2626" />
+                          <Bar dataKey="free" name="Giveaways" stackId="a" fill="#dc2626" />
                       </BarChart>
                   </ResponsiveContainer>
               </div>
@@ -272,7 +406,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                 <YAxis yAxisId="right" orientation="right" tick={{fontSize: 11}} domain={[0, 'auto']} />
                 <Tooltip 
                   cursor={{ stroke: '#9CA3AF', strokeWidth: 1, strokeDasharray: '3 3' }}
-                  content={({ active, payload }) => {
+                  content={({ active, payload }: any) => {
                     if (active && payload && payload.length) {
                       const d = payload[0].payload;
                       return (
@@ -371,7 +505,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                           <YAxis yAxisId="right" orientation="right" tick={{fontSize: 10}} />
                           <Tooltip 
                              cursor={{fill: '#f3f4f6'}}
-                             content={({ active, payload }) => {
+                             content={({ active, payload }: any) => {
                                 if (active && payload && payload.length) {
                                     const d = payload[0].payload;
                                     return (

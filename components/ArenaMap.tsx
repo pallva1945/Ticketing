@@ -220,39 +220,58 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
           })}
         </svg>
 
-        {hoveredZone && stats[hoveredZone] && (
-          <div className="absolute bottom-4 right-4 bg-slate-900/95 text-white p-3 rounded-lg shadow-2xl border border-slate-700 backdrop-blur-md z-30 min-w-[140px] pointer-events-none">
-            <div className="flex justify-between items-center mb-2 border-b border-slate-700 pb-2">
-               <span className="font-bold text-xs text-red-400 uppercase tracking-wider">{hoveredZone}</span>
-            </div>
-            
-            <div className="space-y-1 font-mono text-[10px]">
-                <div className="flex justify-between text-slate-400">
-                  <span>Rev</span>
-                  <span className="text-white">€{(stats[hoveredZone].revenue || 0).toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+        {hoveredZone && stats[hoveredZone] && (() => {
+            const occupancyPct = stats[hoveredZone].capacity > 0 ? (stats[hoveredZone].sold / stats[hoveredZone].capacity) * 100 : 0;
+            const yieldVal = stats[hoveredZone].sold > 0 ? stats[hoveredZone].revenue / stats[hoveredZone].sold : 0;
+            const isYieldOpp = occupancyPct > 90;
+
+            return (
+                <div className="absolute bottom-4 right-4 bg-slate-900/95 text-white p-3 rounded-lg shadow-2xl border border-slate-700 backdrop-blur-md z-30 min-w-[140px] pointer-events-none">
+                    <div className="flex justify-between items-center mb-2 border-b border-slate-700 pb-2">
+                    <span className="font-bold text-xs text-red-400 uppercase tracking-wider">{hoveredZone}</span>
+                    </div>
+                    
+                    <div className="space-y-1.5 font-mono text-[10px]">
+                        <div className="flex justify-between text-slate-400">
+                            <span>Rev</span>
+                            <span className="text-white">€{(stats[hoveredZone].revenue || 0).toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                            <span>Yield (ATP)</span>
+                            <span className="text-green-400 font-bold">
+                                €{yieldVal.toFixed(2)}
+                            </span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                            <span>Sold (Avg)</span>
+                            <span className="text-white">
+                                {Math.round(stats[hoveredZone].sold / gameCount)} 
+                                <span className="text-slate-600"> / {Math.round(stats[hoveredZone].capacity / gameCount)}</span>
+                            </span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                            <span>Occupancy</span>
+                            <span className={`${occupancyPct > 90 ? 'text-green-400 font-bold' : (occupancyPct < 50 ? 'text-red-400' : 'text-white')}`}>
+                                {occupancyPct.toFixed(1)}%
+                            </span>
+                        </div>
+                        
+                        {isYieldOpp && (
+                            <div className="mt-1 pt-1 border-t border-slate-700 text-center">
+                                <span className="text-[9px] font-bold text-purple-400 uppercase animate-pulse">Yield Opportunity: High</span>
+                            </div>
+                        )}
+
+                        <div className="w-full bg-slate-800 h-1 mt-1 rounded-full overflow-hidden">
+                            <div 
+                                className={`h-full ${occupancyPct > 90 ? 'bg-purple-500' : 'bg-red-600'}`} 
+                                style={{width: `${Math.min(occupancyPct, 100)}%`}}
+                            ></div>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex justify-between text-slate-400">
-                  <span>ATP</span>
-                  <span className="text-green-400 font-bold">
-                    €{(stats[hoveredZone].sold > 0 ? stats[hoveredZone].revenue / stats[hoveredZone].sold : 0).toFixed(1)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-slate-400">
-                  <span>Sold (Avg)</span>
-                  <span className="text-white">
-                    {Math.round(stats[hoveredZone].sold / gameCount)} 
-                    <span className="text-slate-600"> / {Math.round(stats[hoveredZone].capacity / gameCount)}</span>
-                  </span>
-                </div>
-                <div className="w-full bg-slate-800 h-1 mt-1 rounded-full overflow-hidden">
-                   <div 
-                     className="h-full bg-red-600" 
-                     style={{width: `${Math.min(((stats[hoveredZone].sold / stats[hoveredZone].capacity)*100), 100)}%`}}
-                   ></div>
-                </div>
-            </div>
-          </div>
-        )}
+            );
+        })()}
       </div>
       
       <div className="w-full flex justify-center mt-auto pb-2 pt-2 z-10">
