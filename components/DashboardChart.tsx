@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, ComposedChart, ScatterChart, Scatter, ReferenceLine, ZAxis, Label, ReferenceArea
@@ -46,6 +46,30 @@ const getDayOfWeek = (dateStr: string) => {
     }
 };
 
+// Simple Linear Regression for Forecasting
+const calculateTrendLine = (dataPoints: any[]) => {
+    if (dataPoints.length < 2) return [];
+
+    const n = dataPoints.length;
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+
+    dataPoints.forEach((point, index) => {
+        sumX += index;
+        sumY += point.revenue;
+        sumXY += index * point.revenue;
+        sumXX += index * index;
+    });
+
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+
+    // Generate trend points including 3 future games
+    return dataPoints.map((point, index) => ({
+        ...point,
+        trend: slope * index + intercept
+    }));
+};
+
 export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiencyData, onFilterChange }) => {
   
   // 1. Revenue & Attendance Trend (Composed)
@@ -58,7 +82,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
         return dateA.localeCompare(dateB);
   });
 
-  const trendData = sortedData.map(game => ({
+  const rawTrendData = sortedData.map(game => ({
         name: isComparisonMode 
             ? `${game.season}`
             : (uniqueOpponents.size <= 3 ? `${game.season} ${game.opponent}` : game.opponent.substring(0, 8)),
@@ -70,6 +94,9 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
         season: game.season,
         tier: game.tier,
     }));
+
+  // Calculate Forecast
+  const trendData = calculateTrendLine(rawTrendData);
 
   // 2. Yield vs Occupancy (Scatter Quadrant)
   const sourceDataForScatter = efficiencyData || data;
@@ -385,10 +412,11 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
 
       {/* ROW 2: Main Revenue Trend (Kept from before) */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-             {uniqueOpponents.size === 1 
-                ? `YoY History: ${Array.from(uniqueOpponents)[0]}` 
-                : 'Revenue vs Attendance Pacing'}
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-between">
+             <span>{uniqueOpponents.size === 1 ? `YoY History: ${Array.from(uniqueOpponents)[0]}` : 'Revenue vs Attendance Pacing'}</span>
+             <span className="text-xs font-normal text-gray-500 flex items-center gap-1">
+                <span className="w-3 h-0.5 bg-yellow-500 dashed"></span> Forecast Line
+             </span>
           </h3>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
@@ -428,6 +456,12 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                                <span className="text-gray-500">Attendance:</span>
                                <span className="font-bold text-gray-900">{d.attendance}</span>
                              </div>
+                             {d.trend && (
+                                <div className="flex justify-between items-center gap-4 border-t border-gray-50 pt-1 mt-1">
+                                    <span className="text-gray-500">Forecast:</span>
+                                    <span className="font-bold text-yellow-600">{formatCurrency(d.trend)}</span>
+                                </div>
+                             )}
                           </div>
                         </div>
                       );
@@ -458,6 +492,18 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                   stroke="#1F2937" 
                   strokeWidth={2} 
                   dot={{r: 3}} 
+                />
+                {/* Trend Line (Linear Regression) */}
+                <Line
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="trend"
+                    name="Trend (Forecast)"
+                    stroke="#eab308"
+                    strokeWidth={2}
+                    strokeDasharray="5 5"
+                    dot={false}
+                    activeDot={false}
                 />
               </ComposedChart>
             </ResponsiveContainer>

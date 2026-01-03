@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, ChevronRight, PieChart, TrendingUp, DollarSign, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, ChevronRight, PieChart, TrendingUp, DollarSign, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Target, AlertTriangle, ChevronDown, Crown, Bell, Users } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -12,6 +12,7 @@ import { PacingWidget } from './components/PacingWidget';
 import { DistressedZones } from './components/DistressedZones';
 import { CompKillerWidget } from './components/CompKillerWidget';
 import { GameDayDashboard } from './components/GameDayDashboard';
+import { MobileTicker, TickerItem } from './components/MobileTicker';
 import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL } from './constants';
 import { GameData, GameDayData, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
@@ -51,158 +52,380 @@ const RevenueHome = ({
     ticketingRevenue, 
     gameDayRevenue, 
     onNavigate,
-    filterBar,
     onAiClick,
-    gamesPlayed
+    gamesPlayed,
+    seasonFilter,
+    onSeasonChange
 }: { 
     modules: any[], 
     ticketingRevenue: number, 
     gameDayRevenue: number, 
     onNavigate: (id: RevenueModule) => void,
-    filterBar: React.ReactNode,
     onAiClick: () => void,
-    gamesPlayed: number
+    gamesPlayed: number,
+    seasonFilter: string,
+    onSeasonChange: (s: string) => void
 }) => {
-    // Mock Data for other verticals to show the dashboard concept
-    // STRICT ALIGNMENT: Total Targets must equal €7,000,000
-    // Tix (1.65) + GD Var (1.65) + Sponsorship (2.65) + Other (1.05) = 7.00
-    const verticalData = {
-        sponsorship: { target: 2650000, current: 2100000 },
-        merchandising: { target: 400000, current: 310000 }, // E-commerce / Non-Gameday
-        venue_ops: { target: 150000, current: 85000 },
-        bops: { target: 300000, current: 120000 },
-        sg: { target: 200000, current: 180000 },
-    };
+    // Constants
+    const TOTAL_GAMES_SEASON = 15;
+    const gamesCount = Math.max(gamesPlayed, 1);
 
-    const totalRevenue = ticketingRevenue + gameDayRevenue + Object.values(verticalData).reduce((acc, v) => acc + v.current, 0);
-    // Note: ticketingRevenue target is SEASON_TARGET_TOTAL (1.65M)
-    // gameDayRevenue (Variable only for this specific aggregate view) target is SEASON_TARGET_GAMEDAY (1.65M Variable)
-    const totalTarget = SEASON_TARGET_TOTAL + SEASON_TARGET_GAMEDAY + Object.values(verticalData).reduce((acc, v) => acc + v.target, 0);
-    const totalProgress = (totalRevenue / totalTarget) * 100;
+    // --- VERTICAL DATA CONFIGURATION ---
+    // 'current' = YTD Actuals
+    // 'projected' = End of Season Forecast
+    // 'target' = Budget/Goal
+    
+    // Projections for variable verticals (Ticketing/GameDay) are calculated dynamically:
+    const projTicketing = (ticketingRevenue / gamesCount) * TOTAL_GAMES_SEASON;
+    const projGameDay = (gameDayRevenue / gamesCount) * TOTAL_GAMES_SEASON;
+
+    const verticalPerformance = [
+      { 
+          id: 'ticketing', 
+          name: 'Ticketing', 
+          current: ticketingRevenue, 
+          projected: projTicketing, 
+          target: SEASON_TARGET_TOTAL, 
+          icon: Ticket, colorClass: 'text-red-600', bgClass: 'bg-red-50', barClass: 'bg-red-500', isVariable: true 
+      },
+      { 
+          id: 'sponsorship', 
+          name: 'Sponsorship', 
+          current: 800000, 
+          projected: 1600000, 
+          target: 1650000, 
+          icon: Flag, colorClass: 'text-blue-600', bgClass: 'bg-blue-50', barClass: 'bg-blue-500', isVariable: false 
+      },
+      { 
+          id: 'gameday', 
+          name: 'GameDay Ops', 
+          current: gameDayRevenue, 
+          projected: projGameDay, 
+          target: SEASON_TARGET_GAMEDAY, 
+          icon: Calendar, colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50', barClass: 'bg-indigo-500', isVariable: true 
+      },
+      { 
+          id: 'merchandising', 
+          name: 'Merchandising', 
+          current: 90000, 
+          projected: 180000, 
+          target: 200000, 
+          icon: ShoppingBag, colorClass: 'text-orange-600', bgClass: 'bg-orange-50', barClass: 'bg-orange-500', isVariable: false 
+      },
+      { 
+          id: 'bops', 
+          name: 'BOps', 
+          current: 100000, 
+          projected: 200000, 
+          target: 300000, 
+          icon: Activity, colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', barClass: 'bg-emerald-500', isVariable: false 
+      },
+      { 
+          id: 'venue_ops', 
+          name: 'Venue Ops', 
+          current: 100000, 
+          projected: 150000, 
+          target: 150000, 
+          icon: Landmark, colorClass: 'text-slate-600', bgClass: 'bg-slate-50', barClass: 'bg-slate-500', isVariable: false 
+      },
+      { 
+          id: 'sg', 
+          name: 'Varese Basketball', 
+          current: 550000, 
+          projected: 1100000, 
+          target: 1200000, 
+          icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false 
+      },
+    ];
+
+    // SORTED VERTICALS (Highest YTD Revenue First)
+    const sortedVerticals = [...verticalPerformance].sort((a, b) => b.current - a.current);
+    
+    // Identify Best Vertical (by YTD volume)
+    const bestVertical = sortedVerticals[0];
+
+    // AGGREGATES
+    const totalRevenueYTD = verticalPerformance.reduce((acc, v) => acc + v.current, 0);
+    const totalRevenueProjected = verticalPerformance.reduce((acc, v) => acc + v.projected, 0);
+    const totalTarget = verticalPerformance.reduce((acc, v) => acc + v.target, 0);
+    
+    // PACING LOGIC
+    const seasonProgressPct = (gamesPlayed / TOTAL_GAMES_SEASON) * 100; // Time Elapsed %
+    const revenueProgressPct = (totalRevenueYTD / totalTarget) * 100; // Revenue Collected %
+    
+    // Delta: How much revenue % vs time %
+    // E.g. 50% revenue at 30% time = +20% (Great)
+    // E.g. 20% revenue at 50% time = -30% (Bad)
+    const pacingDelta = revenueProgressPct - seasonProgressPct;
+    const isAhead = pacingDelta >= 0;
+    
+    // Projection Gap
+    const projectionDiff = totalRevenueProjected - totalTarget;
+
+    // Run Rate (Variable Only)
+    const variableYTD = verticalPerformance.filter(v => v.isVariable).reduce((acc, v) => acc + v.current, 0);
+    const currentVariableRunRate = variableYTD / gamesCount;
 
     return (
-        <div className="max-w-7xl mx-auto animate-fade-in space-y-6 pt-6">
+        <div className="max-w-7xl mx-auto animate-fade-in space-y-8 pt-2 pb-12">
             
-            {/* Standard Header: AI & Pacing */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 relative bg-gradient-to-br from-slate-800 to-black rounded-xl p-6 text-white shadow-lg overflow-hidden group border border-slate-700">
-                    <div className="absolute top-4 right-4 opacity-50 group-hover:opacity-100 transition-opacity duration-500">
-                        <AIAvatar size="sm" />
+            {/* Top Bar: Title & Season Selector */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Executive Overview</h1>
+                    <p className="text-gray-500 text-sm">Consolidated Budget Performance (YTD Actuals)</p>
+                </div>
+                
+                {/* Season Filter - Only Filter Here */}
+                <div className="relative">
+                    <select 
+                        value={seasonFilter}
+                        onChange={(e) => onSeasonChange(e.target.value)}
+                        className="appearance-none bg-white border border-gray-300 text-gray-700 py-2 pl-4 pr-10 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm cursor-pointer hover:bg-gray-50"
+                    >
+                        <option value="25-26">Season 25-26</option>
+                        <option value="24-25">Season 24-25</option>
+                        <option value="23-24">Season 23-24</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                        <ChevronDown size={16} />
                     </div>
-                    <div className="relative z-10 pr-20">
-                        <h3 className="font-bold text-lg mb-2 flex items-center gap-2 text-slate-200 uppercase tracking-wide">
-                            Executive Summary
+                </div>
+            </div>
+
+            {/* AI Executive Summary - HIDDEN ON MOBILE */}
+            <div className="hidden md:block relative bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-xl overflow-hidden border border-slate-700">
+                <div className="absolute top-4 right-4 opacity-30">
+                    <AIAvatar size="sm" />
+                </div>
+                <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start md:items-center">
+                    <div className="flex-1">
+                        <h3 className="font-bold text-sm mb-2 flex items-center gap-2 text-slate-300 uppercase tracking-wide">
+                            <MessageSquare size={16} /> Strategic Assessment
                         </h3>
-                        <p className="text-white/90 text-sm leading-relaxed mb-4">
-                            The organization is tracking at <strong>{totalProgress.toFixed(1)}%</strong> of the annual consolidated budget (€{(totalTarget/1000000).toFixed(2)}M). 
-                            Live data from Ticketing and GameDay verticals indicates variance in per-capita spending. 
-                            Sponsorship remains the dominant stabilizer.
+                        <p className="text-white/90 text-lg font-medium leading-relaxed">
+                            {isAhead 
+                                ? `YTD pacing is strong (+${pacingDelta.toFixed(1)}% vs Time). Sponsorship & VB collections are front-loaded, securing cash flow. Forecast indicates we will land €${(projectionDiff/1000).toFixed(0)}k above budget.` 
+                                : `Alert: YTD collections trail the seasonal timeline by ${Math.abs(pacingDelta).toFixed(1)}%. While fixed revenues (Spons/VB) are stable, variable streams need acceleration to close the projected gap.`
+                            }
                         </p>
-                        <button onClick={onAiClick} className="bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-white/20 transition-colors border border-white/20">
-                            ASK AI ADVISOR
-                        </button>
                     </div>
-                    <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-blue-600/20 rounded-full blur-3xl"></div>
-                </div>
-
-                <div className="lg:col-span-1 h-full">
-                    <PacingWidget 
-                        currentRevenue={totalRevenue} 
-                        gamesPlayed={gamesPlayed} 
-                        seasonTarget={totalTarget} 
-                        totalGamesInSeason={15} 
-                    />
+                    <button onClick={onAiClick} className="shrink-0 bg-white/10 backdrop-blur-md text-white px-5 py-3 rounded-xl text-sm font-bold hover:bg-white/20 transition-colors border border-white/20 flex items-center gap-2">
+                        Full Analysis <ArrowRight size={16} />
+                    </button>
                 </div>
             </div>
 
-            {/* Filter Bar (Passed from Parent) */}
-            {filterBar}
-
-            {/* Financial Snapshot (Hero) */}
+            {/* MAIN PACE WIDGET (Stacked Bar) */}
             <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm relative overflow-hidden">
-                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-3 gap-8 items-end">
-                    <div className="lg:col-span-2">
-                        <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Total Organization Revenue</h2>
-                        <div className="flex items-baseline gap-4 mb-2">
-                            <span className="text-5xl font-extrabold tracking-tight text-gray-900">€{(totalRevenue / 1000000).toFixed(2)}M</span>
-                            <span className="text-lg text-gray-400 font-medium">/ €{(totalTarget / 1000000).toFixed(2)}M Target</span>
+                <div className="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Season Pacing (YTD Collected vs Budget)</h2>
+                        <div className="flex items-baseline gap-3">
+                            <span className="text-5xl font-extrabold text-gray-900">€{(totalRevenueYTD / 1000000).toFixed(2)}M</span>
+                            <span className="text-lg text-gray-400 font-medium">/ €{(totalTarget / 1000000).toFixed(2)}M</span>
                         </div>
-                        <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden max-w-xl">
-                            <div className="h-full bg-green-500 transition-all duration-1000" style={{ width: `${Math.min(totalProgress, 100)}%` }}></div>
-                        </div>
-                        <p className="text-xs text-green-600 mt-2 font-bold flex items-center gap-1">
-                            <TrendingUp size={14} /> {totalProgress.toFixed(1)}% of Annual Budget Achieved
+                    </div>
+                    <div className={`text-right px-4 py-2 rounded-lg ${isAhead ? 'bg-green-50' : 'bg-red-50'}`}>
+                        <p className={`text-xs font-bold uppercase ${isAhead ? 'text-green-600' : 'text-red-600'}`}>
+                            {isAhead ? 'Ahead of Pace' : 'Behind Pace'}
+                        </p>
+                        <p className={`text-2xl font-bold ${isAhead ? 'text-green-700' : 'text-red-700'}`}>
+                            {isAhead ? '+' : ''}{pacingDelta.toFixed(1)}%
                         </p>
                     </div>
-                    <div className="flex gap-4 lg:justify-end">
-                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            <p className="text-xs text-gray-500 uppercase">Active Streams</p>
-                            <p className="text-xl font-bold text-gray-800">7 Verticals</p>
-                        </div>
-                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                            <p className="text-xs text-gray-500 uppercase">YoY Growth</p>
-                            <p className="text-xl font-bold text-green-600">+12.4%</p>
+                </div>
+
+                {/* Stacked Progress Bar */}
+                <div className="relative h-10 bg-gray-100 rounded-full overflow-hidden mb-3 flex border border-gray-200">
+                    {/* Time Marker */}
+                    <div 
+                        className="absolute top-0 bottom-0 border-r-2 border-dashed border-gray-800 z-20 flex items-center justify-end pr-2 opacity-50"
+                        style={{ width: `${seasonProgressPct}%` }}
+                    >
+                        <div className="bg-gray-800 text-white text-[10px] font-bold px-1.5 py-0.5 rounded absolute -bottom-6 transform translate-x-1/2">
+                            Time: {seasonProgressPct.toFixed(0)}%
                         </div>
                     </div>
+
+                    {/* Stacked Segments (YTD) */}
+                    {sortedVerticals.map((v) => {
+                        // Calculate width as percentage of TOTAL TARGET
+                        const widthPct = (v.current / totalTarget) * 100;
+                        const shareOfYTD = (v.current / totalRevenueYTD) * 100;
+                        const contributionToTarget = (v.current / totalTarget) * 100;
+
+                        if (widthPct <= 0) return null;
+                        return (
+                            <div 
+                                key={v.id}
+                                className={`h-full ${v.barClass} first:rounded-l-full last:rounded-r-full relative group transition-all duration-500 hover:brightness-110 cursor-help`}
+                                style={{ width: `${widthPct}%` }}
+                            >
+                                {/* Enhanced Tooltip */}
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 bg-slate-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 min-w-[160px] pointer-events-none transform translate-y-1 group-hover:translate-y-0">
+                                    <div className="p-3 border-b border-slate-700 font-bold bg-slate-950 rounded-t-lg flex justify-between items-center">
+                                        <span>{v.name}</span>
+                                        <v.icon size={12} className="text-slate-400" />
+                                    </div>
+                                    <div className="p-3 space-y-2">
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-400">YTD Revenue:</span>
+                                            <span className="font-mono font-bold">€{(v.current/1000).toFixed(0)}k</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-400">Share of YTD:</span>
+                                            <span className="font-mono text-blue-400">{shareOfYTD.toFixed(1)}%</span>
+                                        </div>
+                                        <div className="flex justify-between border-t border-slate-700 pt-2 mt-1">
+                                            <span className="text-slate-400">vs Season Goal:</span>
+                                            <span className="font-mono text-green-400">{contributionToTarget.toFixed(1)}%</span>
+                                        </div>
+                                    </div>
+                                    {/* Arrow */}
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px w-0 h-0 border-x-8 border-x-transparent border-t-8 border-t-slate-900"></div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+                
+                {/* Legend for Stacked Bar */}
+                <div className="flex flex-wrap gap-4 justify-center mt-6">
+                    {sortedVerticals.map((v) => (
+                        <div key={v.id} className="flex items-center gap-1.5">
+                            <div className={`w-3 h-3 rounded-full ${v.barClass}`}></div>
+                            <span className="text-[10px] font-bold text-gray-600 uppercase">{v.name}</span>
+                        </div>
+                    ))}
                 </div>
             </div>
 
-            {/* Verticals Grid */}
+            {/* STRATEGIC SIGNALS */}
             <div>
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <LayoutDashboard size={20} /> Revenue Verticals
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <Activity size={20} className="text-gray-500" /> Strategic Signals
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {modules.filter((m: any) => m.id !== 'home').map((module: any) => {
-                        let metric = { current: 0, target: 100000 };
-                        let isLive = false;
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    {/* Signal 1: Projected Finish */}
+                    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center gap-2 mb-2">
+                                <Flag size={18} className="text-blue-600" />
+                                <span className="text-xs font-bold text-gray-500 uppercase">Projected Finish</span>
+                            </div>
+                            <p className="text-3xl font-bold text-gray-900">€{(totalRevenueProjected/1000000).toFixed(2)}M</p>
+                            <p className={`text-sm font-medium mt-1 ${projectionDiff >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {projectionDiff >= 0 ? 'Surplus' : 'Gap'}: €{(Math.abs(projectionDiff)/1000).toFixed(0)}k
+                            </p>
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-500">
+                            Forecast based on YTD run-rate + fixed contracts.
+                        </div>
+                    </div>
 
-                        if (module.id === 'ticketing') {
-                            metric = { current: ticketingRevenue, target: SEASON_TARGET_TOTAL };
-                            isLive = true;
-                        } else if (module.id === 'gameday') {
-                            // Use Variable Target only for this card summary to be consistent with 7M breakdown
-                            metric = { current: gameDayRevenue, target: SEASON_TARGET_GAMEDAY };
-                            isLive = true;
-                        } else {
-                            metric = (verticalData as any)[module.id] || { current: 0, target: 100000 };
-                        }
+                    {/* Signal 2: Variable Efficiency */}
+                    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center gap-2 mb-2">
+                                <TrendingUp size={18} className="text-purple-600" />
+                                <span className="text-xs font-bold text-gray-500 uppercase">Variable Run Rate</span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <p className="text-3xl font-bold text-gray-900">€{(currentVariableRunRate/1000).toFixed(1)}k</p>
+                                <span className="text-sm text-gray-400">/ gm</span>
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">Ticketing + GameDay Avg</p>
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                            <div className="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                                <div 
+                                    className="h-full bg-purple-500" 
+                                    style={{ width: `${Math.min((currentVariableRunRate/150000)*100, 100)}%` }}
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Signal 3: Top Revenue Driver (YTD) */}
+                    <div className="bg-white border border-yellow-200 rounded-xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                        <div className="absolute -right-6 -top-6 bg-yellow-50 w-24 h-24 rounded-full"></div>
+                        <div>
+                            <div className="flex items-center gap-2 mb-2 relative z-10">
+                                <Crown size={18} className="text-yellow-600" />
+                                <span className="text-xs font-bold text-yellow-700 uppercase">Top Driver (YTD)</span>
+                            </div>
+                            <p className="text-2xl font-bold text-gray-900 relative z-10">{bestVertical.name}</p>
+                            <p className="text-3xl font-extrabold text-yellow-600 mt-1 relative z-10">
+                                €{(bestVertical.current / 1000000).toFixed(2)}M
+                            </p>
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-yellow-100 relative z-10">
+                            <p className="text-xs text-gray-500">
+                                Contributes <span className="font-bold text-gray-700">{((bestVertical.current / totalRevenueYTD) * 100).toFixed(1)}%</span> of total YTD revenue.
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            {/* REVENUE STREAMS GRID (Sorted High to Low) */}
+            <div>
+                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                    <Target size={20} className="text-gray-500" /> Revenue Streams (Ranked by YTD Volume)
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {sortedVerticals.map((vertical) => {
+                        const pct = Math.min((vertical.current / vertical.target) * 100, 100);
+                        const shareOfTotal = totalRevenueYTD > 0 ? (vertical.current / totalRevenueYTD) * 100 : 0;
                         
-                        const pct = (metric.current / metric.target) * 100;
-
                         return (
-                            <div key={module.id} className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-all group flex flex-col relative overflow-hidden">
-                                {isLive && <div className="absolute top-0 right-0 bg-green-100 text-green-800 text-[9px] font-bold px-2 py-1 rounded-bl-lg">LIVE DATA</div>}
+                            <div 
+                                key={vertical.id}
+                                onClick={() => onNavigate(vertical.id as RevenueModule)}
+                                className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden"
+                            >
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${vertical.barClass}`}></div>
                                 
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className={`p-3 rounded-lg ${isLive ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-gray-500 group-hover:bg-blue-50 group-hover:text-blue-600'} transition-colors`}>
-                                        <module.icon size={24} />
-                                    </div>
-                                    <h4 className="font-bold text-gray-900">{module.label}</h4>
-                                </div>
-                                
-                                <div className="flex-1 space-y-3">
-                                    <div>
-                                        <p className="text-xs text-gray-400 font-medium uppercase">Revenue YTD</p>
-                                        <p className="text-2xl font-bold text-gray-800">€{(metric.current / 1000).toFixed(0)}k</p>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between text-[10px] text-gray-500 mb-1">
-                                            <span>Progress</span>
-                                            <span>{pct.toFixed(0)}%</span>
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-2 rounded-lg ${vertical.bgClass} ${vertical.colorClass}`}>
+                                            <vertical.icon size={20} />
                                         </div>
-                                        <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                                            <div className={`h-full rounded-full ${isLive ? 'bg-red-500' : 'bg-blue-500'}`} style={{ width: `${Math.min(pct, 100)}%` }}></div>
+                                        <div>
+                                            <h4 className="font-bold text-gray-800 text-sm leading-tight">{vertical.name}</h4>
+                                            <span className="text-[10px] text-gray-400 font-medium uppercase tracking-wide">Vertical</span>
                                         </div>
+                                    </div>
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
+                                        <ChevronRight size={18} className="text-gray-400" />
                                     </div>
                                 </div>
 
-                                <button 
-                                    onClick={() => onNavigate(module.id)}
-                                    className="mt-6 w-full py-2 border border-gray-200 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-gray-900 flex items-center justify-center gap-2 transition-colors"
-                                >
-                                    Enter Module <ArrowRight size={14} />
-                                </button>
+                                <div className="space-y-1">
+                                    <div className="flex justify-between items-end">
+                                        <span className="text-lg font-bold text-gray-900">€{(vertical.current / 1000).toFixed(0)}k</span>
+                                        <span className="text-xs text-gray-500 font-medium">/ {(vertical.target / 1000).toFixed(0)}k</span>
+                                    </div>
+                                    
+                                    <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                        <div 
+                                            className={`h-full rounded-full transition-all duration-1000 ${vertical.barClass}`}
+                                            style={{ width: `${pct}%` }}
+                                        ></div>
+                                    </div>
+                                    
+                                    <div className="flex justify-between items-center pt-2 border-t border-gray-50 mt-2">
+                                        <span className={`text-[10px] font-bold ${pct >= 100 ? 'text-green-600' : 'text-gray-500'}`}>
+                                            Proj: €{(vertical.projected/1000).toFixed(0)}k
+                                        </span>
+                                        <span className="text-[10px] font-bold text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded">
+                                            {shareOfTotal.toFixed(1)}% of YTD
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         );
                     })}
@@ -345,10 +568,64 @@ service cloud.firestore {
   </div>
 );
 
+// --- NEW COMPONENT: Action Center (Smart Alerts) ---
+const ActionCenter = ({ data }: { data: GameData[] }) => {
+    // Logic to find critical alerts
+    const alerts = useMemo(() => {
+        const list: { type: 'critical'|'warning', msg: string, action: string }[] = [];
+        
+        // 1. Check last game occupancy
+        if (data.length > 0) {
+            const lastGame = data[data.length - 1]; // Assuming sorted elsewhere, or just take last in array
+            const occ = lastGame.capacity > 0 ? (lastGame.attendance / lastGame.capacity) * 100 : 0;
+            
+            if (occ < 60) {
+                list.push({ type: 'critical', msg: `Low occupancy (${occ.toFixed(0)}%) in last match vs ${lastGame.opponent}.`, action: 'Launch Promo' });
+            }
+        }
+
+        // 2. Check Overall Yield Trend
+        // Simple logic: if avg yield < 10 euro
+        const avgYield = data.reduce((acc, g) => acc + (g.attendance>0 ? g.totalRevenue/g.attendance : 0), 0) / (data.length||1);
+        if (avgYield < 12) {
+             list.push({ type: 'warning', msg: `Average Yield is €${avgYield.toFixed(1)}, below target floor of €12.0.`, action: 'Review Pricing' });
+        }
+
+        return list;
+    }, [data]);
+
+    if (alerts.length === 0) return null;
+
+    return (
+        <div className="mb-6 bg-white border-l-4 border-red-500 rounded-r-xl shadow-sm p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in slide-in-from-top-2">
+            <div className="flex items-start gap-3">
+                <div className="p-2 bg-red-100 rounded-full text-red-600">
+                    <Bell size={20} />
+                </div>
+                <div>
+                    <h3 className="font-bold text-gray-900 text-sm">Action Required</h3>
+                    <div className="flex flex-col gap-1 mt-1">
+                        {alerts.map((alert, idx) => (
+                            <p key={idx} className="text-xs text-gray-600 flex items-center gap-2">
+                                <span className={`w-1.5 h-1.5 rounded-full ${alert.type==='critical' ? 'bg-red-500' : 'bg-orange-400'}`}></span>
+                                {alert.msg}
+                            </p>
+                        ))}
+                    </div>
+                </div>
+            </div>
+            <button className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-colors whitespace-nowrap">
+                Open Strategy Simulator
+            </button>
+        </div>
+    );
+};
+
 const App: React.FC = () => {
   // Navigation State - Defaults to HOME
   const [activeModule, setActiveModule] = useState<RevenueModule>('home');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'simulator' | 'chat'>('dashboard');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Data State
   const [data, setData] = useState<GameData[]>([]);
@@ -401,8 +678,8 @@ const App: React.FC = () => {
     { id: 'sponsorship', label: 'Sponsorship', icon: Flag },
     { id: 'merchandising', label: 'Merchandising', icon: ShoppingBag },
     { id: 'venue_ops', label: 'Venue Ops', icon: Landmark },
-    { id: 'bops', label: 'Bops', icon: Activity },
-    { id: 'sg', label: 'SG', icon: GraduationCap },
+    { id: 'bops', label: 'BOps', icon: Activity },
+    { id: 'sg', label: 'Varese Basketball', icon: GraduationCap },
   ];
 
   const loadData = async () => {
@@ -720,13 +997,12 @@ const App: React.FC = () => {
     return { totalRevenue, avgAttendance, topPerformingZone: topZone, occupancyRate, giveawayRate };
   }, [viewData]);
 
-  // Aggregate Game Day Revenue (For Home Screen Card - Pure Variable)
+  // Aggregate Game Day Revenue (For Home Screen Card - Total Revenue MINUS Ticketing)
+  // This matches the user's request for "bring all game day revenue minus tix"
   const gameDayRevenueNet = useMemo(() => {
       return filteredGameDayData.reduce((acc, game) => {
-          // Calculate variable parts only
-          const variableSum = game.merchRevenue + game.fbRevenue + game.hospitalityRevenue + game.parkingRevenue + game.expRevenue;
-          // Note: Ticketing is separate vertical in Home
-          return acc + variableSum;
+          // Total Revenue - Ticketing Revenue = (Merch + F&B + Hosp + Park + Exp + Spons + TV)
+          return acc + (game.totalRevenue - game.tixRevenue);
       }, 0);
   }, [filteredGameDayData]);
 
@@ -784,25 +1060,19 @@ const App: React.FC = () => {
 
   const aiContext = useMemo(() => {
     if (activeModule === 'home') {
-        const verticalData = {
-            sponsorship: { target: 2650000, current: 2100000 },
-            merchandising: { target: 400000, current: 310000 },
-            venue_ops: { target: 150000, current: 85000 },
-            bops: { target: 300000, current: 120000 },
-            sg: { target: 200000, current: 180000 },
-        };
         const totalLiveTix = stats.totalRevenue; // Uses filtered data
         const totalLiveGD = filteredGameDayRevForPacing; // Uses filtered data
-        const totalMock = Object.values(verticalData).reduce((acc, v) => acc + v.current, 0);
-        const totalRev = totalLiveTix + totalLiveGD + totalMock;
-
+        
+        // Pass the actual YTD data to the AI for accurate context
         return JSON.stringify({
             context_filter: { seasons: selectedSeasons, leagues: selectedLeagues },
             view_mode: 'HOME_OVERVIEW',
             totals: {
-                totalRevenue: totalRev,
                 ticketingRevenue: totalLiveTix,
                 gameDayRevenue: totalLiveGD,
+                sponsorshipRevenue: 800000,
+                vareseBasketballRevenue: 550000,
+                merchRevenue: 90000,
                 gamesCount: viewData.length
             }
         });
@@ -911,19 +1181,40 @@ const App: React.FC = () => {
     </div>
   );
 
+  // --- COMPREHENSIVE TICKER ITEMS ---
+  const tickerItems: TickerItem[] = useMemo(() => [
+    { label: "TICKET", value: `€${(stats.totalRevenue/1000).toFixed(0)}k`, icon: Ticket, color: "text-red-400" },
+    { label: "AVG ATT", value: stats.avgAttendance.toFixed(0), icon: Users, color: "text-red-200" },
+    { label: "SPONSOR", value: "€800k", icon: Flag, color: "text-blue-400" },
+    { label: "GAMEDAY", value: `€${(gameDayRevenueNet/1000).toFixed(0)}k`, icon: Calendar, color: "text-indigo-400" },
+    { label: "MERCH", value: "€90k", icon: ShoppingBag, color: "text-orange-400" },
+    { label: "VARESE BSK", value: "€550k", icon: GraduationCap, color: "text-teal-400" },
+    { label: "VENUE", value: "€100k", icon: Landmark, color: "text-slate-400" },
+    { label: "BOPS", value: "€100k", icon: Activity, color: "text-emerald-400" },
+  ], [stats, gameDayRevenueNet]);
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row relative">
       {showSetupModal && <SetupModal onClose={() => setShowSetupModal(false)} />}
       {showRulesError && <RulesErrorModal onClose={() => { setShowRulesError(false); window.location.reload(); }} />}
       
       {/* Top Navigation */}
       <div className="fixed top-0 left-0 w-full bg-white border-b border-gray-200 h-16 z-50 px-6 flex items-center justify-between shadow-sm">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 w-full md:w-auto">
+             <button className="md:hidden text-gray-600 hover:bg-gray-100 p-2 rounded-lg" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+                <Menu size={24} />
+             </button>
              <div className="w-8 h-8 flex-shrink-0">
                <img src={PV_LOGO_URL} alt="PV" className="w-full h-full object-contain" />
              </div>
-             <div className="h-6 w-px bg-gray-200"></div>
-             <div className="flex items-center gap-1 overflow-x-auto">
+             
+             {/* Integrated Mobile Ticker (Hidden on Desktop) */}
+             {!isLoadingData && (
+                <MobileTicker items={tickerItems} />
+             )}
+
+             <div className="h-6 w-px bg-gray-200 hidden md:block"></div>
+             <div className="hidden md:flex items-center gap-1 overflow-x-auto">
                 {MODULES.map((module) => (
                     <button 
                         key={module.id}
@@ -952,25 +1243,74 @@ const App: React.FC = () => {
       </div>
 
       {/* Sidebar - Contextual */}
-      <aside className="bg-white border-r border-gray-200 w-full md:w-24 lg:w-64 flex-shrink-0 flex flex-col fixed left-0 top-16 bottom-0 z-20 overflow-y-auto">
+      <aside className={`bg-white border-r border-gray-200 w-64 md:w-24 lg:w-64 flex-shrink-0 flex flex-col fixed left-0 top-16 bottom-0 z-40 overflow-y-auto transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         
         {/* Module Specific Tools */}
         <div className="p-4 flex-1">
+            {/* Mobile-only Module Switcher */}
+            <div className="md:hidden mb-6 space-y-2 border-b border-gray-100 pb-4">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-2 mb-2">Modules</p>
+                {MODULES.map((module) => (
+                    <button 
+                        key={module.id}
+                        onClick={() => { setActiveModule(module.id); setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                            activeModule === module.id 
+                            ? 'bg-slate-900 text-white shadow-md' 
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                    >
+                        <module.icon size={18} className={activeModule === module.id ? 'text-white' : 'text-gray-400'} />
+                        {module.label}
+                    </button>
+                ))}
+            </div>
+
             {activeModule === 'ticketing' && (
                 <div className="animate-in slide-in-from-left-2 duration-300 space-y-1">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Ticketing Tools</p>
-                    <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'dashboard' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
-                        <LayoutDashboard size={18} /> <span className="hidden lg:inline text-sm">Overview</span>
+                    <button onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'dashboard' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        <LayoutDashboard size={18} /> <span className="inline md:hidden lg:inline text-sm">Overview</span>
                     </button>
-                    <button onClick={() => setActiveTab('comparison')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'comparison' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
-                        <ArrowLeftRight size={18} /> <span className="hidden lg:inline text-sm">Comparison</span>
+                    <button onClick={() => { setActiveTab('comparison'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'comparison' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        <ArrowLeftRight size={18} /> <span className="inline md:hidden lg:inline text-sm">Comparison</span>
                     </button>
-                    <button onClick={() => setActiveTab('simulator')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'simulator' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
-                        <Calculator size={18} /> <span className="hidden lg:inline text-sm">Simulator</span>
+                    <button onClick={() => { setActiveTab('simulator'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'simulator' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        <Calculator size={18} /> <span className="inline md:hidden lg:inline text-sm">Simulator</span>
                     </button>
-                    <button onClick={() => setActiveTab('chat')} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'chat' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
-                        <MessageSquare size={18} /> <span className="hidden lg:inline text-sm">AI Strategist</span>
+                    <button onClick={() => { setActiveTab('chat'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'chat' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        <MessageSquare size={18} /> <span className="inline md:hidden lg:inline text-sm">AI Strategist</span>
                     </button>
+
+                    {(activeTab === 'dashboard' || activeTab === 'comparison') && (
+                        <div className="mt-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Data View</p>
+                            <div className="flex flex-col gap-2">
+                                <button 
+                                    onClick={() => setViewMode('total')}
+                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                                        viewMode === 'total' 
+                                        ? 'bg-white text-gray-900 shadow-sm border border-gray-200' 
+                                        : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    <Briefcase size={14} />
+                                    Total View
+                                </button>
+                                <button 
+                                    onClick={() => setViewMode('gameday')}
+                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                                        viewMode === 'gameday' 
+                                        ? 'bg-white text-red-600 shadow-sm border border-gray-200' 
+                                        : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                                >
+                                    <Calendar size={14} />
+                                    GameDay Only
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -978,7 +1318,7 @@ const App: React.FC = () => {
                 <div className="animate-in slide-in-from-left-2 duration-300 space-y-1">
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">GameDay Tools</p>
                     <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 text-indigo-700 font-bold border border-indigo-100 mb-4">
-                        <LayoutDashboard size={18} /> <span className="hidden lg:inline text-sm">Dashboard</span>
+                        <LayoutDashboard size={18} /> <span className="inline md:hidden lg:inline text-sm">Dashboard</span>
                     </button>
                     
                     <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
@@ -1074,50 +1414,17 @@ const App: React.FC = () => {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-x-hidden pt-16 pl-0 md:pl-24 lg:pl-64">
-        {/* Module Header Strip */}
-        <header className="bg-gray-50 border-b border-gray-200 py-4 px-6 flex flex-col sm:flex-row items-center justify-between sticky top-16 z-40 gap-4 shadow-sm pb-4">
-          <div className="flex items-center gap-4 w-full sm:w-auto">
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                {activeModule === 'home' ? 'Executive Overview' : MODULES.find(m => m.id === activeModule)?.label}
-                {activeModule === 'ticketing' && (
-                    <span className="text-gray-400 font-normal text-sm border-l border-gray-300 pl-3 ml-1">
-                        {activeTab === 'dashboard' ? 'Season Overview' : (activeTab === 'comparison' ? 'Scenario Comparison' : (activeTab === 'simulator' ? 'Strategy Simulator' : 'Strategic Planning'))}
-                    </span>
-                )}
-            </h2>
-          </div>
-          
-          {/* View Mode Toggle (Only valid for Ticketing Dashboard/Comparison) */}
-          {activeModule === 'ticketing' && (activeTab === 'dashboard' || activeTab === 'comparison') && (
-            <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
-                <button 
-                    onClick={() => setViewMode('total')}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                        viewMode === 'total' 
-                        ? 'bg-white text-gray-900 shadow-sm' 
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                >
-                    <Briefcase size={14} />
-                    Total View
-                </button>
-                <button 
-                    onClick={() => setViewMode('gameday')}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                        viewMode === 'gameday' 
-                        ? 'bg-white text-red-600 shadow-sm' 
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                >
-                    <Calendar size={14} />
-                    GameDay Only
-                </button>
-            </div>
-          )}
-        </header>
+      {/* Overlay for mobile sidebar */}
+      {isMobileMenuOpen && (
+        <div 
+            className="fixed inset-0 bg-black/50 z-30 md:hidden backdrop-blur-sm"
+            onClick={() => setIsMobileMenuOpen(false)}
+        ></div>
+      )}
 
-        <div className="p-6 max-w-7xl mx-auto min-h-[calc(100vh-144px)] mt-6">
+      <main className="flex-1 overflow-x-hidden pt-16 pl-0 md:pl-24 lg:pl-64">
+        
+        <div className="p-6 max-w-7xl mx-auto min-h-[calc(100vh-64px)]">
           
           {/* --- CONTENT AREA SWITCHER --- */}
           
@@ -1127,18 +1434,19 @@ const App: React.FC = () => {
                 ticketingRevenue={stats.totalRevenue} 
                 gameDayRevenue={gameDayRevenueNet} 
                 onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
-                filterBar={<FilterBar />}
                 onAiClick={() => {
                     setActiveModule('ticketing');
                     setActiveTab('chat');
                 }}
                 gamesPlayed={viewData.length}
+                seasonFilter={selectedSeasons[0]}
+                onSeasonChange={(s) => setSelectedSeasons([s])}
               />
           ) : activeModule === 'gameday' ? (
               <div className="pt-6">
                 {!isLoadingData && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                        <div className="lg:col-span-2 relative bg-gradient-to-br from-indigo-800 to-slate-900 rounded-xl p-6 text-white shadow-lg overflow-hidden group border border-indigo-700">
+                        <div className="hidden md:block lg:col-span-2 relative bg-gradient-to-br from-indigo-800 to-slate-900 rounded-xl p-6 text-white shadow-lg overflow-hidden group border border-indigo-700">
                             <div className="absolute top-4 right-4 opacity-50 group-hover:opacity-100 transition-opacity duration-500">
                             <AIAvatar size="sm" />
                             </div>
@@ -1191,7 +1499,7 @@ const App: React.FC = () => {
                     {/* DIRECTOR'S NOTE */}
                     {!isLoadingData && (
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                            <div className="lg:col-span-2 relative bg-gradient-to-br from-red-700 to-slate-900 rounded-xl p-6 text-white shadow-lg overflow-hidden group border border-red-900">
+                            <div className="hidden md:block lg:col-span-2 relative bg-gradient-to-br from-red-700 to-slate-900 rounded-xl p-6 text-white shadow-lg overflow-hidden group border border-red-900">
                                 <div className="absolute top-4 right-4 opacity-50 group-hover:opacity-100 transition-opacity duration-500">
                                 <AIAvatar size="sm" />
                                 </div>
@@ -1233,6 +1541,9 @@ const App: React.FC = () => {
 
                     {/* Filter Bar */}
                     <FilterBar />
+                    
+                    {/* Action Center - Smart Alerts */}
+                    <ActionCenter data={viewData} />
                     
                     {isLoadingData && data.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-96">
