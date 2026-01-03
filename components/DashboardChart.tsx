@@ -48,7 +48,9 @@ const getDayOfWeek = (dateStr: string) => {
 
 // Simple Linear Regression for Forecasting
 const calculateTrendLine = (dataPoints: any[]) => {
-    if (dataPoints.length < 2) return [];
+    // FIX: If not enough points to calculate a trend (slope), return data as-is 
+    // so the bars still appear. Previously returned [] causing chart to vanish.
+    if (dataPoints.length < 2) return dataPoints;
 
     const n = dataPoints.length;
     let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
@@ -60,10 +62,13 @@ const calculateTrendLine = (dataPoints: any[]) => {
         sumXX += index * index;
     });
 
-    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    const denominator = (n * sumXX - sumX * sumX);
+    if (denominator === 0) return dataPoints;
+
+    const slope = (n * sumXY - sumX * sumY) / denominator;
     const intercept = (sumY - slope * sumX) / n;
 
-    // Generate trend points including 3 future games
+    // Generate trend points
     return dataPoints.map((point, index) => ({
         ...point,
         trend: slope * index + intercept
@@ -74,7 +79,12 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
   
   // 1. Revenue & Attendance Trend (Composed)
   const uniqueOpponents = new Set(data.map(d => d.opponent));
-  const isComparisonMode = uniqueOpponents.size < data.length * 0.5;
+  
+  // If we are looking at a single opponent across multiple seasons, concise labeling is better.
+  const isSingleOpponentView = uniqueOpponents.size === 1; 
+  
+  // If we have very few games, we show full details. If many, we abbreviate.
+  const isComparisonMode = uniqueOpponents.size < data.length * 0.5; 
 
   const sortedData = [...data].sort((a, b) => {
         const dateA = a.date.split('/').reverse().join('');
@@ -83,8 +93,8 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
   });
 
   const rawTrendData = sortedData.map(game => ({
-        name: isComparisonMode 
-            ? `${game.season}`
+        name: isSingleOpponentView
+            ? `${game.season}` // Just season if looking at one team history
             : (uniqueOpponents.size <= 3 ? `${game.season} ${game.opponent}` : game.opponent.substring(0, 8)),
         fullLabel: `${game.opponent} (${game.season})`,
         date: game.date,
@@ -456,7 +466,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                                <span className="text-gray-500">Attendance:</span>
                                <span className="font-bold text-gray-900">{d.attendance}</span>
                              </div>
-                             {d.trend && (
+                             {d.trend !== undefined && (
                                 <div className="flex justify-between items-center gap-4 border-t border-gray-50 pt-1 mt-1">
                                     <span className="text-gray-500">Forecast:</span>
                                     <span className="font-bold text-yellow-600">{formatCurrency(d.trend)}</span>
