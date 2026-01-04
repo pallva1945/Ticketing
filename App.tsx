@@ -1567,9 +1567,10 @@ const App: React.FC = () => {
                                 <h2 className="text-xl font-bold text-gray-800">Venue Intelligence</h2>
                             </div>
                             
-                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                                {/* Map Area */}
-                                <div className="xl:col-span-5 h-[500px]">
+                            {/* Map and Vertical Widgets Row */}
+                            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-6">
+                                {/* Map Area - Significantly Bigger (75% width) */}
+                                <div className="xl:col-span-3 h-[600px]">
                                     <ArenaMap 
                                         data={viewData} 
                                         onZoneClick={handleZoneClick} 
@@ -1577,46 +1578,48 @@ const App: React.FC = () => {
                                     />
                                 </div>
 
-                                {/* Distressed Zones & Comp Killer & Table Area */}
-                                <div className="xl:col-span-7 h-[500px] flex flex-col gap-4">
-                                    {/* Top Row: Distress & Comp Killer (Side by Side) */}
-                                    <div className="flex-shrink-0 grid grid-cols-1 md:grid-cols-2 gap-4 h-40">
+                                {/* Vertical Widgets Column */}
+                                <div className="xl:col-span-1 flex flex-col gap-6 h-[600px]">
+                                    <div className="flex-1 min-h-0">
                                         <DistressedZones data={viewData} />
+                                    </div>
+                                    <div className="flex-1 min-h-0">
                                         <CompKillerWidget data={viewData} />
                                     </div>
+                                </div>
+                            </div>
 
-                                    <div className="flex-1 overflow-hidden min-h-0">
-                                        {selectedZones.includes('All') ? (
-                                        <ZoneTable data={viewData} onZoneClick={handleZoneClick} />
-                                        ) : (
-                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
-                                            <div className="p-4 border-b border-gray-100 font-semibold text-gray-700 flex justify-between items-center bg-gray-50 flex-shrink-0">
+                            {/* Full Width Zone Table */}
+                            <div className="h-[600px] w-full">
+                                {selectedZones.includes('All') ? (
+                                    <ZoneTable data={viewData} onZoneClick={handleZoneClick} />
+                                ) : (
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
+                                        <div className="p-4 border-b border-gray-100 font-semibold text-gray-700 flex justify-between items-center bg-gray-50 flex-shrink-0">
                                             <div className="flex items-center gap-2">
                                                 <span>Detailed Games Log ({selectedZones[0]})</span>
                                                 <button onClick={() => setSelectedZones(['All'])} className="text-xs text-red-600 hover:underline ml-2 bg-white px-2 py-1 rounded border border-red-200">Reset View</button>
                                             </div>
                                             <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-gray-500">{viewData.length} Matches</span>
-                                            </div>
-                                            <div className="divide-y divide-gray-50 overflow-y-auto flex-1 p-2">
+                                        </div>
+                                        <div className="divide-y divide-gray-50 overflow-y-auto flex-1 p-2">
                                             {[...viewData].reverse().map((game) => (
                                                 <div key={game.id} className="p-3 flex items-center justify-between hover:bg-gray-50 transition-colors rounded-lg">
-                                                <div>
-                                                    <p className="font-bold text-gray-900 text-sm">{game.opponent}</p>
-                                                    <p className="text-xs text-gray-400">{game.date} • {game.season}</p>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="font-bold text-gray-900 text-sm">€{(game.totalRevenue/1000).toFixed(1)}k</p>
-                                                    <p className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-1">
-                                                    {game.attendance} Sold
-                                                    </p>
-                                                </div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-900 text-sm">{game.opponent}</p>
+                                                        <p className="text-xs text-gray-400">{game.date} • {game.season}</p>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="font-bold text-gray-900 text-sm">€{(game.totalRevenue/1000).toFixed(1)}k</p>
+                                                        <p className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-1">
+                                                            {game.attendance} Sold
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             ))}
-                                            </div>
                                         </div>
-                                        )}
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                         
