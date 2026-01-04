@@ -1603,7 +1603,7 @@ const App: React.FC = () => {
                             data={viewData} 
                             fullDataset={data} 
                             filters={{ season: selectedSeasons, league: selectedLeagues, zone: selectedZones, opponent: selectedOpponents, tier: selectedTiers }} 
-                            kpiConfig={kpiConfig}
+                            kpiConfig={{ ...kpiConfig, giveawayTarget: viewMode === 'gameday' ? 15 : 10 }}
                             viewMode={viewMode}
                         />
 
@@ -1625,7 +1625,7 @@ const App: React.FC = () => {
 
                                 {/* Vertical Widgets Column */}
                                 <div className="xl:col-span-1 flex flex-col gap-4 h-[600px]">
-                                    <div className="flex-[2] min-h-0">
+                                    <div className="flex-[4] min-h-0">
                                         <DistressedZones data={viewData} />
                                     </div>
                                     <div className="flex-1 min-h-0">
