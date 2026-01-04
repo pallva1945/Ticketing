@@ -1613,9 +1613,9 @@ const App: React.FC = () => {
                             </div>
                             
                             {/* Map and Vertical Widgets Row */}
-                            <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-6">
-                                {/* Map Area - Significantly Bigger (75% width) */}
-                                <div className="xl:col-span-3 h-[600px]">
+                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6">
+                                {/* Map Area - Slimmer (8/12 = 66%) */}
+                                <div className="xl:col-span-8 h-[600px]">
                                     <ArenaMap 
                                         data={viewData} 
                                         onZoneClick={handleZoneClick} 
@@ -1623,12 +1623,14 @@ const App: React.FC = () => {
                                     />
                                 </div>
 
-                                {/* Vertical Widgets Column */}
-                                <div className="xl:col-span-1 flex flex-col gap-4 h-[600px]">
-                                    <div className="flex-[4] min-h-0">
+                                {/* Vertical Widgets Column - Wider (4/12 = 33%) */}
+                                <div className="xl:col-span-4 flex flex-col gap-4 h-[600px]">
+                                    {/* 70% Height */}
+                                    <div className="flex-[7] min-h-0">
                                         <DistressedZones data={viewData} />
                                     </div>
-                                    <div className="flex-1 min-h-0">
+                                    {/* 30% Height */}
+                                    <div className="flex-[3] min-h-0">
                                         <CompKillerWidget data={viewData} />
                                     </div>
                                 </div>
