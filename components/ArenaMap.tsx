@@ -153,6 +153,7 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
         }
       `}</style>
 
+      {/* Header controls */}
       <div className="w-full flex justify-between items-center mb-2 z-10 px-4 absolute top-4 left-0 right-0">
         <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2 drop-shadow-md">
            <span className="w-1.5 h-4 bg-red-600 rounded-sm"></span>
@@ -166,8 +167,10 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
         </div>
       </div>
       
-      <div className="relative w-full flex-1 flex items-center justify-center z-0 mt-8">
-        <svg viewBox="100 60 600 480" className="w-full h-full drop-shadow-2xl">
+      {/* Map Graphic Area */}
+      <div className="relative w-full flex-1 min-h-0 flex items-center justify-center z-0 mt-8 mb-0">
+        {/* Adjusted viewBox: -35 -30 870 660 for optimal fit without clipping */}
+        <svg viewBox="-35 -30 870 660" preserveAspectRatio="xMidYMid meet" className="w-full h-full drop-shadow-2xl">
           <defs>
              <pattern id="grid" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
                 <circle cx="1" cy="1" r="0.5" fill="rgba(255,255,255,0.05)" />
@@ -220,13 +223,14 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
           })}
         </svg>
 
+        {/* Tooltip */}
         {hoveredZone && stats[hoveredZone] && (() => {
             const occupancyPct = stats[hoveredZone].capacity > 0 ? (stats[hoveredZone].sold / stats[hoveredZone].capacity) * 100 : 0;
             const yieldVal = stats[hoveredZone].sold > 0 ? stats[hoveredZone].revenue / stats[hoveredZone].sold : 0;
             const isYieldOpp = occupancyPct > 90;
 
             return (
-                <div className="absolute bottom-4 right-4 bg-slate-900/95 text-white p-3 rounded-lg shadow-2xl border border-slate-700 backdrop-blur-md z-30 min-w-[140px] pointer-events-none">
+                <div className="absolute top-20 left-4 bg-slate-900/95 text-white p-3 rounded-lg shadow-2xl border border-slate-700 backdrop-blur-md z-30 min-w-[140px] pointer-events-none animate-in fade-in zoom-in duration-200">
                     <div className="flex justify-between items-center mb-2 border-b border-slate-700 pb-2">
                     <span className="font-bold text-xs text-red-400 uppercase tracking-wider">{hoveredZone}</span>
                     </div>
@@ -274,7 +278,8 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
         })()}
       </div>
       
-      <div className="w-full flex justify-center mt-auto pb-2 pt-2 z-10">
+      {/* Legend / Reference */}
+      <div className="w-full flex justify-center pb-3 pt-2 z-20 bg-slate-900 border-t border-slate-800 rounded-b-lg">
          {metric === 'yield' ? (
              <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase">
                 <div className="w-3 h-3 rounded bg-purple-600 border border-white/20"></div> High Occ. (&gt;95%) - Raise Price
