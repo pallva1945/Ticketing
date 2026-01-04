@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, ChevronRight, PieChart, TrendingUp, DollarSign, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Target, AlertTriangle, ChevronDown, Crown, Bell, Users } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, ChevronRight, PieChart, TrendingUp, DollarSign, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Target, AlertTriangle, ChevronDown, Crown, Bell, Users, FileText } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -1380,9 +1380,24 @@ const App: React.FC = () => {
             )}
 
             {activeModule === 'home' && (
-                <div className="p-4 bg-gray-50 rounded-lg text-center border border-gray-100">
-                    <PieChart size={32} className="mx-auto text-gray-300 mb-2" />
-                    <p className="text-xs text-gray-500">Global Overview Mode</p>
+                <div className="space-y-4 animate-in slide-in-from-left-2 duration-300">
+                    <div className="p-4 bg-gray-50 rounded-lg text-center border border-gray-100">
+                        <PieChart size={32} className="mx-auto text-gray-300 mb-2" />
+                        <p className="text-xs text-gray-500">Global Overview Mode</p>
+                    </div>
+                    
+                    <a 
+                        href="https://shareholders.pallacanestrovarese.club/" 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-600 font-medium shadow-sm hover:border-red-200 hover:text-red-700 transition-all group"
+                    >
+                        <div className="p-1.5 bg-gray-100 rounded-md group-hover:bg-red-50 transition-colors">
+                            <FileText size={16} />
+                        </div>
+                        <span className="inline md:hidden lg:inline text-sm">Monthly Reports</span>
+                        <ExternalLink size={12} className="ml-auto opacity-50 group-hover:opacity-100" />
+                    </a>
                 </div>
             )}
         </div>
