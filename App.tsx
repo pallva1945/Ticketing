@@ -644,7 +644,7 @@ const App: React.FC = () => {
   const [showRulesError, setShowRulesError] = useState(false);
   
   // View Mode
-  const [viewMode, setViewMode] = useState<'total' | 'gameday'>('total');
+  const [viewMode, setViewMode] = useState<'total' | 'gameday'>('gameday');
   const [gameDayIncludeTicketing, setGameDayIncludeTicketing] = useState(false);
 
   // KPI Configuration (Hardcoded)
@@ -855,6 +855,51 @@ const App: React.FC = () => {
 
   const filteredGames = useMemo(() => getFilteredGames(), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
 
+  // NEW: Total View Data (Independent of viewMode) for Executive Overview
+  const totalViewData = useMemo(() => {
+    return filteredGames.map(game => {
+      let zoneSales = game.salesBreakdown;
+
+      if (ignoreOspiti) zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
+      if (!selectedZones.includes('All')) zoneSales = zoneSales.filter(s => selectedZones.includes(s.zone));
+
+      // No channel filtering (Total View)
+      
+      const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
+      const zoneAttendance = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
+
+      let zoneCapacity = 0;
+      let filteredZoneCapacities = { ...game.zoneCapacities };
+      if (ignoreOspiti) delete filteredZoneCapacities[TicketZone.OSPITI];
+      
+      if (!selectedZones.includes('All')) {
+          const newCapMap: Record<string, number> = {};
+          Object.keys(filteredZoneCapacities).forEach(z => {
+              if (selectedZones.includes(z)) newCapMap[z] = filteredZoneCapacities[z];
+          });
+          filteredZoneCapacities = newCapMap;
+      }
+
+      // No fixed deduction (Total View)
+
+      Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
+
+      return {
+        ...game,
+        attendance: zoneAttendance,
+        totalRevenue: zoneRevenue,
+        capacity: zoneCapacity,
+        salesBreakdown: zoneSales,
+        zoneCapacities: filteredZoneCapacities
+      };
+    });
+  }, [filteredGames, selectedZones, ignoreOspiti]);
+
+  const totalStats = useMemo(() => {
+      const totalRevenue = totalViewData.reduce((sum, game) => sum + game.totalRevenue, 0);
+      return { totalRevenue };
+  }, [totalViewData]);
+
   const viewData = useMemo(() => {
     return filteredGames.map(game => {
       let zoneSales = game.salesBreakdown;
@@ -1060,7 +1105,7 @@ const App: React.FC = () => {
 
   const aiContext = useMemo(() => {
     if (activeModule === 'home') {
-        const totalLiveTix = stats.totalRevenue; // Uses filtered data
+        const totalLiveTix = totalStats.totalRevenue; // Uses total stats (unaffected by viewMode)
         const totalLiveGD = filteredGameDayRevForPacing; // Uses filtered data
         
         // Pass the actual YTD data to the AI for accurate context
@@ -1105,7 +1150,7 @@ const App: React.FC = () => {
       totals: stats,
       games_in_view: viewData.length
     });
-  }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, viewMode, activeModule, filteredGameDayData, filteredGameDayRevForPacing]);
+  }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, viewMode, activeModule, filteredGameDayData, filteredGameDayRevForPacing, totalStats]);
 
   const lastGame = useMemo(() => {
     if (data.length === 0) return null;
@@ -1431,7 +1476,7 @@ const App: React.FC = () => {
           {activeModule === 'home' ? (
               <RevenueHome 
                 modules={MODULES} 
-                ticketingRevenue={stats.totalRevenue} 
+                ticketingRevenue={totalStats.totalRevenue} 
                 gameDayRevenue={gameDayRevenueNet} 
                 onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
                 onAiClick={() => {

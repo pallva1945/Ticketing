@@ -107,6 +107,8 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
         return '#475569'; // Slate 600
     } else {
         // Occupancy Scale
+        if (zoneData.capacity === 0) return '#334155'; // Grey for no capacity (N/A)
+
         const occupancy = zoneData.capacity > 0 ? zoneData.sold / zoneData.capacity : 0;
         if (occupancy < 0.50) return '#dc2626'; // Red 600 (Critical)
         if (occupancy >= 0.90) return '#22c55e'; // Green
@@ -121,11 +123,24 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
   const R2 = { ix: 185, iy: 135, ox: 240, oy: 180 };
   const R3 = { ix: 250, iy: 190, ox: 295, oy: 225 };
 
+  // Calculate split radius for Parterre Executive (Front rows / Near Court)
+  // We allocate the inner 40% of the ring to Executive
+  const R1_Split = { 
+      x: R1.ix + (R1.ox - R1.ix) * 0.40, 
+      y: R1.iy + (R1.oy - R1.iy) * 0.40 
+  };
+
   const stadiumZones = [
     { id: TicketZone.PAR_E, label: 'Parterre Est', path: describeSector(CX, CY, R1.ix, R1.iy, R1.ox, R1.oy, 230, 310), isZone: true },
+    
+    // Parterre Ovest Left & Right (Full Depth)
     { id: TicketZone.PAR_O, label: 'Parterre Ovest', path: describeSector(CX, CY, R1.ix, R1.iy, R1.ox, R1.oy, -40, 40), isZone: true },
-    { id: TicketZone.PAR_O, label: 'Parterre Ovest', path: describeSector(CX, CY, R1.ix, R1.iy, R1.ox, R1.oy, 50, 130), isZone: true },
     { id: TicketZone.PAR_O, label: 'Parterre Ovest', path: describeSector(CX, CY, R1.ix, R1.iy, R1.ox, R1.oy, 140, 220), isZone: true },
+    
+    // Parterre Ovest Central (Split: Inner = Par Ex, Outer = Par O)
+    { id: TicketZone.PAR_EX, label: 'Parterre Executive', path: describeSector(CX, CY, R1.ix, R1.iy, R1_Split.x, R1_Split.y, 50, 130), isZone: true },
+    { id: TicketZone.PAR_O, label: 'Parterre Ovest', path: describeSector(CX, CY, R1_Split.x, R1_Split.y, R1.ox, R1.oy, 50, 130), isZone: true },
+
     { id: TicketZone.TRIB_G, label: 'Tribuna Gold', path: describeSector(CX, CY, R2.ix, R2.iy, R2.ox, R2.oy, 230, 310), isZone: true },
     { id: TicketZone.TRIB_S, label: 'Tribuna Silver', path: describeSector(CX, CY, R2.ix, R2.iy, R2.ox, R2.oy, -40, 40), isZone: true },
     { id: TicketZone.TRIB_G, label: 'Tribuna Gold', path: describeSector(CX, CY, R2.ix, R2.iy, R2.ox, R2.oy, 50, 130), isZone: true },
@@ -255,8 +270,8 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
                         </div>
                         <div className="flex justify-between text-slate-400">
                             <span>Occupancy</span>
-                            <span className={`${occupancyPct > 90 ? 'text-green-400 font-bold' : (occupancyPct < 50 ? 'text-red-400' : 'text-white')}`}>
-                                {occupancyPct.toFixed(1)}%
+                            <span className={`${stats[hoveredZone].capacity === 0 ? 'text-gray-400' : (occupancyPct > 90 ? 'text-green-400 font-bold' : (occupancyPct < 50 ? 'text-red-400' : 'text-white'))}`}>
+                                {stats[hoveredZone].capacity === 0 ? 'N/A' : `${occupancyPct.toFixed(1)}%`}
                             </span>
                         </div>
                         
@@ -268,8 +283,8 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
 
                         <div className="w-full bg-slate-800 h-1 mt-1 rounded-full overflow-hidden">
                             <div 
-                                className={`h-full ${occupancyPct > 90 ? 'bg-purple-500' : 'bg-red-600'}`} 
-                                style={{width: `${Math.min(occupancyPct, 100)}%`}}
+                                className={`h-full ${stats[hoveredZone].capacity === 0 ? 'bg-slate-600' : (occupancyPct > 90 ? 'bg-purple-500' : 'bg-red-600')}`} 
+                                style={{width: `${stats[hoveredZone].capacity === 0 ? 0 : Math.min(occupancyPct, 100)}%`}}
                             ></div>
                         </div>
                     </div>
