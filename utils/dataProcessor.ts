@@ -1,72 +1,48 @@
+import { GameData, GameDayData, SalesChannel, SalesDataPoint, TicketTypeBreakdown, TicketZone } from '../types';
 
-import { GameData, SalesDataPoint, TicketZone, SalesChannel, TicketTypeBreakdown, GameDayData } from '../types';
+// --- HELPERS ---
 
-// Helper to clean currency string and parse to float
-// ADAPTED FOR ITALIAN FORMAT (Dot = Thousands, Comma = Decimals)
-const parseCurrency = (val: string): number => {
-  if (!val || val === '#DIV/0!' || val.trim() === '') return 0;
-  
-  // Remove currency symbols, whitespace, non-breaking spaces, and quotes
-  let clean = val.replace(/[€$£\s\u00A0"]/g, '');
-  
-  // Check if it's potentially US format (1,000.00) vs Italian (1.000,00)
-  // We assume Italian primarily for this dataset.
-  // Italian: 1.234,56
-  // Remove all dots (thousands separators)
-  clean = clean.replace(/\./g, '');
-  // Replace comma with dot (decimal separator)
-  clean = clean.replace(/,/g, '.');
+const parseCSV = (str: string): string[][] => {
+    const arr: string[][] = [];
+    let quote = false;
+    let row = 0, col = 0;
 
-  const num = parseFloat(clean);
-  return isNaN(num) ? 0 : num;
+    for (let c = 0; c < str.length; c++) {
+        let cc = str[c], nc = str[c+1];
+        arr[row] = arr[row] || [];
+        arr[row][col] = arr[row][col] || '';
+
+        if (cc == '"' && quote && nc == '"') { arr[row][col] += cc; ++c; continue; }
+        if (cc == '"') { quote = !quote; continue; }
+        if (cc == ',' && !quote) { ++col; continue; }
+        if (cc == '\r' && nc == '\n' && !quote) { ++row; col = 0; ++c; continue; }
+        if (cc == '\n' && !quote) { ++row; col = 0; continue; }
+        if (cc == '\r' && !quote) { ++row; col = 0; continue; }
+
+        arr[row][col] += cc;
+    }
+    return arr;
 };
 
-// Helper to parse integer
-const parseInteger = (val: string): number => {
-  if (!val || val === '#DIV/0!' || val.trim() === '') return 0;
-  // Remove non-digits (except minus)
-  // For Italian format like 1.000, we want 1000.
-  let clean = val.replace(/[^\d-,.]/g, ''); 
-  
-  // Normalize Italian: Remove dots, replace comma with dot (though integers usually don't have decimals)
-  clean = clean.replace(/\./g, '').replace(/,/g, '.');
-  
+const parseInteger = (val: string | undefined): number => {
+  if (!val) return 0;
+  // Remove dots (thousands separators) and non-numeric except minus
+  const clean = val.replace(/\./g, '').replace(/[^0-9-]/g, '');
   const num = parseInt(clean, 10);
   return isNaN(num) ? 0 : num;
 };
 
-// Simple CSV parser
-const parseCSV = (text: string): string[][] => {
-  const result: string[][] = [];
-  const lines = text.split(/\r?\n/);
-  
-  for (const line of lines) {
-    if (!line.trim()) continue;
-    
-    const row: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        if (inQuotes && line[i+1] === '"') {
-            current += '"';
-            i++;
-        } else {
-            inQuotes = !inQuotes;
-        }
-      } else if (char === ',' && !inQuotes) {
-        row.push(current);
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    row.push(current);
-    result.push(row);
-  }
-  return result;
+const parseCurrency = (val: string | undefined): number => {
+  if (!val) return 0;
+  // Standardize format: "€ 1.234,56" -> 1234.56
+  // Remove € and whitespace
+  let clean = val.replace(/[€\s]/g, '');
+  // Remove thousands separator (dots)
+  clean = clean.replace(/\./g, '');
+  // Replace decimal separator (comma) with dot
+  clean = clean.replace(',', '.');
+  const num = parseFloat(clean);
+  return isNaN(num) ? 0 : num;
 };
 
 // --- SEASONAL CAPACITY CONFIGURATIONS ---
@@ -101,11 +77,11 @@ const CAPACITIES_24_25: Record<TicketZone, number> = {
 };
 
 const CAPACITIES_25_26: Record<TicketZone, number> = {
-  [TicketZone.PAR_O]: 382,
-  [TicketZone.PAR_EX]: 83, // Carved out of Par O
+  [TicketZone.PAR_O]: 390,
+  [TicketZone.PAR_EX]: 83,
   [TicketZone.PAR_E]: 220,
-  [TicketZone.TRIB_G]: 2209,
-  [TicketZone.TRIB_S]: 367,
+  [TicketZone.TRIB_G]: 1816, // Updated: Total 1816 (Fix 1230 -> 586 Available)
+  [TicketZone.TRIB_S]: 705,  // Updated: Total 705 (Fix 261 -> 444 Available)
   [TicketZone.GALL_G]: 389,
   [TicketZone.GALL_S]: 669,
   [TicketZone.CURVA]: 458,

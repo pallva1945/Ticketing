@@ -47,17 +47,17 @@ You are the Strategic Board Advisor to Luis Scola, CEO of Pallacanestro Varese.
 // Used to calculate "Game Day Availability"
 // Galleria total 352 split estimated 37/63 based on capacity ratio
 export const FIXED_CAPACITY_25_26: Record<string, number> = {
-  [TicketZone.PAR_O]: 309,
+  [TicketZone.PAR_O]: 243, // Updated: Total 390 - Fixed 243 = 147 Available
   [TicketZone.PAR_E]: 94,
   [TicketZone.TRIB_G]: 1230,
   [TicketZone.TRIB_S]: 261,
-  [TicketZone.GALL_G]: 130, // Estimated split of 352
-  [TicketZone.GALL_S]: 222, // Estimated split of 352
+  [TicketZone.GALL_G]: 282, // Updated: Total 389 - Fixed 282 = 107 Available
+  [TicketZone.GALL_S]: 70,  // Updated: Total 669 - Fixed 70 = 599 Available
   [TicketZone.CURVA]: 314,
   [TicketZone.COURTSIDE]: 38,
   [TicketZone.SKYBOX]: 60,
   [TicketZone.OSPITI]: 0, // Usually 0 fixed
-  [TicketZone.PAR_EX]: 0 // Assuming included in Par O number or 0 for now
+  [TicketZone.PAR_EX]: 66 // Updated: 66 sold fixed, total cap 83 -> 17 available
 };
 
 // Initial empty state, data is loaded from CSV in App.tsx
