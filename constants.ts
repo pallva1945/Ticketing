@@ -6,8 +6,9 @@ export const MAX_CAPACITY = 5113;
 export const PV_LOGO_URL = "https://i.imgur.com/r1fWDF1.png";
 
 // --- TARGET CONFIGURATION ---
-export const SEASON_TARGET_TOTAL = 1650000;   // €1.65M Ticketing Core
-export const SEASON_TARGET_GAMEDAY = 1650000;  // €1.65M Variable Target (Net minus Tix)
+export const SEASON_TARGET_TOTAL = 1650000;   // €1.65M Ticketing Core (Total)
+export const SEASON_TARGET_TICKETING_DAY = 495000; // €495k Target for Day Sales (€33k/game * 15 games)
+export const SEASON_TARGET_GAMEDAY = 1650000;  // €1.65M Variable Target (Net minus Tix) - For GameDay Module
 export const SEASON_TARGET_GAMEDAY_TOTAL = 3300000; // €3.3M Total GameDay Budget (Tix + Variable)
 
 // --- GOOGLE SHEETS CONFIGURATION ---

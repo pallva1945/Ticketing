@@ -13,7 +13,7 @@ import { DistressedZones } from './components/DistressedZones';
 import { CompKillerWidget } from './components/CompKillerWidget';
 import { GameDayDashboard } from './components/GameDayDashboard';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
-import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL } from './constants';
+import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { GAMEDAY_CSV_CONTENT } from './data/gameDayData';
@@ -1532,7 +1532,7 @@ const App: React.FC = () => {
                                 <PacingWidget 
                                     currentRevenue={stats.totalRevenue} 
                                     gamesPlayed={viewData.length} 
-                                    seasonTarget={viewMode === 'gameday' ? SEASON_TARGET_GAMEDAY : SEASON_TARGET_TOTAL} 
+                                    seasonTarget={viewMode === 'gameday' ? SEASON_TARGET_TICKETING_DAY : SEASON_TARGET_TOTAL} 
                                     totalGamesInSeason={15} // Approx
                                 />
                             </div>
