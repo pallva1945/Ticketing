@@ -155,22 +155,22 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
 
       {/* Header controls */}
       <div className="w-full flex justify-between items-center mb-2 z-10 px-4 absolute top-4 left-0 right-0">
-        <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2 drop-shadow-md">
-           <span className="w-1.5 h-4 bg-red-600 rounded-sm"></span>
+        <h3 className="text-lg font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2 drop-shadow-md">
+           <span className="w-1.5 h-5 bg-red-600 rounded-sm"></span>
            Arena Map
         </h3>
         
         <div className="flex bg-slate-900/80 backdrop-blur-sm rounded-lg p-0.5 border border-slate-700 shadow-lg">
-            <button onClick={() => setMetric('revenue')} className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${metric === 'revenue' ? 'bg-red-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Revenue</button>
-            <button onClick={() => setMetric('occupancy')} className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${metric === 'occupancy' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Occupancy</button>
-            <button onClick={() => setMetric('yield')} className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${metric === 'yield' ? 'bg-purple-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Yield Opportunity</button>
+            <button onClick={() => setMetric('revenue')} className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase transition-all ${metric === 'revenue' ? 'bg-red-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Revenue</button>
+            <button onClick={() => setMetric('occupancy')} className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase transition-all ${metric === 'occupancy' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Occupancy</button>
+            <button onClick={() => setMetric('yield')} className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase transition-all ${metric === 'yield' ? 'bg-purple-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Yield Opportunity</button>
         </div>
       </div>
       
       {/* Map Graphic Area */}
-      <div className="relative w-full flex-1 min-h-0 flex items-center justify-center z-0 mt-8 mb-0">
-        {/* Adjusted viewBox: -35 -30 870 660 for optimal fit without clipping */}
-        <svg viewBox="-35 -30 870 660" preserveAspectRatio="xMidYMid meet" className="w-full h-full drop-shadow-2xl">
+      <div className="relative w-full flex-1 min-h-0 flex items-center justify-center z-0 mt-12 mb-0">
+        {/* Adjusted viewBox: 90 60 620 480 for tighter fit around arena */}
+        <svg viewBox="90 60 620 480" preserveAspectRatio="xMidYMid meet" className="w-full h-full drop-shadow-2xl">
           <defs>
              <pattern id="grid" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
                 <circle cx="1" cy="1" r="0.5" fill="rgba(255,255,255,0.05)" />
@@ -281,24 +281,24 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
       {/* Legend / Reference */}
       <div className="w-full flex justify-center pb-3 pt-2 z-20 bg-slate-900 border-t border-slate-800 rounded-b-lg">
          {metric === 'yield' ? (
-             <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase">
+             <div className="flex items-center gap-2 text-xs text-slate-400 font-bold uppercase">
                 <div className="w-3 h-3 rounded bg-purple-600 border border-white/20"></div> High Occ. (&gt;95%) - Raise Price
              </div>
          ) : metric === 'revenue' ? (
              <div className="flex flex-col items-center gap-1">
-                 <div className="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Revenue Scale</div>
-                 <div className="flex items-center gap-2 text-[9px] text-slate-500 font-medium">
+                 <div className="text-xs text-slate-400 uppercase tracking-widest font-semibold">Revenue Scale</div>
+                 <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
                     <span>Low</span>
-                    <div className="w-48 h-2 rounded-full bg-gradient-to-r from-[hsl(348,83%,25%)] via-[hsl(348,83%,55%)] to-[hsl(348,83%,85%)] border border-slate-700 shadow-inner"></div>
+                    <div className="w-48 h-3 rounded-full bg-gradient-to-r from-[hsl(348,83%,25%)] via-[hsl(348,83%,55%)] to-[hsl(348,83%,85%)] border border-slate-700 shadow-inner"></div>
                     <span>High</span>
                  </div>
              </div>
          ) : (
-             <div className="flex items-center gap-4 text-[9px] text-slate-400 font-bold uppercase">
-                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-red-600 animate-pulse"></div>Critical &lt;50%</div>
-                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-yellow-500 shadow-sm"></div>50-75%</div>
-                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-green-500 shadow-sm"></div>75-90%</div>
-                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-green-500 shadow-sm"></div>&gt;90%</div>
+             <div className="flex items-center gap-4 text-xs text-slate-400 font-bold uppercase">
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-red-600 animate-pulse"></div>Critical &lt;50%</div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-yellow-500 shadow-sm"></div>50-75%</div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-green-500 shadow-sm"></div>75-90%</div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-green-500 shadow-sm"></div>&gt;90%</div>
              </div>
          )}
       </div>
