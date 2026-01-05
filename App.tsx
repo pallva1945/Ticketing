@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, ChevronRight, PieChart, TrendingUp, DollarSign, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Target, AlertTriangle, ChevronDown, Crown, Bell, Users, FileText } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, ChevronRight, PieChart, TrendingUp, DollarSign, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Target, AlertTriangle, ChevronDown, Crown, Bell, Users } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -644,7 +644,7 @@ const App: React.FC = () => {
   const [showRulesError, setShowRulesError] = useState(false);
   
   // View Mode
-  const [viewMode, setViewMode] = useState<'total' | 'gameday'>('gameday');
+  const [viewMode, setViewMode] = useState<'total' | 'gameday'>('total');
   const [gameDayIncludeTicketing, setGameDayIncludeTicketing] = useState(false);
 
   // KPI Configuration (Hardcoded)
@@ -855,51 +855,6 @@ const App: React.FC = () => {
 
   const filteredGames = useMemo(() => getFilteredGames(), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
 
-  // NEW: Total View Data (Independent of viewMode) for Executive Overview
-  const totalViewData = useMemo(() => {
-    return filteredGames.map(game => {
-      let zoneSales = game.salesBreakdown;
-
-      if (ignoreOspiti) zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
-      if (!selectedZones.includes('All')) zoneSales = zoneSales.filter(s => selectedZones.includes(s.zone));
-
-      // No channel filtering (Total View)
-      
-      const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
-      const zoneAttendance = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
-
-      let zoneCapacity = 0;
-      let filteredZoneCapacities = { ...game.zoneCapacities };
-      if (ignoreOspiti) delete filteredZoneCapacities[TicketZone.OSPITI];
-      
-      if (!selectedZones.includes('All')) {
-          const newCapMap: Record<string, number> = {};
-          Object.keys(filteredZoneCapacities).forEach(z => {
-              if (selectedZones.includes(z)) newCapMap[z] = filteredZoneCapacities[z];
-          });
-          filteredZoneCapacities = newCapMap;
-      }
-
-      // No fixed deduction (Total View)
-
-      Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
-
-      return {
-        ...game,
-        attendance: zoneAttendance,
-        totalRevenue: zoneRevenue,
-        capacity: zoneCapacity,
-        salesBreakdown: zoneSales,
-        zoneCapacities: filteredZoneCapacities
-      };
-    });
-  }, [filteredGames, selectedZones, ignoreOspiti]);
-
-  const totalStats = useMemo(() => {
-      const totalRevenue = totalViewData.reduce((sum, game) => sum + game.totalRevenue, 0);
-      return { totalRevenue };
-  }, [totalViewData]);
-
   const viewData = useMemo(() => {
     return filteredGames.map(game => {
       let zoneSales = game.salesBreakdown;
@@ -1105,7 +1060,7 @@ const App: React.FC = () => {
 
   const aiContext = useMemo(() => {
     if (activeModule === 'home') {
-        const totalLiveTix = totalStats.totalRevenue; // Uses total stats (unaffected by viewMode)
+        const totalLiveTix = stats.totalRevenue; // Uses filtered data
         const totalLiveGD = filteredGameDayRevForPacing; // Uses filtered data
         
         // Pass the actual YTD data to the AI for accurate context
@@ -1150,7 +1105,7 @@ const App: React.FC = () => {
       totals: stats,
       games_in_view: viewData.length
     });
-  }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, viewMode, activeModule, filteredGameDayData, filteredGameDayRevForPacing, totalStats]);
+  }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, viewMode, activeModule, filteredGameDayData, filteredGameDayRevForPacing]);
 
   const lastGame = useMemo(() => {
     if (data.length === 0) return null;
@@ -1380,24 +1335,9 @@ const App: React.FC = () => {
             )}
 
             {activeModule === 'home' && (
-                <div className="space-y-4 animate-in slide-in-from-left-2 duration-300">
-                    <div className="p-4 bg-gray-50 rounded-lg text-center border border-gray-100">
-                        <PieChart size={32} className="mx-auto text-gray-300 mb-2" />
-                        <p className="text-xs text-gray-500">Global Overview Mode</p>
-                    </div>
-                    
-                    <a 
-                        href="https://shareholders.pallacanestrovarese.club/" 
-                        target="_blank" 
-                        rel="noreferrer"
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-600 font-medium shadow-sm hover:border-red-200 hover:text-red-700 transition-all group"
-                    >
-                        <div className="p-1.5 bg-gray-100 rounded-md group-hover:bg-red-50 transition-colors">
-                            <FileText size={16} />
-                        </div>
-                        <span className="inline md:hidden lg:inline text-sm">Monthly Reports</span>
-                        <ExternalLink size={12} className="ml-auto opacity-50 group-hover:opacity-100" />
-                    </a>
+                <div className="p-4 bg-gray-50 rounded-lg text-center border border-gray-100">
+                    <PieChart size={32} className="mx-auto text-gray-300 mb-2" />
+                    <p className="text-xs text-gray-500">Global Overview Mode</p>
                 </div>
             )}
         </div>
@@ -1491,7 +1431,7 @@ const App: React.FC = () => {
           {activeModule === 'home' ? (
               <RevenueHome 
                 modules={MODULES} 
-                ticketingRevenue={totalStats.totalRevenue} 
+                ticketingRevenue={stats.totalRevenue} 
                 gameDayRevenue={gameDayRevenueNet} 
                 onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
                 onAiClick={() => {
@@ -1618,7 +1558,7 @@ const App: React.FC = () => {
                             data={viewData} 
                             fullDataset={data} 
                             filters={{ season: selectedSeasons, league: selectedLeagues, zone: selectedZones, opponent: selectedOpponents, tier: selectedTiers }} 
-                            kpiConfig={{ ...kpiConfig, giveawayTarget: viewMode === 'gameday' ? 15 : 10 }}
+                            kpiConfig={kpiConfig}
                             viewMode={viewMode}
                         />
 
@@ -1627,10 +1567,9 @@ const App: React.FC = () => {
                                 <h2 className="text-xl font-bold text-gray-800">Venue Intelligence</h2>
                             </div>
                             
-                            {/* Map and Vertical Widgets Row */}
-                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 mb-6">
-                                {/* Map Area - Slimmer (8/12 = 66%) */}
-                                <div className="xl:col-span-8 h-[600px]">
+                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                                {/* Map Area */}
+                                <div className="xl:col-span-5 h-[500px]">
                                     <ArenaMap 
                                         data={viewData} 
                                         onZoneClick={handleZoneClick} 
@@ -1638,50 +1577,46 @@ const App: React.FC = () => {
                                     />
                                 </div>
 
-                                {/* Vertical Widgets Column - Wider (4/12 = 33%) */}
-                                <div className="xl:col-span-4 flex flex-col gap-4 h-[600px]">
-                                    {/* 70% Height */}
-                                    <div className="flex-[7] min-h-0">
+                                {/* Distressed Zones & Comp Killer & Table Area */}
+                                <div className="xl:col-span-7 h-[500px] flex flex-col gap-4">
+                                    {/* Top Row: Distress & Comp Killer (Side by Side) */}
+                                    <div className="flex-shrink-0 grid grid-cols-1 md:grid-cols-2 gap-4 h-40">
                                         <DistressedZones data={viewData} />
-                                    </div>
-                                    {/* 30% Height */}
-                                    <div className="flex-[3] min-h-0">
                                         <CompKillerWidget data={viewData} />
                                     </div>
-                                </div>
-                            </div>
 
-                            {/* Full Width Zone Table */}
-                            <div className="h-[600px] w-full">
-                                {selectedZones.includes('All') ? (
-                                    <ZoneTable data={viewData} onZoneClick={handleZoneClick} />
-                                ) : (
-                                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
-                                        <div className="p-4 border-b border-gray-100 font-semibold text-gray-700 flex justify-between items-center bg-gray-50 flex-shrink-0">
+                                    <div className="flex-1 overflow-hidden min-h-0">
+                                        {selectedZones.includes('All') ? (
+                                        <ZoneTable data={viewData} onZoneClick={handleZoneClick} />
+                                        ) : (
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
+                                            <div className="p-4 border-b border-gray-100 font-semibold text-gray-700 flex justify-between items-center bg-gray-50 flex-shrink-0">
                                             <div className="flex items-center gap-2">
                                                 <span>Detailed Games Log ({selectedZones[0]})</span>
                                                 <button onClick={() => setSelectedZones(['All'])} className="text-xs text-red-600 hover:underline ml-2 bg-white px-2 py-1 rounded border border-red-200">Reset View</button>
                                             </div>
                                             <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-gray-500">{viewData.length} Matches</span>
-                                        </div>
-                                        <div className="divide-y divide-gray-50 overflow-y-auto flex-1 p-2">
+                                            </div>
+                                            <div className="divide-y divide-gray-50 overflow-y-auto flex-1 p-2">
                                             {[...viewData].reverse().map((game) => (
                                                 <div key={game.id} className="p-3 flex items-center justify-between hover:bg-gray-50 transition-colors rounded-lg">
-                                                    <div>
-                                                        <p className="font-bold text-gray-900 text-sm">{game.opponent}</p>
-                                                        <p className="text-xs text-gray-400">{game.date} • {game.season}</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="font-bold text-gray-900 text-sm">€{(game.totalRevenue/1000).toFixed(1)}k</p>
-                                                        <p className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-1">
-                                                            {game.attendance} Sold
-                                                        </p>
-                                                    </div>
+                                                <div>
+                                                    <p className="font-bold text-gray-900 text-sm">{game.opponent}</p>
+                                                    <p className="text-xs text-gray-400">{game.date} • {game.season}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="font-bold text-gray-900 text-sm">€{(game.totalRevenue/1000).toFixed(1)}k</p>
+                                                    <p className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-1">
+                                                    {game.attendance} Sold
+                                                    </p>
+                                                </div>
                                                 </div>
                                             ))}
+                                            </div>
                                         </div>
+                                        )}
                                     </div>
-                                )}
+                                </div>
                             </div>
                         </div>
                         

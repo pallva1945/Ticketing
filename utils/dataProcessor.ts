@@ -77,11 +77,11 @@ const CAPACITIES_24_25: Record<TicketZone, number> = {
 };
 
 const CAPACITIES_25_26: Record<TicketZone, number> = {
-  [TicketZone.PAR_O]: 390,
-  [TicketZone.PAR_EX]: 83,
+  [TicketZone.PAR_O]: 390, // Updated Total Capacity
+  [TicketZone.PAR_EX]: 83, // Carved out of Par O
   [TicketZone.PAR_E]: 220,
-  [TicketZone.TRIB_G]: 1816, // Updated: Total 1816 (Fix 1230 -> 586 Available)
-  [TicketZone.TRIB_S]: 705,  // Updated: Total 705 (Fix 261 -> 444 Available)
+  [TicketZone.TRIB_G]: 2209,
+  [TicketZone.TRIB_S]: 367,
   [TicketZone.GALL_G]: 389,
   [TicketZone.GALL_S]: 669,
   [TicketZone.CURVA]: 458,
