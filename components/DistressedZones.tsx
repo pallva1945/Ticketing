@@ -4,6 +4,8 @@ import { AlertCircle, CheckCircle, Coins, TrendingDown } from 'lucide-react';
 
 interface DistressedZonesProps {
   data: GameData[];
+  fullDataset?: GameData[];
+  currentSeasons?: string[];
 }
 
 interface ZoneStat {
@@ -12,11 +14,12 @@ interface ZoneStat {
   revenue: number;
 }
 
-export const DistressedZones: React.FC<DistressedZonesProps> = ({ data }) => {
+export const DistressedZones: React.FC<DistressedZonesProps> = ({ data, fullDataset, currentSeasons }) => {
   // Identify zones performing below their seasonal average in the most recent games
   // For simplicity in this "snapshot" view, we calculate the fill rate of the CURRENT selection
   // and flag anything below 65% as "Distressed".
   
+  // 1. Calculate Current Stats (from current view) for Occupancy/Fill Rate
   const stats = useMemo(() => {
       const agg: Record<string, ZoneStat> = {};
       
@@ -38,6 +41,33 @@ export const DistressedZones: React.FC<DistressedZonesProps> = ({ data }) => {
       return agg;
   }, [data]);
 
+  // 2. Calculate Benchmark Yields (Yearly Total View Average Price)
+  // This uses the full dataset filtered by the current season to get a stable "Yearly" ATP per zone.
+  const benchmarkYields = useMemo(() => {
+      const yields: Record<string, number> = {};
+      
+      if (!fullDataset || !currentSeasons) return yields;
+
+      const agg: Record<string, { rev: number, qty: number }> = {};
+      
+      // Filter full dataset by selected seasons (ignore other filters like opponent/game type to get true average)
+      const relevantGames = fullDataset.filter(g => currentSeasons.includes('All') || currentSeasons.includes(g.season));
+
+      relevantGames.forEach(g => {
+          g.salesBreakdown.forEach(s => {
+              if (!agg[s.zone]) agg[s.zone] = { rev: 0, qty: 0 };
+              agg[s.zone].rev += s.revenue;
+              agg[s.zone].qty += s.quantity;
+          });
+      });
+
+      Object.entries(agg).forEach(([z, val]) => {
+          yields[z] = val.qty > 0 ? val.rev / val.qty : 0;
+      });
+
+      return yields;
+  }, [fullDataset, currentSeasons]);
+
   const distressed = useMemo(() => {
       return Object.entries(stats)
         .map(([zone, val]) => {
@@ -47,9 +77,9 @@ export const DistressedZones: React.FC<DistressedZonesProps> = ({ data }) => {
             const fillRate = stat.capacity > 0 ? (stat.sold / stat.capacity) * 100 : 0;
             const unsold = Math.max(0, stat.capacity - stat.sold);
             
-            // Calculate Yield (Average Ticket Price) for this zone
-            // If nothing sold, we can't calculate potential revenue accurately, assume 0 or fallback
-            const yieldPrice = stat.sold > 0 ? stat.revenue / stat.sold : 0;
+            // Calculate Yield: Prefer Benchmark (Yearly Avg), fallback to Current View Avg
+            const yieldPrice = benchmarkYields[zone] || (stat.sold > 0 ? stat.revenue / stat.sold : 0);
+            
             const potentialRevenue = unsold * yieldPrice;
 
             return {
@@ -57,14 +87,15 @@ export const DistressedZones: React.FC<DistressedZonesProps> = ({ data }) => {
                 fillRate,
                 unsold,
                 potentialRevenue,
-                capacity: stat.capacity
+                capacity: stat.capacity,
+                yieldUsed: yieldPrice
             };
         })
         // Threshold for distress: Fill rate < 75%, and capacity must be > 0 
         // (excludes zones sold out via season tickets in Game Day view)
         .filter(d => d.fillRate < 75 && d.capacity > 0) 
         .sort((a, b) => b.potentialRevenue - a.potentialRevenue); // Sort by money left on table (Highest first)
-  }, [stats]);
+  }, [stats, benchmarkYields]);
 
   const totalMoneyLeftOnTable = distressed.reduce((acc, curr) => acc + curr.potentialRevenue, 0);
 
@@ -103,7 +134,10 @@ export const DistressedZones: React.FC<DistressedZonesProps> = ({ data }) => {
                 <div key={d.zone} className="bg-white p-3 rounded-lg border border-gray-100 hover:border-red-200 transition-colors shadow-sm">
                     <div className="flex justify-between items-start mb-2">
                         <span className="text-xs font-bold text-gray-800 truncate max-w-[120px]" title={d.zone}>{d.zone}</span>
-                        <span className="text-xs font-bold text-red-600">€{(d.potentialRevenue/1000).toFixed(1)}k</span>
+                        <div className="text-right">
+                            <span className="text-xs font-bold text-red-600 block">€{(d.potentialRevenue/1000).toFixed(1)}k</span>
+                            <span className="text-[9px] text-gray-400 block font-mono">@ €{d.yieldUsed.toFixed(0)}</span>
+                        </div>
                     </div>
                     
                     <div className="flex items-center justify-between text-[10px] text-gray-500 mb-1">
@@ -122,7 +156,7 @@ export const DistressedZones: React.FC<DistressedZonesProps> = ({ data }) => {
         </div>
         
         <div className="p-2 border-t border-gray-100 bg-gray-50 text-[9px] text-gray-400 text-center uppercase tracking-wide">
-            Potential based on Avg Zone Yield
+            Potential based on Yearly Total Avg Yield
         </div>
     </div>
   );

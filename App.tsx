@@ -1585,7 +1585,11 @@ const App: React.FC = () => {
                                 <div className="xl:col-span-4 flex flex-col gap-4 h-[600px]">
                                     {/* 70% Height */}
                                     <div className="flex-[7] min-h-0">
-                                        <DistressedZones data={viewData} />
+                                        <DistressedZones 
+                                            data={viewData} 
+                                            fullDataset={data}
+                                            currentSeasons={selectedSeasons}
+                                        />
                                     </div>
                                     {/* 30% Height */}
                                     <div className="flex-[3] min-h-0">
