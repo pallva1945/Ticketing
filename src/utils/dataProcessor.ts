@@ -1,3 +1,4 @@
+
 import { GameData, GameDayData, SalesChannel, SalesDataPoint, TicketTypeBreakdown, TicketZone } from '../types';
 
 // --- HELPERS ---
@@ -76,12 +77,14 @@ const CAPACITIES_24_25: Record<TicketZone, number> = {
   [TicketZone.SKYBOX]: 60
 };
 
+// FULL CAPACITY 25-26 (Hardcoded per request)
+// TOTAL: 5177
 const CAPACITIES_25_26: Record<TicketZone, number> = {
-  [TicketZone.PAR_O]: 390,
-  [TicketZone.PAR_EX]: 83,
-  [TicketZone.PAR_E]: 220,
-  [TicketZone.TRIB_G]: 1816, // Updated: Total 1816 (Fix 1230 -> 586 Available)
-  [TicketZone.TRIB_S]: 705,  // Updated: Total 705 (Fix 261 -> 444 Available)
+  [TicketZone.PAR_O]: 373,
+  [TicketZone.PAR_EX]: 75, // New: Parterre Executive
+  [TicketZone.PAR_E]: 200,
+  [TicketZone.TRIB_G]: 2209,
+  [TicketZone.TRIB_S]: 367,
   [TicketZone.GALL_G]: 389,
   [TicketZone.GALL_S]: 669,
   [TicketZone.CURVA]: 458,

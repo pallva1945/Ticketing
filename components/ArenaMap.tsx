@@ -107,6 +107,8 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
         return '#475569'; // Slate 600
     } else {
         // Occupancy Scale
+        if (zoneData.capacity === 0) return '#334155'; // Grey for no capacity (N/A)
+
         const occupancy = zoneData.capacity > 0 ? zoneData.sold / zoneData.capacity : 0;
         if (occupancy < 0.50) return '#dc2626'; // Red 600 (Critical)
         if (occupancy >= 0.90) return '#22c55e'; // Green
@@ -121,11 +123,24 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
   const R2 = { ix: 185, iy: 135, ox: 240, oy: 180 };
   const R3 = { ix: 250, iy: 190, ox: 295, oy: 225 };
 
+  // Calculate split radius for Parterre Executive (Front rows / Near Court)
+  // We allocate the inner 40% of the ring to Executive
+  const R1_Split = { 
+      x: R1.ix + (R1.ox - R1.ix) * 0.40, 
+      y: R1.iy + (R1.oy - R1.iy) * 0.40 
+  };
+
   const stadiumZones = [
     { id: TicketZone.PAR_E, label: 'Parterre Est', path: describeSector(CX, CY, R1.ix, R1.iy, R1.ox, R1.oy, 230, 310), isZone: true },
+    
+    // Parterre Ovest Left & Right (Full Depth)
     { id: TicketZone.PAR_O, label: 'Parterre Ovest', path: describeSector(CX, CY, R1.ix, R1.iy, R1.ox, R1.oy, -40, 40), isZone: true },
-    { id: TicketZone.PAR_O, label: 'Parterre Ovest', path: describeSector(CX, CY, R1.ix, R1.iy, R1.ox, R1.oy, 50, 130), isZone: true },
     { id: TicketZone.PAR_O, label: 'Parterre Ovest', path: describeSector(CX, CY, R1.ix, R1.iy, R1.ox, R1.oy, 140, 220), isZone: true },
+    
+    // Parterre Ovest Central (Split: Inner = Par Ex, Outer = Par O)
+    { id: TicketZone.PAR_EX, label: 'Parterre Executive', path: describeSector(CX, CY, R1.ix, R1.iy, R1_Split.x, R1_Split.y, 50, 130), isZone: true },
+    { id: TicketZone.PAR_O, label: 'Parterre Ovest', path: describeSector(CX, CY, R1_Split.x, R1_Split.y, R1.ox, R1.oy, 50, 130), isZone: true },
+
     { id: TicketZone.TRIB_G, label: 'Tribuna Gold', path: describeSector(CX, CY, R2.ix, R2.iy, R2.ox, R2.oy, 230, 310), isZone: true },
     { id: TicketZone.TRIB_S, label: 'Tribuna Silver', path: describeSector(CX, CY, R2.ix, R2.iy, R2.ox, R2.oy, -40, 40), isZone: true },
     { id: TicketZone.TRIB_G, label: 'Tribuna Gold', path: describeSector(CX, CY, R2.ix, R2.iy, R2.ox, R2.oy, 50, 130), isZone: true },
@@ -153,21 +168,24 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
         }
       `}</style>
 
+      {/* Header controls */}
       <div className="w-full flex justify-between items-center mb-2 z-10 px-4 absolute top-4 left-0 right-0">
-        <h3 className="text-sm font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2 drop-shadow-md">
-           <span className="w-1.5 h-4 bg-red-600 rounded-sm"></span>
+        <h3 className="text-lg font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2 drop-shadow-md">
+           <span className="w-1.5 h-5 bg-red-600 rounded-sm"></span>
            Arena Map
         </h3>
         
         <div className="flex bg-slate-900/80 backdrop-blur-sm rounded-lg p-0.5 border border-slate-700 shadow-lg">
-            <button onClick={() => setMetric('revenue')} className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${metric === 'revenue' ? 'bg-red-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Revenue</button>
-            <button onClick={() => setMetric('occupancy')} className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${metric === 'occupancy' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Occupancy</button>
-            <button onClick={() => setMetric('yield')} className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${metric === 'yield' ? 'bg-purple-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Yield Opportunity</button>
+            <button onClick={() => setMetric('revenue')} className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase transition-all ${metric === 'revenue' ? 'bg-red-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Revenue</button>
+            <button onClick={() => setMetric('occupancy')} className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase transition-all ${metric === 'occupancy' ? 'bg-blue-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Occupancy</button>
+            <button onClick={() => setMetric('yield')} className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase transition-all ${metric === 'yield' ? 'bg-purple-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Yield Opportunity</button>
         </div>
       </div>
       
-      <div className="relative w-full flex-1 flex items-center justify-center z-0 mt-8">
-        <svg viewBox="100 60 600 480" className="w-full h-full drop-shadow-2xl">
+      {/* Map Graphic Area */}
+      <div className="relative w-full flex-1 min-h-0 flex items-center justify-center z-0 mt-12 mb-0">
+        {/* Adjusted viewBox: 90 60 620 480 for tighter fit around arena */}
+        <svg viewBox="90 60 620 480" preserveAspectRatio="xMidYMid meet" className="w-full h-full drop-shadow-2xl">
           <defs>
              <pattern id="grid" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
                 <circle cx="1" cy="1" r="0.5" fill="rgba(255,255,255,0.05)" />
@@ -220,13 +238,14 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
           })}
         </svg>
 
+        {/* Tooltip */}
         {hoveredZone && stats[hoveredZone] && (() => {
             const occupancyPct = stats[hoveredZone].capacity > 0 ? (stats[hoveredZone].sold / stats[hoveredZone].capacity) * 100 : 0;
             const yieldVal = stats[hoveredZone].sold > 0 ? stats[hoveredZone].revenue / stats[hoveredZone].sold : 0;
             const isYieldOpp = occupancyPct > 90;
 
             return (
-                <div className="absolute bottom-4 right-4 bg-slate-900/95 text-white p-3 rounded-lg shadow-2xl border border-slate-700 backdrop-blur-md z-30 min-w-[140px] pointer-events-none">
+                <div className="absolute top-20 left-4 bg-slate-900/95 text-white p-3 rounded-lg shadow-2xl border border-slate-700 backdrop-blur-md z-30 min-w-[140px] pointer-events-none animate-in fade-in zoom-in duration-200">
                     <div className="flex justify-between items-center mb-2 border-b border-slate-700 pb-2">
                     <span className="font-bold text-xs text-red-400 uppercase tracking-wider">{hoveredZone}</span>
                     </div>
@@ -251,8 +270,8 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
                         </div>
                         <div className="flex justify-between text-slate-400">
                             <span>Occupancy</span>
-                            <span className={`${occupancyPct > 90 ? 'text-green-400 font-bold' : (occupancyPct < 50 ? 'text-red-400' : 'text-white')}`}>
-                                {occupancyPct.toFixed(1)}%
+                            <span className={`${stats[hoveredZone].capacity === 0 ? 'text-gray-400' : (occupancyPct > 90 ? 'text-green-400 font-bold' : (occupancyPct < 50 ? 'text-red-400' : 'text-white'))}`}>
+                                {stats[hoveredZone].capacity === 0 ? 'N/A' : `${occupancyPct.toFixed(1)}%`}
                             </span>
                         </div>
                         
@@ -264,8 +283,8 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
 
                         <div className="w-full bg-slate-800 h-1 mt-1 rounded-full overflow-hidden">
                             <div 
-                                className={`h-full ${occupancyPct > 90 ? 'bg-purple-500' : 'bg-red-600'}`} 
-                                style={{width: `${Math.min(occupancyPct, 100)}%`}}
+                                className={`h-full ${stats[hoveredZone].capacity === 0 ? 'bg-slate-600' : (occupancyPct > 90 ? 'bg-purple-500' : 'bg-red-600')}`} 
+                                style={{width: `${stats[hoveredZone].capacity === 0 ? 0 : Math.min(occupancyPct, 100)}%`}}
                             ></div>
                         </div>
                     </div>
@@ -274,26 +293,27 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
         })()}
       </div>
       
-      <div className="w-full flex justify-center mt-auto pb-2 pt-2 z-10">
+      {/* Legend / Reference */}
+      <div className="w-full flex justify-center pb-3 pt-2 z-20 bg-slate-900 border-t border-slate-800 rounded-b-lg">
          {metric === 'yield' ? (
-             <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase">
+             <div className="flex items-center gap-2 text-xs text-slate-400 font-bold uppercase">
                 <div className="w-3 h-3 rounded bg-purple-600 border border-white/20"></div> High Occ. (&gt;95%) - Raise Price
              </div>
          ) : metric === 'revenue' ? (
              <div className="flex flex-col items-center gap-1">
-                 <div className="text-[9px] text-slate-400 uppercase tracking-widest font-semibold">Revenue Scale</div>
-                 <div className="flex items-center gap-2 text-[9px] text-slate-500 font-medium">
+                 <div className="text-xs text-slate-400 uppercase tracking-widest font-semibold">Revenue Scale</div>
+                 <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
                     <span>Low</span>
-                    <div className="w-48 h-2 rounded-full bg-gradient-to-r from-[hsl(348,83%,25%)] via-[hsl(348,83%,55%)] to-[hsl(348,83%,85%)] border border-slate-700 shadow-inner"></div>
+                    <div className="w-48 h-3 rounded-full bg-gradient-to-r from-[hsl(348,83%,25%)] via-[hsl(348,83%,55%)] to-[hsl(348,83%,85%)] border border-slate-700 shadow-inner"></div>
                     <span>High</span>
                  </div>
              </div>
          ) : (
-             <div className="flex items-center gap-4 text-[9px] text-slate-400 font-bold uppercase">
-                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-red-600 animate-pulse"></div>Critical &lt;50%</div>
-                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-yellow-500 shadow-sm"></div>50-75%</div>
-                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-green-500 shadow-sm"></div>75-90%</div>
-                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-sm bg-green-500 shadow-sm"></div>&gt;90%</div>
+             <div className="flex items-center gap-4 text-xs text-slate-400 font-bold uppercase">
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-red-600 animate-pulse"></div>Critical &lt;50%</div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-yellow-500 shadow-sm"></div>50-75%</div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-green-500 shadow-sm"></div>75-90%</div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-green-500 shadow-sm"></div>&gt;90%</div>
              </div>
          )}
       </div>

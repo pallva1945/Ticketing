@@ -51,24 +51,27 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
     const gameCount = data.length || 1;
     const totalRev = Object.values(stats).reduce((acc, curr) => acc + curr.revenue, 0);
 
-    const rows = Object.entries(stats).map(([zone, val]) => {
-      const avgCapacity = Math.round(val.totalCapacity / gameCount);
-      const avgSold = val.sold / gameCount;
-      const fillRate = val.totalCapacity > 0 ? (val.sold / val.totalCapacity) * 100 : 0;
-      const revPas = val.totalCapacity > 0 ? val.revenue / val.totalCapacity : 0;
+    const rows = Object.entries(stats)
+      .map(([zone, val]) => {
+        const avgCapacity = Math.round(val.totalCapacity / gameCount);
+        const avgSold = val.sold / gameCount;
+        const fillRate = val.totalCapacity > 0 ? (val.sold / val.totalCapacity) * 100 : 0;
+        const revPas = val.totalCapacity > 0 ? val.revenue / val.totalCapacity : 0;
 
-      return {
-        zone,
-        capacity: avgCapacity,
-        totalRevenue: val.revenue,
-        avgRevenue: val.revenue / gameCount,
-        avgSold: avgSold,
-        avgPrice: val.sold > 0 ? val.revenue / val.sold : 0,
-        revPas: revPas,
-        revShare: totalRev > 0 ? (val.revenue / totalRev) * 100 : 0,
-        fillRate: fillRate
-      };
-    });
+        return {
+          zone,
+          capacity: avgCapacity,
+          totalRevenue: val.revenue,
+          avgRevenue: val.revenue / gameCount,
+          avgSold: avgSold,
+          avgPrice: val.sold > 0 ? val.revenue / val.sold : 0,
+          revPas: revPas,
+          revShare: totalRev > 0 ? (val.revenue / totalRev) * 100 : 0,
+          fillRate: fillRate
+        };
+      })
+      // Filter out zones with 0 capacity (e.g. Skyboxes in Game Day view)
+      .filter(row => row.capacity > 0);
 
     return rows.sort((a, b) => {
       const aValue = a[sortConfig.key];
