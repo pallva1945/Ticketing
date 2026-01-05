@@ -168,7 +168,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
   const isCapped = previewCalculatedVol > previewAvailableCap;
   
   // Calculate percentage of bar to be "capped" (red)
-  const capOverflowWidth = isCapped ? Math.min(((previewCalculatedVol - previewAvailableCap) / previewAvailableCap) * 100, 100) : 0;
+  // const capOverflowWidth = isCapped ? Math.min(((previewCalculatedVol - previewAvailableCap) / previewAvailableCap) * 100, 100) : 0; // Removed unused variable
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in pb-12">

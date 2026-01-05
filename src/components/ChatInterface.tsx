@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, Sparkles, Loader2, BrainCircuit } from 'lucide-react';
+import { Send, Sparkles, Loader2, BrainCircuit } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { sendMessageToGemini } from '../services/geminiService';
 import { PV_LOGO_URL } from '../constants';
@@ -14,12 +14,6 @@ export const AIAvatar: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' 
     sm: 'w-8 h-8',
     md: 'w-12 h-12',
     lg: 'w-20 h-20'
-  };
-
-  const iconSizes = {
-    sm: 14,
-    md: 20,
-    lg: 32
   };
 
   return (

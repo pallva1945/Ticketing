@@ -1,20 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check, X } from 'lucide-react';
+import { ChevronDown, Check } from 'lucide-react';
 
 interface MultiSelectProps {
   label: string;
   options: string[];
   selected: string[];
   onChange: (selected: string[]) => void;
-  placeholder?: string;
+  // placeholder?: string; // Removed unused prop
 }
 
 export const MultiSelect: React.FC<MultiSelectProps> = ({ 
   label, 
   options, 
   selected, 
-  onChange,
-  placeholder = "Select..."
+  onChange
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);

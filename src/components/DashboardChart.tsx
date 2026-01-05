@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  LineChart, Line, ComposedChart, ScatterChart, Scatter, ReferenceLine, ZAxis, Label, ReferenceArea
+  Line, ComposedChart, ScatterChart, Scatter, ReferenceLine, ZAxis, Label, ReferenceArea
 } from 'recharts';
 import { GameData } from '../types';
 
@@ -383,7 +383,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                           <CartesianGrid strokeDasharray="3 3" vertical={false} />
                           <XAxis dataKey="name" tick={{fontSize: 10}} interval={0} angle={-45} textAnchor="end" height={60} />
                           <YAxis tick={{fontSize: 10}} />
-                          <Tooltip content={({ active, payload, label }: any) => {
+                          <Tooltip content={({ active, payload }: any) => {
                               if (active && payload && payload.length) {
                                   const total = payload.reduce((sum: number, p: any) => sum + (Number(p.value) || 0), 0);
                                   return (

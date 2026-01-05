@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, ChevronRight, PieChart, TrendingUp, DollarSign, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Target, AlertTriangle, ChevronDown, Crown, Bell, Users, FileText } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, ChevronDown, Crown, Bell, Users, FileText, ShieldAlert } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -13,7 +13,7 @@ import { DistressedZones } from './components/DistressedZones';
 import { CompKillerWidget } from './components/CompKillerWidget';
 import { GameDayDashboard } from './components/GameDayDashboard';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
-import { TEAM_NAME, APP_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
+import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { GAMEDAY_CSV_CONTENT } from './data/gameDayData';
@@ -48,10 +48,8 @@ const PlaceholderView = ({ moduleName, icon: Icon }: { moduleName: string, icon:
 
 // --- REVENUE CENTER HOME ---
 const RevenueHome = ({ 
-    modules, 
     ticketingRevenue, 
     gameDayRevenue, 
-    onNavigate,
     onAiClick,
     gamesPlayed,
     seasonFilter,
@@ -75,8 +73,8 @@ const RevenueHome = ({
     // 'target' = Budget (Specific values from 2025 Sales Budget)
     
     // Internal Projections for Pacing Widget (Still useful there)
-    const projTicketing = (ticketingRevenue / gamesCount) * TOTAL_GAMES_SEASON;
-    const projGameDay = (gameDayRevenue / gamesCount) * TOTAL_GAMES_SEASON;
+    // const projTicketing = (ticketingRevenue / gamesCount) * TOTAL_GAMES_SEASON;
+    // const projGameDay = (gameDayRevenue / gamesCount) * TOTAL_GAMES_SEASON;
 
     const verticalPerformance = [
       { 
@@ -1585,7 +1583,11 @@ const App: React.FC = () => {
                                 <div className="xl:col-span-4 flex flex-col gap-4 h-[600px]">
                                     {/* 70% Height */}
                                     <div className="flex-[7] min-h-0">
-                                        <DistressedZones data={viewData} />
+                                        <DistressedZones 
+                                            data={viewData} 
+                                            fullDataset={data}
+                                            currentSeasons={selectedSeasons}
+                                        />
                                     </div>
                                     {/* 30% Height */}
                                     <div className="flex-[3] min-h-0">

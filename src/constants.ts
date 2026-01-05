@@ -1,4 +1,4 @@
-import { GameData, SalesChannel, TicketZone } from './types';
+import { GameData, TicketZone } from './types';
 
 export const APP_NAME = "PV Strategy AI";
 export const TEAM_NAME = "Pallacanestro Varese";

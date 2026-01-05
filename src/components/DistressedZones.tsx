@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { GameData } from '../types';
-import { AlertCircle, CheckCircle, Coins, TrendingDown } from 'lucide-react';
+import { AlertCircle, CheckCircle, TrendingDown } from 'lucide-react';
 
 interface DistressedZonesProps {
   data: GameData[];

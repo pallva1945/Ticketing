@@ -312,7 +312,6 @@ export const processGameDayData = (csvContent: string): GameDayData[] => {
   const hospRevIdx = getIndex(['hospitality $', 'hospitality']);
   const parkRevIdx = getIndex(['park $', 'parking']);
   const fbRevIdx = getIndex(['f&b $', 'f&b']);
-  const sponsRevIdx = getIndex(['sponsorship', 'sponsorship %', 'sponsorship $']); // Careful, 'Sponsorship' might be the amount column if % is separate
   // Actually, header is "Sponsorship %,Sponsorship". So we want "Sponsorship".
   const sponsValIdx = header.indexOf('sponsorship'); // Strict match preferred if array logic fails
   

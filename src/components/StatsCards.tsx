@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
-import { DollarSign, Users, Briefcase, Ticket, TrendingUp, TrendingDown, Minus, Gift } from 'lucide-react';
-import { DashboardStats, GameData, SalesChannel, StatsCardsProps } from '../types';
+import { DollarSign, Users, Ticket, TrendingUp, TrendingDown, Minus, Gift } from 'lucide-react';
+import { GameData, SalesChannel, StatsCardsProps } from '../types';
 import { FIXED_CAPACITY_25_26 } from '../constants';
 
 // Helper to calculate raw KPIs for any set of games
@@ -123,7 +123,7 @@ const MetricCard = ({
   );
 };
 
-export const StatsCards: React.FC<StatsCardsProps> = ({ stats, data, fullDataset, filters, kpiConfig, viewMode }) => {
+export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filters, kpiConfig, viewMode }) => {
   
   // 1. Calculate Current KPIs (based on the filtered `data` passed in)
   const currentKPIs = useMemo(() => calculateKPIs(data), [data]);
