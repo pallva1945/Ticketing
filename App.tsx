@@ -587,7 +587,7 @@ const App: React.FC = () => {
   const [showRulesError, setShowRulesError] = useState(false);
   
   // View Mode
-  const [viewMode, setViewMode] = useState<'total' | 'gameday'>('total');
+  const [viewMode, setViewMode] = useState<'total' | 'gameday'>('gameday');
   const [gameDayIncludeTicketing, setGameDayIncludeTicketing] = useState(false);
 
   // KPI Configuration (Hardcoded)
