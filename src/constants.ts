@@ -1,4 +1,3 @@
-
 import { GameData, SalesChannel, TicketZone } from './types';
 
 export const APP_NAME = "PV Strategy AI";
@@ -10,15 +9,9 @@ export const PV_LOGO_URL = "https://i.imgur.com/r1fWDF1.png";
 export const SEASON_TARGET_TOTAL = 1650000;   // €1.65M Ticketing Core
 export const SEASON_TARGET_GAMEDAY = 1650000;  // €1.65M Variable Target (Net minus Tix) - For GameDay Module
 export const SEASON_TARGET_GAMEDAY_TOTAL = 3300000; // €3.3M Total GameDay Budget (Tix + Variable)
-// Added missing constant
 export const SEASON_TARGET_TICKETING_DAY = 495000; // €495k Target for Day Sales (€33k/game * 15 games)
 
 // --- GOOGLE SHEETS CONFIGURATION ---
-// 1. Open your Google Sheet.
-// 2. Go to File > Share > Publish to Web.
-// 3. Under "Link", select the specific tab (e.g., "Sheet1") instead of "Entire Document".
-// 4. Select "Comma-separated values (.csv)" as the format.
-// 5. Click Publish and copy the generated link below.
 export const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR_UAEI1obd5F-Pfbe-G5dSFjcK1E86y9rStQb3bDdFRzVPkDItG7V83FZgw8TbtqiONYcGpRoneImG/pub?gid=2044782685&single=true&output=csv"; 
 
 export const SYSTEM_INSTRUCTION = `
