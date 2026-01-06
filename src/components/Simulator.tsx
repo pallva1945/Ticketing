@@ -1,7 +1,9 @@
+
 import React, { useState, useMemo } from 'react';
 import { GameData, SalesChannel } from '../types';
 import { FIXED_CAPACITY_25_26 } from '../constants';
-import { Calculator, TrendingUp, TrendingDown, RefreshCcw, Plus, Trash2, Sun, Snowflake, ArrowRight } from 'lucide-react';
+import { Calculator, TrendingUp, TrendingDown, RefreshCcw, Plus, Trash2, Sun, Snowflake, ArrowRight, Sparkles, Loader2, BrainCircuit } from 'lucide-react';
+import { sendMessageToGemini } from '../services/geminiService';
 
 interface SimulatorProps {
   data: GameData[];
@@ -14,11 +16,13 @@ interface Decision {
   zone: string;
   priceAdj: number;
   demandAdj: number;
+  reasoning?: string;
 }
 
 export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
   const [mode, setMode] = useState<StrategyMode>('IN_SEASON');
   const [decisions, setDecisions] = useState<Decision[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
   
   // Current Input State
   const [selectedZone, setSelectedZone] = useState<string>('Curva');
@@ -102,6 +106,50 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
       setDecisions(decisions.filter(d => d.id !== id));
   };
 
+  const handleGenerateAIStrategy = async () => {
+      setIsGenerating(true);
+      try {
+          const context = JSON.stringify(baselineStats);
+          const prompt = `
+            Act as a Revenue Manager. Analyze the following Zone Baseline Data (AvgPrice, AvgVol, TotalCapacity).
+            Identify ONE zone with either high elasticity potential (raise price) or distress (lower price to fill).
+            
+            Return ONLY a valid JSON object with this format (no markdown, no other text):
+            {
+                "zone": "Exact Zone Name from list",
+                "priceAdj": number (e.g. 5 or -2),
+                "demandAdj": number (estimated % change in volume, e.g. -10 or 20),
+                "reasoning": "Short strategic reason."
+            }
+          `;
+          
+          const response = await sendMessageToGemini(prompt, context);
+          
+          // Clean response to ensure valid JSON
+          const cleanJson = response.replace(/```json/g, '').replace(/```/g, '').trim();
+          const aiDecision = JSON.parse(cleanJson);
+
+          if (aiDecision.zone && typeof aiDecision.priceAdj === 'number') {
+              const newDecision: Decision = {
+                  id: Math.random().toString(36).substr(2, 9),
+                  zone: aiDecision.zone,
+                  priceAdj: aiDecision.priceAdj,
+                  demandAdj: aiDecision.demandAdj || 0,
+                  reasoning: aiDecision.reasoning
+              };
+              setDecisions(prev => [...prev, newDecision]);
+          } else {
+              alert("AI could not generate a valid strategy. Try again.");
+          }
+
+      } catch (error) {
+          console.error("AI Strategy Error", error);
+          alert("AI Consultant is offline. Please input manually.");
+      } finally {
+          setIsGenerating(false);
+      }
+  };
+
   // Calculate Cumulative Impact with Constraints
   const simulationResults = useMemo(() => {
       let totalBaselineRev = 0;
@@ -168,7 +216,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
   const isCapped = previewCalculatedVol > previewAvailableCap;
   
   // Calculate percentage of bar to be "capped" (red)
-  // const capOverflowWidth = isCapped ? Math.min(((previewCalculatedVol - previewAvailableCap) / previewAvailableCap) * 100, 100) : 0; // Removed unused variable
+  const capOverflowWidth = isCapped ? Math.min(((previewCalculatedVol - previewAvailableCap) / previewAvailableCap) * 100, 100) : 0;
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in pb-12">
@@ -214,11 +262,32 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
             
             {/* LEFT COLUMN: Input Form */}
             <div className="lg:col-span-4 space-y-6">
+                
+                {/* AI Button */}
+                <button 
+                    onClick={handleGenerateAIStrategy}
+                    disabled={isGenerating}
+                    className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-2 border border-white/20 relative overflow-hidden group"
+                >
+                    {isGenerating ? (
+                        <>
+                            <Loader2 size={18} className="animate-spin" />
+                            Calculating...
+                        </>
+                    ) : (
+                        <>
+                            <BrainCircuit size={18} className="group-hover:animate-pulse" />
+                            Auto-Generate Strategy (AI)
+                        </>
+                    )}
+                    <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                </button>
+
                 <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
                     <h3 className="font-bold text-gray-800 mb-6 flex items-center gap-2">
                         <Plus size={18} className="text-indigo-500" />
-                        New Decision
+                        Manual Adjustment
                     </h3>
 
                     <div className="space-y-5">
@@ -299,9 +368,9 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
 
                         <button 
                             onClick={addDecision}
-                            className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-xl font-bold text-sm transition-all shadow-sm active:scale-95 flex items-center justify-center gap-2"
                         >
-                            Add to Strategy <ArrowRight size={16} />
+                            Add to List <ArrowRight size={16} />
                         </button>
                     </div>
                 </div>
@@ -371,6 +440,11 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                                                         Vol: {d.demandAdj > 0 ? '+' : ''}{d.demandAdj}%
                                                     </span>
                                                 </div>
+                                                {d.reasoning && (
+                                                    <p className="text-[10px] text-indigo-600 mt-1 italic flex items-center gap-1">
+                                                        <Sparkles size={8} /> {d.reasoning}
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
                                         <button 

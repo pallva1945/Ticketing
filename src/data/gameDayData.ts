@@ -1,3 +1,4 @@
+
 export const GAMEDAY_CSV_CONTENT = `Date,Season,League,Game,Game ID,Tix %,Tix Avg,Tix $,Merch %,Merch Avg,Merch $,Hospitality %,Hospitality Avg,Hospitality $,Park %,Park Avg,Park $,F&B %,F&B Avg,F&B $,Sponsorship %,Sponsorship,TV %,TV,Exp %,Exp Avg,Exp $,Total #,Total
 04/10/2023,23-24,LBA,Pistoia,45203Pistoia,"48,56%",€ 20,€ 88.522,"1,40%","€ 0,59",€2.545,"3,404%","€ 1,44",€6.205,"0,00%",€ 0,€0,"0,374%","€ 0,16",€682,43%,€78.000,3%,€ 6.333,"0,000%","€ 0,000",,4.324,€ 182.288
 15/10/2023,23-24,LBA,Tortona,45214Tortona,"49,24%",€ 21,€91.080,"1,44%","€ 0,61",€2.658,"3,355%","€ 1,42",€6.205,"0,00%",€ 0,€0,"0,371%","€ 0,16",€686,42%,€78.000,3%,€ 6.333,"0,000%","€ 0,000",,4.355,€ 184.962
