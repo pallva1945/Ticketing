@@ -278,6 +278,12 @@ export const processGameData = (csvContent: string): GameData[] => {
     if (ospitiQty > 0 || ospitiRev > 0) {
       salesBreakdown.push({ zone: TicketZone.OSPITI, channel: SalesChannel.TIX, quantity: ospitiQty, revenue: ospitiRev });
     }
+    
+    // NEW LOGIC: Ospiti Free Num
+    const ospitiFreeQty = parseInteger(getValue(['Ospiti Free Num', 'Ospiti Free', 'Guests Free']));
+    if (ospitiFreeQty > 0) {
+        salesBreakdown.push({ zone: TicketZone.OSPITI, channel: SalesChannel.GIVEAWAY, quantity: ospitiFreeQty, revenue: 0 });
+    }
 
     return {
       id, opponent, date, attendance: totalAttendance || attendance,
@@ -312,8 +318,11 @@ export const processGameDayData = (csvContent: string): GameDayData[] => {
   const hospRevIdx = getIndex(['hospitality $', 'hospitality']);
   const parkRevIdx = getIndex(['park $', 'parking']);
   const fbRevIdx = getIndex(['f&b $', 'f&b']);
-  // Actually, header is "Sponsorship %,Sponsorship". So we want "Sponsorship".
-  const sponsValIdx = header.indexOf('sponsorship'); // Strict match preferred if array logic fails
+  const sponsRevIdx = getIndex(['sponsorship', 'sponsorship %', 'sponsorship $']); 
+  // Careful, 'Sponsorship' might be the amount column if % is separate. 
+  // The header often has "Sponsorship %,Sponsorship". So strict matching "sponsorship" gets the amount col usually if unique, or the second one.
+  // Using exact string 'sponsorship' should target the value column in typical CSVs where % is labeled 'sponsorship %'
+  const sponsValIdx = header.indexOf('sponsorship'); 
   
   const tvRevIdx = getIndex(['tv', 'tv $']);
   const expRevIdx = getIndex(['exp $', 'experience']);
