@@ -318,11 +318,9 @@ export const processGameDayData = (csvContent: string): GameDayData[] => {
   const hospRevIdx = getIndex(['hospitality $', 'hospitality']);
   const parkRevIdx = getIndex(['park $', 'parking']);
   const fbRevIdx = getIndex(['f&b $', 'f&b']);
-  const sponsRevIdx = getIndex(['sponsorship', 'sponsorship %', 'sponsorship $']); 
-  // Careful, 'Sponsorship' might be the amount column if % is separate. 
-  // The header often has "Sponsorship %,Sponsorship". So strict matching "sponsorship" gets the amount col usually if unique, or the second one.
-  // Using exact string 'sponsorship' should target the value column in typical CSVs where % is labeled 'sponsorship %'
-  const sponsValIdx = header.indexOf('sponsorship'); 
+  
+  // Actually, header is "Sponsorship %,Sponsorship". So we want "Sponsorship".
+  const sponsValIdx = header.indexOf('sponsorship'); // Strict match preferred if array logic fails
   
   const tvRevIdx = getIndex(['tv', 'tv $']);
   const expRevIdx = getIndex(['exp $', 'experience']);
