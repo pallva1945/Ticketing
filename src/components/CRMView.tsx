@@ -1,10 +1,8 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Search, Filter, Mail, Phone, MoreHorizontal, User, Building, Star, CheckCircle, Clock, ArrowUpRight, AlertCircle } from 'lucide-react';
 
 export const CRMView: React.FC = () => {
-  const [filter, setFilter] = useState('All');
-
   // Mock Data for CRM
   const contacts = [
     { id: 1, name: 'Alessandro Rossi', company: 'TechVarese S.r.l.', role: 'CEO', type: 'Corporate', spend: 12500, status: 'Hot', probability: 90, lastContact: '2 days ago', avatar: 'AR' },

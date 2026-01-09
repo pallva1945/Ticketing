@@ -161,7 +161,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                 <KPICard 
                     label={includeTicketing ? "Total GameDay Rev" : "GameDay Rev (Net)"}
                     value={stats.avgBudgetRev}
-                    subLabel={includeTicketing ? "Incl. Tix (Target €2.9M)" : "Excl. Tix (Target €1.25M)"}
+                    subLabel={includeTicketing ? "Total Net (Target 2.9M)" : "Net excl. Tix (Target 1.25M)"}
                     icon={Coins}
                     color="text-emerald-600 border-emerald-100"
                     borderTop

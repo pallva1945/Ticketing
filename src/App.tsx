@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, ChevronRight, PieChart, TrendingUp, DollarSign, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Target, AlertTriangle, ChevronDown, Crown, Bell, Users, FileText } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Crown, Bell, Users, FileText, ChevronDown } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -1046,7 +1045,6 @@ const App: React.FC = () => {
   const days = useMemo(() => getAvailableOptions('day'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers]);
   const zones = useMemo(() => getAvailableOptions('zone'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
 
-  // START INSERTION
   const allSeasons = useMemo(() => Array.from(new Set(data.map(d => d.season))).sort().reverse(), [data]);
   const allLeagues = useMemo(() => Array.from(new Set(data.map(d => d.league))).sort(), [data]);
   const allOpponents = useMemo(() => Array.from(new Set(data.map(d => d.opponent))).sort(), [data]);
@@ -1056,7 +1054,6 @@ const App: React.FC = () => {
      data.forEach(g => g.salesBreakdown.forEach(s => z.add(s.zone)));
      return Array.from(z).sort();
   }, [data]);
-  // END INSERTION
 
   const aiContext = useMemo(() => {
     if (activeModule === 'home') {
