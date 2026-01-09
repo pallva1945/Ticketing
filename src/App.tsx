@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Crown, Bell, Users, FileText, ChevronDown } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
@@ -14,7 +15,6 @@ import { CompKillerWidget } from './components/CompKillerWidget';
 import { GameDayDashboard } from './components/GameDayDashboard';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
 import { BoardReportModal } from './components/BoardReportModal';
-import { CRMView } from './components/CRMView';
 import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
@@ -562,7 +562,7 @@ const ActionCenter = ({ data }: { data: GameData[] }) => {
 const App: React.FC = () => {
   // Navigation State - Defaults to HOME
   const [activeModule, setActiveModule] = useState<RevenueModule>('home');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'simulator' | 'chat' | 'crm'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'simulator' | 'chat'>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   
@@ -1045,6 +1045,7 @@ const App: React.FC = () => {
   const days = useMemo(() => getAvailableOptions('day'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers]);
   const zones = useMemo(() => getAvailableOptions('zone'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
 
+  // START INSERTION
   const allSeasons = useMemo(() => Array.from(new Set(data.map(d => d.season))).sort().reverse(), [data]);
   const allLeagues = useMemo(() => Array.from(new Set(data.map(d => d.league))).sort(), [data]);
   const allOpponents = useMemo(() => Array.from(new Set(data.map(d => d.opponent))).sort(), [data]);
@@ -1054,6 +1055,7 @@ const App: React.FC = () => {
      data.forEach(g => g.salesBreakdown.forEach(s => z.add(s.zone)));
      return Array.from(z).sort();
   }, [data]);
+  // END INSERTION
 
   const aiContext = useMemo(() => {
     if (activeModule === 'home') {
@@ -1262,9 +1264,6 @@ const App: React.FC = () => {
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Ticketing Tools</p>
                     <button onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'dashboard' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
                         <LayoutDashboard size={18} /> <span className="inline md:hidden lg:inline text-sm">Overview</span>
-                    </button>
-                    <button onClick={() => { setActiveTab('crm'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'crm' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
-                        <Users size={18} /> <span className="inline md:hidden lg:inline text-sm">CRM</span>
                     </button>
                     <button onClick={() => { setActiveTab('comparison'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'comparison' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
                         <ArrowLeftRight size={18} /> <span className="inline md:hidden lg:inline text-sm">Comparison</span>
@@ -1663,12 +1662,6 @@ const App: React.FC = () => {
                 {activeTab === 'simulator' && (
                     <div className="pt-6">
                         <Simulator data={viewData} />
-                    </div>
-                )}
-
-                {activeTab === 'crm' && (
-                    <div className="pt-6">
-                        <CRMView />
                     </div>
                 )}
 
