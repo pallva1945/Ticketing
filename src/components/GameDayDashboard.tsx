@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { GameDayData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -41,8 +42,8 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
 
       // "Budget Revenue" / "GameDay Net Revenue" logic
       // According to requirement:
-      // If Toggle ON: 3.3M Target -> Measures Everything (Total Revenue including Tix)
-      // If Toggle OFF: 1.65M Target -> Measures Everything minus Tix (Variable + Spons + TV)
+      // If Toggle ON: 2.9M Target -> Measures Everything (Total Revenue including Tix)
+      // If Toggle OFF: 1.25M Target -> Measures Everything minus Tix (Variable + Spons + TV)
       
       const revenueForBudget = includeTicketing 
           ? (totalVariable + totals.tix + totals.sponsorship + totals.tv)
@@ -158,9 +159,9 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                 
                 {/* 1. Primary Tracking Metric */}
                 <KPICard 
-                    label="Total GameDay Rev"
+                    label={includeTicketing ? "Total GameDay Rev" : "GameDay Rev (Net)"}
                     value={stats.avgBudgetRev}
-                    subLabel={includeTicketing ? "Total Net (Target 3.3M)" : "Net excl. Tix (Target 1.65M)"}
+                    subLabel={includeTicketing ? "Incl. Tix (Target €2.9M)" : "Excl. Tix (Target €1.25M)"}
                     icon={Coins}
                     color="text-emerald-600 border-emerald-100"
                     borderTop

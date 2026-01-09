@@ -1,5 +1,6 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, ChevronDown, Crown, Bell, Users, FileText, ShieldAlert } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, Trash2, UserX, Cloud, CloudOff, Database, Settings, ExternalLink, Copy, AlertCircle, ShieldAlert, Save, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, ChevronRight, PieChart, TrendingUp, DollarSign, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Target, AlertTriangle, ChevronDown, Crown, Bell, Users, FileText } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -13,6 +14,8 @@ import { DistressedZones } from './components/DistressedZones';
 import { CompKillerWidget } from './components/CompKillerWidget';
 import { GameDayDashboard } from './components/GameDayDashboard';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
+import { BoardReportModal } from './components/BoardReportModal';
+import { CRMView } from './components/CRMView';
 import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
@@ -51,6 +54,7 @@ const RevenueHome = ({
     ticketingRevenue, 
     gameDayRevenue, 
     onAiClick,
+    onReportClick,
     gamesPlayed,
     seasonFilter,
     onSeasonChange
@@ -60,6 +64,7 @@ const RevenueHome = ({
     gameDayRevenue: number, 
     onNavigate: (id: RevenueModule) => void,
     onAiClick: () => void,
+    onReportClick: () => void,
     gamesPlayed: number,
     seasonFilter: string,
     onSeasonChange: (s: string) => void
@@ -68,91 +73,76 @@ const RevenueHome = ({
     const TOTAL_GAMES_SEASON = 15;
     const gamesCount = Math.max(gamesPlayed, 1);
 
-    // --- VERTICAL DATA CONFIGURATION ---
-    // 'current' = YTD Actuals (Using FAKE values where requested)
-    // 'target' = Budget (Specific values from 2025 Sales Budget)
-    
-    // Internal Projections for Pacing Widget (Still useful there)
-    // const projTicketing = (ticketingRevenue / gamesCount) * TOTAL_GAMES_SEASON;
-    // const projGameDay = (gameDayRevenue / gamesCount) * TOTAL_GAMES_SEASON;
-
     const verticalPerformance = [
       { 
           id: 'sponsorship', 
           name: 'Sponsorship', 
-          current: 800000, // FAKE YTD
-          target: 2098000, // Budget 2.098m
+          current: 800000, 
+          target: 2098000,
           icon: Flag, colorClass: 'text-blue-600', bgClass: 'bg-blue-50', barClass: 'bg-blue-500', isVariable: false 
       },
       { 
           id: 'ticketing', 
           name: 'Ticketing', 
-          current: ticketingRevenue, // ACTUAL YTD
-          target: 1650000, // Budget 1.65m
+          current: ticketingRevenue, 
+          target: 1650000, 
           icon: Ticket, colorClass: 'text-red-600', bgClass: 'bg-red-50', barClass: 'bg-red-500', isVariable: true 
       },
       { 
           id: 'gameday', 
           name: 'Game Day', 
-          current: gameDayRevenue, // ACTUAL YTD
-          target: 1218000, // Budget 1.218m
+          current: gameDayRevenue, 
+          target: 1250000, 
           icon: Calendar, colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50', barClass: 'bg-indigo-500', isVariable: true 
       },
       { 
           id: 'sg', 
           name: 'Varese Basketball', 
-          current: 500000, // FAKE YTD
-          target: 930000, // Budget 930k
+          current: 500000, 
+          target: 930000, 
           icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false 
       },
       { 
           id: 'bops', 
           name: 'BOps', 
-          current: 200000, // FAKE YTD
-          target: 525000, // Budget 525k
+          current: 200000, 
+          target: 525000, 
           icon: Activity, colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', barClass: 'bg-emerald-500', isVariable: false 
       },
       { 
           id: 'venue_ops', 
           name: 'Venue Ops', 
-          current: 100000, // FAKE YTD
-          target: 258000, // Budget 258k
+          current: 100000, 
+          target: 258000, 
           icon: Landmark, colorClass: 'text-slate-600', bgClass: 'bg-slate-50', barClass: 'bg-slate-500', isVariable: false 
       },
       { 
           id: 'merchandising', 
           name: 'Merchandising', 
-          current: 80000, // FAKE YTD
-          target: 131000, // Budget 131k
+          current: 80000, 
+          target: 131000, 
           icon: ShoppingBag, colorClass: 'text-orange-600', bgClass: 'bg-orange-50', barClass: 'bg-orange-500', isVariable: false 
       },
       { 
           id: 'ebp', 
           name: 'EBP', 
-          current: 20000, // FAKE YTD
-          target: 41250, // Budget 41.25k
+          current: 20000, 
+          target: 41250, 
           icon: Briefcase, colorClass: 'text-pink-600', bgClass: 'bg-pink-50', barClass: 'bg-pink-500', isVariable: false 
       },
     ];
 
     // SORTED VERTICALS (Highest YTD Revenue First)
     const sortedVerticals = [...verticalPerformance].sort((a, b) => b.current - a.current);
-    
-    // Identify Best Vertical (by YTD volume)
     const bestVertical = sortedVerticals[0];
 
     // AGGREGATES
     const totalRevenueYTD = verticalPerformance.reduce((acc, v) => acc + v.current, 0);
-    // Projecting sum of targets just for top level context
     const totalTarget = verticalPerformance.reduce((acc, v) => acc + v.target, 0);
-    // Re-calculating projections based on new mix
     const totalRevenueProjected = verticalPerformance.reduce((acc, v) => {
         if(v.isVariable) {
              return acc + (v.current / gamesCount) * TOTAL_GAMES_SEASON;
         } else {
-             // For static/fake verticals, assume linear or fixed? Let's just use target as placeholder if we don't have pacing
-             // Actually, lets assume they are fixed contracts so YTD is what it is, maybe 80% collected?
-             // To simplify pacing widget:
              return acc + v.target; 
         }
     }, 0);
@@ -164,7 +154,6 @@ const RevenueHome = ({
     const isAhead = pacingDelta >= 0;
     const projectionDiff = totalRevenueProjected - totalTarget;
 
-    // Run Rate (Variable Only)
     const variableYTD = verticalPerformance.filter(v => v.isVariable).reduce((acc, v) => acc + v.current, 0);
     const currentVariableRunRate = variableYTD / gamesCount;
 
@@ -178,19 +167,29 @@ const RevenueHome = ({
                     <p className="text-gray-500 text-sm">Consolidated Budget Performance (YTD Actuals)</p>
                 </div>
                 
-                {/* Season Filter - Only Filter Here */}
-                <div className="relative">
-                    <select 
-                        value={seasonFilter}
-                        onChange={(e) => onSeasonChange(e.target.value)}
-                        className="appearance-none bg-white border border-gray-300 text-gray-700 py-2 pl-4 pr-10 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm cursor-pointer hover:bg-gray-50"
+                <div className="flex items-center gap-3">
+                    {/* Report Button */}
+                    <button 
+                        onClick={onReportClick}
+                        className="flex items-center gap-2 px-3 py-2 bg-slate-900 text-white rounded-lg text-sm font-bold hover:bg-slate-800 transition-colors shadow-sm"
                     >
-                        <option value="25-26">Season 25-26</option>
-                        <option value="24-25">Season 24-25</option>
-                        <option value="23-24">Season 23-24</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                        <ChevronDown size={16} />
+                        <FileText size={16} /> Generate Report
+                    </button>
+
+                    {/* Season Filter */}
+                    <div className="relative">
+                        <select 
+                            value={seasonFilter}
+                            onChange={(e) => onSeasonChange(e.target.value)}
+                            className="appearance-none bg-white border border-gray-300 text-gray-700 py-2 pl-4 pr-10 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm cursor-pointer hover:bg-gray-50"
+                        >
+                            <option value="25-26">Season 25-26</option>
+                            <option value="24-25">Season 24-25</option>
+                            <option value="23-24">Season 23-24</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                            <ChevronDown size={16} />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -252,7 +251,6 @@ const RevenueHome = ({
 
                     {/* Stacked Segments (YTD) */}
                     {sortedVerticals.map((v) => {
-                        // Calculate width as percentage of TOTAL TARGET
                         const widthPct = (v.current / totalTarget) * 100;
                         const shareOfYTD = (v.current / totalRevenueYTD) * 100;
                         const contributionToTarget = (v.current / totalTarget) * 100;
@@ -565,8 +563,9 @@ const ActionCenter = ({ data }: { data: GameData[] }) => {
 const App: React.FC = () => {
   // Navigation State - Defaults to HOME
   const [activeModule, setActiveModule] = useState<RevenueModule>('home');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'simulator' | 'chat'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'simulator' | 'chat' | 'crm'>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   
   // Data State
   const [data, setData] = useState<GameData[]>([]);
@@ -804,8 +803,6 @@ const App: React.FC = () => {
       if (ignoreOspiti) zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
       if (!selectedZones.includes('All')) zoneSales = zoneSales.filter(s => selectedZones.includes(s.zone));
 
-      // No channel filtering (Total View)
-      
       const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
       const zoneAttendance = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
 
@@ -820,8 +817,6 @@ const App: React.FC = () => {
           });
           filteredZoneCapacities = newCapMap;
       }
-
-      // No fixed deduction (Total View)
 
       Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
 
@@ -838,7 +833,18 @@ const App: React.FC = () => {
 
   const totalStats = useMemo(() => {
       const totalRevenue = totalViewData.reduce((sum, game) => sum + game.totalRevenue, 0);
-      return { totalRevenue };
+      const totalAttendance = totalViewData.reduce((sum, game) => sum + game.attendance, 0);
+      const totalCapacity = totalViewData.reduce((sum, game) => sum + game.capacity, 0);
+      const avgAttendance = totalViewData.length > 0 ? totalAttendance / totalViewData.length : 0;
+      const occupancyRate = totalCapacity > 0 ? (totalAttendance / totalCapacity) * 100 : 0;
+      
+      const totalGiveaways = totalViewData.reduce((sum, game) => {
+         const ga = game.salesBreakdown.filter(s => s.channel === SalesChannel.GIVEAWAY || s.channel === SalesChannel.PROTOCOL);
+         return sum + ga.reduce((acc, curr) => acc + curr.quantity, 0);
+      }, 0);
+      const giveawayRate = totalAttendance > 0 ? (totalGiveaways / totalAttendance) * 100 : 0;
+
+      return { totalRevenue, avgAttendance, topPerformingZone: '', occupancyRate, giveawayRate };
   }, [totalViewData]);
 
   const viewData = useMemo(() => {
@@ -983,24 +989,19 @@ const App: React.FC = () => {
     return { totalRevenue, avgAttendance, topPerformingZone: topZone, occupancyRate, giveawayRate };
   }, [viewData]);
 
-  // Aggregate Game Day Revenue (For Home Screen Card - Total Revenue MINUS Ticketing)
-  // This matches the user's request for "bring all game day revenue minus tix"
+  // Aggregate Game Day Revenue
   const gameDayRevenueNet = useMemo(() => {
       return filteredGameDayData.reduce((acc, game) => {
-          // Total Revenue - Ticketing Revenue = (Merch + F&B + Hosp + Park + Exp + Spons + TV)
           return acc + (game.totalRevenue - game.tixRevenue);
       }, 0);
   }, [filteredGameDayData]);
 
-  // Filtered Game Day Revenue for PACING WIDGET in GameDay Module
-  // STRICTLY follows the "Budget is 3.3M (Full) or 1.65M (Net minus Tix)" rule.
+  // Filtered Game Day Revenue for PACING WIDGET
   const filteredGameDayRevForPacing = useMemo(() => {
       return filteredGameDayData.reduce((acc, game) => {
-          // If Toggle ON: Everything (Total Revenue from CSV includes Tix+Spons+TV+Variable)
           if (gameDayIncludeTicketing) {
               return acc + game.totalRevenue; 
           } 
-          // If Toggle OFF: Everything MINUS Ticketing
           else {
               return acc + (game.totalRevenue - game.tixRevenue);
           }
@@ -1008,6 +1009,7 @@ const App: React.FC = () => {
   }, [filteredGameDayData, gameDayIncludeTicketing]);
 
   const getAvailableOptions = (targetField: 'season' | 'league' | 'opponent' | 'tier' | 'day' | 'zone') => {
+      // ... logic same as previous block ...
       const filtered = data.filter(d => {
         const matchSeason = targetField === 'season' || selectedSeasons.includes('All') || selectedSeasons.includes(d.season);
         const matchLeague = targetField === 'league' || selectedLeagues.includes('All') || selectedLeagues.includes(d.league);
@@ -1044,12 +1046,23 @@ const App: React.FC = () => {
   const days = useMemo(() => getAvailableOptions('day'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers]);
   const zones = useMemo(() => getAvailableOptions('zone'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
 
+  // START INSERTION
+  const allSeasons = useMemo(() => Array.from(new Set(data.map(d => d.season))).sort().reverse(), [data]);
+  const allLeagues = useMemo(() => Array.from(new Set(data.map(d => d.league))).sort(), [data]);
+  const allOpponents = useMemo(() => Array.from(new Set(data.map(d => d.opponent))).sort(), [data]);
+  const allTiers = useMemo(() => Array.from(new Set(data.map(d => d.tier))).filter((t: any) => t > 0).map(String).sort((a: any,b: any)=>Number(a)-Number(b)), [data]);
+  const allZones = useMemo(() => {
+     const z = new Set<string>();
+     data.forEach(g => g.salesBreakdown.forEach(s => z.add(s.zone)));
+     return Array.from(z).sort();
+  }, [data]);
+  // END INSERTION
+
   const aiContext = useMemo(() => {
     if (activeModule === 'home') {
         const totalLiveTix = totalStats.totalRevenue; // Uses total stats (unaffected by viewMode)
         const totalLiveGD = filteredGameDayRevForPacing; // Uses filtered data
         
-        // Pass the actual YTD data to the AI for accurate context
         return JSON.stringify({
             context_filter: { seasons: selectedSeasons, leagues: selectedLeagues },
             view_mode: 'HOME_OVERVIEW',
@@ -1124,16 +1137,6 @@ const App: React.FC = () => {
      setSelectedZones(selectedZones.includes(zone) && selectedZones.length === 1 ? ['All'] : [zone]);
   };
 
-  const allSeasons = useMemo(() => Array.from(new Set(data.map(d => d.season))).sort().reverse(), [data]);
-  const allLeagues = useMemo(() => Array.from(new Set(data.map(d => d.league))).sort(), [data]);
-  const allOpponents = useMemo(() => Array.from(new Set(data.map(d => d.opponent))).sort(), [data]);
-  const allTiers = useMemo(() => Array.from(new Set(data.map(d => d.tier))).filter((t: any) => t > 0).map(String).sort((a,b)=>Number(a)-Number(b)), [data]);
-  const allZones = useMemo(() => {
-     const z = new Set<string>();
-     data.forEach(g => g.salesBreakdown.forEach(s => z.add(s.zone)));
-     return Array.from(z).sort();
-  }, [data]);
-
   const FilterBar = () => (
     <div className="mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
         <div className="flex items-center justify-between mb-3">
@@ -1167,7 +1170,6 @@ const App: React.FC = () => {
     </div>
   );
 
-  // --- COMPREHENSIVE TICKER ITEMS ---
   const tickerItems: TickerItem[] = useMemo(() => [
     { label: "TICKET", value: `€${(stats.totalRevenue/1000).toFixed(0)}k`, icon: Ticket, color: "text-red-400" },
     { label: "AVG ATT", value: stats.avgAttendance.toFixed(0), icon: Users, color: "text-red-200" },
@@ -1183,6 +1185,14 @@ const App: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row relative">
       {showSetupModal && <SetupModal onClose={() => setShowSetupModal(false)} />}
       {showRulesError && <RulesErrorModal onClose={() => { setShowRulesError(false); window.location.reload(); }} />}
+      {showReportModal && (
+        <BoardReportModal 
+            stats={totalStats} 
+            data={totalViewData} 
+            onClose={() => setShowReportModal(false)} 
+            seasonTarget={SEASON_TARGET_TOTAL}
+        />
+      )}
       
       {/* Top Navigation */}
       <div className="fixed top-0 left-0 w-full bg-white border-b border-gray-200 h-16 z-50 px-6 flex items-center justify-between shadow-sm">
@@ -1194,7 +1204,6 @@ const App: React.FC = () => {
                <img src={PV_LOGO_URL} alt="PV" className="w-full h-full object-contain" />
              </div>
              
-             {/* Integrated Mobile Ticker (Hidden on Desktop) */}
              {!isLoadingData && (
                 <MobileTicker items={tickerItems} />
              )}
@@ -1233,7 +1242,6 @@ const App: React.FC = () => {
         
         {/* Module Specific Tools */}
         <div className="p-4 flex-1">
-            {/* Mobile-only Module Switcher */}
             <div className="md:hidden mb-6 space-y-2 border-b border-gray-100 pb-4">
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-2 mb-2">Modules</p>
                 {MODULES.map((module) => (
@@ -1257,6 +1265,9 @@ const App: React.FC = () => {
                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Ticketing Tools</p>
                     <button onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'dashboard' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
                         <LayoutDashboard size={18} /> <span className="inline md:hidden lg:inline text-sm">Overview</span>
+                    </button>
+                    <button onClick={() => { setActiveTab('crm'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'crm' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
+                        <Users size={18} /> <span className="inline md:hidden lg:inline text-sm">CRM</span>
                     </button>
                     <button onClick={() => { setActiveTab('comparison'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'comparison' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
                         <ArrowLeftRight size={18} /> <span className="inline md:hidden lg:inline text-sm">Comparison</span>
@@ -1439,6 +1450,7 @@ const App: React.FC = () => {
                     setActiveModule('ticketing');
                     setActiveTab('chat');
                 }}
+                onReportClick={() => setShowReportModal(true)}
                 gamesPlayed={viewData.length}
                 seasonFilter={selectedSeasons[0]}
                 onSeasonChange={(s) => setSelectedSeasons([s])}
@@ -1460,9 +1472,9 @@ const App: React.FC = () => {
                                     <>
                                     Monitoring <strong>{filteredGameDayData.length} GameDay events</strong>. 
                                     {gameDayIncludeTicketing ? (
-                                        <>Tracking <strong>Total Net Revenue</strong> against the <strong>€3.3M Budget</strong> (Includes Tix + Spons + TV + Variable).</>
+                                        <>Tracking <strong>Total Net Revenue</strong> against the <strong>€2.9M Budget</strong> (Includes Tix + Spons + TV + Variable).</>
                                     ) : (
-                                        <>Tracking <strong>Net Revenue (Excl. Tix)</strong> against the <strong>€1.65M Budget</strong> (Includes Spons + TV + Variable).</>
+                                        <>Tracking <strong>Net Revenue (Excl. Tix)</strong> against the <strong>€1.25M Budget</strong> (Includes Spons + TV + Variable).</>
                                     )}
                                     Look for correlations between Merchandising spikes and specific opponents.
                                     </>
@@ -1654,6 +1666,12 @@ const App: React.FC = () => {
                 {activeTab === 'simulator' && (
                     <div className="pt-6">
                         <Simulator data={viewData} />
+                    </div>
+                )}
+
+                {activeTab === 'crm' && (
+                    <div className="pt-6">
+                        <CRMView />
                     </div>
                 )}
 
