@@ -109,6 +109,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
   const stats = useMemo(() => {
     const dataSource = chartFilteredData;
+    const GAMES_PER_SEASON = 15; // GameDay reconciliation values are per-game, multiply by 15 for season total
     
     const totalCommercial = dataSource.reduce((sum, d) => sum + d.commercialValue, 0);
     const totalCash = dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.commercialValue, 0);
@@ -116,7 +117,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     const totalSponsors = dataSource.length;
     const uniqueCompanies = new Set(dataSource.map(d => d.company)).size;
     
-    const totalGameday = dataSource.reduce((sum, d) => sum + d.gamedayReconciliation, 0);
+    // GameDay reconciliation is per-game, so multiply by 15 for season total
+    const totalGameday = dataSource.reduce((sum, d) => sum + d.gamedayReconciliation, 0) * GAMES_PER_SEASON;
     const totalVB = dataSource.reduce((sum, d) => sum + d.vbReconciliation, 0);
     const totalCSR = dataSource.reduce((sum, d) => sum + d.csrReconciliation, 0);
     const totalCorpTix = dataSource.reduce((sum, d) => sum + d.corpTixReconciliation, 0);
@@ -131,11 +133,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       - (excludeVB ? totalVB : 0);
     const adjustedCash = totalCash 
       - (excludeCorpTix ? dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.corpTixReconciliation, 0) : 0)
-      - (excludeGameDay ? dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.gamedayReconciliation, 0) : 0)
+      - (excludeGameDay ? dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.gamedayReconciliation, 0) * GAMES_PER_SEASON : 0)
       - (excludeVB ? dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.vbReconciliation, 0) : 0);
     const adjustedCM = totalCM 
       - (excludeCorpTix ? dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.corpTixReconciliation, 0) : 0)
-      - (excludeGameDay ? dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.gamedayReconciliation, 0) : 0)
+      - (excludeGameDay ? dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.gamedayReconciliation, 0) * GAMES_PER_SEASON : 0)
       - (excludeVB ? dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.vbReconciliation, 0) : 0);
     
     const pureSponsorship = totalSponsorRec + totalCSR;
