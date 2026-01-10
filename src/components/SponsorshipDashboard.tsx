@@ -530,28 +530,51 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
         {/* Deal Quality Overview */}
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <TrendingUp size={20} className="text-emerald-500" />
             Deal Quality Overview
           </h3>
-          <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
-            <div>
-              <span className="text-xs text-gray-500">Portfolio Net Delta</span>
-              <p className={`text-xl font-bold ${dealQualityStats.totalDelta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-500">Portfolio Net Delta</span>
+              <span className={`text-xl font-bold ${dealQualityStats.totalDelta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                 {dealQualityStats.totalDelta >= 0 ? '+' : ''}{formatCompactCurrency(dealQualityStats.totalDelta)}
-              </p>
+              </span>
             </div>
-            <div className="text-right">
-              <span className="text-xs text-gray-500">Avg Score</span>
-              <div className="flex items-center gap-1 mt-1">
-                {[1, 2, 3, 4, 5].map(i => (
-                  <div key={i} className={`w-4 h-4 rounded ${i <= Math.round(dealQualityStats.avgQualityScore) ? 'bg-emerald-500' : 'bg-gray-200'}`} />
-                ))}
-                <span className="text-sm font-bold text-gray-700 ml-1">{dealQualityStats.avgQualityScore.toFixed(1)}</span>
-              </div>
+            <p className="text-xs text-gray-400">Revenue received minus value given (LED, jersey, tickets, etc.)</p>
+          </div>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-sm text-gray-500">Avg Score:</span>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className={`w-5 h-5 rounded ${i <= Math.round(dealQualityStats.avgQualityScore) ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+              ))}
+            </div>
+            <span className="text-sm font-bold text-gray-700">{dealQualityStats.avgQualityScore.toFixed(1)}/5</span>
+          </div>
+          <div className="grid grid-cols-5 gap-2 text-center mb-4">
+            <div className="bg-emerald-50 rounded-lg p-2">
+              <p className="text-lg font-bold text-emerald-700">{dealQualityStats.excellent}</p>
+              <p className="text-[10px] text-emerald-600 font-medium">Excellent</p>
+            </div>
+            <div className="bg-green-50 rounded-lg p-2">
+              <p className="text-lg font-bold text-green-600">{dealQualityStats.good}</p>
+              <p className="text-[10px] text-green-600 font-medium">Good</p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-2">
+              <p className="text-lg font-bold text-slate-600">{dealQualityStats.fair}</p>
+              <p className="text-[10px] text-slate-600 font-medium">Fair</p>
+            </div>
+            <div className="bg-amber-50 rounded-lg p-2">
+              <p className="text-lg font-bold text-amber-600">{dealQualityStats.below}</p>
+              <p className="text-[10px] text-amber-600 font-medium">Below</p>
+            </div>
+            <div className="bg-red-50 rounded-lg p-2">
+              <p className="text-lg font-bold text-red-600">{dealQualityStats.poor}</p>
+              <p className="text-[10px] text-red-600 font-medium">Poor</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
             <div>
               <p className="text-[10px] font-bold text-emerald-600 uppercase mb-2">Best Deals</p>
               <div className="space-y-1.5">
