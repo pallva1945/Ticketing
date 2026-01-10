@@ -550,63 +550,87 @@ const RevenueHome = ({
 
             {/* YoY COMPARISON - 3 Season Chart */}
             <div className="mt-6">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">3-Season Revenue Trend</h3>
-                    <div className="flex items-center gap-4 text-[10px]">
-                        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-slate-300"></div> 23-24</div>
-                        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-slate-500"></div> 24-25</div>
-                        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-red-600"></div> 25-26 (Proj)</div>
+                    <div className="flex items-center gap-5 text-xs">
+                        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-slate-300"></div> 23-24</div>
+                        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-slate-500"></div> 24-25</div>
+                        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-600"></div> 25-26 (Proj)</div>
+                        <div className="flex items-center gap-1.5"><div className="w-6 h-0.5 bg-amber-500"></div> Trend</div>
                     </div>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-                    <div className="grid grid-cols-3 gap-6">
+                <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+                    <div className="grid grid-cols-3 gap-8">
                         {yoyStats.chartData.map((vertical) => {
-                            const maxVal = Math.max(vertical['23-24'], vertical['24-25'], vertical['25-26']);
-                            const MAX_BAR_HEIGHT = 100;
+                            const vals = [vertical['23-24'], vertical['24-25'], vertical['25-26']];
+                            const maxVal = Math.max(...vals);
+                            const MAX_BAR_HEIGHT = 180;
                             const getHeight = (val: number) => maxVal > 0 ? (val / maxVal) * MAX_BAR_HEIGHT : 0;
                             const yoy = vertical['24-25'] > 0 
                                 ? ((vertical['25-26'] - vertical['24-25']) / vertical['24-25']) * 100 
                                 : 0;
                             
+                            const heights = vals.map(v => MAX_BAR_HEIGHT - getHeight(v));
+                            
                             return (
                                 <div key={vertical.vertical} className="text-center">
-                                    <div className="flex items-center justify-center gap-1 mb-3">
-                                        {vertical.vertical === 'Ticketing' && <Ticket size={14} className="text-red-600" />}
-                                        {vertical.vertical === 'GameDay' && <Calendar size={14} className="text-indigo-600" />}
-                                        {vertical.vertical === 'Sponsorship' && <Flag size={14} className="text-blue-600" />}
-                                        <span className="font-semibold text-gray-800 text-sm">{vertical.vertical}</span>
-                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-1 ${yoy >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    <div className="flex items-center justify-center gap-2 mb-4">
+                                        {vertical.vertical === 'Ticketing' && <Ticket size={16} className="text-red-600" />}
+                                        {vertical.vertical === 'GameDay' && <Calendar size={16} className="text-indigo-600" />}
+                                        {vertical.vertical === 'Sponsorship' && <Flag size={16} className="text-blue-600" />}
+                                        <span className="font-semibold text-gray-800">{vertical.vertical}</span>
+                                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${yoy >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                             {yoy >= 0 ? '+' : ''}{yoy.toFixed(0)}%
                                         </span>
                                     </div>
-                                    <div className="flex items-end justify-center gap-3" style={{ height: '120px' }}>
-                                        <div className="flex flex-col items-center justify-end h-full group relative">
-                                            <div 
-                                                className="w-10 bg-slate-300 rounded-t transition-all duration-500 cursor-pointer hover:bg-slate-400" 
-                                                style={{ height: `${Math.max(getHeight(vertical['23-24']), 8)}px` }}
-                                                title={`23-24: ${formatCompact(vertical['23-24'])}`}
-                                            />
-                                            <span className="text-[9px] text-gray-400 mt-1">23-24</span>
+                                    <div className="relative bg-gray-50 rounded-lg p-4" style={{ height: `${MAX_BAR_HEIGHT + 40}px` }}>
+                                        <div className="absolute inset-x-4 top-4 bottom-8 border-b border-gray-200">
+                                            <div className="absolute w-full border-t border-dashed border-gray-200" style={{ top: '25%' }}></div>
+                                            <div className="absolute w-full border-t border-dashed border-gray-200" style={{ top: '50%' }}></div>
+                                            <div className="absolute w-full border-t border-dashed border-gray-200" style={{ top: '75%' }}></div>
                                         </div>
-                                        <div className="flex flex-col items-center justify-end h-full group relative">
-                                            <div 
-                                                className="w-10 bg-slate-500 rounded-t transition-all duration-500 cursor-pointer hover:bg-slate-600" 
-                                                style={{ height: `${Math.max(getHeight(vertical['24-25']), 8)}px` }}
-                                                title={`24-25: ${formatCompact(vertical['24-25'])}`}
-                                            />
-                                            <span className="text-[9px] text-gray-400 mt-1">24-25</span>
+                                        <div className="flex items-end justify-center gap-5 h-full pb-6 relative z-10">
+                                            <div className="flex flex-col items-center justify-end" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
+                                                <div 
+                                                    className="w-14 bg-slate-300 rounded-t transition-all duration-500 cursor-pointer hover:bg-slate-400 shadow-sm" 
+                                                    style={{ height: `${Math.max(getHeight(vertical['23-24']), 12)}px` }}
+                                                    title={`23-24: ${formatCompact(vertical['23-24'])}`}
+                                                />
+                                                <span className="text-[11px] text-gray-500 mt-2 font-medium">23-24</span>
+                                            </div>
+                                            <div className="flex flex-col items-center justify-end" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
+                                                <div 
+                                                    className="w-14 bg-slate-500 rounded-t transition-all duration-500 cursor-pointer hover:bg-slate-600 shadow-sm" 
+                                                    style={{ height: `${Math.max(getHeight(vertical['24-25']), 12)}px` }}
+                                                    title={`24-25: ${formatCompact(vertical['24-25'])}`}
+                                                />
+                                                <span className="text-[11px] text-gray-500 mt-2 font-medium">24-25</span>
+                                            </div>
+                                            <div className="flex flex-col items-center justify-end" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
+                                                <div 
+                                                    className="w-14 bg-red-600 rounded-t transition-all duration-500 cursor-pointer hover:bg-red-700 shadow-sm"
+                                                    style={{ height: `${Math.max(getHeight(vertical['25-26']), 12)}px` }}
+                                                    title={`25-26 (Proj): ${formatCompact(vertical['25-26'])}`}
+                                                />
+                                                <span className="text-[11px] text-gray-600 mt-2 font-semibold">25-26</span>
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col items-center justify-end h-full group relative">
-                                            <div 
-                                                className="w-10 bg-red-600 rounded-t transition-all duration-500 cursor-pointer hover:bg-red-700"
-                                                style={{ height: `${Math.max(getHeight(vertical['25-26']), 8)}px` }}
-                                                title={`25-26 (Proj): ${formatCompact(vertical['25-26'])}`}
+                                        <svg className="absolute inset-x-4 top-4 pointer-events-none z-20" style={{ height: `${MAX_BAR_HEIGHT}px`, width: 'calc(100% - 32px)' }}>
+                                            <line 
+                                                x1="16%" y1={heights[0]} 
+                                                x2="50%" y2={heights[1]} 
+                                                stroke="#f59e0b" strokeWidth="3" strokeLinecap="round"
                                             />
-                                            <span className="text-[9px] text-gray-500 font-medium mt-1">25-26 (Proj)</span>
-                                        </div>
-                                    </div>
-                                    <div className="mt-3 pt-3 border-t border-gray-100">
-                                        <p className="text-lg font-bold text-gray-900">{formatCompact(vertical['25-26'])}</p>
+                                            <line 
+                                                x1="50%" y1={heights[1]} 
+                                                x2="84%" y2={heights[2]} 
+                                                stroke="#f59e0b" strokeWidth="3" strokeLinecap="round" 
+                                                strokeDasharray={vertical.isProjected ? "6 4" : "0"}
+                                            />
+                                            <circle cx="16%" cy={heights[0]} r="4" fill="#f59e0b" />
+                                            <circle cx="50%" cy={heights[1]} r="4" fill="#f59e0b" />
+                                            <circle cx="84%" cy={heights[2]} r="5" fill="#f59e0b" stroke="white" strokeWidth="2" />
+                                        </svg>
                                     </div>
                                 </div>
                             );
