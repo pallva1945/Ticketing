@@ -114,3 +114,25 @@ export interface StatsCardsProps {
   kpiConfig: KPIConfig;
   viewMode: 'total' | 'gameday';
 }
+
+export interface SponsorData {
+  id: string;
+  company: string;
+  sector: string;
+  dimension: string;
+  level: string;
+  contact: string;
+  email: string;
+  contractType: 'CASH' | 'CM';
+  contractDuration: string;
+  season: string;
+  commercialValue: number;
+  bonusPlayoff: number;
+  netOfTicketing: number;
+  gamedayReconciliation: number;
+  vbReconciliation: number;
+  csrReconciliation: number;
+  corpTixReconciliation: number;
+  sponsorReconciliation: number;
+  monthlyPayments: Record<string, number>;
+}

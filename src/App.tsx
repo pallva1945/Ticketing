@@ -16,11 +16,13 @@ import { GameDayDashboard } from './components/GameDayDashboard';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
 import { BoardReportModal } from './components/BoardReportModal';
 import { CRMView } from './components/CRMView';
+import { SponsorshipDashboard } from './components/SponsorshipDashboard';
 import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
-import { GameData, GameDayData, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
+import { GameData, GameDayData, SponsorData, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { GAMEDAY_CSV_CONTENT } from './data/gameDayData';
-import { processGameData, processGameDayData } from './utils/dataProcessor';
+import { SPONSOR_CSV_CONTENT } from './data/sponsorData';
+import { processGameData, processGameDayData, processSponsorData } from './utils/dataProcessor';
 import { getCsvFromFirebase, saveCsvToFirebase } from './services/dbService';
 import { isFirebaseConfigured } from './firebaseConfig';
 
@@ -569,7 +571,10 @@ const App: React.FC = () => {
   
   // Data State
   const [data, setData] = useState<GameData[]>([]);
-  const [gameDayData, setGameDayData] = useState<GameDayData[]>([]); 
+  const [gameDayData, setGameDayData] = useState<GameDayData[]>([]);
+  const [sponsorData, setSponsorData] = useState<SponsorData[]>([]);
+  const [sponsorDataSource, setSponsorDataSource] = useState<'local' | 'cloud'>('local');
+  const [sponsorLastUpdated, setSponsorLastUpdated] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
   
   // Sources separated by vertical
@@ -649,7 +654,29 @@ const App: React.FC = () => {
     }
     setGameDayData(loadedGameDay);
 
-    // 2. TICKETING DATA LOADING
+    // 2. SPONSOR DATA LOADING
+    try {
+        let sponsorCsv = SPONSOR_CSV_CONTENT;
+        let sponsorSource: 'local' | 'cloud' = 'local';
+        
+        if (isFirebaseConfigured) {
+            const cloudSponsor = await getCsvFromFirebase('sponsor');
+            if (cloudSponsor) {
+                sponsorCsv = cloudSponsor.content;
+                setSponsorLastUpdated(cloudSponsor.updatedAt);
+                sponsorSource = 'cloud';
+            }
+        }
+        const loadedSponsors = processSponsorData(sponsorCsv);
+        setSponsorData(loadedSponsors);
+        setSponsorDataSource(sponsorSource);
+    } catch(e) {
+        console.error("Error loading Sponsor data", e);
+        setSponsorData(processSponsorData(SPONSOR_CSV_CONTENT));
+        setSponsorDataSource('local');
+    }
+
+    // 3. TICKETING DATA LOADING
     try {
       if (isFirebaseConfigured) {
         try {
@@ -1686,6 +1713,23 @@ const App: React.FC = () => {
                     </div>
                 )}
             </>
+          ) : activeModule === 'sponsorship' ? (
+              <div className="pt-6">
+                <SponsorshipDashboard 
+                  data={sponsorData}
+                  onUploadCsv={async (content: string) => {
+                    const newData = processSponsorData(content);
+                    setSponsorData(newData);
+                    if (isFirebaseConfigured) {
+                      await saveCsvToFirebase('sponsor', content);
+                      setSponsorDataSource('cloud');
+                      setSponsorLastUpdated(new Date().toLocaleString());
+                    }
+                  }}
+                  dataSource={sponsorDataSource}
+                  lastUpdated={sponsorLastUpdated}
+                />
+              </div>
           ) : (
               <PlaceholderView 
                 moduleName={MODULES.find(m => m.id === activeModule)?.label || 'Module'} 

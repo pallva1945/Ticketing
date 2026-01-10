@@ -1,4 +1,4 @@
-import { GameData, GameDayData, SalesChannel, SalesDataPoint, TicketTypeBreakdown, TicketZone } from '../types';
+import { GameData, GameDayData, SalesChannel, SalesDataPoint, SponsorData, TicketTypeBreakdown, TicketZone } from '../types';
 
 // --- HELPERS ---
 
@@ -363,4 +363,74 @@ export const processGameDayData = (csvContent: string): GameDayData[] => {
     const dateB = new Date(yb < 100 ? 2000 + yb : yb, mb - 1, db);
     return dateA.getTime() - dateB.getTime();
   });
+};
+
+export const processSponsorData = (csvContent: string): SponsorData[] => {
+  const rows = parseCSV(csvContent);
+  if (rows.length < 2) return [];
+
+  const header = rows[0].map(h => h.trim().toLowerCase());
+  
+  const getIndex = (keys: string[]) => header.findIndex(h => keys.map(k => k.toLowerCase()).includes(h));
+  
+  const companyIdx = getIndex(['azienda', 'company']);
+  const sectorIdx = getIndex(['settore', 'sector']);
+  const dimensionIdx = getIndex(['dimensione', 'dimension']);
+  const levelIdx = getIndex(['livello', 'level']);
+  const contactIdx = getIndex(['contatto', 'contact']);
+  const emailIdx = getIndex(['email']);
+  const contractTypeIdx = getIndex(['tipo contratto', 'contract type']);
+  const contractDurationIdx = getIndex(['durata contratto', 'contract duration']);
+  const seasonIdx = getIndex(['season', 'stagione']);
+  const commercialValueIdx = getIndex(['commercial value', 'valore commerciale']);
+  const bonusPlayoffIdx = getIndex(['bonus playoff']);
+  const netOfTicketingIdx = getIndex(['net of ticketing']);
+  const gamedayIdx = getIndex(['gameday reconciliation']);
+  const vbIdx = getIndex(['vb reconciliaiton', 'vb reconciliation']);
+  const csrIdx = getIndex(['csr reconciliation']);
+  const corpTixIdx = getIndex(['corp tix reconciliation']);
+  const sponsorRecIdx = getIndex(['sponsor reconciliation']);
+  
+  const monthNames = ['july', 'august', 'september', 'october', 'november', 'december', 
+                      'january', 'february', 'march', 'april', 'may', 'june'];
+  const monthIndices: Record<string, number> = {};
+  monthNames.forEach(m => {
+    const idx = header.findIndex(h => h.toLowerCase() === m);
+    if (idx >= 0) monthIndices[m] = idx;
+  });
+
+  return rows.slice(1).map((row, idx) => {
+    const getVal = (colIdx: number) => (colIdx >= 0 && row[colIdx]) ? row[colIdx].trim() : '';
+    
+    const company = getVal(companyIdx);
+    const season = getVal(seasonIdx);
+    const contractType: 'CASH' | 'CM' = getVal(contractTypeIdx).toUpperCase() === 'CM' ? 'CM' : 'CASH';
+    
+    const monthlyPayments: Record<string, number> = {};
+    Object.entries(monthIndices).forEach(([month, colIdx]) => {
+      monthlyPayments[month] = parseCurrency(getVal(colIdx));
+    });
+
+    return {
+      id: `${company}-${season}-${idx}`,
+      company,
+      sector: getVal(sectorIdx),
+      dimension: getVal(dimensionIdx),
+      level: getVal(levelIdx),
+      contact: getVal(contactIdx),
+      email: getVal(emailIdx),
+      contractType,
+      contractDuration: getVal(contractDurationIdx),
+      season,
+      commercialValue: parseCurrency(getVal(commercialValueIdx)),
+      bonusPlayoff: parseCurrency(getVal(bonusPlayoffIdx)),
+      netOfTicketing: parseCurrency(getVal(netOfTicketingIdx)),
+      gamedayReconciliation: parseCurrency(getVal(gamedayIdx)),
+      vbReconciliation: parseCurrency(getVal(vbIdx)),
+      csrReconciliation: parseCurrency(getVal(csrIdx)),
+      corpTixReconciliation: parseCurrency(getVal(corpTixIdx)),
+      sponsorReconciliation: parseCurrency(getVal(sponsorRecIdx)),
+      monthlyPayments
+    };
+  }).filter(s => s.company && s.commercialValue > 0);
 };
