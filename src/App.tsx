@@ -564,9 +564,9 @@ const RevenueHome = ({
                         {yoyStats.chartData.map((vertical) => {
                             const vals = [vertical['23-24'], vertical['24-25'], vertical['25-26']];
                             const maxVal = Math.max(...vals);
-                            const MAX_BAR_HEIGHT = 100;
-                            const BAR_WIDTH = 32;
-                            const BAR_GAP = 8;
+                            const MAX_BAR_HEIGHT = 90;
+                            const BAR_WIDTH = 44;
+                            const BAR_GAP = 6;
                             const CHART_WIDTH = BAR_WIDTH * 3 + BAR_GAP * 2;
                             const barCenters = [BAR_WIDTH / 2, BAR_WIDTH * 1.5 + BAR_GAP, BAR_WIDTH * 2.5 + BAR_GAP * 2];
                             const getHeight = (val: number) => maxVal > 0 ? (val / maxVal) * MAX_BAR_HEIGHT : 0;
@@ -586,16 +586,16 @@ const RevenueHome = ({
                                             {yoy >= 0 ? '+' : ''}{yoy.toFixed(0)}%
                                         </span>
                                     </div>
-                                    <div className="relative bg-gray-50 rounded-lg overflow-hidden" style={{ height: `${MAX_BAR_HEIGHT + 36}px`, padding: '12px' }}>
-                                        <div className="absolute left-2 top-3 bottom-6 flex flex-col justify-between text-[9px] text-gray-400 w-7">
+                                    <div className="relative bg-gray-50 rounded-lg overflow-hidden" style={{ height: `${MAX_BAR_HEIGHT + 44}px`, padding: '16px 12px 12px 12px' }}>
+                                        <div className="absolute left-2 top-4 flex flex-col justify-between text-[9px] text-gray-400 w-7" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
                                             <span>{formatCompact(maxVal)}</span>
                                             <span>{formatCompact(maxVal * 0.5)}</span>
                                             <span>€0</span>
                                         </div>
-                                        <div className="absolute left-10 right-3 top-3 border-b border-gray-300" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
+                                        <div className="absolute left-10 right-3 top-4 border-b border-gray-300" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
                                             <div className="absolute w-full border-t border-dashed border-gray-200" style={{ top: '50%' }}></div>
                                         </div>
-                                        <div className="flex justify-center" style={{ paddingLeft: '32px' }}>
+                                        <div className="flex justify-center" style={{ paddingLeft: '28px' }}>
                                             <div className="relative" style={{ width: `${CHART_WIDTH}px`, height: `${MAX_BAR_HEIGHT}px` }}>
                                                 <div className="absolute bottom-0 left-0 flex items-end" style={{ gap: `${BAR_GAP}px` }}>
                                                     <div 
@@ -623,7 +623,7 @@ const RevenueHome = ({
                                                 </svg>
                                             </div>
                                         </div>
-                                        <div className="flex justify-center mt-1" style={{ paddingLeft: '32px' }}>
+                                        <div className="flex justify-center mt-2" style={{ paddingLeft: '28px' }}>
                                             <div className="flex" style={{ width: `${CHART_WIDTH}px`, gap: `${BAR_GAP}px` }}>
                                                 <span className="text-[10px] text-gray-500 font-medium text-center" style={{ width: `${BAR_WIDTH}px` }}>23-24</span>
                                                 <span className="text-[10px] text-gray-500 font-medium text-center" style={{ width: `${BAR_WIDTH}px` }}>24-25</span>
