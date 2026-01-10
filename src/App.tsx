@@ -553,9 +553,9 @@ const RevenueHome = ({
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">3-Season Revenue Trend</h3>
                     <div className="flex items-center gap-4 text-[10px]">
-                        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-slate-400"></div> 23-24</div>
-                        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-slate-600"></div> 24-25</div>
-                        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-red-600"></div> 25-26 (Proj.)</div>
+                        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-slate-300"></div> 23-24</div>
+                        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-slate-500"></div> 24-25</div>
+                        <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-red-600"></div> 25-26 (Proj)</div>
                     </div>
                 </div>
                 <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
@@ -580,31 +580,33 @@ const RevenueHome = ({
                                         </span>
                                     </div>
                                     <div className="flex items-end justify-center gap-3" style={{ height: '120px' }}>
-                                        <div className="flex flex-col items-center justify-end h-full">
+                                        <div className="flex flex-col items-center justify-end h-full group relative">
                                             <div 
-                                                className="w-10 bg-slate-300 rounded-t transition-all duration-500" 
+                                                className="w-10 bg-slate-300 rounded-t transition-all duration-500 cursor-pointer hover:bg-slate-400" 
                                                 style={{ height: `${Math.max(getHeight(vertical['23-24']), 8)}px` }}
+                                                title={`23-24: ${formatCompact(vertical['23-24'])}`}
                                             />
                                             <span className="text-[9px] text-gray-400 mt-1">23-24</span>
                                         </div>
-                                        <div className="flex flex-col items-center justify-end h-full">
+                                        <div className="flex flex-col items-center justify-end h-full group relative">
                                             <div 
-                                                className="w-10 bg-slate-500 rounded-t transition-all duration-500" 
+                                                className="w-10 bg-slate-500 rounded-t transition-all duration-500 cursor-pointer hover:bg-slate-600" 
                                                 style={{ height: `${Math.max(getHeight(vertical['24-25']), 8)}px` }}
+                                                title={`24-25: ${formatCompact(vertical['24-25'])}`}
                                             />
                                             <span className="text-[9px] text-gray-400 mt-1">24-25</span>
                                         </div>
-                                        <div className="flex flex-col items-center justify-end h-full">
+                                        <div className="flex flex-col items-center justify-end h-full group relative">
                                             <div 
-                                                className={`w-10 rounded-t transition-all duration-500 ${vertical.isProjected ? 'bg-red-400' : 'bg-red-600'}`}
+                                                className="w-10 bg-red-600 rounded-t transition-all duration-500 cursor-pointer hover:bg-red-700"
                                                 style={{ height: `${Math.max(getHeight(vertical['25-26']), 8)}px` }}
+                                                title={`25-26 (Proj): ${formatCompact(vertical['25-26'])}`}
                                             />
-                                            <span className="text-[9px] text-gray-500 font-medium mt-1">25-26</span>
+                                            <span className="text-[9px] text-gray-500 font-medium mt-1">25-26 (Proj)</span>
                                         </div>
                                     </div>
                                     <div className="mt-3 pt-3 border-t border-gray-100">
                                         <p className="text-lg font-bold text-gray-900">{formatCompact(vertical['25-26'])}</p>
-                                        <p className="text-[10px] text-gray-400">{vertical.isProjected ? 'Projected' : 'Actual'}</p>
                                     </div>
                                 </div>
                             );
