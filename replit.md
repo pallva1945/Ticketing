@@ -35,6 +35,14 @@ src/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 10, 2026: Executive Overview Redesign
+  - 7 revenue vertical score cards (Sponsorship, Ticketing, GameDay, VB, BOps, Venue Ops, Merchandising)
+  - Actual data integration for Ticketing, GameDay, and Sponsorship (Sponsor Rec + CSR)
+  - Variable vs Absolute pacing logic: Ticketing/GameDay use games-based pacing; others use percentage-based
+  - Comprehensive tooltips on all pacing bars showing YTD, target, achievement, pace, and projections
+  - 4 strategic signal cards: Projected Finish, Variable Run Rate, Fixed Revenue Secured, Attention Required
+  - Stacked progress bar showing contribution by vertical with hover tooltips
+
 - January 10, 2026: Sponsorship Season Target Widget
   - Added €2.1M season target for Sponsorship + CSR only
   - Excludes Corp Tickets, GameDay, and VB from target calculation
