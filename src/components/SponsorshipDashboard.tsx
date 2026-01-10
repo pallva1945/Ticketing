@@ -285,41 +285,6 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <FileSpreadsheet size={14} />
-            <span>{stats.totalSponsors} contracts | {stats.uniqueCompanies} companies</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setExcludeCorpTix(!excludeCorpTix)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                excludeCorpTix ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white text-gray-600 border-gray-200'
-              }`}
-            >
-              {excludeCorpTix ? '✓' : '○'} Exclude Corp Tickets
-            </button>
-            <button
-              onClick={() => setExcludeGameDay(!excludeGameDay)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                excludeGameDay ? 'bg-green-50 text-green-700 border-green-200' : 'bg-white text-gray-600 border-gray-200'
-              }`}
-            >
-              {excludeGameDay ? '✓' : '○'} Exclude GameDay
-            </button>
-            <button
-              onClick={() => setExcludeVB(!excludeVB)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                excludeVB ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-white text-gray-600 border-gray-200'
-              }`}
-            >
-              {excludeVB ? '✓' : '○'} Exclude VB
-            </button>
-          </div>
-        </div>
-      </div>
-
       {hasActiveFilter && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between flex-wrap gap-3">
@@ -415,6 +380,41 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
           </div>
         );
       })()}
+
+      <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <FileSpreadsheet size={14} />
+            <span>{stats.totalSponsors} contracts | {stats.uniqueCompanies} companies</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setExcludeCorpTix(!excludeCorpTix)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                excludeCorpTix ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white text-gray-600 border-gray-200'
+              }`}
+            >
+              {excludeCorpTix ? '✓' : '○'} Exclude Corp Tickets
+            </button>
+            <button
+              onClick={() => setExcludeGameDay(!excludeGameDay)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                excludeGameDay ? 'bg-green-50 text-green-700 border-green-200' : 'bg-white text-gray-600 border-gray-200'
+              }`}
+            >
+              {excludeGameDay ? '✓' : '○'} Exclude GameDay
+            </button>
+            <button
+              onClick={() => setExcludeVB(!excludeVB)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                excludeVB ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-white text-gray-600 border-gray-200'
+              }`}
+            >
+              {excludeVB ? '✓' : '○'} Exclude VB
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
