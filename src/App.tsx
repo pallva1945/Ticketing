@@ -272,6 +272,9 @@ const RevenueHome = ({
                         <p className={`text-2xl font-bold ${isAhead ? 'text-green-700' : 'text-red-700'}`}>
                             {isAhead ? '+' : ''}{pacingDelta.toFixed(1)}%
                         </p>
+                        <p className={`text-xs font-medium ${isAhead ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCompact(Math.abs(totalRevenueYTD - (totalTarget * seasonProgressFraction)))} {isAhead ? 'surplus' : 'gap'}
+                        </p>
                     </div>
                 </div>
 
