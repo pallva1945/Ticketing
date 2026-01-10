@@ -4,7 +4,7 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import { SponsorData } from '../types';
-import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet, X, Filter } from 'lucide-react';
 
 interface SponsorshipDashboardProps {
   data: SponsorData[];
@@ -69,6 +69,18 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
   const [excludeCorpTix, setExcludeCorpTix] = useState(true);
   const [excludeGameDay, setExcludeGameDay] = useState(true);
+  
+  const [filterCompany, setFilterCompany] = useState<string | null>(null);
+  const [filterSector, setFilterSector] = useState<string | null>(null);
+  const [filterContractType, setFilterContractType] = useState<'CASH' | 'CM' | null>(null);
+  
+  const hasActiveFilter = filterCompany || filterSector || filterContractType;
+  
+  const clearAllFilters = () => {
+    setFilterCompany(null);
+    setFilterSector(null);
+    setFilterContractType(null);
+  };
 
   const seasons = useMemo(() => {
     const s = Array.from(new Set(data.map(d => d.season))).filter(Boolean).sort().reverse();
@@ -129,6 +141,20 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       .sort((a, b) => b.commercialValue - a.commercialValue)
       .slice(0, 10);
   }, [filteredData]);
+
+  const tableFilteredData = useMemo(() => {
+    let result = [...filteredData];
+    if (filterCompany) {
+      result = result.filter(d => d.company === filterCompany);
+    }
+    if (filterSector) {
+      result = result.filter(d => (d.sector || 'Other') === filterSector);
+    }
+    if (filterContractType) {
+      result = result.filter(d => d.contractType === filterContractType);
+    }
+    return result.sort((a, b) => b.commercialValue - a.commercialValue);
+  }, [filteredData, filterCompany, filterSector, filterContractType]);
 
   const sectorData = useMemo(() => {
     const sectorMap: Record<string, { value: number, count: number }> = {};
@@ -272,6 +298,52 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         </div>
       </div>
 
+      {hasActiveFilter && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-2">
+              <Filter size={16} className="text-amber-600" />
+              <span className="text-sm font-medium text-amber-800">Active Filters:</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                {filterCompany && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
+                    Company: {filterCompany}
+                    <button onClick={() => setFilterCompany(null)} className="hover:text-amber-600">
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+                {filterSector && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
+                    Sector: {filterSector}
+                    <button onClick={() => setFilterSector(null)} className="hover:text-amber-600">
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+                {filterContractType && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
+                    Type: {filterContractType === 'CASH' ? 'Cash' : 'Cambio Merce'}
+                    <button onClick={() => setFilterContractType(null)} className="hover:text-amber-600">
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+              </div>
+            </div>
+            <button 
+              onClick={clearAllFilters}
+              className="text-xs font-medium text-amber-700 hover:text-amber-900 underline"
+            >
+              Clear All
+            </button>
+          </div>
+          <p className="text-xs text-amber-600 mt-2">
+            Showing {tableFilteredData.length} of {filteredData.length} sponsors • Click any chart element to filter
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
@@ -325,10 +397,24 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Top 10 Sponsors</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-between">
+            Top 10 Sponsors
+            <span className="text-xs font-normal text-gray-400">Click bar to filter</span>
+          </h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topSponsors} layout="vertical" margin={{ left: 10, right: 30 }}>
+              <BarChart 
+                data={topSponsors} 
+                layout="vertical" 
+                margin={{ left: 10, right: 30 }}
+                onClick={(e) => {
+                  if (e && e.activePayload && e.activePayload[0]) {
+                    const company = e.activePayload[0].payload.company;
+                    setFilterCompany(filterCompany === company ? null : company);
+                  }
+                }}
+                style={{ cursor: 'pointer' }}
+              >
                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
                 <XAxis type="number" tickFormatter={formatCompactCurrency} tick={{ fontSize: 10 }} />
                 <YAxis 
@@ -343,14 +429,25 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                   labelFormatter={(label) => label}
                   contentStyle={{ fontSize: '12px' }}
                 />
-                <Bar dataKey="commercialValue" fill={COLORS.primary} radius={[0, 4, 4, 0]} />
+                <Bar dataKey="commercialValue" radius={[0, 4, 4, 0]}>
+                  {topSponsors.map((entry) => (
+                    <Cell 
+                      key={entry.id} 
+                      fill={filterCompany === entry.company ? '#991b1b' : COLORS.primary}
+                      opacity={filterCompany && filterCompany !== entry.company ? 0.4 : 1}
+                    />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Revenue by Sector</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-between">
+            Revenue by Sector
+            <span className="text-xs font-normal text-gray-400">Click slice to filter</span>
+          </h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -365,11 +462,20 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                   nameKey="name"
                   label={({ name, percent }) => `${name.substring(0, 10)}${name.length > 10 ? '..' : ''} ${(percent * 100).toFixed(0)}%`}
                   labelLine={true}
+                  onClick={(data) => {
+                    if (data && data.name) {
+                      setFilterSector(filterSector === data.name ? null : data.name);
+                    }
+                  }}
+                  style={{ cursor: 'pointer' }}
                 >
                   {sectorData.slice(0, 8).map((entry, index) => (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={SECTOR_COLORS[entry.name] || SECTOR_COLORS.default} 
+                      fill={SECTOR_COLORS[entry.name] || SECTOR_COLORS.default}
+                      opacity={filterSector && filterSector !== entry.name ? 0.4 : 1}
+                      stroke={filterSector === entry.name ? '#000' : 'none'}
+                      strokeWidth={filterSector === entry.name ? 2 : 0}
                     />
                   ))}
                 </Pie>
@@ -382,7 +488,10 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Contract Type Split</h3>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-between">
+            Contract Type Split
+            <span className="text-xs font-normal text-gray-400">Click slice to filter</span>
+          </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -395,10 +504,26 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                   paddingAngle={5}
                   dataKey="value"
                   label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  onClick={(data) => {
+                    if (data && data.name) {
+                      const type = data.name === 'Cash' ? 'CASH' : 'CM';
+                      setFilterContractType(filterContractType === type ? null : type);
+                    }
+                  }}
+                  style={{ cursor: 'pointer' }}
                 >
-                  {contractTypeData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
+                  {contractTypeData.map((entry, index) => {
+                    const type = entry.name === 'Cash' ? 'CASH' : 'CM';
+                    return (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={entry.fill}
+                        opacity={filterContractType && filterContractType !== type ? 0.4 : 1}
+                        stroke={filterContractType === type ? '#000' : 'none'}
+                        strokeWidth={filterContractType === type ? 2 : 0}
+                      />
+                    );
+                  })}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
@@ -449,10 +574,20 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Sponsor Portfolio</h3>
-        <div className="overflow-x-auto">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-between">
+          <span>Sponsor Portfolio {hasActiveFilter && <span className="text-sm font-normal text-amber-600">({tableFilteredData.length} filtered)</span>}</span>
+          {hasActiveFilter && (
+            <button 
+              onClick={clearAllFilters}
+              className="text-xs font-medium text-gray-500 hover:text-gray-700 flex items-center gap-1"
+            >
+              <X size={14} /> Clear filters
+            </button>
+          )}
+        </h3>
+        <div className="overflow-x-auto max-h-96">
           <table className="w-full text-sm">
-            <thead>
+            <thead className="sticky top-0 bg-white">
               <tr className="border-b border-gray-100">
                 <th className="text-left py-3 px-4 font-semibold text-gray-600">Company</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-600">Sector</th>
@@ -462,7 +597,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               </tr>
             </thead>
             <tbody>
-              {topSponsors.slice(0, 15).map((sponsor, idx) => (
+              {(hasActiveFilter ? tableFilteredData : topSponsors.slice(0, 15)).map((sponsor, idx) => (
                 <tr key={sponsor.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
@@ -473,24 +608,28 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <span 
-                      className="px-2 py-0.5 rounded-full text-xs font-medium"
+                    <button 
+                      onClick={() => setFilterSector(filterSector === (sponsor.sector || 'Other') ? null : (sponsor.sector || 'Other'))}
+                      className="px-2 py-0.5 rounded-full text-xs font-medium hover:ring-2 hover:ring-offset-1 transition-all"
                       style={{ 
                         backgroundColor: `${SECTOR_COLORS[sponsor.sector] || SECTOR_COLORS.default}20`,
                         color: SECTOR_COLORS[sponsor.sector] || SECTOR_COLORS.default
                       }}
                     >
                       {sponsor.sector || 'Other'}
-                    </span>
+                    </button>
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                      sponsor.contractType === 'CASH' 
-                        ? 'bg-green-50 text-green-700' 
-                        : 'bg-purple-50 text-purple-700'
-                    }`}>
+                    <button 
+                      onClick={() => setFilterContractType(filterContractType === sponsor.contractType ? null : sponsor.contractType)}
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium hover:ring-2 hover:ring-offset-1 transition-all ${
+                        sponsor.contractType === 'CASH' 
+                          ? 'bg-green-50 text-green-700' 
+                          : 'bg-purple-50 text-purple-700'
+                      }`}
+                    >
                       {sponsor.contractType}
-                    </span>
+                    </button>
                   </td>
                   <td className="py-3 px-4 text-right font-medium text-gray-900">
                     {formatCurrency(sponsor.commercialValue)}

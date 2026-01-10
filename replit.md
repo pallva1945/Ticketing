@@ -35,6 +35,13 @@ src/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 10, 2026: Interactive Click-to-Filter on Sponsorship Dashboard
+  - Click any bar in Top Sponsors chart to filter by company
+  - Click pie slices in Sector/Contract Type charts to filter
+  - Click sector/type badges in portfolio table to filter
+  - Active filter indicator with individual and bulk clear options
+  - Portfolio table shows filtered results when filters active
+
 - January 10, 2026: Data Processing & Number Format Standardization
   - Standardized all CSV parsing to Italian number format (dots as thousand separators, commas as decimal separators)
   - Added deduplication logic to ticketing and GameDay data processors
