@@ -126,21 +126,36 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     
     const avgDealSize = uniqueCompanies > 0 ? totalCommercial / uniqueCompanies : 0;
     
-    // Adjusted values based on toggles
-    const adjustedCommercial = totalCommercial 
-      - (excludeCorpTix ? totalCorpTix : 0) 
-      - (excludeGameDay ? totalGameday : 0)
-      - (excludeVB ? totalVB : 0);
-    const adjustedCash = totalCash 
-      - (excludeCorpTix ? dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.corpTixReconciliation, 0) : 0)
-      - (excludeGameDay ? dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.gamedayReconciliation, 0) * GAMES_PER_SEASON : 0)
-      - (excludeVB ? dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.vbReconciliation, 0) : 0);
-    const adjustedCM = totalCM 
-      - (excludeCorpTix ? dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.corpTixReconciliation, 0) : 0)
-      - (excludeGameDay ? dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.gamedayReconciliation, 0) * GAMES_PER_SEASON : 0)
-      - (excludeVB ? dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.vbReconciliation, 0) : 0);
-    
     const pureSponsorship = totalSponsorRec + totalCSR;
+    
+    // Adjusted values based on toggles
+    // When ALL exclusions are enabled, use pureSponsorship directly to ensure consistency with Season Target
+    const allExcluded = excludeCorpTix && excludeGameDay && excludeVB;
+    const adjustedCommercial = allExcluded 
+      ? pureSponsorship 
+      : totalCommercial 
+        - (excludeCorpTix ? totalCorpTix : 0) 
+        - (excludeGameDay ? totalGameday : 0)
+        - (excludeVB ? totalVB : 0);
+    
+    // For Cash/CM breakdown when all excluded, use reconciliation-based values
+    const cashSponsorRec = dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.sponsorReconciliation, 0);
+    const cashCSR = dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.csrReconciliation, 0);
+    const cmSponsorRec = dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.sponsorReconciliation, 0);
+    const cmCSR = dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.csrReconciliation, 0);
+    
+    const adjustedCash = allExcluded
+      ? cashSponsorRec + cashCSR
+      : totalCash 
+        - (excludeCorpTix ? dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.corpTixReconciliation, 0) : 0)
+        - (excludeGameDay ? dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.gamedayReconciliation, 0) * GAMES_PER_SEASON : 0)
+        - (excludeVB ? dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.vbReconciliation, 0) : 0);
+    const adjustedCM = allExcluded
+      ? cmSponsorRec + cmCSR
+      : totalCM 
+        - (excludeCorpTix ? dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.corpTixReconciliation, 0) : 0)
+        - (excludeGameDay ? dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.gamedayReconciliation, 0) * GAMES_PER_SEASON : 0)
+        - (excludeVB ? dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.vbReconciliation, 0) : 0);
     
     return {
       totalCommercial,
