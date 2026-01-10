@@ -295,7 +295,16 @@ export const processGameData = (csvContent: string): GameData[] => {
     };
   });
 
-  return games.sort((a, b) => {
+  // Deduplicate games by ID - keep the last occurrence (most recent in CSV)
+  const uniqueGamesMap = new Map<string, typeof games[0]>();
+  games.forEach(game => {
+    if (game.id && game.opponent !== 'Unknown') {
+      uniqueGamesMap.set(game.id, game);
+    }
+  });
+  const uniqueGames = Array.from(uniqueGamesMap.values());
+
+  return uniqueGames.sort((a, b) => {
     const [da, ma, ya] = a.date.split('/').map(Number);
     const [db, mb, yb] = b.date.split('/').map(Number);
     const dateA = new Date(ya < 100 ? 2000 + ya : ya, ma - 1, da);
@@ -338,15 +347,17 @@ export const processGameDayData = (csvContent: string): GameDayData[] => {
   // Manual override for Sponsorship/TV if fuzzy match fails due to duplicate prefixes
   // The provided CSV has "Sponsorship %" then "Sponsorship".
   
-  return rows.slice(1).map(row => {
-      // Helper to get raw string
+  const gameDayEntries = rows.slice(1).map(row => {
       const getVal = (idx: number) => (idx >= 0 && row[idx]) ? row[idx] : '';
       
+      const date = getVal(dateIdx);
+      const opponent = getVal(gameIdx);
+      
       return {
-          date: getVal(dateIdx),
+          date,
           season: getVal(seasonIdx),
           league: getVal(leagueIdx),
-          opponent: getVal(gameIdx),
+          opponent,
           attendance: parseInteger(getVal(totalNumIdx)),
           totalRevenue: parseCurrency(getVal(totalRevIdx)),
           tixRevenue: parseCurrency(getVal(tixRevIdx)),
@@ -358,7 +369,19 @@ export const processGameDayData = (csvContent: string): GameDayData[] => {
           tvRevenue: parseCurrency(getVal(tvRevIdx)),
           expRevenue: parseCurrency(getVal(expRevIdx)),
       };
-  }).sort((a, b) => {
+  });
+
+  // Deduplicate by date+opponent combination - keep the last occurrence
+  const uniqueMap = new Map<string, typeof gameDayEntries[0]>();
+  gameDayEntries.forEach(entry => {
+    if (entry.date && entry.opponent) {
+      const key = `${entry.date}-${entry.opponent}`;
+      uniqueMap.set(key, entry);
+    }
+  });
+  const uniqueEntries = Array.from(uniqueMap.values());
+
+  return uniqueEntries.sort((a, b) => {
     const [da, ma, ya] = a.date.split('/').map(Number);
     const [db, mb, yb] = b.date.split('/').map(Number);
     const dateA = new Date(ya < 100 ? 2000 + ya : ya, ma - 1, da);
