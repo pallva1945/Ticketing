@@ -35,6 +35,13 @@ src/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 10, 2026: Sponsorship Analytics Module
+  - Added SponsorshipDashboard component with full analytics views
+  - Top sponsors chart, sector breakdown, contract type analysis
+  - Revenue reconciliation comparison and monthly cash flow tracking
+  - CSV upload functionality with Firebase cloud sync support
+  - Fallback sponsor data for demo/development mode
+
 - January 10, 2026: Initial Replit setup
   - Configured Vite for port 5000 with allowedHosts
   - Set up development workflow
