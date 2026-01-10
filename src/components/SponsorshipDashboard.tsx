@@ -70,6 +70,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
   const [excludeCorpTix, setExcludeCorpTix] = useState(true);
   const [excludeGameDay, setExcludeGameDay] = useState(true);
+  const [excludeVB, setExcludeVB] = useState(true);
   
   const [filterCompany, setFilterCompany] = useState<string | null>(null);
   const [filterSector, setFilterSector] = useState<string | null>(null);
@@ -110,13 +111,16 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     // Adjusted values based on toggles
     const adjustedCommercial = totalCommercial 
       - (excludeCorpTix ? totalCorpTix : 0) 
-      - (excludeGameDay ? totalGameday : 0);
+      - (excludeGameDay ? totalGameday : 0)
+      - (excludeVB ? totalVB : 0);
     const adjustedCash = totalCash 
       - (excludeCorpTix ? filteredData.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.corpTixReconciliation, 0) : 0)
-      - (excludeGameDay ? filteredData.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.gamedayReconciliation, 0) : 0);
+      - (excludeGameDay ? filteredData.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.gamedayReconciliation, 0) : 0)
+      - (excludeVB ? filteredData.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.vbReconciliation, 0) : 0);
     const adjustedCM = totalCM 
       - (excludeCorpTix ? filteredData.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.corpTixReconciliation, 0) : 0)
-      - (excludeGameDay ? filteredData.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.gamedayReconciliation, 0) : 0);
+      - (excludeGameDay ? filteredData.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.gamedayReconciliation, 0) : 0)
+      - (excludeVB ? filteredData.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.vbReconciliation, 0) : 0);
     
     const pureSponsorship = totalSponsorRec + totalCSR;
     
@@ -138,7 +142,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       avgDealSize,
       cashRatio: totalCommercial > 0 ? (totalCash / totalCommercial) * 100 : 0
     };
-  }, [filteredData, excludeCorpTix, excludeGameDay]);
+  }, [filteredData, excludeCorpTix, excludeGameDay, excludeVB]);
 
   const topSponsors = useMemo(() => {
     return [...filteredData]
@@ -298,6 +302,14 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             >
               {excludeGameDay ? '✓' : '○'} Exclude GameDay
             </button>
+            <button
+              onClick={() => setExcludeVB(!excludeVB)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                excludeVB ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-white text-gray-600 border-gray-200'
+              }`}
+            >
+              {excludeVB ? '✓' : '○'} Exclude VB
+            </button>
           </div>
         </div>
       </div>
@@ -409,7 +421,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             </span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{formatCompactCurrency(stats.adjustedCommercial)}</p>
-          <p className="text-xs text-gray-500 mt-1">Commercial Value {(excludeCorpTix || excludeGameDay) ? '(Adj.)' : ''}</p>
+          <p className="text-xs text-gray-500 mt-1">Commercial Value {(excludeCorpTix || excludeGameDay || excludeVB) ? '(Adj.)' : ''}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
@@ -422,7 +434,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             </span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{formatCompactCurrency(stats.adjustedCash)}</p>
-          <p className="text-xs text-gray-500 mt-1">Cash {(excludeCorpTix || excludeGameDay) ? '(Adj.)' : ''}</p>
+          <p className="text-xs text-gray-500 mt-1">Cash {(excludeCorpTix || excludeGameDay || excludeVB) ? '(Adj.)' : ''}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
@@ -435,7 +447,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             </span>
           </div>
           <p className="text-2xl font-bold text-gray-900">{formatCompactCurrency(stats.adjustedCM)}</p>
-          <p className="text-xs text-gray-500 mt-1">Cambio Merce {(excludeCorpTix || excludeGameDay) ? '(Adj.)' : ''}</p>
+          <p className="text-xs text-gray-500 mt-1">Cambio Merce {(excludeCorpTix || excludeGameDay || excludeVB) ? '(Adj.)' : ''}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
