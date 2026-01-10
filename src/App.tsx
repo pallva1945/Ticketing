@@ -1623,7 +1623,13 @@ const App: React.FC = () => {
                                             <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-gray-500">{viewData.length} Matches</span>
                                         </div>
                                         <div className="divide-y divide-gray-50 overflow-y-auto flex-1 p-2">
-                                            {[...viewData].reverse().map((game) => (
+                                            {[...viewData].sort((a, b) => {
+                                                const [da, ma, ya] = a.date.split('/').map(Number);
+                                                const [db, mb, yb] = b.date.split('/').map(Number);
+                                                const dateA = new Date(ya < 100 ? 2000 + ya : ya, ma - 1, da);
+                                                const dateB = new Date(yb < 100 ? 2000 + yb : yb, mb - 1, db);
+                                                return dateB.getTime() - dateA.getTime();
+                                            }).map((game) => (
                                                 <div key={game.id} className="p-3 flex items-center justify-between hover:bg-gray-50 transition-colors rounded-lg">
                                                     <div>
                                                         <p className="font-bold text-gray-900 text-sm">{game.opponent}</p>

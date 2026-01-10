@@ -87,9 +87,11 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
   const isComparisonMode = uniqueOpponents.size < data.length * 0.5; 
 
   const sortedData = [...data].sort((a, b) => {
-        const dateA = a.date.split('/').reverse().join('');
-        const dateB = b.date.split('/').reverse().join('');
-        return dateA.localeCompare(dateB);
+    const [da, ma, ya] = a.date.split('/').map(Number);
+    const [db, mb, yb] = b.date.split('/').map(Number);
+    const dateA = new Date(ya < 100 ? 2000 + ya : ya, ma - 1, da);
+    const dateB = new Date(yb < 100 ? 2000 + yb : yb, mb - 1, db);
+    return dateA.getTime() - dateB.getTime();
   });
 
   const rawTrendData = sortedData.map(game => ({
