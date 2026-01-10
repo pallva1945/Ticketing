@@ -34,15 +34,16 @@ const parseInteger = (val: string | undefined): number => {
 
 const parseCurrency = (val: string | undefined): number => {
   if (!val) return 0;
-  // Handle format where commas are thousand separators
-  // e.g., "300,000" = 300000, "€ 1,234.56" = 1234.56
+  // Handle Italian format: dots are thousand separators, commas are decimal separators
+  // e.g., "€ 104.010" = 104010, "€ 1.234,56" = 1234.56
   let clean = val.replace(/[€\s]/g, '');
   // Check for negative
   const isNegative = clean.includes('-');
   clean = clean.replace(/-/g, '');
-  // Remove commas (thousand separators)
-  clean = clean.replace(/,/g, '');
-  // Period remains as decimal separator
+  // Remove dots (thousand separators in Italian format)
+  clean = clean.replace(/\./g, '');
+  // Replace comma with dot (decimal separator in Italian format)
+  clean = clean.replace(',', '.');
   const num = parseFloat(clean);
   return isNaN(num) ? 0 : (isNegative ? -num : num);
 };
