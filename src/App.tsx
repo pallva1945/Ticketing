@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Crown, Bell, Users, FileText, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Crown, Bell, Users, FileText, ChevronDown, Target, Shield } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -55,6 +55,7 @@ const PlaceholderView = ({ moduleName, icon: Icon }: { moduleName: string, icon:
 const RevenueHome = ({ 
     ticketingRevenue, 
     gameDayRevenue, 
+    sponsorshipRevenue,
     onAiClick,
     gamesPlayed,
     seasonFilter,
@@ -63,6 +64,7 @@ const RevenueHome = ({
     modules: any[], 
     ticketingRevenue: number, 
     gameDayRevenue: number, 
+    sponsorshipRevenue: number,
     onNavigate: (id: RevenueModule) => void,
     onAiClick: () => void,
     gamesPlayed: number,
@@ -72,13 +74,15 @@ const RevenueHome = ({
     // Constants
     const TOTAL_GAMES_SEASON = 15;
     const gamesCount = Math.max(gamesPlayed, 1);
+    const seasonProgressPct = (gamesPlayed / TOTAL_GAMES_SEASON) * 100;
 
+    // 7 Revenue Verticals with actual data for Ticketing, GameDay, Sponsorship
     const verticalPerformance = [
       { 
           id: 'sponsorship', 
           name: 'Sponsorship', 
-          current: 800000, 
-          target: 2098000,
+          current: sponsorshipRevenue, 
+          target: 2100000,
           icon: Flag, colorClass: 'text-blue-600', bgClass: 'bg-blue-50', barClass: 'bg-blue-500', isVariable: false 
       },
       { 
@@ -90,7 +94,7 @@ const RevenueHome = ({
       },
       { 
           id: 'gameday', 
-          name: 'Game Day', 
+          name: 'GameDay', 
           current: gameDayRevenue, 
           target: 1250000, 
           icon: Calendar, colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50', barClass: 'bg-indigo-500', isVariable: true 
@@ -98,77 +102,100 @@ const RevenueHome = ({
       { 
           id: 'sg', 
           name: 'Varese Basketball', 
-          current: 500000, 
+          current: 650000, 
           target: 930000, 
           icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false 
       },
       { 
           id: 'bops', 
           name: 'BOps', 
-          current: 200000, 
+          current: 320000, 
           target: 525000, 
           icon: Activity, colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', barClass: 'bg-emerald-500', isVariable: false 
       },
       { 
           id: 'venue_ops', 
           name: 'Venue Ops', 
-          current: 100000, 
+          current: 145000, 
           target: 258000, 
           icon: Landmark, colorClass: 'text-slate-600', bgClass: 'bg-slate-50', barClass: 'bg-slate-500', isVariable: false 
       },
       { 
           id: 'merchandising', 
           name: 'Merchandising', 
-          current: 80000, 
+          current: 75000, 
           target: 131000, 
           icon: ShoppingBag, colorClass: 'text-orange-600', bgClass: 'bg-orange-50', barClass: 'bg-orange-500', isVariable: false 
       },
-      { 
-          id: 'ebp', 
-          name: 'EBP', 
-          current: 20000, 
-          target: 41250, 
-          icon: Briefcase, colorClass: 'text-pink-600', bgClass: 'bg-pink-50', barClass: 'bg-pink-500', isVariable: false 
-      },
     ];
 
+    // Calculate pacing for each vertical
+    const verticalsWithPacing = verticalPerformance.map(v => {
+        let pacePct: number;
+        let expectedAtThisPoint: number;
+        
+        if (v.isVariable) {
+            // Variable: Pace based on games played
+            expectedAtThisPoint = (v.target / TOTAL_GAMES_SEASON) * gamesPlayed;
+            pacePct = expectedAtThisPoint > 0 ? ((v.current / expectedAtThisPoint) - 1) * 100 : 0;
+        } else {
+            // Absolute: Pace based on % of target achieved
+            expectedAtThisPoint = v.target * (seasonProgressPct / 100);
+            pacePct = v.target > 0 ? ((v.current / v.target) * 100) - seasonProgressPct : 0;
+        }
+        
+        const projectedFinish = v.isVariable 
+            ? (v.current / gamesCount) * TOTAL_GAMES_SEASON
+            : v.current; // For absolute, current is what we have
+        
+        return { ...v, pacePct, expectedAtThisPoint, projectedFinish };
+    });
+
     // SORTED VERTICALS (Highest YTD Revenue First)
-    const sortedVerticals = [...verticalPerformance].sort((a, b) => b.current - a.current);
+    const sortedVerticals = [...verticalsWithPacing].sort((a, b) => b.current - a.current);
     const bestVertical = sortedVerticals[0];
+    const worstPacingVertical = [...verticalsWithPacing].sort((a, b) => a.pacePct - b.pacePct)[0];
+    const bestPacingVertical = [...verticalsWithPacing].sort((a, b) => b.pacePct - a.pacePct)[0];
 
     // AGGREGATES
     const totalRevenueYTD = verticalPerformance.reduce((acc, v) => acc + v.current, 0);
     const totalTarget = verticalPerformance.reduce((acc, v) => acc + v.target, 0);
-    const totalRevenueProjected = verticalPerformance.reduce((acc, v) => {
+    const totalRevenueProjected = verticalsWithPacing.reduce((acc, v) => {
         if(v.isVariable) {
-             return acc + (v.current / gamesCount) * TOTAL_GAMES_SEASON;
+             return acc + v.projectedFinish;
         } else {
-             return acc + v.target; 
+             return acc + v.current; // For absolute, use current collected
         }
     }, 0);
     
     // PACING LOGIC
-    const seasonProgressPct = (gamesPlayed / TOTAL_GAMES_SEASON) * 100; 
     const revenueProgressPct = (totalRevenueYTD / totalTarget) * 100;
     const pacingDelta = revenueProgressPct - seasonProgressPct;
     const isAhead = pacingDelta >= 0;
     const projectionDiff = totalRevenueProjected - totalTarget;
 
     const variableYTD = verticalPerformance.filter(v => v.isVariable).reduce((acc, v) => acc + v.current, 0);
+    const fixedYTD = verticalPerformance.filter(v => !v.isVariable).reduce((acc, v) => acc + v.current, 0);
     const currentVariableRunRate = variableYTD / gamesCount;
 
+    // Helper for formatting
+    const formatCompact = (val: number) => {
+        if (val >= 1000000) return `€${(val/1000000).toFixed(2)}M`;
+        if (val >= 1000) return `€${(val/1000).toFixed(0)}k`;
+        return `€${val.toFixed(0)}`;
+    };
+
     return (
-        <div className="max-w-7xl mx-auto animate-fade-in space-y-8 pt-2 pb-12">
+        <div className="max-w-7xl mx-auto animate-fade-in space-y-6 pt-2 pb-12">
             
             {/* Top Bar: Title & Season Selector */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Executive Overview</h1>
-                    <p className="text-gray-500 text-sm">Consolidated Budget Performance (YTD Actuals)</p>
+                    <p className="text-gray-500 text-sm">Season {seasonFilter} • {gamesPlayed} of {TOTAL_GAMES_SEASON} games played</p>
                 </div>
                 
                 <div className="flex items-center gap-3">
-                    {/* Season Filter */}
                     <div className="relative">
                         <select 
                             value={seasonFilter}
@@ -186,7 +213,7 @@ const RevenueHome = ({
                 </div>
             </div>
 
-            {/* AI Executive Summary - HIDDEN ON MOBILE */}
+            {/* AI Executive Summary */}
             <div className="hidden md:block relative bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-xl overflow-hidden border border-slate-700">
                 <div className="absolute top-4 right-4 opacity-30">
                     <AIAvatar size="sm" />
@@ -198,8 +225,8 @@ const RevenueHome = ({
                         </h3>
                         <p className="text-white/90 text-lg font-medium leading-relaxed">
                             {isAhead 
-                                ? `YTD pacing is strong (+${pacingDelta.toFixed(1)}% vs Time). Sponsorship & VB collections are front-loaded, securing cash flow. Forecast indicates we will land €${(projectionDiff/1000).toFixed(0)}k above budget.` 
-                                : `Alert: YTD collections trail the seasonal timeline by ${Math.abs(pacingDelta).toFixed(1)}%. While fixed revenues (Spons/VB) are stable, variable streams need acceleration to close the projected gap.`
+                                ? `YTD pacing is strong (+${pacingDelta.toFixed(1)}% vs Time). ${bestPacingVertical.name} leads at ${bestPacingVertical.pacePct >= 0 ? '+' : ''}${bestPacingVertical.pacePct.toFixed(0)}% pace. Forecast: ${formatCompact(totalRevenueProjected)}.` 
+                                : `Alert: Collections trail timeline by ${Math.abs(pacingDelta).toFixed(1)}%. ${worstPacingVertical.name} needs attention (${worstPacingVertical.pacePct.toFixed(0)}% pace). Focus on variable revenue acceleration.`
                             }
                         </p>
                     </div>
@@ -210,13 +237,13 @@ const RevenueHome = ({
             </div>
 
             {/* MAIN PACE WIDGET (Stacked Bar) */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm relative overflow-hidden">
-                <div className="flex justify-between items-end mb-6">
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm relative overflow-hidden">
+                <div className="flex justify-between items-end mb-4">
                     <div>
-                        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Season Pacing (YTD Collected vs Budget)</h2>
+                        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Season Pacing</h2>
                         <div className="flex items-baseline gap-3">
-                            <span className="text-5xl font-extrabold text-gray-900">€{(totalRevenueYTD / 1000000).toFixed(2)}M</span>
-                            <span className="text-lg text-gray-400 font-medium">/ €{(totalTarget / 1000000).toFixed(2)}M</span>
+                            <span className="text-4xl font-extrabold text-gray-900">{formatCompact(totalRevenueYTD)}</span>
+                            <span className="text-lg text-gray-400 font-medium">/ {formatCompact(totalTarget)}</span>
                         </div>
                     </div>
                     <div className={`text-right px-4 py-2 rounded-lg ${isAhead ? 'bg-green-50' : 'bg-red-50'}`}>
@@ -230,134 +257,215 @@ const RevenueHome = ({
                 </div>
 
                 {/* Stacked Progress Bar */}
-                <div className="relative h-10 bg-gray-100 rounded-full overflow-hidden mb-3 flex border border-gray-200">
+                <div className="relative h-8 bg-gray-100 rounded-full overflow-hidden mb-3 flex border border-gray-200">
                     {/* Time Marker */}
                     <div 
-                        className="absolute top-0 bottom-0 border-r-2 border-dashed border-gray-800 z-20 flex items-center justify-end pr-2 opacity-50"
+                        className="absolute top-0 bottom-0 border-r-2 border-dashed border-gray-800 z-20 opacity-60"
                         style={{ width: `${seasonProgressPct}%` }}
                     >
-                        <div className="bg-gray-800 text-white text-[10px] font-bold px-1.5 py-0.5 rounded absolute -bottom-6 transform translate-x-1/2">
-                            Time: {seasonProgressPct.toFixed(0)}%
+                        <div className="bg-gray-800 text-white text-[9px] font-bold px-1.5 py-0.5 rounded absolute -bottom-5 right-0 transform translate-x-1/2 whitespace-nowrap">
+                            {seasonProgressPct.toFixed(0)}% Time
                         </div>
                     </div>
 
                     {/* Stacked Segments (YTD) */}
                     {sortedVerticals.map((v) => {
                         const widthPct = (v.current / totalTarget) * 100;
-                        const shareOfYTD = (v.current / totalRevenueYTD) * 100;
-                        const contributionToTarget = (v.current / totalTarget) * 100;
-
                         if (widthPct <= 0) return null;
                         return (
                             <div 
                                 key={v.id}
-                                className={`h-full ${v.barClass} first:rounded-l-full last:rounded-r-full relative group transition-all duration-500 hover:brightness-110 cursor-help`}
+                                className={`h-full ${v.barClass} first:rounded-l-full relative group transition-all duration-300 hover:brightness-110 cursor-help`}
                                 style={{ width: `${widthPct}%` }}
                             >
                                 {/* Enhanced Tooltip */}
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 bg-slate-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 min-w-[160px] pointer-events-none transform translate-y-1 group-hover:translate-y-0">
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 bg-slate-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 min-w-[180px] pointer-events-none">
                                     <div className="p-3 border-b border-slate-700 font-bold bg-slate-950 rounded-t-lg flex justify-between items-center">
                                         <span>{v.name}</span>
-                                        <v.icon size={12} className="text-slate-400" />
+                                        <span className={`text-xs px-1.5 py-0.5 rounded ${v.isVariable ? 'bg-purple-600' : 'bg-blue-600'}`}>
+                                            {v.isVariable ? 'Variable' : 'Fixed'}
+                                        </span>
                                     </div>
                                     <div className="p-3 space-y-2">
                                         <div className="flex justify-between">
-                                            <span className="text-slate-400">YTD Revenue:</span>
-                                            <span className="font-mono font-bold">€{(v.current/1000).toFixed(0)}k</span>
+                                            <span className="text-slate-400">YTD Collected:</span>
+                                            <span className="font-mono font-bold">{formatCompact(v.current)}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-400">Share of YTD:</span>
-                                            <span className="font-mono text-blue-400">{shareOfYTD.toFixed(1)}%</span>
+                                            <span className="text-slate-400">Season Target:</span>
+                                            <span className="font-mono text-slate-300">{formatCompact(v.target)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                            <span className="text-slate-400">Achievement:</span>
+                                            <span className="font-mono text-blue-400">{((v.current / v.target) * 100).toFixed(1)}%</span>
                                         </div>
                                         <div className="flex justify-between border-t border-slate-700 pt-2 mt-1">
-                                            <span className="text-slate-400">vs Season Goal:</span>
-                                            <span className="font-mono text-green-400">{contributionToTarget.toFixed(1)}%</span>
+                                            <span className="text-slate-400">Pace vs Time:</span>
+                                            <span className={`font-mono font-bold ${v.pacePct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(1)}%
+                                            </span>
                                         </div>
+                                        {v.isVariable && (
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-400">Projected:</span>
+                                                <span className="font-mono text-purple-400">{formatCompact(v.projectedFinish)}</span>
+                                            </div>
+                                        )}
                                     </div>
-                                    {/* Arrow */}
-                                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px w-0 h-0 border-x-8 border-x-transparent border-t-8 border-t-slate-900"></div>
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-8 border-x-transparent border-t-8 border-t-slate-900"></div>
                                 </div>
                             </div>
                         );
                     })}
                 </div>
                 
-                {/* Legend for Stacked Bar */}
-                <div className="flex flex-wrap gap-4 justify-center mt-6">
+                {/* Legend */}
+                <div className="flex flex-wrap gap-3 justify-center mt-5">
                     {sortedVerticals.map((v) => (
                         <div key={v.id} className="flex items-center gap-1.5">
-                            <div className={`w-3 h-3 rounded-full ${v.barClass}`}></div>
-                            <span className="text-[10px] font-bold text-gray-600 uppercase">{v.name}</span>
+                            <div className={`w-2.5 h-2.5 rounded-full ${v.barClass}`}></div>
+                            <span className="text-[10px] font-medium text-gray-600">{v.name}</span>
                         </div>
                     ))}
                 </div>
             </div>
 
+            {/* 7 VERTICAL SCORE CARDS */}
+            <div>
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Revenue Verticals</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+                    {verticalsWithPacing.map((v) => {
+                        const progressPct = Math.min((v.current / v.target) * 100, 100);
+                        const isOnTrack = v.pacePct >= -5;
+                        
+                        return (
+                            <div key={v.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm relative group hover:shadow-md transition-shadow">
+                                {/* Icon & Name */}
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className={`w-8 h-8 ${v.bgClass} rounded-lg flex items-center justify-center`}>
+                                        <v.icon size={16} className={v.colorClass} />
+                                    </div>
+                                    <span className={`text-[10px] font-bold uppercase ${v.isVariable ? 'text-purple-600' : 'text-gray-500'}`}>
+                                        {v.isVariable ? '●' : '○'}
+                                    </span>
+                                </div>
+                                
+                                {/* Values */}
+                                <p className="text-lg font-bold text-gray-900 leading-tight">{formatCompact(v.current)}</p>
+                                <p className="text-[10px] text-gray-400 mb-2">/ {formatCompact(v.target)}</p>
+                                
+                                {/* Progress Bar with Tooltip */}
+                                <div className="relative h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1">
+                                    <div 
+                                        className={`h-full ${v.barClass} transition-all duration-500`}
+                                        style={{ width: `${progressPct}%` }}
+                                    />
+                                    {/* Time marker */}
+                                    <div 
+                                        className="absolute top-0 bottom-0 w-0.5 bg-gray-800 opacity-40"
+                                        style={{ left: `${seasonProgressPct}%` }}
+                                    />
+                                </div>
+                                
+                                {/* Pace Indicator */}
+                                <div className="flex items-center justify-between">
+                                    <span className="text-[10px] text-gray-500">{v.name}</span>
+                                    <span className={`text-[10px] font-bold ${isOnTrack ? 'text-green-600' : 'text-red-600'}`}>
+                                        {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(0)}%
+                                    </span>
+                                </div>
+
+                                {/* Hover Tooltip */}
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white text-[10px] rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 min-w-[140px] pointer-events-none p-2">
+                                    <p className="font-bold mb-1">{v.name}</p>
+                                    <p>Collected: {formatCompact(v.current)}</p>
+                                    <p>Target: {formatCompact(v.target)}</p>
+                                    <p>Progress: {((v.current / v.target) * 100).toFixed(1)}%</p>
+                                    <p className={v.pacePct >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                        Pace: {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(1)}%
+                                    </p>
+                                    {v.isVariable && <p className="text-purple-400">Proj: {formatCompact(v.projectedFinish)}</p>}
+                                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-900"></div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
             {/* STRATEGIC SIGNALS */}
             <div>
-                <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <Activity size={20} className="text-gray-500" /> Strategic Signals
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Strategic Signals</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     
                     {/* Signal 1: Projected Finish */}
-                    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center gap-2 mb-2">
-                                <Flag size={18} className="text-blue-600" />
-                                <span className="text-xs font-bold text-gray-500 uppercase">Projected Finish</span>
-                            </div>
-                            <p className="text-3xl font-bold text-gray-900">€{(totalRevenueProjected/1000000).toFixed(2)}M</p>
-                            <p className={`text-sm font-medium mt-1 ${projectionDiff >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {projectionDiff >= 0 ? 'Surplus' : 'Gap'}: €{(Math.abs(projectionDiff)/1000).toFixed(0)}k
-                            </p>
+                    <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-5 text-white shadow-lg border border-slate-700">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Target size={16} className="text-slate-400" />
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Projected Finish</span>
                         </div>
-                        <div className="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-500">
-                            Forecast based on YTD run-rate + fixed contracts.
+                        <p className="text-2xl font-bold">{formatCompact(totalRevenueProjected)}</p>
+                        <p className={`text-sm font-medium mt-1 ${projectionDiff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                            {projectionDiff >= 0 ? '+' : ''}{formatCompact(projectionDiff)} vs Target
+                        </p>
+                        <div className="mt-3 pt-3 border-t border-slate-700 text-[10px] text-slate-500">
+                            Based on current run-rate extrapolation
                         </div>
                     </div>
 
-                    {/* Signal 2: Variable Efficiency */}
-                    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center gap-2 mb-2">
-                                <TrendingUp size={18} className="text-purple-600" />
-                                <span className="text-xs font-bold text-gray-500 uppercase">Variable Run Rate</span>
-                            </div>
-                            <div className="flex items-baseline gap-2">
-                                <p className="text-3xl font-bold text-gray-900">€{(currentVariableRunRate/1000).toFixed(1)}k</p>
-                                <span className="text-sm text-gray-400">/ gm</span>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">Ticketing + GameDay Avg</p>
+                    {/* Signal 2: Variable Run Rate */}
+                    <div className="bg-white border border-purple-200 rounded-xl p-5 shadow-sm">
+                        <div className="flex items-center gap-2 mb-3">
+                            <TrendingUp size={16} className="text-purple-600" />
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Variable Run Rate</span>
                         </div>
-                        <div className="mt-4 pt-4 border-t border-gray-100">
-                            <div className="w-full bg-gray-100 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div className="flex items-baseline gap-1">
+                            <p className="text-2xl font-bold text-gray-900">{formatCompact(currentVariableRunRate)}</p>
+                            <span className="text-xs text-gray-400">/ game</span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Ticketing + GameDay combined</p>
+                        <div className="mt-3 h-1.5 bg-purple-100 rounded-full overflow-hidden">
+                            <div 
+                                className="h-full bg-purple-500" 
+                                style={{ width: `${Math.min((currentVariableRunRate/200000)*100, 100)}%` }}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Signal 3: Fixed Revenue Secured */}
+                    <div className="bg-white border border-blue-200 rounded-xl p-5 shadow-sm">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Shield size={16} className="text-blue-600" />
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Fixed Revenue Secured</span>
+                        </div>
+                        <p className="text-2xl font-bold text-gray-900">{formatCompact(fixedYTD)}</p>
+                        <p className="text-xs text-gray-500 mt-1">Sponsorship + VB + Others</p>
+                        <div className="mt-3 flex items-center gap-2">
+                            <div className="flex-1 h-1.5 bg-blue-100 rounded-full overflow-hidden">
                                 <div 
-                                    className="h-full bg-purple-500" 
-                                    style={{ width: `${Math.min((currentVariableRunRate/150000)*100, 100)}%` }}
-                                ></div>
+                                    className="h-full bg-blue-500" 
+                                    style={{ width: `${Math.min((fixedYTD / (totalTarget - variableYTD + fixedYTD)) * 100, 100)}%` }}
+                                />
                             </div>
+                            <span className="text-[10px] font-bold text-blue-600">
+                                {((fixedYTD / totalRevenueYTD) * 100).toFixed(0)}%
+                            </span>
                         </div>
                     </div>
 
-                    {/* Signal 3: Top Revenue Driver (YTD) */}
-                    <div className="bg-white border border-yellow-200 rounded-xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
-                        <div className="absolute -right-6 -top-6 bg-yellow-50 w-24 h-24 rounded-full"></div>
-                        <div>
-                            <div className="flex items-center gap-2 mb-2 relative z-10">
-                                <Crown size={18} className="text-yellow-600" />
-                                <span className="text-xs font-bold text-yellow-700 uppercase">Top Driver (YTD)</span>
-                            </div>
-                            <p className="text-2xl font-bold text-gray-900 relative z-10">{bestVertical.name}</p>
-                            <p className="text-3xl font-extrabold text-yellow-600 mt-1 relative z-10">
-                                €{(bestVertical.current / 1000000).toFixed(2)}M
-                            </p>
+                    {/* Signal 4: Attention Required */}
+                    <div className={`rounded-xl p-5 shadow-sm border ${worstPacingVertical.pacePct < -10 ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+                        <div className="flex items-center gap-2 mb-3">
+                            <Bell size={16} className={worstPacingVertical.pacePct < -10 ? 'text-red-600' : 'text-amber-600'} />
+                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Attention Required</span>
                         </div>
-                        <div className="mt-4 pt-4 border-t border-yellow-100 relative z-10">
-                            <p className="text-xs text-gray-500">
-                                Contributes <span className="font-bold text-gray-700">{((bestVertical.current / totalRevenueYTD) * 100).toFixed(1)}%</span> of total YTD revenue.
-                            </p>
-                        </div>
+                        <p className="text-lg font-bold text-gray-900">{worstPacingVertical.name}</p>
+                        <p className={`text-2xl font-bold ${worstPacingVertical.pacePct < -10 ? 'text-red-600' : 'text-amber-600'}`}>
+                            {worstPacingVertical.pacePct.toFixed(0)}% pace
+                        </p>
+                        <p className="text-[10px] text-gray-500 mt-2">
+                            Gap: {formatCompact(worstPacingVertical.target * (seasonProgressPct/100) - worstPacingVertical.current)} behind expected
+                        </p>
                     </div>
 
                 </div>
@@ -1036,6 +1144,20 @@ const App: React.FC = () => {
       }, 0);
   }, [filteredGameDayData, gameDayIncludeTicketing]);
 
+  // Sponsorship Stats for Executive Overview
+  const sponsorshipStats = useMemo(() => {
+      // Convert season filter format: "25-26" -> "25/26"
+      const seasonMatch = selectedSeasons[0]?.replace('-', '/') || '25/26';
+      const filteredSponsors = sponsorData.filter(s => s.season === seasonMatch);
+      
+      const totalSponsorRec = filteredSponsors.reduce((sum, d) => sum + d.sponsorReconciliation, 0);
+      const totalCSR = filteredSponsors.reduce((sum, d) => sum + d.csrReconciliation, 0);
+      const pureSponsorship = totalSponsorRec + totalCSR;
+      const totalCommercial = filteredSponsors.reduce((sum, d) => sum + d.commercialValue, 0);
+      
+      return { pureSponsorship, totalCommercial, sponsorCount: filteredSponsors.length };
+  }, [sponsorData, selectedSeasons]);
+
   const getAvailableOptions = (targetField: 'season' | 'league' | 'opponent' | 'tier' | 'day' | 'zone') => {
       // ... logic same as previous block ...
       const filtered = data.filter(d => {
@@ -1483,6 +1605,7 @@ const App: React.FC = () => {
                 modules={MODULES} 
                 ticketingRevenue={totalStats.totalRevenue} 
                 gameDayRevenue={gameDayRevenueNet} 
+                sponsorshipRevenue={sponsorshipStats.pureSponsorship}
                 onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
                 onAiClick={() => {
                     setActiveModule('ticketing');
