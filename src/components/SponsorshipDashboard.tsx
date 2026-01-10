@@ -193,15 +193,16 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   }, [stats]);
 
   const reconciliationData = useMemo(() => {
+    // Always show all reconciliation categories (no exclusion toggles applied to charts)
     const items = [
       { name: 'Sponsorship', value: stats.totalSponsorRec, fill: COLORS.primary },
       { name: 'VB (Youth)', value: stats.totalVB, fill: COLORS.quaternary },
-      { name: 'CSR', value: stats.totalCSR, fill: COLORS.gray }
+      { name: 'CSR', value: stats.totalCSR, fill: COLORS.gray },
+      { name: 'Corp Tickets', value: stats.totalCorpTix, fill: COLORS.secondary },
+      { name: 'Game Day', value: stats.totalGameday, fill: COLORS.tertiary }
     ];
-    if (!excludeCorpTix) items.push({ name: 'Corp Tickets', value: stats.totalCorpTix, fill: COLORS.secondary });
-    if (!excludeGameDay) items.push({ name: 'Game Day', value: stats.totalGameday, fill: COLORS.tertiary });
     return items.filter(d => d.value > 0);
-  }, [stats, excludeCorpTix, excludeGameDay]);
+  }, [stats]);
 
   const monthlyData = useMemo(() => {
     const months = ['july', 'august', 'september', 'october', 'november', 'december', 
