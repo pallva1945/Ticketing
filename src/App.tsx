@@ -60,7 +60,8 @@ const RevenueHome = ({
     onAiClick,
     gamesPlayed,
     seasonFilter,
-    onSeasonChange
+    onSeasonChange,
+    yoyStats
 }: { 
     modules: any[], 
     ticketingRevenue: number,
@@ -71,7 +72,14 @@ const RevenueHome = ({
     onAiClick: () => void,
     gamesPlayed: number,
     seasonFilter: string,
-    onSeasonChange: (s: string) => void
+    onSeasonChange: (s: string) => void,
+    yoyStats: {
+        currentSeason: string,
+        prevSeason: string | null,
+        ticketing: { current: number, prev: number, currentGames: number, prevGames: number, currentAvgAtt: number, prevAvgAtt: number, yoyPct: number, yoyAttPct: number },
+        gameDay: { current: number, prev: number, currentGames: number, prevGames: number, yoyPct: number },
+        sponsorship: { current: number, prev: number, yoyPct: number }
+    }
 }) => {
     // Constants
     const TOTAL_GAMES_SEASON = 15;
@@ -525,6 +533,114 @@ const RevenueHome = ({
 
                 </div>
             </div>
+
+            {/* YoY COMPARISON */}
+            {yoyStats.prevSeason && (
+            <div className="mt-6">
+                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Year-over-Year Comparison</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Ticketing YoY */}
+                    <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center">
+                                    <Ticket size={16} className="text-red-600" />
+                                </div>
+                                <span className="font-semibold text-gray-800">Ticketing</span>
+                            </div>
+                            <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${yoyStats.ticketing.yoyPct >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {yoyStats.ticketing.yoyPct >= 0 ? '+' : ''}{yoyStats.ticketing.yoyPct.toFixed(1)}%
+                            </span>
+                        </div>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500">{yoyStats.currentSeason} ({yoyStats.ticketing.currentGames}G)</span>
+                                <span className="text-sm font-bold text-gray-900">{formatCompact(yoyStats.ticketing.current)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-400">{yoyStats.prevSeason} ({yoyStats.ticketing.prevGames}G)</span>
+                                <span className="text-sm text-gray-500">{formatCompact(yoyStats.ticketing.prev)}</span>
+                            </div>
+                            <div className="pt-2 border-t border-gray-100">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] text-gray-400 uppercase">Avg Attendance</span>
+                                    <span className={`text-xs font-semibold ${yoyStats.ticketing.yoyAttPct >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {yoyStats.ticketing.currentAvgAtt.toLocaleString('it-IT', {maximumFractionDigits: 0})} 
+                                        <span className="text-[10px] ml-1">({yoyStats.ticketing.yoyAttPct >= 0 ? '+' : ''}{yoyStats.ticketing.yoyAttPct.toFixed(1)}%)</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* GameDay YoY */}
+                    <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center">
+                                    <Calendar size={16} className="text-indigo-600" />
+                                </div>
+                                <span className="font-semibold text-gray-800">GameDay</span>
+                            </div>
+                            <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${yoyStats.gameDay.yoyPct >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {yoyStats.gameDay.yoyPct >= 0 ? '+' : ''}{yoyStats.gameDay.yoyPct.toFixed(1)}%
+                            </span>
+                        </div>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500">{yoyStats.currentSeason} ({yoyStats.gameDay.currentGames}G)</span>
+                                <span className="text-sm font-bold text-gray-900">{formatCompact(yoyStats.gameDay.current)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-400">{yoyStats.prevSeason} ({yoyStats.gameDay.prevGames}G)</span>
+                                <span className="text-sm text-gray-500">{formatCompact(yoyStats.gameDay.prev)}</span>
+                            </div>
+                            <div className="pt-2 border-t border-gray-100">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] text-gray-400 uppercase">Per Game Avg</span>
+                                    <span className="text-xs font-semibold text-gray-700">
+                                        {formatCompact(yoyStats.gameDay.current / Math.max(yoyStats.gameDay.currentGames, 1))} / game
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Sponsorship YoY */}
+                    <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                                    <Flag size={16} className="text-blue-600" />
+                                </div>
+                                <span className="font-semibold text-gray-800">Sponsorship</span>
+                            </div>
+                            <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${yoyStats.sponsorship.yoyPct >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                {yoyStats.sponsorship.yoyPct >= 0 ? '+' : ''}{yoyStats.sponsorship.yoyPct.toFixed(1)}%
+                            </span>
+                        </div>
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500">{yoyStats.currentSeason}</span>
+                                <span className="text-sm font-bold text-gray-900">{formatCompact(yoyStats.sponsorship.current)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-400">{yoyStats.prevSeason}</span>
+                                <span className="text-sm text-gray-500">{formatCompact(yoyStats.sponsorship.prev)}</span>
+                            </div>
+                            <div className="pt-2 border-t border-gray-100">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] text-gray-400 uppercase">Net Change</span>
+                                    <span className={`text-xs font-semibold ${yoyStats.sponsorship.current - yoyStats.sponsorship.prev >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {yoyStats.sponsorship.current - yoyStats.sponsorship.prev >= 0 ? '+' : ''}{formatCompact(yoyStats.sponsorship.current - yoyStats.sponsorship.prev)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            )}
         </div>
     );
 };
@@ -1164,6 +1280,80 @@ const App: React.FC = () => {
       return { pureSponsorship, totalCommercial, sponsorCount: filteredSponsors.length };
   }, [sponsorData, selectedSeasons]);
 
+  // YoY Comparison Stats (Previous Season)
+  const yoyComparisonStats = useMemo(() => {
+      // Get current season and previous season
+      const currentSeason = selectedSeasons[0] || '25-26';
+      const allSeasonsArray = Array.from(new Set(data.map(d => d.season))).sort().reverse();
+      const currentIdx = allSeasonsArray.indexOf(currentSeason);
+      const prevSeason = currentIdx !== -1 && currentIdx < allSeasonsArray.length - 1 
+          ? allSeasonsArray[currentIdx + 1] 
+          : null;
+      
+      // Current season ticketing
+      const currentTicketingData = data.filter(d => d.season === currentSeason);
+      const currentTicketingRev = currentTicketingData.reduce((sum, g) => sum + g.totalRevenue, 0);
+      const currentTicketingGames = currentTicketingData.length;
+      const currentAvgAttendance = currentTicketingData.length > 0 
+          ? currentTicketingData.reduce((sum, g) => sum + g.attendance, 0) / currentTicketingData.length 
+          : 0;
+      
+      // Previous season ticketing
+      const prevTicketingData = prevSeason ? data.filter(d => d.season === prevSeason) : [];
+      const prevTicketingRev = prevTicketingData.reduce((sum, g) => sum + g.totalRevenue, 0);
+      const prevTicketingGames = prevTicketingData.length;
+      const prevAvgAttendance = prevTicketingData.length > 0 
+          ? prevTicketingData.reduce((sum, g) => sum + g.attendance, 0) / prevTicketingData.length 
+          : 0;
+      
+      // GameDay - Current season
+      const currentGameDayData = gameDayData.filter(d => d.season === currentSeason);
+      const currentGameDayRev = currentGameDayData.reduce((acc, g) => acc + (g.totalRevenue - g.tixRevenue), 0);
+      const currentGameDayGames = currentGameDayData.length;
+      
+      // GameDay - Previous season
+      const prevGameDayData = prevSeason ? gameDayData.filter(d => d.season === prevSeason) : [];
+      const prevGameDayRev = prevGameDayData.reduce((acc, g) => acc + (g.totalRevenue - g.tixRevenue), 0);
+      const prevGameDayGames = prevGameDayData.length;
+      
+      // Sponsorship - Current season
+      const currentSeasonSponsors = currentSeason?.replace('-', '/') || '25/26';
+      const currentSponsors = sponsorData.filter(s => s.season === currentSeasonSponsors);
+      const currentSponsorRev = currentSponsors.reduce((sum, d) => sum + d.sponsorReconciliation + d.csrReconciliation, 0);
+      
+      // Sponsorship - Previous season
+      const prevSeasonSponsors = prevSeason?.replace('-', '/') || '24/25';
+      const prevSponsors = sponsorData.filter(s => s.season === prevSeasonSponsors);
+      const prevSponsorRev = prevSponsors.reduce((sum, d) => sum + d.sponsorReconciliation + d.csrReconciliation, 0);
+      
+      return {
+          currentSeason,
+          prevSeason,
+          ticketing: {
+              current: currentTicketingRev,
+              prev: prevTicketingRev,
+              currentGames: currentTicketingGames,
+              prevGames: prevTicketingGames,
+              currentAvgAtt: currentAvgAttendance,
+              prevAvgAtt: prevAvgAttendance,
+              yoyPct: prevTicketingRev > 0 ? ((currentTicketingRev - prevTicketingRev) / prevTicketingRev) * 100 : 0,
+              yoyAttPct: prevAvgAttendance > 0 ? ((currentAvgAttendance - prevAvgAttendance) / prevAvgAttendance) * 100 : 0
+          },
+          gameDay: {
+              current: currentGameDayRev,
+              prev: prevGameDayRev,
+              currentGames: currentGameDayGames,
+              prevGames: prevGameDayGames,
+              yoyPct: prevGameDayRev > 0 ? ((currentGameDayRev - prevGameDayRev) / prevGameDayRev) * 100 : 0
+          },
+          sponsorship: {
+              current: currentSponsorRev,
+              prev: prevSponsorRev,
+              yoyPct: prevSponsorRev > 0 ? ((currentSponsorRev - prevSponsorRev) / prevSponsorRev) * 100 : 0
+          }
+      };
+  }, [data, gameDayData, sponsorData, selectedSeasons]);
+
   const getAvailableOptions = (targetField: 'season' | 'league' | 'opponent' | 'tier' | 'day' | 'zone') => {
       // ... logic same as previous block ...
       const filtered = data.filter(d => {
@@ -1621,6 +1811,7 @@ const App: React.FC = () => {
                 gamesPlayed={viewData.length}
                 seasonFilter={selectedSeasons[0]}
                 onSeasonChange={(s) => setSelectedSeasons([s])}
+                yoyStats={yoyComparisonStats}
               />
           ) : activeModule === 'gameday' ? (
               <div className="pt-6">

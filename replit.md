@@ -35,6 +35,16 @@ src/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 10, 2026: Executive Overview YoY Comparison & Ticketing Improvements
+  - Added Year-over-Year Comparison section below Strategic Signals
+  - YoY cards for Ticketing, GameDay, and Sponsorship showing current vs previous season
+  - Each card displays: total revenue, game count, YoY percentage change
+  - Ticketing card includes avg attendance comparison
+  - GameDay card includes per-game average
+  - Sponsorship card includes net change amount
+  - Added 6th score card "Avg Attendance" to Ticketing dashboard (always shows total view, not affected by GameDay filter)
+  - Removed Action Required banner from Ticketing dashboard
+
 - January 10, 2026: Sponsor Tiers & Deal Quality Analytics
   - Sponsor Tiers: Platinum (€200k+), Gold (€100k-200k), Silver (€50k-100k), Bronze (€10k-50k), Micro (€0-10k)
   - Deal Quality metric based on Delta (Revenue Received - Value Given back in LED, jersey, tickets, etc.)
