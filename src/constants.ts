@@ -11,6 +11,7 @@ export const SEASON_TARGET_TOTAL = 1650000;   // €1.65M Ticketing Core
 export const SEASON_TARGET_GAMEDAY = 1250000;  // €1.25M Variable Target (Net minus Tix) - For GameDay Module
 export const SEASON_TARGET_GAMEDAY_TOTAL = 2900000; // €2.9M Total GameDay Budget (Tix + Variable)
 export const SEASON_TARGET_TICKETING_DAY = 495000; // €495k Target for Day Sales (€33k/game * 15 games)
+export const SEASON_TARGET_SPONSORSHIP = 2100000; // €2.1M Sponsorship Target (Sponsorship + CSR only, no Corp Tix, no GameDay, no VB)
 
 // --- GOOGLE SHEETS CONFIGURATION ---
 export const GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR_UAEI1obd5F-Pfbe-G5dSFjcK1E86y9rStQb3bDdFRzVPkDItG7V83FZgw8TbtqiONYcGpRoneImG/pub?gid=2044782685&single=true&output=csv"; 

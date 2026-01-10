@@ -35,6 +35,11 @@ src/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 10, 2026: Sponsorship Season Target Widget
+  - Added €2.1M season target for Sponsorship + CSR only
+  - Excludes Corp Tickets, GameDay, and VB from target calculation
+  - Dark themed pacing widget showing progress bar, variance %, and breakdown
+
 - January 10, 2026: Interactive Click-to-Filter on Sponsorship Dashboard
   - Click any bar in Top Sponsors chart to filter by company
   - Click pie slices in Sector/Contract Type charts to filter

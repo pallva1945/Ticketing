@@ -4,7 +4,8 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import { SponsorData } from '../types';
-import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet, X, Filter } from 'lucide-react';
+import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet, X, Filter, Target } from 'lucide-react';
+import { SEASON_TARGET_SPONSORSHIP } from '../constants';
 
 interface SponsorshipDashboardProps {
   data: SponsorData[];
@@ -117,6 +118,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       - (excludeCorpTix ? filteredData.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.corpTixReconciliation, 0) : 0)
       - (excludeGameDay ? filteredData.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.gamedayReconciliation, 0) : 0);
     
+    const pureSponsorship = totalSponsorRec + totalCSR;
+    
     return {
       totalCommercial,
       totalCash,
@@ -131,6 +134,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       totalCSR,
       totalCorpTix,
       totalSponsorRec,
+      pureSponsorship,
       avgDealSize,
       cashRatio: totalCommercial > 0 ? (totalCash / totalCommercial) * 100 : 0
     };
@@ -343,6 +347,56 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
           </p>
         </div>
       )}
+
+      {/* Season Target Pacing Widget */}
+      {(() => {
+        const progress = Math.min((stats.pureSponsorship / SEASON_TARGET_SPONSORSHIP) * 100, 100);
+        const isOnTrack = stats.pureSponsorship >= SEASON_TARGET_SPONSORSHIP * 0.8;
+        const variance = stats.pureSponsorship - SEASON_TARGET_SPONSORSHIP;
+        const variancePercent = ((stats.pureSponsorship / SEASON_TARGET_SPONSORSHIP) - 1) * 100;
+        
+        return (
+          <div className="bg-slate-900 rounded-xl p-6 text-white shadow-lg border border-slate-700 relative overflow-hidden">
+            {!isOnTrack && <div className="absolute top-0 right-0 w-24 h-24 bg-red-600/20 blur-3xl rounded-full" />}
+            
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-red-600/20 rounded-lg flex items-center justify-center">
+                  <Target size={20} className="text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">Season Target (Sponsorship + CSR)</h3>
+                  <p className="text-xs text-slate-500">Excludes Corp Tickets, GameDay, VB</p>
+                </div>
+              </div>
+              <div className={`text-right px-3 py-1.5 rounded-lg ${variance >= 0 ? 'bg-green-900/40' : 'bg-amber-900/40'}`}>
+                <span className={`text-lg font-bold ${variance >= 0 ? 'text-green-400' : 'text-amber-400'}`}>
+                  {variancePercent >= 0 ? '+' : ''}{variancePercent.toFixed(1)}%
+                </span>
+                <p className="text-xs text-slate-400">{variance >= 0 ? 'Above Target' : 'Below Target'}</p>
+              </div>
+            </div>
+            
+            <div className="flex items-baseline gap-3 mb-4">
+              <span className="text-4xl font-extrabold">{formatCompactCurrency(stats.pureSponsorship)}</span>
+              <span className="text-lg text-slate-400 font-medium">/ {formatCompactCurrency(SEASON_TARGET_SPONSORSHIP)}</span>
+            </div>
+            
+            <div className="relative h-3 bg-slate-800 rounded-full overflow-hidden mb-3">
+              <div 
+                className={`absolute top-0 left-0 h-full transition-all duration-1000 ease-out ${variance >= 0 ? 'bg-green-500' : 'bg-red-500'}`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            
+            <div className="flex justify-between text-xs text-slate-500">
+              <span>Sponsorship: {formatCompactCurrency(stats.totalSponsorRec)}</span>
+              <span>CSR: {formatCompactCurrency(stats.totalCSR)}</span>
+              <span>{progress.toFixed(1)}% of target</span>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
