@@ -35,12 +35,17 @@ src/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 10, 2026: Data Processing & Number Format Standardization
+  - Standardized all CSV parsing to Italian number format (dots as thousand separators, commas as decimal separators)
+  - Added deduplication logic to ticketing and GameDay data processors
+  - Updated fallback sponsor data with comprehensive multi-season sponsor database (420 entries across seasons 22/23 to 27/28)
+
 - January 10, 2026: Sponsorship Analytics Module
   - Added SponsorshipDashboard component with full analytics views
   - Top sponsors chart, sector breakdown, contract type analysis
   - Revenue reconciliation comparison and monthly cash flow tracking
   - CSV upload functionality with Firebase cloud sync support
-  - Fallback sponsor data for demo/development mode
+  - Toggles to exclude Corp Tickets and GameDay from calculations
 
 - January 10, 2026: Initial Replit setup
   - Configured Vite for port 5000 with allowedHosts
