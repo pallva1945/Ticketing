@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Crown, Bell, Users, FileText, ChevronDown, Target, Shield } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Bell, Users, FileText, ChevronDown, Target, Shield } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -168,11 +168,9 @@ const RevenueHome = ({
 
     // Filter verticals with actual data for aggregates
     const verticalsWithData = verticalsWithPacing.filter(v => v.hasData);
-    const verticalsWithoutData = verticalsWithPacing.filter(v => !v.hasData);
 
     // SORTED VERTICALS (Only those with data, highest YTD first)
     const sortedVerticals = [...verticalsWithData].sort((a, b) => b.current - a.current);
-    const bestVertical = sortedVerticals[0];
     const worstPacingVertical = [...verticalsWithData].sort((a, b) => a.pacePct - b.pacePct)[0];
     const bestPacingVertical = [...verticalsWithData].sort((a, b) => b.pacePct - a.pacePct)[0];
 
