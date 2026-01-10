@@ -713,7 +713,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               <BarChart 
                 data={topSponsors} 
                 layout="vertical" 
-                margin={{ left: 10, right: 30 }}
+                margin={{ left: 0, right: 20 }}
                 onClick={(e) => {
                   if (e && e.activePayload && e.activePayload[0]) {
                     const company = e.activePayload[0].payload.company;
@@ -727,9 +727,9 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 <YAxis 
                   type="category" 
                   dataKey="company" 
-                  width={130} 
-                  tick={{ fontSize: 10, fontWeight: 600 }}
-                  tickFormatter={(v) => v.length > 16 ? v.substring(0, 16) + '..' : v}
+                  width={160} 
+                  tick={{ fontSize: 10, fontWeight: 600, textAnchor: 'end' }}
+                  tickFormatter={(v) => v.length > 22 ? v.substring(0, 22) + '..' : v}
                 />
                 <Tooltip 
                   formatter={(value: number) => [formatCurrency(value), 'Value']}
