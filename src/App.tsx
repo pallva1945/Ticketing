@@ -564,9 +564,9 @@ const RevenueHome = ({
                         {yoyStats.chartData.map((vertical) => {
                             const vals = [vertical['23-24'], vertical['24-25'], vertical['25-26']];
                             const maxVal = Math.max(...vals);
-                            const MAX_BAR_HEIGHT = 105;
+                            const MAX_BAR_HEIGHT = 115;
                             const BAR_WIDTH = 44;
-                            const BAR_GAP = 12;
+                            const BAR_GAP = 16;
                             const CHART_WIDTH = BAR_WIDTH * 3 + BAR_GAP * 2;
                             const barCenters = [BAR_WIDTH / 2, BAR_WIDTH * 1.5 + BAR_GAP, BAR_WIDTH * 2.5 + BAR_GAP * 2];
                             const getHeight = (val: number) => maxVal > 0 ? (val / maxVal) * MAX_BAR_HEIGHT : 0;
@@ -586,7 +586,7 @@ const RevenueHome = ({
                                             {yoy >= 0 ? '+' : ''}{yoy.toFixed(0)}%
                                         </span>
                                     </div>
-                                    <div className="relative bg-gray-50 rounded-lg overflow-hidden" style={{ height: `${MAX_BAR_HEIGHT + 50}px`, padding: '18px 12px 12px 12px' }}>
+                                    <div className="relative bg-gray-50 rounded-lg overflow-hidden" style={{ height: `${MAX_BAR_HEIGHT + 55}px`, padding: '20px 12px 12px 12px' }}>
                                         <div className="absolute left-2 top-4 flex flex-col justify-between text-[9px] text-gray-400 w-7" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
                                             <span>{formatCompact(maxVal)}</span>
                                             <span>{formatCompact(maxVal * 0.5)}</span>
