@@ -224,6 +224,9 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
 
         // Special Rules
         giveawayRate: kpiConfig.giveawayTarget, // Fixed target remains
+        
+        // Avg Attendance from baseline
+        avgAttendance: baselineKPIs.totalAttendance / baselineKPIs.gameCount,
     };
 
   }, [fullDataset, filters, kpiConfig, viewMode]);
@@ -280,9 +283,9 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
       <div className="bg-white p-5 rounded-xl shadow-sm border-l-4 border-blue-600">
         <div className="flex justify-between items-start mb-2">
           <div>
-            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total Attendance</p>
+            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Avg Attendance</p>
             <p className="text-xl font-bold text-gray-900 mt-1">
-              {currentKPIs.totalAttendance >= 1000 ? `${(currentKPIs.totalAttendance / 1000).toFixed(1)}k` : currentKPIs.totalAttendance.toLocaleString()}
+              {(currentKPIs.totalAttendance / currentKPIs.gameCount).toLocaleString('it-IT', { maximumFractionDigits: 0 })}
             </p>
           </div>
           <div className="p-2 rounded-full bg-blue-50 text-blue-600">
@@ -290,7 +293,19 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400">{currentKPIs.gameCount} games</span>
+          {targetKPIs && targetKPIs.avgAttendance ? (
+            <>
+              <div className={`flex items-center text-xs font-semibold ${
+                (currentKPIs.totalAttendance / currentKPIs.gameCount) >= targetKPIs.avgAttendance ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {(currentKPIs.totalAttendance / currentKPIs.gameCount) >= targetKPIs.avgAttendance ? <TrendingUp size={12} className="mr-1" /> : <TrendingDown size={12} className="mr-1" />}
+                {Math.abs((((currentKPIs.totalAttendance / currentKPIs.gameCount) - targetKPIs.avgAttendance) / targetKPIs.avgAttendance) * 100).toFixed(1)}%
+              </div>
+              <span className="text-[10px] text-gray-400">vs KPIs</span>
+            </>
+          ) : (
+            <span className="text-xs text-gray-400">per game</span>
+          )}
         </div>
       </div>
     </div>
