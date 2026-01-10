@@ -35,6 +35,14 @@ src/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 10, 2026: Sponsor Tiers & Deal Quality Analytics
+  - Sponsor Tiers: Platinum (€200k+), Gold (€100k-200k), Silver (€50k-100k), Bronze (€10k-50k), Micro (€0-10k)
+  - Deal Quality metric based on Delta (Revenue Received - Value Given back in LED, jersey, tickets, etc.)
+  - Quality ratings: Excellent (20%+ margin), Good (5-20%), Fair (-5% to 5%), Below (-20% to -5%), Poor (<-20%)
+  - Tier breakdown card showing count, total value, and average deal quality per tier
+  - Deal Quality Overview card with portfolio net delta, average score (1-5), and distribution by rating
+  - Updated portfolio table with Tier badges and Deal Quality indicators with hover tooltips showing delta amount and margin %
+
 - January 10, 2026: Executive Overview Redesign
   - 7 revenue vertical score cards (Sponsorship, Ticketing, GameDay, VB, BOps, Venue Ops, Merchandising)
   - Actual data integration for Ticketing, GameDay, and Sponsorship (Sponsor Rec + CSR)

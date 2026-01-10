@@ -4,8 +4,45 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import { SponsorData } from '../types';
-import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet, X, Filter, Target, Ticket } from 'lucide-react';
+import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet, X, Filter, Target, Ticket, Award, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { SEASON_TARGET_SPONSORSHIP } from '../constants';
+
+const SPONSOR_TIERS = {
+  PLATINUM: { name: 'Platinum', min: 200000, color: '#475569', bgColor: 'bg-slate-600', textColor: 'text-white', borderColor: 'border-slate-600' },
+  GOLD: { name: 'Gold', min: 100000, color: '#ca8a04', bgColor: 'bg-yellow-600', textColor: 'text-white', borderColor: 'border-yellow-600' },
+  SILVER: { name: 'Silver', min: 50000, color: '#64748b', bgColor: 'bg-slate-400', textColor: 'text-white', borderColor: 'border-slate-400' },
+  BRONZE: { name: 'Bronze', min: 10000, color: '#b45309', bgColor: 'bg-amber-700', textColor: 'text-white', borderColor: 'border-amber-700' },
+  MICRO: { name: 'Micro', min: 0, color: '#78716c', bgColor: 'bg-stone-500', textColor: 'text-white', borderColor: 'border-stone-500' }
+};
+
+const getSponsorTier = (value: number) => {
+  if (value >= 200000) return SPONSOR_TIERS.PLATINUM;
+  if (value >= 100000) return SPONSOR_TIERS.GOLD;
+  if (value >= 50000) return SPONSOR_TIERS.SILVER;
+  if (value >= 10000) return SPONSOR_TIERS.BRONZE;
+  return SPONSOR_TIERS.MICRO;
+};
+
+const GAMES_PER_SEASON = 15;
+
+const calculateDelta = (sponsor: SponsorData) => {
+  const benefitsGiven = sponsor.sponsorReconciliation + 
+                        sponsor.csrReconciliation + 
+                        sponsor.corpTixReconciliation + 
+                        (sponsor.gamedayReconciliation * GAMES_PER_SEASON) + 
+                        sponsor.vbReconciliation;
+  return sponsor.commercialValue - benefitsGiven;
+};
+
+const getDealQuality = (delta: number, commercialValue: number) => {
+  if (commercialValue === 0) return { label: 'N/A', score: 0, color: 'text-gray-400', bgColor: 'bg-gray-100', icon: Minus };
+  const ratio = delta / commercialValue;
+  if (ratio >= 0.2) return { label: 'Excellent', score: 5, color: 'text-emerald-700', bgColor: 'bg-emerald-100', icon: TrendingUp };
+  if (ratio >= 0.05) return { label: 'Good', score: 4, color: 'text-green-600', bgColor: 'bg-green-100', icon: TrendingUp };
+  if (ratio >= -0.05) return { label: 'Fair', score: 3, color: 'text-slate-600', bgColor: 'bg-slate-100', icon: Minus };
+  if (ratio >= -0.2) return { label: 'Below', score: 2, color: 'text-amber-600', bgColor: 'bg-amber-100', icon: TrendingDown };
+  return { label: 'Poor', score: 1, color: 'text-red-600', bgColor: 'bg-red-100', icon: TrendingDown };
+};
 
 interface SponsorshipDashboardProps {
   data: SponsorData[];
@@ -230,6 +267,52 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     });
   }, [filteredData]);
 
+  const tierStats = useMemo(() => {
+    const tiers = Object.values(SPONSOR_TIERS).map(tier => ({
+      ...tier,
+      sponsors: filteredData.filter(d => getSponsorTier(d.commercialValue).name === tier.name),
+      count: 0,
+      totalValue: 0,
+      avgDealQuality: 0
+    }));
+
+    tiers.forEach(tier => {
+      tier.count = tier.sponsors.length;
+      tier.totalValue = tier.sponsors.reduce((sum, s) => sum + s.commercialValue, 0);
+      const qualityScores = tier.sponsors.map(s => {
+        const delta = calculateDelta(s);
+        return getDealQuality(delta, s.commercialValue).score;
+      });
+      tier.avgDealQuality = qualityScores.length > 0 
+        ? qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length 
+        : 0;
+    });
+
+    return tiers;
+  }, [filteredData]);
+
+  const dealQualityStats = useMemo(() => {
+    const qualityBuckets = { excellent: 0, good: 0, fair: 0, below: 0, poor: 0 };
+    let totalDelta = 0;
+    
+    filteredData.forEach(sponsor => {
+      const delta = calculateDelta(sponsor);
+      totalDelta += delta;
+      const quality = getDealQuality(delta, sponsor.commercialValue);
+      if (quality.label === 'Excellent') qualityBuckets.excellent++;
+      else if (quality.label === 'Good') qualityBuckets.good++;
+      else if (quality.label === 'Fair') qualityBuckets.fair++;
+      else if (quality.label === 'Below') qualityBuckets.below++;
+      else if (quality.label === 'Poor') qualityBuckets.poor++;
+    });
+
+    const avgQualityScore = filteredData.length > 0 
+      ? filteredData.reduce((sum, s) => sum + getDealQuality(calculateDelta(s), s.commercialValue).score, 0) / filteredData.length 
+      : 0;
+
+    return { ...qualityBuckets, totalDelta, avgQualityScore, total: filteredData.length };
+  }, [filteredData]);
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -398,6 +481,88 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
           </div>
         );
       })()}
+
+      {/* Sponsor Tiers & Deal Quality Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Sponsor Tiers */}
+        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Award size={20} className="text-amber-500" />
+            Sponsor Tiers
+          </h3>
+          <div className="space-y-3">
+            {tierStats.map((tier) => (
+              <div key={tier.name} className={`flex items-center gap-3 p-3 rounded-lg border ${tier.count > 0 ? tier.borderColor : 'border-gray-200'} bg-gray-50`}>
+                <div className={`w-10 h-10 rounded-lg ${tier.bgColor} ${tier.textColor} flex items-center justify-center font-bold text-sm`}>
+                  {tier.count}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-gray-800">{tier.name}</span>
+                    <span className="font-bold text-gray-900">{formatCompactCurrency(tier.totalValue)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-500 mt-0.5">
+                    <span>{tier.min >= 200000 ? '€200k+' : tier.min >= 100000 ? '€100k-200k' : tier.min >= 50000 ? '€50k-100k' : tier.min >= 10000 ? '€10k-50k' : '€0-10k'}</span>
+                    {tier.count > 0 && (
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${tier.avgDealQuality >= 4 ? 'bg-emerald-100 text-emerald-700' : tier.avgDealQuality >= 3 ? 'bg-slate-100 text-slate-700' : 'bg-amber-100 text-amber-700'}`}>
+                        Avg Quality: {tier.avgDealQuality.toFixed(1)}/5
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Deal Quality Overview */}
+        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <TrendingUp size={20} className="text-emerald-500" />
+            Deal Quality Overview
+          </h3>
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm text-gray-500">Portfolio Net Delta</span>
+              <span className={`text-xl font-bold ${dealQualityStats.totalDelta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {dealQualityStats.totalDelta >= 0 ? '+' : ''}{formatCompactCurrency(dealQualityStats.totalDelta)}
+              </span>
+            </div>
+            <p className="text-xs text-gray-400">Revenue received minus value given (LED, jersey, tickets, etc.)</p>
+          </div>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-sm text-gray-500">Avg Score:</span>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className={`w-5 h-5 rounded ${i <= Math.round(dealQualityStats.avgQualityScore) ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+              ))}
+            </div>
+            <span className="text-sm font-bold text-gray-700">{dealQualityStats.avgQualityScore.toFixed(1)}/5</span>
+          </div>
+          <div className="grid grid-cols-5 gap-2 text-center">
+            <div className="bg-emerald-50 rounded-lg p-2">
+              <p className="text-lg font-bold text-emerald-700">{dealQualityStats.excellent}</p>
+              <p className="text-[10px] text-emerald-600 font-medium">Excellent</p>
+            </div>
+            <div className="bg-green-50 rounded-lg p-2">
+              <p className="text-lg font-bold text-green-600">{dealQualityStats.good}</p>
+              <p className="text-[10px] text-green-600 font-medium">Good</p>
+            </div>
+            <div className="bg-slate-50 rounded-lg p-2">
+              <p className="text-lg font-bold text-slate-600">{dealQualityStats.fair}</p>
+              <p className="text-[10px] text-slate-600 font-medium">Fair</p>
+            </div>
+            <div className="bg-amber-50 rounded-lg p-2">
+              <p className="text-lg font-bold text-amber-600">{dealQualityStats.below}</p>
+              <p className="text-[10px] text-amber-600 font-medium">Below</p>
+            </div>
+            <div className="bg-red-50 rounded-lg p-2">
+              <p className="text-lg font-bold text-red-600">{dealQualityStats.poor}</p>
+              <p className="text-[10px] text-red-600 font-medium">Poor</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -693,14 +858,20 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             <thead className="sticky top-0 bg-white">
               <tr className="border-b border-gray-100">
                 <th className="text-left py-3 px-4 font-semibold text-gray-600">Company</th>
+                <th className="text-center py-3 px-2 font-semibold text-gray-600">Tier</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-600">Sector</th>
                 <th className="text-left py-3 px-4 font-semibold text-gray-600">Type</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-600">Commercial Value</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-600">Net of Ticketing</th>
+                <th className="text-right py-3 px-4 font-semibold text-gray-600">Value</th>
+                <th className="text-center py-3 px-4 font-semibold text-gray-600">Deal Quality</th>
               </tr>
             </thead>
             <tbody>
-              {(hasActiveFilter ? tableFilteredData : topSponsors.slice(0, 15)).map((sponsor, idx) => (
+              {(hasActiveFilter ? tableFilteredData : topSponsors.slice(0, 15)).map((sponsor, idx) => {
+                const tier = getSponsorTier(sponsor.commercialValue);
+                const delta = calculateDelta(sponsor);
+                const quality = getDealQuality(delta, sponsor.commercialValue);
+                const QualityIcon = quality.icon;
+                return (
                 <tr key={sponsor.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
@@ -709,6 +880,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                       </span>
                       <span className="font-medium text-gray-900">{sponsor.company}</span>
                     </div>
+                  </td>
+                  <td className="py-3 px-2 text-center">
+                    <span className={`px-2 py-1 rounded text-[10px] font-bold ${tier.bgColor} ${tier.textColor}`}>
+                      {tier.name}
+                    </span>
                   </td>
                   <td className="py-3 px-4">
                     <button 
@@ -735,13 +911,22 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                     </button>
                   </td>
                   <td className="py-3 px-4 text-right font-medium text-gray-900">
-                    {formatCurrency(sponsor.commercialValue)}
+                    {formatCompactCurrency(sponsor.commercialValue)}
                   </td>
-                  <td className="py-3 px-4 text-right text-gray-600">
-                    {formatCurrency(sponsor.netOfTicketing)}
+                  <td className="py-3 px-4">
+                    <div className="flex items-center justify-center gap-1.5 group relative">
+                      <span className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${quality.bgColor} ${quality.color}`}>
+                        <QualityIcon size={12} />
+                        {quality.label}
+                      </span>
+                      <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                        <p>Delta: {delta >= 0 ? '+' : ''}{formatCompactCurrency(delta)}</p>
+                        <p className="text-slate-400">({((delta / sponsor.commercialValue) * 100).toFixed(1)}% margin)</p>
+                      </div>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>
