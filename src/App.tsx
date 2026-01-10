@@ -81,6 +81,7 @@ const RevenueHome = ({
 
     // 7 Revenue Verticals with actual data for Ticketing, GameDay, Sponsorship
     // isProrated: Sponsorship contracts are signed for the full year but recognized over time
+    // hasData: indicates if this vertical has real data connected
     const verticalPerformance = [
       { 
           id: 'sponsorship', 
@@ -88,49 +89,49 @@ const RevenueHome = ({
           signedValue: sponsorshipRevenue, // Full year contracts signed
           current: sponsorshipRevenue * seasonProgressFraction, // Recognized YTD (prorated)
           target: 2100000,
-          icon: Flag, colorClass: 'text-blue-600', bgClass: 'bg-blue-50', barClass: 'bg-blue-500', isVariable: false, isProrated: true 
+          icon: Flag, colorClass: 'text-blue-600', bgClass: 'bg-blue-50', barClass: 'bg-blue-500', isVariable: false, isProrated: true, hasData: true 
       },
       { 
           id: 'ticketing', 
           name: 'Ticketing', 
           current: ticketingRevenue, 
           target: 1650000, 
-          icon: Ticket, colorClass: 'text-red-600', bgClass: 'bg-red-50', barClass: 'bg-red-500', isVariable: true, isProrated: false 
+          icon: Ticket, colorClass: 'text-red-600', bgClass: 'bg-red-50', barClass: 'bg-red-500', isVariable: true, isProrated: false, hasData: true 
       },
       { 
           id: 'gameday', 
           name: 'GameDay', 
           current: gameDayRevenue, 
           target: 1250000, 
-          icon: Calendar, colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50', barClass: 'bg-indigo-500', isVariable: true, isProrated: false 
+          icon: Calendar, colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50', barClass: 'bg-indigo-500', isVariable: true, isProrated: false, hasData: true 
       },
       { 
           id: 'sg', 
           name: 'Varese Basketball', 
-          current: 650000, 
+          current: 0, 
           target: 930000, 
-          icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false, isProrated: false 
+          icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false, isProrated: false, hasData: false 
       },
       { 
           id: 'bops', 
           name: 'BOps', 
-          current: 320000, 
+          current: 0, 
           target: 525000, 
-          icon: Activity, colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', barClass: 'bg-emerald-500', isVariable: false, isProrated: false 
+          icon: Activity, colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', barClass: 'bg-emerald-500', isVariable: false, isProrated: false, hasData: false 
       },
       { 
           id: 'venue_ops', 
           name: 'Venue Ops', 
-          current: 145000, 
+          current: 0, 
           target: 258000, 
-          icon: Landmark, colorClass: 'text-slate-600', bgClass: 'bg-slate-50', barClass: 'bg-slate-500', isVariable: false, isProrated: false 
+          icon: Landmark, colorClass: 'text-slate-600', bgClass: 'bg-slate-50', barClass: 'bg-slate-500', isVariable: false, isProrated: false, hasData: false 
       },
       { 
           id: 'merchandising', 
           name: 'Merchandising', 
-          current: 75000, 
+          current: 0, 
           target: 131000, 
-          icon: ShoppingBag, colorClass: 'text-orange-600', bgClass: 'bg-orange-50', barClass: 'bg-orange-500', isVariable: false, isProrated: false 
+          icon: ShoppingBag, colorClass: 'text-orange-600', bgClass: 'bg-orange-50', barClass: 'bg-orange-500', isVariable: false, isProrated: false, hasData: false 
       },
     ];
 
@@ -163,31 +164,37 @@ const RevenueHome = ({
         return { ...v, pacePct, expectedAtThisPoint, projectedFinish };
     });
 
-    // SORTED VERTICALS (Highest YTD Revenue First)
-    const sortedVerticals = [...verticalsWithPacing].sort((a, b) => b.current - a.current);
-    const bestVertical = sortedVerticals[0];
-    const worstPacingVertical = [...verticalsWithPacing].sort((a, b) => a.pacePct - b.pacePct)[0];
-    const bestPacingVertical = [...verticalsWithPacing].sort((a, b) => b.pacePct - a.pacePct)[0];
+    // Filter verticals with actual data for aggregates
+    const verticalsWithData = verticalsWithPacing.filter(v => v.hasData);
+    const verticalsWithoutData = verticalsWithPacing.filter(v => !v.hasData);
 
-    // AGGREGATES
-    const totalRevenueYTD = verticalPerformance.reduce((acc, v) => acc + v.current, 0);
-    const totalTarget = verticalPerformance.reduce((acc, v) => acc + v.target, 0);
-    const totalRevenueProjected = verticalsWithPacing.reduce((acc, v) => {
+    // SORTED VERTICALS (Only those with data, highest YTD first)
+    const sortedVerticals = [...verticalsWithData].sort((a, b) => b.current - a.current);
+    const bestVertical = sortedVerticals[0];
+    const worstPacingVertical = [...verticalsWithData].sort((a, b) => a.pacePct - b.pacePct)[0];
+    const bestPacingVertical = [...verticalsWithData].sort((a, b) => b.pacePct - a.pacePct)[0];
+
+    // AGGREGATES (Only verticals with actual data)
+    const totalRevenueYTD = verticalsWithData.reduce((acc, v) => acc + v.current, 0);
+    const totalTarget = verticalsWithData.reduce((acc, v) => acc + v.target, 0);
+    const totalRevenueProjected = verticalsWithData.reduce((acc, v) => {
         if(v.isVariable) {
              return acc + v.projectedFinish;
+        } else if (v.isProrated && 'signedValue' in v) {
+             return acc + (v.signedValue as number);
         } else {
-             return acc + v.current; // For absolute, use current collected
+             return acc + v.current;
         }
     }, 0);
     
     // PACING LOGIC
-    const revenueProgressPct = (totalRevenueYTD / totalTarget) * 100;
+    const revenueProgressPct = totalTarget > 0 ? (totalRevenueYTD / totalTarget) * 100 : 0;
     const pacingDelta = revenueProgressPct - seasonProgressPct;
     const isAhead = pacingDelta >= 0;
     const projectionDiff = totalRevenueProjected - totalTarget;
 
-    const variableYTD = verticalPerformance.filter(v => v.isVariable).reduce((acc, v) => acc + v.current, 0);
-    const fixedYTD = verticalPerformance.filter(v => !v.isVariable).reduce((acc, v) => acc + v.current, 0);
+    const variableYTD = verticalsWithData.filter(v => v.isVariable).reduce((acc, v) => acc + v.current, 0);
+    const fixedYTD = verticalsWithData.filter(v => !v.isVariable).reduce((acc, v) => acc + v.current, 0);
     const currentVariableRunRate = variableYTD / gamesCount;
 
     // Helper for formatting
@@ -353,9 +360,30 @@ const RevenueHome = ({
                 <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Revenue Verticals</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     {verticalsWithPacing.map((v) => {
-                        const progressPct = Math.min((v.current / v.target) * 100, 100);
+                        const progressPct = v.hasData ? Math.min((v.current / v.target) * 100, 100) : 0;
                         const isOnTrack = v.pacePct >= -5;
                         
+                        // Card for verticals WITHOUT data - Coming Soon
+                        if (!v.hasData) {
+                            return (
+                                <div key={v.id} className="bg-gray-50 rounded-xl border border-dashed border-gray-300 p-4 shadow-sm relative">
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <div className={`w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center`}>
+                                            <v.icon size={16} className="text-gray-400" />
+                                        </div>
+                                    </div>
+                                    <p className="text-sm font-medium text-gray-400 leading-tight">Coming Soon</p>
+                                    <p className="text-[10px] text-gray-300 mb-2">Target: {formatCompact(v.target)}</p>
+                                    <div className="h-1.5 bg-gray-200 rounded-full mb-1" />
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] text-gray-400">{v.name}</span>
+                                        <span className="text-[10px] font-medium text-gray-400">—</span>
+                                    </div>
+                                </div>
+                            );
+                        }
+                        
+                        // Card for verticals WITH data
                         return (
                             <div key={v.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm relative group hover:shadow-md transition-shadow">
                                 {/* Icon & Name */}
@@ -363,8 +391,8 @@ const RevenueHome = ({
                                     <div className={`w-8 h-8 ${v.bgClass} rounded-lg flex items-center justify-center`}>
                                         <v.icon size={16} className={v.colorClass} />
                                     </div>
-                                    <span className={`text-[10px] font-bold uppercase ${v.isVariable ? 'text-purple-600' : 'text-gray-500'}`}>
-                                        {v.isVariable ? '●' : '○'}
+                                    <span className={`text-[10px] font-bold uppercase ${v.isVariable ? 'text-purple-600' : v.isProrated ? 'text-cyan-600' : 'text-gray-500'}`}>
+                                        {v.isVariable ? '●' : v.isProrated ? '◐' : '○'}
                                     </span>
                                 </div>
                                 

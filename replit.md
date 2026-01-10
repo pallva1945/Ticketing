@@ -38,6 +38,8 @@ src/
 - January 10, 2026: Executive Overview Redesign
   - 7 revenue vertical score cards (Sponsorship, Ticketing, GameDay, VB, BOps, Venue Ops, Merchandising)
   - Actual data integration for Ticketing, GameDay, and Sponsorship (Sponsor Rec + CSR)
+  - Verticals without data (VB, BOps, Venue Ops, Merch) show "Coming Soon" with dashed borders
+  - Season pacing only accounts for verticals with actual data (Sponsorship + Ticketing + GameDay = €5.0M target)
   - Variable vs Absolute pacing logic: Ticketing/GameDay use games-based pacing; others use percentage-based
   - Sponsorship uses PRORATED pacing: signed contracts represent full-year value, recognized YTD = signed × seasonProgress
   - Comprehensive tooltips on all pacing bars showing YTD, target, achievement, pace, and projections
