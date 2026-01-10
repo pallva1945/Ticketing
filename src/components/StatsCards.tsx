@@ -232,6 +232,16 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
     const growthRevPas = 1 + (kpiConfig.revPasGrowth / 100);
     const growthOcc = 1 + (kpiConfig.occupancyGrowth / 100);
 
+    // Calculate total view baseline for attendance (without gameday filter)
+    const totalViewBaselineGames = fullDataset.filter(d => 
+      baselineSeasons.includes(d.season) && 
+      (filters.league.includes('All') || filters.league.includes(d.league)) &&
+      (filters.opponent.includes('All') || filters.opponent.includes(d.opponent)) &&
+      (filters.tier.includes('All') || filters.tier.includes(String(d.tier)))
+    );
+    const totalViewBaselineAtt = totalViewBaselineGames.reduce((acc, g) => acc + g.attendance, 0);
+    const totalViewBaselineAvgAtt = totalViewBaselineGames.length > 0 ? totalViewBaselineAtt / totalViewBaselineGames.length : 0;
+
     return {
         // Apply specific growth factors
         arpg: baselineKPIs.arpg * growthArpg,
@@ -244,8 +254,8 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
         // Special Rules
         giveawayRate: kpiConfig.giveawayTarget, // Fixed target remains
         
-        // Avg Attendance from baseline
-        avgAttendance: baselineKPIs.totalAttendance / baselineKPIs.gameCount,
+        // Avg Attendance from baseline (total view, not gameday filtered)
+        avgAttendance: totalViewBaselineAvgAtt,
     };
 
   }, [fullDataset, filters, kpiConfig, viewMode]);
