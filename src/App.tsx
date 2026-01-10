@@ -563,7 +563,7 @@ const ActionCenter = ({ data }: { data: GameData[] }) => {
 const App: React.FC = () => {
   // Navigation State - Defaults to HOME
   const [activeModule, setActiveModule] = useState<RevenueModule>('home');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'simulator' | 'chat'>('dashboard');
+      const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'simulator' | 'chat' | 'crm'>('dashboard');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   

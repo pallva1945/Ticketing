@@ -23,7 +23,7 @@ export enum SalesChannel {
   GIVEAWAY = 'Giveaway (Dynamic)'
 }
 
-export type RevenueModule = 'home' | 'ticketing' | 'gameday' | 'sponsorship' | 'merchandising' | 'venue_ops' | 'bops' | 'sg';
+export type RevenueModule = 'home' | 'ticketing' | 'gameday' | 'sponsorship' | 'merchandising' | 'venue_ops' | 'bops' | 'sg' | 'crm';
 
 export interface SalesDataPoint {
   zone: TicketZone;
