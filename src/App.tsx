@@ -562,7 +562,8 @@ const RevenueHome = ({
                     <div className="grid grid-cols-3 gap-6">
                         {yoyStats.chartData.map((vertical) => {
                             const maxVal = Math.max(vertical['23-24'], vertical['24-25'], vertical['25-26']);
-                            const getHeight = (val: number) => maxVal > 0 ? (val / maxVal) * 100 : 0;
+                            const MAX_BAR_HEIGHT = 100;
+                            const getHeight = (val: number) => maxVal > 0 ? (val / maxVal) * MAX_BAR_HEIGHT : 0;
                             const yoy = vertical['24-25'] > 0 
                                 ? ((vertical['25-26'] - vertical['24-25']) / vertical['24-25']) * 100 
                                 : 0;
@@ -578,25 +579,25 @@ const RevenueHome = ({
                                             {yoy >= 0 ? '+' : ''}{yoy.toFixed(0)}%
                                         </span>
                                     </div>
-                                    <div className="flex items-end justify-center gap-3 h-32">
-                                        <div className="flex flex-col items-center">
+                                    <div className="flex items-end justify-center gap-3" style={{ height: '120px' }}>
+                                        <div className="flex flex-col items-center justify-end h-full">
                                             <div 
                                                 className="w-10 bg-slate-300 rounded-t transition-all duration-500" 
-                                                style={{ height: `${getHeight(vertical['23-24'])}%`, minHeight: vertical['23-24'] > 0 ? '8px' : '0' }}
+                                                style={{ height: `${Math.max(getHeight(vertical['23-24']), 8)}px` }}
                                             />
                                             <span className="text-[9px] text-gray-400 mt-1">23-24</span>
                                         </div>
-                                        <div className="flex flex-col items-center">
+                                        <div className="flex flex-col items-center justify-end h-full">
                                             <div 
                                                 className="w-10 bg-slate-500 rounded-t transition-all duration-500" 
-                                                style={{ height: `${getHeight(vertical['24-25'])}%`, minHeight: vertical['24-25'] > 0 ? '8px' : '0' }}
+                                                style={{ height: `${Math.max(getHeight(vertical['24-25']), 8)}px` }}
                                             />
                                             <span className="text-[9px] text-gray-400 mt-1">24-25</span>
                                         </div>
-                                        <div className="flex flex-col items-center">
+                                        <div className="flex flex-col items-center justify-end h-full">
                                             <div 
-                                                className={`w-10 rounded-t transition-all duration-500 ${vertical.isProjected ? 'bg-red-500 bg-stripes' : 'bg-red-600'}`}
-                                                style={{ height: `${getHeight(vertical['25-26'])}%`, minHeight: vertical['25-26'] > 0 ? '8px' : '0' }}
+                                                className={`w-10 rounded-t transition-all duration-500 ${vertical.isProjected ? 'bg-red-400' : 'bg-red-600'}`}
+                                                style={{ height: `${Math.max(getHeight(vertical['25-26']), 8)}px` }}
                                             />
                                             <span className="text-[9px] text-gray-500 font-medium mt-1">25-26</span>
                                         </div>
