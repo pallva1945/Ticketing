@@ -708,12 +708,12 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             Top 10 Sponsors
             <span className="text-xs font-normal text-gray-400">Click bar to filter</span>
           </h3>
-          <div className="h-80 -ml-4">
+          <div className="h-80 -ml-8">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart 
                 data={topSponsors} 
                 layout="vertical" 
-                margin={{ left: -10, right: 20 }}
+                margin={{ left: -20, right: 20 }}
                 onClick={(e) => {
                   if (e && e.activePayload && e.activePayload[0]) {
                     const company = e.activePayload[0].payload.company;
