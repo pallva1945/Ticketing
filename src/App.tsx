@@ -76,56 +76,61 @@ const RevenueHome = ({
     const gamesCount = Math.max(gamesPlayed, 1);
     const seasonProgressPct = (gamesPlayed / TOTAL_GAMES_SEASON) * 100;
 
+    // Season progress fraction (0 to 1) for prorating
+    const seasonProgressFraction = gamesPlayed / TOTAL_GAMES_SEASON;
+
     // 7 Revenue Verticals with actual data for Ticketing, GameDay, Sponsorship
+    // isProrated: Sponsorship contracts are signed for the full year but recognized over time
     const verticalPerformance = [
       { 
           id: 'sponsorship', 
           name: 'Sponsorship', 
-          current: sponsorshipRevenue, 
+          signedValue: sponsorshipRevenue, // Full year contracts signed
+          current: sponsorshipRevenue * seasonProgressFraction, // Recognized YTD (prorated)
           target: 2100000,
-          icon: Flag, colorClass: 'text-blue-600', bgClass: 'bg-blue-50', barClass: 'bg-blue-500', isVariable: false 
+          icon: Flag, colorClass: 'text-blue-600', bgClass: 'bg-blue-50', barClass: 'bg-blue-500', isVariable: false, isProrated: true 
       },
       { 
           id: 'ticketing', 
           name: 'Ticketing', 
           current: ticketingRevenue, 
           target: 1650000, 
-          icon: Ticket, colorClass: 'text-red-600', bgClass: 'bg-red-50', barClass: 'bg-red-500', isVariable: true 
+          icon: Ticket, colorClass: 'text-red-600', bgClass: 'bg-red-50', barClass: 'bg-red-500', isVariable: true, isProrated: false 
       },
       { 
           id: 'gameday', 
           name: 'GameDay', 
           current: gameDayRevenue, 
           target: 1250000, 
-          icon: Calendar, colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50', barClass: 'bg-indigo-500', isVariable: true 
+          icon: Calendar, colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50', barClass: 'bg-indigo-500', isVariable: true, isProrated: false 
       },
       { 
           id: 'sg', 
           name: 'Varese Basketball', 
           current: 650000, 
           target: 930000, 
-          icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false 
+          icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false, isProrated: false 
       },
       { 
           id: 'bops', 
           name: 'BOps', 
           current: 320000, 
           target: 525000, 
-          icon: Activity, colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', barClass: 'bg-emerald-500', isVariable: false 
+          icon: Activity, colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', barClass: 'bg-emerald-500', isVariable: false, isProrated: false 
       },
       { 
           id: 'venue_ops', 
           name: 'Venue Ops', 
           current: 145000, 
           target: 258000, 
-          icon: Landmark, colorClass: 'text-slate-600', bgClass: 'bg-slate-50', barClass: 'bg-slate-500', isVariable: false 
+          icon: Landmark, colorClass: 'text-slate-600', bgClass: 'bg-slate-50', barClass: 'bg-slate-500', isVariable: false, isProrated: false 
       },
       { 
           id: 'merchandising', 
           name: 'Merchandising', 
           current: 75000, 
           target: 131000, 
-          icon: ShoppingBag, colorClass: 'text-orange-600', bgClass: 'bg-orange-50', barClass: 'bg-orange-500', isVariable: false 
+          icon: ShoppingBag, colorClass: 'text-orange-600', bgClass: 'bg-orange-50', barClass: 'bg-orange-500', isVariable: false, isProrated: false 
       },
     ];
 
@@ -139,14 +144,21 @@ const RevenueHome = ({
             expectedAtThisPoint = (v.target / TOTAL_GAMES_SEASON) * gamesPlayed;
             pacePct = expectedAtThisPoint > 0 ? ((v.current / expectedAtThisPoint) - 1) * 100 : 0;
         } else {
-            // Absolute: Pace based on % of target achieved
-            expectedAtThisPoint = v.target * (seasonProgressPct / 100);
-            pacePct = v.target > 0 ? ((v.current / v.target) * 100) - seasonProgressPct : 0;
+            // Absolute/Prorated: Pace based on % of target achieved vs time
+            expectedAtThisPoint = v.target * seasonProgressFraction;
+            pacePct = expectedAtThisPoint > 0 ? ((v.current / expectedAtThisPoint) - 1) * 100 : 0;
         }
         
-        const projectedFinish = v.isVariable 
-            ? (v.current / gamesCount) * TOTAL_GAMES_SEASON
-            : v.current; // For absolute, current is what we have
+        // Projected finish calculation
+        let projectedFinish: number;
+        if (v.isVariable) {
+            projectedFinish = (v.current / gamesCount) * TOTAL_GAMES_SEASON;
+        } else if (v.isProrated && 'signedValue' in v) {
+            // For prorated: full signed value is the projected finish
+            projectedFinish = v.signedValue as number;
+        } else {
+            projectedFinish = v.current; // For absolute, current is what we have
+        }
         
         return { ...v, pacePct, expectedAtThisPoint, projectedFinish };
     });
@@ -282,13 +294,19 @@ const RevenueHome = ({
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 bg-slate-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 min-w-[180px] pointer-events-none">
                                     <div className="p-3 border-b border-slate-700 font-bold bg-slate-950 rounded-t-lg flex justify-between items-center">
                                         <span>{v.name}</span>
-                                        <span className={`text-xs px-1.5 py-0.5 rounded ${v.isVariable ? 'bg-purple-600' : 'bg-blue-600'}`}>
-                                            {v.isVariable ? 'Variable' : 'Fixed'}
+                                        <span className={`text-xs px-1.5 py-0.5 rounded ${v.isVariable ? 'bg-purple-600' : v.isProrated ? 'bg-cyan-600' : 'bg-blue-600'}`}>
+                                            {v.isVariable ? 'Variable' : v.isProrated ? 'Prorated' : 'Fixed'}
                                         </span>
                                     </div>
                                     <div className="p-3 space-y-2">
+                                        {v.isProrated && 'signedValue' in v && (
+                                            <div className="flex justify-between">
+                                                <span className="text-slate-400">Signed (Full Year):</span>
+                                                <span className="font-mono text-cyan-400">{formatCompact(v.signedValue as number)}</span>
+                                            </div>
+                                        )}
                                         <div className="flex justify-between">
-                                            <span className="text-slate-400">YTD Collected:</span>
+                                            <span className="text-slate-400">{v.isProrated ? 'Recognized YTD:' : 'YTD Collected:'}</span>
                                             <span className="font-mono font-bold">{formatCompact(v.current)}</span>
                                         </div>
                                         <div className="flex justify-between">
@@ -305,9 +323,9 @@ const RevenueHome = ({
                                                 {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(1)}%
                                             </span>
                                         </div>
-                                        {v.isVariable && (
+                                        {(v.isVariable || v.isProrated) && (
                                             <div className="flex justify-between">
-                                                <span className="text-slate-400">Projected:</span>
+                                                <span className="text-slate-400">{v.isProrated ? 'Full Year:' : 'Projected:'}</span>
                                                 <span className="font-mono text-purple-400">{formatCompact(v.projectedFinish)}</span>
                                             </div>
                                         )}
@@ -378,13 +396,17 @@ const RevenueHome = ({
                                 {/* Hover Tooltip */}
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white text-[10px] rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 min-w-[140px] pointer-events-none p-2">
                                     <p className="font-bold mb-1">{v.name}</p>
-                                    <p>Collected: {formatCompact(v.current)}</p>
+                                    {v.isProrated && 'signedValue' in v && (
+                                        <p className="text-cyan-400">Signed: {formatCompact(v.signedValue as number)}</p>
+                                    )}
+                                    <p>{v.isProrated ? 'Recognized:' : 'Collected:'} {formatCompact(v.current)}</p>
                                     <p>Target: {formatCompact(v.target)}</p>
                                     <p>Progress: {((v.current / v.target) * 100).toFixed(1)}%</p>
                                     <p className={v.pacePct >= 0 ? 'text-green-400' : 'text-red-400'}>
                                         Pace: {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(1)}%
                                     </p>
                                     {v.isVariable && <p className="text-purple-400">Proj: {formatCompact(v.projectedFinish)}</p>}
+                                    {v.isProrated && 'signedValue' in v && <p className="text-purple-400">Full Year: {formatCompact(v.signedValue as number)}</p>}
                                     <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-900"></div>
                                 </div>
                             </div>

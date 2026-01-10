@@ -39,7 +39,9 @@ src/
   - 7 revenue vertical score cards (Sponsorship, Ticketing, GameDay, VB, BOps, Venue Ops, Merchandising)
   - Actual data integration for Ticketing, GameDay, and Sponsorship (Sponsor Rec + CSR)
   - Variable vs Absolute pacing logic: Ticketing/GameDay use games-based pacing; others use percentage-based
+  - Sponsorship uses PRORATED pacing: signed contracts represent full-year value, recognized YTD = signed × seasonProgress
   - Comprehensive tooltips on all pacing bars showing YTD, target, achievement, pace, and projections
+  - Sponsorship tooltips show both "Signed (Full Year)" and "Recognized YTD" values
   - 4 strategic signal cards: Projected Finish, Variable Run Rate, Fixed Revenue Secured, Attention Required
   - Stacked progress bar showing contribution by vertical with hover tooltips
 
