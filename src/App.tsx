@@ -53,7 +53,8 @@ const PlaceholderView = ({ moduleName, icon: Icon }: { moduleName: string, icon:
 
 // --- REVENUE CENTER HOME ---
 const RevenueHome = ({ 
-    ticketingRevenue, 
+    ticketingRevenue,
+    gameDayTicketing,
     gameDayRevenue, 
     sponsorshipRevenue,
     onAiClick,
@@ -62,7 +63,8 @@ const RevenueHome = ({
     onSeasonChange
 }: { 
     modules: any[], 
-    ticketingRevenue: number, 
+    ticketingRevenue: number,
+    gameDayTicketing: number,
     gameDayRevenue: number, 
     sponsorshipRevenue: number,
     onNavigate: (id: RevenueModule) => void,
@@ -193,8 +195,10 @@ const RevenueHome = ({
     const isAhead = pacingDelta >= 0;
     const projectionDiff = totalRevenueProjected - totalTarget;
 
-    const variableYTD = verticalsWithData.filter(v => v.isVariable).reduce((acc, v) => acc + v.current, 0);
-    const fixedYTD = verticalsWithData.filter(v => !v.isVariable).reduce((acc, v) => acc + v.current, 0);
+    const fixedTicketing = ticketingRevenue - gameDayTicketing;
+    const variableYTD = gameDayTicketing + gameDayRevenue;
+    const sponsorshipProrated = verticalsWithData.find(v => v.id === 'sponsorship')?.current || 0;
+    const fixedYTD = sponsorshipProrated + fixedTicketing;
     const currentVariableRunRate = variableYTD / gamesCount;
 
     // Helper for formatting
@@ -476,7 +480,7 @@ const RevenueHome = ({
                             <p className="text-2xl font-bold text-gray-900">{formatCompact(currentVariableRunRate)}</p>
                             <span className="text-xs text-gray-400">/ game</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">Ticketing + GameDay combined</p>
+                        <p className="text-xs text-gray-500 mt-1">GameDay Ticketing + GameDay Rev</p>
                         <div className="mt-3 h-1.5 bg-purple-100 rounded-full overflow-hidden">
                             <div 
                                 className="h-full bg-purple-500" 
@@ -492,7 +496,7 @@ const RevenueHome = ({
                             <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Fixed Revenue Secured</span>
                         </div>
                         <p className="text-2xl font-bold text-gray-900">{formatCompact(fixedYTD)}</p>
-                        <p className="text-xs text-gray-500 mt-1">Sponsorship + VB + Others</p>
+                        <p className="text-xs text-gray-500 mt-1">Sponsorship + Fixed Ticketing</p>
                         <div className="mt-3 flex items-center gap-2">
                             <div className="flex-1 h-1.5 bg-blue-100 rounded-full overflow-hidden">
                                 <div 
@@ -1150,6 +1154,10 @@ const App: React.FC = () => {
     });
   }, [filteredGames, selectedZones, ignoreOspiti]);
 
+  const gameDayTicketingRevenue = useMemo(() => {
+      return efficiencyData.reduce((sum, game) => sum + game.totalRevenue, 0);
+  }, [efficiencyData]);
+
   const stats: DashboardStats = useMemo(() => {
     const totalRevenue = viewData.reduce((sum, game) => sum + game.totalRevenue, 0);
     const totalAttendance = viewData.reduce((sum, game) => sum + game.attendance, 0);
@@ -1656,7 +1664,8 @@ const App: React.FC = () => {
           {activeModule === 'home' ? (
               <RevenueHome 
                 modules={MODULES} 
-                ticketingRevenue={totalStats.totalRevenue} 
+                ticketingRevenue={totalStats.totalRevenue}
+                gameDayTicketing={gameDayTicketingRevenue}
                 gameDayRevenue={gameDayRevenueNet} 
                 sponsorshipRevenue={sponsorshipStats.pureSponsorship}
                 onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
