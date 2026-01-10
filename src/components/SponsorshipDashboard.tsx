@@ -574,27 +574,27 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               <p className="text-[10px] text-red-600 font-medium">Poor</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
+          <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100 items-center">
             <div>
               <p className="text-[10px] font-bold text-emerald-600 uppercase mb-2">Best Deals</p>
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {topAndWorstDeals.top3.map((s, i) => (
-                  <div key={s.id} className="flex items-center gap-2 bg-emerald-50 rounded-lg px-2 py-1.5">
-                    <span className="w-5 h-5 bg-emerald-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">{i + 1}</span>
-                    <span className="flex-1 text-xs font-medium text-gray-800 truncate">{s.company}</span>
-                    <span className="text-xs font-bold text-emerald-700">+{formatCompactCurrency(s.delta)}</span>
+                  <div key={s.id} className="flex items-center gap-2 bg-emerald-50 rounded px-2 py-1">
+                    <span className="w-4 h-4 bg-emerald-600 text-white rounded-full flex items-center justify-center text-[9px] font-bold shrink-0">{i + 1}</span>
+                    <span className="flex-1 text-[11px] font-semibold text-gray-800 truncate">{s.company}</span>
+                    <span className="text-[11px] font-bold text-emerald-700 shrink-0">+{formatCompactCurrency(s.delta)}</span>
                   </div>
                 ))}
               </div>
             </div>
             <div>
               <p className="text-[10px] font-bold text-red-600 uppercase mb-2">Worst Deals</p>
-              <div className="space-y-1.5">
+              <div className="space-y-1">
                 {topAndWorstDeals.worst3.map((s, i) => (
-                  <div key={s.id} className="flex items-center gap-2 bg-red-50 rounded-lg px-2 py-1.5">
-                    <span className="w-5 h-5 bg-red-600 text-white rounded-full flex items-center justify-center text-[10px] font-bold">{i + 1}</span>
-                    <span className="flex-1 text-xs font-medium text-gray-800 truncate">{s.company}</span>
-                    <span className="text-xs font-bold text-red-700">{formatCompactCurrency(s.delta)}</span>
+                  <div key={s.id} className="flex items-center gap-2 bg-red-50 rounded px-2 py-1">
+                    <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[9px] font-bold shrink-0">{i + 1}</span>
+                    <span className="flex-1 text-[11px] font-semibold text-gray-800 truncate">{s.company}</span>
+                    <span className="text-[11px] font-bold text-red-700 shrink-0">{formatCompactCurrency(s.delta)}</span>
                   </div>
                 ))}
               </div>
@@ -727,9 +727,9 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 <YAxis 
                   type="category" 
                   dataKey="company" 
-                  width={120} 
-                  tick={{ fontSize: 10 }}
-                  tickFormatter={(v) => v.length > 18 ? v.substring(0, 18) + '...' : v}
+                  width={140} 
+                  tick={{ fontSize: 11, fontWeight: 600 }}
+                  tickFormatter={(v) => v.length > 20 ? v.substring(0, 20) + '...' : v}
                 />
                 <Tooltip 
                   formatter={(value: number) => [formatCurrency(value), 'Value']}
