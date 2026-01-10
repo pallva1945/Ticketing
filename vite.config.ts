@@ -7,6 +7,9 @@ export default defineConfig({
   build: {
     outDir: 'dist',
   },
+  define: {
+    'process.env.GEMINI_API_KEY': JSON.stringify(process.env.GEMINI_API_KEY),
+  },
   resolve: {
     alias: {
       src: "/src",
