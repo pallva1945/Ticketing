@@ -529,13 +529,13 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         </div>
 
         {/* Deal Quality Overview */}
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm flex flex-col justify-center">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
             <TrendingUp size={20} className="text-emerald-500" />
             Deal Quality Overview
           </h3>
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
+          <div className="mb-3">
+            <div className="flex items-center justify-between mb-1">
               <span className="text-sm text-gray-500">Portfolio Net Delta</span>
               <span className={`text-xl font-bold ${dealQualityStats.totalDelta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                 {dealQualityStats.totalDelta >= 0 ? '+' : ''}{formatCompactCurrency(dealQualityStats.totalDelta)}
@@ -543,16 +543,16 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             </div>
             <p className="text-xs text-gray-400">Revenue received minus value given (LED, jersey, tickets, etc.)</p>
           </div>
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-3">
             <span className="text-sm text-gray-500">Avg Score:</span>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className={`w-5 h-5 rounded ${i <= Math.round(dealQualityStats.avgQualityScore) ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+                <div key={i} className={`w-4 h-4 rounded ${i <= Math.round(dealQualityStats.avgQualityScore) ? 'bg-emerald-500' : 'bg-gray-200'}`} />
               ))}
             </div>
             <span className="text-sm font-bold text-gray-700">{dealQualityStats.avgQualityScore.toFixed(1)}/5</span>
           </div>
-          <div className="grid grid-cols-5 gap-2 text-center mb-4">
+          <div className="grid grid-cols-5 gap-2 text-center mb-3">
             <div className="bg-emerald-50 rounded-lg p-2">
               <p className="text-lg font-bold text-emerald-700">{dealQualityStats.excellent}</p>
               <p className="text-[10px] text-emerald-600 font-medium">Excellent</p>
@@ -727,9 +727,9 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 <YAxis 
                   type="category" 
                   dataKey="company" 
-                  width={140} 
-                  tick={{ fontSize: 11, fontWeight: 600 }}
-                  tickFormatter={(v) => v.length > 20 ? v.substring(0, 20) + '...' : v}
+                  width={130} 
+                  tick={{ fontSize: 10, fontWeight: 600 }}
+                  tickFormatter={(v) => v.length > 16 ? v.substring(0, 16) + '..' : v}
                 />
                 <Tooltip 
                   formatter={(value: number) => [formatCurrency(value), 'Value']}
