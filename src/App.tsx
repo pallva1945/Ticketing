@@ -662,59 +662,6 @@ service cloud.firestore {
   </div>
 );
 
-// --- NEW COMPONENT: Action Center (Smart Alerts) ---
-const ActionCenter = ({ data }: { data: GameData[] }) => {
-    // Logic to find critical alerts
-    const alerts = useMemo(() => {
-        const list: { type: 'critical'|'warning', msg: string, action: string }[] = [];
-        
-        // 1. Check last game occupancy
-        if (data.length > 0) {
-            const lastGame = data[data.length - 1]; // Assuming sorted elsewhere, or just take last in array
-            const occ = lastGame.capacity > 0 ? (lastGame.attendance / lastGame.capacity) * 100 : 0;
-            
-            if (occ < 60) {
-                list.push({ type: 'critical', msg: `Low occupancy (${occ.toFixed(0)}%) in last match vs ${lastGame.opponent}.`, action: 'Launch Promo' });
-            }
-        }
-
-        // 2. Check Overall Yield Trend
-        // Simple logic: if avg yield < 10 euro
-        const avgYield = data.reduce((acc, g) => acc + (g.attendance>0 ? g.totalRevenue/g.attendance : 0), 0) / (data.length||1);
-        if (avgYield < 12) {
-             list.push({ type: 'warning', msg: `Average Yield is €${avgYield.toFixed(1)}, below target floor of €12.0.`, action: 'Review Pricing' });
-        }
-
-        return list;
-    }, [data]);
-
-    if (alerts.length === 0) return null;
-
-    return (
-        <div className="mb-6 bg-white border-l-4 border-red-500 rounded-r-xl shadow-sm p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in slide-in-from-top-2">
-            <div className="flex items-start gap-3">
-                <div className="p-2 bg-red-100 rounded-full text-red-600">
-                    <Bell size={20} />
-                </div>
-                <div>
-                    <h3 className="font-bold text-gray-900 text-sm">Action Required</h3>
-                    <div className="flex flex-col gap-1 mt-1">
-                        {alerts.map((alert, idx) => (
-                            <p key={idx} className="text-xs text-gray-600 flex items-center gap-2">
-                                <span className={`w-1.5 h-1.5 rounded-full ${alert.type==='critical' ? 'bg-red-500' : 'bg-orange-400'}`}></span>
-                                {alert.msg}
-                            </p>
-                        ))}
-                    </div>
-                </div>
-            </div>
-            <button className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-colors whitespace-nowrap">
-                Open Strategy Simulator
-            </button>
-        </div>
-    );
-};
-
 const App: React.FC = () => {
   // Navigation State - Defaults to HOME
   const [activeModule, setActiveModule] = useState<RevenueModule>('home');
@@ -1775,9 +1722,6 @@ const App: React.FC = () => {
 
                     {/* Filter Bar */}
                     <FilterBar />
-                    
-                    {/* Action Center - Smart Alerts */}
-                    <ActionCenter data={viewData} />
                     
                     {isLoadingData && data.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-96">

@@ -232,7 +232,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
   if (!currentKPIs) return null;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
       <MetricCard 
         label="Avg Rev/Game" 
         value={currentKPIs.arpg} 
@@ -277,6 +277,22 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
         inverse={true}
         comparisonLabel="vs Max Target"
       />
+      <div className="bg-white p-5 rounded-xl shadow-sm border-l-4 border-blue-600">
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Total Attendance</p>
+            <p className="text-xl font-bold text-gray-900 mt-1">
+              {currentKPIs.totalAttendance >= 1000 ? `${(currentKPIs.totalAttendance / 1000).toFixed(1)}k` : currentKPIs.totalAttendance.toLocaleString()}
+            </p>
+          </div>
+          <div className="p-2 rounded-full bg-blue-50 text-blue-600">
+            <Users size={18} />
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400">{currentKPIs.gameCount} games</span>
+        </div>
+      </div>
     </div>
   );
 };
