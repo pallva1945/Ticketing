@@ -127,6 +127,25 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
   
   // 1. Calculate Current KPIs (based on the filtered `data` passed in)
   const currentKPIs = useMemo(() => calculateKPIs(data), [data]);
+  
+  // Calculate Total View attendance (ignores gameday filter) for attendance card
+  const totalViewAttendance = useMemo(() => {
+    // Get current season games with all channels (not gameday filtered)
+    const currentSeasonGames = fullDataset.filter(d => 
+      (filters.season.includes('All') || filters.season.includes(d.season)) &&
+      (filters.league.includes('All') || filters.league.includes(d.league)) &&
+      (filters.opponent.includes('All') || filters.opponent.includes(d.opponent)) &&
+      (filters.tier.includes('All') || filters.tier.includes(String(d.tier)))
+    );
+    
+    if (currentSeasonGames.length === 0) return { avgAttendance: 0, gameCount: 0 };
+    
+    const totalAtt = currentSeasonGames.reduce((acc, g) => acc + g.attendance, 0);
+    return {
+      avgAttendance: totalAtt / currentSeasonGames.length,
+      gameCount: currentSeasonGames.length
+    };
+  }, [fullDataset, filters]);
 
   // 2. Calculate Comparison/Target KPIs based on KPI Config
   const targetKPIs = useMemo(() => {
@@ -285,7 +304,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
           <div>
             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Avg Attendance</p>
             <p className="text-xl font-bold text-gray-900 mt-1">
-              {(currentKPIs.totalAttendance / currentKPIs.gameCount).toLocaleString('it-IT', { maximumFractionDigits: 0 })}
+              {totalViewAttendance.avgAttendance.toLocaleString('it-IT', { maximumFractionDigits: 0 })}
             </p>
           </div>
           <div className="p-2 rounded-full bg-blue-50 text-blue-600">
@@ -296,10 +315,10 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
           {targetKPIs && targetKPIs.avgAttendance ? (
             <>
               <div className={`flex items-center text-xs font-semibold ${
-                (currentKPIs.totalAttendance / currentKPIs.gameCount) >= targetKPIs.avgAttendance ? 'text-green-600' : 'text-red-600'
+                totalViewAttendance.avgAttendance >= targetKPIs.avgAttendance ? 'text-green-600' : 'text-red-600'
               }`}>
-                {(currentKPIs.totalAttendance / currentKPIs.gameCount) >= targetKPIs.avgAttendance ? <TrendingUp size={12} className="mr-1" /> : <TrendingDown size={12} className="mr-1" />}
-                {Math.abs((((currentKPIs.totalAttendance / currentKPIs.gameCount) - targetKPIs.avgAttendance) / targetKPIs.avgAttendance) * 100).toFixed(1)}%
+                {totalViewAttendance.avgAttendance >= targetKPIs.avgAttendance ? <TrendingUp size={12} className="mr-1" /> : <TrendingDown size={12} className="mr-1" />}
+                {Math.abs(((totalViewAttendance.avgAttendance - targetKPIs.avgAttendance) / targetKPIs.avgAttendance) * 100).toFixed(1)}%
               </div>
               <span className="text-[10px] text-gray-400">vs KPIs</span>
             </>
