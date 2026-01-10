@@ -746,7 +746,7 @@ const App: React.FC = () => {
     }
 
     // Determine target based on active module
-    const targetDataset = activeModule === 'gameday' ? 'gameday' : 'ticketing';
+    const targetDataset = activeModule === 'gameday' ? 'gameday' : activeModule === 'sponsorship' ? 'sponsor' : 'ticketing';
 
     setIsUploading(true);
     const reader = new FileReader();
@@ -760,10 +760,17 @@ const App: React.FC = () => {
               const testData = processGameData(text);
               isValid = testData.length > 0;
               if (isValid) setData(testData);
-          } else {
+          } else if (targetDataset === 'gameday') {
               const testData = processGameDayData(text);
               isValid = testData.length > 0;
               if (isValid) setGameDayData(testData);
+          } else if (targetDataset === 'sponsor') {
+              const testData = processSponsorData(text);
+              isValid = testData.length > 0;
+              if (isValid) {
+                  setSponsorData(testData);
+                  setSponsorDataSource('cloud');
+              }
           }
 
           if (isValid) {
@@ -773,8 +780,12 @@ const App: React.FC = () => {
               const now = new Date().toISOString();
               
               // UPDATE STATE IMMEDIATELY
-              setLastUploadTimes(prev => ({...prev, [targetDataset]: now}));
-              setDataSources(prev => ({...prev, [targetDataset]: 'cloud'}));
+              if (targetDataset === 'sponsor') {
+                  setSponsorLastUpdated(now);
+              } else {
+                  setLastUploadTimes(prev => ({...prev, [targetDataset]: now}));
+                  setDataSources(prev => ({...prev, [targetDataset]: 'cloud'}));
+              }
               
               alert(`Success! ${targetDataset.toUpperCase()} data updated in cloud.`);
             } catch (dbError: any) {
@@ -1400,14 +1411,24 @@ const App: React.FC = () => {
                      <>
                         <div className="text-[10px] text-gray-500 mb-1 px-1 flex items-center gap-1">
                             Current Source: 
-                            <strong className={`flex items-center gap-1 ${dataSources[activeModule === 'gameday' ? 'gameday' : 'ticketing'] === 'cloud' ? 'text-green-600' : 'text-orange-600'}`}>
-                                {dataSources[activeModule === 'gameday' ? 'gameday' : 'ticketing'] === 'cloud' ? <Cloud size={10} /> : <Database size={10} />}
-                                {dataSources[activeModule === 'gameday' ? 'gameday' : 'ticketing'].toUpperCase()}
+                            <strong className={`flex items-center gap-1 ${
+                                activeModule === 'sponsorship' 
+                                    ? (sponsorDataSource === 'cloud' ? 'text-green-600' : 'text-orange-600')
+                                    : (dataSources[activeModule === 'gameday' ? 'gameday' : 'ticketing'] === 'cloud' ? 'text-green-600' : 'text-orange-600')
+                            }`}>
+                                {activeModule === 'sponsorship' 
+                                    ? (sponsorDataSource === 'cloud' ? <Cloud size={10} /> : <Database size={10} />)
+                                    : (dataSources[activeModule === 'gameday' ? 'gameday' : 'ticketing'] === 'cloud' ? <Cloud size={10} /> : <Database size={10} />)
+                                }
+                                {activeModule === 'sponsorship' 
+                                    ? sponsorDataSource.toUpperCase()
+                                    : dataSources[activeModule === 'gameday' ? 'gameday' : 'ticketing'].toUpperCase()
+                                }
                             </strong>
                         </div>
                         <button onClick={triggerFileUpload} disabled={isUploading} className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-gray-600 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors shadow-sm active:bg-gray-50 hover:shadow-md hover:text-gray-900">
                             {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} 
-                            Upload {activeModule === 'gameday' ? 'GameDay' : 'Ticketing'} CSV
+                            Upload {activeModule === 'gameday' ? 'GameDay' : activeModule === 'sponsorship' ? 'Sponsor' : 'Ticketing'} CSV
                         </button>
                      </>
                  ) : (

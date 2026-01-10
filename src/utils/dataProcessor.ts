@@ -34,15 +34,17 @@ const parseInteger = (val: string | undefined): number => {
 
 const parseCurrency = (val: string | undefined): number => {
   if (!val) return 0;
-  // Standardize format: "€ 1.234,56" -> 1234.56
-  // Remove € and whitespace
+  // Handle format where commas are thousand separators
+  // e.g., "300,000" = 300000, "€ 1,234.56" = 1234.56
   let clean = val.replace(/[€\s]/g, '');
-  // Remove thousands separator (dots)
-  clean = clean.replace(/\./g, '');
-  // Replace decimal separator (comma) with dot
-  clean = clean.replace(',', '.');
+  // Check for negative
+  const isNegative = clean.includes('-');
+  clean = clean.replace(/-/g, '');
+  // Remove commas (thousand separators)
+  clean = clean.replace(/,/g, '');
+  // Period remains as decimal separator
   const num = parseFloat(clean);
-  return isNaN(num) ? 0 : num;
+  return isNaN(num) ? 0 : (isNegative ? -num : num);
 };
 
 // --- SEASONAL CAPACITY CONFIGURATIONS ---
