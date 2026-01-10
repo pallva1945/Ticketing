@@ -4,7 +4,7 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import { SponsorData } from '../types';
-import { Upload, Cloud, Database, Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet } from 'lucide-react';
 
 interface SponsorshipDashboardProps {
   data: SponsorData[];
@@ -62,13 +62,13 @@ const formatCompactCurrency = (value: number) => {
 
 export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({ 
   data, 
-  onUploadCsv,
-  dataSource,
-  lastUpdated
+  onUploadCsv
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedSeason, setSelectedSeason] = useState<string>('24/25');
+  const [selectedSeason, setSelectedSeason] = useState<string>('25/26');
   const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
+  const [excludeCorpTix, setExcludeCorpTix] = useState(true);
+  const [excludeGameDay, setExcludeGameDay] = useState(true);
 
   const seasons = useMemo(() => {
     const s = Array.from(new Set(data.map(d => d.season))).filter(Boolean).sort().reverse();
@@ -94,10 +94,24 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     
     const avgDealSize = uniqueCompanies > 0 ? totalCommercial / uniqueCompanies : 0;
     
+    // Adjusted values based on toggles
+    const adjustedCommercial = totalCommercial 
+      - (excludeCorpTix ? totalCorpTix : 0) 
+      - (excludeGameDay ? totalGameday : 0);
+    const adjustedCash = totalCash 
+      - (excludeCorpTix ? filteredData.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.corpTixReconciliation, 0) : 0)
+      - (excludeGameDay ? filteredData.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.gamedayReconciliation, 0) : 0);
+    const adjustedCM = totalCM 
+      - (excludeCorpTix ? filteredData.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.corpTixReconciliation, 0) : 0)
+      - (excludeGameDay ? filteredData.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.gamedayReconciliation, 0) : 0);
+    
     return {
       totalCommercial,
       totalCash,
       totalCM,
+      adjustedCommercial,
+      adjustedCash,
+      adjustedCM,
       totalSponsors,
       uniqueCompanies,
       totalGameday,
@@ -108,7 +122,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       avgDealSize,
       cashRatio: totalCommercial > 0 ? (totalCash / totalCommercial) * 100 : 0
     };
-  }, [filteredData]);
+  }, [filteredData, excludeCorpTix, excludeGameDay]);
 
   const topSponsors = useMemo(() => {
     return [...filteredData]
@@ -137,14 +151,15 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   }, [stats]);
 
   const reconciliationData = useMemo(() => {
-    return [
+    const items = [
       { name: 'Sponsorship', value: stats.totalSponsorRec, fill: COLORS.primary },
-      { name: 'Corp Tickets', value: stats.totalCorpTix, fill: COLORS.secondary },
-      { name: 'Game Day', value: stats.totalGameday, fill: COLORS.tertiary },
       { name: 'VB (Youth)', value: stats.totalVB, fill: COLORS.quaternary },
       { name: 'CSR', value: stats.totalCSR, fill: COLORS.gray }
-    ].filter(d => d.value > 0);
-  }, [stats]);
+    ];
+    if (!excludeCorpTix) items.push({ name: 'Corp Tickets', value: stats.totalCorpTix, fill: COLORS.secondary });
+    if (!excludeGameDay) items.push({ name: 'Game Day', value: stats.totalGameday, fill: COLORS.tertiary });
+    return items.filter(d => d.value > 0);
+  }, [stats, excludeCorpTix, excludeGameDay]);
 
   const monthlyData = useMemo(() => {
     const months = ['july', 'august', 'september', 'october', 'november', 'december', 
@@ -227,39 +242,32 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               </div>
             )}
           </div>
-          
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm"
-          >
-            <Upload size={16} />
-            <span className="text-sm font-medium">Upload Sponsor CSV</span>
-          </button>
         </div>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              {dataSource === 'cloud' ? (
-                <Cloud size={16} className="text-green-600" />
-              ) : (
-                <Database size={16} className="text-blue-600" />
-              )}
-              <span className="text-sm text-gray-600">
-                Current Source: <strong className="text-gray-900">{dataSource === 'cloud' ? 'CLOUD' : 'LOCAL'}</strong>
-              </span>
-            </div>
-            {lastUpdated && (
-              <span className="text-xs text-gray-400">
-                Last updated: {lastUpdated}
-              </span>
-            )}
-          </div>
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2 text-xs text-gray-500">
             <FileSpreadsheet size={14} />
             <span>{stats.totalSponsors} contracts | {stats.uniqueCompanies} companies</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setExcludeCorpTix(!excludeCorpTix)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                excludeCorpTix ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white text-gray-600 border-gray-200'
+              }`}
+            >
+              {excludeCorpTix ? '✓' : '○'} Exclude Corp Tickets
+            </button>
+            <button
+              onClick={() => setExcludeGameDay(!excludeGameDay)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                excludeGameDay ? 'bg-green-50 text-green-700 border-green-200' : 'bg-white text-gray-600 border-gray-200'
+              }`}
+            >
+              {excludeGameDay ? '✓' : '○'} Exclude GameDay
+            </button>
           </div>
         </div>
       </div>
@@ -274,8 +282,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               <ArrowUpRight size={12} /> Active
             </span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCompactCurrency(stats.totalCommercial)}</p>
-          <p className="text-xs text-gray-500 mt-1">Total Commercial Value</p>
+          <p className="text-2xl font-bold text-gray-900">{formatCompactCurrency(stats.adjustedCommercial)}</p>
+          <p className="text-xs text-gray-500 mt-1">Commercial Value {(excludeCorpTix || excludeGameDay) ? '(Adj.)' : ''}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
@@ -287,8 +295,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               {stats.cashRatio.toFixed(0)}% Cash
             </span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCompactCurrency(stats.totalCash)}</p>
-          <p className="text-xs text-gray-500 mt-1">Cash Contracts</p>
+          <p className="text-2xl font-bold text-gray-900">{formatCompactCurrency(stats.adjustedCash)}</p>
+          <p className="text-xs text-gray-500 mt-1">Cash {(excludeCorpTix || excludeGameDay) ? '(Adj.)' : ''}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
@@ -300,8 +308,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               Barter
             </span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCompactCurrency(stats.totalCM)}</p>
-          <p className="text-xs text-gray-500 mt-1">Cambio Merce (CM)</p>
+          <p className="text-2xl font-bold text-gray-900">{formatCompactCurrency(stats.adjustedCM)}</p>
+          <p className="text-xs text-gray-500 mt-1">Cambio Merce {(excludeCorpTix || excludeGameDay) ? '(Adj.)' : ''}</p>
         </div>
 
         <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
@@ -451,7 +459,6 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 <th className="text-left py-3 px-4 font-semibold text-gray-600">Type</th>
                 <th className="text-right py-3 px-4 font-semibold text-gray-600">Commercial Value</th>
                 <th className="text-right py-3 px-4 font-semibold text-gray-600">Net of Ticketing</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-600">Sponsor Rec.</th>
               </tr>
             </thead>
             <tbody>
@@ -490,11 +497,6 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                   </td>
                   <td className="py-3 px-4 text-right text-gray-600">
                     {formatCurrency(sponsor.netOfTicketing)}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <span className={sponsor.sponsorReconciliation >= 0 ? 'text-green-600' : 'text-red-600'}>
-                      {formatCurrency(sponsor.sponsorReconciliation)}
-                    </span>
                   </td>
                 </tr>
               ))}
