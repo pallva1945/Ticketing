@@ -583,39 +583,41 @@ const RevenueHome = ({
                                             {yoy >= 0 ? '+' : ''}{yoy.toFixed(0)}%
                                         </span>
                                     </div>
-                                    <div className="relative bg-gray-50 rounded-lg p-4" style={{ height: `${MAX_BAR_HEIGHT + 40}px` }}>
-                                        <div className="absolute inset-x-4 top-4 bottom-8 border-b border-gray-200">
+                                    <div className="relative bg-gray-50 rounded-lg p-4 pt-6" style={{ height: `${MAX_BAR_HEIGHT + 60}px` }}>
+                                        <div className="absolute inset-x-4 top-6 bottom-10 border-b border-gray-200">
                                             <div className="absolute w-full border-t border-dashed border-gray-200" style={{ top: '25%' }}></div>
                                             <div className="absolute w-full border-t border-dashed border-gray-200" style={{ top: '50%' }}></div>
                                             <div className="absolute w-full border-t border-dashed border-gray-200" style={{ top: '75%' }}></div>
                                         </div>
-                                        <div className="flex items-end justify-center gap-5 h-full pb-6 relative z-10">
-                                            <div className="flex flex-col items-center justify-end" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
+                                        <div className="flex items-end justify-center gap-5 relative z-10" style={{ height: `${MAX_BAR_HEIGHT}px`, marginTop: '8px' }}>
+                                            <div className="flex flex-col items-center justify-end h-full">
                                                 <div 
-                                                    className="w-14 bg-slate-300 rounded-t transition-all duration-500 cursor-pointer hover:bg-slate-400 shadow-sm" 
+                                                    className="w-12 bg-slate-300 rounded-t transition-all duration-500 cursor-pointer hover:bg-slate-400 shadow-sm" 
                                                     style={{ height: `${Math.max(getHeight(vertical['23-24']), 12)}px` }}
                                                     title={`23-24: ${formatCompact(vertical['23-24'])}`}
                                                 />
-                                                <span className="text-[11px] text-gray-500 mt-2 font-medium">23-24</span>
                                             </div>
-                                            <div className="flex flex-col items-center justify-end" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
+                                            <div className="flex flex-col items-center justify-end h-full">
                                                 <div 
-                                                    className="w-14 bg-slate-500 rounded-t transition-all duration-500 cursor-pointer hover:bg-slate-600 shadow-sm" 
+                                                    className="w-12 bg-slate-500 rounded-t transition-all duration-500 cursor-pointer hover:bg-slate-600 shadow-sm" 
                                                     style={{ height: `${Math.max(getHeight(vertical['24-25']), 12)}px` }}
                                                     title={`24-25: ${formatCompact(vertical['24-25'])}`}
                                                 />
-                                                <span className="text-[11px] text-gray-500 mt-2 font-medium">24-25</span>
                                             </div>
-                                            <div className="flex flex-col items-center justify-end" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
+                                            <div className="flex flex-col items-center justify-end h-full">
                                                 <div 
-                                                    className="w-14 bg-red-600 rounded-t transition-all duration-500 cursor-pointer hover:bg-red-700 shadow-sm"
+                                                    className="w-12 bg-red-600 rounded-t transition-all duration-500 cursor-pointer hover:bg-red-700 shadow-sm"
                                                     style={{ height: `${Math.max(getHeight(vertical['25-26']), 12)}px` }}
                                                     title={`25-26 (Proj): ${formatCompact(vertical['25-26'])}`}
                                                 />
-                                                <span className="text-[11px] text-gray-600 mt-2 font-semibold">25-26</span>
                                             </div>
                                         </div>
-                                        <svg className="absolute inset-x-4 top-4 pointer-events-none z-20" style={{ height: `${MAX_BAR_HEIGHT}px`, width: 'calc(100% - 32px)' }}>
+                                        <div className="flex justify-center gap-5 mt-2">
+                                            <span className="text-[11px] text-gray-500 font-medium w-12 text-center">23-24</span>
+                                            <span className="text-[11px] text-gray-500 font-medium w-12 text-center">24-25</span>
+                                            <span className="text-[11px] text-gray-600 font-semibold w-12 text-center">25-26</span>
+                                        </div>
+                                        <svg className="absolute inset-x-4 pointer-events-none z-20" style={{ top: '14px', height: `${MAX_BAR_HEIGHT}px`, width: 'calc(100% - 32px)' }}>
                                             <line 
                                                 x1="16%" y1={heights[0]} 
                                                 x2="50%" y2={heights[1]} 
@@ -1277,22 +1279,22 @@ const App: React.FC = () => {
       return { pureSponsorship, totalCommercial, sponsorCount: filteredSponsors.length };
   }, [sponsorData, selectedSeasons]);
 
-  // YoY Comparison Stats (3 Seasons with Projections)
+  // YoY Comparison Stats (3 Seasons with Projections) - LBA only (excludes FEC)
   const yoyComparisonStats = useMemo(() => {
       const TOTAL_GAMES = 15;
       const seasons = ['23-24', '24-25', '25-26'];
       
       const getSeasonData = (season: string) => {
-          // Ticketing
-          const ticketingData = data.filter(d => d.season === season);
+          // Ticketing - LBA only (exclude FEC)
+          const ticketingData = data.filter(d => d.season === season && d.league === 'LBA');
           const ticketingRev = ticketingData.reduce((sum, g) => sum + g.totalRevenue, 0);
           const ticketingGames = ticketingData.length;
           const avgAtt = ticketingData.length > 0 
               ? ticketingData.reduce((sum, g) => sum + g.attendance, 0) / ticketingData.length 
               : 0;
           
-          // GameDay
-          const gdData = gameDayData.filter(d => d.season === season);
+          // GameDay - LBA only (exclude FEC)
+          const gdData = gameDayData.filter(d => d.season === season && d.league === 'LBA');
           const gdRev = gdData.reduce((acc, g) => acc + (g.totalRevenue - g.tixRevenue), 0);
           const gdGames = gdData.length;
           
