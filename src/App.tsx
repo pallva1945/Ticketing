@@ -1507,6 +1507,7 @@ const App: React.FC = () => {
           ) : activeModule === 'ticketing' ? (
             <>
                 {/* EXISTING TICKETING LOGIC */}
+                {activeTab === 'crm' && <CRMView />}
                 {activeTab === 'dashboard' && (
                     <div className="pt-6">
                     {/* DIRECTOR'S NOTE */}
