@@ -320,7 +320,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
                 {totalViewAttendance.avgAttendance >= targetKPIs.avgAttendance ? <TrendingUp size={12} className="mr-1" /> : <TrendingDown size={12} className="mr-1" />}
                 {Math.abs(((totalViewAttendance.avgAttendance - targetKPIs.avgAttendance) / targetKPIs.avgAttendance) * 100).toFixed(1)}%
               </div>
-              <span className="text-[10px] text-gray-400">vs KPIs</span>
+              <span className="text-[10px] text-gray-400">vs prev season</span>
             </>
           ) : (
             <span className="text-xs text-gray-400">per game</span>
