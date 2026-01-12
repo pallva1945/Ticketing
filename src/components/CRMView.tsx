@@ -231,7 +231,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
       const ticketLower = (r.ticketType || '').toLowerCase();
       const isCorp = sellLower === 'corp' || ticketLower === 'corp';
       const isAbb = sellLower === 'abb' || ticketLower === 'abb';
-      return !isCorp && !isAbb;
+      const isGiveaway = ['protocol', 'giveaway', 'giveaways'].includes(sellLower) || ['protocol', 'giveaway', 'giveaways'].includes(ticketLower);
+      return !isCorp && !isAbb && !isGiveaway;
     });
 
     const allCustomers = Object.entries(
