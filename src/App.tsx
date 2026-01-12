@@ -1124,6 +1124,7 @@ const App: React.FC = () => {
       return;
     }
     
+    // First validate the file can be parsed
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
@@ -1131,23 +1132,29 @@ const App: React.FC = () => {
         const crmRecords = processCRMData(csvContent);
         if (crmRecords.length > 0) {
           try {
-            // Upload to cloud storage via dedicated CRM endpoint
+            // Upload to cloud storage using FormData for large files
+            const formData = new FormData();
+            formData.append('file', file);
+            
             const uploadResponse = await fetch('/api/crm/upload', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ content: csvContent })
+              body: formData  // No Content-Type header - browser sets it with boundary
             });
             
             if (!uploadResponse.ok) {
-              throw new Error('Failed to upload CRM data');
+              const errorData = await uploadResponse.json().catch(() => ({}));
+              throw new Error(errorData.error || 'Failed to upload CRM data');
             }
             
+            const result = await uploadResponse.json();
+            console.log('CRM upload result:', result);
+            
             setCrmData(crmRecords);
-            alert(`Success! ${crmRecords.length} CRM records saved to cloud.`);
+            alert(`Success! ${crmRecords.length} CRM records saved to cloud (${(result.size / 1024 / 1024).toFixed(1)}MB).`);
           } catch (uploadError: any) {
             console.error('Upload error:', uploadError);
             setCrmData(crmRecords);
-            alert(`Loaded ${crmRecords.length} CRM records locally. Cloud sync unavailable.`);
+            alert(`Loaded ${crmRecords.length} CRM records locally. Cloud sync failed: ${uploadError.message}`);
           }
         } else {
           alert("Error: No valid CRM records found in the CSV file.");

@@ -1,5 +1,11 @@
 import type { Express } from "express";
+import multer from "multer";
 import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
+
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+});
 
 /**
  * Register object storage routes for file uploads.
@@ -76,16 +82,19 @@ export function registerObjectStorageRoutes(app: Express): void {
     }
   });
 
-  // CRM-specific upload endpoint - saves to fixed path
-  app.post("/api/crm/upload", async (req, res) => {
+  // CRM-specific upload endpoint - saves to fixed path using multipart form data
+  app.post("/api/crm/upload", upload.single('file'), async (req, res) => {
     try {
-      const { content } = req.body;
-      console.log("[CRM Upload] Request received, content length:", content?.length || 0);
+      const file = req.file;
+      console.log("[CRM Upload] Request received, file size:", file?.size || 0);
       
-      if (!content) {
-        console.log("[CRM Upload] Error: Missing content");
-        return res.status(400).json({ error: "Missing content" });
+      if (!file || !file.buffer) {
+        console.log("[CRM Upload] Error: No file uploaded");
+        return res.status(400).json({ error: "No file uploaded" });
       }
+
+      const content = file.buffer.toString('utf-8');
+      console.log("[CRM Upload] Content length:", content.length);
 
       const privateDir = objectStorageService.getPrivateObjectDir();
       const fullPath = `${privateDir}/crm-data.csv`;
@@ -95,15 +104,15 @@ export function registerObjectStorageRoutes(app: Express): void {
       console.log("[CRM Upload] Bucket:", bucketName, "Object:", objectName);
       
       const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
+      const storageFile = bucket.file(objectName);
       
-      await file.save(content, {
+      await storageFile.save(content, {
         contentType: 'text/csv',
         metadata: { updatedAt: new Date().toISOString() }
       });
 
       console.log("[CRM Upload] Success! Saved", content.length, "bytes");
-      res.json({ success: true, path: '/api/crm/data' });
+      res.json({ success: true, path: '/api/crm/data', size: content.length });
     } catch (error) {
       console.error("[CRM Upload] Error:", error);
       res.status(500).json({ error: "Failed to save CRM data" });
