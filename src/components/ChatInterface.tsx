@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, Loader2, BrainCircuit } from 'lucide-react';
+import { Send, Sparkles, Loader2, Brain, Ticket } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { sendMessageToGemini } from '../services/geminiService';
-import { PV_LOGO_URL } from '../constants';
 
 interface ChatInterfaceProps {
   contextData: string;
@@ -11,36 +10,61 @@ interface ChatInterfaceProps {
 // Exported for use in App.tsx to maintain visual consistency
 export const AIAvatar: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' }) => {
   const sizeClasses = {
-    sm: 'w-8 h-8',
-    md: 'w-12 h-12',
-    lg: 'w-20 h-20'
+    sm: 'w-10 h-10',
+    md: 'w-14 h-14',
+    lg: 'w-24 h-24'
+  };
+  
+  const iconSizes = {
+    sm: 14,
+    md: 20,
+    lg: 32
+  };
+  
+  const ticketSizes = {
+    sm: 10,
+    md: 14,
+    lg: 22
   };
 
   return (
     <div className={`relative flex items-center justify-center ${sizeClasses[size]}`}>
-      {/* Outer spinning ring */}
-      <div className="absolute inset-0 border-2 border-dashed border-white/30 rounded-full animate-[spin_10s_linear_infinite]"></div>
+      {/* Outer glowing ring with gradient */}
+      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-red-500 via-purple-500 to-blue-500 animate-[spin_4s_linear_infinite] opacity-70 blur-[2px]"></div>
       
-      {/* Pulsing glow layer */}
-      <div className="absolute inset-1 bg-white/20 rounded-full animate-pulse"></div>
+      {/* Secondary spinning ring */}
+      <div className="absolute inset-0.5 border-2 border-dashed border-white/40 rounded-full animate-[spin_8s_linear_infinite_reverse]"></div>
       
-      {/* Inner Gradient Core */}
-      <div className="absolute inset-2 bg-gradient-to-br from-white to-gray-200 rounded-full shadow-lg flex items-center justify-center z-10 overflow-hidden border border-white/50">
-         <img 
-            src={PV_LOGO_URL} 
-            alt="AI Avatar" 
-            className="w-full h-full object-contain p-1 animate-[pulse_3s_infinite]" 
-         />
-         {/* Glossy shine effect */}
-         <div className="absolute top-0 left-0 w-full h-1/2 bg-gradient-to-b from-white/80 to-transparent opacity-50"></div>
+      {/* Dark inner background */}
+      <div className="absolute inset-1.5 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-full shadow-xl"></div>
+      
+      {/* Neural network pattern overlay */}
+      <div className="absolute inset-2 rounded-full overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(139,92,246,0.3)_0%,transparent_50%)]"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_70%,rgba(239,68,68,0.3)_0%,transparent_50%)]"></div>
       </div>
-
-      {/* Satellite particle */}
-      <div className="absolute -top-1 -right-1">
+      
+      {/* Brain icon - center */}
+      <div className="relative z-10 flex items-center justify-center">
+        <Brain size={iconSizes[size]} className="text-purple-400 drop-shadow-[0_0_8px_rgba(168,85,247,0.8)] animate-pulse" />
+      </div>
+      
+      {/* Ticket badge - bottom right */}
+      <div className="absolute -bottom-0.5 -right-0.5 z-20">
         <div className="relative">
-          <div className="absolute inset-0 bg-yellow-400 blur-sm rounded-full animate-pulse"></div>
-          <div className="relative bg-yellow-300 rounded-full p-0.5 border border-white">
-            <Sparkles size={size === 'sm' ? 8 : 12} className="text-yellow-700" />
+          <div className="absolute inset-0 bg-red-500 blur-md rounded-full animate-pulse opacity-60"></div>
+          <div className="relative bg-gradient-to-br from-red-500 to-red-700 rounded-full p-1 border-2 border-white/80 shadow-lg">
+            <Ticket size={ticketSizes[size]} className="text-white" style={{ transform: 'rotate(-15deg)' }} />
+          </div>
+        </div>
+      </div>
+      
+      {/* Sparkle accent - top left */}
+      <div className="absolute -top-0.5 -left-0.5 z-20">
+        <div className="relative">
+          <div className="absolute inset-0 bg-yellow-400 blur-sm rounded-full animate-ping opacity-40"></div>
+          <div className="relative bg-gradient-to-br from-yellow-300 to-amber-500 rounded-full p-0.5 border border-white/80">
+            <Sparkles size={ticketSizes[size] - 2} className="text-yellow-800" />
           </div>
         </div>
       </div>
@@ -139,7 +163,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData }) => 
             }`}>
               {msg.role === 'model' && (
                 <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-50">
-                   <BrainCircuit size={14} className="text-red-600" />
+                   <Brain size={14} className="text-red-600" />
                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Consultant</span>
                 </div>
               )}
