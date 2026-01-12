@@ -143,7 +143,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
     const totalRevenue = filteredData.reduce((sum, r) => sum + r.price, 0);
     const totalCommercialValue = filteredData.reduce((sum, r) => sum + r.commercialValue, 0);
     const corpCommercialValue = corporateRecords.reduce((sum, r) => sum + r.commercialValue, 0);
-    const cashReceived = totalCommercialValue - corpCommercialValue;
     const totalTickets = filteredData.reduce((sum, r) => sum + r.quantity, 0);
 
     const zoneBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
@@ -419,7 +418,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
       totalTickets,
       totalRevenue,
       totalCommercialValue,
-      cashReceived,
       corpCommercialValue,
       uniqueCustomers: uniqueCustomers.size,
       uniqueEmails: uniqueEmails.size,
@@ -682,7 +680,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
 
       {activeView === 'overview' && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center">
@@ -705,15 +703,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
                   <Euro size={16} className="text-green-600" />
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-gray-900">{formatCompact(stats.cashReceived)}</p>
-              <p className="text-xs text-gray-500">Cash Received</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
-                  <TrendingUp size={16} className="text-purple-600" />
                 </div>
               </div>
               <p className="text-2xl font-bold text-gray-900">{formatCompact(stats.totalCommercialValue)}</p>
