@@ -162,8 +162,11 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
     });
 
     const nonCorpData = filteredData.filter(r => {
-      const isCorp = (r.sellType || '').toLowerCase() === 'corp' || (r.ticketType || '').toLowerCase() === 'corp';
-      return !isCorp;
+      const sellLower = (r.sellType || '').toLowerCase();
+      const ticketLower = (r.ticketType || '').toLowerCase();
+      const isCorp = sellLower === 'corp' || ticketLower === 'corp';
+      const isAbb = sellLower === 'abb' || ticketLower === 'abb';
+      return !isCorp && !isAbb;
     });
 
     const topCustomers = Object.entries(
@@ -561,7 +564,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                   <th className="text-left py-3 px-4 font-medium">Email</th>
                   <th className="text-right py-3 px-4 font-medium">Tickets</th>
                   <th className="text-right py-3 px-4 font-medium">Revenue</th>
-                  <th className="text-right py-3 px-4 font-medium">Value</th>
                   <th className="text-center py-3 px-4 font-medium">Actions</th>
                 </tr>
               </thead>
@@ -572,7 +574,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                     <td className="py-3 px-4 font-medium text-gray-800">{c.name}</td>
                     <td className="py-3 px-4 text-gray-600">{c.email || '-'}</td>
                     <td className="py-3 px-4 text-right">{c.tickets}</td>
-                    <td className="py-3 px-4 text-right">{formatCurrency(c.revenue)}</td>
                     <td className="py-3 px-4 text-right font-semibold text-green-600">{formatCurrency(c.value)}</td>
                     <td className="py-3 px-4 text-center">
                       <button 
