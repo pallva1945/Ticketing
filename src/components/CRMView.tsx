@@ -302,10 +302,15 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       // Buying behavior
       if (r.buyTimestamp && r.buyTimestamp instanceof Date && !isNaN(r.buyTimestamp.getTime())) {
         const hour = r.buyTimestamp.getHours();
-        const hourLabel = `${hour.toString().padStart(2, '0')}:00`;
-        if (!purchaseHourBreakdown[hourLabel]) purchaseHourBreakdown[hourLabel] = { count: 0, value: 0 };
-        purchaseHourBreakdown[hourLabel].count += r.quantity;
-        purchaseHourBreakdown[hourLabel].value += r.commercialValue;
+        const minute = r.buyTimestamp.getMinutes();
+        const hasValidTime = !(hour === 0 && minute === 0);
+        
+        if (hasValidTime) {
+          const hourLabel = `${hour.toString().padStart(2, '0')}:00`;
+          if (!purchaseHourBreakdown[hourLabel]) purchaseHourBreakdown[hourLabel] = { count: 0, value: 0 };
+          purchaseHourBreakdown[hourLabel].count += r.quantity;
+          purchaseHourBreakdown[hourLabel].value += r.commercialValue;
+        }
 
         const dayOfWeek = dayNames[r.buyTimestamp.getDay()];
         if (!purchaseDayBreakdown[dayOfWeek]) purchaseDayBreakdown[dayOfWeek] = { count: 0, value: 0 };
