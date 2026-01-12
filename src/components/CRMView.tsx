@@ -98,7 +98,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
 
     const zoneBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
     const eventBreakdown: Record<string, { count: number; revenue: number }> = {};
-    const sellTypeBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
+    const rawSellTypeBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
+    const groupedSellTypeBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
     const paymentBreakdown: Record<string, { count: number; revenue: number }> = {};
     const discountBreakdown: Record<string, { count: number; revenue: number }> = {};
     const corpBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
@@ -110,14 +111,21 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       zoneBreakdown[zone].revenue += r.price;
       zoneBreakdown[zone].value += r.commercialValue;
 
-      const event = r.event.includes('ABBONAMENTO') ? 'Season Ticket' : 
-                    r.event.includes('PACK') ? 'Mini Pack' : 'Single Game';
+      const event = (r.event || '').includes('ABBONAMENTO') ? 'Season Ticket' : 
+                    (r.event || '').includes('PACK') ? 'Mini Pack' : 'Single Game';
       if (!eventBreakdown[event]) eventBreakdown[event] = { count: 0, revenue: 0 };
       eventBreakdown[event].count += r.quantity;
       eventBreakdown[event].revenue += r.price;
 
       const rawSell = (r.sellType || '').toLowerCase();
       const rawTicketType = (r.ticketType || '').toLowerCase();
+      
+      const normalizedSellType = (r.sellType || r.ticketType || 'Unknown').toUpperCase();
+      if (!rawSellTypeBreakdown[normalizedSellType]) rawSellTypeBreakdown[normalizedSellType] = { count: 0, revenue: 0, value: 0 };
+      rawSellTypeBreakdown[normalizedSellType].count += r.quantity;
+      rawSellTypeBreakdown[normalizedSellType].revenue += r.price;
+      rawSellTypeBreakdown[normalizedSellType].value += r.commercialValue;
+      
       let sellCategory: string;
       if (['mp', 'tix', 'vb'].includes(rawSell) || ['mp', 'tix', 'vb'].includes(rawTicketType)) {
         sellCategory = 'GameDay';
@@ -128,10 +136,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       } else {
         sellCategory = r.sellType || r.ticketType || 'Unknown';
       }
-      if (!sellTypeBreakdown[sellCategory]) sellTypeBreakdown[sellCategory] = { count: 0, revenue: 0, value: 0 };
-      sellTypeBreakdown[sellCategory].count += r.quantity;
-      sellTypeBreakdown[sellCategory].revenue += r.price;
-      sellTypeBreakdown[sellCategory].value += r.commercialValue;
+      if (!groupedSellTypeBreakdown[sellCategory]) groupedSellTypeBreakdown[sellCategory] = { count: 0, revenue: 0, value: 0 };
+      groupedSellTypeBreakdown[sellCategory].count += r.quantity;
+      groupedSellTypeBreakdown[sellCategory].revenue += r.price;
+      groupedSellTypeBreakdown[sellCategory].value += r.commercialValue;
 
       const payment = r.payment || 'Unknown';
       if (!paymentBreakdown[payment]) paymentBreakdown[payment] = { count: 0, revenue: 0 };
@@ -181,7 +189,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       corporateTickets: corporateRecords.length,
       zoneBreakdown,
       eventBreakdown,
-      sellTypeBreakdown,
+      rawSellTypeBreakdown,
+      groupedSellTypeBreakdown,
       paymentBreakdown,
       discountBreakdown,
       topCustomers,
@@ -197,12 +206,18 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       .slice(0, 10),
   [stats.zoneBreakdown]);
 
-  const sellTypeChartData = useMemo(() => 
-    Object.entries(stats.sellTypeBreakdown)
-      .filter(([name]) => !['Giveaway', 'Protocol'].includes(name))
+  const salesChannelChartData = useMemo(() => 
+    Object.entries(stats.rawSellTypeBreakdown)
+      .filter(([name]) => !['PROTOCOL', 'GIVEAWAY', 'GIVEAWAYS'].includes(name.toUpperCase()))
       .map(([name, val]) => ({ name, tickets: val.count, value: val.value }))
       .sort((a, b) => b.value - a.value),
-  [stats.sellTypeBreakdown]);
+  [stats.rawSellTypeBreakdown]);
+
+  const ticketTypeDistributionData = useMemo(() => 
+    Object.entries(stats.groupedSellTypeBreakdown)
+      .map(([name, val]) => ({ name, tickets: val.count, value: val.value }))
+      .sort((a, b) => b.value - a.value),
+  [stats.groupedSellTypeBreakdown]);
 
   const customerDetail = useMemo(() => {
     if (!selectedCustomer) return null;
@@ -440,7 +455,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsPie>
                     <Pie
-                      data={sellTypeChartData}
+                      data={ticketTypeDistributionData}
                       cx="50%"
                       cy="50%"
                       innerRadius={50}
@@ -451,12 +466,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       labelLine={false}
                     >
-                      {sellTypeChartData.map((_, index) => (
+                      {ticketTypeDistributionData.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
                           fill={COLORS[index % COLORS.length]} 
                           cursor="pointer"
-                          onClick={() => setFilterSellType(filterSellType === sellTypeChartData[index].name ? null : sellTypeChartData[index].name)}
+                          onClick={() => setFilterSellType(filterSellType === entry.name ? null : entry.name)}
                         />
                       ))}
                     </Pie>
@@ -499,7 +514,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={sellTypeChartData}>
+                  <BarChart data={salesChannelChartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                     <YAxis tickFormatter={(v) => formatCompact(v)} tick={{ fontSize: 11 }} />
@@ -644,18 +659,14 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                   <h4 className="font-semibold text-gray-800">{zone}</h4>
                   <MapPin size={18} className="text-gray-400" />
                 </div>
-                <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="grid grid-cols-2 gap-3 text-center">
                   <div>
                     <p className="text-xl font-bold text-gray-900">{data.count.toLocaleString()}</p>
                     <p className="text-[10px] text-gray-500 uppercase">Tickets</p>
                   </div>
                   <div>
-                    <p className="text-xl font-bold text-blue-600">{formatCompact(data.revenue)}</p>
-                    <p className="text-[10px] text-gray-500 uppercase">Cash</p>
-                  </div>
-                  <div>
                     <p className="text-xl font-bold text-green-600">{formatCompact(data.value)}</p>
-                    <p className="text-[10px] text-gray-500 uppercase">Value</p>
+                    <p className="text-[10px] text-gray-500 uppercase">Cash</p>
                   </div>
                 </div>
               </div>
