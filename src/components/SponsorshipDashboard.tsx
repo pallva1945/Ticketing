@@ -583,7 +583,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               <p className="text-[10px] font-bold text-red-600 uppercase mb-2">Worst Deals</p>
               <div className="space-y-1">
                 {topAndWorstDeals.worst5.map((s, i) => {
-                  const score = (1 + i * 0.2).toFixed(1);
+                  const score = (i * 0.2).toFixed(1);
                   return (
                     <div key={s.id} className="flex items-center gap-2 bg-red-50 rounded px-2 py-1">
                       <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[9px] font-bold shrink-0">{i + 1}</span>
