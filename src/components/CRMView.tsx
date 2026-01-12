@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, X, Filter, Eye, BarChart3, PieChart, UserCheck, Euro, Award } from 'lucide-react';
+import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, Upload, X, Filter, Eye, BarChart3, PieChart, UserCheck, Euro, Award } from 'lucide-react';
 import { CRMRecord } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
@@ -178,11 +178,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       .sort((a, b) => b.value - a.value)
       .slice(0, 10),
   [stats.zoneBreakdown]);
-
-  const eventChartData = useMemo(() => 
-    Object.entries(stats.eventBreakdown)
-      .map(([name, val]) => ({ name, value: val.count })),
-  [stats.eventBreakdown]);
 
   const sellTypeChartData = useMemo(() => 
     Object.entries(stats.sellTypeBreakdown)
