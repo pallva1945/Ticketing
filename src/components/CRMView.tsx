@@ -173,9 +173,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       nonCorpData.reduce((acc, r) => {
         const key = r.email || r.fullName;
         if (!acc[key]) acc[key] = { name: r.fullName, email: r.email, tickets: 0, revenue: 0, value: 0 };
-        acc[key].tickets += r.quantity;
-        acc[key].revenue += r.price;
-        acc[key].value += r.commercialValue;
+        acc[key].tickets += Number(r.quantity) || 1;
+        acc[key].revenue += Number(r.price) || 0;
+        acc[key].value += Number(r.commercialValue) || 0;
         return acc;
       }, {} as Record<string, { name: string; email: string; tickets: number; revenue: number; value: number }>)
     ).map(([key, val]) => ({ key, ...val }))
