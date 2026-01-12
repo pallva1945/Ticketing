@@ -62,17 +62,24 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
     let result = [...data];
     
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
+      const queries = searchQuery.split(',').map(q => q.trim().toLowerCase()).filter(q => q);
       result = result.filter(r => 
-        r.fullName.toLowerCase().includes(q) ||
-        r.email.toLowerCase().includes(q) ||
-        r.group.toLowerCase().includes(q) ||
-        r.address.toLowerCase().includes(q)
+        queries.every(q => 
+          (r.fullName || '').toLowerCase().includes(q) ||
+          (r.email || '').toLowerCase().includes(q) ||
+          (r.group || '').toLowerCase().includes(q) ||
+          (r.address || '').toLowerCase().includes(q) ||
+          (r.pvZone || '').toLowerCase().includes(q) ||
+          (r.sellType || '').toLowerCase().includes(q) ||
+          (r.ticketType || '').toLowerCase().includes(q) ||
+          (r.event || '').toLowerCase().includes(q) ||
+          (r.game || '').toLowerCase().includes(q)
+        )
       );
     }
     if (filterZone) result = result.filter(r => r.pvZone === filterZone);
-    if (filterEvent) result = result.filter(r => r.event.includes(filterEvent));
-    if (filterSellType) result = result.filter(r => r.sellType === filterSellType);
+    if (filterEvent) result = result.filter(r => (r.event || '').includes(filterEvent));
+    if (filterSellType) result = result.filter(r => (r.sellType || '').toLowerCase() === filterSellType.toLowerCase());
     
     return result;
   }, [data, searchQuery, filterZone, filterEvent, filterSellType]);
@@ -109,11 +116,22 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       eventBreakdown[event].count += r.quantity;
       eventBreakdown[event].revenue += r.price;
 
-      const sell = r.sellType || 'Unknown';
-      if (!sellTypeBreakdown[sell]) sellTypeBreakdown[sell] = { count: 0, revenue: 0, value: 0 };
-      sellTypeBreakdown[sell].count += r.quantity;
-      sellTypeBreakdown[sell].revenue += r.price;
-      sellTypeBreakdown[sell].value += r.commercialValue;
+      const rawSell = (r.sellType || '').toLowerCase();
+      const rawTicketType = (r.ticketType || '').toLowerCase();
+      let sellCategory: string;
+      if (['mp', 'tix', 'vb'].includes(rawSell) || ['mp', 'tix', 'vb'].includes(rawTicketType)) {
+        sellCategory = 'GameDay';
+      } else if (['corp', 'abb'].includes(rawSell) || ['corp', 'abb'].includes(rawTicketType)) {
+        sellCategory = 'Fixed';
+      } else if (['protocol', 'giveaway', 'giveaways'].includes(rawSell) || ['protocol', 'giveaway', 'giveaways'].includes(rawTicketType)) {
+        sellCategory = 'Giveaway';
+      } else {
+        sellCategory = r.sellType || r.ticketType || 'Unknown';
+      }
+      if (!sellTypeBreakdown[sellCategory]) sellTypeBreakdown[sellCategory] = { count: 0, revenue: 0, value: 0 };
+      sellTypeBreakdown[sellCategory].count += r.quantity;
+      sellTypeBreakdown[sellCategory].revenue += r.price;
+      sellTypeBreakdown[sellCategory].value += r.commercialValue;
 
       const payment = r.payment || 'Unknown';
       if (!paymentBreakdown[payment]) paymentBreakdown[payment] = { count: 0, revenue: 0 };
@@ -181,6 +199,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
 
   const sellTypeChartData = useMemo(() => 
     Object.entries(stats.sellTypeBreakdown)
+      .filter(([name]) => !['Giveaway', 'Protocol'].includes(name))
       .map(([name, val]) => ({ name, tickets: val.count, value: val.value }))
       .sort((a, b) => b.value - a.value),
   [stats.sellTypeBreakdown]);
@@ -254,10 +273,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search customers..."
+              placeholder="Filter: name, zone, type... (comma separated)"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent w-64"
+              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent w-80"
             />
           </div>
       </div>
@@ -700,15 +719,29 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
               <div>
                 <p className="text-xs text-gray-500 uppercase mb-2">Purchase History ({customerDetail.records.length} transactions)</p>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {customerDetail.records.slice(0, 20).map((r, i) => (
-                    <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm">
-                      <div>
-                        <p className="font-medium">{r.event}</p>
-                        <p className="text-xs text-gray-500">{r.buyDate} • {r.pvZone}</p>
-                      </div>
-                      <span className="font-bold text-green-600">{formatCurrency(r.commercialValue)}</span>
-                    </div>
-                  ))}
+                  {(() => {
+                    const grouped: Record<string, { label: string; sellType: string; tickets: number; value: number; zone: string }> = {};
+                    customerDetail.records.forEach(r => {
+                      const rawSell = (r.sellType || '').toLowerCase();
+                      const isAbb = rawSell === 'abb';
+                      const key = isAbb ? 'Season Ticket' : (r.game || r.event || 'Unknown');
+                      const sellType = rawSell.toUpperCase() || 'N/A';
+                      if (!grouped[key]) grouped[key] = { label: key, sellType, tickets: 0, value: 0, zone: r.pvZone || '' };
+                      grouped[key].tickets += r.quantity;
+                      grouped[key].value += r.commercialValue;
+                    });
+                    return Object.values(grouped)
+                      .sort((a, b) => b.value - a.value)
+                      .map((g, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg text-sm">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{g.label}</p>
+                            <p className="text-xs text-gray-500">{g.sellType} • {g.tickets} tickets • {g.zone}</p>
+                          </div>
+                          <span className="font-bold text-green-600 ml-2">{formatCurrency(g.value)}</span>
+                        </div>
+                      ));
+                  })()}
                 </div>
               </div>
             </div>

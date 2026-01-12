@@ -828,8 +828,22 @@ service cloud.firestore {
 
 const App: React.FC = () => {
   // Navigation State - Defaults to HOME
-  const [activeModule, setActiveModule] = useState<RevenueModule>('home');
-      const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'simulator' | 'chat' | 'crm'>('dashboard');
+  const [activeModule, setActiveModule] = useState<RevenueModule>(() => {
+    const saved = localStorage.getItem('activeModule');
+    return (saved as RevenueModule) || 'home';
+  });
+  
+  useEffect(() => {
+    localStorage.setItem('activeModule', activeModule);
+  }, [activeModule]);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'simulator' | 'chat' | 'crm'>(() => {
+    const saved = localStorage.getItem('activeTab');
+    return (saved as 'dashboard' | 'comparison' | 'simulator' | 'chat' | 'crm') || 'dashboard';
+  });
+  
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   
