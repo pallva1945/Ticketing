@@ -84,6 +84,7 @@ const RevenueHome = ({
             gameDayActual: number,
             gameDayGames: number,
             sponsorship: number,
+            corpTix: number,
             isProjected: boolean
         }>,
         chartData: Array<{
@@ -92,9 +93,15 @@ const RevenueHome = ({
             '24-25': number,
             '25-26': number,
             isProjected: boolean
-        }>
+        }>,
+        corpTixBySeason: {
+            '23-24': number,
+            '24-25': number,
+            '25-26': number
+        }
     }
 }) => {
+    const [corpTixInSponsorship, setCorpTixInSponsorship] = useState(false);
     // Constants
     const TOTAL_GAMES_SEASON = 15;
     const gamesCount = Math.max(gamesPlayed, 1);
@@ -560,9 +567,50 @@ const RevenueHome = ({
                     </div>
                 </div>
                 <div className="bg-white rounded-xl border border-gray-100 p-4 sm:p-6 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 pb-4 border-b border-gray-100">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">View:</span>
+                            <button
+                                onClick={() => setCorpTixInSponsorship(false)}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${!corpTixInSponsorship ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                            >
+                                Accounting
+                            </button>
+                            <button
+                                onClick={() => setCorpTixInSponsorship(true)}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${corpTixInSponsorship ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                            >
+                                Realistic
+                            </button>
+                        </div>
+                        <p className="text-[10px] text-gray-400 max-w-xs">
+                            {corpTixInSponsorship 
+                                ? 'Corp Tickets moved from Ticketing → Sponsorship (realistic view)' 
+                                : 'Corp Tickets in Ticketing (standard accounting view)'}
+                        </p>
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
                         {yoyStats.chartData.map((vertical) => {
-                            const vals = [vertical['23-24'], vertical['24-25'], vertical['25-26']];
+                            const corpTix = yoyStats.corpTixBySeason;
+                            let adjustedVals = [vertical['23-24'], vertical['24-25'], vertical['25-26']];
+                            
+                            if (corpTixInSponsorship) {
+                                if (vertical.vertical === 'Ticketing') {
+                                    adjustedVals = [
+                                        vertical['23-24'] - corpTix['23-24'],
+                                        vertical['24-25'] - corpTix['24-25'],
+                                        vertical['25-26'] - corpTix['25-26']
+                                    ];
+                                } else if (vertical.vertical === 'Sponsorship') {
+                                    adjustedVals = [
+                                        vertical['23-24'] + corpTix['23-24'],
+                                        vertical['24-25'] + corpTix['24-25'],
+                                        vertical['25-26'] + corpTix['25-26']
+                                    ];
+                                }
+                            }
+                            
+                            const vals = adjustedVals;
                             const dataMax = Math.max(...vals);
                             const maxVal = dataMax * 1.15;
                             const MAX_BAR_HEIGHT = 115;
@@ -571,8 +619,8 @@ const RevenueHome = ({
                             const CHART_WIDTH = BAR_WIDTH * 3 + BAR_GAP * 2;
                             const barCenters = [BAR_WIDTH / 2, BAR_WIDTH * 1.5 + BAR_GAP, BAR_WIDTH * 2.5 + BAR_GAP * 2];
                             const getHeight = (val: number) => maxVal > 0 ? (val / maxVal) * MAX_BAR_HEIGHT : 0;
-                            const yoy = vertical['24-25'] > 0 
-                                ? ((vertical['25-26'] - vertical['24-25']) / vertical['24-25']) * 100 
+                            const yoy = vals[1] > 0 
+                                ? ((vals[2] - vals[1]) / vals[1]) * 100 
                                 : 0;
                             const trendY = vals.map(v => MAX_BAR_HEIGHT - getHeight(v));
                             
@@ -1296,10 +1344,11 @@ const App: React.FC = () => {
           const gdRev = gdData.reduce((acc, g) => acc + (g.totalRevenue - g.tixRevenue), 0);
           const gdGames = gdData.length;
           
-          // Sponsorship
+          // Sponsorship (including corpTix separately for toggle)
           const sponsorSeason = season.replace('-', '/');
           const sponsors = sponsorData.filter(s => s.season === sponsorSeason);
           const sponsorRev = sponsors.reduce((sum, d) => sum + d.sponsorReconciliation + d.csrReconciliation, 0);
+          const corpTixRev = sponsors.reduce((sum, d) => sum + d.corpTixReconciliation, 0);
           
           // Is current season (25-26)? Calculate projected values
           const isCurrent = season === '25-26';
@@ -1315,6 +1364,7 @@ const App: React.FC = () => {
               gameDayActual: gdRev,
               gameDayGames: gdGames,
               sponsorship: sponsorRev,
+              corpTix: corpTixRev,
               isProjected: isCurrent && gamesPlayed < TOTAL_GAMES
           };
       };
@@ -1345,7 +1395,12 @@ const App: React.FC = () => {
                   '25-26': seasonData[2].sponsorship,
                   isProjected: false
               }
-          ]
+          ],
+          corpTixBySeason: {
+              '23-24': seasonData[0].corpTix,
+              '24-25': seasonData[1].corpTix,
+              '25-26': seasonData[2].corpTix
+          }
       };
   }, [data, gameDayData, sponsorData]);
 
