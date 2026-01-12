@@ -27,6 +27,24 @@ interface CRMViewProps {
   onUploadCsv?: (content: string) => void;
 }
 
+const getCustomerKey = (r: CRMRecord): string => {
+  const lastName = (r.lastName || '').trim().toLowerCase();
+  const firstName = (r.firstName || '').trim().toLowerCase();
+  const dob = (r.dob || '').trim();
+  const email = (r.email || '').trim().toLowerCase();
+  
+  if (lastName && firstName && dob) {
+    return `${lastName}|${firstName}|${dob}`;
+  }
+  if (lastName && firstName && email) {
+    return `${lastName}|${firstName}|${email}`;
+  }
+  if (email) {
+    return `email:${email}`;
+  }
+  return `name:${(r.fullName || 'unknown').trim().toLowerCase()}`;
+};
+
 export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -171,7 +189,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
 
     const topCustomers = Object.entries(
       nonCorpData.reduce((acc, r) => {
-        const key = r.email || r.fullName;
+        const key = getCustomerKey(r);
         if (!acc[key]) acc[key] = { name: r.fullName, email: r.email, tickets: 0, revenue: 0, value: 0 };
         acc[key].tickets += Number(r.quantity) || 1;
         acc[key].revenue += Number(r.price) || 0;
@@ -231,7 +249,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
 
   const customerDetail = useMemo(() => {
     if (!selectedCustomer) return null;
-    const records = filteredData.filter(r => (r.email || r.fullName) === selectedCustomer);
+    const records = filteredData.filter(r => getCustomerKey(r) === selectedCustomer);
     if (records.length === 0) return null;
     
     const first = records[0];
