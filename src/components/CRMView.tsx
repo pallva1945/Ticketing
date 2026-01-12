@@ -211,8 +211,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
         
         const buyTs = r.buyTimestamp && r.buyTimestamp instanceof Date && !isNaN(r.buyTimestamp.getTime()) ? r.buyTimestamp : null;
         if (buyTs && r.gmDateTime && r.gmDateTime > 0) {
-          const gmTimeMs = r.gmDateTime < 1e12 ? r.gmDateTime * 1000 : r.gmDateTime;
-          const gameDate = new Date(gmTimeMs);
+          const gameDate = new Date(r.gmDateTime);
           if (!isNaN(gameDate.getTime())) {
             const diffDays = Math.floor((gameDate.getTime() - buyTs.getTime()) / (1000 * 60 * 60 * 24));
             if (diffDays >= 0) acc[key].advanceDays.push(diffDays);
@@ -292,8 +291,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       // Calculate advance days for this zone
       const zoneBuyTs = r.buyTimestamp && r.buyTimestamp instanceof Date && !isNaN(r.buyTimestamp.getTime()) ? r.buyTimestamp : null;
       if (zoneBuyTs && r.gmDateTime && r.gmDateTime > 0) {
-        const gmTimeMs = r.gmDateTime < 1e12 ? r.gmDateTime * 1000 : r.gmDateTime;
-        const gameDate = new Date(gmTimeMs);
+        const gameDate = new Date(r.gmDateTime);
         if (!isNaN(gameDate.getTime())) {
           const diffDays = Math.floor((gameDate.getTime() - zoneBuyTs.getTime()) / (1000 * 60 * 60 * 24));
           if (diffDays >= 0) {
@@ -342,8 +340,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       // Advance booking (days before game)
       const buyTs = r.buyTimestamp && r.buyTimestamp instanceof Date && !isNaN(r.buyTimestamp.getTime()) ? r.buyTimestamp : null;
       if (buyTs && r.gmDateTime && r.gmDateTime > 0) {
-        const gmTimeMs = r.gmDateTime < 1e12 ? r.gmDateTime * 1000 : r.gmDateTime;
-        const gameDate = new Date(gmTimeMs);
+        const gameDate = new Date(r.gmDateTime);
         if (!isNaN(gameDate.getTime())) {
           const diffDays = Math.floor((gameDate.getTime() - buyTs.getTime()) / (1000 * 60 * 60 * 24));
           let advanceLabel: string;

@@ -568,7 +568,19 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
       abbMpPriceGm: parseCurrency(getVal(abbMpPriceIdx)),
       abbCorpPvPrice: parseCurrency(getVal(abbCorpPriceIdx)),
       game: getVal(gmIdx),
-      gmDateTime: parseFloat(getVal(gmDateTimeIdx).replace(',', '.')) || 0,
+      gmDateTime: (() => {
+        const raw = getVal(gmDateTimeIdx);
+        if (!raw) return 0;
+        // Italian format: 45.941,7604 means 45941.7604 (Excel serial date)
+        // Remove thousands separator (dot), then replace comma with dot for decimal
+        const cleaned = raw.replace(/\./g, '').replace(',', '.');
+        const excelSerial = parseFloat(cleaned) || 0;
+        if (excelSerial === 0) return 0;
+        // Convert Excel serial date to Unix timestamp (milliseconds)
+        // Excel epoch is Jan 1, 1900; Unix epoch is Jan 1, 1970 = 25569 days later
+        const unixMs = (excelSerial - 25569) * 86400 * 1000;
+        return unixMs;
+      })(),
       commercialValue: parseCurrency(getVal(commercialValueIdx)),
       gameId: getVal(gameIdIdx),
       sellType: getVal(sellIdx),
