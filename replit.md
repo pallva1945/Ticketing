@@ -5,10 +5,11 @@ A React-based ticketing dashboard for Pallacanestro Varese, providing executive 
 
 ## Project Architecture
 - **Frontend**: React 18 with TypeScript
-- **Build Tool**: Vite
+- **Backend**: Express.js server (port 5001)
+- **Build Tool**: Vite (port 5000, proxies to backend)
 - **Styling**: Tailwind CSS (via CDN)
 - **Charts**: Recharts
-- **Backend Services**: Firebase, Google Gemini AI
+- **Backend Services**: Firebase, Google Gemini AI, Replit App Storage
 
 ## Directory Structure
 ```
@@ -22,21 +23,33 @@ src/
 ├── types.ts         # TypeScript type definitions
 ├── constants.ts     # Application constants
 └── firebaseConfig.ts # Firebase configuration
+server/
+├── index.ts         # Express backend server
+└── replit_integrations/object_storage/  # Cloud storage integration
 ```
 
 ## Development Setup
-- Dev server runs on port 5000
-- Uses Vite for hot module replacement
+- Frontend Vite dev server runs on port 5000
+- Backend Express server runs on port 5001
+- Vite proxies /api and /objects routes to backend
+- Uses concurrently to run both servers with single command
 - Configured to allow all hosts for Replit proxy compatibility
 
 ## Scripts
-- `npm run dev` - Start development server
+- `npm run dev` - Start both frontend and backend servers
+- `npm run server` - Start only the backend server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 12, 2026: CRM Large File Upload Support
+  - Upgraded CRM upload to use Replit App Storage (was Firebase)
+  - Maximum file size increased from 0.9MB to 50MB
+  - Uses presigned URL flow for direct cloud uploads
+  - Added Express backend server for storage API routes
+
 - January 12, 2026: CRM Data with Cloud Persistence
-  - CRM data now syncs to Firebase cloud storage (like Ticketing, GameDay, Sponsor data)
+  - CRM data now syncs to cloud storage (like Ticketing, GameDay, Sponsor data)
   - Uploaded CRM data persists across sessions and is accessible on any device
   - On startup: Loads from cloud if available, otherwise uses sample data
   - Upload CRM CSV via Data Manager button in Ticketing section

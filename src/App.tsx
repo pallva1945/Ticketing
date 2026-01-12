@@ -1111,10 +1111,10 @@ const App: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     
-    // Check file size - Firebase has 1MB limit per document
-    const MAX_SIZE_MB = 0.9; // Leave some buffer
+    // New limit: 50MB for App Storage
+    const MAX_SIZE_MB = 50;
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      alert(`File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is ${MAX_SIZE_MB}MB for cloud sync. Try reducing the number of records.`);
+      alert(`File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is ${MAX_SIZE_MB}MB.`);
       if (crmFileInputRef.current) crmFileInputRef.current.value = '';
       return;
     }
@@ -1125,24 +1125,46 @@ const App: React.FC = () => {
         const csvContent = e.target?.result as string;
         const crmRecords = processCRMData(csvContent);
         if (crmRecords.length > 0) {
-          // Save to Firebase if configured
-          if (isFirebaseConfigured) {
-            try {
-              await saveCsvToFirebase('crm', csvContent);
-              setCrmData(crmRecords);
-              alert(`Success! ${crmRecords.length} CRM records saved to cloud.`);
-            } catch (dbError: any) {
-              if (dbError.message === 'permission-denied') {
-                setShowRulesError(true);
-              } else if (dbError.message?.includes('call stack') || dbError.message?.includes('size')) {
-                alert("File too large for cloud storage. Try uploading a smaller dataset.");
-              } else {
-                alert("Database Error: " + dbError.message);
-              }
+          try {
+            // Upload to App Storage using presigned URL flow
+            const urlResponse = await fetch('/api/uploads/request-url', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                name: 'crm-data.csv',
+                size: file.size,
+                contentType: 'text/csv'
+              })
+            });
+            
+            if (!urlResponse.ok) {
+              throw new Error('Failed to get upload URL');
             }
-          } else {
+            
+            const { uploadURL, objectPath } = await urlResponse.json();
+            
+            // Upload file directly to presigned URL
+            const uploadResponse = await fetch(uploadURL, {
+              method: 'PUT',
+              body: file,
+              headers: { 'Content-Type': 'text/csv' }
+            });
+            
+            if (!uploadResponse.ok) {
+              throw new Error('Failed to upload file to storage');
+            }
+            
+            // Store reference in localStorage for persistence
+            localStorage.setItem('crmObjectPath', objectPath);
+            localStorage.setItem('crmUploadTime', new Date().toISOString());
+            
             setCrmData(crmRecords);
-            alert(`Loaded ${crmRecords.length} CRM records (local only - connect database to sync).`);
+            alert(`Success! ${crmRecords.length} CRM records saved to cloud.`);
+          } catch (uploadError: any) {
+            console.error('Upload error:', uploadError);
+            // Fall back to local storage
+            setCrmData(crmRecords);
+            alert(`Loaded ${crmRecords.length} CRM records locally. Cloud sync unavailable.`);
           }
         } else {
           alert("Error: No valid CRM records found in the CSV file.");

@@ -19,5 +19,15 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5000,
     allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+      },
+      '/objects': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+      },
+    },
   },
 });
