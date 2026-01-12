@@ -238,6 +238,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
     const locationBreakdown: Record<string, { count: number; value: number }> = {};
     const zoneByAge: Record<string, Record<string, number>> = {};
     const zoneByLocation: Record<string, Record<string, number>> = {};
+    const zoneStats: Record<string, { totalValue: number; totalTickets: number }> = {};
     
     const getAgeGroup = (dob: string): string => {
       if (!dob) return 'Unknown';
@@ -270,20 +271,32 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       ageBreakdown[ageGroup].count += r.quantity;
       ageBreakdown[ageGroup].value += r.commercialValue;
 
-      const location = r.province || r.pob || 'Unknown';
-      const normalizedLoc = location.trim().toUpperCase() || 'Unknown';
-      if (!locationBreakdown[normalizedLoc]) locationBreakdown[normalizedLoc] = { count: 0, value: 0 };
-      locationBreakdown[normalizedLoc].count += r.quantity;
-      locationBreakdown[normalizedLoc].value += r.commercialValue;
+      const location = r.province || r.pob || '';
+      let normalizedLoc = location.trim().toUpperCase();
+      if (normalizedLoc === 'VA') normalizedLoc = 'VARESE';
+      if (!normalizedLoc) normalizedLoc = 'Unknown';
+      if (normalizedLoc !== 'Unknown') {
+        if (!locationBreakdown[normalizedLoc]) locationBreakdown[normalizedLoc] = { count: 0, value: 0 };
+        locationBreakdown[normalizedLoc].count += r.quantity;
+        locationBreakdown[normalizedLoc].value += r.commercialValue;
+      }
 
       const zone = r.pvZone || 'Unknown';
-      if (!zoneByAge[zone]) zoneByAge[zone] = {};
-      if (!zoneByAge[zone][ageGroup]) zoneByAge[zone][ageGroup] = 0;
-      zoneByAge[zone][ageGroup] += r.quantity;
+      if (!zoneStats[zone]) zoneStats[zone] = { totalValue: 0, totalTickets: 0 };
+      zoneStats[zone].totalValue += r.commercialValue;
+      zoneStats[zone].totalTickets += r.quantity;
+      
+      if (ageGroup !== 'Unknown') {
+        if (!zoneByAge[zone]) zoneByAge[zone] = {};
+        if (!zoneByAge[zone][ageGroup]) zoneByAge[zone][ageGroup] = 0;
+        zoneByAge[zone][ageGroup] += r.quantity;
+      }
 
-      if (!zoneByLocation[zone]) zoneByLocation[zone] = {};
-      if (!zoneByLocation[zone][normalizedLoc]) zoneByLocation[zone][normalizedLoc] = 0;
-      zoneByLocation[zone][normalizedLoc] += r.quantity;
+      if (normalizedLoc !== 'Unknown') {
+        if (!zoneByLocation[zone]) zoneByLocation[zone] = {};
+        if (!zoneByLocation[zone][normalizedLoc]) zoneByLocation[zone][normalizedLoc] = 0;
+        zoneByLocation[zone][normalizedLoc] += r.quantity;
+      }
 
       // Buying behavior
       if (r.buyTimestamp && r.buyTimestamp instanceof Date && !isNaN(r.buyTimestamp.getTime())) {
@@ -348,6 +361,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       locationBreakdown,
       zoneByAge,
       zoneByLocation,
+      zoneStats,
       purchaseHourBreakdown,
       purchaseDayBreakdown,
       advanceBookingBreakdown,
@@ -357,14 +371,16 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
 
 
   const ageChartData = useMemo(() => {
-    const order = ['Under 18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+', 'Unknown'];
+    const order = ['Under 18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
     return Object.entries(stats.ageBreakdown)
+      .filter(([age]) => age !== 'Unknown')
       .map(([age, val]) => ({ age, tickets: val.count, value: val.value }))
       .sort((a, b) => order.indexOf(a.age) - order.indexOf(b.age));
   }, [stats.ageBreakdown]);
 
   const locationChartData = useMemo(() => 
     Object.entries(stats.locationBreakdown)
+      .filter(([location]) => location !== 'Unknown')
       .map(([location, val]) => ({ location, tickets: val.count, value: val.value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 10),
@@ -802,13 +818,14 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                 <thead className="bg-gray-50 text-gray-600">
                   <tr>
                     <th className="text-left py-3 px-4 font-medium">Zone</th>
-                    <th className="text-right py-3 px-4 font-medium">Under 18</th>
-                    <th className="text-right py-3 px-4 font-medium">18-24</th>
-                    <th className="text-right py-3 px-4 font-medium">25-34</th>
-                    <th className="text-right py-3 px-4 font-medium">35-44</th>
-                    <th className="text-right py-3 px-4 font-medium">45-54</th>
-                    <th className="text-right py-3 px-4 font-medium">55-64</th>
-                    <th className="text-right py-3 px-4 font-medium">65+</th>
+                    <th className="text-center py-3 px-4 font-medium">Under 18</th>
+                    <th className="text-center py-3 px-4 font-medium">18-24</th>
+                    <th className="text-center py-3 px-4 font-medium">25-34</th>
+                    <th className="text-center py-3 px-4 font-medium">35-44</th>
+                    <th className="text-center py-3 px-4 font-medium">45-54</th>
+                    <th className="text-center py-3 px-4 font-medium">55-64</th>
+                    <th className="text-center py-3 px-4 font-medium">65+</th>
+                    <th className="text-right py-3 px-4 font-medium">Avg Price</th>
                     <th className="text-right py-3 px-4 font-medium">Top Location</th>
                   </tr>
                 </thead>
@@ -818,17 +835,36 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                     .slice(0, 10)
                     .map(([zone, ages]) => {
                       const locations = stats.zoneByLocation[zone] || {};
-                      const topLoc = Object.entries(locations).sort((a, b) => b[1] - a[1])[0];
+                      const topLoc = Object.entries(locations).filter(([loc]) => loc !== 'Unknown').sort((a, b) => b[1] - a[1])[0];
+                      const zoneTotal = Object.values(ages).reduce((s, v) => s + v, 0);
+                      const zs = stats.zoneStats[zone];
+                      const avgPrice = zs && zs.totalTickets > 0 ? zs.totalValue / zs.totalTickets : 0;
+                      const ageGroups = ['Under 18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
+                      const getColorIntensity = (pct: number) => {
+                        if (pct === 0) return 'bg-gray-50 text-gray-400';
+                        if (pct < 10) return 'bg-blue-50 text-blue-600';
+                        if (pct < 20) return 'bg-blue-100 text-blue-700';
+                        if (pct < 30) return 'bg-blue-200 text-blue-800';
+                        if (pct < 40) return 'bg-blue-300 text-blue-900';
+                        return 'bg-blue-400 text-white';
+                      };
                       return (
                         <tr key={zone} className="hover:bg-gray-50">
                           <td className="py-3 px-4 font-medium text-gray-800">{zone}</td>
-                          <td className="py-3 px-4 text-right text-gray-600">{ages['Under 18'] || 0}</td>
-                          <td className="py-3 px-4 text-right text-gray-600">{ages['18-24'] || 0}</td>
-                          <td className="py-3 px-4 text-right text-gray-600">{ages['25-34'] || 0}</td>
-                          <td className="py-3 px-4 text-right text-gray-600">{ages['35-44'] || 0}</td>
-                          <td className="py-3 px-4 text-right text-gray-600">{ages['45-54'] || 0}</td>
-                          <td className="py-3 px-4 text-right text-gray-600">{ages['55-64'] || 0}</td>
-                          <td className="py-3 px-4 text-right text-gray-600">{ages['65+'] || 0}</td>
+                          {ageGroups.map(ag => {
+                            const count = ages[ag] || 0;
+                            const pct = zoneTotal > 0 ? (count / zoneTotal) * 100 : 0;
+                            return (
+                              <td key={ag} className="py-2 px-2 text-center">
+                                <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getColorIntensity(pct)}`}>
+                                  {pct > 0 ? `${pct.toFixed(0)}%` : '-'}
+                                </span>
+                              </td>
+                            );
+                          })}
+                          <td className="py-3 px-4 text-right font-medium text-gray-700">
+                            {avgPrice > 0 ? `€${avgPrice.toFixed(0)}` : '-'}
+                          </td>
                           <td className="py-3 px-4 text-right">
                             {topLoc ? (
                               <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">{topLoc[0]}</span>

@@ -507,13 +507,25 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
 
   const parseBuyDate = (dateStr: string): Date | null => {
     if (!dateStr) return null;
-    const parts = dateStr.split(/[\/\s\.]/);
-    if (parts.length >= 3) {
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1;
-      const year = parseInt(parts[2], 10);
+    const dateTimeParts = dateStr.split(' ');
+    const datePart = dateTimeParts[0];
+    const timePart = dateTimeParts[1] || '';
+    
+    const dateParts = datePart.split('/');
+    if (dateParts.length >= 3) {
+      const day = parseInt(dateParts[0], 10);
+      const month = parseInt(dateParts[1], 10) - 1;
+      const year = parseInt(dateParts[2], 10);
+      
+      let hours = 0, minutes = 0;
+      if (timePart) {
+        const timeParts = timePart.split('.');
+        hours = parseInt(timeParts[0], 10) || 0;
+        minutes = parseInt(timeParts[1], 10) || 0;
+      }
+      
       if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-        return new Date(year, month, day);
+        return new Date(year, month, day, hours, minutes);
       }
     }
     return null;
