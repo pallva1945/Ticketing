@@ -101,7 +101,7 @@ const RevenueHome = ({
         }
     }
 }) => {
-    const [corpTixInSponsorship, setCorpTixInSponsorship] = useState(false);
+    const [corpTixInSponsorship, setCorpTixInSponsorship] = useState(true);
     // Constants
     const TOTAL_GAMES_SEASON = 15;
     const gamesCount = Math.max(gamesPlayed, 1);
@@ -230,8 +230,10 @@ const RevenueHome = ({
 
     // Helper for formatting
     const formatCompact = (val: number) => {
-        if (val >= 1000000) return `€${(val/1000000).toFixed(2)}M`;
-        if (val >= 1000) return `€${(val/1000).toFixed(0)}k`;
+        const absVal = Math.abs(val);
+        const sign = val < 0 ? '-' : '';
+        if (absVal >= 1000000) return `${sign}€${(absVal/1000000).toFixed(2)}M`;
+        if (absVal >= 1000) return `${sign}€${(absVal/1000).toFixed(0)}k`;
         return `€${val.toFixed(0)}`;
     };
 

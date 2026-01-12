@@ -37,9 +37,10 @@ src/
 ## Recent Changes
 - January 12, 2026: 3-Season Revenue Trend - Corp Tickets Toggle
   - Added Accounting/Realistic view toggle to switch corp tickets between Ticketing and Sponsorship
+  - **Realistic view is now the default** - Corp tickets moved from Ticketing → Sponsorship
   - Accounting view: Corp tickets counted in Ticketing (standard financial reporting)
-  - Realistic view: Corp tickets moved from Ticketing → Sponsorship (shows true sponsorship value)
-  - Corp ticket revenue calculated from ticketing data (SalesChannel.CORP), not sponsorship reconciliation
+  - Corp ticket revenue calculated from ticketing CSV "Corp Eur" aggregate column
+  - Improved formatCompact function for cleaner negative number display (-€542k instead of €-542k)
   - Mobile-optimized toggle with responsive layout
   - YoY percentages recalculate based on adjusted values when toggle is switched
 
