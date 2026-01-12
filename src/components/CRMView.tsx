@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, Upload, X, Filter, BarChart3, PieChart, Euro, Award } from 'lucide-react';
+import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, Upload, X, Filter, BarChart3, PieChart, Euro, Award, ChevronUp, ChevronDown } from 'lucide-react';
 import { CRMRecord, SponsorData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
@@ -64,6 +64,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
   const [capacityView, setCapacityView] = useState<'all' | 'fixed' | 'flexible'>('all');
   const [activeView, setActiveView] = useState<'overview' | 'demographics' | 'behavior' | 'customers' | 'corporate'>('overview');
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
+  const [sortColumn, setSortColumn] = useState<string>('value');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   const hasActiveFilter = filterZone || filterEvent || capacityView !== 'all' || searchQuery;
 
@@ -802,21 +804,102 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                 <thead>
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-2 px-2 font-semibold text-gray-600">#</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-600">Customer</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-600">Sell Type</th>
-                    <th className="text-center py-2 px-2 font-semibold text-gray-600">Tickets</th>
-                    <th className="text-right py-2 px-2 font-semibold text-gray-600">Total Paid</th>
-                    <th className="text-right py-2 px-2 font-semibold text-gray-600">Avg/Gm</th>
-                    <th className="text-right py-2 px-2 font-semibold text-gray-600">Avg/Txn</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-600">Principal Zone</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-600">Secondary Zone</th>
-                    <th className="text-center py-2 px-2 font-semibold text-gray-600">Avg Advance</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-600">Age</th>
-                    <th className="text-left py-2 px-2 font-semibold text-gray-600">Location</th>
+                    <th 
+                      className="text-left py-2 px-2 font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 select-none"
+                      onClick={() => { setSortColumn('name'); setSortDirection(sortColumn === 'name' && sortDirection === 'asc' ? 'desc' : 'asc'); }}
+                    >
+                      <span className="flex items-center gap-1">Customer {sortColumn === 'name' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                    </th>
+                    <th 
+                      className="text-left py-2 px-2 font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 select-none"
+                      onClick={() => { setSortColumn('topSellType'); setSortDirection(sortColumn === 'topSellType' && sortDirection === 'asc' ? 'desc' : 'asc'); }}
+                    >
+                      <span className="flex items-center gap-1">Sell Type {sortColumn === 'topSellType' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                    </th>
+                    <th 
+                      className="text-center py-2 px-2 font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 select-none"
+                      onClick={() => { setSortColumn('tickets'); setSortDirection(sortColumn === 'tickets' && sortDirection === 'desc' ? 'asc' : 'desc'); }}
+                    >
+                      <span className="flex items-center justify-center gap-1">Tickets {sortColumn === 'tickets' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                    </th>
+                    <th 
+                      className="text-right py-2 px-2 font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 select-none"
+                      onClick={() => { setSortColumn('value'); setSortDirection(sortColumn === 'value' && sortDirection === 'desc' ? 'asc' : 'desc'); }}
+                    >
+                      <span className="flex items-center justify-end gap-1">Total Paid {sortColumn === 'value' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                    </th>
+                    <th 
+                      className="text-right py-2 px-2 font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 select-none"
+                      onClick={() => { setSortColumn('avgPerGame'); setSortDirection(sortColumn === 'avgPerGame' && sortDirection === 'desc' ? 'asc' : 'desc'); }}
+                    >
+                      <span className="flex items-center justify-end gap-1">Avg/Gm {sortColumn === 'avgPerGame' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                    </th>
+                    <th 
+                      className="text-right py-2 px-2 font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 select-none"
+                      onClick={() => { setSortColumn('avgPerTxn'); setSortDirection(sortColumn === 'avgPerTxn' && sortDirection === 'desc' ? 'asc' : 'desc'); }}
+                    >
+                      <span className="flex items-center justify-end gap-1">Avg/Txn {sortColumn === 'avgPerTxn' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                    </th>
+                    <th 
+                      className="text-left py-2 px-2 font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 select-none"
+                      onClick={() => { setSortColumn('principalZone'); setSortDirection(sortColumn === 'principalZone' && sortDirection === 'asc' ? 'desc' : 'asc'); }}
+                    >
+                      <span className="flex items-center gap-1">Principal Zone {sortColumn === 'principalZone' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                    </th>
+                    <th 
+                      className="text-left py-2 px-2 font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 select-none"
+                      onClick={() => { setSortColumn('secondaryZone'); setSortDirection(sortColumn === 'secondaryZone' && sortDirection === 'asc' ? 'desc' : 'asc'); }}
+                    >
+                      <span className="flex items-center gap-1">Secondary Zone {sortColumn === 'secondaryZone' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                    </th>
+                    <th 
+                      className="text-center py-2 px-2 font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 select-none"
+                      onClick={() => { setSortColumn('avgAdvance'); setSortDirection(sortColumn === 'avgAdvance' && sortDirection === 'desc' ? 'asc' : 'desc'); }}
+                    >
+                      <span className="flex items-center justify-center gap-1">Avg Advance {sortColumn === 'avgAdvance' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                    </th>
+                    <th 
+                      className="text-left py-2 px-2 font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 select-none"
+                      onClick={() => { setSortColumn('age'); setSortDirection(sortColumn === 'age' && sortDirection === 'desc' ? 'asc' : 'desc'); }}
+                    >
+                      <span className="flex items-center gap-1">Age {sortColumn === 'age' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                    </th>
+                    <th 
+                      className="text-left py-2 px-2 font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 select-none"
+                      onClick={() => { setSortColumn('location'); setSortDirection(sortColumn === 'location' && sortDirection === 'asc' ? 'desc' : 'asc'); }}
+                    >
+                      <span className="flex items-center gap-1">Location {sortColumn === 'location' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {stats.topCustomers.map((c, i) => {
+                  {[...stats.topCustomers].sort((a, b) => {
+                    const getAgeNum = (dob: string) => {
+                      if (!dob) return 0;
+                      const parts = dob.split('/');
+                      if (parts.length < 3) return 0;
+                      const year = parseInt(parts[2], 10);
+                      return isNaN(year) ? 0 : new Date().getFullYear() - year;
+                    };
+                    let aVal: any, bVal: any;
+                    switch (sortColumn) {
+                      case 'name': aVal = a.name?.toLowerCase() || ''; bVal = b.name?.toLowerCase() || ''; break;
+                      case 'topSellType': aVal = a.topSellType?.toLowerCase() || ''; bVal = b.topSellType?.toLowerCase() || ''; break;
+                      case 'tickets': aVal = a.tickets; bVal = b.tickets; break;
+                      case 'value': aVal = a.value; bVal = b.value; break;
+                      case 'avgPerGame': aVal = a.avgPerGame; bVal = b.avgPerGame; break;
+                      case 'avgPerTxn': aVal = a.avgPerTxn; bVal = b.avgPerTxn; break;
+                      case 'principalZone': aVal = a.principalZone?.toLowerCase() || ''; bVal = b.principalZone?.toLowerCase() || ''; break;
+                      case 'secondaryZone': aVal = a.secondaryZone?.toLowerCase() || ''; bVal = b.secondaryZone?.toLowerCase() || ''; break;
+                      case 'avgAdvance': aVal = a.avgAdvance ?? -1; bVal = b.avgAdvance ?? -1; break;
+                      case 'age': aVal = getAgeNum(a.age); bVal = getAgeNum(b.age); break;
+                      case 'location': aVal = a.location?.toLowerCase() || ''; bVal = b.location?.toLowerCase() || ''; break;
+                      default: aVal = a.value; bVal = b.value;
+                    }
+                    if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+                    if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                  }).map((c, i) => {
                     let ageDisplay = '-';
                     if (c.age) {
                       const parts = c.age.split('/');
