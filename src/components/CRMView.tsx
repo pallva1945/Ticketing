@@ -518,16 +518,31 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
           </h1>
           <p className="text-sm text-gray-500 mt-1">{stats.totalTickets.toLocaleString()} tickets from {stats.uniqueCustomers.toLocaleString()} customers</p>
         </div>
-        <div className="relative">
+        <div className="flex items-center gap-3">
+          <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Filter: name, zone, type... (comma separated)"
+              placeholder="Filter: name, zone, type..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent w-80"
+              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent w-64"
             />
           </div>
+          <select
+            value={filterSellType || ''}
+            onChange={(e) => setFilterSellType(e.target.value || null)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white"
+          >
+            <option value="">All Sell Types</option>
+            <option value="Corp">Corp</option>
+            <option value="Abb">Abb</option>
+            <option value="VB">VB</option>
+            <option value="GiveAway">GiveAway</option>
+            <option value="MP">MP</option>
+            <option value="Tix">Tix</option>
+          </select>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
