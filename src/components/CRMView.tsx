@@ -238,7 +238,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
     const locationBreakdown: Record<string, { count: number; value: number }> = {};
     const zoneByAge: Record<string, Record<string, number>> = {};
     const zoneByLocation: Record<string, Record<string, number>> = {};
-    const zoneStats: Record<string, { totalValue: number; totalTickets: number }> = {};
+    const zoneStats: Record<string, { totalValue: number; totalTickets: number; totalAdvanceDays: number; advanceCount: number }> = {};
     
     const getAgeGroup = (dob: string): string => {
       if (!dob) return 'Unknown';
@@ -284,9 +284,23 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       }
 
       const zone = r.pvZone || 'Unknown';
-      if (!zoneStats[zone]) zoneStats[zone] = { totalValue: 0, totalTickets: 0 };
+      if (!zoneStats[zone]) zoneStats[zone] = { totalValue: 0, totalTickets: 0, totalAdvanceDays: 0, advanceCount: 0 };
       zoneStats[zone].totalValue += r.commercialValue;
       zoneStats[zone].totalTickets += r.quantity;
+      
+      // Calculate advance days for this zone
+      const zoneBuyTs = r.buyTimestamp && r.buyTimestamp instanceof Date && !isNaN(r.buyTimestamp.getTime()) ? r.buyTimestamp : null;
+      if (zoneBuyTs && r.gmDateTime && r.gmDateTime > 0) {
+        const gmTimeMs = r.gmDateTime < 1e12 ? r.gmDateTime * 1000 : r.gmDateTime;
+        const gameDate = new Date(gmTimeMs);
+        if (!isNaN(gameDate.getTime())) {
+          const diffDays = Math.floor((gameDate.getTime() - zoneBuyTs.getTime()) / (1000 * 60 * 60 * 24));
+          if (diffDays >= 0) {
+            zoneStats[zone].totalAdvanceDays += diffDays * r.quantity;
+            zoneStats[zone].advanceCount += r.quantity;
+          }
+        }
+      }
       
       if (ageGroup !== 'Unknown') {
         if (!zoneByAge[zone]) zoneByAge[zone] = {};
@@ -833,6 +847,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                     <th className="text-center py-3 px-4 font-medium">55-64</th>
                     <th className="text-center py-3 px-4 font-medium">65+</th>
                     <th className="text-right py-3 px-4 font-medium">Avg Price</th>
+                    <th className="text-right py-3 px-4 font-medium">Avg Advance</th>
                     <th className="text-right py-3 px-4 font-medium">Top Location</th>
                   </tr>
                 </thead>
@@ -871,6 +886,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                           })}
                           <td className="py-3 px-4 text-right font-medium text-gray-700">
                             {avgPrice > 0 ? `€${avgPrice.toFixed(0)}` : '-'}
+                          </td>
+                          <td className="py-3 px-4 text-right font-medium text-gray-700">
+                            {zs && zs.advanceCount > 0 ? `${Math.round(zs.totalAdvanceDays / zs.advanceCount)}d` : '-'}
                           </td>
                           <td className="py-3 px-4 text-right">
                             {topLoc ? (
