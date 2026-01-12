@@ -60,6 +60,13 @@ src/
   - Added 6th score card "Avg Attendance" to Ticketing dashboard (always shows total view, not affected by GameDay filter)
   - Removed Action Required banner from Ticketing dashboard
 
+- January 12, 2026: Deal Quality Fix - Now Using Delta Column
+  - Deal Quality now reads the "Delta" column directly from sponsorship CSV
+  - Delta = Revenue Received - Value Given (positive = good deal, negative = bad deal)
+  - Falls back to calculated delta if Delta column is missing from CSV
+  - Fixed formatCompactCurrency to display negative values correctly (-€25k format)
+  - Poor and Below deals now properly detected and displayed
+
 - January 10, 2026: Sponsor Tiers & Deal Quality Analytics
   - Sponsor Tiers: Platinum (€200k+), Gold (€100k-200k), Silver (€50k-100k), Bronze (€10k-50k), Micro (€0-10k)
   - Deal Quality metric based on Delta (Revenue Received - Value Given back in LED, jersey, tickets, etc.)

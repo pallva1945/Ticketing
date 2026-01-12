@@ -23,17 +23,6 @@ const getSponsorTier = (value: number) => {
   return SPONSOR_TIERS.MICRO;
 };
 
-const GAMES_PER_SEASON = 15;
-
-const calculateDelta = (sponsor: SponsorData) => {
-  const benefitsGiven = sponsor.sponsorReconciliation + 
-                        sponsor.csrReconciliation + 
-                        sponsor.corpTixReconciliation + 
-                        (sponsor.gamedayReconciliation * GAMES_PER_SEASON) + 
-                        sponsor.vbReconciliation;
-  return sponsor.commercialValue - benefitsGiven;
-};
-
 const getDealQuality = (delta: number, commercialValue: number) => {
   if (commercialValue === 0) return { label: 'N/A', score: 0, color: 'text-gray-400', bgColor: 'bg-gray-100', icon: Minus };
   const ratio = delta / commercialValue;
@@ -93,9 +82,11 @@ const formatCurrency = (value: number) => {
 };
 
 const formatCompactCurrency = (value: number) => {
-  if (value >= 1000000) return `€${(value / 1000000).toFixed(1)}M`;
-  if (value >= 1000) return `€${(value / 1000).toFixed(0)}k`;
-  return `€${value}`;
+  const absVal = Math.abs(value);
+  const sign = value < 0 ? '-' : '';
+  if (absVal >= 1000000) return `${sign}€${(absVal / 1000000).toFixed(1)}M`;
+  if (absVal >= 1000) return `${sign}€${(absVal / 1000).toFixed(0)}k`;
+  return `${sign}€${absVal}`;
 };
 
 export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({ 
@@ -280,8 +271,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       tier.count = tier.sponsors.length;
       tier.totalValue = tier.sponsors.reduce((sum, s) => sum + s.commercialValue, 0);
       const qualityScores = tier.sponsors.map(s => {
-        const delta = calculateDelta(s);
-        return getDealQuality(delta, s.commercialValue).score;
+        return getDealQuality(s.delta, s.commercialValue).score;
       });
       tier.avgDealQuality = qualityScores.length > 0 
         ? qualityScores.reduce((a, b) => a + b, 0) / qualityScores.length 
@@ -296,9 +286,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     let totalDelta = 0;
     
     filteredData.forEach(sponsor => {
-      const delta = calculateDelta(sponsor);
-      totalDelta += delta;
-      const quality = getDealQuality(delta, sponsor.commercialValue);
+      totalDelta += sponsor.delta;
+      const quality = getDealQuality(sponsor.delta, sponsor.commercialValue);
       if (quality.label === 'Excellent') qualityBuckets.excellent++;
       else if (quality.label === 'Good') qualityBuckets.good++;
       else if (quality.label === 'Fair') qualityBuckets.fair++;
@@ -307,7 +296,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     });
 
     const avgQualityScore = filteredData.length > 0 
-      ? filteredData.reduce((sum, s) => sum + getDealQuality(calculateDelta(s), s.commercialValue).score, 0) / filteredData.length 
+      ? filteredData.reduce((sum, s) => sum + getDealQuality(s.delta, s.commercialValue).score, 0) / filteredData.length 
       : 0;
 
     return { ...qualityBuckets, totalDelta, avgQualityScore, total: filteredData.length };
@@ -316,8 +305,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   const topAndWorstDeals = useMemo(() => {
     const withDelta = filteredData.map(s => ({
       ...s,
-      delta: calculateDelta(s),
-      quality: getDealQuality(calculateDelta(s), s.commercialValue)
+      delta: s.delta,
+      quality: getDealQuality(s.delta, s.commercialValue)
     }));
     const sorted = [...withDelta].sort((a, b) => b.delta - a.delta);
     return {
@@ -907,8 +896,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             <tbody>
               {(hasActiveFilter ? tableFilteredData : topSponsors.slice(0, 15)).map((sponsor, idx) => {
                 const tier = getSponsorTier(sponsor.commercialValue);
-                const delta = calculateDelta(sponsor);
-                const quality = getDealQuality(delta, sponsor.commercialValue);
+                const quality = getDealQuality(sponsor.delta, sponsor.commercialValue);
                 const QualityIcon = quality.icon;
                 return (
                 <tr key={sponsor.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
@@ -959,8 +947,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                         {quality.label}
                       </span>
                       <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                        <p>Delta: {delta >= 0 ? '+' : ''}{formatCompactCurrency(delta)}</p>
-                        <p className="text-slate-400">({((delta / sponsor.commercialValue) * 100).toFixed(1)}% margin)</p>
+                        <p>Delta: {sponsor.delta >= 0 ? '+' : ''}{formatCompactCurrency(sponsor.delta)}</p>
+                        <p className="text-slate-400">({((sponsor.delta / sponsor.commercialValue) * 100).toFixed(1)}% margin)</p>
                       </div>
                     </div>
                   </td>

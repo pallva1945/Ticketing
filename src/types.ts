@@ -135,5 +135,6 @@ export interface SponsorData {
   csrReconciliation: number;
   corpTixReconciliation: number;
   sponsorReconciliation: number;
+  delta: number;
   monthlyPayments: Record<string, number>;
 }

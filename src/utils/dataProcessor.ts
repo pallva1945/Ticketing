@@ -417,6 +417,7 @@ export const processSponsorData = (csvContent: string): SponsorData[] => {
   const csrIdx = getIndex(['csr reconciliation']);
   const corpTixIdx = getIndex(['corp tix reconciliation']);
   const sponsorRecIdx = getIndex(['sponsor reconciliation']);
+  const deltaIdx = getIndex(['delta']);
   
   const monthNames = ['july', 'august', 'september', 'october', 'november', 'december', 
                       'january', 'february', 'march', 'april', 'may', 'june'];
@@ -457,6 +458,18 @@ export const processSponsorData = (csvContent: string): SponsorData[] => {
       csrReconciliation: parseCurrency(getVal(csrIdx)),
       corpTixReconciliation: parseCurrency(getVal(corpTixIdx)),
       sponsorReconciliation: parseCurrency(getVal(sponsorRecIdx)),
+      delta: deltaIdx >= 0 && getVal(deltaIdx) 
+        ? parseCurrency(getVal(deltaIdx))
+        : (() => {
+            const commercialValue = parseCurrency(getVal(commercialValueIdx));
+            const sponsorRec = parseCurrency(getVal(sponsorRecIdx));
+            const csrRec = parseCurrency(getVal(csrIdx));
+            const corpTixRec = parseCurrency(getVal(corpTixIdx));
+            const gamedayRec = parseCurrency(getVal(gamedayIdx));
+            const vbRec = parseCurrency(getVal(vbIdx));
+            const benefitsGiven = sponsorRec + csrRec + corpTixRec + (gamedayRec * 15) + vbRec;
+            return commercialValue - benefitsGiven;
+          })(),
       monthlyPayments
     };
   }).filter(s => s.company && s.commercialValue > 0);
