@@ -151,16 +151,23 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       discountBreakdown[discount].count += r.quantity;
       discountBreakdown[discount].revenue += r.price;
 
-      if (r.group && (r.sellType === 'Corp' || r.ticketType === 'CORP')) {
-        if (!corpBreakdown[r.group]) corpBreakdown[r.group] = { count: 0, revenue: 0, value: 0 };
-        corpBreakdown[r.group].count += r.quantity;
-        corpBreakdown[r.group].revenue += r.price;
-        corpBreakdown[r.group].value += r.commercialValue;
+      const isCorp = (r.sellType || '').toLowerCase() === 'corp' || (r.ticketType || '').toLowerCase() === 'corp';
+      if (isCorp) {
+        const corpKey = r.fullName || r.group || 'Unknown';
+        if (!corpBreakdown[corpKey]) corpBreakdown[corpKey] = { count: 0, revenue: 0, value: 0 };
+        corpBreakdown[corpKey].count += r.quantity;
+        corpBreakdown[corpKey].revenue += r.price;
+        corpBreakdown[corpKey].value += r.commercialValue;
       }
     });
 
+    const nonCorpData = filteredData.filter(r => {
+      const isCorp = (r.sellType || '').toLowerCase() === 'corp' || (r.ticketType || '').toLowerCase() === 'corp';
+      return !isCorp;
+    });
+
     const topCustomers = Object.entries(
-      filteredData.reduce((acc, r) => {
+      nonCorpData.reduce((acc, r) => {
         const key = r.email || r.fullName;
         if (!acc[key]) acc[key] = { name: r.fullName, email: r.email, tickets: 0, revenue: 0, value: 0 };
         acc[key].tickets += r.quantity;
