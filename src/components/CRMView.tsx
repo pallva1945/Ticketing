@@ -85,6 +85,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
     
     const totalRevenue = filteredData.reduce((sum, r) => sum + r.price, 0);
     const totalCommercialValue = filteredData.reduce((sum, r) => sum + r.commercialValue, 0);
+    const corpCommercialValue = corporateRecords.reduce((sum, r) => sum + r.commercialValue, 0);
+    const cashReceived = totalCommercialValue - corpCommercialValue;
     const totalTickets = filteredData.reduce((sum, r) => sum + r.quantity, 0);
 
     const zoneBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
@@ -153,6 +155,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       totalTickets,
       totalRevenue,
       totalCommercialValue,
+      cashReceived,
+      corpCommercialValue,
       uniqueCustomers: uniqueCustomers.size,
       uniqueEmails: uniqueEmails.size,
       uniqueCorps: uniqueCorps.size,
@@ -353,7 +357,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                   <Euro size={16} className="text-green-600" />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-900">{formatCompact(stats.totalRevenue)}</p>
+              <p className="text-2xl font-bold text-gray-900">{formatCompact(stats.cashReceived)}</p>
               <p className="text-xs text-gray-500">Cash Received</p>
             </div>
             <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
