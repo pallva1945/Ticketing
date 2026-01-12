@@ -80,12 +80,20 @@ export function registerObjectStorageRoutes(app: Express): void {
   app.post("/api/crm/upload", async (req, res) => {
     try {
       const { content } = req.body;
+      console.log("[CRM Upload] Request received, content length:", content?.length || 0);
+      
       if (!content) {
+        console.log("[CRM Upload] Error: Missing content");
         return res.status(400).json({ error: "Missing content" });
       }
 
       const privateDir = objectStorageService.getPrivateObjectDir();
-      const { bucketName, objectName } = parseObjectPath(`${privateDir}/crm-data.csv`);
+      const fullPath = `${privateDir}/crm-data.csv`;
+      console.log("[CRM Upload] Saving to path:", fullPath);
+      
+      const { bucketName, objectName } = parseObjectPath(fullPath);
+      console.log("[CRM Upload] Bucket:", bucketName, "Object:", objectName);
+      
       const bucket = objectStorageClient.bucket(bucketName);
       const file = bucket.file(objectName);
       
@@ -94,9 +102,10 @@ export function registerObjectStorageRoutes(app: Express): void {
         metadata: { updatedAt: new Date().toISOString() }
       });
 
+      console.log("[CRM Upload] Success! Saved", content.length, "bytes");
       res.json({ success: true, path: '/api/crm/data' });
     } catch (error) {
-      console.error("Error saving CRM data:", error);
+      console.error("[CRM Upload] Error:", error);
       res.status(500).json({ error: "Failed to save CRM data" });
     }
   });
