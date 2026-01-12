@@ -925,9 +925,17 @@ const App: React.FC = () => {
         if (isFirebaseConfigured) {
             const cloudSponsor = await getCsvFromFirebase('sponsor');
             if (cloudSponsor) {
-                sponsorCsv = cloudSponsor.content;
-                setSponsorLastUpdated(cloudSponsor.updatedAt);
-                sponsorSource = 'cloud';
+                // Check if cloud data has Delta column, otherwise use local
+                const hasCloudDelta = cloudSponsor.content.toLowerCase().includes(',delta,');
+                const hasLocalDelta = SPONSOR_CSV_CONTENT.toLowerCase().includes(',delta,');
+                if (hasCloudDelta || !hasLocalDelta) {
+                    sponsorCsv = cloudSponsor.content;
+                    setSponsorLastUpdated(cloudSponsor.updatedAt);
+                    sponsorSource = 'cloud';
+                } else {
+                    // Local has Delta column but cloud doesn't - save local to cloud
+                    await saveCsvToFirebase('sponsor', SPONSOR_CSV_CONTENT);
+                }
             }
         }
         const loadedSponsors = processSponsorData(sponsorCsv);

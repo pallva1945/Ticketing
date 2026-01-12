@@ -1,5 +1,4 @@
-export const SPONSOR_CSV_CONTENT = `
-Azienda,Settore,Dimensione,Livello,Contatto,Email,Tipo Contratto,Durata Contratto,Season,Commercial Value,Bonus Playoff,Net of Ticketing,Gameday Reconciliation,VB Reconciliaiton,CSR Reconciliation,Corp Tix Reconciliation,Sponsor Reconciliation,Delta,July,August,September,October,November,December,January,February,March,April,May,June
+export const SPONSOR_CSV_CONTENT = `Azienda,Settore,Dimensione,Livello,Contatto,Email,Tipo Contratto,Durata Contratto,Season,Commercial Value,Bonus Playoff,Net of Ticketing,Gameday Reconciliation,VB Reconciliaiton,CSR Reconciliation,Corp Tix Reconciliation,Sponsor Reconciliation,Delta,July,August,September,October,November,December,January,February,March,April,May,June
 BROTHER,,,,,,CASH,Anno Solare,22/23,40.000 €,,40.000 €,0 €,40.000 €,,0 €,0 €,33.500 €,,,,,,,,,,,,
 C'ERA UNA VOLTA,,,,,,CASH,Stagione,22/23,1.500 €,,1.500 €,0 €,1.500 €,,0 €,0 €,1.500 €,,,,,,,,,,,,
 CALZATURIFICIO DI BESNATE,,,,,,CASH,Anno Solare,22/23,2.000 €,,2.000 €,0 €,2.000 €,,0 €,0 €,2.000 €,,,,,,,,,,,,
