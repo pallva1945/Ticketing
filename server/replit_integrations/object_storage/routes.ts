@@ -1,17 +1,8 @@
 import type { Express } from "express";
-import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { ObjectStorageService, ObjectNotFoundError, objectStorageClient } from "./objectStorage";
 
 /**
  * Register object storage routes for file uploads.
- *
- * This provides example routes for the presigned URL upload flow:
- * 1. POST /api/uploads/request-url - Get a presigned URL for uploading
- * 2. The client then uploads directly to the presigned URL
- *
- * IMPORTANT: These are example routes. Customize based on your use case:
- * - Add authentication middleware for protected uploads
- * - Add file metadata storage (save to database after upload)
- * - Add ACL policies for access control
  */
 export function registerObjectStorageRoutes(app: Express): void {
   const objectStorageService = new ObjectStorageService();
@@ -84,5 +75,59 @@ export function registerObjectStorageRoutes(app: Express): void {
       return res.status(500).json({ error: "Failed to serve object" });
     }
   });
+
+  // CRM-specific upload endpoint - saves to fixed path
+  app.post("/api/crm/upload", async (req, res) => {
+    try {
+      const { content } = req.body;
+      if (!content) {
+        return res.status(400).json({ error: "Missing content" });
+      }
+
+      const privateDir = objectStorageService.getPrivateObjectDir();
+      const { bucketName, objectName } = parseObjectPath(`${privateDir}/crm-data.csv`);
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      
+      await file.save(content, {
+        contentType: 'text/csv',
+        metadata: { updatedAt: new Date().toISOString() }
+      });
+
+      res.json({ success: true, path: '/api/crm/data' });
+    } catch (error) {
+      console.error("Error saving CRM data:", error);
+      res.status(500).json({ error: "Failed to save CRM data" });
+    }
+  });
+
+  // CRM-specific download endpoint - reads from fixed path
+  app.get("/api/crm/data", async (req, res) => {
+    try {
+      const privateDir = objectStorageService.getPrivateObjectDir();
+      const { bucketName, objectName } = parseObjectPath(`${privateDir}/crm-data.csv`);
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      
+      const [exists] = await file.exists();
+      if (!exists) {
+        return res.status(404).json({ error: "No CRM data found" });
+      }
+
+      const [content] = await file.download();
+      res.setHeader('Content-Type', 'text/csv');
+      res.send(content.toString());
+    } catch (error) {
+      console.error("Error loading CRM data:", error);
+      res.status(500).json({ error: "Failed to load CRM data" });
+    }
+  });
+}
+
+function parseObjectPath(path: string): { bucketName: string; objectName: string } {
+  if (!path.startsWith("/")) path = `/${path}`;
+  const parts = path.split("/");
+  if (parts.length < 3) throw new Error("Invalid path");
+  return { bucketName: parts[1], objectName: parts.slice(2).join("/") };
 }
 

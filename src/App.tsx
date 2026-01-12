@@ -950,22 +950,19 @@ const App: React.FC = () => {
         setSponsorDataSource('local');
     }
 
-    // 2b. CRM DATA LOADING (App Storage first, fallback to sample)
+    // 2b. CRM DATA LOADING (Cloud first, fallback to sample)
     try {
         let crmCsv = CRM_CSV_CONTENT;
-        const crmObjectPath = localStorage.getItem('crmObjectPath');
         
-        if (crmObjectPath) {
-            // Try to load from App Storage
-            try {
-                const response = await fetch(crmObjectPath);
-                if (response.ok) {
-                    crmCsv = await response.text();
-                    console.log('CRM loaded from cloud storage');
-                }
-            } catch (storageError) {
-                console.warn('Failed to load CRM from cloud storage:', storageError);
+        // Try to load from cloud storage via dedicated endpoint
+        try {
+            const response = await fetch('/api/crm/data');
+            if (response.ok) {
+                crmCsv = await response.text();
+                console.log('CRM loaded from cloud storage');
             }
+        } catch (storageError) {
+            console.warn('Failed to load CRM from cloud storage:', storageError);
         }
         setCrmData(processCRMData(crmCsv));
     } catch(e) {
@@ -1134,43 +1131,21 @@ const App: React.FC = () => {
         const crmRecords = processCRMData(csvContent);
         if (crmRecords.length > 0) {
           try {
-            // Upload to App Storage using presigned URL flow
-            const urlResponse = await fetch('/api/uploads/request-url', {
+            // Upload to cloud storage via dedicated CRM endpoint
+            const uploadResponse = await fetch('/api/crm/upload', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                name: 'crm-data.csv',
-                size: file.size,
-                contentType: 'text/csv'
-              })
-            });
-            
-            if (!urlResponse.ok) {
-              throw new Error('Failed to get upload URL');
-            }
-            
-            const { uploadURL, objectPath } = await urlResponse.json();
-            
-            // Upload file directly to presigned URL
-            const uploadResponse = await fetch(uploadURL, {
-              method: 'PUT',
-              body: file,
-              headers: { 'Content-Type': 'text/csv' }
+              body: JSON.stringify({ content: csvContent })
             });
             
             if (!uploadResponse.ok) {
-              throw new Error('Failed to upload file to storage');
+              throw new Error('Failed to upload CRM data');
             }
-            
-            // Store reference in localStorage for persistence
-            localStorage.setItem('crmObjectPath', objectPath);
-            localStorage.setItem('crmUploadTime', new Date().toISOString());
             
             setCrmData(crmRecords);
             alert(`Success! ${crmRecords.length} CRM records saved to cloud.`);
           } catch (uploadError: any) {
             console.error('Upload error:', uploadError);
-            // Fall back to local storage
             setCrmData(crmRecords);
             alert(`Loaded ${crmRecords.length} CRM records locally. Cloud sync unavailable.`);
           }
