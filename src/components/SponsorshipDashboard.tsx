@@ -103,13 +103,15 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   const [filterCompany, setFilterCompany] = useState<string | null>(null);
   const [filterSector, setFilterSector] = useState<string | null>(null);
   const [filterContractType, setFilterContractType] = useState<'CASH' | 'CM' | null>(null);
+  const [filterTier, setFilterTier] = useState<string | null>(null);
   
-  const hasActiveFilter = filterCompany || filterSector || filterContractType;
+  const hasActiveFilter = filterCompany || filterSector || filterContractType || filterTier;
   
   const clearAllFilters = () => {
     setFilterCompany(null);
     setFilterSector(null);
     setFilterContractType(null);
+    setFilterTier(null);
   };
 
   const seasons = useMemo(() => {
@@ -132,8 +134,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     if (filterContractType) {
       result = result.filter(d => d.contractType === filterContractType);
     }
+    if (filterTier) {
+      result = result.filter(d => getSponsorTier(d.commercialValue).name === filterTier);
+    }
     return result;
-  }, [filteredData, filterCompany, filterSector, filterContractType]);
+  }, [filteredData, filterCompany, filterSector, filterContractType, filterTier]);
 
   const stats = useMemo(() => {
     const dataSource = chartFilteredData;
@@ -419,6 +424,14 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                     </button>
                   </span>
                 )}
+                {filterTier && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
+                    Tier: {filterTier}
+                    <button onClick={() => setFilterTier(null)} className="hover:text-amber-600">
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
               </div>
             </div>
             <button 
@@ -494,7 +507,15 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
           </h3>
           <div className="space-y-3">
             {tierStats.map((tier) => (
-              <div key={tier.name} className={`flex items-center gap-3 p-3 rounded-lg border ${tier.count > 0 ? tier.borderColor : 'border-gray-200'} bg-gray-50`}>
+              <div 
+                key={tier.name} 
+                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                  filterTier === tier.name 
+                    ? 'ring-2 ring-amber-400 border-amber-400' 
+                    : tier.count > 0 ? tier.borderColor : 'border-gray-200'
+                } ${tier.count > 0 ? 'bg-gray-50 hover:bg-gray-100' : 'bg-gray-50 opacity-50'}`}
+                onClick={() => tier.count > 0 && setFilterTier(filterTier === tier.name ? null : tier.name)}
+              >
                 <div className={`w-10 h-10 rounded-lg ${tier.bgColor} ${tier.textColor} flex items-center justify-center font-bold text-sm`}>
                   {tier.count}
                 </div>
@@ -572,7 +593,10 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                   return (
                     <div key={s.id} className="flex items-center gap-2 bg-emerald-50 rounded px-2 py-1">
                       <span className="w-4 h-4 bg-emerald-600 text-white rounded-full flex items-center justify-center text-[9px] font-bold shrink-0">{i + 1}</span>
-                      <span className="flex-1 text-[11px] font-semibold text-gray-800 truncate">{s.company}</span>
+                      <span 
+                        className="flex-1 text-[11px] font-semibold text-gray-800 truncate cursor-pointer hover:text-emerald-700 hover:underline"
+                        onClick={() => setFilterCompany(filterCompany === s.company ? null : s.company)}
+                      >{s.company}</span>
                       <span className="text-[11px] font-bold text-emerald-700 shrink-0">{score}/5</span>
                     </div>
                   );
@@ -587,7 +611,10 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                   return (
                     <div key={s.id} className="flex items-center gap-2 bg-red-50 rounded px-2 py-1">
                       <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[9px] font-bold shrink-0">{i + 1}</span>
-                      <span className="flex-1 text-[11px] font-semibold text-gray-800 truncate">{s.company}</span>
+                      <span 
+                        className="flex-1 text-[11px] font-semibold text-gray-800 truncate cursor-pointer hover:text-red-700 hover:underline"
+                        onClick={() => setFilterCompany(filterCompany === s.company ? null : s.company)}
+                      >{s.company}</span>
                       <span className="text-[11px] font-bold text-red-700 shrink-0">{score}/5</span>
                     </div>
                   );
