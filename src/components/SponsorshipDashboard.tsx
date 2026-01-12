@@ -573,7 +573,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                     <div key={s.id} className="flex items-center gap-2 bg-emerald-50 rounded px-2 py-1">
                       <span className="w-4 h-4 bg-emerald-600 text-white rounded-full flex items-center justify-center text-[9px] font-bold shrink-0">{i + 1}</span>
                       <span className="flex-1 text-[11px] font-semibold text-gray-800 truncate">{s.company}</span>
-                      <span className="text-[11px] font-bold text-emerald-700 shrink-0">{score}</span>
+                      <span className="text-[11px] font-bold text-emerald-700 shrink-0">{score}/5</span>
                     </div>
                   );
                 })}
@@ -588,7 +588,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                     <div key={s.id} className="flex items-center gap-2 bg-red-50 rounded px-2 py-1">
                       <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[9px] font-bold shrink-0">{i + 1}</span>
                       <span className="flex-1 text-[11px] font-semibold text-gray-800 truncate">{s.company}</span>
-                      <span className="text-[11px] font-bold text-red-700 shrink-0">{score}</span>
+                      <span className="text-[11px] font-bold text-red-700 shrink-0">{score}/5</span>
                     </div>
                   );
                 })}
