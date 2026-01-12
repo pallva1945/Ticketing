@@ -61,17 +61,46 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
   const [searchQuery, setSearchQuery] = useState('');
   const [filterZone, setFilterZone] = useState<string | null>(null);
   const [filterEvent, setFilterEvent] = useState<string | null>(null);
-  const [filterSellType, setFilterSellType] = useState<string | null>(null);
+  const [capacityView, setCapacityView] = useState<'all' | 'fixed' | 'gameday'>('all');
   const [activeView, setActiveView] = useState<'overview' | 'demographics' | 'behavior' | 'customers' | 'corporate'>('overview');
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
 
-  const hasActiveFilter = filterZone || filterEvent || filterSellType || searchQuery;
+  const hasActiveFilter = filterZone || filterEvent || capacityView !== 'all' || searchQuery;
 
   const clearAllFilters = () => {
     setFilterZone(null);
     setFilterEvent(null);
-    setFilterSellType(null);
+    setCapacityView('all');
     setSearchQuery('');
+  };
+
+  const seasonStartDates = useMemo(() => {
+    const startDates: Record<string, number> = {};
+    data.forEach(r => {
+      if (r.gmDateTime && r.season) {
+        const existing = startDates[r.season];
+        if (!existing || r.gmDateTime < existing) {
+          startDates[r.season] = r.gmDateTime;
+        }
+      }
+    });
+    return startDates;
+  }, [data]);
+
+  const getCapacityBucket = (r: CRMRecord): 'fixed' | 'gameday' => {
+    const sellLower = (r.sellType || '').toLowerCase();
+    const ticketLower = (r.ticketType || '').toLowerCase();
+    
+    const buyTs = r.buyTimestamp instanceof Date ? r.buyTimestamp.getTime() : null;
+    if (buyTs && r.season && seasonStartDates[r.season]) {
+      return buyTs < seasonStartDates[r.season] ? 'fixed' : 'gameday';
+    }
+    
+    if (['abb', 'abbonamento', 'corp'].includes(sellLower) || ['abb', 'abbonamento', 'corp'].includes(ticketLower)) {
+      return 'fixed';
+    }
+    
+    return 'gameday';
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -108,10 +137,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
     }
     if (filterZone) result = result.filter(r => r.pvZone === filterZone);
     if (filterEvent) result = result.filter(r => (r.event || '').includes(filterEvent));
-    if (filterSellType) result = result.filter(r => (r.sellType || '').toLowerCase() === filterSellType.toLowerCase());
+    if (capacityView !== 'all') {
+      result = result.filter(r => getCapacityBucket(r) === capacityView);
+    }
     
     return result;
-  }, [data, searchQuery, filterZone, filterEvent, filterSellType]);
+  }, [data, searchQuery, filterZone, filterEvent, capacityView, seasonStartDates]);
 
   const sectorLookup = useMemo(() => {
     const lookup: Record<string, { sector: string; sector2?: string }> = {};
@@ -575,19 +606,25 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
               className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent w-64"
             />
           </div>
-          <select
-            value={filterSellType || ''}
-            onChange={(e) => setFilterSellType(e.target.value || null)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white"
-          >
-            <option value="">All Sell Types</option>
-            <option value="Corp">Corp</option>
-            <option value="Abb">Abb</option>
-            <option value="VB">VB</option>
-            <option value="GiveAway">GiveAway</option>
-            <option value="MP">MP</option>
-            <option value="Tix">Tix</option>
-          </select>
+          <div className="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1">
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'fixed', label: 'Fixed Capacity' },
+              { key: 'gameday', label: 'GameDay' }
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setCapacityView(key as 'all' | 'fixed' | 'gameday')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                  capacityView === key
+                    ? 'bg-white text-gray-800 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-800'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -636,10 +673,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                     <button onClick={() => setFilterEvent(null)} className="hover:text-amber-600"><X size={12} /></button>
                   </span>
                 )}
-                {filterSellType && (
+                {capacityView !== 'all' && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
-                    Type: {filterSellType}
-                    <button onClick={() => setFilterSellType(null)} className="hover:text-amber-600"><X size={12} /></button>
+                    View: {capacityView === 'fixed' ? 'Fixed Capacity' : 'GameDay'}
+                    <button onClick={() => setCapacityView('all')} className="hover:text-amber-600"><X size={12} /></button>
                   </span>
                 )}
               </div>
@@ -734,12 +771,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       labelLine={false}
                     >
-                      {ticketTypeDistributionData.map((entry, index) => (
+                      {ticketTypeDistributionData.map((_, index) => (
                         <Cell 
                           key={`cell-${index}`} 
                           fill={COLORS[index % COLORS.length]} 
-                          cursor="pointer"
-                          onClick={() => setFilterSellType(filterSellType === entry.name ? null : entry.name)}
                         />
                       ))}
                     </Pie>
@@ -769,8 +804,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                       dataKey="value" 
                       fill="#16a34a" 
                       radius={[4, 4, 0, 0]}
-                      cursor="pointer"
-                      onClick={(data) => setFilterSellType(filterSellType === data.name ? null : data.name)}
                     />
                   </BarChart>
                 </ResponsiveContainer>
