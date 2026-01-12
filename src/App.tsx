@@ -1344,11 +1344,8 @@ const App: React.FC = () => {
           const gdRev = gdData.reduce((acc, g) => acc + (g.totalRevenue - g.tixRevenue), 0);
           const gdGames = gdData.length;
           
-          // Corp Tickets revenue from TICKETING data (SalesChannel.CORP)
-          const corpTixRev = ticketingData.reduce((sum, game) => {
-              const corpSales = game.salesBreakdown.filter(s => s.channel === SalesChannel.CORP);
-              return sum + corpSales.reduce((acc, s) => acc + s.revenue, 0);
-          }, 0);
+          // Corp Tickets revenue from TICKETING data (aggregate "Corp Eur" column)
+          const corpTixRev = ticketingData.reduce((sum, game) => sum + game.corpRevenue, 0);
           
           // Sponsorship
           const sponsorSeason = season.replace('-', '/');

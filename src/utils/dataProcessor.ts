@@ -186,6 +186,7 @@ export const processGameData = (csvContent: string): GameData[] => {
     const attendance = parseInteger(getValue(['Tot pay Num', 'Total Pay Num'])); 
     const totalAttendance = parseInteger(getValue(['Total num', 'Total Attendance']));
     const totalRevenue = parseCurrency(getValue(['Tot Eur', 'Total Revenue']));
+    const corpRevenue = parseCurrency(getValue(['Corp Eur']));
 
     // --- PnL Data (Columns 1-12) ---
     const pnlBreakdown: Record<number, number> = {};
@@ -290,7 +291,7 @@ export const processGameData = (csvContent: string): GameData[] => {
 
     return {
       id, opponent, date, attendance: totalAttendance || attendance,
-      capacity: currentTotalCapacity, zoneCapacities, totalRevenue,
+      capacity: currentTotalCapacity, zoneCapacities, totalRevenue, corpRevenue,
       salesBreakdown,
       league, season, oppRank, pvRank, tier, pnlBreakdown, ticketTypeBreakdown
     };

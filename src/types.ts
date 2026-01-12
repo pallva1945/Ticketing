@@ -48,6 +48,7 @@ export interface GameData {
   capacity: number;
   zoneCapacities: Record<string, number>; // Dynamic capacity per zone for this specific game
   totalRevenue: number;
+  corpRevenue: number; // Aggregate Corp Eur from CSV
   salesBreakdown: SalesDataPoint[];
   league: string;
   season: string;
