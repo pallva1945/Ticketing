@@ -190,13 +190,41 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
     const topCustomers = Object.entries(
       nonCorpData.reduce((acc, r) => {
         const key = getCustomerKey(r);
-        if (!acc[key]) acc[key] = { name: r.fullName, email: r.email, tickets: 0, revenue: 0, value: 0 };
+        if (!acc[key]) acc[key] = { 
+          name: r.fullName, 
+          email: r.email, 
+          tickets: 0, 
+          revenue: 0, 
+          value: 0,
+          zones: {} as Record<string, number>,
+          age: r.dob || '',
+          location: r.province || r.pob || '',
+          advanceDays: [] as number[]
+        };
         acc[key].tickets += Number(r.quantity) || 1;
         acc[key].revenue += Number(r.price) || 0;
         acc[key].value += Number(r.commercialValue) || 0;
+        const zone = r.pvZone || r.zone || 'Unknown';
+        acc[key].zones[zone] = (acc[key].zones[zone] || 0) + (Number(r.quantity) || 1);
+        if (!acc[key].age && r.dob) acc[key].age = r.dob;
+        if (!acc[key].location && (r.province || r.pob)) acc[key].location = r.province || r.pob || '';
+        
+        const buyTs = r.buyTimestamp && r.buyTimestamp instanceof Date && !isNaN(r.buyTimestamp.getTime()) ? r.buyTimestamp : null;
+        if (buyTs && r.gmDateTime && r.gmDateTime > 0) {
+          const gmTimeMs = r.gmDateTime < 1e12 ? r.gmDateTime * 1000 : r.gmDateTime;
+          const gameDate = new Date(gmTimeMs);
+          if (!isNaN(gameDate.getTime())) {
+            const diffDays = Math.floor((gameDate.getTime() - buyTs.getTime()) / (1000 * 60 * 60 * 24));
+            if (diffDays >= 0) acc[key].advanceDays.push(diffDays);
+          }
+        }
         return acc;
-      }, {} as Record<string, { name: string; email: string; tickets: number; revenue: number; value: number }>)
-    ).map(([key, val]) => ({ key, ...val }))
+      }, {} as Record<string, { name: string; email: string; tickets: number; revenue: number; value: number; zones: Record<string, number>; age: string; location: string; advanceDays: number[] }>)
+    ).map(([key, val]) => {
+      const favoriteZone = Object.entries(val.zones).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unknown';
+      const avgAdvance = val.advanceDays.length > 0 ? Math.round(val.advanceDays.reduce((a, b) => a + b, 0) / val.advanceDays.length) : null;
+      return { key, ...val, favoriteZone, avgAdvance };
+    })
      .sort((a, b) => b.value - a.value)
      .slice(0, 10);
 
@@ -626,31 +654,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                 </ResponsiveContainer>
               </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <Award size={20} className="text-amber-500" />
-                Top 10 Customers by Value
-              </h3>
-              <div className="space-y-2 max-h-72 overflow-y-auto">
-                {stats.topCustomers.map((c, i) => (
-                  <div 
-                    key={c.key} 
-                    className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors"
-                    onClick={() => setSelectedCustomer(selectedCustomer === c.key ? null : c.key)}
-                  >
-                    <span className="w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0">{i + 1}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-800 truncate">{c.name}</p>
-                      <p className="text-xs text-gray-500">{c.tickets} tickets</p>
-                    </div>
-                    <span className="font-bold text-gray-900">{formatCompact(c.value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
 
             <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
@@ -677,6 +680,67 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Award size={20} className="text-amber-500" />
+              Top 10 Customers by Value
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-2 px-2 font-semibold text-gray-600">#</th>
+                    <th className="text-left py-2 px-2 font-semibold text-gray-600">Customer</th>
+                    <th className="text-center py-2 px-2 font-semibold text-gray-600">Tickets</th>
+                    <th className="text-right py-2 px-2 font-semibold text-gray-600">Value</th>
+                    <th className="text-left py-2 px-2 font-semibold text-gray-600">Favorite Zone</th>
+                    <th className="text-center py-2 px-2 font-semibold text-gray-600">Avg Advance</th>
+                    <th className="text-left py-2 px-2 font-semibold text-gray-600">Age</th>
+                    <th className="text-left py-2 px-2 font-semibold text-gray-600">Location</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.topCustomers.map((c, i) => {
+                    let ageDisplay = '-';
+                    if (c.age) {
+                      const parts = c.age.split('/');
+                      if (parts.length >= 3) {
+                        const year = parseInt(parts[2], 10);
+                        if (!isNaN(year)) {
+                          ageDisplay = String(new Date().getFullYear() - year);
+                        }
+                      }
+                    }
+                    return (
+                      <tr 
+                        key={c.key} 
+                        className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                        onClick={() => setSelectedCustomer(selectedCustomer === c.key ? null : c.key)}
+                      >
+                        <td className="py-2 px-2">
+                          <span className="w-6 h-6 bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
+                        </td>
+                        <td className="py-2 px-2">
+                          <p className="font-medium text-gray-800">{c.name}</p>
+                        </td>
+                        <td className="py-2 px-2 text-center text-gray-600">{c.tickets}</td>
+                        <td className="py-2 px-2 text-right font-bold text-gray-900">{formatCompact(c.value)}</td>
+                        <td className="py-2 px-2">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">{c.favoriteZone}</span>
+                        </td>
+                        <td className="py-2 px-2 text-center text-gray-600">
+                          {c.avgAdvance !== null ? `${c.avgAdvance}d` : '-'}
+                        </td>
+                        <td className="py-2 px-2 text-gray-600">{ageDisplay}</td>
+                        <td className="py-2 px-2 text-gray-600">{c.location || '-'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         </>
