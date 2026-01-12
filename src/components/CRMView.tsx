@@ -588,7 +588,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
           <div className="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1">
             {[
               { key: 'all', label: 'All' },
-              { key: 'fixed', label: 'Fix Sold (Summer)' },
+              { key: 'fixed', label: 'Fix Sell (Summer)' },
               { key: 'flexible', label: 'Flexible Sell (inSeason)' }
             ].map(({ key, label }) => (
               <button
@@ -654,7 +654,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                 )}
                 {capacityView !== 'all' && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
-                    View: {capacityView === 'fixed' ? 'Fix Sold (Summer)' : 'Flexible Sell (inSeason)'}
+                    View: {capacityView === 'fixed' ? 'Fix Sell (Summer)' : 'Flexible Sell (inSeason)'}
                     <button onClick={() => setCapacityView('all')} className="hover:text-amber-600"><X size={12} /></button>
                   </span>
                 )}
