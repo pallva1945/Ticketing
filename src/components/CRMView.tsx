@@ -61,46 +61,25 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
   const [searchQuery, setSearchQuery] = useState('');
   const [filterZone, setFilterZone] = useState<string | null>(null);
   const [filterEvent, setFilterEvent] = useState<string | null>(null);
-  const [capacityView, setCapacityView] = useState<'all' | 'fixed' | 'gameday'>('all');
+  const [capacityView, setCapacityView] = useState<'all' | 'fixed' | 'flexible'>('all');
   const [activeView, setActiveView] = useState<'overview' | 'demographics' | 'behavior' | 'customers' | 'corporate'>('overview');
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
 
   const hasActiveFilter = filterZone || filterEvent || capacityView !== 'all' || searchQuery;
+
+  const getCapacityBucket = (r: CRMRecord): 'fixed' | 'flexible' => {
+    const eventLower = (r.event || '').toLowerCase();
+    if (eventLower.includes('abbonamento') && eventLower.includes('lba')) {
+      return 'fixed';
+    }
+    return 'flexible';
+  };
 
   const clearAllFilters = () => {
     setFilterZone(null);
     setFilterEvent(null);
     setCapacityView('all');
     setSearchQuery('');
-  };
-
-  const seasonStartDates = useMemo(() => {
-    const startDates: Record<string, number> = {};
-    data.forEach(r => {
-      if (r.gmDateTime && r.season) {
-        const existing = startDates[r.season];
-        if (!existing || r.gmDateTime < existing) {
-          startDates[r.season] = r.gmDateTime;
-        }
-      }
-    });
-    return startDates;
-  }, [data]);
-
-  const getCapacityBucket = (r: CRMRecord): 'fixed' | 'gameday' => {
-    const sellLower = (r.sellType || '').toLowerCase();
-    const ticketLower = (r.ticketType || '').toLowerCase();
-    
-    if (['abb', 'abbonamento', 'corp'].includes(sellLower) || ['abb', 'abbonamento', 'corp'].includes(ticketLower)) {
-      return 'fixed';
-    }
-    
-    const buyTs = r.buyTimestamp instanceof Date ? r.buyTimestamp.getTime() : null;
-    if (buyTs && r.season && seasonStartDates[r.season]) {
-      return buyTs < seasonStartDates[r.season] ? 'fixed' : 'gameday';
-    }
-    
-    return 'gameday';
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,7 +121,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
     }
     
     return result;
-  }, [data, searchQuery, filterZone, filterEvent, capacityView, seasonStartDates]);
+  }, [data, searchQuery, filterZone, filterEvent, capacityView]);
 
   const sectorLookup = useMemo(() => {
     const lookup: Record<string, { sector: string; sector2?: string }> = {};
@@ -609,12 +588,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
           <div className="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1">
             {[
               { key: 'all', label: 'All' },
-              { key: 'fixed', label: 'Fixed Capacity' },
-              { key: 'gameday', label: 'GameDay' }
+              { key: 'fixed', label: 'Fix Sold (Summer)' },
+              { key: 'flexible', label: 'Flexible Sell (inSeason)' }
             ].map(({ key, label }) => (
               <button
                 key={key}
-                onClick={() => setCapacityView(key as 'all' | 'fixed' | 'gameday')}
+                onClick={() => setCapacityView(key as 'all' | 'fixed' | 'flexible')}
                 className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                   capacityView === key
                     ? 'bg-white text-gray-800 shadow-sm'
@@ -675,7 +654,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                 )}
                 {capacityView !== 'all' && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
-                    View: {capacityView === 'fixed' ? 'Fixed Capacity' : 'GameDay'}
+                    View: {capacityView === 'fixed' ? 'Fix Sold (Summer)' : 'Flexible Sell (inSeason)'}
                     <button onClick={() => setCapacityView('all')} className="hover:text-amber-600"><X size={12} /></button>
                   </span>
                 )}
