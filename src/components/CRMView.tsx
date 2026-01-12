@@ -51,7 +51,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
   const [filterZone, setFilterZone] = useState<string | null>(null);
   const [filterEvent, setFilterEvent] = useState<string | null>(null);
   const [filterSellType, setFilterSellType] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<'overview' | 'customers' | 'corporate' | 'zones'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'demographics' | 'behavior' | 'customers' | 'corporate'>('overview');
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
 
   const hasActiveFilter = filterZone || filterEvent || filterSellType || searchQuery;
@@ -205,6 +205,99 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       .sort((a, b) => b.value - a.value)
       .slice(0, 10);
 
+    // Demographics calculations
+    const ageBreakdown: Record<string, { count: number; value: number }> = {};
+    const locationBreakdown: Record<string, { count: number; value: number }> = {};
+    const zoneByAge: Record<string, Record<string, number>> = {};
+    const zoneByLocation: Record<string, Record<string, number>> = {};
+    
+    const getAgeGroup = (dob: string): string => {
+      if (!dob) return 'Unknown';
+      const parts = dob.split('/');
+      if (parts.length < 3) return 'Unknown';
+      const year = parseInt(parts[2], 10);
+      if (isNaN(year)) return 'Unknown';
+      const currentYear = new Date().getFullYear();
+      const age = currentYear - year;
+      if (age < 18) return 'Under 18';
+      if (age < 25) return '18-24';
+      if (age < 35) return '25-34';
+      if (age < 45) return '35-44';
+      if (age < 55) return '45-54';
+      if (age < 65) return '55-64';
+      return '65+';
+    };
+
+    // Buying behavior calculations
+    const purchaseHourBreakdown: Record<string, { count: number; value: number }> = {};
+    const purchaseDayBreakdown: Record<string, { count: number; value: number }> = {};
+    const advanceBookingBreakdown: Record<string, { count: number; value: number }> = {};
+    const monthBreakdown: Record<string, { count: number; value: number }> = {};
+
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    filteredData.forEach(r => {
+      const ageGroup = getAgeGroup(r.dob);
+      if (!ageBreakdown[ageGroup]) ageBreakdown[ageGroup] = { count: 0, value: 0 };
+      ageBreakdown[ageGroup].count += r.quantity;
+      ageBreakdown[ageGroup].value += r.commercialValue;
+
+      const location = r.province || r.pob || 'Unknown';
+      const normalizedLoc = location.trim().toUpperCase() || 'Unknown';
+      if (!locationBreakdown[normalizedLoc]) locationBreakdown[normalizedLoc] = { count: 0, value: 0 };
+      locationBreakdown[normalizedLoc].count += r.quantity;
+      locationBreakdown[normalizedLoc].value += r.commercialValue;
+
+      const zone = r.pvZone || 'Unknown';
+      if (!zoneByAge[zone]) zoneByAge[zone] = {};
+      if (!zoneByAge[zone][ageGroup]) zoneByAge[zone][ageGroup] = 0;
+      zoneByAge[zone][ageGroup] += r.quantity;
+
+      if (!zoneByLocation[zone]) zoneByLocation[zone] = {};
+      if (!zoneByLocation[zone][normalizedLoc]) zoneByLocation[zone][normalizedLoc] = 0;
+      zoneByLocation[zone][normalizedLoc] += r.quantity;
+
+      // Buying behavior
+      if (r.buyTimestamp && r.buyTimestamp instanceof Date && !isNaN(r.buyTimestamp.getTime())) {
+        const hour = r.buyTimestamp.getHours();
+        const hourLabel = `${hour.toString().padStart(2, '0')}:00`;
+        if (!purchaseHourBreakdown[hourLabel]) purchaseHourBreakdown[hourLabel] = { count: 0, value: 0 };
+        purchaseHourBreakdown[hourLabel].count += r.quantity;
+        purchaseHourBreakdown[hourLabel].value += r.commercialValue;
+
+        const dayOfWeek = dayNames[r.buyTimestamp.getDay()];
+        if (!purchaseDayBreakdown[dayOfWeek]) purchaseDayBreakdown[dayOfWeek] = { count: 0, value: 0 };
+        purchaseDayBreakdown[dayOfWeek].count += r.quantity;
+        purchaseDayBreakdown[dayOfWeek].value += r.commercialValue;
+
+        const monthKey = `${r.buyTimestamp.getFullYear()}-${(r.buyTimestamp.getMonth() + 1).toString().padStart(2, '0')}`;
+        if (!monthBreakdown[monthKey]) monthBreakdown[monthKey] = { count: 0, value: 0 };
+        monthBreakdown[monthKey].count += r.quantity;
+        monthBreakdown[monthKey].value += r.commercialValue;
+      }
+
+      // Advance booking (days before game)
+      const buyTs = r.buyTimestamp && r.buyTimestamp instanceof Date && !isNaN(r.buyTimestamp.getTime()) ? r.buyTimestamp : null;
+      if (buyTs && r.gmDateTime && r.gmDateTime > 0) {
+        const gmTimeMs = r.gmDateTime < 1e12 ? r.gmDateTime * 1000 : r.gmDateTime;
+        const gameDate = new Date(gmTimeMs);
+        if (!isNaN(gameDate.getTime())) {
+          const diffDays = Math.floor((gameDate.getTime() - buyTs.getTime()) / (1000 * 60 * 60 * 24));
+          let advanceLabel: string;
+          if (diffDays <= 0) advanceLabel = 'Same Day';
+          else if (diffDays <= 3) advanceLabel = '1-3 Days';
+          else if (diffDays <= 7) advanceLabel = '4-7 Days';
+          else if (diffDays <= 14) advanceLabel = '1-2 Weeks';
+          else if (diffDays <= 30) advanceLabel = '2-4 Weeks';
+          else advanceLabel = '1+ Month';
+          
+          if (!advanceBookingBreakdown[advanceLabel]) advanceBookingBreakdown[advanceLabel] = { count: 0, value: 0 };
+          advanceBookingBreakdown[advanceLabel].count += r.quantity;
+          advanceBookingBreakdown[advanceLabel].value += r.commercialValue;
+        }
+      }
+    });
+
     return {
       totalTickets,
       totalRevenue,
@@ -222,17 +315,67 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       paymentBreakdown,
       discountBreakdown,
       topCustomers,
-      topCorps
+      topCorps,
+      ageBreakdown,
+      locationBreakdown,
+      zoneByAge,
+      zoneByLocation,
+      purchaseHourBreakdown,
+      purchaseDayBreakdown,
+      advanceBookingBreakdown,
+      monthBreakdown
     };
   }, [filteredData]);
 
 
-  const zoneChartData = useMemo(() => 
-    Object.entries(stats.zoneBreakdown)
-      .map(([zone, val]) => ({ zone, tickets: val.count, value: val.value }))
+  const ageChartData = useMemo(() => {
+    const order = ['Under 18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+', 'Unknown'];
+    return Object.entries(stats.ageBreakdown)
+      .map(([age, val]) => ({ age, tickets: val.count, value: val.value }))
+      .sort((a, b) => order.indexOf(a.age) - order.indexOf(b.age));
+  }, [stats.ageBreakdown]);
+
+  const locationChartData = useMemo(() => 
+    Object.entries(stats.locationBreakdown)
+      .map(([location, val]) => ({ location, tickets: val.count, value: val.value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 10),
-  [stats.zoneBreakdown]);
+  [stats.locationBreakdown]);
+
+  const hourChartData = useMemo(() => {
+    const hours = [];
+    for (let i = 0; i < 24; i++) {
+      const label = `${i.toString().padStart(2, '0')}:00`;
+      const data = stats.purchaseHourBreakdown[label] || { count: 0, value: 0 };
+      hours.push({ hour: label, tickets: data.count, value: data.value });
+    }
+    return hours;
+  }, [stats.purchaseHourBreakdown]);
+
+  const dayChartData = useMemo(() => {
+    const order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    return order.map(day => ({
+      day,
+      tickets: stats.purchaseDayBreakdown[day]?.count || 0,
+      value: stats.purchaseDayBreakdown[day]?.value || 0
+    }));
+  }, [stats.purchaseDayBreakdown]);
+
+  const advanceChartData = useMemo(() => {
+    const order = ['Same Day', '1-3 Days', '4-7 Days', '1-2 Weeks', '2-4 Weeks', '1+ Month'];
+    return order.map(label => ({
+      label,
+      tickets: stats.advanceBookingBreakdown[label]?.count || 0,
+      value: stats.advanceBookingBreakdown[label]?.value || 0
+    })).filter(d => d.tickets > 0);
+  }, [stats.advanceBookingBreakdown]);
+
+  const paymentChartData = useMemo(() => 
+    Object.entries(stats.paymentBreakdown)
+      .map(([method, val]) => ({ method, tickets: val.count, revenue: val.revenue }))
+      .sort((a, b) => b.tickets - a.tickets)
+      .slice(0, 8),
+  [stats.paymentBreakdown]);
 
   const salesChannelChartData = useMemo(() => 
     Object.entries(stats.rawSellTypeBreakdown)
@@ -325,7 +468,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        {['overview', 'customers', 'corporate', 'zones'].map(view => (
+        {['overview', 'demographics', 'behavior', 'customers', 'corporate'].map(view => (
           <button
             key={view}
             onClick={() => setActiveView(view as any)}
@@ -336,9 +479,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
             }`}
           >
             {view === 'overview' && <BarChart3 size={14} className="inline mr-2" />}
+            {view === 'demographics' && <Users size={14} className="inline mr-2" />}
+            {view === 'behavior' && <TrendingUp size={14} className="inline mr-2" />}
             {view === 'customers' && <UserCheck size={14} className="inline mr-2" />}
             {view === 'corporate' && <Building2 size={14} className="inline mr-2" />}
-            {view === 'zones' && <MapPin size={14} className="inline mr-2" />}
             {view.charAt(0).toUpperCase() + view.slice(1)}
           </button>
         ))}
@@ -449,33 +593,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <MapPin size={20} className="text-red-500" />
-                Revenue by Zone
-              </h3>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={zoneChartData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis type="number" tickFormatter={(v) => formatCompact(v)} tick={{ fontSize: 11 }} />
-                    <YAxis type="category" dataKey="zone" tick={{ fontSize: 10 }} width={80} />
-                    <Tooltip 
-                      formatter={(value: number) => formatCurrency(value)}
-                      contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
-                    />
-                    <Bar 
-                      dataKey="value" 
-                      fill="#dc2626" 
-                      radius={[0, 4, 4, 0]}
-                      cursor="pointer"
-                      onClick={(data) => setFilterZone(filterZone === data.zone ? null : data.zone)}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                 <PieChart size={20} className="text-blue-500" />
                 Ticket Type Distribution
               </h3>
@@ -558,6 +675,206 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                       onClick={(data) => setFilterSellType(filterSellType === data.name ? null : data.name)}
                     />
                   </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeView === 'demographics' && (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Users size={20} className="text-blue-500" />
+                Age Distribution
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={ageChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="age" tick={{ fontSize: 10 }} />
+                    <YAxis tickFormatter={(v) => v.toLocaleString()} tick={{ fontSize: 11 }} />
+                    <Tooltip 
+                      formatter={(value: number, name: string) => [value.toLocaleString(), name === 'tickets' ? 'Tickets' : 'Value']}
+                      contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
+                    />
+                    <Bar dataKey="tickets" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <MapPin size={20} className="text-green-500" />
+                Top Locations (Province)
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={locationChartData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis type="number" tickFormatter={(v) => v.toLocaleString()} tick={{ fontSize: 11 }} />
+                    <YAxis type="category" dataKey="location" tick={{ fontSize: 10 }} width={60} />
+                    <Tooltip 
+                      formatter={(value: number) => [value.toLocaleString() + ' tickets']}
+                      contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
+                    />
+                    <Bar dataKey="tickets" fill="#16a34a" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Users size={20} className="text-purple-500" />
+              Buyer Persona by Zone
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-gray-600">
+                  <tr>
+                    <th className="text-left py-3 px-4 font-medium">Zone</th>
+                    <th className="text-right py-3 px-4 font-medium">Under 18</th>
+                    <th className="text-right py-3 px-4 font-medium">18-24</th>
+                    <th className="text-right py-3 px-4 font-medium">25-34</th>
+                    <th className="text-right py-3 px-4 font-medium">35-44</th>
+                    <th className="text-right py-3 px-4 font-medium">45-54</th>
+                    <th className="text-right py-3 px-4 font-medium">55-64</th>
+                    <th className="text-right py-3 px-4 font-medium">65+</th>
+                    <th className="text-right py-3 px-4 font-medium">Top Location</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {Object.entries(stats.zoneByAge)
+                    .sort((a, b) => Object.values(b[1]).reduce((s, v) => s + v, 0) - Object.values(a[1]).reduce((s, v) => s + v, 0))
+                    .slice(0, 10)
+                    .map(([zone, ages]) => {
+                      const locations = stats.zoneByLocation[zone] || {};
+                      const topLoc = Object.entries(locations).sort((a, b) => b[1] - a[1])[0];
+                      return (
+                        <tr key={zone} className="hover:bg-gray-50">
+                          <td className="py-3 px-4 font-medium text-gray-800">{zone}</td>
+                          <td className="py-3 px-4 text-right text-gray-600">{ages['Under 18'] || 0}</td>
+                          <td className="py-3 px-4 text-right text-gray-600">{ages['18-24'] || 0}</td>
+                          <td className="py-3 px-4 text-right text-gray-600">{ages['25-34'] || 0}</td>
+                          <td className="py-3 px-4 text-right text-gray-600">{ages['35-44'] || 0}</td>
+                          <td className="py-3 px-4 text-right text-gray-600">{ages['45-54'] || 0}</td>
+                          <td className="py-3 px-4 text-right text-gray-600">{ages['55-64'] || 0}</td>
+                          <td className="py-3 px-4 text-right text-gray-600">{ages['65+'] || 0}</td>
+                          <td className="py-3 px-4 text-right">
+                            {topLoc ? (
+                              <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">{topLoc[0]}</span>
+                            ) : '-'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+
+      {activeView === 'behavior' && (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <TrendingUp size={20} className="text-blue-500" />
+                Purchase Time (Hour of Day)
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={hourChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="hour" tick={{ fontSize: 9 }} interval={2} />
+                    <YAxis tickFormatter={(v) => v.toLocaleString()} tick={{ fontSize: 11 }} />
+                    <Tooltip 
+                      formatter={(value: number) => [value.toLocaleString() + ' tickets']}
+                      contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
+                    />
+                    <Bar dataKey="tickets" fill="#3b82f6" radius={[2, 2, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <BarChart3 size={20} className="text-purple-500" />
+                Purchase Day of Week
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dayChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="day" tick={{ fontSize: 10 }} />
+                    <YAxis tickFormatter={(v) => v.toLocaleString()} tick={{ fontSize: 11 }} />
+                    <Tooltip 
+                      formatter={(value: number) => [value.toLocaleString() + ' tickets']}
+                      contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
+                    />
+                    <Bar dataKey="tickets" fill="#9333ea" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Award size={20} className="text-amber-500" />
+                Advance Booking (Days Before Game)
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={advanceChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                    <YAxis tickFormatter={(v) => v.toLocaleString()} tick={{ fontSize: 11 }} />
+                    <Tooltip 
+                      formatter={(value: number) => [value.toLocaleString() + ' tickets']}
+                      contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
+                    />
+                    <Bar dataKey="tickets" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Euro size={20} className="text-green-500" />
+                Payment Methods
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsPie>
+                    <Pie
+                      data={paymentChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={2}
+                      dataKey="tickets"
+                      nameKey="method"
+                      label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                      labelLine={false}
+                    >
+                      {paymentChartData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => value.toLocaleString() + ' tickets'} />
+                    <Legend />
+                  </RechartsPie>
                 </ResponsiveContainer>
               </div>
             </div>
@@ -669,36 +986,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
         </>
       )}
 
-      {activeView === 'zones' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Object.entries(stats.zoneBreakdown)
-            .sort((a, b) => b[1].value - a[1].value)
-            .map(([zone, data]) => (
-              <div 
-                key={zone} 
-                className={`bg-white rounded-xl border p-5 shadow-sm cursor-pointer transition-all hover:shadow-md ${
-                  filterZone === zone ? 'ring-2 ring-red-500 border-red-500' : 'border-gray-100'
-                }`}
-                onClick={() => setFilterZone(filterZone === zone ? null : zone)}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-semibold text-gray-800">{zone}</h4>
-                  <MapPin size={18} className="text-gray-400" />
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-center">
-                  <div>
-                    <p className="text-xl font-bold text-gray-900">{data.count.toLocaleString()}</p>
-                    <p className="text-[10px] text-gray-500 uppercase">Tickets</p>
-                  </div>
-                  <div>
-                    <p className="text-xl font-bold text-green-600">{formatCompact(data.value)}</p>
-                    <p className="text-[10px] text-gray-500 uppercase">Cash</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-        </div>
-      )}
 
       {customerDetail && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedCustomer(null)}>
