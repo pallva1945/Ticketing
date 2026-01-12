@@ -26,6 +26,7 @@ interface CRMViewProps {
   data: CRMRecord[];
   sponsorData?: SponsorData[];
   onUploadCsv?: (content: string) => void;
+  isLoading?: boolean;
 }
 
 const getCustomerKey = (r: CRMRecord): string => {
@@ -55,7 +56,7 @@ const normalizeCompanyName = (name: string): string => {
     .trim();
 };
 
-export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUploadCsv }) => {
+export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUploadCsv, isLoading = false }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterZone, setFilterZone] = useState<string | null>(null);
@@ -511,6 +512,15 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
       records
     };
   }, [selectedCustomer, filteredData]);
+
+  if (isLoading && data.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8 animate-fade-in pt-6">
+        <div className="w-16 h-16 border-4 border-gray-200 border-t-red-600 rounded-full animate-spin mb-6"></div>
+        <p className="text-gray-500">Loading CRM data...</p>
+      </div>
+    );
+  }
 
   if (data.length === 0) {
     return (
