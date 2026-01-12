@@ -1293,6 +1293,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                     name: r.fullName || `${r.firstName} ${r.lastName}`.trim(),
                     email: r.email,
                     phone: r.phone,
+                    address: r.address,
+                    nationality: r.nationality,
                     dob: r.dob,
                     province: r.province || r.pob,
                     tickets: 0,
@@ -1300,6 +1302,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                     value: 0,
                     zones: {} as Record<string, number>,
                     sellTypes: {} as Record<string, number>,
+                    seats: {} as Record<string, number>,
                     games: new Set<string>(),
                     records: [] as CRMRecord[]
                   };
@@ -1310,7 +1313,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                   if (zone) acc[key].zones[zone] = (acc[key].zones[zone] || 0) + (Number(r.quantity) || 1);
                   const sellType = r.sellType || r.ticketType || '';
                   if (sellType) acc[key].sellTypes[sellType] = (acc[key].sellTypes[sellType] || 0) + (Number(r.quantity) || 1);
+                  const seat = r.seat || '';
+                  if (seat) acc[key].seats[seat] = (acc[key].seats[seat] || 0) + 1;
                   if (r.game || r.event) acc[key].games.add(r.game || r.event);
+                  if (!acc[key].phone && r.phone) acc[key].phone = r.phone;
+                  if (!acc[key].address && r.address) acc[key].address = r.address;
+                  if (!acc[key].nationality && r.nationality) acc[key].nationality = r.nationality;
                   acc[key].records.push(r);
                   return acc;
                 }, {} as Record<string, any>)
@@ -1319,6 +1327,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                 const principalZone = sortedZones[0]?.[0] || '—';
                 const secondaryZone = sortedZones[1]?.[0] || '—';
                 const topSellType = Object.entries(val.sellTypes).sort((a, b) => (b[1] as number) - (a[1] as number))[0]?.[0] || '—';
+                const topSeats = Object.entries(val.seats).sort((a, b) => (b[1] as number) - (a[1] as number)).slice(0, 3).map(([s]) => s);
                 let age = '—';
                 if (val.dob) {
                   const parts = val.dob.split('/');
@@ -1327,12 +1336,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                     if (!isNaN(year)) age = String(new Date().getFullYear() - year);
                   }
                 }
-                return { key, ...val, principalZone, secondaryZone, topSellType, age, gameCount: val.games.size };
+                return { key, ...val, principalZone, secondaryZone, topSellType, topSeats, age, gameCount: val.games.size };
               });
 
               const results = allCustomers.filter(c => {
                 const searchStr = [
-                  c.name, c.email, c.phone, c.province, c.principalZone, c.secondaryZone, c.topSellType
+                  c.name, c.email, c.phone, c.address, c.nationality, c.province, c.principalZone, c.secondaryZone, c.topSellType, ...c.topSeats
                 ].filter(Boolean).join(' ').toLowerCase();
                 return searchStr.includes(query);
               }).sort((a, b) => b.value - a.value).slice(0, 50);
@@ -1353,47 +1362,61 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-200 bg-gray-50">
-                          <th className="text-left py-3 px-3 font-semibold text-gray-600">Client</th>
-                          <th className="text-left py-3 px-3 font-semibold text-gray-600">Email</th>
-                          <th className="text-left py-3 px-3 font-semibold text-gray-600">Sell Type</th>
-                          <th className="text-left py-3 px-3 font-semibold text-gray-600">Principal Zone</th>
-                          <th className="text-left py-3 px-3 font-semibold text-gray-600">Secondary Zone</th>
-                          <th className="text-center py-3 px-3 font-semibold text-gray-600">Tickets</th>
-                          <th className="text-center py-3 px-3 font-semibold text-gray-600">Games</th>
-                          <th className="text-right py-3 px-3 font-semibold text-gray-600">Value</th>
-                          <th className="text-center py-3 px-3 font-semibold text-gray-600">Age</th>
-                          <th className="text-left py-3 px-3 font-semibold text-gray-600">Location</th>
+                          <th className="text-left py-3 px-2 font-semibold text-gray-600">Client</th>
+                          <th className="text-left py-3 px-2 font-semibold text-gray-600">Contact</th>
+                          <th className="text-left py-3 px-2 font-semibold text-gray-600">Address</th>
+                          <th className="text-left py-3 px-2 font-semibold text-gray-600">Nationality</th>
+                          <th className="text-left py-3 px-2 font-semibold text-gray-600">Sell Type</th>
+                          <th className="text-left py-3 px-2 font-semibold text-gray-600">Zones</th>
+                          <th className="text-left py-3 px-2 font-semibold text-gray-600">Seats</th>
+                          <th className="text-center py-3 px-2 font-semibold text-gray-600">Tickets</th>
+                          <th className="text-right py-3 px-2 font-semibold text-gray-600">Total Spend</th>
+                          <th className="text-right py-3 px-2 font-semibold text-gray-600">Value</th>
+                          <th className="text-center py-3 px-2 font-semibold text-gray-600">Age</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
-                        {results.map((c, i) => (
+                        {results.map((c) => (
                           <tr 
                             key={c.key} 
                             className="hover:bg-red-50 cursor-pointer transition-colors"
                             onClick={() => setSelectedCustomer(c.key)}
                           >
-                            <td className="py-3 px-3">
+                            <td className="py-3 px-2">
                               <p className="font-medium text-gray-800">{c.name || '—'}</p>
                             </td>
-                            <td className="py-3 px-3 text-gray-600 text-xs">{c.email || '—'}</td>
-                            <td className="py-3 px-3">
+                            <td className="py-3 px-2">
+                              <div className="text-xs">
+                                {c.email && <p className="text-gray-600">{c.email}</p>}
+                                {c.phone && <p className="text-gray-500">{c.phone}</p>}
+                                {!c.email && !c.phone && '—'}
+                              </div>
+                            </td>
+                            <td className="py-3 px-2 text-xs text-gray-600 max-w-32 truncate" title={c.address || ''}>
+                              {c.address || '—'}
+                            </td>
+                            <td className="py-3 px-2 text-xs text-gray-600">{c.nationality || '—'}</td>
+                            <td className="py-3 px-2">
                               <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">{c.topSellType}</span>
                             </td>
-                            <td className="py-3 px-3">
-                              {c.principalZone !== '—' ? (
-                                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">{c.principalZone}</span>
-                              ) : '—'}
+                            <td className="py-3 px-2">
+                              <div className="flex flex-wrap gap-1">
+                                {c.principalZone !== '—' && (
+                                  <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{c.principalZone}</span>
+                                )}
+                                {c.secondaryZone !== '—' && (
+                                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{c.secondaryZone}</span>
+                                )}
+                                {c.principalZone === '—' && c.secondaryZone === '—' && '—'}
+                              </div>
                             </td>
-                            <td className="py-3 px-3">
-                              {c.secondaryZone !== '—' ? (
-                                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">{c.secondaryZone}</span>
-                              ) : '—'}
+                            <td className="py-3 px-2 text-xs text-gray-600">
+                              {c.topSeats.length > 0 ? c.topSeats.join(', ') : '—'}
                             </td>
-                            <td className="py-3 px-3 text-center">{c.tickets}</td>
-                            <td className="py-3 px-3 text-center">{c.gameCount}</td>
-                            <td className="py-3 px-3 text-right font-bold text-green-600">{formatCompact(c.value)}</td>
-                            <td className="py-3 px-3 text-center">{c.age}</td>
-                            <td className="py-3 px-3 text-gray-600">{c.province || '—'}</td>
+                            <td className="py-3 px-2 text-center">{c.tickets}</td>
+                            <td className="py-3 px-2 text-right text-gray-600">{formatCompact(c.revenue)}</td>
+                            <td className="py-3 px-2 text-right font-bold text-green-600">{formatCompact(c.value)}</td>
+                            <td className="py-3 px-2 text-center">{c.age}</td>
                           </tr>
                         ))}
                       </tbody>
