@@ -816,8 +816,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
               <Award size={20} className="text-amber-500" />
               Top 10 Customers by Value
             </h3>
-            <div className="overflow-x-auto flex justify-center">
-              <table className="text-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-2 px-2 font-semibold text-gray-600">#</th>
@@ -929,8 +929,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
               <Users size={20} className="text-purple-500" />
               Buyer Persona by Zone
             </h3>
-            <div className="overflow-x-auto flex justify-center">
-              <table className="text-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-gray-600">
                   <tr>
                     <th className="text-left py-3 px-4 font-medium">Zone</th>
@@ -1129,8 +1129,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                 Top Corporate Accounts
               </h3>
             </div>
-            <div className="overflow-x-auto flex justify-center">
-              <table className="text-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-gray-600">
                   <tr>
                     <th className="text-left py-3 px-4 font-medium">#</th>
