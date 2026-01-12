@@ -1,4 +1,3 @@
-export const SPONSOR_CSV_CONTENT = `
 Azienda,Settore,Dimensione,Livello,Contatto,Email,Tipo Contratto,Durata Contratto,Season,Commercial Value,Bonus Playoff,Net of Ticketing,Gameday Reconciliation,VB Reconciliaiton,CSR Reconciliation,Corp Tix Reconciliation,Sponsor Reconciliation,Delta,July,August,September,October,November,December,January,February,March,April,May,June
 BROTHER,,,,,,CASH,Anno Solare,22/23,40.000 €,,40.000 €,0 €,40.000 €,,0 €,0 €,33.500 €,,,,,,,,,,,,
 C'ERA UNA VOLTA,,,,,,CASH,Stagione,22/23,1.500 €,,1.500 €,0 €,1.500 €,,0 €,0 €,1.500 €,,,,,,,,,,,,
@@ -419,4 +418,4 @@ VERBANO CARTE,Altro,Piccola,Locale,,,CM,Stagione,25/26,4.500 €,,3.246 €,75 �
 VIRAS,Commercio/GDO,Piccola,Locale,,,CM,Stagione,25/26,2.500 €,,1.836 €,120 €,,,664 €,36 €,36 €,,,,,,,,,,,,
 VIVATICKET,Altro,Grande,Nazionale,,,CM,Stagione,25/26,25.000 €,,25.000 €,0 €,,,0 €,25.000 €,25.000 €,,,,,,,,,,,,
 WESTMINSTER,Immobiliare,Media,Internazionale,,,CASH,Stagione,25/26,100.000 €,,75.463 €,1.497 €,,,24.537 €,47.553 €,47.553 €,,,50.000 €,,,50.000 €,,,,,,
-ZONIN,Food & Beverage,Grande,Internazionale,,,CM,Stagione,25/26,8.000 €,,6.607 €,259 €,,,1.393 €,2.719 €,1.719 €,,,,,,,,,,,,`;
+ZONIN,Food & Beverage,Grande,Internazionale,,,CM,Stagione,25/26,8.000 €,,6.607 €,259 €,,,1.393 €,2.719 €,1.719 €,,,,,,,,,,,,
