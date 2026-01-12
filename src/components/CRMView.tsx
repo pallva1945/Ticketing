@@ -152,7 +152,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
     const groupedSellTypeBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
     const paymentBreakdown: Record<string, { count: number; revenue: number }> = {};
     const discountBreakdown: Record<string, { count: number; revenue: number }> = {};
-    const corpBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
+    const corpBreakdown: Record<string, { count: number; revenue: number; value: number; zones: Record<string, number> }> = {};
 
     filteredData.forEach(r => {
       const zone = r.pvZone || 'Unknown';
@@ -208,10 +208,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
       const isCorp = (r.sellType || '').toLowerCase() === 'corp' || (r.ticketType || '').toLowerCase() === 'corp';
       if (isCorp) {
         const corpKey = r.fullName || r.group || 'Unknown';
-        if (!corpBreakdown[corpKey]) corpBreakdown[corpKey] = { count: 0, revenue: 0, value: 0 };
+        if (!corpBreakdown[corpKey]) corpBreakdown[corpKey] = { count: 0, revenue: 0, value: 0, zones: {} as Record<string, number> };
         corpBreakdown[corpKey].count += r.quantity;
         corpBreakdown[corpKey].revenue += r.price;
         corpBreakdown[corpKey].value += r.commercialValue;
+        const zone = r.pvZone || r.zone || 'Unknown';
+        corpBreakdown[corpKey].zones[zone] = (corpBreakdown[corpKey].zones[zone] || 0) + (Number(r.quantity) || 1);
       }
     });
 
@@ -276,9 +278,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
 
     const topCorps = Object.entries(corpBreakdown)
       .map(([name, val]) => {
-        const normalizedName = normalizeCompanyName(name);
-        const sectorInfo = sectorLookup[normalizedName] || { sector: '' };
-        return { name, ...val, sector: sectorInfo.sector || '—', sector2: '—' };
+        const sortedZones = Object.entries(val.zones).sort((a, b) => b[1] - a[1]);
+        const principalZone = sortedZones[0]?.[0] || '—';
+        const secondaryZone = sortedZones[1]?.[0] || '—';
+        return { name, ...val, principalZone, secondaryZone };
       })
       .sort((a, b) => b.value - a.value)
       .slice(0, 10);
@@ -1122,7 +1125,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                   <tr>
                     <th className="text-left py-3 px-4 font-medium">#</th>
                     <th className="text-left py-3 px-4 font-medium">Company</th>
-                    <th className="text-left py-3 px-4 font-medium">Sector</th>
+                    <th className="text-left py-3 px-4 font-medium">Principal Zone</th>
+                    <th className="text-left py-3 px-4 font-medium">Secondary Zone</th>
                     <th className="text-right py-3 px-4 font-medium">Seats</th>
                     <th className="text-right py-3 px-4 font-medium">Cash Paid</th>
                     <th className="text-right py-3 px-4 font-medium">Commercial Value</th>
@@ -1138,9 +1142,14 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                         <span className="w-6 h-6 bg-amber-600 text-white rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
                       </td>
                       <td className="py-3 px-4 font-medium text-gray-800">{c.name}</td>
-                      <td className="py-3 px-4 text-gray-600">
-                        {c.sector !== '—' ? (
-                          <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">{c.sector}</span>
+                      <td className="py-3 px-4">
+                        {c.principalZone !== '—' ? (
+                          <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">{c.principalZone}</span>
+                        ) : '—'}
+                      </td>
+                      <td className="py-3 px-4">
+                        {c.secondaryZone !== '—' ? (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">{c.secondaryZone}</span>
                         ) : '—'}
                       </td>
                       <td className="py-3 px-4 text-right">{c.count}</td>
