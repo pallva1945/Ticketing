@@ -332,6 +332,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
       if (normalizedLoc === 'VS') normalizedLoc = 'VERCELLI';
       if (normalizedLoc === 'UD') normalizedLoc = 'UDINE';
       if (normalizedLoc === 'NA') normalizedLoc = 'NAPOLI';
+      if (normalizedLoc === 'VB') normalizedLoc = 'VERBANO';
       if (!normalizedLoc) normalizedLoc = 'Unknown';
       if (normalizedLoc !== 'Unknown') {
         if (!locationBreakdown[normalizedLoc]) locationBreakdown[normalizedLoc] = { count: 0, value: 0 };
