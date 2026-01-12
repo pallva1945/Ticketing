@@ -39,7 +39,8 @@ src/
   - Added CRM fallback data file (src/data/crmData.ts) with sample customer records
   - CRM data now loads automatically on app startup using processCRMData function
   - Sample data includes ~24 representative customer records with all fields populated
-  - Users can still upload their own CRM CSV files to override the default data
+  - Users can upload their own CRM CSV files via the Data Manager "Upload CRM CSV" button (visible in Ticketing section)
+  - Purple-styled CRM upload button in Data Management panel for easy access
 
 - January 12, 2026: 3-Season Revenue Trend - Corp Tickets Toggle
   - Added Accounting/Realistic view toggle to switch corp tickets between Ticketing and Sponsorship

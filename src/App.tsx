@@ -868,6 +868,7 @@ const App: React.FC = () => {
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const crmFileInputRef = useRef<HTMLInputElement>(null);
   
   // Filters (Arrays for Multi-Select)
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>(['25-26']);
@@ -1095,6 +1096,36 @@ const App: React.FC = () => {
         fileInputRef.current.click();
     } else {
         alert("Upload interface error. Please refresh.");
+    }
+  };
+
+  const handleCRMFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const csvContent = e.target?.result as string;
+        const crmRecords = processCRMData(csvContent);
+        if (crmRecords.length > 0) {
+          setCrmData(crmRecords);
+          alert(`Success! Loaded ${crmRecords.length} CRM records.`);
+        } else {
+          alert("Error: No valid CRM records found in the CSV file.");
+        }
+      } catch (error) {
+        alert("Failed to parse CRM data. Please check the file format.");
+      } finally {
+        if (crmFileInputRef.current) crmFileInputRef.current.value = '';
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const triggerCRMFileUpload = () => {
+    if (crmFileInputRef.current) {
+      crmFileInputRef.current.click();
     }
   };
 
@@ -1779,6 +1810,7 @@ const App: React.FC = () => {
            </div>
            
            <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden" />
+           <input type="file" ref={crmFileInputRef} onChange={handleCRMFileUpload} accept=".csv" className="hidden" />
            
            {!isFirebaseConfigured ? (
              <button onClick={() => setShowSetupModal(true)} className="w-full mb-3 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-white bg-red-600 hover:bg-red-700 border border-transparent rounded-lg transition-colors shadow-sm animate-pulse">
@@ -1809,6 +1841,11 @@ const App: React.FC = () => {
                             {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} 
                             Upload {activeModule === 'gameday' ? 'GameDay' : activeModule === 'sponsorship' ? 'Sponsor' : 'Ticketing'} CSV
                         </button>
+                        {activeModule === 'ticketing' && (
+                          <button onClick={triggerCRMFileUpload} className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors shadow-sm active:bg-purple-100 hover:shadow-md hover:text-purple-700">
+                            <Upload size={14} /> Upload CRM CSV
+                          </button>
+                        )}
                      </>
                  ) : (
                      <div className="text-center p-2 bg-white rounded border border-gray-200">
