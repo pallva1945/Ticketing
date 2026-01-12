@@ -42,6 +42,14 @@ server/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 12, 2026: CRM Analytics - Demographics & Buying Behavior
+  - Added Demographics tab: age distribution chart, location breakdown by province, buyer personas by zone
+  - Added Buying Behavior tab: purchase hour patterns, day of week trends, advance booking timeline, payment methods
+  - Removed Zones subtab (zone analytics already available in Ticketing module)
+  - Fixed buyTimestamp validation to handle edge cases gracefully
+  - Normalized gmDateTime from epoch seconds to milliseconds for correct date calculations
+  - Customer identification uses composite key (lastName + firstName + dob/email)
+
 - January 12, 2026: CRM Large File Upload Support
   - Upgraded CRM upload to use Replit App Storage (was Firebase)
   - Maximum file size increased from 0.9MB to 50MB
