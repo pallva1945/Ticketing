@@ -1111,6 +1111,14 @@ const App: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
     
+    // Check file size - Firebase has 1MB limit per document
+    const MAX_SIZE_MB = 0.9; // Leave some buffer
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      alert(`File too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum size is ${MAX_SIZE_MB}MB for cloud sync. Try reducing the number of records.`);
+      if (crmFileInputRef.current) crmFileInputRef.current.value = '';
+      return;
+    }
+    
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
@@ -1126,6 +1134,8 @@ const App: React.FC = () => {
             } catch (dbError: any) {
               if (dbError.message === 'permission-denied') {
                 setShowRulesError(true);
+              } else if (dbError.message?.includes('call stack') || dbError.message?.includes('size')) {
+                alert("File too large for cloud storage. Try uploading a smaller dataset.");
               } else {
                 alert("Database Error: " + dbError.message);
               }
