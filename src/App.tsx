@@ -550,23 +550,23 @@ const RevenueHome = ({
 
             {/* YoY COMPARISON - 3 Season Chart */}
             <div className="mt-6">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                     <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">3-Season Revenue Trend</h3>
-                    <div className="flex items-center gap-5 text-xs">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-xs">
                         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-slate-300"></div> 23-24</div>
                         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-slate-500"></div> 24-25</div>
                         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-600"></div> 25-26 (Proj)</div>
                         <div className="flex items-center gap-1.5"><div className="w-6 h-0.5 bg-amber-500"></div> Trend</div>
                     </div>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-                    <div className="grid grid-cols-3 gap-8">
+                <div className="bg-white rounded-xl border border-gray-100 p-4 sm:p-6 shadow-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
                         {yoyStats.chartData.map((vertical) => {
                             const vals = [vertical['23-24'], vertical['24-25'], vertical['25-26']];
                             const dataMax = Math.max(...vals);
                             const maxVal = dataMax * 1.15;
                             const MAX_BAR_HEIGHT = 115;
-                            const BAR_WIDTH = 44;
+                            const BAR_WIDTH = 48;
                             const BAR_GAP = 16;
                             const CHART_WIDTH = BAR_WIDTH * 3 + BAR_GAP * 2;
                             const barCenters = [BAR_WIDTH / 2, BAR_WIDTH * 1.5 + BAR_GAP, BAR_WIDTH * 2.5 + BAR_GAP * 2];
@@ -587,13 +587,13 @@ const RevenueHome = ({
                                             {yoy >= 0 ? '+' : ''}{yoy.toFixed(0)}%
                                         </span>
                                     </div>
-                                    <div className="relative bg-gray-50 rounded-lg overflow-hidden" style={{ height: `${MAX_BAR_HEIGHT + 55}px`, padding: '20px 12px 12px 12px' }}>
-                                        <div className="absolute left-2 top-4 flex flex-col justify-between text-[9px] text-gray-400 w-7" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
+                                    <div className="relative bg-gray-50 rounded-lg overflow-hidden mx-auto" style={{ height: `${MAX_BAR_HEIGHT + 55}px`, maxWidth: `${CHART_WIDTH + 60}px`, padding: '20px 12px 12px 12px' }}>
+                                        <div className="absolute left-2 top-5 flex flex-col justify-between text-[9px] text-gray-400 w-7" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
                                             <span>{formatCompact(maxVal)}</span>
                                             <span>{formatCompact(maxVal * 0.5)}</span>
                                             <span>€0</span>
                                         </div>
-                                        <div className="absolute left-10 right-3 top-4 border-b border-gray-300" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
+                                        <div className="absolute left-10 right-3 top-5 border-b border-gray-300" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
                                             <div className="absolute w-full border-t border-dashed border-gray-200" style={{ top: '50%' }}></div>
                                         </div>
                                         <div className="flex justify-center" style={{ paddingLeft: '28px' }}>
