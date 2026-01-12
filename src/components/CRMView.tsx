@@ -194,8 +194,15 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
       groupedSellTypeBreakdown[sellCategory].value += r.commercialValue;
 
       let payment = r.payment || 'Unknown';
-      const paymentLower = payment.toLowerCase();
-      if (['visa', 'mastercard', 'pos carta di credito', 'pos bancomat'].includes(paymentLower)) {
+      const paymentLower = payment.toLowerCase().replace(/[^a-z]/g, '');
+      if (
+        paymentLower.includes('visa') ||
+        paymentLower.includes('mastercard') ||
+        paymentLower.includes('master') ||
+        paymentLower.includes('cartadicredito') ||
+        paymentLower.includes('bancomat') ||
+        paymentLower === 'pos'
+      ) {
         payment = 'Credit Card';
       }
       if (!paymentBreakdown[payment]) paymentBreakdown[payment] = { count: 0, revenue: 0 };
