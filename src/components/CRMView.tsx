@@ -301,12 +301,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
       if (isNaN(year)) return 'Unknown';
       const currentYear = new Date().getFullYear();
       const age = currentYear - year;
-      if (age < 18) return 'Under 18';
-      if (age < 25) return '18-24';
-      if (age < 35) return '25-34';
-      if (age < 45) return '35-44';
-      if (age < 55) return '45-54';
-      if (age < 65) return '55-64';
+      if (age < 25) return 'Under 25';
+      if (age < 45) return '25-44';
+      if (age < 65) return '45-64';
       return '65+';
     };
 
@@ -450,7 +447,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
 
 
   const ageChartData = useMemo(() => {
-    const order = ['Under 18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
+    const order = ['Under 25', '25-44', '45-64', '65+'];
     return Object.entries(stats.ageBreakdown)
       .filter(([age]) => age !== 'Unknown')
       .map(([age, val]) => ({ age, tickets: val.count, value: val.value }))
@@ -930,12 +927,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                 <thead className="bg-gray-50 text-gray-600">
                   <tr>
                     <th className="text-left py-3 px-4 font-medium">Zone</th>
-                    <th className="text-center py-3 px-4 font-medium">Under 18</th>
-                    <th className="text-center py-3 px-4 font-medium">18-24</th>
-                    <th className="text-center py-3 px-4 font-medium">25-34</th>
-                    <th className="text-center py-3 px-4 font-medium">35-44</th>
-                    <th className="text-center py-3 px-4 font-medium">45-54</th>
-                    <th className="text-center py-3 px-4 font-medium">55-64</th>
+                    <th className="text-center py-3 px-4 font-medium">Under 25</th>
+                    <th className="text-center py-3 px-4 font-medium">25-44</th>
+                    <th className="text-center py-3 px-4 font-medium">45-64</th>
                     <th className="text-center py-3 px-4 font-medium">65+</th>
                     <th className="text-right py-3 px-4 font-medium">Avg Price</th>
                     <th className="text-right py-3 px-4 font-medium">Avg Advance</th>
@@ -952,7 +946,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                       const zoneTotal = Object.values(ages).reduce((s, v) => s + v, 0);
                       const zs = stats.zoneStats[zone];
                       const avgPrice = zs && zs.totalTickets > 0 ? zs.totalValue / zs.totalTickets : 0;
-                      const ageGroups = ['Under 18', '18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
+                      const ageGroups = ['Under 25', '25-44', '45-64', '65+'];
                       const getColorIntensity = (pct: number) => {
                         if (pct === 0) return 'bg-gray-50 text-gray-400';
                         if (pct < 10) return 'bg-blue-50 text-blue-600';
