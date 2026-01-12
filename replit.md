@@ -14,7 +14,7 @@ A React-based ticketing dashboard for Pallacanestro Varese, providing executive 
 ```
 src/
 ├── components/       # React components (ArenaMap, ChatInterface, DashboardChart, etc.)
-├── data/            # Data files (csvData, gameDayData)
+├── data/            # Data files (csvData, gameDayData, crmData, sponsorData)
 ├── services/        # Service integrations (dbService, geminiService)
 ├── utils/           # Utility functions (dataProcessor)
 ├── App.tsx          # Main application component
@@ -35,6 +35,12 @@ src/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 12, 2026: CRM Data Loading on Startup
+  - Added CRM fallback data file (src/data/crmData.ts) with sample customer records
+  - CRM data now loads automatically on app startup using processCRMData function
+  - Sample data includes ~24 representative customer records with all fields populated
+  - Users can still upload their own CRM CSV files to override the default data
+
 - January 12, 2026: 3-Season Revenue Trend - Corp Tickets Toggle
   - Added Accounting/Realistic view toggle to switch corp tickets between Ticketing and Sponsorship
   - **Realistic view is now the default** - Corp tickets moved from Ticketing → Sponsorship
