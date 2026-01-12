@@ -91,13 +91,13 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
     const sellLower = (r.sellType || '').toLowerCase();
     const ticketLower = (r.ticketType || '').toLowerCase();
     
+    if (['abb', 'abbonamento', 'corp'].includes(sellLower) || ['abb', 'abbonamento', 'corp'].includes(ticketLower)) {
+      return 'fixed';
+    }
+    
     const buyTs = r.buyTimestamp instanceof Date ? r.buyTimestamp.getTime() : null;
     if (buyTs && r.season && seasonStartDates[r.season]) {
       return buyTs < seasonStartDates[r.season] ? 'fixed' : 'gameday';
-    }
-    
-    if (['abb', 'abbonamento', 'corp'].includes(sellLower) || ['abb', 'abbonamento', 'corp'].includes(ticketLower)) {
-      return 'fixed';
     }
     
     return 'gameday';
