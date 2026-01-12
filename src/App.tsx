@@ -950,13 +950,21 @@ const App: React.FC = () => {
         setSponsorDataSource('local');
     }
 
-    // 2b. CRM DATA LOADING (Cloud first, fallback to sample)
+    // 2b. CRM DATA LOADING (App Storage first, fallback to sample)
     try {
         let crmCsv = CRM_CSV_CONTENT;
-        if (isFirebaseConfigured) {
-            const cloudCrm = await getCsvFromFirebase('crm');
-            if (cloudCrm) {
-                crmCsv = cloudCrm.content;
+        const crmObjectPath = localStorage.getItem('crmObjectPath');
+        
+        if (crmObjectPath) {
+            // Try to load from App Storage
+            try {
+                const response = await fetch(crmObjectPath);
+                if (response.ok) {
+                    crmCsv = await response.text();
+                    console.log('CRM loaded from cloud storage');
+                }
+            } catch (storageError) {
+                console.warn('Failed to load CRM from cloud storage:', storageError);
             }
         }
         setCrmData(processCRMData(crmCsv));
