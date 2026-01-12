@@ -1123,7 +1123,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                     <th className="text-left py-3 px-4 font-medium">Company</th>
                     <th className="text-left py-3 px-4 font-medium">Principal Zone</th>
                     <th className="text-left py-3 px-4 font-medium">Secondary Zone</th>
-                    <th className="text-right py-3 px-4 font-medium">Seats</th>
+                    <th className="text-right py-3 px-4 font-medium">Total Tickets</th>
                     <th className="text-right py-3 px-4 font-medium">Cash Paid</th>
                     <th className="text-right py-3 px-4 font-medium">Commercial Value</th>
                   </tr>
