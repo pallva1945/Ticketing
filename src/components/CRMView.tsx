@@ -201,6 +201,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
         paymentLower.includes('master') ||
         paymentLower.includes('cartadicredito') ||
         paymentLower.includes('bancomat') ||
+        paymentLower.includes('amex') ||
+        paymentLower.includes('americanexpress') ||
         paymentLower === 'pos'
       ) {
         payment = 'Credit Card';
