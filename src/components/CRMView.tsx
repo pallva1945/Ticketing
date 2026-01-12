@@ -233,12 +233,15 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
           revenue: 0, 
           value: 0,
           zones: {} as Record<string, number>,
+          sellTypes: {} as Record<string, number>,
           games: new Set<string>(),
           transactions: 0,
           age: r.dob || '',
           location: r.province || r.pob || '',
           advanceDays: [] as number[]
         };
+        const sellType = r.sellType || r.ticketType || 'Unknown';
+        acc[key].sellTypes[sellType] = (acc[key].sellTypes[sellType] || 0) + (Number(r.quantity) || 1);
         acc[key].tickets += Number(r.quantity) || 1;
         acc[key].revenue += Number(r.price) || 0;
         acc[key].value += Number(r.commercialValue) || 0;
@@ -258,14 +261,15 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
           }
         }
         return acc;
-      }, {} as Record<string, { name: string; email: string; tickets: number; revenue: number; value: number; zones: Record<string, number>; games: Set<string>; transactions: number; age: string; location: string; advanceDays: number[] }>)
+      }, {} as Record<string, { name: string; email: string; tickets: number; revenue: number; value: number; zones: Record<string, number>; sellTypes: Record<string, number>; games: Set<string>; transactions: number; age: string; location: string; advanceDays: number[] }>)
     ).map(([key, val]) => {
       const favoriteZone = Object.entries(val.zones).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unknown';
+      const topSellType = Object.entries(val.sellTypes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unknown';
       const avgAdvance = val.advanceDays.length > 0 ? Math.round(val.advanceDays.reduce((a, b) => a + b, 0) / val.advanceDays.length) : null;
       const gameCount = val.games.size;
       const avgPerGame = gameCount > 0 ? val.value / gameCount : 0;
       const avgPerTxn = val.transactions > 0 ? val.value / val.transactions : 0;
-      return { key, ...val, favoriteZone, avgAdvance, gameCount, avgPerGame, avgPerTxn };
+      return { key, ...val, favoriteZone, topSellType, avgAdvance, gameCount, avgPerGame, avgPerTxn };
     })
      .sort((a, b) => b.value - a.value)
      .slice(0, 10);
@@ -801,6 +805,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                   <tr className="border-b border-gray-200">
                     <th className="text-left py-2 px-2 font-semibold text-gray-600">#</th>
                     <th className="text-left py-2 px-2 font-semibold text-gray-600">Customer</th>
+                    <th className="text-left py-2 px-2 font-semibold text-gray-600">Sell Type</th>
                     <th className="text-center py-2 px-2 font-semibold text-gray-600">Tickets</th>
                     <th className="text-right py-2 px-2 font-semibold text-gray-600">Total Paid</th>
                     <th className="text-right py-2 px-2 font-semibold text-gray-600">Avg/Gm</th>
@@ -834,6 +839,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                         </td>
                         <td className="py-2 px-2">
                           <p className="font-medium text-gray-800">{c.name}</p>
+                        </td>
+                        <td className="py-2 px-2">
+                          <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">{c.topSellType}</span>
                         </td>
                         <td className="py-2 px-2 text-center text-gray-600">{c.tickets}</td>
                         <td className="py-2 px-2 text-right font-bold text-gray-900">{formatCompact(c.value)}</td>
