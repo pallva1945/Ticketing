@@ -62,7 +62,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
   const [filterZone, setFilterZone] = useState<string | null>(null);
   const [filterEvent, setFilterEvent] = useState<string | null>(null);
   const [capacityView, setCapacityView] = useState<'all' | 'fixed' | 'flexible'>('all');
-  const [activeView, setActiveView] = useState<'overview' | 'demographics' | 'behavior' | 'customers' | 'corporate'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'demographics' | 'behavior' | 'customers' | 'corporate' | 'search'>('overview');
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [sortColumn, setSortColumn] = useState<string>('value');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -621,7 +622,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        {['overview', 'demographics', 'behavior', 'corporate'].map(view => (
+        {['overview', 'demographics', 'behavior', 'corporate', 'search'].map(view => (
           <button
             key={view}
             onClick={() => setActiveView(view as any)}
@@ -635,7 +636,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
             {view === 'demographics' && <Users size={14} className="inline mr-2" />}
             {view === 'behavior' && <TrendingUp size={14} className="inline mr-2" />}
             {view === 'corporate' && <Building2 size={14} className="inline mr-2" />}
-            {view.charAt(0).toUpperCase() + view.slice(1)}
+            {view === 'search' && <Search size={14} className="inline mr-2" />}
+            {view === 'search' ? 'Client Search' : view.charAt(0).toUpperCase() + view.slice(1)}
           </button>
         ))}
       </div>
@@ -1241,6 +1243,172 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
         </>
       )}
 
+      {activeView === 'search' && (
+        <>
+          <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Search size={20} className="text-red-500" />
+              Client Search
+            </h3>
+            <div className="mb-6">
+              <div className="relative max-w-xl">
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, email, zone, sell type, location..."
+                  value={clientSearchQuery}
+                  onChange={(e) => setClientSearchQuery(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  autoFocus
+                />
+                {clientSearchQuery && (
+                  <button 
+                    onClick={() => setClientSearchQuery('')}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Enter at least 2 characters to search</p>
+            </div>
+
+            {clientSearchQuery.length >= 2 && (() => {
+              const query = clientSearchQuery.toLowerCase();
+              const allCustomers = Object.entries(
+                data.reduce((acc, r) => {
+                  const key = getCustomerKey(r);
+                  if (!acc[key]) acc[key] = {
+                    name: r.fullName || `${r.firstName} ${r.lastName}`.trim(),
+                    email: r.email,
+                    phone: r.phone,
+                    dob: r.dob,
+                    province: r.province || r.pob,
+                    tickets: 0,
+                    revenue: 0,
+                    value: 0,
+                    zones: {} as Record<string, number>,
+                    sellTypes: {} as Record<string, number>,
+                    games: new Set<string>(),
+                    records: [] as CRMRecord[]
+                  };
+                  acc[key].tickets += Number(r.quantity) || 1;
+                  acc[key].revenue += Number(r.price) || 0;
+                  acc[key].value += Number(r.commercialValue) || 0;
+                  const zone = r.pvZone || r.zone || '';
+                  if (zone) acc[key].zones[zone] = (acc[key].zones[zone] || 0) + (Number(r.quantity) || 1);
+                  const sellType = r.sellType || r.ticketType || '';
+                  if (sellType) acc[key].sellTypes[sellType] = (acc[key].sellTypes[sellType] || 0) + (Number(r.quantity) || 1);
+                  if (r.game || r.event) acc[key].games.add(r.game || r.event);
+                  acc[key].records.push(r);
+                  return acc;
+                }, {} as Record<string, any>)
+              ).map(([key, val]) => {
+                const sortedZones = Object.entries(val.zones).sort((a, b) => (b[1] as number) - (a[1] as number));
+                const principalZone = sortedZones[0]?.[0] || '—';
+                const secondaryZone = sortedZones[1]?.[0] || '—';
+                const topSellType = Object.entries(val.sellTypes).sort((a, b) => (b[1] as number) - (a[1] as number))[0]?.[0] || '—';
+                let age = '—';
+                if (val.dob) {
+                  const parts = val.dob.split('/');
+                  if (parts.length >= 3) {
+                    const year = parseInt(parts[2], 10);
+                    if (!isNaN(year)) age = String(new Date().getFullYear() - year);
+                  }
+                }
+                return { key, ...val, principalZone, secondaryZone, topSellType, age, gameCount: val.games.size };
+              });
+
+              const results = allCustomers.filter(c => {
+                const searchStr = [
+                  c.name, c.email, c.phone, c.province, c.principalZone, c.secondaryZone, c.topSellType
+                ].filter(Boolean).join(' ').toLowerCase();
+                return searchStr.includes(query);
+              }).sort((a, b) => b.value - a.value).slice(0, 50);
+
+              if (results.length === 0) {
+                return (
+                  <div className="text-center py-12 text-gray-500">
+                    <Users size={48} className="mx-auto mb-4 opacity-30" />
+                    <p>No clients found matching "{clientSearchQuery}"</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div>
+                  <p className="text-sm text-gray-600 mb-4">{results.length} client{results.length !== 1 ? 's' : ''} found</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-200 bg-gray-50">
+                          <th className="text-left py-3 px-3 font-semibold text-gray-600">Client</th>
+                          <th className="text-left py-3 px-3 font-semibold text-gray-600">Email</th>
+                          <th className="text-left py-3 px-3 font-semibold text-gray-600">Sell Type</th>
+                          <th className="text-left py-3 px-3 font-semibold text-gray-600">Principal Zone</th>
+                          <th className="text-left py-3 px-3 font-semibold text-gray-600">Secondary Zone</th>
+                          <th className="text-center py-3 px-3 font-semibold text-gray-600">Tickets</th>
+                          <th className="text-center py-3 px-3 font-semibold text-gray-600">Games</th>
+                          <th className="text-right py-3 px-3 font-semibold text-gray-600">Value</th>
+                          <th className="text-center py-3 px-3 font-semibold text-gray-600">Age</th>
+                          <th className="text-left py-3 px-3 font-semibold text-gray-600">Location</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {results.map((c, i) => (
+                          <tr 
+                            key={c.key} 
+                            className="hover:bg-red-50 cursor-pointer transition-colors"
+                            onClick={() => setSelectedCustomer(c.key)}
+                          >
+                            <td className="py-3 px-3">
+                              <p className="font-medium text-gray-800">{c.name || '—'}</p>
+                            </td>
+                            <td className="py-3 px-3 text-gray-600 text-xs">{c.email || '—'}</td>
+                            <td className="py-3 px-3">
+                              <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">{c.topSellType}</span>
+                            </td>
+                            <td className="py-3 px-3">
+                              {c.principalZone !== '—' ? (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">{c.principalZone}</span>
+                              ) : '—'}
+                            </td>
+                            <td className="py-3 px-3">
+                              {c.secondaryZone !== '—' ? (
+                                <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">{c.secondaryZone}</span>
+                              ) : '—'}
+                            </td>
+                            <td className="py-3 px-3 text-center">{c.tickets}</td>
+                            <td className="py-3 px-3 text-center">{c.gameCount}</td>
+                            <td className="py-3 px-3 text-right font-bold text-green-600">{formatCompact(c.value)}</td>
+                            <td className="py-3 px-3 text-center">{c.age}</td>
+                            <td className="py-3 px-3 text-gray-600">{c.province || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {clientSearchQuery.length > 0 && clientSearchQuery.length < 2 && (
+              <div className="text-center py-12 text-gray-400">
+                <Search size={48} className="mx-auto mb-4 opacity-30" />
+                <p>Type at least 2 characters to search</p>
+              </div>
+            )}
+
+            {clientSearchQuery.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <Search size={48} className="mx-auto mb-4 opacity-30" />
+                <p>Start typing to search for clients</p>
+                <p className="text-xs mt-2">Search by name, email, zone, sell type, or location</p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {customerDetail && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedCustomer(null)}>
