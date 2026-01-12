@@ -426,22 +426,27 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                 <ResponsiveContainer width="100%" height="100%">
                   <RechartsPie>
                     <Pie
-                      data={eventChartData}
+                      data={sellTypeChartData}
                       cx="50%"
                       cy="50%"
                       innerRadius={50}
                       outerRadius={80}
                       paddingAngle={2}
-                      dataKey="value"
+                      dataKey="tickets"
                       nameKey="name"
                       label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                       labelLine={false}
                     >
-                      {eventChartData.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      {sellTypeChartData.map((_, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={COLORS[index % COLORS.length]} 
+                          cursor="pointer"
+                          onClick={() => setFilterSellType(filterSellType === sellTypeChartData[index].name ? null : sellTypeChartData[index].name)}
+                        />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: number) => value.toLocaleString()} />
+                    <Tooltip formatter={(value: number) => value.toLocaleString() + ' tickets'} />
                     <Legend />
                   </RechartsPie>
                 </ResponsiveContainer>
