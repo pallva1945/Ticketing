@@ -950,11 +950,19 @@ const App: React.FC = () => {
         setSponsorDataSource('local');
     }
 
-    // 2b. CRM DATA LOADING (Fallback - users can upload their own)
+    // 2b. CRM DATA LOADING (Cloud first, fallback to sample)
     try {
-        setCrmData(processCRMData(CRM_CSV_CONTENT));
+        let crmCsv = CRM_CSV_CONTENT;
+        if (isFirebaseConfigured) {
+            const cloudCrm = await getCsvFromFirebase('crm');
+            if (cloudCrm) {
+                crmCsv = cloudCrm.content;
+            }
+        }
+        setCrmData(processCRMData(crmCsv));
     } catch(e) {
         console.error("Error loading CRM data", e);
+        setCrmData(processCRMData(CRM_CSV_CONTENT));
     }
 
     // 3. TICKETING DATA LOADING
@@ -1099,18 +1107,33 @@ const App: React.FC = () => {
     }
   };
 
-  const handleCRMFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCRMFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
     
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const csvContent = e.target?.result as string;
         const crmRecords = processCRMData(csvContent);
         if (crmRecords.length > 0) {
-          setCrmData(crmRecords);
-          alert(`Success! Loaded ${crmRecords.length} CRM records.`);
+          // Save to Firebase if configured
+          if (isFirebaseConfigured) {
+            try {
+              await saveCsvToFirebase('crm', csvContent);
+              setCrmData(crmRecords);
+              alert(`Success! ${crmRecords.length} CRM records saved to cloud.`);
+            } catch (dbError: any) {
+              if (dbError.message === 'permission-denied') {
+                setShowRulesError(true);
+              } else {
+                alert("Database Error: " + dbError.message);
+              }
+            }
+          } else {
+            setCrmData(crmRecords);
+            alert(`Loaded ${crmRecords.length} CRM records (local only - connect database to sync).`);
+          }
         } else {
           alert("Error: No valid CRM records found in the CSV file.");
         }
