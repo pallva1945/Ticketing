@@ -18,11 +18,12 @@ import { BoardReportModal } from './components/BoardReportModal';
 import { CRMView } from './components/CRMView';
 import { SponsorshipDashboard } from './components/SponsorshipDashboard';
 import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
-import { GameData, GameDayData, SponsorData, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
+import { GameData, GameDayData, SponsorData, CRMRecord, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { GAMEDAY_CSV_CONTENT } from './data/gameDayData';
 import { SPONSOR_CSV_CONTENT } from './data/sponsorData';
-import { processGameData, processGameDayData, processSponsorData } from './utils/dataProcessor';
+import { CRM_CSV_CONTENT } from './data/crmData';
+import { processGameData, processGameDayData, processSponsorData, processCRMData } from './utils/dataProcessor';
 import { getCsvFromFirebase, saveCsvToFirebase } from './services/dbService';
 import { isFirebaseConfigured } from './firebaseConfig';
 
@@ -836,6 +837,7 @@ const App: React.FC = () => {
   const [data, setData] = useState<GameData[]>([]);
   const [gameDayData, setGameDayData] = useState<GameDayData[]>([]);
   const [sponsorData, setSponsorData] = useState<SponsorData[]>([]);
+  const [crmData, setCrmData] = useState<CRMRecord[]>([]);
   const [sponsorDataSource, setSponsorDataSource] = useState<'local' | 'cloud'>('local');
   const [sponsorLastUpdated, setSponsorLastUpdated] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -945,6 +947,13 @@ const App: React.FC = () => {
         console.error("Error loading Sponsor data", e);
         setSponsorData(processSponsorData(SPONSOR_CSV_CONTENT));
         setSponsorDataSource('local');
+    }
+
+    // 2b. CRM DATA LOADING (Fallback - users can upload their own)
+    try {
+        setCrmData(processCRMData(CRM_CSV_CONTENT));
+    } catch(e) {
+        console.error("Error loading CRM data", e);
     }
 
     // 3. TICKETING DATA LOADING
@@ -1927,7 +1936,7 @@ const App: React.FC = () => {
           ) : activeModule === 'ticketing' ? (
             <>
                 {/* EXISTING TICKETING LOGIC */}
-                {activeTab === 'crm' && <CRMView />}
+                {activeTab === 'crm' && <CRMView data={crmData} onUploadCsv={(content) => setCrmData(processCRMData(content))} />}
                 {activeTab === 'dashboard' && (
                     <div className="pt-6">
                     {/* DIRECTOR'S NOTE */}

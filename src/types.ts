@@ -138,3 +138,41 @@ export interface SponsorData {
   delta: number;
   monthlyPayments: Record<string, number>;
 }
+
+export interface CRMRecord {
+  id: string;
+  lastName: string;
+  firstName: string;
+  fullName: string;
+  email: string;
+  dob: string;
+  pob: string;
+  nationality: string;
+  province: string;
+  phone: string;
+  cell: string;
+  address: string;
+  buyDate: string;
+  buyTimestamp: Date | null;
+  event: string;
+  zone: string;
+  group: string;
+  seat: string;
+  ticketType: string;
+  net: number;
+  iva: number;
+  price: number;
+  payment: string;
+  quantity: number;
+  pvZone: string;
+  abbMpPriceGm: number;
+  abbCorpPvPrice: number;
+  game: string;
+  gmDateTime: number;
+  commercialValue: number;
+  gameId: string;
+  sellType: string;
+  giveawayType: string;
+  discountType: string;
+  season: string;
+}

@@ -1,4 +1,4 @@
-import { GameData, GameDayData, SalesChannel, SalesDataPoint, SponsorData, TicketTypeBreakdown, TicketZone } from '../types';
+import { GameData, GameDayData, CRMRecord, SalesChannel, SalesDataPoint, SponsorData, TicketTypeBreakdown, TicketZone } from '../types';
 
 // --- HELPERS ---
 
@@ -462,4 +462,107 @@ export const processSponsorData = (csvContent: string): SponsorData[] => {
       monthlyPayments
     };
   }).filter(s => s.company && s.commercialValue > 0);
+};
+
+export const processCRMData = (csvContent: string): CRMRecord[] => {
+  const rows = parseCSV(csvContent);
+  if (rows.length < 2) return [];
+
+  const header = rows[0].map(h => h.trim().replace(/^"|"$/g, '').replace(/^\uFEFF/, '').toLowerCase());
+  
+  const getIdx = (names: string[]) => header.findIndex(h => names.includes(h));
+
+  const lastNameIdx = getIdx(['last_name', 'lastname', 'cognome']);
+  const nameIdx = getIdx(['name', 'nome', 'first_name', 'firstname']);
+  const emailIdx = getIdx(['email', 'e-mail']);
+  const dobIdx = getIdx(['dob', 'data_nascita', 'birth']);
+  const pobIdx = getIdx(['pob', 'luogo_nascita', 'place_of_birth']);
+  const nationalityIdx = getIdx(['nationality', 'nazionalita']);
+  const provinceIdx = getIdx(['province', 'provincia']);
+  const phoneIdx = getIdx(['phone', 'telefono']);
+  const cellIdx = getIdx(['cell', 'cellulare', 'mobile']);
+  const addressIdx = getIdx(['address', 'indirizzo']);
+  const buyDateIdx = getIdx(['buy_date', 'data_acquisto']);
+  const eventIdx = getIdx(['event', 'evento']);
+  const zoneIdx = getIdx(['zone', 'zona']);
+  const groupIdx = getIdx(['group', 'gruppo', 'company']);
+  const seatIdx = getIdx(['seat', 'posto']);
+  const typeIdx = getIdx(['type', 'tipo']);
+  const netIdx = getIdx(['net', 'netto']);
+  const ivaIdx = getIdx(['iva', 'vat']);
+  const priceIdx = getIdx(['price', 'prezzo']);
+  const paymentIdx = getIdx(['payment', 'pagamento']);
+  const quantityIdx = getIdx(['quantity', 'quantita']);
+  const pvZoneIdx = getIdx(['pv_zone', 'zona_pv']);
+  const abbMpPriceIdx = getIdx(['abb_mp_price_gm']);
+  const abbCorpPriceIdx = getIdx(['abb_corp_pvprice']);
+  const gmIdx = getIdx(['gm', 'game', 'partita']);
+  const gmDateTimeIdx = getIdx(['gm_date_time', 'data_ora_partita']);
+  const commercialValueIdx = getIdx(['comercial_value', 'commercial_value', 'valore_commerciale']);
+  const gameIdIdx = getIdx(['game_id', 'id_partita']);
+  const sellIdx = getIdx(['sell', 'vendita', 'tipo_vendita']);
+  const giveawayTypeIdx = getIdx(['giveawaytype', 'giveaway_type', 'tipo_omaggio']);
+  const discountTypeIdx = getIdx(['discount_type', 'discounttype', 'tipo_sconto']);
+  const seasonIdx = getIdx(['season', 'stagione']);
+
+  const parseBuyDate = (dateStr: string): Date | null => {
+    if (!dateStr) return null;
+    const parts = dateStr.split(/[\/\s\.]/);
+    if (parts.length >= 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1;
+      const year = parseInt(parts[2], 10);
+      if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+        return new Date(year, month, day);
+      }
+    }
+    return null;
+  };
+
+  return rows.slice(1).map((row, idx) => {
+    const getVal = (colIdx: number) => (colIdx >= 0 && row[colIdx]) ? row[colIdx].trim() : '';
+    
+    const lastName = getVal(lastNameIdx);
+    const firstName = getVal(nameIdx);
+    const fullName = [lastName, firstName].filter(Boolean).join(' ') || 'Unknown';
+    const buyDateStr = getVal(buyDateIdx);
+
+    return {
+      id: `crm-${idx}`,
+      lastName,
+      firstName,
+      fullName,
+      email: getVal(emailIdx),
+      dob: getVal(dobIdx),
+      pob: getVal(pobIdx),
+      nationality: getVal(nationalityIdx),
+      province: getVal(provinceIdx),
+      phone: getVal(phoneIdx),
+      cell: getVal(cellIdx),
+      address: getVal(addressIdx),
+      buyDate: buyDateStr,
+      buyTimestamp: parseBuyDate(buyDateStr),
+      event: getVal(eventIdx),
+      zone: getVal(zoneIdx),
+      group: getVal(groupIdx),
+      seat: getVal(seatIdx),
+      ticketType: getVal(typeIdx),
+      net: parseCurrency(getVal(netIdx)),
+      iva: parseCurrency(getVal(ivaIdx)),
+      price: parseCurrency(getVal(priceIdx)),
+      payment: getVal(paymentIdx),
+      quantity: parseInteger(getVal(quantityIdx)) || 1,
+      pvZone: getVal(pvZoneIdx),
+      abbMpPriceGm: parseCurrency(getVal(abbMpPriceIdx)),
+      abbCorpPvPrice: parseCurrency(getVal(abbCorpPriceIdx)),
+      game: getVal(gmIdx),
+      gmDateTime: parseFloat(getVal(gmDateTimeIdx).replace(',', '.')) || 0,
+      commercialValue: parseCurrency(getVal(commercialValueIdx)),
+      gameId: getVal(gameIdIdx),
+      sellType: getVal(sellIdx),
+      giveawayType: getVal(giveawayTypeIdx),
+      discountType: getVal(discountTypeIdx),
+      season: getVal(seasonIdx)
+    };
+  }).filter(r => r.fullName || r.email || r.group);
 };
