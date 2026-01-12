@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, Upload, X, Filter, Eye, BarChart3, PieChart, UserCheck, Euro, Award } from 'lucide-react';
+import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, Upload, X, Filter, Eye, BarChart3, UserCheck, Euro, Award } from 'lucide-react';
 import { CRMRecord } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
@@ -243,14 +243,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
 
   return (
     <div className="space-y-6 pt-6 animate-fade-in">
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileUpload}
-        accept=".csv"
-        className="hidden"
-      />
-
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -259,8 +251,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
           </h1>
           <p className="text-sm text-gray-500 mt-1">{stats.totalTickets.toLocaleString()} tickets from {stats.uniqueCustomers.toLocaleString()} customers</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
@@ -270,14 +261,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
               className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent w-64"
             />
           </div>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
-          >
-            <Upload size={16} />
-            Upload
-          </button>
-        </div>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
