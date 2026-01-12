@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, Upload, X, Filter, Eye, BarChart3, PieChart, UserCheck, Euro, Award } from 'lucide-react';
+import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, Upload, X, Filter, BarChart3, PieChart, Euro, Award } from 'lucide-react';
 import { CRMRecord } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
@@ -553,7 +553,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        {['overview', 'demographics', 'behavior', 'customers', 'corporate'].map(view => (
+        {['overview', 'demographics', 'behavior', 'corporate'].map(view => (
           <button
             key={view}
             onClick={() => setActiveView(view as any)}
@@ -566,7 +566,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
             {view === 'overview' && <BarChart3 size={14} className="inline mr-2" />}
             {view === 'demographics' && <Users size={14} className="inline mr-2" />}
             {view === 'behavior' && <TrendingUp size={14} className="inline mr-2" />}
-            {view === 'customers' && <UserCheck size={14} className="inline mr-2" />}
             {view === 'corporate' && <Building2 size={14} className="inline mr-2" />}
             {view.charAt(0).toUpperCase() + view.slice(1)}
           </button>
@@ -1029,50 +1028,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
             </div>
           </div>
         </>
-      )}
-
-      {activeView === 'customers' && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-              <UserCheck size={18} className="text-blue-500" />
-              Customer List ({stats.topCustomers.length} shown)
-            </h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 text-gray-600">
-                <tr>
-                  <th className="text-left py-3 px-4 font-medium">#</th>
-                  <th className="text-left py-3 px-4 font-medium">Customer</th>
-                  <th className="text-left py-3 px-4 font-medium">Email</th>
-                  <th className="text-right py-3 px-4 font-medium">Tickets</th>
-                  <th className="text-right py-3 px-4 font-medium">Revenue</th>
-                  <th className="text-center py-3 px-4 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {stats.topCustomers.map((c, i) => (
-                  <tr key={c.key} className="hover:bg-gray-50">
-                    <td className="py-3 px-4 text-gray-500">{i + 1}</td>
-                    <td className="py-3 px-4 font-medium text-gray-800">{c.name}</td>
-                    <td className="py-3 px-4 text-gray-600">{c.email || '-'}</td>
-                    <td className="py-3 px-4 text-right">{c.tickets}</td>
-                    <td className="py-3 px-4 text-right font-semibold text-green-600">{formatCurrency(c.value)}</td>
-                    <td className="py-3 px-4 text-center">
-                      <button 
-                        onClick={() => setSelectedCustomer(selectedCustomer === c.key ? null : c.key)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        <Eye size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
       )}
 
       {activeView === 'corporate' && (
