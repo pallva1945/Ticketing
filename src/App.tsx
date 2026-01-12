@@ -2032,7 +2032,7 @@ const App: React.FC = () => {
           ) : activeModule === 'ticketing' ? (
             <>
                 {/* EXISTING TICKETING LOGIC */}
-                {activeTab === 'crm' && <CRMView data={crmData} onUploadCsv={(content) => setCrmData(processCRMData(content))} />}
+                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} onUploadCsv={(content) => setCrmData(processCRMData(content))} />}
                 {activeTab === 'dashboard' && (
                     <div className="pt-6">
                     {/* DIRECTOR'S NOTE */}

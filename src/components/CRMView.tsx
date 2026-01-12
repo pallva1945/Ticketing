@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, Upload, X, Filter, BarChart3, PieChart, Euro, Award } from 'lucide-react';
-import { CRMRecord } from '../types';
+import { CRMRecord, SponsorData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
 const COLORS = ['#dc2626', '#2563eb', '#16a34a', '#ca8a04', '#9333ea', '#0891b2', '#be185d', '#65a30d'];
@@ -24,6 +24,7 @@ const formatCompact = (value: number) => {
 
 interface CRMViewProps {
   data: CRMRecord[];
+  sponsorData?: SponsorData[];
   onUploadCsv?: (content: string) => void;
 }
 
@@ -45,7 +46,16 @@ const getCustomerKey = (r: CRMRecord): string => {
   return `name:${(r.fullName || 'unknown').trim().toLowerCase()}`;
 };
 
-export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
+const normalizeCompanyName = (name: string): string => {
+  return (name || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+(s\.?r\.?l\.?|s\.?p\.?a\.?|s\.?n\.?c\.?|s\.?a\.?s\.?|ltd|inc|corp|gmbh|ag)\.?$/i, '')
+    .replace(/[^\w\s]/g, '')
+    .trim();
+};
+
+export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUploadCsv }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterZone, setFilterZone] = useState<string | null>(null);
@@ -101,6 +111,17 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
     
     return result;
   }, [data, searchQuery, filterZone, filterEvent, filterSellType]);
+
+  const sectorLookup = useMemo(() => {
+    const lookup: Record<string, { sector: string; sector2?: string }> = {};
+    sponsorData.forEach(s => {
+      const key = normalizeCompanyName(s.company);
+      if (key && !lookup[key]) {
+        lookup[key] = { sector: s.sector || '' };
+      }
+    });
+    return lookup;
+  }, [sponsorData]);
 
   const stats = useMemo(() => {
     const uniqueEmails = new Set(filteredData.filter(r => r.email).map(r => r.email.toLowerCase()));
@@ -235,7 +256,11 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
      .slice(0, 10);
 
     const topCorps = Object.entries(corpBreakdown)
-      .map(([name, val]) => ({ name, ...val }))
+      .map(([name, val]) => {
+        const normalizedName = normalizeCompanyName(name);
+        const sectorInfo = sectorLookup[normalizedName] || { sector: '' };
+        return { name, ...val, sector: sectorInfo.sector || '—', sector2: '—' };
+      })
       .sort((a, b) => b.value - a.value)
       .slice(0, 10);
 
@@ -393,7 +418,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       advanceBookingBreakdown,
       monthBreakdown
     };
-  }, [filteredData]);
+  }, [filteredData, sectorLookup]);
 
 
   const ageChartData = useMemo(() => {
@@ -1063,6 +1088,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                   <tr>
                     <th className="text-left py-3 px-4 font-medium">#</th>
                     <th className="text-left py-3 px-4 font-medium">Company</th>
+                    <th className="text-left py-3 px-4 font-medium">Sector</th>
                     <th className="text-right py-3 px-4 font-medium">Seats</th>
                     <th className="text-right py-3 px-4 font-medium">Cash Paid</th>
                     <th className="text-right py-3 px-4 font-medium">Commercial Value</th>
@@ -1078,6 +1104,11 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
                         <span className="w-6 h-6 bg-amber-600 text-white rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
                       </td>
                       <td className="py-3 px-4 font-medium text-gray-800">{c.name}</td>
+                      <td className="py-3 px-4 text-gray-600">
+                        {c.sector !== '—' ? (
+                          <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">{c.sector}</span>
+                        ) : '—'}
+                      </td>
                       <td className="py-3 px-4 text-right">{c.count}</td>
                       <td className="py-3 px-4 text-right text-gray-600">{formatCurrency(c.revenue)}</td>
                       <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency(c.value)}</td>
