@@ -35,6 +35,20 @@ src/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 12, 2026: 3-Season Revenue Trend - Corp Tickets Toggle
+  - Added Accounting/Realistic view toggle to switch corp tickets between Ticketing and Sponsorship
+  - Accounting view: Corp tickets counted in Ticketing (standard financial reporting)
+  - Realistic view: Corp tickets moved from Ticketing → Sponsorship (shows true sponsorship value)
+  - Corp ticket revenue calculated from ticketing data (SalesChannel.CORP), not sponsorship reconciliation
+  - Mobile-optimized toggle with responsive layout
+  - YoY percentages recalculate based on adjusted values when toggle is switched
+
+- January 12, 2026: 3-Season Revenue Trend Mobile Optimization
+  - Grid stacks to single column on mobile (grid-cols-1 sm:grid-cols-3)
+  - Legend wraps on small screens
+  - Chart containers centered with max-width for mobile
+  - Responsive padding and spacing
+
 - January 10, 2026: Executive Overview YoY Comparison & Ticketing Improvements
   - Added Year-over-Year Comparison section below Strategic Signals
   - YoY cards for Ticketing, GameDay, and Sponsorship showing current vs previous season

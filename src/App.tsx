@@ -1344,11 +1344,16 @@ const App: React.FC = () => {
           const gdRev = gdData.reduce((acc, g) => acc + (g.totalRevenue - g.tixRevenue), 0);
           const gdGames = gdData.length;
           
-          // Sponsorship (including corpTix separately for toggle)
+          // Corp Tickets revenue from TICKETING data (SalesChannel.CORP)
+          const corpTixRev = ticketingData.reduce((sum, game) => {
+              const corpSales = game.salesBreakdown.filter(s => s.channel === SalesChannel.CORP);
+              return sum + corpSales.reduce((acc, s) => acc + s.revenue, 0);
+          }, 0);
+          
+          // Sponsorship
           const sponsorSeason = season.replace('-', '/');
           const sponsors = sponsorData.filter(s => s.season === sponsorSeason);
           const sponsorRev = sponsors.reduce((sum, d) => sum + d.sponsorReconciliation + d.csrReconciliation, 0);
-          const corpTixRev = sponsors.reduce((sum, d) => sum + d.corpTixReconciliation, 0);
           
           // Is current season (25-26)? Calculate projected values
           const isCurrent = season === '25-26';
