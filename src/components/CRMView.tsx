@@ -227,7 +227,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
       return !isCorp && !isAbb;
     });
 
-    const topCustomers = Object.entries(
+    const allCustomers = Object.entries(
       nonCorpData.reduce((acc, r) => {
         const key = getCustomerKey(r);
         if (!acc[key]) acc[key] = { 
@@ -276,9 +276,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
       const avgPerGame = gameCount > 0 ? val.value / gameCount : 0;
       const avgPerTxn = val.transactions > 0 ? val.value / val.transactions : 0;
       return { key, ...val, principalZone, secondaryZone, topSellType, avgAdvance, gameCount, avgPerGame, avgPerTxn };
-    })
-     .sort((a, b) => b.value - a.value)
-     .slice(0, 10);
+    });
 
     const topCorps = Object.entries(corpBreakdown)
       .map(([name, val]) => {
@@ -435,7 +433,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
       groupedSellTypeBreakdown,
       paymentBreakdown,
       discountBreakdown,
-      topCustomers,
+      allCustomers,
       topCorps,
       ageBreakdown,
       locationBreakdown,
@@ -799,7 +797,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
           <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <Award size={20} className="text-amber-500" />
-              Top 10 Customers by Value
+              Top 10 Customers
+              <span className="text-xs font-normal text-gray-400 ml-2">
+                (sorted by {sortColumn === 'value' ? 'Total Paid' : sortColumn === 'tickets' ? 'Tickets' : sortColumn === 'avgPerGame' ? 'Avg/Gm' : sortColumn === 'avgPerTxn' ? 'Avg/Txn' : sortColumn === 'avgAdvance' ? 'Avg Advance' : sortColumn === 'age' ? 'Age' : sortColumn.replace(/([A-Z])/g, ' $1').trim()})
+              </span>
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -875,7 +876,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                   </tr>
                 </thead>
                 <tbody>
-                  {[...stats.topCustomers].sort((a, b) => {
+                  {[...stats.allCustomers].sort((a, b) => {
                     const getAgeNum = (dob: string) => {
                       if (!dob) return 0;
                       const parts = dob.split('/');
@@ -901,7 +902,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                     if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
                     if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
                     return 0;
-                  }).map((c, i) => {
+                  }).slice(0, 10).map((c, i) => {
                     let ageDisplay = '-';
                     if (c.age) {
                       const parts = c.age.split('/');
