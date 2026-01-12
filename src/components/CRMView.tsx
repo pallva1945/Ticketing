@@ -276,6 +276,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, onUploadCsv }) => {
       if (normalizedLoc === 'VA') normalizedLoc = 'VARESE';
       if (normalizedLoc === 'MI') normalizedLoc = 'MILANO';
       if (normalizedLoc === 'CO') normalizedLoc = 'COMO';
+      if (normalizedLoc === 'NO') normalizedLoc = 'NOVARA';
       if (!normalizedLoc) normalizedLoc = 'Unknown';
       if (normalizedLoc !== 'Unknown') {
         if (!locationBreakdown[normalizedLoc]) locationBreakdown[normalizedLoc] = { count: 0, value: 0 };
