@@ -3,13 +3,14 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { syncTicketingToBigQuery, testBigQueryConnection } from "../src/services/bigQueryService";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
-const PORT = isProduction ? 5000 : (process.env.SERVER_PORT || 5001);
+const PORT = isProduction ? 5000 : Number(process.env.SERVER_PORT || 5001);
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
@@ -19,6 +20,28 @@ registerObjectStorageRoutes(app);
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+app.get("/api/bigquery/test", async (req, res) => {
+  try {
+    const result = await testBigQueryConnection();
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/bigquery/sync", async (req, res) => {
+  try {
+    const { csvContent } = req.body;
+    if (!csvContent) {
+      return res.status(400).json({ success: false, message: 'csvContent is required' });
+    }
+    const result = await syncTicketingToBigQuery(csvContent);
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 if (isProduction) {
