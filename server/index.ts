@@ -3,7 +3,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { syncTicketingToBigQuery, testBigQueryConnection } from "../src/services/bigQueryService";
+import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery } from "../src/services/bigQueryService";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,6 +67,35 @@ app.post("/api/bigquery/sync", async (req, res) => {
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+let ticketingCache: { data: any[]; timestamp: number } | null = null;
+const CACHE_TTL = 60 * 1000;
+
+app.get("/api/ticketing", async (req, res) => {
+  try {
+    const now = Date.now();
+    const forceRefresh = req.query.refresh === 'true';
+    
+    if (!forceRefresh && ticketingCache && (now - ticketingCache.timestamp) < CACHE_TTL) {
+      return res.json({ 
+        success: true, 
+        data: ticketingCache.data, 
+        cached: true,
+        message: `Served ${ticketingCache.data.length} games from cache` 
+      });
+    }
+    
+    const result = await fetchTicketingFromBigQuery();
+    
+    if (result.success) {
+      ticketingCache = { data: result.data, timestamp: now };
+    }
+    
+    res.json({ ...result, cached: false });
+  } catch (error: any) {
+    res.status(500).json({ success: false, data: [], message: error.message });
   }
 });
 

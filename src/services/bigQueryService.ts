@@ -205,3 +205,59 @@ export async function testBigQueryConnection(): Promise<{ success: boolean; mess
     };
   }
 }
+
+export async function fetchTicketingFromBigQuery(): Promise<{ success: boolean; data: TicketingRow[]; message: string }> {
+  try {
+    const client = getBigQueryClient();
+    
+    const query = `
+      SELECT 
+        game_id,
+        season,
+        league,
+        opponent,
+        date,
+        attendance,
+        capacity,
+        total_revenue,
+        corp_revenue,
+        tier,
+        opp_rank,
+        pv_rank,
+        updated_at
+      FROM \`${PROJECT_ID}.${DATASET_ID}.${TABLE_ID}\`
+      ORDER BY date DESC
+    `;
+    
+    const [rows] = await client.query({ query, location: 'US' });
+    
+    const ticketingData: TicketingRow[] = (rows as any[]).map(row => ({
+      game_id: row.game_id || '',
+      season: row.season || '',
+      league: row.league || 'LBA',
+      opponent: row.opponent || '',
+      date: row.date || '',
+      attendance: Number(row.attendance) || 0,
+      capacity: Number(row.capacity) || 4068,
+      total_revenue: Number(row.total_revenue) || 0,
+      corp_revenue: Number(row.corp_revenue) || 0,
+      tier: Number(row.tier) || 1,
+      opp_rank: row.opp_rank ? Number(row.opp_rank) : null,
+      pv_rank: row.pv_rank ? Number(row.pv_rank) : null,
+      updated_at: row.updated_at || new Date().toISOString()
+    }));
+    
+    return {
+      success: true,
+      data: ticketingData,
+      message: `Fetched ${ticketingData.length} games from BigQuery`
+    };
+  } catch (error: any) {
+    console.error('BigQuery fetch error:', error);
+    return {
+      success: false,
+      data: [],
+      message: error.message || 'Failed to fetch from BigQuery'
+    };
+  }
+}

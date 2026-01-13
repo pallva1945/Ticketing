@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Bell, Users, FileText, ChevronDown, Target, Shield } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Bell, Users, FileText, ChevronDown, Target, Shield, RefreshCw } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -23,7 +23,7 @@ import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { GAMEDAY_CSV_CONTENT } from './data/gameDayData';
 import { SPONSOR_CSV_CONTENT } from './data/sponsorData';
 import { CRM_CSV_CONTENT } from './data/crmData';
-import { processGameData, processGameDayData, processSponsorData, processCRMData } from './utils/dataProcessor';
+import { processGameData, processGameDayData, processSponsorData, processCRMData, convertBigQueryToGameData, BigQueryTicketingRow } from './utils/dataProcessor';
 import { getCsvFromFirebase, saveCsvToFirebase } from './services/dbService';
 import { isFirebaseConfigured } from './firebaseConfig';
 
@@ -857,8 +857,8 @@ const App: React.FC = () => {
   const [isLoadingData, setIsLoadingData] = useState(true);
   
   // Sources separated by vertical
-  const [dataSources, setDataSources] = useState<Record<string, 'live' | 'cloud' | 'local'>>({
-      ticketing: isFirebaseConfigured ? 'cloud' : 'local',
+  const [dataSources, setDataSources] = useState<Record<string, 'live' | 'cloud' | 'local' | 'bigquery'>>({
+      ticketing: 'local',
       gameday: isFirebaseConfigured ? 'cloud' : 'local'
   });
   
@@ -984,62 +984,28 @@ const App: React.FC = () => {
         setCrmData(processCRMData(CRM_CSV_CONTENT));
     }
 
-    // 3. TICKETING DATA LOADING
+    // 3. TICKETING DATA LOADING (from BigQuery)
     try {
-      if (isFirebaseConfigured) {
-        try {
-          const cloudData = await getCsvFromFirebase('ticketing');
-          if (cloudData) {
-            loadedTicketing = processGameData(cloudData.content);
-            // Validate cloud data - check if it has meaningful revenue values
-            const totalCloudRevenue = loadedTicketing.reduce((sum, g) => sum + g.totalRevenue, 0);
-            if (loadedTicketing.length > 0 && totalCloudRevenue > 0) {
-              setData(loadedTicketing);
-              setLastUploadTimes(prev => ({...prev, ticketing: cloudData.updatedAt}));
-              setDataSources(prev => ({...prev, ticketing: 'cloud'})); 
-              setIsLoadingData(false);
-              return; 
-            } else {
-              console.warn('Cloud ticketing data invalid (€0 total), falling back to local');
-              // Save correct local data to cloud to fix the corruption
-              try {
-                await saveCsvToFirebase('ticketing', FALLBACK_CSV_CONTENT);
-                console.log('Saved correct local ticketing data to cloud');
-              } catch (saveError) {
-                console.warn('Failed to save corrected data to cloud:', saveError);
-              }
-            }
+      const response = await fetch('/api/ticketing');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data && result.data.length > 0) {
+          loadedTicketing = convertBigQueryToGameData(result.data as BigQueryTicketingRow[]);
+          const totalRevenue = loadedTicketing.reduce((sum, g) => sum + g.totalRevenue, 0);
+          if (loadedTicketing.length > 0 && totalRevenue > 0) {
+            setData(loadedTicketing);
+            setDataSources(prev => ({...prev, ticketing: 'bigquery'}));
+            setIsLoadingData(false);
+            console.log(`Loaded ${loadedTicketing.length} games from BigQuery`);
+            return;
           }
-        } catch (dbError: any) {
-          if (dbError.message === 'permission-denied') setShowRulesError(true);
         }
       }
-
-      if (GOOGLE_SHEET_CSV_URL) {
-        try {
-          const cacheBuster = `&t=${Date.now()}`;
-          const response = await fetch(GOOGLE_SHEET_CSV_URL + cacheBuster);
-          if (response.ok) {
-            const csvText = await response.text();
-            loadedTicketing = processGameData(csvText);
-            if (loadedTicketing.length > 0) {
-                setData(loadedTicketing);
-                setDataSources(prev => ({...prev, ticketing: 'live'}));
-                setIsLoadingData(false);
-                return;
-            }
-          }
-        } catch (directError) {
-          console.warn("Direct fetch failed", directError);
-        }
-      }
-
-      if (loadedTicketing.length === 0) {
-        loadedTicketing = processGameData(FALLBACK_CSV_CONTENT);
-        setData(loadedTicketing);
-        setDataSources(prev => ({...prev, ticketing: 'local'}));
-      }
-
+      
+      console.warn('BigQuery fetch failed or empty, falling back to local data');
+      loadedTicketing = processGameData(FALLBACK_CSV_CONTENT);
+      setData(loadedTicketing);
+      setDataSources(prev => ({...prev, ticketing: 'local'}));
     } catch (error) {
       console.error("Critical error processing data:", error);
       setData(processGameData(FALLBACK_CSV_CONTENT));
@@ -1156,6 +1122,32 @@ const App: React.FC = () => {
         fileInputRef.current.click();
     } else {
         alert("Upload interface error. Please refresh.");
+    }
+  };
+
+  const [isRefreshingTicketing, setIsRefreshingTicketing] = useState(false);
+  
+  const refreshTicketingFromBigQuery = async () => {
+    setIsRefreshingTicketing(true);
+    try {
+      const response = await fetch('/api/ticketing?refresh=true');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data && result.data.length > 0) {
+          const loadedData = convertBigQueryToGameData(result.data as BigQueryTicketingRow[]);
+          setData(loadedData);
+          setDataSources(prev => ({...prev, ticketing: 'bigquery'}));
+          console.log(`Refreshed ${loadedData.length} games from BigQuery`);
+          return true;
+        }
+      }
+      console.warn('BigQuery refresh failed');
+      return false;
+    } catch (error) {
+      console.error('Error refreshing from BigQuery:', error);
+      return false;
+    } finally {
+      setIsRefreshingTicketing(false);
     }
   };
 
@@ -1915,24 +1907,41 @@ const App: React.FC = () => {
                         <div className="text-[10px] text-gray-500 mb-1 px-1 flex items-center gap-1">
                             Current Source: 
                             <strong className={`flex items-center gap-1 ${
-                                activeModule === 'sponsorship' 
-                                    ? (sponsorDataSource === 'cloud' ? 'text-green-600' : 'text-orange-600')
-                                    : (dataSources[activeModule === 'gameday' ? 'gameday' : 'ticketing'] === 'cloud' ? 'text-green-600' : 'text-orange-600')
+                                activeModule === 'ticketing'
+                                    ? (dataSources.ticketing === 'bigquery' ? 'text-blue-600' : 'text-orange-600')
+                                    : activeModule === 'sponsorship' 
+                                        ? (sponsorDataSource === 'cloud' ? 'text-green-600' : 'text-orange-600')
+                                        : (dataSources.gameday === 'cloud' ? 'text-green-600' : 'text-orange-600')
                             }`}>
-                                {activeModule === 'sponsorship' 
-                                    ? (sponsorDataSource === 'cloud' ? <Cloud size={10} /> : <Database size={10} />)
-                                    : (dataSources[activeModule === 'gameday' ? 'gameday' : 'ticketing'] === 'cloud' ? <Cloud size={10} /> : <Database size={10} />)
+                                {activeModule === 'ticketing'
+                                    ? (dataSources.ticketing === 'bigquery' ? <Database size={10} /> : <Database size={10} />)
+                                    : activeModule === 'sponsorship' 
+                                        ? (sponsorDataSource === 'cloud' ? <Cloud size={10} /> : <Database size={10} />)
+                                        : (dataSources.gameday === 'cloud' ? <Cloud size={10} /> : <Database size={10} />)
                                 }
-                                {activeModule === 'sponsorship' 
-                                    ? sponsorDataSource.toUpperCase()
-                                    : dataSources[activeModule === 'gameday' ? 'gameday' : 'ticketing'].toUpperCase()
+                                {activeModule === 'ticketing'
+                                    ? dataSources.ticketing.toUpperCase()
+                                    : activeModule === 'sponsorship' 
+                                        ? sponsorDataSource.toUpperCase()
+                                        : dataSources.gameday.toUpperCase()
                                 }
                             </strong>
                         </div>
-                        <button onClick={triggerFileUpload} disabled={isUploading} className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-gray-600 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors shadow-sm active:bg-gray-50 hover:shadow-md hover:text-gray-900">
-                            {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} 
-                            Upload {activeModule === 'gameday' ? 'GameDay' : activeModule === 'sponsorship' ? 'Sponsor' : 'Ticketing'} CSV
-                        </button>
+                        {activeModule === 'ticketing' ? (
+                          <button 
+                            onClick={refreshTicketingFromBigQuery} 
+                            disabled={isRefreshingTicketing} 
+                            className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors shadow-sm active:bg-blue-100 hover:shadow-md hover:text-blue-700"
+                          >
+                            {isRefreshingTicketing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} 
+                            Sync from BigQuery
+                          </button>
+                        ) : (
+                          <button onClick={triggerFileUpload} disabled={isUploading} className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-gray-600 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors shadow-sm active:bg-gray-50 hover:shadow-md hover:text-gray-900">
+                              {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} 
+                              Upload {activeModule === 'gameday' ? 'GameDay' : 'Sponsor'} CSV
+                          </button>
+                        )}
                         {activeModule === 'ticketing' && (
                           <button onClick={triggerCRMFileUpload} className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors shadow-sm active:bg-purple-100 hover:shadow-md hover:text-purple-700">
                             <Upload size={14} /> Upload CRM CSV

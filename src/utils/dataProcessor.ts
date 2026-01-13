@@ -611,3 +611,50 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
     };
   }).filter(r => r.fullName || r.email || r.group);
 };
+
+export interface BigQueryTicketingRow {
+  game_id: string;
+  season: string;
+  league: string;
+  opponent: string;
+  date: string;
+  attendance: number;
+  capacity: number;
+  total_revenue: number;
+  corp_revenue: number;
+  tier: number;
+  opp_rank: number | null;
+  pv_rank: number | null;
+  updated_at: string;
+}
+
+export const convertBigQueryToGameData = (rows: BigQueryTicketingRow[]): GameData[] => {
+  return rows.map(row => {
+    const getSeasonCapacity = (season: string): Record<TicketZone, number> => {
+      if (season.includes('25-26') || season.includes('25/26')) return CAPACITIES_25_26;
+      if (season.includes('24-25') || season.includes('24/25')) return CAPACITIES_24_25;
+      return CAPACITIES_23_24;
+    };
+    
+    const capacities = getSeasonCapacity(row.season);
+    const totalCapacity = Object.values(capacities).reduce((sum, v) => sum + v, 0);
+    
+    return {
+      id: row.game_id,
+      opponent: row.opponent,
+      date: row.date,
+      attendance: row.attendance,
+      capacity: row.capacity || totalCapacity,
+      zoneCapacities: capacities as unknown as Record<string, number>,
+      totalRevenue: row.total_revenue,
+      corpRevenue: row.corp_revenue,
+      salesBreakdown: [],
+      league: row.league,
+      season: row.season,
+      oppRank: row.opp_rank || 0,
+      pvRank: row.pv_rank || 0,
+      tier: row.tier,
+      pnlBreakdown: {}
+    };
+  });
+};
