@@ -42,6 +42,13 @@ server/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 13, 2026: International CSV Format Support
+  - CSV parser now auto-detects Italian (1.234,56) vs American (1,234.56) number formats
+  - Column headers support both underscore (Par_O_Abb_Num) and space (Par O Abb Num) formats
+  - Added cloud data validation: Falls back to local data if cloud data shows €0 total (corruption detection)
+  - When cloud corruption is detected, automatically saves valid local data to cloud to fix it
+  - Current cloud data: 46 games across 3 seasons (23-24, 24-25, 25-26) with €3.8M total revenue
+
 - January 12, 2026: CRM Analytics - Demographics & Buying Behavior
   - Added Demographics tab: age distribution chart, location breakdown by province, buyer personas by zone
   - Added Buying Behavior tab: purchase hour patterns, day of week trends, advance booking timeline, payment methods

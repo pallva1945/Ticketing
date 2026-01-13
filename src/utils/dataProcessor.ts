@@ -26,25 +26,41 @@ const parseCSV = (str: string): string[][] => {
 
 const parseInteger = (val: string | undefined): number => {
   if (!val) return 0;
-  // Remove dots (thousands separators) and non-numeric except minus
-  const clean = val.replace(/\./g, '').replace(/[^0-9-]/g, '');
+  // Remove thousands separators (dots or commas) and non-numeric except minus
+  const clean = val.replace(/[.,]/g, '').replace(/[^0-9-]/g, '');
   const num = parseInt(clean, 10);
   return isNaN(num) ? 0 : num;
 };
 
 const parseCurrency = (val: string | undefined): number => {
   if (!val) return 0;
-  // Handle Italian format: dots are thousand separators, commas are decimal separators
-  // e.g., "€ 104.010" = 104010, "€ 1.234,56" = 1234.56
   let clean = val.replace(/[€\s]/g, '');
-  // Check for negative
   const isNegative = clean.includes('-');
   clean = clean.replace(/-/g, '');
-  // Remove dots (thousand separators in Italian format)
-  clean = clean.replace(/\./g, '');
-  // Replace comma with dot (decimal separator in Italian format)
-  clean = clean.replace(',', '.');
-  const num = parseFloat(clean);
+  
+  // Auto-detect format by finding the last punctuation mark
+  // American: "88,521.99" - comma is thousands, dot is decimal
+  // Italian: "88.521,99" - dot is thousands, comma is decimal
+  const lastComma = clean.lastIndexOf(',');
+  const lastDot = clean.lastIndexOf('.');
+  
+  let num: number;
+  if (lastComma > lastDot) {
+    // Italian format: comma is decimal separator, dots are thousands
+    // e.g., "88.521,99" -> 88521.99
+    clean = clean.replace(/\./g, '').replace(',', '.');
+    num = parseFloat(clean);
+  } else if (lastDot > lastComma) {
+    // American format: dot is decimal separator, commas are thousands
+    // e.g., "88,521.99" -> 88521.99
+    clean = clean.replace(/,/g, '');
+    num = parseFloat(clean);
+  } else {
+    // No punctuation or only one type - try parsing directly
+    clean = clean.replace(/,/g, '').replace(/\./g, '');
+    num = parseFloat(clean);
+  }
+  
   return isNaN(num) ? 0 : (isNegative ? -num : num);
 };
 
@@ -151,9 +167,14 @@ export const processGameData = (csvContent: string): GameData[] => {
   };
 
   const games: GameData[] = dataRows.map(row => {
-    // Helper to extract value safely
+    // Helper to extract value safely - handles both underscore and space formats
     const getValue = (possibleNames: string[]): string => {
-      const idx = header.findIndex(h => possibleNames.map(n => n.toLowerCase()).includes(h));
+      // Normalize both header and search names (convert underscores to spaces, lowercase)
+      const normalize = (s: string) => s.toLowerCase().replace(/_/g, ' ');
+      const normalizedHeaders = header.map(normalize);
+      const idx = normalizedHeaders.findIndex(h => 
+        possibleNames.map(n => normalize(n)).includes(h)
+      );
       if (idx === -1 || !row[idx]) return '';
       let val = row[idx].trim();
       if (val.startsWith('"') && val.endsWith('"')) {

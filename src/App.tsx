@@ -991,12 +991,23 @@ const App: React.FC = () => {
           const cloudData = await getCsvFromFirebase('ticketing');
           if (cloudData) {
             loadedTicketing = processGameData(cloudData.content);
-            if (loadedTicketing.length > 0) {
+            // Validate cloud data - check if it has meaningful revenue values
+            const totalCloudRevenue = loadedTicketing.reduce((sum, g) => sum + g.totalRevenue, 0);
+            if (loadedTicketing.length > 0 && totalCloudRevenue > 0) {
               setData(loadedTicketing);
               setLastUploadTimes(prev => ({...prev, ticketing: cloudData.updatedAt}));
               setDataSources(prev => ({...prev, ticketing: 'cloud'})); 
               setIsLoadingData(false);
               return; 
+            } else {
+              console.warn('Cloud ticketing data invalid (€0 total), falling back to local');
+              // Save correct local data to cloud to fix the corruption
+              try {
+                await saveCsvToFirebase('ticketing', FALLBACK_CSV_CONTENT);
+                console.log('Saved correct local ticketing data to cloud');
+              } catch (saveError) {
+                console.warn('Failed to save corrected data to cloud:', saveError);
+              }
             }
           }
         } catch (dbError: any) {
