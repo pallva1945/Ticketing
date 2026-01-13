@@ -47,7 +47,8 @@ server/
   - BigQuery connection: project `ticketing-migration`, dataset `ticketing_migration`, table `extended_db_final`
   - API endpoints: `/api/bigquery/test` (connection test), `/api/bigquery/sync` (sync data)
   - Service account credentials stored securely in GOOGLE_CLOUD_CREDENTIALS secret
-  - Sync includes: game_id, season, league, opponent, date, attendance, capacity, total_revenue, corp_revenue, tier
+  - Sync includes: game_id, season, league, opponent, date, attendance, capacity, total_revenue, corp_revenue, tier, updated_at
+  - Security: BigQuery endpoints restricted to internal requests only (localhost); external access requires BIGQUERY_ADMIN_SECRET
 
 - January 13, 2026: International CSV Format Support
   - CSV parser now auto-detects Italian (1.234,56) vs American (1,234.56) number formats
