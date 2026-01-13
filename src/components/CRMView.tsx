@@ -1338,7 +1338,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
             if (!subGroups[key]) subGroups[key] = [];
             subGroups[key].push(r);
           });
-          Object.entries(subGroups).forEach(([key, recs]) => {
+          Object.entries(subGroups).forEach(([_key, recs]) => {
             const seats = [...new Set(recs.map(r => r.seat).filter(Boolean))];
             const totalValue = recs.reduce((sum, r) => sum + (Number(r.commercialValue) || 0), 0);
             const leadDays = recs.map(r => {
