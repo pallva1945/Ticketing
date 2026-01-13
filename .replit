@@ -47,3 +47,10 @@ deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
 publicDir = "dist"
 run = ["npm", "run", "start"]
+
+[userenv]
+
+[userenv.shared]
+BIGQUERY_PROJECT_ID = "ticketing-migration"
+BIGQUERY_DATASET_ID = "ticketing_migration"
+BIGQUERY_TABLE_ID = "extended_db_final"
