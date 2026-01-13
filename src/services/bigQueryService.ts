@@ -186,12 +186,16 @@ function parseCSVLine(line: string): string[] {
 export async function testBigQueryConnection(): Promise<{ success: boolean; message: string }> {
   try {
     const client = getBigQueryClient();
-    const [datasets] = await client.getDatasets();
+    
+    const query = `SELECT 1 as test`;
+    const [rows] = await client.query({ query, location: 'US' });
+    
     return { 
       success: true, 
-      message: `Connected! Found ${datasets.length} datasets` 
+      message: `Connected to BigQuery! Project: ${PROJECT_ID}` 
     };
   } catch (error: any) {
+    console.error('BigQuery connection test error:', error);
     return { 
       success: false, 
       message: error.message || 'Connection failed' 
