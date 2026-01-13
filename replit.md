@@ -42,13 +42,14 @@ server/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
-- January 13, 2026: BigQuery Integration for Ticketing Data
-  - Added automatic sync to BigQuery when uploading ticketing CSV files
+- January 13, 2026: BigQuery as Primary Data Source for Ticketing
+  - **BigQuery is now the source of truth for ticketing data** - CSV uploads removed
+  - Dashboard loads ticketing data directly from BigQuery on startup and via "Sync from BigQuery" button
   - BigQuery connection: project `ticketing-migration`, dataset `ticketing_migration`, table `extended_db_final`
-  - API endpoints: `/api/bigquery/test` (connection test), `/api/bigquery/sync` (sync data)
-  - Service account credentials stored securely in GOOGLE_CLOUD_CREDENTIALS secret
-  - Sync includes: game_id, season, league, opponent, date, attendance, capacity, total_revenue, corp_revenue, tier, updated_at
-  - Security: BigQuery endpoints restricted to internal requests only (localhost); external access requires BIGQUERY_ADMIN_SECRET
+  - API endpoint: `/api/ticketing` (GET) - fetches data with 60-second cache, `?refresh=true` to force refresh
+  - Column mapping: Season, Liga, Contro (opponent), Data (date), Tot_Eur, Corp_Eur, Total_num (attendance), Tier, etc.
+  - Handles localized number formats (€ 48,63) and date objects from BigQuery
+  - When BigQuery updates, click "Sync from BigQuery" in Ticketing module to refresh dashboard
 
 - January 13, 2026: International CSV Format Support
   - CSV parser now auto-detects Italian (1.234,56) vs American (1,234.56) number formats

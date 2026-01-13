@@ -191,7 +191,7 @@ export async function testBigQueryConnection(): Promise<{ success: boolean; mess
     const client = getBigQueryClient();
     
     const query = `SELECT 1 as test`;
-    const [rows] = await client.query({ query, location: 'US' });
+    const [rows] = await client.query({ query });
     
     return { 
       success: true, 
@@ -210,42 +210,58 @@ export async function fetchTicketingFromBigQuery(): Promise<{ success: boolean; 
   try {
     const client = getBigQueryClient();
     
-    const query = `
-      SELECT 
-        game_id,
-        season,
-        league,
-        opponent,
-        date,
-        attendance,
-        capacity,
-        total_revenue,
-        corp_revenue,
-        tier,
-        opp_rank,
-        pv_rank,
-        updated_at
-      FROM \`${PROJECT_ID}.${DATASET_ID}.${TABLE_ID}\`
-      ORDER BY date DESC
-    `;
+    const query = `SELECT * FROM \`${PROJECT_ID}.${DATASET_ID}.${TABLE_ID}\` LIMIT 1000`;
     
-    const [rows] = await client.query({ query, location: 'US' });
+    const [rows] = await client.query({ query });
     
-    const ticketingData: TicketingRow[] = (rows as any[]).map(row => ({
-      game_id: row.game_id || '',
-      season: row.season || '',
-      league: row.league || 'LBA',
-      opponent: row.opponent || '',
-      date: row.date || '',
-      attendance: Number(row.attendance) || 0,
-      capacity: Number(row.capacity) || 4068,
-      total_revenue: Number(row.total_revenue) || 0,
-      corp_revenue: Number(row.corp_revenue) || 0,
-      tier: Number(row.tier) || 1,
-      opp_rank: row.opp_rank ? Number(row.opp_rank) : null,
-      pv_rank: row.pv_rank ? Number(row.pv_rank) : null,
-      updated_at: row.updated_at || new Date().toISOString()
-    }));
+    const parseNumeric = (val: any): number => {
+      if (val === null || val === undefined) return 0;
+      if (typeof val === 'number') return isNaN(val) ? 0 : val;
+      if (typeof val === 'string') {
+        let cleaned = val.replace(/[€$£\s]/g, '');
+        const lastComma = cleaned.lastIndexOf(',');
+        const lastDot = cleaned.lastIndexOf('.');
+        if (lastComma > lastDot) {
+          cleaned = cleaned.replace(/\./g, '').replace(',', '.');
+        } else {
+          cleaned = cleaned.replace(/,/g, '');
+        }
+        const num = parseFloat(cleaned);
+        return isNaN(num) ? 0 : num;
+      }
+      return 0;
+    };
+    
+    const ticketingData: TicketingRow[] = (rows as any[]).map(row => {
+      let dateValue = '';
+      if (row.Data) {
+        if (typeof row.Data === 'object' && row.Data.value) {
+          dateValue = row.Data.value;
+        } else if (typeof row.Data === 'string') {
+          dateValue = row.Data;
+        }
+      }
+      if (dateValue && dateValue.includes('-')) {
+        const [year, month, day] = dateValue.split('-');
+        dateValue = `${day}/${month}/${year}`;
+      }
+      
+      return {
+        game_id: row.Game_ID || row.game_id || `${row.Season || row.season}-${row.Contro || row.opponent}`,
+        season: row.Season || row.season || '',
+        league: row.Liga || row.league || 'LBA',
+        opponent: row.Contro || row.opponent || '',
+        date: dateValue || row.date || '',
+        attendance: parseNumeric(row.Total_num || row.Tot_Att || row.attendance),
+        capacity: 4068,
+        total_revenue: parseNumeric(row.Tot_Eur || row.total_revenue),
+        corp_revenue: parseNumeric(row.Corp_Eur || row.corp_revenue),
+        tier: parseNumeric(row.Tier || row.tier) || 1,
+        opp_rank: row.Opp_Rank ? parseNumeric(row.Opp_Rank) : null,
+        pv_rank: row.PV_Rank ? parseNumeric(row.PV_Rank) : null,
+        updated_at: new Date().toISOString()
+      };
+    });
     
     return {
       success: true,
