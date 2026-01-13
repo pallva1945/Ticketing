@@ -1266,7 +1266,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                 <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search by name, email, zone, sell type, location..."
+                  placeholder="Search by name, email, zone, sell type... (use commas for multiple filters)"
                   value={clientSearchQuery}
                   onChange={(e) => setClientSearchQuery(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -1339,11 +1339,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                 return { key, ...val, principalZone, secondaryZone, topSellType, topSeats, age, gameCount: val.games.size };
               });
 
+              const searchTerms = query.split(',').map(t => t.trim().toLowerCase()).filter(t => t.length > 0);
               const results = allCustomers.filter(c => {
                 const searchStr = [
                   c.name, c.email, c.phone, c.address, c.nationality, c.province, c.principalZone, c.secondaryZone, c.topSellType, ...c.topSeats
                 ].filter(Boolean).join(' ').toLowerCase();
-                return searchStr.includes(query);
+                return searchTerms.every(term => searchStr.includes(term));
               }).sort((a, b) => b.value - a.value).slice(0, 50);
 
               if (results.length === 0) {
