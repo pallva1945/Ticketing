@@ -1106,7 +1106,29 @@ const App: React.FC = () => {
                   setDataSources(prev => ({...prev, [targetDataset]: 'cloud'}));
               }
               
-              alert(`Success! ${targetDataset.toUpperCase()} data updated in cloud.`);
+              // Auto-sync ticketing data to BigQuery
+              if (targetDataset === 'ticketing') {
+                try {
+                  const bqResponse = await fetch('/api/bigquery/sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ csvContent: text })
+                  });
+                  const bqResult = await bqResponse.json();
+                  if (bqResult.success) {
+                    console.log('BigQuery sync successful:', bqResult.message);
+                    alert(`Success! Ticketing data updated in cloud AND synced to BigQuery (${bqResult.rowCount} rows).`);
+                  } else {
+                    console.warn('BigQuery sync failed:', bqResult.message);
+                    alert(`Success! Ticketing data updated in cloud. (BigQuery sync failed: ${bqResult.message})`);
+                  }
+                } catch (bqError) {
+                  console.warn('BigQuery sync error:', bqError);
+                  alert(`Success! ${targetDataset.toUpperCase()} data updated in cloud. (BigQuery sync unavailable)`);
+                }
+              } else {
+                alert(`Success! ${targetDataset.toUpperCase()} data updated in cloud.`);
+              }
             } catch (dbError: any) {
               if (dbError.message === 'permission-denied') setShowRulesError(true);
               else alert("Database Error: " + dbError.message);

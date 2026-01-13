@@ -42,6 +42,13 @@ server/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 13, 2026: BigQuery Integration for Ticketing Data
+  - Added automatic sync to BigQuery when uploading ticketing CSV files
+  - BigQuery connection: project `ticketing-migration`, dataset `ticketing_migration`, table `extended_db_final`
+  - API endpoints: `/api/bigquery/test` (connection test), `/api/bigquery/sync` (sync data)
+  - Service account credentials stored securely in GOOGLE_CLOUD_CREDENTIALS secret
+  - Sync includes: game_id, season, league, opponent, date, attendance, capacity, total_revenue, corp_revenue, tier
+
 - January 13, 2026: International CSV Format Support
   - CSV parser now auto-detects Italian (1.234,56) vs American (1,234.56) number formats
   - Column headers support both underscore (Par_O_Abb_Num) and space (Par O Abb Num) formats
