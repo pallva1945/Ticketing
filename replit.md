@@ -49,6 +49,7 @@ server/
   - API endpoint: `/api/ticketing` (GET) - fetches data with 60-second cache, `?refresh=true` to force refresh
   - Column mapping: Season, Liga, Contro (opponent), Data (date), Tot_Eur, Corp_Eur, Total_num (attendance), Tier, etc.
   - Handles localized number formats (€ 48,63) and date objects from BigQuery
+  - Fixed data aggregation for BigQuery data (uses original game revenue when no zone breakdown available)
   - When BigQuery updates, click "Sync from BigQuery" in Ticketing module to refresh dashboard
 
 - January 13, 2026: International CSV Format Support

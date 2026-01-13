@@ -1253,11 +1253,15 @@ const App: React.FC = () => {
 
       Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
 
+      // Use original values if salesBreakdown is empty (e.g., from BigQuery data)
+      const hasSalesBreakdown = game.salesBreakdown.length > 0;
+      const noZoneFiltering = selectedZones.includes('All') && !ignoreOspiti;
+      
       return {
         ...game,
-        attendance: zoneAttendance,
-        totalRevenue: zoneRevenue,
-        capacity: zoneCapacity,
+        attendance: hasSalesBreakdown ? zoneAttendance : game.attendance,
+        totalRevenue: (hasSalesBreakdown || !noZoneFiltering) ? zoneRevenue : game.totalRevenue,
+        capacity: hasSalesBreakdown ? zoneCapacity : game.capacity,
         salesBreakdown: zoneSales,
         zoneCapacities: filteredZoneCapacities
       };
@@ -1317,11 +1321,15 @@ const App: React.FC = () => {
 
       Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
 
+      // Use original values if salesBreakdown is empty (e.g., from BigQuery data)
+      const hasSalesBreakdown = game.salesBreakdown.length > 0;
+      const noZoneFiltering = selectedZones.includes('All') && !ignoreOspiti;
+      
       return {
         ...game,
-        attendance: zoneAttendance,
-        totalRevenue: zoneRevenue,
-        capacity: zoneCapacity,
+        attendance: hasSalesBreakdown ? zoneAttendance : game.attendance,
+        totalRevenue: (hasSalesBreakdown || !noZoneFiltering) ? zoneRevenue : game.totalRevenue,
+        capacity: hasSalesBreakdown ? zoneCapacity : game.capacity,
         salesBreakdown: zoneSales,
         zoneCapacities: filteredZoneCapacities
       };

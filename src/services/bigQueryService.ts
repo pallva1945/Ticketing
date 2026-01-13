@@ -263,9 +263,12 @@ export async function fetchTicketingFromBigQuery(): Promise<{ success: boolean; 
       };
     });
     
+    // Filter out incomplete rows (no opponent or date)
+    const validData = ticketingData.filter(row => row.opponent && row.date);
+    
     return {
       success: true,
-      data: ticketingData,
+      data: validData,
       message: `Fetched ${ticketingData.length} games from BigQuery`
     };
   } catch (error: any) {
