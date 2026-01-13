@@ -984,32 +984,43 @@ const App: React.FC = () => {
         setCrmData(processCRMData(CRM_CSV_CONTENT));
     }
 
-    // 3. TICKETING DATA LOADING (from BigQuery)
+    // 3. TICKETING DATA LOADING (Cloud storage first for zone details, fallback to local)
     try {
-      const response = await fetch('/api/ticketing');
-      if (response.ok) {
-        const result = await response.json();
-        if (result.success && result.data && result.data.length > 0) {
-          loadedTicketing = convertBigQueryToGameData(result.data as BigQueryTicketingRow[]);
-          const totalRevenue = loadedTicketing.reduce((sum, g) => sum + g.totalRevenue, 0);
-          if (loadedTicketing.length > 0 && totalRevenue > 0) {
-            setData(loadedTicketing);
-            setDataSources(prev => ({...prev, ticketing: 'bigquery'}));
-            setIsLoadingData(false);
-            console.log(`Loaded ${loadedTicketing.length} games from BigQuery`);
-            return;
-          }
+        let ticketingCsv = FALLBACK_CSV_CONTENT;
+        let ticketingSource: 'local' | 'cloud' = 'local';
+        
+        // Try cloud storage first (has detailed zone breakdown)
+        if (isFirebaseConfigured) {
+            const cloudTicketing = await getCsvFromFirebase('ticketing');
+            if (cloudTicketing) {
+                // Validate cloud data has actual content AND zone breakdown for ALL games
+                const testData = processGameData(cloudTicketing.content);
+                const testRevenue = testData.reduce((sum, g) => sum + g.totalRevenue, 0);
+                
+                // Check zone-level data - require ALL games to have zone breakdown
+                const allGamesHaveZoneData = testData.length > 0 && 
+                    testData.every(g => g.salesBreakdown && g.salesBreakdown.length > 0);
+                
+                if (testData.length > 0 && testRevenue > 0 && allGamesHaveZoneData) {
+                    ticketingCsv = cloudTicketing.content;
+                    setLastUploadTimes(prev => ({...prev, ticketing: cloudTicketing.updatedAt}));
+                    ticketingSource = 'cloud';
+                } else if (testData.length > 0 && testRevenue > 0) {
+                    // Cloud has data but some games missing zones - use local for complete zone analytics
+                    const gamesWithoutZones = testData.filter(g => !g.salesBreakdown || g.salesBreakdown.length === 0);
+                    console.warn(`Cloud ticketing has ${gamesWithoutZones.length} games without zone breakdown, using local data`);
+                }
+            }
         }
-      }
-      
-      console.warn('BigQuery fetch failed or empty, falling back to local data');
-      loadedTicketing = processGameData(FALLBACK_CSV_CONTENT);
-      setData(loadedTicketing);
-      setDataSources(prev => ({...prev, ticketing: 'local'}));
-    } catch (error) {
-      console.error("Critical error processing data:", error);
-      setData(processGameData(FALLBACK_CSV_CONTENT));
-      setDataSources(prev => ({...prev, ticketing: 'local'}));
+        
+        loadedTicketing = processGameData(ticketingCsv);
+        setData(loadedTicketing);
+        setDataSources(prev => ({...prev, ticketing: ticketingSource}));
+    } catch(e) {
+        console.error("Error loading Ticketing data", e);
+        loadedTicketing = processGameData(FALLBACK_CSV_CONTENT);
+        setData(loadedTicketing);
+        setDataSources(prev => ({...prev, ticketing: 'local'}));
     } finally {
       setIsLoadingData(false);
     }
