@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, Upload, X, Filter, BarChart3, PieChart, Euro, Award, ChevronUp, ChevronDown } from 'lucide-react';
+import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, Upload, X, Filter, BarChart3, PieChart, Euro, Award, ChevronUp, ChevronDown, ChevronLeft, User } from 'lucide-react';
 import { CRMRecord, SponsorData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
@@ -65,6 +65,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
   const [activeView, setActiveView] = useState<'overview' | 'demographics' | 'behavior' | 'customers' | 'corporate' | 'search'>('overview');
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
+  const [searchSelectedClient, setSearchSelectedClient] = useState<string | null>(null);
+  const [searchGameFilter, setSearchGameFilter] = useState<string>('all');
   const [sortColumn, setSortColumn] = useState<string>('value');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -1254,196 +1256,341 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
         </>
       )}
 
-      {activeView === 'search' && (
-        <>
-          <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <Search size={20} className="text-red-500" />
-              Client Search
-            </h3>
-            <div className="mb-6">
-              <div className="relative max-w-xl">
-                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by name, email, zone, sell type... (use commas for multiple filters)"
-                  value={clientSearchQuery}
-                  onChange={(e) => setClientSearchQuery(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                  autoFocus
-                />
-                {clientSearchQuery && (
-                  <button 
-                    onClick={() => setClientSearchQuery('')}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
+      {activeView === 'search' && (() => {
+        const allClients = Object.entries(
+          data.reduce((acc, r) => {
+            const key = getCustomerKey(r);
+            if (!acc[key]) acc[key] = {
+              name: r.fullName || `${r.firstName} ${r.lastName}`.trim(),
+              firstName: r.firstName,
+              lastName: r.lastName,
+              email: r.email,
+              phone: r.phone,
+              cell: r.cell,
+              address: r.address,
+              nationality: r.nationality,
+              dob: r.dob,
+              pob: r.pob,
+              province: r.province,
+              records: [] as CRMRecord[],
+              payments: {} as Record<string, number>,
+              leadDays: [] as number[]
+            };
+            acc[key].records.push(r);
+            if (!acc[key].phone && r.phone) acc[key].phone = r.phone;
+            if (!acc[key].cell && r.cell) acc[key].cell = r.cell;
+            if (!acc[key].address && r.address) acc[key].address = r.address;
+            if (!acc[key].nationality && r.nationality) acc[key].nationality = r.nationality;
+            if (!acc[key].pob && r.pob) acc[key].pob = r.pob;
+            const payment = (r.payment || '').toLowerCase().replace(/[^a-z]/g, '');
+            if (payment) acc[key].payments[payment] = (acc[key].payments[payment] || 0) + (Number(r.quantity) || 1);
+            if (r.buyTimestamp && r.gmDateTime) {
+              const gameDate = r.gmDateTime > 1e11 ? r.gmDateTime : r.gmDateTime * 1000;
+              const diff = Math.floor((gameDate - r.buyTimestamp.getTime()) / (1000 * 60 * 60 * 24));
+              if (diff >= 0 && diff < 365) acc[key].leadDays.push(diff);
+            }
+            return acc;
+          }, {} as Record<string, any>)
+        ).map(([key, val]) => {
+          const preferredPayment = Object.entries(val.payments).sort((a, b) => (b[1] as number) - (a[1] as number))[0]?.[0] || '—';
+          const avgLeadDays = val.leadDays.length > 0 ? Math.round(val.leadDays.reduce((a: number, b: number) => a + b, 0) / val.leadDays.length) : null;
+          let age: string | null = null;
+          if (val.dob) {
+            const parts = val.dob.split('/');
+            if (parts.length >= 3) {
+              const year = parseInt(parts[2], 10);
+              if (!isNaN(year)) age = String(new Date().getFullYear() - year);
+            }
+          }
+          return { key, ...val, preferredPayment, avgLeadDays, age };
+        });
+
+        const query = clientSearchQuery.toLowerCase().trim();
+        const matchingClients = query.length >= 2 ? allClients.filter(c => {
+          const searchStr = [
+            c.name, c.firstName, c.lastName, c.email, c.phone, c.cell, c.address, c.nationality, c.dob, c.pob, c.province, c.age
+          ].filter(Boolean).join(' ').toLowerCase();
+          return searchStr.includes(query);
+        }).slice(0, 20) : [];
+
+        const selectedClient = searchSelectedClient ? allClients.find(c => c.key === searchSelectedClient) : null;
+        const clientGames: string[] = selectedClient ? [...new Set(selectedClient.records.map((r: CRMRecord) => r.game || r.event).filter(Boolean))] as string[] : [];
+
+        const getTicketRows = () => {
+          if (!selectedClient) return [];
+          let records = selectedClient.records as CRMRecord[];
+          if (searchGameFilter !== 'all') {
+            records = records.filter(r => (r.game || r.event) === searchGameFilter);
+          }
+          const subscriptionTypes = ['abbonamento', 'abb', 'mini'];
+          const grouped: any[] = [];
+          const subRecords = records.filter(r => {
+            const sellType = (r.sellType || r.ticketType || '').toLowerCase();
+            return subscriptionTypes.some(t => sellType.includes(t));
+          });
+          const otherRecords = records.filter(r => {
+            const sellType = (r.sellType || r.ticketType || '').toLowerCase();
+            return !subscriptionTypes.some(t => sellType.includes(t));
+          });
+          const subGroups: Record<string, CRMRecord[]> = {};
+          subRecords.forEach(r => {
+            const key = `${r.sellType || r.ticketType}|${r.pvZone || r.zone}`;
+            if (!subGroups[key]) subGroups[key] = [];
+            subGroups[key].push(r);
+          });
+          Object.entries(subGroups).forEach(([key, recs]) => {
+            const seats = [...new Set(recs.map(r => r.seat).filter(Boolean))];
+            const totalValue = recs.reduce((sum, r) => sum + (Number(r.commercialValue) || 0), 0);
+            const leadDays = recs.map(r => {
+              if (r.buyTimestamp && r.gmDateTime) {
+                const gameDate = r.gmDateTime > 1e11 ? r.gmDateTime : r.gmDateTime * 1000;
+                return Math.floor((gameDate - r.buyTimestamp.getTime()) / (1000 * 60 * 60 * 24));
+              }
+              return null;
+            }).filter(d => d !== null && d >= 0);
+            const avgLead = leadDays.length > 0 ? Math.round(leadDays.reduce((a, b) => a! + b!, 0)! / leadDays.length) : null;
+            grouped.push({
+              isGrouped: true,
+              zone: recs[0].pvZone || recs[0].zone || '—',
+              seats: seats.join(', ') || '—',
+              discountType: recs[0].discountType || '—',
+              value: totalValue,
+              leadDays: avgLead,
+              sellType: recs[0].sellType || recs[0].ticketType || '—',
+              giveawayType: recs[0].giveawayType || '',
+              quantity: recs.length,
+              game: 'Season Package'
+            });
+          });
+          otherRecords.forEach(r => {
+            let leadDays: number | null = null;
+            if (r.buyTimestamp && r.gmDateTime) {
+              const gameDate = r.gmDateTime > 1e11 ? r.gmDateTime : r.gmDateTime * 1000;
+              leadDays = Math.floor((gameDate - r.buyTimestamp.getTime()) / (1000 * 60 * 60 * 24));
+              if (leadDays < 0) leadDays = null;
+            }
+            grouped.push({
+              isGrouped: false,
+              zone: r.pvZone || r.zone || '—',
+              seats: r.seat || '—',
+              discountType: r.discountType || '—',
+              value: Number(r.commercialValue) || 0,
+              leadDays,
+              sellType: r.sellType || r.ticketType || '—',
+              giveawayType: r.giveawayType || '',
+              quantity: Number(r.quantity) || 1,
+              game: r.game || r.event || '—'
+            });
+          });
+          return grouped;
+        };
+
+        return (
+          <>
+            <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <Search size={20} className="text-red-500" />
+                Client Search
+              </h3>
+              <div className="mb-6">
+                <div className="relative max-w-xl">
+                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by name, email, phone, address, DOB, nationality..."
+                    value={clientSearchQuery}
+                    onChange={(e) => {
+                      setClientSearchQuery(e.target.value);
+                      if (e.target.value.length < 2) setSearchSelectedClient(null);
+                    }}
+                    className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    autoFocus
+                  />
+                  {clientSearchQuery && (
+                    <button 
+                      onClick={() => { setClientSearchQuery(''); setSearchSelectedClient(null); setSearchGameFilter('all'); }}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Enter at least 2 characters to find a client</p>
               </div>
-              <p className="text-xs text-gray-500 mt-2">Enter at least 2 characters to search</p>
-            </div>
 
-            {clientSearchQuery.length >= 2 && (() => {
-              const query = clientSearchQuery.toLowerCase();
-              const allCustomers = Object.entries(
-                data.reduce((acc, r) => {
-                  const key = getCustomerKey(r);
-                  if (!acc[key]) acc[key] = {
-                    name: r.fullName || `${r.firstName} ${r.lastName}`.trim(),
-                    email: r.email,
-                    phone: r.phone,
-                    address: r.address,
-                    nationality: r.nationality,
-                    dob: r.dob,
-                    province: r.province || r.pob,
-                    tickets: 0,
-                    revenue: 0,
-                    value: 0,
-                    zones: {} as Record<string, number>,
-                    sellTypes: {} as Record<string, number>,
-                    seats: {} as Record<string, number>,
-                    games: new Set<string>(),
-                    records: [] as CRMRecord[]
-                  };
-                  acc[key].tickets += Number(r.quantity) || 1;
-                  acc[key].revenue += Number(r.price) || 0;
-                  acc[key].value += Number(r.commercialValue) || 0;
-                  const zone = r.pvZone || r.zone || '';
-                  if (zone) acc[key].zones[zone] = (acc[key].zones[zone] || 0) + (Number(r.quantity) || 1);
-                  const sellType = r.sellType || r.ticketType || '';
-                  if (sellType) acc[key].sellTypes[sellType] = (acc[key].sellTypes[sellType] || 0) + (Number(r.quantity) || 1);
-                  const seat = r.seat || '';
-                  if (seat) acc[key].seats[seat] = (acc[key].seats[seat] || 0) + 1;
-                  if (r.game || r.event) acc[key].games.add(r.game || r.event);
-                  if (!acc[key].phone && r.phone) acc[key].phone = r.phone;
-                  if (!acc[key].address && r.address) acc[key].address = r.address;
-                  if (!acc[key].nationality && r.nationality) acc[key].nationality = r.nationality;
-                  acc[key].records.push(r);
-                  return acc;
-                }, {} as Record<string, any>)
-              ).map(([key, val]) => {
-                const sortedZones = Object.entries(val.zones).sort((a, b) => (b[1] as number) - (a[1] as number));
-                const principalZone = sortedZones[0]?.[0] || '—';
-                const secondaryZone = sortedZones[1]?.[0] || '—';
-                const topSellType = Object.entries(val.sellTypes).sort((a, b) => (b[1] as number) - (a[1] as number))[0]?.[0] || '—';
-                const topSeats = Object.entries(val.seats).sort((a, b) => (b[1] as number) - (a[1] as number)).slice(0, 3).map(([s]) => s);
-                let age = '—';
-                if (val.dob) {
-                  const parts = val.dob.split('/');
-                  if (parts.length >= 3) {
-                    const year = parseInt(parts[2], 10);
-                    if (!isNaN(year)) age = String(new Date().getFullYear() - year);
-                  }
-                }
-                return { key, ...val, principalZone, secondaryZone, topSellType, topSeats, age, gameCount: val.games.size };
-              });
-
-              const searchTerms = query.split(',').map(t => t.trim().toLowerCase()).filter(t => t.length > 0);
-              const results = allCustomers.filter(c => {
-                const searchStr = [
-                  c.name, c.email, c.phone, c.address, c.nationality, c.province, c.principalZone, c.secondaryZone, c.topSellType, ...c.topSeats
-                ].filter(Boolean).join(' ').toLowerCase();
-                return searchTerms.every(term => searchStr.includes(term));
-              }).sort((a, b) => b.value - a.value).slice(0, 50);
-
-              if (results.length === 0) {
-                return (
+              {query.length >= 2 && !selectedClient && (
+                matchingClients.length === 0 ? (
                   <div className="text-center py-12 text-gray-500">
                     <Users size={48} className="mx-auto mb-4 opacity-30" />
                     <p>No clients found matching "{clientSearchQuery}"</p>
                   </div>
-                );
-              }
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600 mb-3">{matchingClients.length} client{matchingClients.length !== 1 ? 's' : ''} found - click to view details</p>
+                    {matchingClients.map(c => (
+                      <div
+                        key={c.key}
+                        onClick={() => { setSearchSelectedClient(c.key); setSearchGameFilter('all'); }}
+                        className="p-4 border border-gray-200 rounded-lg hover:border-red-300 hover:bg-red-50 cursor-pointer transition-colors"
+                      >
+                        <p className="font-semibold text-gray-800">{c.name}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-1">
+                          {c.email && <span>{c.email}</span>}
+                          {c.phone && <span>{c.phone}</span>}
+                          {c.dob && <span>DOB: {c.dob}</span>}
+                          {c.province && <span>{c.province}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
 
-              return (
-                <div>
-                  <p className="text-sm text-gray-600 mb-4">{results.length} client{results.length !== 1 ? 's' : ''} found</p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-gray-200 bg-gray-50">
-                          <th className="text-left py-3 px-2 font-semibold text-gray-600">Client</th>
-                          <th className="text-left py-3 px-2 font-semibold text-gray-600">Contact</th>
-                          <th className="text-left py-3 px-2 font-semibold text-gray-600">Address</th>
-                          <th className="text-left py-3 px-2 font-semibold text-gray-600">Nationality</th>
-                          <th className="text-left py-3 px-2 font-semibold text-gray-600">Sell Type</th>
-                          <th className="text-left py-3 px-2 font-semibold text-gray-600">Zones</th>
-                          <th className="text-left py-3 px-2 font-semibold text-gray-600">Seats</th>
-                          <th className="text-center py-3 px-2 font-semibold text-gray-600">Tickets</th>
-                          <th className="text-right py-3 px-2 font-semibold text-gray-600">Total Spend</th>
-                          <th className="text-right py-3 px-2 font-semibold text-gray-600">Value</th>
-                          <th className="text-center py-3 px-2 font-semibold text-gray-600">Age</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {results.map((c) => (
-                          <tr 
-                            key={c.key} 
-                            className="hover:bg-red-50 cursor-pointer transition-colors"
-                            onClick={() => setSelectedCustomer(c.key)}
-                          >
-                            <td className="py-3 px-2">
-                              <p className="font-medium text-gray-800">{c.name || '—'}</p>
-                            </td>
-                            <td className="py-3 px-2">
-                              <div className="text-xs">
-                                {c.email && <p className="text-gray-600">{c.email}</p>}
-                                {c.phone && <p className="text-gray-500">{c.phone}</p>}
-                                {!c.email && !c.phone && '—'}
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 text-xs text-gray-600 max-w-32 truncate" title={c.address || ''}>
-                              {c.address || '—'}
-                            </td>
-                            <td className="py-3 px-2 text-xs text-gray-600">{c.nationality || '—'}</td>
-                            <td className="py-3 px-2">
-                              <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">{c.topSellType}</span>
-                            </td>
-                            <td className="py-3 px-2">
-                              <div className="flex flex-wrap gap-1">
-                                {c.principalZone !== '—' && (
-                                  <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{c.principalZone}</span>
-                                )}
-                                {c.secondaryZone !== '—' && (
-                                  <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{c.secondaryZone}</span>
-                                )}
-                                {c.principalZone === '—' && c.secondaryZone === '—' && '—'}
-                              </div>
-                            </td>
-                            <td className="py-3 px-2 text-xs text-gray-600">
-                              {c.topSeats.length > 0 ? c.topSeats.join(', ') : '—'}
-                            </td>
-                            <td className="py-3 px-2 text-center">{c.tickets}</td>
-                            <td className="py-3 px-2 text-right text-gray-600">{formatCompact(c.revenue)}</td>
-                            <td className="py-3 px-2 text-right font-bold text-green-600">{formatCompact(c.value)}</td>
-                            <td className="py-3 px-2 text-center">{c.age}</td>
+              {selectedClient && (
+                <div className="space-y-6">
+                  <button
+                    onClick={() => setSearchSelectedClient(null)}
+                    className="text-sm text-red-600 hover:text-red-700 flex items-center gap-1"
+                  >
+                    <ChevronLeft size={16} /> Back to search results
+                  </button>
+
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
+                    <h4 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                      <User size={20} className="text-red-500" />
+                      Client Profile
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase">Full Name</p>
+                        <p className="font-medium">{selectedClient.name || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase">Email</p>
+                        <p className="font-medium">{selectedClient.email || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase">Date of Birth</p>
+                        <p className="font-medium">{selectedClient.dob || '—'}{selectedClient.age && ` (${selectedClient.age} yrs)`}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase">Place of Birth</p>
+                        <p className="font-medium">{selectedClient.pob || selectedClient.province || '—'}</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <p className="text-xs text-gray-500 uppercase">Address</p>
+                        <p className="font-medium">{selectedClient.address || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase">Nationality</p>
+                        <p className="font-medium">{selectedClient.nationality || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase">Phone</p>
+                        <p className="font-medium">{selectedClient.phone || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase">Cell</p>
+                        <p className="font-medium">{selectedClient.cell || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase">Preferred Payment</p>
+                        <p className="font-medium capitalize">{selectedClient.preferredPayment}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase">Avg Days Before Game</p>
+                        <p className="font-medium">{selectedClient.avgLeadDays !== null ? `${selectedClient.avgLeadDays} days` : '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 uppercase">Total Tickets</p>
+                        <p className="font-medium">{selectedClient.records.length}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl border border-gray-200 p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <Ticket size={20} className="text-blue-500" />
+                        Ticket History
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">Filter by game:</span>
+                        <select
+                          value={searchGameFilter}
+                          onChange={(e) => setSearchGameFilter(e.target.value)}
+                          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5"
+                        >
+                          <option value="all">All Games</option>
+                          {clientGames.map(g => (
+                            <option key={g} value={g}>{g}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-200 bg-gray-50">
+                            <th className="text-left py-2 px-2 font-semibold text-gray-600">Game</th>
+                            <th className="text-left py-2 px-2 font-semibold text-gray-600">Zone</th>
+                            <th className="text-left py-2 px-2 font-semibold text-gray-600">Seat(s)</th>
+                            <th className="text-left py-2 px-2 font-semibold text-gray-600">Sell Type</th>
+                            <th className="text-left py-2 px-2 font-semibold text-gray-600">Discount</th>
+                            <th className="text-right py-2 px-2 font-semibold text-gray-600">Value</th>
+                            <th className="text-center py-2 px-2 font-semibold text-gray-600">Days Before</th>
+                            <th className="text-left py-2 px-2 font-semibold text-gray-600">Giveaway</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {getTicketRows().map((row, i) => (
+                            <tr key={i} className={row.isGrouped ? 'bg-purple-50' : ''}>
+                              <td className="py-2 px-2 text-xs">{row.game}</td>
+                              <td className="py-2 px-2">
+                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">{row.zone}</span>
+                              </td>
+                              <td className="py-2 px-2 text-xs max-w-24 truncate" title={row.seats}>{row.seats}</td>
+                              <td className="py-2 px-2">
+                                <span className={`px-2 py-0.5 rounded text-xs ${row.isGrouped ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'}`}>
+                                  {row.sellType}{row.isGrouped ? ` (${row.quantity})` : ''}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2 text-xs text-gray-600">{row.discountType}</td>
+                              <td className="py-2 px-2 text-right font-medium text-green-600">{formatCurrency(row.value)}</td>
+                              <td className="py-2 px-2 text-center text-xs">{row.leadDays !== null ? row.leadDays : '—'}</td>
+                              <td className="py-2 px-2 text-xs text-gray-600">{row.giveawayType || '—'}</td>
+                            </tr>
+                          ))}
+                          {getTicketRows().length === 0 && (
+                            <tr>
+                              <td colSpan={8} className="py-8 text-center text-gray-400">No tickets found for this filter</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
-              );
-            })()}
+              )}
 
-            {clientSearchQuery.length > 0 && clientSearchQuery.length < 2 && (
-              <div className="text-center py-12 text-gray-400">
-                <Search size={48} className="mx-auto mb-4 opacity-30" />
-                <p>Type at least 2 characters to search</p>
-              </div>
-            )}
+              {query.length === 0 && (
+                <div className="text-center py-12 text-gray-400">
+                  <Search size={48} className="mx-auto mb-4 opacity-30" />
+                  <p>Start typing to find a client</p>
+                  <p className="text-xs mt-2">Search by name, email, phone, DOB, address, or nationality</p>
+                </div>
+              )}
 
-            {clientSearchQuery.length === 0 && (
-              <div className="text-center py-12 text-gray-400">
-                <Search size={48} className="mx-auto mb-4 opacity-30" />
-                <p>Start typing to search for clients</p>
-                <p className="text-xs mt-2">Search by name, email, zone, sell type, or location</p>
-              </div>
-            )}
-          </div>
-        </>
-      )}
+              {query.length > 0 && query.length < 2 && (
+                <div className="text-center py-12 text-gray-400">
+                  <Search size={48} className="mx-auto mb-4 opacity-30" />
+                  <p>Type at least 2 characters to search</p>
+                </div>
+              )}
+            </div>
+          </>
+        );
+      })()}
 
       {customerDetail && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedCustomer(null)}>
