@@ -66,13 +66,16 @@ export async function syncTicketingToBigQuery(csvContent: string): Promise<{ suc
     };
   } catch (error: any) {
     if (error.name === 'PartialFailureError') {
-      const successCount = error.response?.insertErrors?.length 
-        ? error.response.insertErrors.length 
-        : 0;
+      const failedRows = error.errors?.length || 0;
+      const errorMessages = error.errors?.slice(0, 3).map((e: any) => 
+        e.errors?.map((err: any) => err.message).join(', ')
+      ).join('; ') || 'Unknown validation errors';
+      
+      console.error('BigQuery partial failure:', errorMessages);
       return {
-        success: true,
-        rowCount: successCount,
-        message: `Partial sync: some rows failed validation`
+        success: false,
+        rowCount: 0,
+        message: `${failedRows} rows failed validation: ${errorMessages}`
       };
     }
     console.error('BigQuery sync error:', error);

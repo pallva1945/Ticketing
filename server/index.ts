@@ -22,7 +22,31 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+const validateBigQueryRequest = (req: express.Request, res: express.Response): boolean => {
+  const isInternalRequest = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip?.includes('127.0.0.1') || req.ip === '::ffff:127.0.0.1';
+  
+  if (isInternalRequest) {
+    return true;
+  }
+  
+  const adminSecret = process.env.BIGQUERY_ADMIN_SECRET;
+  if (!adminSecret) {
+    res.status(403).json({ success: false, message: 'BigQuery endpoints are only available for internal requests' });
+    return false;
+  }
+  
+  const authHeader = req.headers['x-admin-secret'] || req.headers['authorization'];
+  if (authHeader !== adminSecret && authHeader !== `Bearer ${adminSecret}`) {
+    res.status(403).json({ success: false, message: 'Unauthorized: Invalid authentication' });
+    return false;
+  }
+  
+  return true;
+};
+
 app.get("/api/bigquery/test", async (req, res) => {
+  if (!validateBigQueryRequest(req, res)) return;
+  
   try {
     const result = await testBigQueryConnection();
     res.json(result);
@@ -32,6 +56,8 @@ app.get("/api/bigquery/test", async (req, res) => {
 });
 
 app.post("/api/bigquery/sync", async (req, res) => {
+  if (!validateBigQueryRequest(req, res)) return;
+  
   try {
     const { csvContent } = req.body;
     if (!csvContent) {
