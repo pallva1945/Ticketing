@@ -852,7 +852,7 @@ const App: React.FC = () => {
   const [gameDayData, setGameDayData] = useState<GameDayData[]>([]);
   const [sponsorData, setSponsorData] = useState<SponsorData[]>([]);
   const [crmData, setCrmData] = useState<CRMRecord[]>([]);
-  const [crmStats, setCrmStats] = useState<any>(null); // Server-computed CRM stats for fast loading
+  const [crmStats, setCrmStats] = useState<{ all: any; fixed: any; flexible: any } | null>(null); // Server-computed CRM stats for fast loading
   const [sponsorDataSource, setSponsorDataSource] = useState<'local' | 'cloud'>('local');
   const [sponsorLastUpdated, setSponsorLastUpdated] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -1003,8 +1003,12 @@ const App: React.FC = () => {
       if (crmResponse.ok) {
         const crmResult = await crmResponse.json();
         if (crmResult.success && crmResult.stats) {
-          // Use server-computed stats for fast initial load
-          setCrmStats(crmResult.stats);
+          // Use server-computed stats for fast initial load (all, fixed, flexible)
+          setCrmStats({
+            all: crmResult.stats,
+            fixed: crmResult.fixedStats,
+            flexible: crmResult.flexibleStats
+          });
           setDataSources(prev => ({...prev, crm: 'bigquery'}));
           setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
           console.log(`CRM loaded from BigQuery: ${crmResult.stats.totalRecords} records (server-processed)`);

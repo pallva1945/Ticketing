@@ -110,8 +110,14 @@ app.get("/api/ticketing", async (req, res) => {
 });
 
 // CRM BigQuery endpoint with server-side processing for faster loads
-let crmCache: { rawRows: any[]; processedStats: any; timestamp: number } | null = null;
+let crmCache: { rawRows: any[]; processedStats: any; fixedStats: any; flexibleStats: any; timestamp: number } | null = null;
 const CRM_CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
+
+// Helper to determine if a row is fixed capacity
+const isRowFixedCapacity = (row: any): boolean => {
+  const eventRaw = (row.event || row.Event || row.EVENT || '').trim().toLowerCase();
+  return eventRaw === 'abbonamento lba 2025/26';
+};
 
 // Server-side CRM stats computation
 const computeCRMStats = (rawRows: any[]) => {
@@ -462,6 +468,8 @@ app.get("/api/crm/bigquery", async (req, res) => {
       return res.json({ 
         success: true, 
         stats: crmCache.processedStats,
+        fixedStats: crmCache.fixedStats,
+        flexibleStats: crmCache.flexibleStats,
         rawRows: fullData ? crmCache.rawRows : undefined,
         cached: true,
         message: `Served CRM stats from cache (${crmCache.processedStats.totalRecords} records)` 
@@ -471,16 +479,28 @@ app.get("/api/crm/bigquery", async (req, res) => {
     const result = await fetchCRMFromBigQuery();
     
     if (result.success && result.rawRows) {
+      // Compute stats for all data
       const processedStats = computeCRMStats(result.rawRows);
+      // Compute stats for fixed capacity only (event = "ABBONAMENTO LBA 2025/26")
+      const fixedRows = result.rawRows.filter(isRowFixedCapacity);
+      const fixedStats = computeCRMStats(fixedRows);
+      // Compute stats for flexible capacity (everything else)
+      const flexibleRows = result.rawRows.filter((row: any) => !isRowFixedCapacity(row));
+      const flexibleStats = computeCRMStats(flexibleRows);
+      
       crmCache = { 
         rawRows: result.rawRows,
         processedStats,
+        fixedStats,
+        flexibleStats,
         timestamp: now 
       };
       
       res.json({ 
         success: true,
         stats: processedStats,
+        fixedStats,
+        flexibleStats,
         rawRows: fullData ? result.rawRows : undefined,
         cached: false,
         message: `Processed ${result.rawRows.length} CRM records`

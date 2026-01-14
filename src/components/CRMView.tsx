@@ -68,7 +68,7 @@ interface CRMViewProps {
   data: CRMRecord[];
   sponsorData?: SponsorData[];
   isLoading?: boolean;
-  serverStats?: CRMStats | null; // Pre-computed stats from server for fast loading
+  serverStats?: { all: CRMStats; fixed: CRMStats; flexible: CRMStats } | null; // Pre-computed stats from server for fast loading
 }
 
 const getCustomerKey = (r: CRMRecord): string => {
@@ -170,20 +170,40 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   }, [sponsorData]);
 
   const stats = useMemo(() => {
-    // Use server-computed stats ONLY when no filters are active at all
-    // When capacityView is set (fixed/flexible), we need to compute from filtered data
-    // so that Sales Channel, Top Customers etc. reflect the filter
-    if (serverStats && !hasActiveFilter) {
+    // Use server-computed stats when no complex filters (search, zone, event) are active
+    // For capacity filter, we can use the pre-computed fixed/flexible stats from server
+    const hasComplexFilter = !!filterZone || !!filterEvent || !!searchQuery;
+    
+    if (serverStats && !hasComplexFilter) {
+      // Select the appropriate pre-computed stats based on capacityView
+      const selectedStats = capacityView === 'fixed' ? serverStats.fixed 
+                          : capacityView === 'flexible' ? serverStats.flexible 
+                          : serverStats.all;
+      
+      // Use the selected stats, or fall back to all stats
+      const statsToUse = selectedStats || serverStats.all;
+      if (!statsToUse) {
+        // Return empty default stats if nothing available
+        return {
+          uniqueEmails: 0, uniqueCustomers: 0, uniqueCorps: 0, totalRevenue: 0, totalCommercialValue: 0,
+          corpCommercialValue: 0, totalTickets: 0, zoneBreakdown: {}, eventBreakdown: {}, rawSellTypeBreakdown: {},
+          groupedSellTypeBreakdown: {}, paymentBreakdown: {}, discountBreakdown: {}, topCorps: [], allCustomers: [],
+          ageBreakdown: {}, locationBreakdown: {}, zoneStats: {}, purchaseHourBreakdown: {}, purchaseDayBreakdown: {},
+          advanceBookingBreakdown: {}, monthBreakdown: {}, zoneByAge: {}, zoneByLocation: {}, corporateTickets: 0,
+          capacityBreakdown: { fixed: { tickets: 0, revenue: 0 }, flexible: { tickets: 0, revenue: 0 } }
+        };
+      }
+      
       // Build zoneBreakdown as Record
       const zoneBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
-      (serverStats.zoneBreakdown || []).forEach((z: any) => {
+      (statsToUse.zoneBreakdown || []).forEach((z: any) => {
         zoneBreakdown[z.zone] = { count: z.tickets, revenue: z.revenue, value: z.revenue };
       });
       
       // Build rawSellTypeBreakdown from server data
       const rawSellTypeBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
       const groupedSellTypeBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
-      (serverStats.sellTypeBreakdown || []).forEach((s: any) => {
+      (statsToUse.sellTypeBreakdown || []).forEach((s: any) => {
         rawSellTypeBreakdown[s.type] = { count: s.tickets, revenue: s.revenue, value: s.revenue };
         // Group into categories
         const typeLower = (s.type || '').toLowerCase();
@@ -200,39 +220,39 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
       // Build paymentBreakdown from server data
       const serverPaymentBreakdown: Record<string, { count: number; revenue: number }> = {};
-      if (serverStats.paymentBreakdown) {
-        Object.entries(serverStats.paymentBreakdown).forEach(([method, val]: [string, any]) => {
+      if (statsToUse.paymentBreakdown) {
+        Object.entries(statsToUse.paymentBreakdown).forEach(([method, val]: [string, any]) => {
           serverPaymentBreakdown[method] = { count: val.count, revenue: val.revenue };
         });
       }
 
       return {
-        uniqueEmails: serverStats.uniqueCustomers || 0,
-        uniqueCustomers: serverStats.uniqueCustomers || 0,
-        uniqueCorps: serverStats.uniqueCorps || 0,
-        totalRevenue: serverStats.totalRevenue || 0,
-        totalCommercialValue: serverStats.totalRevenue || 0,
-        corpCommercialValue: serverStats.corpCommercialValue || 0,
-        totalTickets: serverStats.totalTickets || 0,
+        uniqueEmails: statsToUse.uniqueCustomers || 0,
+        uniqueCustomers: statsToUse.uniqueCustomers || 0,
+        uniqueCorps: statsToUse.uniqueCorps || 0,
+        totalRevenue: statsToUse.totalRevenue || 0,
+        totalCommercialValue: statsToUse.totalRevenue || 0,
+        corpCommercialValue: statsToUse.corpCommercialValue || 0,
+        totalTickets: statsToUse.totalTickets || 0,
         zoneBreakdown,
         eventBreakdown: {} as Record<string, { count: number; revenue: number }>,
         rawSellTypeBreakdown,
         groupedSellTypeBreakdown,
         paymentBreakdown: serverPaymentBreakdown,
         discountBreakdown: {} as Record<string, { count: number; revenue: number }>,
-        topCorps: serverStats.topCorps || [],
-        allCustomers: serverStats.topCustomers || [],
-        ageBreakdown: serverStats.ageBreakdown || {},
-        locationBreakdown: serverStats.locationBreakdown || {},
-        zoneStats: serverStats.zoneStats || {},
-        purchaseHourBreakdown: serverStats.purchaseHourBreakdown || {},
-        purchaseDayBreakdown: serverStats.purchaseDayBreakdown || {},
-        advanceBookingBreakdown: serverStats.advanceBookingBreakdown || {},
+        topCorps: statsToUse.topCorps || [],
+        allCustomers: statsToUse.topCustomers || [],
+        ageBreakdown: statsToUse.ageBreakdown || {},
+        locationBreakdown: statsToUse.locationBreakdown || {},
+        zoneStats: statsToUse.zoneStats || {},
+        purchaseHourBreakdown: statsToUse.purchaseHourBreakdown || {},
+        purchaseDayBreakdown: statsToUse.purchaseDayBreakdown || {},
+        advanceBookingBreakdown: statsToUse.advanceBookingBreakdown || {},
         monthBreakdown: {} as Record<string, { count: number; value: number }>,
-        zoneByAge: serverStats.zoneByAge || {},
-        zoneByLocation: serverStats.zoneByLocation || {},
-        corporateTickets: serverStats.corporateTickets || 0,
-        capacityBreakdown: serverStats.capacityBreakdown
+        zoneByAge: statsToUse.zoneByAge || {},
+        zoneByLocation: statsToUse.zoneByLocation || {},
+        corporateTickets: statsToUse.corporateTickets || 0,
+        capacityBreakdown: statsToUse.capacityBreakdown
       };
     }
     
