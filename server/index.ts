@@ -185,21 +185,39 @@ const computeCRMStats = (rawRows: any[]) => {
     return '65+';
   };
   
-  // Location normalization: "Varese Varese VA" -> "Varese"
+  // Location normalization: convert province codes to full names
+  const provinceCodeMap: Record<string, string> = {
+    'VA': 'Varese', 'MI': 'Milano', 'CO': 'Como', 'NO': 'Novara', 'MB': 'Monza',
+    'BG': 'Bergamo', 'BS': 'Brescia', 'CR': 'Cremona', 'LC': 'Lecco', 'LO': 'Lodi',
+    'MN': 'Mantova', 'PV': 'Pavia', 'SO': 'Sondrio', 'RM': 'Roma', 'TO': 'Torino',
+    'GE': 'Genova', 'VE': 'Venezia', 'PD': 'Padova', 'VR': 'Verona', 'BO': 'Bologna',
+    'FI': 'Firenze', 'NA': 'Napoli', 'BA': 'Bari', 'PA': 'Palermo', 'CT': 'Catania',
+    'RO': 'Rovigo', 'VB': 'Verbano', 'VC': 'Vercelli', 'BI': 'Biella', 'AL': 'Alessandria',
+    'AT': 'Asti', 'CN': 'Cuneo', 'SV': 'Savona', 'IM': 'Imperia', 'SP': 'La Spezia',
+    'PR': 'Parma', 'RE': 'Reggio Emilia', 'MO': 'Modena', 'FE': 'Ferrara', 'RA': 'Ravenna',
+    'FC': 'Forli-Cesena', 'RN': 'Rimini', 'PU': 'Pesaro-Urbino', 'AN': 'Ancona',
+    'UD': 'Udine', 'PN': 'Pordenone', 'GO': 'Gorizia', 'TS': 'Trieste', 'TN': 'Trento',
+    'BZ': 'Bolzano', 'BL': 'Belluno', 'TV': 'Treviso', 'VI': 'Vicenza'
+  };
+  
   const normalizeLocation = (loc: string): string => {
-    if (!loc || loc === 'Unknown') return 'Unknown';
-    // Split by spaces and process
+    if (!loc || loc === 'Unknown' || loc === 'null') return 'Unknown';
+    const trimmed = loc.trim().toUpperCase();
+    
+    // If it's a 2-letter province code, convert to full name
+    if (trimmed.length === 2 && provinceCodeMap[trimmed]) {
+      return provinceCodeMap[trimmed];
+    }
+    
+    // Otherwise process as before - clean up duplicates, etc.
     const parts = loc.trim().split(/\s+/);
-    // Remove province codes (2-letter uppercase at end like "VA", "MI", "CO")
     const filtered = parts.filter(p => !(p.length === 2 && p === p.toUpperCase() && /^[A-Z]{2}$/.test(p)));
-    // Remove duplicates (case-insensitive)
     const seen = new Set<string>();
     const unique: string[] = [];
     for (const p of filtered) {
       const lower = p.toLowerCase();
       if (!seen.has(lower) && p.length > 0) {
         seen.add(lower);
-        // Capitalize first letter
         unique.push(p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
       }
     }
