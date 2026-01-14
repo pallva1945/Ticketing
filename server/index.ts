@@ -224,7 +224,8 @@ const computeCRMStats = (rawRows: any[]) => {
     const price = (isSeasonOrPack && perGamePrice > 0) ? perGamePrice : fullPrice;
     
     // Commercial value - use per-game for season/packs too
-    const fullCommercialValue = parseNumber(row.commercial_value) || price;
+    // Note: BigQuery column is spelled "comercial_value" (one 'm') not "commercial_value"
+    const fullCommercialValue = parseNumber(row.comercial_value) || parseNumber(row.commercial_value) || price;
     const commercialValue = (isSeasonOrPack && perGamePrice > 0) ? perGamePrice : fullCommercialValue;
     
     const pvZone = row.pv_zone || row.Pv_Zone || row.PV_Zone || row.zone || row.Zone || 'Unknown';
