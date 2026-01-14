@@ -42,6 +42,13 @@ server/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 14, 2026: Parallel BigQuery Loading for Faster Initial Render
+  - All four data modules (Ticketing, GameDay, Sponsorship, CRM) now fetch in parallel using Promise.all()
+  - Ticketing data processed first (most critical for Executive Overview display)
+  - Added React ref guard to prevent duplicate data loading from React Strict Mode
+  - Loading time reduced from sequential (~6s) to parallel (~2s)
+  - Executive Overview displays 8 games for Season 25-26 with ~€800k ticketing revenue
+
 - January 14, 2026: CRM Server-Side Processing Improvements
   - **Demographics & Behavior tabs**: Server now computes age, location, purchase hour/day, advance booking breakdowns
   - **Corporate tab**: Server computes topCorps, uniqueCorps, corporateTickets for immediate display

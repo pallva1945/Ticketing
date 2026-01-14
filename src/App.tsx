@@ -914,24 +914,82 @@ const App: React.FC = () => {
     let loadedTicketing: GameData[] = [];
     let loadedGameDay: GameDayData[] = [];
     
-    // 1. GAME DAY DATA LOADING - BigQuery first, then cloud storage, then local fallback
+    // Start all BigQuery fetches in parallel for faster loading
+    const [ticketingResponse, gdResponse, sponsorResponse, crmResponse] = await Promise.all([
+      fetch('/api/ticketing').catch(e => { console.warn('Ticketing fetch failed:', e); return null; }),
+      fetch('/api/gameday/bigquery').catch(e => { console.warn('GameDay fetch failed:', e); return null; }),
+      fetch('/api/sponsorship/bigquery').catch(e => { console.warn('Sponsorship fetch failed:', e); return null; }),
+      fetch('/api/crm/bigquery').catch(e => { console.warn('CRM fetch failed:', e); return null; })
+    ]);
+    
+    // 1. TICKETING DATA - Process first (most critical for Executive Overview)
+    try {
+        let ticketingSource: 'local' | 'cloud' | 'bigquery' = 'local';
+        
+        if (ticketingResponse && ticketingResponse.ok) {
+            const ticketingResult = await ticketingResponse.json();
+            if (ticketingResult.success && ticketingResult.data && ticketingResult.data.length > 0) {
+                loadedTicketing = convertBigQueryToGameData(
+                    ticketingResult.data as BigQueryTicketingRow[],
+                    ticketingResult.rawRows
+                );
+                const totalRevenue = loadedTicketing.reduce((sum, g) => sum + g.totalRevenue, 0);
+                if (loadedTicketing.length > 0 && totalRevenue > 0) {
+                    setData(loadedTicketing);
+                    ticketingSource = 'bigquery';
+                    setDataSources(prev => ({...prev, ticketing: 'bigquery'}));
+                    console.log(`Ticketing loaded from BigQuery: ${loadedTicketing.length} games - ${totalRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})} total`);
+                }
+            }
+        }
+        
+        // If BigQuery didn't work, try cloud storage
+        if (ticketingSource === 'local' && isFirebaseConfigured) {
+            const cloudTicketing = await getCsvFromFirebase('ticketing');
+            if (cloudTicketing) {
+                const testData = processGameData(cloudTicketing.content);
+                const testRevenue = testData.reduce((sum, g) => sum + g.totalRevenue, 0);
+                const gamesWithZoneData = testData.filter(g => g.salesBreakdown && g.salesBreakdown.length > 0);
+                const hasZoneData = gamesWithZoneData.length > 0;
+                
+                if (testData.length > 0 && testRevenue > 0) {
+                    loadedTicketing = testData;
+                    setData(loadedTicketing);
+                    setLastUploadTimes(prev => ({...prev, ticketing: cloudTicketing.updatedAt}));
+                    ticketingSource = 'cloud';
+                    setDataSources(prev => ({...prev, ticketing: 'cloud'}));
+                    console.log(`Ticketing loaded from cloud: ${testData.length} games (${hasZoneData ? 'with' : 'NO'} zone data) - ${testRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})} total`);
+                }
+            }
+        }
+        
+        // Final fallback to local data
+        if (ticketingSource === 'local') {
+            loadedTicketing = processGameData(FALLBACK_CSV_CONTENT);
+            setData(loadedTicketing);
+            setDataSources(prev => ({...prev, ticketing: 'local'}));
+            const totalRevenue = loadedTicketing.reduce((sum, g) => sum + g.totalRevenue, 0);
+            console.log(`Ticketing loaded from local fallback: ${loadedTicketing.length} games - ${totalRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})} total`);
+        }
+    } catch(e) {
+        console.error("Error loading Ticketing data", e);
+        loadedTicketing = processGameData(FALLBACK_CSV_CONTENT);
+        setData(loadedTicketing);
+        setDataSources(prev => ({...prev, ticketing: 'local'}));
+    }
+    
+    // 2. GAME DAY DATA - Process parallel response
     try {
         let gdCsv = GAMEDAY_CSV_CONTENT;
         let gdSource: 'local' | 'cloud' | 'bigquery' = 'local';
         
-        // Try BigQuery first
-        try {
-            const gdResponse = await fetch('/api/gameday/bigquery');
-            if (gdResponse.ok) {
-                const gdResult = await gdResponse.json();
-                if (gdResult.success && gdResult.csvContent) {
-                    gdCsv = gdResult.csvContent;
-                    gdSource = 'bigquery';
-                    console.log(`GameDay loaded from BigQuery: ${gdResult.rowCount} records`);
-                }
+        if (gdResponse && gdResponse.ok) {
+            const gdResult = await gdResponse.json();
+            if (gdResult.success && gdResult.csvContent) {
+                gdCsv = gdResult.csvContent;
+                gdSource = 'bigquery';
+                console.log(`GameDay loaded from BigQuery: ${gdResult.rowCount} records`);
             }
-        } catch (bqError) {
-            console.warn('BigQuery GameDay fetch failed, trying cloud storage...', bqError);
         }
         
         // Fallback to cloud storage if BigQuery didn't work
@@ -952,24 +1010,18 @@ const App: React.FC = () => {
     }
     setGameDayData(loadedGameDay);
 
-    // 2. SPONSOR DATA LOADING - BigQuery first, then cloud storage, then local fallback
+    // 3. SPONSOR DATA - Process parallel response
     try {
         let sponsorCsv = SPONSOR_CSV_CONTENT;
         let sponsorSource: 'local' | 'cloud' | 'bigquery' = 'local';
         
-        // Try BigQuery first
-        try {
-            const sponsorResponse = await fetch('/api/sponsorship/bigquery');
-            if (sponsorResponse.ok) {
-                const sponsorResult = await sponsorResponse.json();
-                if (sponsorResult.success && sponsorResult.csvContent) {
-                    sponsorCsv = sponsorResult.csvContent;
-                    sponsorSource = 'bigquery';
-                    console.log(`Sponsorship loaded from BigQuery: ${sponsorResult.rowCount} records`);
-                }
+        if (sponsorResponse && sponsorResponse.ok) {
+            const sponsorResult = await sponsorResponse.json();
+            if (sponsorResult.success && sponsorResult.csvContent) {
+                sponsorCsv = sponsorResult.csvContent;
+                sponsorSource = 'bigquery';
+                console.log(`Sponsorship loaded from BigQuery: ${sponsorResult.rowCount} records`);
             }
-        } catch (bqError) {
-            console.warn('BigQuery sponsorship fetch failed, trying cloud storage...', bqError);
         }
         
         // Fallback to cloud storage if BigQuery didn't work
@@ -997,10 +1049,9 @@ const App: React.FC = () => {
         setSponsorDataSource('local');
     }
 
-    // 2b. CRM DATA LOADING - Auto-sync from BigQuery (server-side processed for speed)
+    // 4. CRM DATA - Process parallel response
     try {
-      const crmResponse = await fetch('/api/crm/bigquery');
-      if (crmResponse.ok) {
+      if (crmResponse && crmResponse.ok) {
         const crmResult = await crmResponse.json();
         if (crmResult.success && crmResult.stats) {
           // Use server-computed stats for fast initial load (all, fixed, flexible)
@@ -1017,50 +1068,15 @@ const App: React.FC = () => {
     } catch (crmError) {
       console.warn('Failed to load CRM from BigQuery:', crmError);
     }
-
-    // 3. TICKETING DATA LOADING (Cloud storage first for zone details, fallback to local)
-    try {
-        let ticketingCsv = FALLBACK_CSV_CONTENT;
-        let ticketingSource: 'local' | 'cloud' = 'local';
-        
-        // Try cloud storage first (has detailed zone breakdown)
-        if (isFirebaseConfigured) {
-            const cloudTicketing = await getCsvFromFirebase('ticketing');
-            if (cloudTicketing) {
-                // Validate cloud data has actual content AND zone breakdown
-                const testData = processGameData(cloudTicketing.content);
-                const testRevenue = testData.reduce((sum, g) => sum + g.totalRevenue, 0);
-                
-                // Check zone-level data - at least SOME games should have zone breakdown
-                const gamesWithZoneData = testData.filter(g => g.salesBreakdown && g.salesBreakdown.length > 0);
-                const hasZoneData = gamesWithZoneData.length > 0;
-                
-                if (testData.length > 0 && testRevenue > 0 && hasZoneData) {
-                    ticketingCsv = cloudTicketing.content;
-                    setLastUploadTimes(prev => ({...prev, ticketing: cloudTicketing.updatedAt}));
-                    ticketingSource = 'cloud';
-                } else if (testData.length > 0 && testRevenue > 0) {
-                    // Cloud has aggregate data but no zones - still use it for revenue
-                    ticketingCsv = cloudTicketing.content;
-                    ticketingSource = 'cloud';
-                }
-            }
-        }
-        
-        loadedTicketing = processGameData(ticketingCsv);
-        setData(loadedTicketing);
-        setDataSources(prev => ({...prev, ticketing: ticketingSource}));
-    } catch(e) {
-        console.error("Error loading Ticketing data", e);
-        loadedTicketing = processGameData(FALLBACK_CSV_CONTENT);
-        setData(loadedTicketing);
-        setDataSources(prev => ({...prev, ticketing: 'local'}));
-    } finally {
-      setIsLoadingData(false);
-    }
+    
+    setIsLoadingData(false);
   };
 
+  const dataLoadedRef = React.useRef(false);
+  
   useEffect(() => {
+    if (dataLoadedRef.current) return;
+    dataLoadedRef.current = true;
     loadData();
   }, []);
 
@@ -1339,7 +1355,7 @@ const App: React.FC = () => {
   // --- Filtering & Logic ---
 
   const getFilteredGames = () => {
-    return data.filter(d => {
+    const result = data.filter(d => {
       const matchSeason = selectedSeasons.includes('All') || selectedSeasons.includes(d.season);
       const matchLeague = selectedLeagues.includes('All') || selectedLeagues.includes(d.league);
       const matchOpponent = selectedOpponents.includes('All') || selectedOpponents.includes(d.opponent);
@@ -1347,9 +1363,18 @@ const App: React.FC = () => {
       const matchDay = selectedDays.includes('All') || selectedDays.includes(getDayName(d.date));
       return matchSeason && matchLeague && matchOpponent && matchTier && matchDay;
     });
+    if (data.length > 0 && result.length === 0) {
+      console.log('Filter mismatch! Data seasons:', [...new Set(data.map(d => d.season))], 'Selected:', selectedSeasons);
+    }
+    return result;
   };
 
   const filteredGames = useMemo(() => getFilteredGames(), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
+  
+  // Debug logging for data state
+  useEffect(() => {
+    console.log('Data state updated:', data.length, 'games. FilteredGames:', filteredGames.length, 'Selected season:', selectedSeasons);
+  }, [data, filteredGames, selectedSeasons]);
 
   // NEW: Total View Data (Independent of viewMode) for Executive Overview
   const totalViewData = useMemo(() => {
@@ -1403,7 +1428,7 @@ const App: React.FC = () => {
          return sum + ga.reduce((acc, curr) => acc + curr.quantity, 0);
       }, 0);
       const giveawayRate = totalAttendance > 0 ? (totalGiveaways / totalAttendance) * 100 : 0;
-
+      
       return { totalRevenue, avgAttendance, topPerformingZone: '', occupancyRate, giveawayRate };
   }, [totalViewData]);
 
