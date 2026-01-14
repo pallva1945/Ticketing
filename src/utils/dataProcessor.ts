@@ -273,15 +273,23 @@ export const processGameData = (csvContent: string): GameData[] => {
     });
     
     // Total giveaway = protocol + free (for Total view)
-    // GameDay giveaway = free only
+    // GameDay giveaway = free only (no protocol)
     const giveawaySum = protocolSum + freeSum;
 
+    // For GameDay view, ticket counts exclude protocol allocations
+    // Full price and discount are the same in both views (they're paid tickets)
+    // Only giveaways differ (protocol excluded in GameDay)
     const ticketTypeBreakdown: TicketTypeBreakdown = {
+      // Total view (includes protocol)
       full: fullPrice,
       discount: discountSum,
-      giveaway: giveawaySum,        // Total view: protocol + free
-      giveawayGameDay: freeSum,     // GameDay view: free only
-      giveawayProtocol: protocolSum, // Protocol portion (fixed capacity)
+      giveaway: giveawaySum,
+      // GameDay view (excludes protocol)
+      fullGameDay: fullPrice,        // Same as total
+      discountGameDay: discountSum,  // Same as total
+      giveawayGameDay: freeSum,      // Free only, no protocol
+      // Protocol portion
+      giveawayProtocol: protocolSum,
       discountDetails,
       giveawayDetails
     };
@@ -343,9 +351,18 @@ export const processGameData = (csvContent: string): GameData[] => {
         salesBreakdown.push({ zone: TicketZone.OSPITI, channel: SalesChannel.GIVEAWAY, quantity: ospitiFreeQty, revenue: 0 });
     }
 
+    // GameDay attendance = paid attendance + free giveaways (no protocol)
+    // Total attendance = paid + protocol + free
+    const gameDayAttendance = attendance + freeSum;  // paid + free
+    const totalAttendanceCalc = totalAttendance || (attendance + protocolSum + freeSum);
+
     return {
-      id, opponent, date, attendance: totalAttendance || attendance,
-      capacity: currentTotalCapacity, zoneCapacities, totalRevenue, corpRevenue,
+      id, opponent, date, 
+      attendance: totalAttendanceCalc,      // Total view: includes protocol
+      attendanceGameDay: gameDayAttendance, // GameDay view: excludes protocol
+      totalRevenue,                         // Same for both views
+      revenueGameDay: totalRevenue,         // Same for both views (revenue is revenue)
+      capacity: currentTotalCapacity, zoneCapacities, corpRevenue,
       salesBreakdown,
       league, season, oppRank, pvRank, tier, pnlBreakdown, ticketTypeBreakdown
     };

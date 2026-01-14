@@ -33,11 +33,16 @@ export interface SalesDataPoint {
 }
 
 export interface TicketTypeBreakdown {
+  // Total view (protocol + free)
   full: number;
   discount: number;
-  giveaway: number;           // Total view: protocol + free
-  giveawayGameDay?: number;   // GameDay view: free only (no protocol)
-  giveawayProtocol?: number;  // Protocol portion (fixed capacity)
+  giveaway: number;
+  // GameDay view (free only, no protocol)
+  fullGameDay?: number;
+  discountGameDay?: number;
+  giveawayGameDay?: number;
+  // Protocol portion (fixed capacity - Total view only)
+  giveawayProtocol?: number;
   discountDetails: Record<string, number>;
   giveawayDetails: Record<string, number>;
 }
@@ -46,10 +51,14 @@ export interface GameData {
   id: string; // Date + Time + Opponent
   opponent: string;
   date: string;
-  attendance: number;
+  // Total view metrics (includes protocol)
+  attendance: number;         // Total attendance (paid + protocol + free)
+  totalRevenue: number;       // Total revenue
+  // GameDay view metrics (excludes protocol)
+  attendanceGameDay?: number; // GameDay attendance (paid + free, no protocol)
+  revenueGameDay?: number;    // GameDay revenue (same as total for now)
   capacity: number;
   zoneCapacities: Record<string, number>; // Dynamic capacity per zone for this specific game
-  totalRevenue: number;
   corpRevenue: number; // Aggregate Corp Eur from CSV
   salesBreakdown: SalesDataPoint[];
   league: string;

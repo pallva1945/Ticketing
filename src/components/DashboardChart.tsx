@@ -112,20 +112,36 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
   const trendData = calculateTrendLine(rawTrendData);
 
   // 2. Yield vs Occupancy (Scatter Quadrant)
+  // Use viewMode to determine which attendance/revenue to use
   const sourceDataForScatter = efficiencyData || data;
   
-  // Calculate averages for quadrants
-  const rawScatterData = sourceDataForScatter.map(game => ({
-      x: game.capacity > 0 ? (game.attendance / game.capacity) * 100 : 0,
-      y: game.attendance > 0 ? game.totalRevenue / game.attendance : 0
-  }));
+  // Calculate averages for quadrants - use view-specific metrics
+  const rawScatterData = sourceDataForScatter.map(game => {
+      const attendance = viewMode === 'total' 
+          ? game.attendance 
+          : (game.attendanceGameDay ?? game.attendance);
+      const revenue = viewMode === 'total'
+          ? game.totalRevenue
+          : (game.revenueGameDay ?? game.totalRevenue);
+      return {
+          x: game.capacity > 0 ? (attendance / game.capacity) * 100 : 0,
+          y: attendance > 0 ? revenue / attendance : 0
+      };
+  });
   const avgOccupancy = rawScatterData.reduce((acc, d) => acc + d.x, 0) / (rawScatterData.length || 1);
   const avgYield = rawScatterData.reduce((acc, d) => acc + d.y, 0) / (rawScatterData.length || 1);
 
-  // Process data for chart
+  // Process data for chart - use view-specific metrics
   const scatterData = sourceDataForScatter.map(game => {
-      const occupancy = game.capacity > 0 ? (game.attendance / game.capacity) * 100 : 0;
-      const yieldVal = game.attendance > 0 ? game.totalRevenue / game.attendance : 0;
+      const attendance = viewMode === 'total' 
+          ? game.attendance 
+          : (game.attendanceGameDay ?? game.attendance);
+      const revenue = viewMode === 'total'
+          ? game.totalRevenue
+          : (game.revenueGameDay ?? game.totalRevenue);
+      
+      const occupancy = game.capacity > 0 ? (attendance / game.capacity) * 100 : 0;
+      const yieldVal = attendance > 0 ? revenue / attendance : 0;
       
       // Calculate Z (Size) based on Tier. 
       // Tier 1 (High) -> Big Bubble. Tier 4 (Low) -> Small Bubble.
@@ -141,9 +157,9 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
           tier: game.tier,
           season: game.season,
           date: game.date,
-          attendance: game.attendance,
+          attendance,
           capacity: game.capacity,
-          revenue: game.totalRevenue
+          revenue
       };
   });
   
@@ -176,18 +192,30 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
 
 
   // 3. Ticket Type Breakdown (Stacked Bar)
-  // - Total view: shows protocol + free giveaways
-  // - GameDay view: shows only free giveaways (no protocol)
+  // - Total view: shows all ticket types including protocol giveaways
+  // - GameDay view: shows ticket types excluding protocol giveaways
   const ticketTypeData = sortedData.map(game => {
-      const breakdown = game.ticketTypeBreakdown || { full: 0, discount: 0, giveaway: 0, giveawayGameDay: 0 };
+      const breakdown = game.ticketTypeBreakdown || { 
+          full: 0, discount: 0, giveaway: 0, 
+          fullGameDay: 0, discountGameDay: 0, giveawayGameDay: 0 
+      };
+      
+      // Use view-specific values
+      const fullValue = viewMode === 'total' 
+          ? breakdown.full 
+          : (breakdown.fullGameDay ?? breakdown.full);
+      const discountValue = viewMode === 'total' 
+          ? breakdown.discount 
+          : (breakdown.discountGameDay ?? breakdown.discount);
       const giveawayValue = viewMode === 'total' 
           ? breakdown.giveaway                    // Total: protocol + free
           : (breakdown.giveawayGameDay ?? breakdown.giveaway);  // GameDay: free only
+      
       return {
           name: isComparisonMode ? `${game.season}` : game.opponent.substring(0, 8),
           fullLabel: game.opponent,
-          full: breakdown.full,
-          discount: breakdown.discount,
+          full: fullValue,
+          discount: discountValue,
           free: giveawayValue
       };
   });
