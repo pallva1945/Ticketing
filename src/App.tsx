@@ -24,6 +24,7 @@ import { GAMEDAY_CSV_CONTENT } from './data/gameDayData';
 import { SPONSOR_CSV_CONTENT } from './data/sponsorData';
 import { CRM_CSV_CONTENT } from './data/crmData';
 import { processGameData, processGameDayData, processSponsorData, processCRMData, convertBigQueryToGameData, convertBigQueryToCRMData, BigQueryTicketingRow } from './utils/dataProcessor';
+import { convertBigQueryRowsToGameDayCSV, convertBigQueryRowsToSponsorCSV } from './services/bigQueryService';
 import { getCsvFromFirebase, saveCsvToFirebase } from './services/dbService';
 import { isFirebaseConfigured } from './firebaseConfig';
 
@@ -1290,6 +1291,83 @@ const App: React.FC = () => {
     }
   };
 
+  // Master sync function to refresh ALL data from BigQuery
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
+  
+  const syncAllFromBigQuery = async () => {
+    setIsSyncingAll(true);
+    try {
+      console.log('Starting full BigQuery sync...');
+      
+      // Fetch all data sources in parallel with force refresh
+      const [ticketingRes, crmRes, gameDayRes, sponsorRes] = await Promise.all([
+        fetch('/api/ticketing?refresh=true'),
+        fetch('/api/crm/bigquery?refresh=true'),
+        fetch('/api/gameday/bigquery?refresh=true'),
+        fetch('/api/sponsorship/bigquery?refresh=true')
+      ]);
+      
+      let results = { ticketing: false, crm: false, gameDay: false, sponsor: false };
+      
+      // Process Ticketing
+      if (ticketingRes.ok) {
+        const result = await ticketingRes.json();
+        if (result.success && result.data?.length > 0) {
+          const loadedData = convertBigQueryToGameData(result.data, result.rawRows);
+          setData(loadedData);
+          setDataSources(prev => ({...prev, ticketing: 'bigquery'}));
+          results.ticketing = true;
+          console.log(`Synced ${loadedData.length} ticketing games`);
+        }
+      }
+      
+      // Process CRM
+      if (crmRes.ok) {
+        const result = await crmRes.json();
+        if (result.success && result.rawRows?.length > 0) {
+          const loadedCRM = convertBigQueryToCRMData(result.rawRows);
+          setCrmData(loadedCRM);
+          setDataSources(prev => ({...prev, crm: 'bigquery'}));
+          results.crm = true;
+          console.log(`Synced ${loadedCRM.length} CRM records`);
+        }
+      }
+      
+      // Process GameDay
+      if (gameDayRes.ok) {
+        const result = await gameDayRes.json();
+        if (result.success && result.rawRows?.length > 0) {
+          const loadedGameDay = processGameDayData(convertBigQueryRowsToGameDayCSV(result.rawRows));
+          setGameDayData(loadedGameDay);
+          setDataSources(prev => ({...prev, gameday: 'bigquery'}));
+          results.gameDay = true;
+          console.log(`Synced ${loadedGameDay.length} GameDay records`);
+        }
+      }
+      
+      // Process Sponsorship
+      if (sponsorRes.ok) {
+        const result = await sponsorRes.json();
+        if (result.success && result.rawRows?.length > 0) {
+          const loadedSponsors = processSponsorData(convertBigQueryRowsToSponsorCSV(result.rawRows));
+          setSponsorData(loadedSponsors);
+          setDataSources(prev => ({...prev, sponsor: 'bigquery'}));
+          results.sponsor = true;
+          console.log(`Synced ${loadedSponsors.length} Sponsor records`);
+        }
+      }
+      
+      const successCount = Object.values(results).filter(Boolean).length;
+      alert(`Sync complete! Updated ${successCount}/4 data sources from BigQuery.`);
+      
+    } catch (error) {
+      console.error('Error during BigQuery sync:', error);
+      alert('Error syncing from BigQuery. Check console for details.');
+    } finally {
+      setIsSyncingAll(false);
+    }
+  };
+
   const handleCRMFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -2070,6 +2148,14 @@ const App: React.FC = () => {
                         <div className="text-center py-2 px-3 text-[10px] text-blue-600 bg-blue-50 border border-blue-200 rounded-lg">
                           Auto-synced from BigQuery
                         </div>
+                        <button
+                          onClick={syncAllFromBigQuery}
+                          disabled={isSyncingAll}
+                          className="w-full mt-2 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <RefreshCw size={14} className={isSyncingAll ? 'animate-spin' : ''} />
+                          {isSyncingAll ? 'Syncing...' : 'Sync All Data'}
+                        </button>
                      </>
                  ) : (
                      <div className="text-center p-2 bg-white rounded border border-gray-200">
