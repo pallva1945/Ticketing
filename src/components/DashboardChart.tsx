@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   Line, ComposedChart, ScatterChart, Scatter, ReferenceLine, ZAxis, Label, ReferenceArea
 } from 'recharts';
 import { GameData } from '../types';
 
-type ViewMode = 'total' | 'gameday';
-
 interface DashboardChartProps {
   data: GameData[];
   efficiencyData?: GameData[]; // Added optional prop for specific Efficiency chart data
   onFilterChange: (type: 'opponent' | 'tier' | 'day', value: string) => void;
+  viewMode: 'total' | 'gameday';  // Global view mode from App
 }
 
 const SEASON_COLORS: Record<string, string> = {
@@ -77,8 +76,7 @@ const calculateTrendLine = (dataPoints: any[]) => {
     }));
 };
 
-export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiencyData, onFilterChange }) => {
-  const [viewMode, setViewMode] = useState<ViewMode>('gameday');
+export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiencyData, onFilterChange, viewMode }) => {
   
   // 1. Revenue & Attendance Trend (Composed)
   const uniqueOpponents = new Set(data.map(d => d.opponent));
@@ -340,31 +338,16 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
               {/* Bottom Legends Panel */}
               <div className="mt-4 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-4">
                   
-                  {/* Group 1: View Mode Toggle */}
+                  {/* Group 1: View Mode (Read-only indicator from global toggle) */}
                   <div className="flex flex-col gap-1">
                       <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">View Mode</span>
-                      <div className="flex items-center gap-1">
-                          <button
-                              onClick={() => setViewMode('gameday')}
-                              className={`text-[10px] px-2 py-0.5 rounded border font-semibold transition-colors ${
-                                  viewMode === 'gameday' 
-                                      ? 'bg-blue-50 text-blue-700 border-blue-200' 
-                                      : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
-                              }`}
-                          >
-                              GameDay
-                          </button>
-                          <button
-                              onClick={() => setViewMode('total')}
-                              className={`text-[10px] px-2 py-0.5 rounded border font-semibold transition-colors ${
-                                  viewMode === 'total' 
-                                      ? 'bg-blue-50 text-blue-700 border-blue-200' 
-                                      : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
-                              }`}
-                          >
-                              Total
-                          </button>
-                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded border font-semibold w-fit ${
+                          viewMode === 'gameday' 
+                              ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                              : 'bg-green-50 text-green-700 border-green-200'
+                      }`}>
+                          {viewMode === 'gameday' ? 'GameDay' : 'Total'}
+                      </span>
                   </div>
 
                   {/* Group 2: Season */}

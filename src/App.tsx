@@ -2474,7 +2474,8 @@ const App: React.FC = () => {
                             <DashboardChart 
                                 data={viewData} 
                                 efficiencyData={efficiencyData}
-                                onFilterChange={handleChartFilterChange} 
+                                onFilterChange={handleChartFilterChange}
+                                viewMode={viewMode}
                             />
                         </div>
                         </div>
