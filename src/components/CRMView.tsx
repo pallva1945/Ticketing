@@ -45,6 +45,15 @@ interface CRMStats {
   }>;
   zoneBreakdown: Array<{ zone: string; tickets: number; revenue: number }>;
   sellTypeBreakdown: Array<{ type: string; tickets: number; revenue: number }>;
+  ageBreakdown?: Record<string, { count: number; value: number }>;
+  locationBreakdown?: Record<string, { count: number; value: number }>;
+  purchaseHourBreakdown?: Record<string, { count: number; value: number }>;
+  purchaseDayBreakdown?: Record<string, { count: number; value: number }>;
+  advanceBookingBreakdown?: Record<string, { count: number; value: number }>;
+  zoneByAge?: Record<string, Record<string, number>>;
+  zoneByLocation?: Record<string, Record<string, number>>;
+  zoneStats?: Record<string, { totalValue: number; totalTickets: number; totalAdvanceDays: number; advanceCount: number }>;
+  paymentBreakdown?: Record<string, { count: number; revenue: number }>;
 }
 
 interface CRMViewProps {
@@ -177,6 +186,14 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         groupedSellTypeBreakdown[category].value += s.revenue;
       });
 
+      // Build paymentBreakdown from server data
+      const serverPaymentBreakdown: Record<string, { count: number; revenue: number }> = {};
+      if (serverStats.paymentBreakdown) {
+        Object.entries(serverStats.paymentBreakdown).forEach(([method, val]: [string, any]) => {
+          serverPaymentBreakdown[method] = { count: val.count, revenue: val.revenue };
+        });
+      }
+
       return {
         uniqueEmails: serverStats.uniqueCustomers || 0,
         uniqueCustomers: serverStats.uniqueCustomers || 0,
@@ -189,19 +206,19 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         eventBreakdown: {} as Record<string, { count: number; revenue: number }>,
         rawSellTypeBreakdown,
         groupedSellTypeBreakdown,
-        paymentBreakdown: {} as Record<string, { count: number; revenue: number }>,
+        paymentBreakdown: serverPaymentBreakdown,
         discountBreakdown: {} as Record<string, { count: number; revenue: number }>,
         topCorps: [] as Array<{ name: string; count: number; revenue: number; value: number; principalZone: string; secondaryZone: string }>,
         allCustomers: serverStats.topCustomers || [],
-        ageBreakdown: {} as Record<string, { count: number; value: number }>,
-        locationBreakdown: {} as Record<string, { count: number; value: number }>,
-        zoneStats: {} as Record<string, { totalValue: number; totalTickets: number; totalAdvanceDays: number; advanceCount: number }>,
-        purchaseHourBreakdown: {} as Record<string, { count: number; value: number }>,
-        purchaseDayBreakdown: {} as Record<string, { count: number; value: number }>,
-        advanceBookingBreakdown: {} as Record<string, { count: number; value: number }>,
+        ageBreakdown: serverStats.ageBreakdown || {},
+        locationBreakdown: serverStats.locationBreakdown || {},
+        zoneStats: serverStats.zoneStats || {},
+        purchaseHourBreakdown: serverStats.purchaseHourBreakdown || {},
+        purchaseDayBreakdown: serverStats.purchaseDayBreakdown || {},
+        advanceBookingBreakdown: serverStats.advanceBookingBreakdown || {},
         monthBreakdown: {} as Record<string, { count: number; value: number }>,
-        zoneByAge: {} as Record<string, Record<string, number>>,
-        zoneByLocation: {} as Record<string, Record<string, number>>,
+        zoneByAge: serverStats.zoneByAge || {},
+        zoneByLocation: serverStats.zoneByLocation || {},
         corporateTickets: 0
       };
     }

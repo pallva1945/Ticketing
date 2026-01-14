@@ -121,6 +121,32 @@ const computeCRMStats = (rawRows: any[]) => {
   const zoneStats: Record<string, { tickets: number; revenue: number }> = {};
   const sellTypeStats: Record<string, { tickets: number; revenue: number }> = {};
   
+  // Demographics & behavior breakdowns
+  const ageBreakdown: Record<string, { count: number; value: number }> = {};
+  const locationBreakdown: Record<string, { count: number; value: number }> = {};
+  const purchaseHourBreakdown: Record<string, { count: number; value: number }> = {};
+  const purchaseDayBreakdown: Record<string, { count: number; value: number }> = {};
+  const advanceBookingBreakdown: Record<string, { count: number; value: number }> = {};
+  const zoneByAge: Record<string, Record<string, number>> = {};
+  const zoneByLocation: Record<string, Record<string, number>> = {};
+  const zoneStatsDetailed: Record<string, { totalValue: number; totalTickets: number; totalAdvanceDays: number; advanceCount: number }> = {};
+  const paymentBreakdown: Record<string, { count: number; revenue: number }> = {};
+  
+  const getAgeGroup = (dob: string) => {
+    if (!dob || !dob.includes('/')) return 'Unknown';
+    const parts = dob.split('/');
+    const year = parseInt(parts[2]);
+    if (isNaN(year)) return 'Unknown';
+    const fullYear = year < 100 ? (year > 30 ? 1900 + year : 2000 + year) : year;
+    const age = new Date().getFullYear() - fullYear;
+    if (age < 25) return 'Under 25';
+    if (age < 45) return '25-44';
+    if (age < 65) return '45-64';
+    return '65+';
+  };
+  
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  
   for (const row of rawRows) {
     const lastName = row.last_name || '';
     const firstName = row.name || '';
@@ -143,6 +169,67 @@ const computeCRMStats = (rawRows: any[]) => {
     if (!sellTypeStats[sellType]) sellTypeStats[sellType] = { tickets: 0, revenue: 0 };
     sellTypeStats[sellType].tickets += qty;
     sellTypeStats[sellType].revenue += price;
+    
+    // Age breakdown
+    const ageGroup = getAgeGroup(row.dob || '');
+    if (!ageBreakdown[ageGroup]) ageBreakdown[ageGroup] = { count: 0, value: 0 };
+    ageBreakdown[ageGroup].count += qty;
+    ageBreakdown[ageGroup].value += price;
+    
+    // Location breakdown
+    const location = row.province || row.pob || 'Unknown';
+    if (!locationBreakdown[location]) locationBreakdown[location] = { count: 0, value: 0 };
+    locationBreakdown[location].count += qty;
+    locationBreakdown[location].value += price;
+    
+    // Zone by age
+    if (!zoneByAge[pvZone]) zoneByAge[pvZone] = {};
+    zoneByAge[pvZone][ageGroup] = (zoneByAge[pvZone][ageGroup] || 0) + qty;
+    
+    // Zone by location
+    if (!zoneByLocation[pvZone]) zoneByLocation[pvZone] = {};
+    zoneByLocation[pvZone][location] = (zoneByLocation[pvZone][location] || 0) + qty;
+    
+    // Zone stats detailed
+    if (!zoneStatsDetailed[pvZone]) zoneStatsDetailed[pvZone] = { totalValue: 0, totalTickets: 0, totalAdvanceDays: 0, advanceCount: 0 };
+    zoneStatsDetailed[pvZone].totalValue += price;
+    zoneStatsDetailed[pvZone].totalTickets += qty;
+    
+    // Payment breakdown
+    let payment = row.payment || 'Unknown';
+    const paymentLower = (payment || '').toLowerCase().replace(/[^a-z]/g, '');
+    if (paymentLower.includes('visa') || paymentLower.includes('mastercard') || paymentLower.includes('master') ||
+        paymentLower.includes('cartadicredito') || paymentLower.includes('bancomat') || paymentLower.includes('amex') ||
+        paymentLower.includes('americanexpress') || paymentLower === 'pos') {
+      payment = 'Credit Card';
+    }
+    if (!paymentBreakdown[payment]) paymentBreakdown[payment] = { count: 0, revenue: 0 };
+    paymentBreakdown[payment].count += qty;
+    paymentBreakdown[payment].revenue += price;
+    
+    // Purchase time breakdown
+    const buyDateStr = row.buy_date || '';
+    if (buyDateStr && buyDateStr.includes('/')) {
+      const timePart = buyDateStr.split(' ')[1] || '';
+      const hourMatch = timePart.match(/^(\d{1,2})/);
+      if (hourMatch) {
+        const hour = `${hourMatch[1].padStart(2, '0')}:00`;
+        if (!purchaseHourBreakdown[hour]) purchaseHourBreakdown[hour] = { count: 0, value: 0 };
+        purchaseHourBreakdown[hour].count += qty;
+        purchaseHourBreakdown[hour].value += price;
+      }
+      
+      // Day of week
+      const datePart = buyDateStr.split(' ')[0];
+      const [d, m, y] = datePart.split('/').map(Number);
+      const buyDate = new Date(y, m - 1, d);
+      if (!isNaN(buyDate.getTime())) {
+        const dayName = dayNames[buyDate.getDay()];
+        if (!purchaseDayBreakdown[dayName]) purchaseDayBreakdown[dayName] = { count: 0, value: 0 };
+        purchaseDayBreakdown[dayName].count += qty;
+        purchaseDayBreakdown[dayName].value += price;
+      }
+    }
     
     // Customer aggregation
     if (!customerMap[key]) {
@@ -171,7 +258,6 @@ const computeCRMStats = (rawRows: any[]) => {
     if (row.game_id) cust.games.add(row.game_id);
     
     // Advance days calculation
-    const buyDateStr = row.buy_date || '';
     const gmDateTimeStr = row.Gm_Date_time || row.gm_date_time || '';
     if (buyDateStr && gmDateTimeStr && buyDateStr.includes('/') && gmDateTimeStr.includes('/')) {
       const parseDT = (s: string) => {
@@ -180,11 +266,30 @@ const computeCRMStats = (rawRows: any[]) => {
         const [h = 0, min = 0] = (timePart || '').split('.').map(Number);
         return new Date(y, m - 1, d, h || 0, min || 0);
       };
-      const buyDate = parseDT(buyDateStr);
+      const buyDate2 = parseDT(buyDateStr);
       const gameDate = parseDT(gmDateTimeStr);
-      if (!isNaN(buyDate.getTime()) && !isNaN(gameDate.getTime())) {
-        const diffDays = Math.floor((gameDate.getTime() - buyDate.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays >= 0) cust.advanceDays.push(diffDays);
+      if (!isNaN(buyDate2.getTime()) && !isNaN(gameDate.getTime())) {
+        const diffDays = Math.floor((gameDate.getTime() - buyDate2.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0) {
+          cust.advanceDays.push(diffDays);
+          
+          // Add to zone stats
+          zoneStatsDetailed[pvZone].totalAdvanceDays += diffDays;
+          zoneStatsDetailed[pvZone].advanceCount += 1;
+          
+          // Advance booking breakdown
+          let bucket: string;
+          if (diffDays === 0) bucket = 'Same Day';
+          else if (diffDays <= 3) bucket = '1-3 Days';
+          else if (diffDays <= 7) bucket = '4-7 Days';
+          else if (diffDays <= 14) bucket = '1-2 Weeks';
+          else if (diffDays <= 28) bucket = '2-4 Weeks';
+          else bucket = '1+ Month';
+          
+          if (!advanceBookingBreakdown[bucket]) advanceBookingBreakdown[bucket] = { count: 0, value: 0 };
+          advanceBookingBreakdown[bucket].count += qty;
+          advanceBookingBreakdown[bucket].value += price;
+        }
       }
     }
   }
@@ -225,7 +330,16 @@ const computeCRMStats = (rawRows: any[]) => {
     uniqueCustomers: allCustomers.length,
     topCustomers: allCustomers.slice(0, 100),
     zoneBreakdown: Object.entries(zoneStats).map(([zone, stats]) => ({ zone, ...stats })).sort((a, b) => b.revenue - a.revenue),
-    sellTypeBreakdown: Object.entries(sellTypeStats).map(([type, stats]) => ({ type, ...stats })).sort((a, b) => b.revenue - a.revenue)
+    sellTypeBreakdown: Object.entries(sellTypeStats).map(([type, stats]) => ({ type, ...stats })).sort((a, b) => b.revenue - a.revenue),
+    ageBreakdown,
+    locationBreakdown,
+    purchaseHourBreakdown,
+    purchaseDayBreakdown,
+    advanceBookingBreakdown,
+    zoneByAge,
+    zoneByLocation,
+    zoneStats: zoneStatsDetailed,
+    paymentBreakdown
   };
 };
 
