@@ -114,8 +114,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const hasActiveFilter = filterZone || filterEvent || capacityView !== 'all' || searchQuery;
 
   const getCapacityBucket = (r: CRMRecord): 'fixed' | 'flexible' => {
+    // Fixed = sellType is "Abb" OR event contains "ABBONAMENTO LBA 2025/26"
+    const sellTypeLower = (r.sellType || '').toLowerCase();
     const eventLower = (r.event || '').toLowerCase();
-    if (eventLower.includes('abbonamento') && eventLower.includes('lba')) {
+    if (sellTypeLower === 'abb' || eventLower.includes('abbonamento lba 2025/26')) {
       return 'fixed';
     }
     return 'flexible';
