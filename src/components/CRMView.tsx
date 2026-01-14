@@ -261,9 +261,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     const corporateRecords = filteredData.filter(r => r.sellType === 'Corp' || r.ticketType === 'CORP');
     const uniqueCorps = new Set(corporateRecords.map(r => r.group).filter(Boolean));
     
-    const totalRevenue = filteredData.reduce((sum, r) => sum + r.price, 0);
-    const totalCommercialValue = filteredData.reduce((sum, r) => sum + r.commercialValue, 0);
-    const corpCommercialValue = corporateRecords.reduce((sum, r) => sum + r.commercialValue, 0);
+    const totalRevenue = filteredData.reduce((sum, r) => sum + (r.price * r.quantity), 0);
+    const totalCommercialValue = filteredData.reduce((sum, r) => sum + (r.commercialValue * r.quantity), 0);
+    const corpCommercialValue = corporateRecords.reduce((sum, r) => sum + (r.commercialValue * r.quantity), 0);
     const totalTickets = filteredData.reduce((sum, r) => sum + r.quantity, 0);
 
     const zoneBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
@@ -336,11 +336,11 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
       const isCorp = (r.sellType || '').toLowerCase() === 'corp' || (r.ticketType || '').toLowerCase() === 'corp';
       if (isCorp) {
-        const corpKey = r.fullName || r.group || 'Unknown';
+        const corpKey = r.group || r.fullName || 'Unknown';
         if (!corpBreakdown[corpKey]) corpBreakdown[corpKey] = { count: 0, revenue: 0, value: 0, zones: {} as Record<string, number> };
         corpBreakdown[corpKey].count += r.quantity;
-        corpBreakdown[corpKey].revenue += r.price;
-        corpBreakdown[corpKey].value += r.commercialValue;
+        corpBreakdown[corpKey].revenue += r.price * r.quantity;
+        corpBreakdown[corpKey].value += r.commercialValue * r.quantity;
         const zone = r.pvZone || r.zone || 'Unknown';
         corpBreakdown[corpKey].zones[zone] = (corpBreakdown[corpKey].zones[zone] || 0) + (Number(r.quantity) || 1);
       }

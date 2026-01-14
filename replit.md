@@ -42,6 +42,12 @@ server/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 14, 2026: Corporate Section Commercial Value Fix
+  - Corporate table now uses `group` column as primary key for company name (was incorrectly using fullName first)
+  - Commercial Value column correctly aggregates `commercial_value` × `quantity` for all Corp sell type tickets
+  - Corp Commercial Value scorecard now shows correct aggregated total
+  - Client-side fallback calculations fixed to match server-side aggregation logic
+
 - January 14, 2026: Parallel BigQuery Loading for Faster Initial Render
   - All four data modules (Ticketing, GameDay, Sponsorship, CRM) now fetch in parallel using Promise.all()
   - Ticketing data processed first (most critical for Executive Overview display)
