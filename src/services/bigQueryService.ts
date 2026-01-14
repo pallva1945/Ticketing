@@ -350,6 +350,75 @@ export function convertBigQueryRowsToCRMCSV(rows: any[]): string {
   return [headerRow, ...dataRows].join('\n');
 }
 
+// Fetch Sponsorship data from BigQuery
+const SPONSOR_TABLE_ID = process.env.BIGQUERY_SPONSOR_TABLE_ID || 'sponsor_db';
+
+export async function fetchSponsorshipFromBigQuery(): Promise<{ success: boolean; rawRows?: any[]; message: string }> {
+  try {
+    const client = getBigQueryClient();
+    
+    // Fetch all columns from sponsor table
+    const query = `SELECT * FROM \`${PROJECT_ID}.${DATASET_ID}.${SPONSOR_TABLE_ID}\` LIMIT 50000`;
+    
+    const [rows] = await client.query({ query });
+    
+    if (!rows || rows.length === 0) {
+      return {
+        success: false,
+        message: 'No sponsorship data found in BigQuery'
+      };
+    }
+    
+    return {
+      success: true,
+      rawRows: rows as any[],
+      message: `Fetched ${rows.length} sponsorship records from BigQuery`
+    };
+  } catch (error: any) {
+    console.error('BigQuery Sponsorship fetch error:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to fetch Sponsorship from BigQuery'
+    };
+  }
+}
+
+// Convert BigQuery Sponsorship rows to CSV format for processing by processSponsorData
+export function convertBigQueryRowsToSponsorCSV(rows: any[]): string {
+  if (!rows || rows.length === 0) return '';
+  
+  const columns = Object.keys(rows[0]);
+  
+  // Convert column names for CSV compatibility
+  const headerRow = columns.map(col => col.replace(/_/g, ' ')).join(',');
+  
+  const formatValue = (val: any): string => {
+    if (val === null || val === undefined) return '';
+    
+    // Handle BigQuery date/timestamp objects
+    if (typeof val === 'object' && val.value) {
+      return String(val.value);
+    }
+    
+    // Handle numbers
+    if (typeof val === 'number') {
+      return val.toString();
+    }
+    
+    const strVal = String(val);
+    if (strVal.includes(',') || strVal.includes('"') || strVal.includes('\n')) {
+      return `"${strVal.replace(/"/g, '""')}"`;
+    }
+    return strVal;
+  };
+  
+  const dataRows = rows.map(row => 
+    columns.map(col => formatValue(row[col])).join(',')
+  );
+  
+  return [headerRow, ...dataRows].join('\n');
+}
+
 // Convert BigQuery raw rows to CSV format for processing by processGameData
 // BigQuery uses underscores in headers; this normalizes them to spaces
 export function convertBigQueryRowsToCSV(rows: any[]): string {

@@ -936,15 +936,30 @@ const App: React.FC = () => {
     }
     setGameDayData(loadedGameDay);
 
-    // 2. SPONSOR DATA LOADING
+    // 2. SPONSOR DATA LOADING - BigQuery first, then cloud storage, then local fallback
     try {
         let sponsorCsv = SPONSOR_CSV_CONTENT;
-        let sponsorSource: 'local' | 'cloud' = 'local';
+        let sponsorSource: 'local' | 'cloud' | 'bigquery' = 'local';
         
-        if (isFirebaseConfigured) {
+        // Try BigQuery first
+        try {
+            const sponsorResponse = await fetch('/api/sponsorship/bigquery');
+            if (sponsorResponse.ok) {
+                const sponsorResult = await sponsorResponse.json();
+                if (sponsorResult.success && sponsorResult.csvContent) {
+                    sponsorCsv = sponsorResult.csvContent;
+                    sponsorSource = 'bigquery';
+                    console.log(`Sponsorship loaded from BigQuery: ${sponsorResult.rowCount} records`);
+                }
+            }
+        } catch (bqError) {
+            console.warn('BigQuery sponsorship fetch failed, trying cloud storage...', bqError);
+        }
+        
+        // Fallback to cloud storage if BigQuery didn't work
+        if (sponsorSource === 'local' && isFirebaseConfigured) {
             const cloudSponsor = await getCsvFromFirebase('sponsor');
             if (cloudSponsor) {
-                // Check if cloud data has Delta column, otherwise use local
                 const hasCloudDelta = cloudSponsor.content.toLowerCase().includes(',delta,');
                 const hasLocalDelta = SPONSOR_CSV_CONTENT.toLowerCase().includes(',delta,');
                 if (hasCloudDelta || !hasLocalDelta) {
@@ -952,14 +967,14 @@ const App: React.FC = () => {
                     setSponsorLastUpdated(cloudSponsor.updatedAt);
                     sponsorSource = 'cloud';
                 } else {
-                    // Local has Delta column but cloud doesn't - save local to cloud
                     await saveCsvToFirebase('sponsor', SPONSOR_CSV_CONTENT);
                 }
             }
         }
         const loadedSponsors = processSponsorData(sponsorCsv);
         setSponsorData(loadedSponsors);
-        setSponsorDataSource(sponsorSource);
+        setSponsorDataSource(sponsorSource as any);
+        setDataSources(prev => ({...prev, sponsorship: sponsorSource}));
     } catch(e) {
         console.error("Error loading Sponsor data", e);
         setSponsorData(processSponsorData(SPONSOR_CSV_CONTENT));

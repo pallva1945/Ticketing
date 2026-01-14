@@ -42,10 +42,11 @@ server/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
-- January 14, 2026: BigQuery Integration for Both Ticketing and CRM
+- January 14, 2026: BigQuery Integration for Ticketing, CRM, and Sponsorship
   - **Ticketing**: BigQuery reads ALL columns including zone-level data (Par_O_Abb_Num, Trib_G_Tix_Eur, etc.)
   - **CRM**: BigQuery reads from `ticketing_migration.CRM_2526` table (uppercase) with full customer data
-  - Both Ticketing and CRM auto-sync from BigQuery on app load (no manual sync required)
+  - **Sponsorship**: BigQuery reads from `ticketing_migration.sponsor_db` table (420 sponsor records)
+  - All three modules auto-sync from BigQuery on app load (no manual sync required)
   - **Server-side CRM processing**: Stats computed on server and cached for 10 minutes (major performance boost)
   - Server returns pre-computed stats (top 100 customers, zone/sell type breakdowns) instead of 34k raw records
   - CRMView uses server stats for fast initial render, falls back to client processing only when filters are active
