@@ -232,8 +232,9 @@ const computeCRMStats = (rawRows: any[]) => {
     const fullName = [lastName, firstName].filter(Boolean).join(' ') || 'Unknown';
     const key = `${lastName.toLowerCase()}_${firstName.toLowerCase()}_${row.dob || row.email || ''}`;
     // Check both quantity and Quantity (BigQuery column casing varies)
+    // Allow negative values for returns (-1 = return)
     const rawQty = row.quantity ?? row.Quantity ?? row.QUANTITY ?? 1;
-    const qty = Math.max(1, Number(rawQty) || 1);
+    const qty = Number(rawQty) || 1;
     
     // For season tickets/packs, use per-game price instead of full bundle price
     const eventLower = (row.event || '').toLowerCase();
@@ -481,7 +482,7 @@ const computeCRMStats = (rawRows: any[]) => {
 
   return {
     totalRecords: rawRows.length,
-    totalTickets: rawRows.length, // Use record count - each row = 1 ticket
+    totalTickets, // Net tickets (purchases minus returns)
     totalRevenue,
     corpCommercialValue,
     uniqueCustomers: allCustomers.length,
