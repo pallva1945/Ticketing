@@ -287,7 +287,8 @@ const computeCRMStats = (rawRows: any[]) => {
     
     // Location breakdown - use only province (not pob which is place of birth)
     // pob can be international cities like Buenos Aires, Tokyo, etc.
-    const rawLocation = row.province || 'Unknown';
+    // Check multiple column name variations
+    const rawLocation = row.province || row.provincia || row.Province || row.Provincia || 'Unknown';
     const location = normalizeLocation(rawLocation);
     if (!locationBreakdown[location]) locationBreakdown[location] = { count: 0, value: 0 };
     locationBreakdown[location].count += qty;
