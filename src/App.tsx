@@ -1992,24 +1992,14 @@ const App: React.FC = () => {
                             </strong>
                         </div>
                         {activeModule === 'ticketing' ? (
-                          <div className="space-y-2">
-                            <button 
-                              onClick={reloadTicketingFromCloud} 
-                              disabled={isRefreshingTicketing} 
-                              className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-green-600 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors shadow-sm active:bg-green-100 hover:shadow-md hover:text-green-700"
-                            >
-                              {isRefreshingTicketing ? <Loader2 size={14} className="animate-spin" /> : <Cloud size={14} />} 
-                              Reload from Cloud
-                            </button>
-                            <button 
-                              onClick={refreshTicketingFromBigQuery} 
-                              disabled={isRefreshingTicketing} 
-                              className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors shadow-sm active:bg-blue-100 hover:shadow-md hover:text-blue-700"
-                            >
-                              {isRefreshingTicketing ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />} 
-                              Sync from BigQuery
-                            </button>
-                          </div>
+                          <button 
+                            onClick={refreshTicketingFromBigQuery} 
+                            disabled={isRefreshingTicketing} 
+                            className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors shadow-sm active:bg-blue-100 hover:shadow-md hover:text-blue-700"
+                          >
+                            {isRefreshingTicketing ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />} 
+                            Sync from BigQuery
+                          </button>
                         ) : (
                           <button onClick={triggerFileUpload} disabled={isUploading} className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-gray-600 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors shadow-sm active:bg-gray-50 hover:shadow-md hover:text-gray-900">
                               {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} 
