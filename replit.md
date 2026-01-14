@@ -46,10 +46,12 @@ server/
   - **Ticketing**: BigQuery reads ALL columns including zone-level data (Par_O_Abb_Num, Trib_G_Tix_Eur, etc.)
   - **CRM**: BigQuery reads from `ticketing_migration.CRM_2526` table (uppercase) with full customer data
   - Both Ticketing and CRM auto-sync from BigQuery on app load (no manual sync required)
+  - **Server-side CRM processing**: Stats computed on server and cached for 10 minutes (major performance boost)
+  - Server returns pre-computed stats (top 100 customers, zone/sell type breakdowns) instead of 34k raw records
+  - CRMView uses server stats for fast initial render, falls back to client processing only when filters are active
   - Column headers with underscores normalized to spaces/lowercase for CSV parsing compatibility
   - American number format (comma thousands, dot decimal) properly handled
-  - Server returns rawRows alongside aggregate data for full processing
-  - CRM "Top Customers" section shows 100 customers with scrollable table
+  - Date fields (buy_date, gm_date_time) properly parsed for Avg Advance calculation
   - Data source indicator tracks BigQuery as source with sync timestamp
 
 - January 14, 2026: Fixed Executive Overview Data Display

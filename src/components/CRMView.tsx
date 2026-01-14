@@ -22,10 +22,36 @@ const formatCompact = (value: number) => {
   return `${sign}€${absVal.toFixed(0)}`;
 };
 
+interface CRMStats {
+  totalRecords: number;
+  totalTickets: number;
+  totalRevenue: number;
+  uniqueCustomers: number;
+  topCustomers: Array<{
+    key: string;
+    name: string;
+    email: string;
+    tickets: number;
+    value: number;
+    principalZone: string;
+    secondaryZone: string;
+    topSellType: string;
+    avgAdvance: number | null;
+    gameCount: number;
+    avgPerGame: number;
+    avgPerTxn: number;
+    age: string;
+    location: string;
+  }>;
+  zoneBreakdown: Array<{ zone: string; tickets: number; revenue: number }>;
+  sellTypeBreakdown: Array<{ type: string; tickets: number; revenue: number }>;
+}
+
 interface CRMViewProps {
   data: CRMRecord[];
   sponsorData?: SponsorData[];
   isLoading?: boolean;
+  serverStats?: CRMStats | null; // Pre-computed stats from server for fast loading
 }
 
 const getCustomerKey = (r: CRMRecord): string => {
@@ -55,7 +81,7 @@ const normalizeCompanyName = (name: string): string => {
     .trim();
 };
 
-export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoading = false }) => {
+export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoading = false, serverStats = null }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterZone, setFilterZone] = useState<string | null>(null);
   const [filterEvent, setFilterEvent] = useState<string | null>(null);
@@ -125,6 +151,38 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   }, [sponsorData]);
 
   const stats = useMemo(() => {
+    // Use server-computed stats when available and no filters are active (fast path)
+    if (serverStats && !hasActiveFilter) {
+      return {
+        uniqueEmails: serverStats.uniqueCustomers,
+        uniqueCustomers: serverStats.uniqueCustomers,
+        uniqueCorps: 0,
+        totalRevenue: serverStats.totalRevenue,
+        totalCommercialValue: serverStats.totalRevenue,
+        corpCommercialValue: 0,
+        totalTickets: serverStats.totalTickets,
+        zones: serverStats.zoneBreakdown.map(z => ({ zone: z.zone, count: z.tickets, revenue: z.revenue, value: z.revenue })),
+        events: [],
+        sellTypes: serverStats.sellTypeBreakdown.map(s => ({ type: s.type, count: s.tickets, revenue: s.revenue, value: s.revenue })),
+        groupedSellTypes: [],
+        payments: [],
+        discounts: [],
+        topCorps: [],
+        allCustomers: serverStats.topCustomers,
+        ageBreakdown: {} as Record<string, { count: number; value: number }>,
+        locationBreakdown: {} as Record<string, { count: number; value: number }>,
+        zoneStats: {} as Record<string, { totalValue: number; totalTickets: number; totalAdvanceDays: number; advanceCount: number }>,
+        salesChannels: [],
+        purchaseHourBreakdown: {} as Record<string, { count: number; revenue: number }>,
+        purchaseDayBreakdown: {} as Record<string, { count: number; revenue: number }>,
+        advanceBookingBreakdown: {} as Record<string, { count: number; revenue: number }>,
+        monthBreakdown: {} as Record<string, { count: number; revenue: number; value: number }>,
+        zoneByAge: {} as Record<string, Record<string, number>>,
+        zoneByLocation: {} as Record<string, Record<string, number>>,
+        corporateTickets: [] as Array<{ name: string; tickets: number; revenue: number; value: number }>
+      };
+    }
+    
     const uniqueEmails = new Set(filteredData.filter(r => r.email).map(r => r.email.toLowerCase()));
     const uniqueCustomers = new Set(filteredData.map(r => r.email || r.fullName));
     const corporateRecords = filteredData.filter(r => r.sellType === 'Corp' || r.ticketType === 'CORP');
@@ -442,7 +500,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       advanceBookingBreakdown,
       monthBreakdown
     };
-  }, [filteredData, sectorLookup]);
+  }, [filteredData, sectorLookup, serverStats, hasActiveFilter]);
 
 
   const ageChartData = useMemo(() => {

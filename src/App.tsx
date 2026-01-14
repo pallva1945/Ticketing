@@ -852,6 +852,7 @@ const App: React.FC = () => {
   const [gameDayData, setGameDayData] = useState<GameDayData[]>([]);
   const [sponsorData, setSponsorData] = useState<SponsorData[]>([]);
   const [crmData, setCrmData] = useState<CRMRecord[]>([]);
+  const [crmStats, setCrmStats] = useState<any>(null); // Server-computed CRM stats for fast loading
   const [sponsorDataSource, setSponsorDataSource] = useState<'local' | 'cloud'>('local');
   const [sponsorLastUpdated, setSponsorLastUpdated] = useState<string | null>(null);
   const [isLoadingData, setIsLoadingData] = useState(true);
@@ -965,18 +966,25 @@ const App: React.FC = () => {
         setSponsorDataSource('local');
     }
 
-    // 2b. CRM DATA LOADING - Auto-sync from BigQuery
+    // 2b. CRM DATA LOADING - Auto-sync from BigQuery (server-side processed for speed)
     try {
       const crmResponse = await fetch('/api/crm/bigquery');
       if (crmResponse.ok) {
         const crmResult = await crmResponse.json();
-        if (crmResult.success && crmResult.rawRows && crmResult.rawRows.length > 0) {
+        if (crmResult.success && crmResult.stats) {
+          // Use server-computed stats for fast initial load
+          setCrmStats(crmResult.stats);
+          setDataSources(prev => ({...prev, crm: 'bigquery'}));
+          setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
+          console.log(`CRM loaded from BigQuery: ${crmResult.stats.totalRecords} records (server-processed)`);
+        } else if (crmResult.rawRows && crmResult.rawRows.length > 0) {
+          // Fallback to client-side processing if stats not available
           const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
           if (loadedCRM.length > 0) {
             setCrmData(loadedCRM);
             setDataSources(prev => ({...prev, crm: 'bigquery'}));
             setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
-            console.log(`CRM loaded from BigQuery: ${loadedCRM.length} records`);
+            console.log(`CRM loaded from BigQuery: ${loadedCRM.length} records (client-processed)`);
           }
         }
       }
@@ -2161,7 +2169,7 @@ const App: React.FC = () => {
           ) : activeModule === 'ticketing' ? (
             <>
                 {/* EXISTING TICKETING LOGIC */}
-                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingData} />}
+                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingData} serverStats={crmStats} />}
                 {activeTab === 'dashboard' && (
                     <div className="pt-6">
                     {/* DIRECTOR'S NOTE */}
