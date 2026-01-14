@@ -958,7 +958,7 @@ const App: React.FC = () => {
       fetch('/api/ticketing').catch(e => { console.warn('Ticketing fetch failed:', e); return null; }),
       fetch('/api/gameday/bigquery').catch(e => { console.warn('GameDay fetch failed:', e); return null; }),
       fetch('/api/sponsorship/bigquery').catch(e => { console.warn('Sponsorship fetch failed:', e); return null; }),
-      fetch('/api/crm/bigquery').catch(e => { console.warn('CRM fetch failed:', e); return null; })
+      fetch('/api/crm/bigquery?full=true').catch(e => { console.warn('CRM fetch failed:', e); return null; })
     ]);
     
     // 1. TICKETING DATA - Process first (most critical for Executive Overview)
@@ -1099,9 +1099,16 @@ const App: React.FC = () => {
             fixed: crmResult.fixedStats,
             flexible: crmResult.flexibleStats
           });
+          // Also load full raw data for client search functionality
+          if (crmResult.rawRows && crmResult.rawRows.length > 0) {
+            const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
+            setCrmData(loadedCRM);
+            console.log(`CRM loaded from BigQuery: ${loadedCRM.length} records (with client search data)`);
+          } else {
+            console.log(`CRM loaded from BigQuery: ${crmResult.stats.totalRecords} records (stats only)`);
+          }
           setDataSources(prev => ({...prev, crm: 'bigquery'}));
           setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
-          console.log(`CRM loaded from BigQuery: ${crmResult.stats.totalRecords} records (server-processed)`);
         }
       }
     } catch (crmError) {
@@ -1301,7 +1308,7 @@ const App: React.FC = () => {
   const refreshCRMFromBigQuery = async () => {
     setIsRefreshingCRM(true);
     try {
-      const response = await fetch('/api/crm/bigquery?refresh=true');
+      const response = await fetch('/api/crm/bigquery?refresh=true&full=true');
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.rawRows && result.rawRows.length > 0) {
@@ -1340,7 +1347,7 @@ const App: React.FC = () => {
       // Fetch all data sources in parallel with force refresh
       const [ticketingRes, crmRes, gameDayRes, sponsorRes] = await Promise.all([
         fetch('/api/ticketing?refresh=true'),
-        fetch('/api/crm/bigquery?refresh=true'),
+        fetch('/api/crm/bigquery?refresh=true&full=true'),
         fetch('/api/gameday/bigquery?refresh=true'),
         fetch('/api/sponsorship/bigquery?refresh=true')
       ]);
