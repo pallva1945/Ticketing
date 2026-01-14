@@ -684,8 +684,60 @@ const convertBigQueryRowsToCRMCSV = (rows: any[]): string => {
   // Convert column names to lowercase for CSV compatibility
   const headerRow = columns.map(col => col.toLowerCase()).join(',');
   
-  const formatValue = (val: any): string => {
+  const formatDateValue = (val: any): string => {
+    if (!val) return '';
+    
+    // Handle BigQuery timestamp objects with value property
+    if (typeof val === 'object' && val.value) {
+      const d = new Date(val.value);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        const secs = String(d.getSeconds()).padStart(2, '0');
+        return `${day}/${month}/${year} ${hours}:${mins}:${secs}`;
+      }
+      return String(val.value);
+    }
+    
+    // Handle Date objects
+    if (val instanceof Date && !isNaN(val.getTime())) {
+      const day = String(val.getDate()).padStart(2, '0');
+      const month = String(val.getMonth() + 1).padStart(2, '0');
+      const year = val.getFullYear();
+      const hours = String(val.getHours()).padStart(2, '0');
+      const mins = String(val.getMinutes()).padStart(2, '0');
+      const secs = String(val.getSeconds()).padStart(2, '0');
+      return `${day}/${month}/${year} ${hours}:${mins}:${secs}`;
+    }
+    
+    // Handle ISO date strings (2024-01-15T10:30:00.000Z)
+    if (typeof val === 'string' && val.includes('T') && val.includes('-')) {
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) {
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        const hours = String(d.getHours()).padStart(2, '0');
+        const mins = String(d.getMinutes()).padStart(2, '0');
+        const secs = String(d.getSeconds()).padStart(2, '0');
+        return `${day}/${month}/${year} ${hours}:${mins}:${secs}`;
+      }
+    }
+    
+    return String(val);
+  };
+  
+  const formatValue = (val: any, colName: string): string => {
     if (val === null || val === undefined) return '';
+    
+    // Handle date columns specially
+    const lowerCol = colName.toLowerCase();
+    if (lowerCol.includes('date') || lowerCol.includes('time') || lowerCol === 'buy_date' || lowerCol === 'gm_date_time') {
+      return formatDateValue(val);
+    }
     
     // Handle BigQuery date/timestamp objects
     if (typeof val === 'object' && val.value) {
@@ -705,7 +757,7 @@ const convertBigQueryRowsToCRMCSV = (rows: any[]): string => {
   };
   
   const dataRows = rows.map(row => 
-    columns.map(col => formatValue(row[col])).join(',')
+    columns.map(col => formatValue(row[col], col)).join(',')
   );
   
   return [headerRow, ...dataRows].join('\n');
