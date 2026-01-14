@@ -628,8 +628,73 @@ export interface BigQueryTicketingRow {
   updated_at: string;
 }
 
-export const convertBigQueryToGameData = (rows: BigQueryTicketingRow[]): GameData[] => {
-  return rows.map(row => {
+// Convert BigQuery raw rows to CSV format for processing
+// BigQuery uses underscores in headers; this normalizes them to spaces
+const convertBigQueryRowsToCSV = (rows: any[]): string => {
+  if (!rows || rows.length === 0) return '';
+  
+  // Get all column names from first row
+  const columns = Object.keys(rows[0]);
+  
+  // Convert underscore column names to space-separated for CSV compatibility
+  // e.g., Par_O_Abb_Num -> Par O Abb Num
+  const headerRow = columns.map(col => col.replace(/_/g, ' ')).join(',');
+  
+  // Format values properly for CSV
+  const formatValue = (val: any): string => {
+    if (val === null || val === undefined) return '';
+    
+    // Handle BigQuery date objects
+    if (typeof val === 'object' && val.value) {
+      let dateStr = val.value;
+      // Convert ISO date (YYYY-MM-DD) to DD/MM/YYYY
+      if (dateStr && dateStr.includes('-') && !dateStr.includes('/')) {
+        const [year, month, day] = dateStr.split('-');
+        dateStr = `${day}/${month}/${year}`;
+      }
+      return dateStr;
+    }
+    
+    // Handle numbers - format consistently
+    if (typeof val === 'number') {
+      return val.toString();
+    }
+    
+    // Handle strings that might contain commas (escape with quotes)
+    const strVal = String(val);
+    if (strVal.includes(',') || strVal.includes('"') || strVal.includes('\n')) {
+      return `"${strVal.replace(/"/g, '""')}"`;
+    }
+    return strVal;
+  };
+  
+  const dataRows = rows.map(row => 
+    columns.map(col => formatValue(row[col])).join(',')
+  );
+  
+  return [headerRow, ...dataRows].join('\n');
+};
+
+// Convert BigQuery data to GameData - supports both legacy aggregate data and full raw rows
+export const convertBigQueryToGameData = (
+  aggregateRows: BigQueryTicketingRow[], 
+  rawRows?: any[]
+): GameData[] => {
+  // If we have raw rows with zone data, use full CSV processing
+  if (rawRows && rawRows.length > 0) {
+    const csvContent = convertBigQueryRowsToCSV(rawRows);
+    if (csvContent) {
+      const fullData = processGameData(csvContent);
+      if (fullData.length > 0) {
+        console.log(`Processed ${fullData.length} games from BigQuery with full zone data`);
+        return fullData;
+      }
+    }
+  }
+  
+  // Fallback to aggregate-only processing (no zone breakdown)
+  console.warn('BigQuery: Using aggregate data only (no zone breakdown)');
+  return aggregateRows.map(row => {
     const getSeasonCapacity = (season: string): Record<TicketZone, number> => {
       if (season.includes('25-26') || season.includes('25/26')) return CAPACITIES_25_26;
       if (season.includes('24-25') || season.includes('24/25')) return CAPACITIES_24_25;

@@ -206,11 +206,14 @@ export async function testBigQueryConnection(): Promise<{ success: boolean; mess
   }
 }
 
-export async function fetchTicketingFromBigQuery(): Promise<{ success: boolean; data: TicketingRow[]; message: string }> {
+// Fetch ALL columns from BigQuery and return as raw rows
+// This allows downstream processing to extract zone data
+export async function fetchTicketingFromBigQuery(): Promise<{ success: boolean; data: TicketingRow[]; rawRows?: any[]; message: string }> {
   try {
     const client = getBigQueryClient();
     
-    const query = `SELECT * FROM \`${PROJECT_ID}.${DATASET_ID}.${TABLE_ID}\` LIMIT 1000`;
+    // Fetch all columns - don't limit fields
+    const query = `SELECT * FROM \`${PROJECT_ID}.${DATASET_ID}.${TABLE_ID}\` ORDER BY Data DESC LIMIT 1000`;
     
     const [rows] = await client.query({ query });
     
@@ -218,20 +221,15 @@ export async function fetchTicketingFromBigQuery(): Promise<{ success: boolean; 
       if (val === null || val === undefined) return 0;
       if (typeof val === 'number') return isNaN(val) ? 0 : val;
       if (typeof val === 'string') {
-        let cleaned = val.replace(/[€$£\s]/g, '');
-        const lastComma = cleaned.lastIndexOf(',');
-        const lastDot = cleaned.lastIndexOf('.');
-        if (lastComma > lastDot) {
-          cleaned = cleaned.replace(/\./g, '').replace(',', '.');
-        } else {
-          cleaned = cleaned.replace(/,/g, '');
-        }
+        // American format: comma thousands, dot decimal
+        let cleaned = val.replace(/[€$£\s]/g, '').replace(/,/g, '');
         const num = parseFloat(cleaned);
         return isNaN(num) ? 0 : num;
       }
       return 0;
     };
     
+    // Basic TicketingRow for backward compat (aggregate data)
     const ticketingData: TicketingRow[] = (rows as any[]).map(row => {
       let dateValue = '';
       if (row.Data) {
@@ -241,7 +239,8 @@ export async function fetchTicketingFromBigQuery(): Promise<{ success: boolean; 
           dateValue = row.Data;
         }
       }
-      if (dateValue && dateValue.includes('-')) {
+      // Convert ISO date (YYYY-MM-DD) to DD/MM/YYYY
+      if (dateValue && dateValue.includes('-') && !dateValue.includes('/')) {
         const [year, month, day] = dateValue.split('-');
         dateValue = `${day}/${month}/${year}`;
       }
@@ -269,6 +268,7 @@ export async function fetchTicketingFromBigQuery(): Promise<{ success: boolean; 
     return {
       success: true,
       data: validData,
+      rawRows: rows as any[], // Return raw rows for full zone data processing
       message: `Fetched ${ticketingData.length} games from BigQuery`
     };
   } catch (error: any) {
@@ -279,4 +279,51 @@ export async function fetchTicketingFromBigQuery(): Promise<{ success: boolean; 
       message: error.message || 'Failed to fetch from BigQuery'
     };
   }
+}
+
+// Convert BigQuery raw rows to CSV format for processing by processGameData
+// BigQuery uses underscores in headers; this normalizes them to spaces
+export function convertBigQueryRowsToCSV(rows: any[]): string {
+  if (!rows || rows.length === 0) return '';
+  
+  // Get all column names from first row
+  const columns = Object.keys(rows[0]);
+  
+  // Convert underscore column names to space-separated for CSV compatibility
+  // e.g., Par_O_Abb_Num -> Par O Abb Num
+  const headerRow = columns.map(col => col.replace(/_/g, ' ')).join(',');
+  
+  // Format values properly for CSV
+  const formatValue = (val: any): string => {
+    if (val === null || val === undefined) return '';
+    
+    // Handle BigQuery date objects
+    if (typeof val === 'object' && val.value) {
+      let dateStr = val.value;
+      // Convert ISO date (YYYY-MM-DD) to DD/MM/YYYY
+      if (dateStr && dateStr.includes('-') && !dateStr.includes('/')) {
+        const [year, month, day] = dateStr.split('-');
+        dateStr = `${day}/${month}/${year}`;
+      }
+      return dateStr;
+    }
+    
+    // Handle numbers - format consistently
+    if (typeof val === 'number') {
+      return val.toString();
+    }
+    
+    // Handle strings that might contain commas (escape with quotes)
+    const strVal = String(val);
+    if (strVal.includes(',') || strVal.includes('"') || strVal.includes('\n')) {
+      return `"${strVal.replace(/"/g, '""')}"`;
+    }
+    return strVal;
+  };
+  
+  const dataRows = rows.map(row => 
+    columns.map(col => formatValue(row[col])).join(',')
+  );
+  
+  return [headerRow, ...dataRows].join('\n');
 }

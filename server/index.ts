@@ -70,7 +70,7 @@ app.post("/api/bigquery/sync", async (req, res) => {
   }
 });
 
-let ticketingCache: { data: any[]; timestamp: number } | null = null;
+let ticketingCache: { data: any[]; rawRows: any[]; timestamp: number } | null = null;
 const CACHE_TTL = 60 * 1000;
 
 app.get("/api/ticketing", async (req, res) => {
@@ -81,7 +81,8 @@ app.get("/api/ticketing", async (req, res) => {
     if (!forceRefresh && ticketingCache && (now - ticketingCache.timestamp) < CACHE_TTL) {
       return res.json({ 
         success: true, 
-        data: ticketingCache.data, 
+        data: ticketingCache.data,
+        rawRows: ticketingCache.rawRows,
         cached: true,
         message: `Served ${ticketingCache.data.length} games from cache` 
       });
@@ -90,12 +91,21 @@ app.get("/api/ticketing", async (req, res) => {
     const result = await fetchTicketingFromBigQuery();
     
     if (result.success) {
-      ticketingCache = { data: result.data, timestamp: now };
+      ticketingCache = { 
+        data: result.data, 
+        rawRows: result.rawRows || [],
+        timestamp: now 
+      };
     }
     
-    res.json({ ...result, cached: false });
+    // Return both aggregate data and raw rows for full zone processing
+    res.json({ 
+      ...result, 
+      rawRows: result.rawRows || [],
+      cached: false 
+    });
   } catch (error: any) {
-    res.status(500).json({ success: false, data: [], message: error.message });
+    res.status(500).json({ success: false, data: [], rawRows: [], message: error.message });
   }
 });
 

@@ -1139,32 +1139,41 @@ const App: React.FC = () => {
   const [isRefreshingTicketing, setIsRefreshingTicketing] = useState(false);
   
   const refreshTicketingFromBigQuery = async () => {
-    // Warn user that BigQuery data lacks zone details
-    const confirmed = window.confirm(
-      'BigQuery contains aggregate data only (no zone breakdown).\n\n' +
-      'This will replace your detailed ticketing data. Zone analytics and seat maps will show limited data.\n\n' +
-      'To restore full zone data, use "Reload from Cloud" afterwards.\n\n' +
-      'Continue with BigQuery sync?'
-    );
-    if (!confirmed) return false;
-    
     setIsRefreshingTicketing(true);
     try {
       const response = await fetch('/api/ticketing?refresh=true');
       if (response.ok) {
         const result = await response.json();
         if (result.success && result.data && result.data.length > 0) {
-          const loadedData = convertBigQueryToGameData(result.data as BigQueryTicketingRow[]);
+          // Use rawRows for full zone data processing, fallback to aggregate data
+          const loadedData = convertBigQueryToGameData(
+            result.data as BigQueryTicketingRow[],
+            result.rawRows
+          );
+          
+          // Validate zone data was loaded
+          const hasZoneData = loadedData.some(g => g.salesBreakdown && g.salesBreakdown.length > 0);
+          
           setData(loadedData);
           setDataSources(prev => ({...prev, ticketing: 'bigquery'}));
-          console.log(`Refreshed ${loadedData.length} games from BigQuery`);
+          
+          const totalRevenue = loadedData.reduce((sum, g) => sum + g.totalRevenue, 0);
+          console.log(`Refreshed ${loadedData.length} games from BigQuery (${hasZoneData ? 'with' : 'NO'} zone data) - Total: ${totalRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}`);
+          
+          if (hasZoneData) {
+            alert(`Loaded ${loadedData.length} games from BigQuery with full zone breakdown.`);
+          } else {
+            alert(`Loaded ${loadedData.length} games from BigQuery. Note: Zone breakdown may be limited.`);
+          }
           return true;
         }
       }
       console.warn('BigQuery refresh failed');
+      alert('Failed to refresh from BigQuery. Check console for details.');
       return false;
     } catch (error) {
       console.error('Error refreshing from BigQuery:', error);
+      alert('Error connecting to BigQuery. Check console for details.');
       return false;
     } finally {
       setIsRefreshingTicketing(false);
