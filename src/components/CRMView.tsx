@@ -170,12 +170,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   }, [sponsorData]);
 
   const stats = useMemo(() => {
-    // Check if only capacityView filter is active (no other filters like search, zone, event)
-    const onlyCapacityFilter = capacityView !== 'all' && !filterZone && !filterEvent && !searchQuery;
-    
-    // Use server-computed stats when available and no complex filters are active
-    // We can handle capacityView using server's capacityBreakdown
-    if (serverStats && (!hasActiveFilter || onlyCapacityFilter)) {
+    // Use server-computed stats ONLY when no filters are active at all
+    // When capacityView is set (fixed/flexible), we need to compute from filtered data
+    // so that Sales Channel, Top Customers etc. reflect the filter
+    if (serverStats && !hasActiveFilter) {
       // Build zoneBreakdown as Record
       const zoneBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
       (serverStats.zoneBreakdown || []).forEach((z: any) => {
@@ -208,23 +206,14 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         });
       }
 
-      // Apply capacityView filter to totals using capacityBreakdown
-      let filteredTickets = serverStats.totalTickets || 0;
-      let filteredRevenue = serverStats.totalRevenue || 0;
-      if (capacityView !== 'all' && serverStats.capacityBreakdown) {
-        const cap = serverStats.capacityBreakdown[capacityView];
-        filteredTickets = cap?.tickets || 0;
-        filteredRevenue = cap?.revenue || 0;
-      }
-
       return {
         uniqueEmails: serverStats.uniqueCustomers || 0,
         uniqueCustomers: serverStats.uniqueCustomers || 0,
         uniqueCorps: serverStats.uniqueCorps || 0,
-        totalRevenue: filteredRevenue,
-        totalCommercialValue: filteredRevenue,
+        totalRevenue: serverStats.totalRevenue || 0,
+        totalCommercialValue: serverStats.totalRevenue || 0,
         corpCommercialValue: serverStats.corpCommercialValue || 0,
-        totalTickets: filteredTickets,
+        totalTickets: serverStats.totalTickets || 0,
         zoneBreakdown,
         eventBreakdown: {} as Record<string, { count: number; revenue: number }>,
         rawSellTypeBreakdown,
