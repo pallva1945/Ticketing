@@ -592,13 +592,37 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
       gmDateTime: (() => {
         const raw = getVal(gmDateTimeIdx);
         if (!raw) return 0;
-        // Italian format: 45.941,7604 means 45941.7604 (Excel serial date)
-        // Remove thousands separator (dot), then replace comma with dot for decimal
+        
+        // Handle date string format: "DD/MM/YYYY HH.MM.SS" or "DD/MM/YYYY HH.MM"
+        if (raw.includes('/')) {
+          const dateTimeParts = raw.split(' ');
+          const datePart = dateTimeParts[0];
+          const timePart = dateTimeParts[1] || '';
+          
+          const dateParts = datePart.split('/');
+          if (dateParts.length >= 3) {
+            const day = parseInt(dateParts[0], 10);
+            const month = parseInt(dateParts[1], 10) - 1;
+            const year = parseInt(dateParts[2], 10);
+            
+            let hours = 0, minutes = 0, seconds = 0;
+            if (timePart) {
+              const timeParts = timePart.split('.');
+              hours = parseInt(timeParts[0], 10) || 0;
+              minutes = parseInt(timeParts[1], 10) || 0;
+              seconds = parseInt(timeParts[2], 10) || 0;
+            }
+            
+            if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+              return new Date(year, month, day, hours, minutes, seconds).getTime();
+            }
+          }
+        }
+        
+        // Fallback: Italian format Excel serial (45.941,7604 = 45941.7604)
         const cleaned = raw.replace(/\./g, '').replace(',', '.');
         const excelSerial = parseFloat(cleaned) || 0;
         if (excelSerial === 0) return 0;
-        // Convert Excel serial date to Unix timestamp (milliseconds)
-        // Excel epoch is Jan 1, 1900; Unix epoch is Jan 1, 1970 = 25569 days later
         const unixMs = (excelSerial - 25569) * 86400 * 1000;
         return unixMs;
       })(),
