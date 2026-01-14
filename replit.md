@@ -47,6 +47,7 @@ server/
   - Commercial Value column correctly aggregates `commercial_value` × `quantity` for all Corp sell type tickets
   - Corp Commercial Value scorecard now shows correct aggregated total
   - Client-side fallback calculations fixed to match server-side aggregation logic
+  - **Server-side European number parsing**: Added `parseNumber()` function to handle BigQuery European format (1.234,56)
 
 - January 14, 2026: Parallel BigQuery Loading for Faster Initial Render
   - All four data modules (Ticketing, GameDay, Sponsorship, CRM) now fetch in parallel using Promise.all()

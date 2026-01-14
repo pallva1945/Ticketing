@@ -113,6 +113,29 @@ app.get("/api/ticketing", async (req, res) => {
 let crmCache: { rawRows: any[]; processedStats: any; fixedStats: any; flexibleStats: any; timestamp: number } | null = null;
 const CRM_CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache
 
+// Parse European number format (1.234,56) and American format (1,234.56)
+const parseNumber = (val: any): number => {
+  if (val === null || val === undefined) return 0;
+  if (typeof val === 'number') return val;
+  const str = String(val).replace(/[€\s]/g, '');
+  if (!str) return 0;
+  
+  const lastComma = str.lastIndexOf(',');
+  const lastDot = str.lastIndexOf('.');
+  
+  let clean = str;
+  if (lastComma > lastDot) {
+    // European format: 1.234,56 -> 1234.56
+    clean = str.replace(/\./g, '').replace(',', '.');
+  } else if (lastDot > lastComma) {
+    // American format: 1,234.56 -> 1234.56
+    clean = str.replace(/,/g, '');
+  }
+  
+  const num = parseFloat(clean);
+  return isNaN(num) ? 0 : num;
+};
+
 // Helper to determine if a row is fixed capacity
 const isRowFixedCapacity = (row: any): boolean => {
   const eventRaw = (row.event || row.Event || row.EVENT || '').trim().toLowerCase();
@@ -195,13 +218,13 @@ const computeCRMStats = (rawRows: any[]) => {
     // For season tickets/packs, use per-game price instead of full bundle price
     const eventLower = (row.event || '').toLowerCase();
     const isSeasonOrPack = eventLower.includes('abbonamento') || eventLower.includes('pack');
-    const perGamePrice = Number(row.abb_mp_price_gm) || 0;
-    const fullPrice = Number(row.price) || 0;
+    const perGamePrice = parseNumber(row.abb_mp_price_gm);
+    const fullPrice = parseNumber(row.price);
     // Use per-game price if available for season/pack tickets, otherwise use full price
     const price = (isSeasonOrPack && perGamePrice > 0) ? perGamePrice : fullPrice;
     
     // Commercial value - use per-game for season/packs too
-    const fullCommercialValue = Number(row.commercial_value) || price;
+    const fullCommercialValue = parseNumber(row.commercial_value) || price;
     const commercialValue = (isSeasonOrPack && perGamePrice > 0) ? perGamePrice : fullCommercialValue;
     
     const pvZone = row.pv_zone || row.Pv_Zone || row.PV_Zone || row.zone || row.Zone || 'Unknown';
