@@ -1,210 +1,24 @@
 # PV Ticketing Dashboard
 
 ## Overview
-A React-based ticketing dashboard for Pallacanestro Varese, providing executive overview, ticketing analytics, game day data, and various business operations metrics.
+The PV Ticketing Dashboard is a React-based application designed for Pallacanestro Varese. Its primary purpose is to provide an executive overview, detailed ticketing analytics, game day data, and various business operations metrics. The project aims to offer a comprehensive, real-time data visualization tool for strategic decision-making, improving operational efficiency, and enhancing fan engagement. It consolidates diverse data sources into a single, intuitive platform to support business growth and market potential within the sports industry.
 
-## Project Architecture
-- **Frontend**: React 18 with TypeScript
-- **Backend**: Express.js server (port 5001)
-- **Build Tool**: Vite (port 5000, proxies to backend)
-- **Styling**: Tailwind CSS (via CDN)
-- **Charts**: Recharts
-- **Backend Services**: Firebase, Google Gemini AI, Replit App Storage
+## User Preferences
+Not specified.
 
-## Directory Structure
-```
-src/
-├── components/       # React components (ArenaMap, ChatInterface, DashboardChart, etc.)
-├── data/            # Data files (csvData, gameDayData, crmData, sponsorData)
-├── services/        # Service integrations (dbService, geminiService)
-├── utils/           # Utility functions (dataProcessor)
-├── App.tsx          # Main application component
-├── index.tsx        # Application entry point
-├── types.ts         # TypeScript type definitions
-├── constants.ts     # Application constants
-└── firebaseConfig.ts # Firebase configuration
-server/
-├── index.ts         # Express backend server
-└── replit_integrations/object_storage/  # Cloud storage integration
-```
+## System Architecture
+The application uses a modern web stack with React 18 and TypeScript for the frontend, styled with Tailwind CSS (via CDN) and charting capabilities provided by Recharts. The backend is an Express.js server running on port 5001. Vite serves the frontend on port 5000 and acts as a proxy for backend API calls. Data is processed to handle international number formats (Italian and American), normalize headers, and deduplicate entries. Key architectural decisions include:
+- **Parallel Data Loading**: All data modules (Ticketing, GameDay, Sponsorship, CRM) fetch data in parallel using `Promise.all()` for faster initial render times.
+- **Server-Side Processing**: Critical data processing and aggregation for CRM, corporate commercial value, demographics, and behavioral analytics are performed on the Express backend and cached for performance.
+- **Data Source Prioritization**: Cloud storage (Firebase) is the primary source for detailed ticketing data, especially for zone-level information, with BigQuery used for aggregate data and other modules.
+- **Dynamic Filtering**: Interactive click-to-filter functionality is implemented across dashboards, allowing users to filter data by categories such as sponsors, sectors, and contract types.
+- **Responsive Design**: The UI is optimized for mobile devices with responsive layouts, stacking grids, and wrapping legends.
+- **Financial Metric Adjustments**: The dashboard includes a toggle for "Accounting" vs. "Realistic" views, allowing corporate tickets to be shifted between Ticketing and Sponsorship revenue calculations, with "Realistic" as the default.
+- **Pacing Logic**: Season pacing incorporates variable (games-based) and absolute (percentage-based) logic, with prorated pacing for sponsorship revenue.
+- **Deal Quality Metric**: Sponsorship analytics include a "Deal Quality" metric based on the `Delta` column (Revenue Received - Value Given) to categorize deals.
 
-## Development Setup
-- Frontend Vite dev server runs on port 5000
-- Backend Express server runs on port 5001
-- Vite proxies /api and /objects routes to backend
-- Uses concurrently to run both servers with single command
-- Configured to allow all hosts for Replit proxy compatibility
-
-## Scripts
-- `npm run dev` - Start both frontend and backend servers
-- `npm run server` - Start only the backend server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-
-## Recent Changes
-- January 14, 2026: Corporate Section Commercial Value Fix
-  - Corporate table now uses `group` column as primary key for company name (was incorrectly using fullName first)
-  - Commercial Value column correctly aggregates `commercial_value` × `quantity` for all Corp sell type tickets
-  - Corp Commercial Value scorecard now shows correct aggregated total
-  - Client-side fallback calculations fixed to match server-side aggregation logic
-  - **Server-side European number parsing**: Added `parseNumber()` function to handle BigQuery European format (1.234,56)
-
-- January 14, 2026: Parallel BigQuery Loading for Faster Initial Render
-  - All four data modules (Ticketing, GameDay, Sponsorship, CRM) now fetch in parallel using Promise.all()
-  - Ticketing data processed first (most critical for Executive Overview display)
-  - Added React ref guard to prevent duplicate data loading from React Strict Mode
-  - Loading time reduced from sequential (~6s) to parallel (~2s)
-  - Executive Overview displays 8 games for Season 25-26 with ~€800k ticketing revenue
-
-- January 14, 2026: CRM Server-Side Processing Improvements
-  - **Demographics & Behavior tabs**: Server now computes age, location, purchase hour/day, advance booking breakdowns
-  - **Corporate tab**: Server computes topCorps, uniqueCorps, corporateTickets for immediate display
-  - **Corporate commercial value**: Aggregates individual ticket commercial values (not just price)
-  - **Fix/Flexible filter**: Server computes capacityBreakdown (fixed vs flexible) for filter support without raw data
-  - **Purchase time filter**: 00:00 times are now ignored (treated as missing data, not midnight purchases)
-  - **Location normalization**: "Varese Varese VA" now displays as "Varese" (removes duplicates and province codes)
-  - **Season ticket/pack pricing**: Uses abb_mp_price_gm column (per-game price) for abbonamento/pack events
-  - **Revenue calculation fix**: All revenue totals now correctly multiply price × quantity per transaction
-  - **F&B column fix**: GameDay converter properly maps F_B → F&B for correct F&B revenue display
-  - CRM tabs (Demographics, Behavior, Corporate, Client Search) now work with server-processed data
-
-- January 14, 2026: BigQuery Integration for ALL Data Modules
-  - **Ticketing**: BigQuery reads ALL columns including zone-level data (Par_O_Abb_Num, Trib_G_Tix_Eur, etc.)
-  - **CRM**: BigQuery reads from `ticketing_migration.CRM_2526` table (uppercase) with full customer data
-  - **Sponsorship**: BigQuery reads from `ticketing_migration.sponsor_db` table (420 sponsor records)
-  - **GameDay**: BigQuery reads from `ticketing_migration.gameday_db` table (F_B → F&B column mapping)
-  - All four modules auto-sync from BigQuery on app load (no manual sync required)
-  - **BigQuery Data Format**: 
-    - Ticketing/CRM/Sponsorship: Headers with underscores, European numbers (dot thousands, comma decimals)
-    - GameDay: Headers with underscores, US numbers (comma thousands, dot decimals), $ → Eur, # → Num, % → Pct
-  - Converter normalizes headers and number formats for CSV compatibility
-  - **Server-side CRM processing**: Stats computed on server and cached for 10 minutes (major performance boost)
-  - Server returns pre-computed stats (top 100 customers, zone/sell type breakdowns) instead of 34k raw records
-  - CRMView uses server stats for fast initial render, falls back to client processing only when filters are active
-  - Column headers with underscores normalized to spaces/lowercase for CSV parsing compatibility
-  - American number format (comma thousands, dot decimal) properly handled
-  - Date fields (buy_date, gm_date_time) properly parsed for Avg Advance calculation
-  - Data source indicator tracks BigQuery as source with sync timestamp
-
-- January 14, 2026: Fixed Executive Overview Data Display
-  - Fixed gamesPlayed prop to use filteredGames.length directly (was incorrectly using viewData.length)
-  - Improved zone data validation: requires at least SOME games to have zone breakdown before accepting cloud data
-  - Cloud ticketing data loads correctly: 46 games, €3.8M total, all games have zone breakdown
-  - Season 25-26 filter returns 8 games with ~€800k ticketing revenue
-  - Executive Overview now correctly displays ticketing revenue and games played count
-
-- January 13, 2026: Cloud Storage as Primary Data Source for Ticketing (with Zone Details)
-  - **Cloud storage (Firebase) is the primary source** for ticketing data with full zone breakdown
-  - BigQuery available as secondary source for aggregate data (lacks zone-level details for seat map)
-  - Dashboard loads ticketing data from cloud storage on startup for zone/seat map analytics
-  - CSV upload functionality available for updating ticketing data with zone breakdown
-  - Fixed data aggregation to use original game revenue when zone breakdown is unavailable
-
-- January 13, 2026: International CSV Format Support
-  - CSV parser now auto-detects Italian (1.234,56) vs American (1,234.56) number formats
-  - Column headers support both underscore (Par_O_Abb_Num) and space (Par O Abb Num) formats
-  - Added cloud data validation: Falls back to local data if cloud data shows €0 total (corruption detection)
-  - When cloud corruption is detected, automatically saves valid local data to cloud to fix it
-  - Current cloud data: 46 games across 3 seasons (23-24, 24-25, 25-26) with €3.8M total revenue
-
-- January 12, 2026: CRM Analytics - Demographics & Buying Behavior
-  - Added Demographics tab: age distribution chart, location breakdown by province, buyer personas by zone
-  - Added Buying Behavior tab: purchase hour patterns, day of week trends, advance booking timeline, payment methods
-  - Removed Zones subtab (zone analytics already available in Ticketing module)
-  - Fixed buyTimestamp validation to handle edge cases gracefully
-  - Normalized gmDateTime from epoch seconds to milliseconds for correct date calculations
-  - Customer identification uses composite key (lastName + firstName + dob/email)
-
-- January 12, 2026: CRM Large File Upload Support
-  - Upgraded CRM upload to use Replit App Storage (was Firebase)
-  - Maximum file size increased from 0.9MB to 50MB
-  - Uses presigned URL flow for direct cloud uploads
-  - Added Express backend server for storage API routes
-
-- January 12, 2026: CRM Data with Cloud Persistence
-  - CRM data now syncs to cloud storage (like Ticketing, GameDay, Sponsor data)
-  - Uploaded CRM data persists across sessions and is accessible on any device
-  - On startup: Loads from cloud if available, otherwise uses sample data
-  - Upload CRM CSV via Data Manager button in Ticketing section
-  - Cash Received = Commercial Value - Corp Commercial Value
-  - Ticket Type Distribution chart shows all sell types from CSV
-
-- January 12, 2026: 3-Season Revenue Trend - Corp Tickets Toggle
-  - Added Accounting/Realistic view toggle to switch corp tickets between Ticketing and Sponsorship
-  - **Realistic view is now the default** - Corp tickets moved from Ticketing → Sponsorship
-  - Accounting view: Corp tickets counted in Ticketing (standard financial reporting)
-  - Corp ticket revenue calculated from ticketing CSV "Corp Eur" aggregate column
-  - Improved formatCompact function for cleaner negative number display (-€542k instead of €-542k)
-  - Mobile-optimized toggle with responsive layout
-  - YoY percentages recalculate based on adjusted values when toggle is switched
-
-- January 12, 2026: 3-Season Revenue Trend Mobile Optimization
-  - Grid stacks to single column on mobile (grid-cols-1 sm:grid-cols-3)
-  - Legend wraps on small screens
-  - Chart containers centered with max-width for mobile
-  - Responsive padding and spacing
-
-- January 10, 2026: Executive Overview YoY Comparison & Ticketing Improvements
-  - Added Year-over-Year Comparison section below Strategic Signals
-  - YoY cards for Ticketing, GameDay, and Sponsorship showing current vs previous season
-  - Each card displays: total revenue, game count, YoY percentage change
-  - Ticketing card includes avg attendance comparison
-  - GameDay card includes per-game average
-  - Sponsorship card includes net change amount
-  - Added 6th score card "Avg Attendance" to Ticketing dashboard (always shows total view, not affected by GameDay filter)
-  - Removed Action Required banner from Ticketing dashboard
-
-- January 12, 2026: Deal Quality Fix - Now Using Delta Column
-  - Deal Quality now reads the "Delta" column directly from sponsorship CSV
-  - Delta = Revenue Received - Value Given (positive = good deal, negative = bad deal)
-  - Falls back to calculated delta if Delta column is missing from CSV
-  - Fixed formatCompactCurrency to display negative values correctly (-€25k format)
-  - Poor and Below deals now properly detected and displayed
-
-- January 10, 2026: Sponsor Tiers & Deal Quality Analytics
-  - Sponsor Tiers: Platinum (€200k+), Gold (€100k-200k), Silver (€50k-100k), Bronze (€10k-50k), Micro (€0-10k)
-  - Deal Quality metric based on Delta (Revenue Received - Value Given back in LED, jersey, tickets, etc.)
-  - Quality ratings: Excellent (20%+ margin), Good (5-20%), Fair (-5% to 5%), Below (-20% to -5%), Poor (<-20%)
-  - Tier breakdown card showing count, total value, and average deal quality per tier
-  - Deal Quality Overview card with portfolio net delta, average score (1-5), and distribution by rating
-  - Updated portfolio table with Tier badges and Deal Quality indicators with hover tooltips showing delta amount and margin %
-
-- January 10, 2026: Executive Overview Redesign
-  - 7 revenue vertical score cards (Sponsorship, Ticketing, GameDay, VB, BOps, Venue Ops, Merchandising)
-  - Actual data integration for Ticketing, GameDay, and Sponsorship (Sponsor Rec + CSR)
-  - Verticals without data (VB, BOps, Venue Ops, Merch) show "Coming Soon" with dashed borders
-  - Season pacing only accounts for verticals with actual data (Sponsorship + Ticketing + GameDay = €5.0M target)
-  - Variable vs Absolute pacing logic: Ticketing/GameDay use games-based pacing; others use percentage-based
-  - Sponsorship uses PRORATED pacing: signed contracts represent full-year value, recognized YTD = signed × seasonProgress
-  - Comprehensive tooltips on all pacing bars showing YTD, target, achievement, pace, and projections
-  - Sponsorship tooltips show both "Signed (Full Year)" and "Recognized YTD" values
-  - 4 strategic signal cards: Projected Finish, Variable Run Rate, Fixed Revenue Secured, Attention Required
-  - Stacked progress bar showing contribution by vertical with hover tooltips
-
-- January 10, 2026: Sponsorship Season Target Widget
-  - Added €2.1M season target for Sponsorship + CSR only
-  - Excludes Corp Tickets, GameDay, and VB from target calculation
-  - Dark themed pacing widget showing progress bar, variance %, and breakdown
-
-- January 10, 2026: Interactive Click-to-Filter on Sponsorship Dashboard
-  - Click any bar in Top Sponsors chart to filter by company
-  - Click pie slices in Sector/Contract Type charts to filter
-  - Click sector/type badges in portfolio table to filter
-  - Active filter indicator with individual and bulk clear options
-  - Portfolio table shows filtered results when filters active
-
-- January 10, 2026: Data Processing & Number Format Standardization
-  - Standardized all CSV parsing to Italian number format (dots as thousand separators, commas as decimal separators)
-  - Added deduplication logic to ticketing and GameDay data processors
-  - Updated fallback sponsor data with comprehensive multi-season sponsor database (420 entries across seasons 22/23 to 27/28)
-
-- January 10, 2026: Sponsorship Analytics Module
-  - Added SponsorshipDashboard component with full analytics views
-  - Top sponsors chart, sector breakdown, contract type analysis
-  - Revenue reconciliation comparison and monthly cash flow tracking
-  - CSV upload functionality with Firebase cloud sync support
-  - Toggles to exclude Corp Tickets and GameDay from calculations
-
-- January 10, 2026: Initial Replit setup
-  - Configured Vite for port 5000 with allowedHosts
-  - Set up development workflow
+## External Dependencies
+- **Firebase**: Used for cloud storage, serving as the primary data source for ticketing and persistence for other modules.
+- **Google Gemini AI**: Integrated for potential AI-driven insights or functionalities.
+- **Replit App Storage**: Utilized for large file uploads, particularly for CRM data, bypassing size limitations of other services.
+- **BigQuery**: Serves as a data source for Ticketing, CRM, Sponsorship, and GameDay modules, providing comprehensive dataset access.

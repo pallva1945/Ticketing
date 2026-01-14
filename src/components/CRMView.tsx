@@ -451,7 +451,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       ageBreakdown[ageGroup].count += r.quantity;
       ageBreakdown[ageGroup].value += r.commercialValue;
 
-      const location = r.province || r.pob || '';
+      // Use only province for location (not pob which is place of birth - could be international)
+      const location = r.province || '';
       let normalizedLoc = location.trim().toUpperCase();
       if (normalizedLoc === 'VA') normalizedLoc = 'VARESE';
       if (normalizedLoc === 'MI') normalizedLoc = 'MILANO';

@@ -284,8 +284,9 @@ const computeCRMStats = (rawRows: any[]) => {
     ageBreakdown[ageGroup].count += qty;
     ageBreakdown[ageGroup].value += rowRevenue;
     
-    // Location breakdown - normalize locations like "Varese Varese VA" -> "Varese"
-    const rawLocation = row.province || row.pob || 'Unknown';
+    // Location breakdown - use only province (not pob which is place of birth)
+    // pob can be international cities like Buenos Aires, Tokyo, etc.
+    const rawLocation = row.province || 'Unknown';
     const location = normalizeLocation(rawLocation);
     if (!locationBreakdown[location]) locationBreakdown[location] = { count: 0, value: 0 };
     locationBreakdown[location].count += qty;
