@@ -50,6 +50,7 @@ server/
   - **Purchase time filter**: 00:00 times are now ignored (treated as missing data, not midnight purchases)
   - **Location normalization**: "Varese Varese VA" now displays as "Varese" (removes duplicates and province codes)
   - **Season ticket/pack pricing**: Uses abb_mp_price_gm column (per-game price) for abbonamento/pack events
+  - **Revenue calculation fix**: All revenue totals now correctly multiply price × quantity per transaction
   - **F&B column fix**: GameDay converter properly maps F_B → F&B for correct F&B revenue display
   - CRM tabs (Demographics, Behavior, Corporate, Client Search) now work with server-processed data
 

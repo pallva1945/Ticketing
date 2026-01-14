@@ -202,54 +202,58 @@ const computeCRMStats = (rawRows: any[]) => {
     const sellType = row.sell || row.type || 'Unknown';
     const ticketType = (row.ticket_type || '').toUpperCase();
     
+    // Calculate revenue = price * qty for proper totals
+    const rowRevenue = price * qty;
+    const rowCommercialValue = commercialValue * qty;
+    
     totalTickets += qty;
-    totalRevenue += price;
+    totalRevenue += rowRevenue;
     
     // Zone stats
     if (!zoneStats[pvZone]) zoneStats[pvZone] = { tickets: 0, revenue: 0 };
     zoneStats[pvZone].tickets += qty;
-    zoneStats[pvZone].revenue += price;
+    zoneStats[pvZone].revenue += rowRevenue;
     
     // Sell type stats
     if (!sellTypeStats[sellType]) sellTypeStats[sellType] = { tickets: 0, revenue: 0 };
     sellTypeStats[sellType].tickets += qty;
-    sellTypeStats[sellType].revenue += price;
+    sellTypeStats[sellType].revenue += rowRevenue;
     
     // Corporate breakdown - track Corp sell type or ticket type
     const sellTypeLower = sellType.toLowerCase();
     const isCorp = sellTypeLower === 'corp' || ticketType === 'CORP';
     if (isCorp) {
       corporateTickets += qty;
-      corpCommercialValue += commercialValue;
+      corpCommercialValue += rowCommercialValue;
       const corpName = row.group || fullName || 'Unknown';
       if (!corpBreakdown[corpName]) corpBreakdown[corpName] = { count: 0, revenue: 0, value: 0, zones: {} };
       corpBreakdown[corpName].count += qty;
-      corpBreakdown[corpName].revenue += price;
-      corpBreakdown[corpName].value += commercialValue;
+      corpBreakdown[corpName].revenue += rowRevenue;
+      corpBreakdown[corpName].value += rowCommercialValue;
       corpBreakdown[corpName].zones[pvZone] = (corpBreakdown[corpName].zones[pvZone] || 0) + qty;
     }
     
     // Fixed vs Flexible capacity breakdown (eventLower already defined above)
     if (eventLower.includes('abbonamento') && eventLower.includes('lba')) {
       capacityBreakdown.fixed.tickets += qty;
-      capacityBreakdown.fixed.revenue += price;
+      capacityBreakdown.fixed.revenue += rowRevenue;
     } else {
       capacityBreakdown.flexible.tickets += qty;
-      capacityBreakdown.flexible.revenue += price;
+      capacityBreakdown.flexible.revenue += rowRevenue;
     }
     
     // Age breakdown
     const ageGroup = getAgeGroup(row.dob || '');
     if (!ageBreakdown[ageGroup]) ageBreakdown[ageGroup] = { count: 0, value: 0 };
     ageBreakdown[ageGroup].count += qty;
-    ageBreakdown[ageGroup].value += price;
+    ageBreakdown[ageGroup].value += rowRevenue;
     
     // Location breakdown - normalize locations like "Varese Varese VA" -> "Varese"
     const rawLocation = row.province || row.pob || 'Unknown';
     const location = normalizeLocation(rawLocation);
     if (!locationBreakdown[location]) locationBreakdown[location] = { count: 0, value: 0 };
     locationBreakdown[location].count += qty;
-    locationBreakdown[location].value += price;
+    locationBreakdown[location].value += rowRevenue;
     
     // Zone by age
     if (!zoneByAge[pvZone]) zoneByAge[pvZone] = {};
@@ -261,7 +265,7 @@ const computeCRMStats = (rawRows: any[]) => {
     
     // Zone stats detailed
     if (!zoneStatsDetailed[pvZone]) zoneStatsDetailed[pvZone] = { totalValue: 0, totalTickets: 0, totalAdvanceDays: 0, advanceCount: 0 };
-    zoneStatsDetailed[pvZone].totalValue += price;
+    zoneStatsDetailed[pvZone].totalValue += rowRevenue;
     zoneStatsDetailed[pvZone].totalTickets += qty;
     
     // Payment breakdown
@@ -274,7 +278,7 @@ const computeCRMStats = (rawRows: any[]) => {
     }
     if (!paymentBreakdown[payment]) paymentBreakdown[payment] = { count: 0, revenue: 0 };
     paymentBreakdown[payment].count += qty;
-    paymentBreakdown[payment].revenue += price;
+    paymentBreakdown[payment].revenue += rowRevenue;
     
     // Purchase time breakdown (skip 00:00 as it indicates missing time data)
     const buyDateStr = row.buy_date || '';
@@ -288,7 +292,7 @@ const computeCRMStats = (rawRows: any[]) => {
           const hour = `${hourMatch[1].padStart(2, '0')}:00`;
           if (!purchaseHourBreakdown[hour]) purchaseHourBreakdown[hour] = { count: 0, value: 0 };
           purchaseHourBreakdown[hour].count += qty;
-          purchaseHourBreakdown[hour].value += price;
+          purchaseHourBreakdown[hour].value += rowRevenue;
         }
       }
       
@@ -300,7 +304,7 @@ const computeCRMStats = (rawRows: any[]) => {
         const dayName = dayNames[buyDate.getDay()];
         if (!purchaseDayBreakdown[dayName]) purchaseDayBreakdown[dayName] = { count: 0, value: 0 };
         purchaseDayBreakdown[dayName].count += qty;
-        purchaseDayBreakdown[dayName].value += price;
+        purchaseDayBreakdown[dayName].value += rowRevenue;
       }
     }
     
@@ -324,7 +328,7 @@ const computeCRMStats = (rawRows: any[]) => {
     
     const cust = customerMap[key];
     cust.tickets += qty;
-    cust.value += price;
+    cust.value += rowRevenue;
     cust.transactions += 1;
     cust.zones[pvZone] = (cust.zones[pvZone] || 0) + qty;
     cust.sellTypes[sellType] = (cust.sellTypes[sellType] || 0) + qty;
@@ -361,7 +365,7 @@ const computeCRMStats = (rawRows: any[]) => {
           
           if (!advanceBookingBreakdown[bucket]) advanceBookingBreakdown[bucket] = { count: 0, value: 0 };
           advanceBookingBreakdown[bucket].count += qty;
-          advanceBookingBreakdown[bucket].value += price;
+          advanceBookingBreakdown[bucket].value += rowRevenue;
         }
       }
     }
