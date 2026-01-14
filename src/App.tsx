@@ -964,25 +964,9 @@ const App: React.FC = () => {
         setSponsorDataSource('local');
     }
 
-    // 2b. CRM DATA LOADING (Cloud first, fallback to sample)
-    try {
-        let crmCsv = CRM_CSV_CONTENT;
-        
-        // Try to load from cloud storage via dedicated endpoint
-        try {
-            const response = await fetch('/api/crm/data');
-            if (response.ok) {
-                crmCsv = await response.text();
-                console.log('CRM loaded from cloud storage');
-            }
-        } catch (storageError) {
-            console.warn('Failed to load CRM from cloud storage:', storageError);
-        }
-        setCrmData(processCRMData(crmCsv));
-    } catch(e) {
-        console.error("Error loading CRM data", e);
-        setCrmData(processCRMData(CRM_CSV_CONTENT));
-    }
+    // 2b. CRM DATA LOADING - Start empty, user syncs from BigQuery
+    // No automatic loading - CRM data comes from BigQuery on demand
+    setCrmData([]);
 
     // 3. TICKETING DATA LOADING (Cloud storage first for zone details, fallback to local)
     try {
