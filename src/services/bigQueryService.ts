@@ -282,7 +282,7 @@ export async function fetchTicketingFromBigQuery(): Promise<{ success: boolean; 
 }
 
 // Fetch CRM data from BigQuery
-const CRM_TABLE_ID = process.env.BIGQUERY_CRM_TABLE_ID || 'crm_2526';
+const CRM_TABLE_ID = process.env.BIGQUERY_CRM_TABLE_ID || 'CRM_2526';
 
 export async function fetchCRMFromBigQuery(): Promise<{ success: boolean; rawRows?: any[]; message: string }> {
   try {
