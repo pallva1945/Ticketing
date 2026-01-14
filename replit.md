@@ -42,11 +42,19 @@ server/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 14, 2026: CRM Server-Side Processing Improvements
+  - **Demographics & Behavior tabs**: Server now computes age, location, purchase hour/day, advance booking breakdowns
+  - **Corporate tab**: Server computes topCorps, uniqueCorps, corporateTickets for immediate display
+  - **Fix/Flexible filter**: Server computes capacityBreakdown (fixed vs flexible) for filter support without raw data
+  - **Purchase time filter**: 00:00 times are now ignored (treated as missing data, not midnight purchases)
+  - **F&B column fix**: GameDay converter properly maps F_B → F&B for correct F&B revenue display
+  - CRM tabs (Demographics, Behavior, Corporate, Client Search) now work with server-processed data
+
 - January 14, 2026: BigQuery Integration for ALL Data Modules
   - **Ticketing**: BigQuery reads ALL columns including zone-level data (Par_O_Abb_Num, Trib_G_Tix_Eur, etc.)
   - **CRM**: BigQuery reads from `ticketing_migration.CRM_2526` table (uppercase) with full customer data
   - **Sponsorship**: BigQuery reads from `ticketing_migration.sponsor_db` table (420 sponsor records)
-  - **GameDay**: BigQuery reads from `ticketing_migration.gameday_db` table
+  - **GameDay**: BigQuery reads from `ticketing_migration.gameday_db` table (F_B → F&B column mapping)
   - All four modules auto-sync from BigQuery on app load (no manual sync required)
   - **BigQuery Data Format**: 
     - Ticketing/CRM/Sponsorship: Headers with underscores, European numbers (dot thousands, comma decimals)

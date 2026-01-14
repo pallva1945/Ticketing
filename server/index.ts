@@ -132,6 +132,16 @@ const computeCRMStats = (rawRows: any[]) => {
   const zoneStatsDetailed: Record<string, { totalValue: number; totalTickets: number; totalAdvanceDays: number; advanceCount: number }> = {};
   const paymentBreakdown: Record<string, { count: number; revenue: number }> = {};
   
+  // Corporate breakdown
+  const corpBreakdown: Record<string, { count: number; revenue: number; value: number; zones: Record<string, number> }> = {};
+  let corporateTickets = 0;
+  
+  // Fixed vs Flexible breakdown (for fix/flex filter)
+  const capacityBreakdown = {
+    fixed: { tickets: 0, revenue: 0 },
+    flexible: { tickets: 0, revenue: 0 }
+  };
+  
   const getAgeGroup = (dob: string) => {
     if (!dob || !dob.includes('/')) return 'Unknown';
     const parts = dob.split('/');
@@ -170,6 +180,28 @@ const computeCRMStats = (rawRows: any[]) => {
     sellTypeStats[sellType].tickets += qty;
     sellTypeStats[sellType].revenue += price;
     
+    // Corporate breakdown - track Corp sell type
+    const sellTypeLower = sellType.toLowerCase();
+    if (sellTypeLower === 'corp') {
+      corporateTickets += qty;
+      const corpName = fullName || row.group || 'Unknown';
+      if (!corpBreakdown[corpName]) corpBreakdown[corpName] = { count: 0, revenue: 0, value: 0, zones: {} };
+      corpBreakdown[corpName].count += qty;
+      corpBreakdown[corpName].revenue += price;
+      corpBreakdown[corpName].value += price;
+      corpBreakdown[corpName].zones[pvZone] = (corpBreakdown[corpName].zones[pvZone] || 0) + qty;
+    }
+    
+    // Fixed vs Flexible capacity breakdown
+    const eventLower = (row.event || '').toLowerCase();
+    if (eventLower.includes('abbonamento') && eventLower.includes('lba')) {
+      capacityBreakdown.fixed.tickets += qty;
+      capacityBreakdown.fixed.revenue += price;
+    } else {
+      capacityBreakdown.flexible.tickets += qty;
+      capacityBreakdown.flexible.revenue += price;
+    }
+    
     // Age breakdown
     const ageGroup = getAgeGroup(row.dob || '');
     if (!ageBreakdown[ageGroup]) ageBreakdown[ageGroup] = { count: 0, value: 0 };
@@ -207,16 +239,20 @@ const computeCRMStats = (rawRows: any[]) => {
     paymentBreakdown[payment].count += qty;
     paymentBreakdown[payment].revenue += price;
     
-    // Purchase time breakdown
+    // Purchase time breakdown (skip 00:00 as it indicates missing time data)
     const buyDateStr = row.buy_date || '';
     if (buyDateStr && buyDateStr.includes('/')) {
       const timePart = buyDateStr.split(' ')[1] || '';
       const hourMatch = timePart.match(/^(\d{1,2})/);
       if (hourMatch) {
-        const hour = `${hourMatch[1].padStart(2, '0')}:00`;
-        if (!purchaseHourBreakdown[hour]) purchaseHourBreakdown[hour] = { count: 0, value: 0 };
-        purchaseHourBreakdown[hour].count += qty;
-        purchaseHourBreakdown[hour].value += price;
+        const hourNum = parseInt(hourMatch[1]);
+        // Skip 00:00 times - they indicate missing time data, not midnight purchases
+        if (hourNum !== 0 || (timePart && !timePart.startsWith('00'))) {
+          const hour = `${hourMatch[1].padStart(2, '0')}:00`;
+          if (!purchaseHourBreakdown[hour]) purchaseHourBreakdown[hour] = { count: 0, value: 0 };
+          purchaseHourBreakdown[hour].count += qty;
+          purchaseHourBreakdown[hour].value += price;
+        }
       }
       
       // Day of week
@@ -323,6 +359,25 @@ const computeCRMStats = (rawRows: any[]) => {
     };
   }).sort((a, b) => b.value - a.value);
   
+  // Build topCorps array
+  const topCorps = Object.entries(corpBreakdown)
+    .map(([name, val]) => {
+      const sortedZones = Object.entries(val.zones).sort((a, b) => b[1] - a[1]);
+      return {
+        name,
+        count: val.count,
+        revenue: val.revenue,
+        value: val.value,
+        principalZone: sortedZones[0]?.[0] || '—',
+        secondaryZone: sortedZones[1]?.[0] || '—'
+      };
+    })
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 50);
+  
+  // Count unique corps
+  const uniqueCorps = Object.keys(corpBreakdown).length;
+
   return {
     totalRecords: rawRows.length,
     totalTickets,
@@ -339,7 +394,11 @@ const computeCRMStats = (rawRows: any[]) => {
     zoneByAge,
     zoneByLocation,
     zoneStats: zoneStatsDetailed,
-    paymentBreakdown
+    paymentBreakdown,
+    topCorps,
+    uniqueCorps,
+    corporateTickets,
+    capacityBreakdown
   };
 };
 

@@ -54,6 +54,13 @@ interface CRMStats {
   zoneByLocation?: Record<string, Record<string, number>>;
   zoneStats?: Record<string, { totalValue: number; totalTickets: number; totalAdvanceDays: number; advanceCount: number }>;
   paymentBreakdown?: Record<string, { count: number; revenue: number }>;
+  topCorps?: Array<{ name: string; count: number; revenue: number; value: number; principalZone: string; secondaryZone: string }>;
+  uniqueCorps?: number;
+  corporateTickets?: number;
+  capacityBreakdown?: {
+    fixed: { tickets: number; revenue: number };
+    flexible: { tickets: number; revenue: number };
+  };
 }
 
 interface CRMViewProps {
@@ -160,8 +167,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   }, [sponsorData]);
 
   const stats = useMemo(() => {
-    // Use server-computed stats when available and no filters are active (fast path)
-    if (serverStats && !hasActiveFilter) {
+    // Check if only capacityView filter is active (no other filters like search, zone, event)
+    const onlyCapacityFilter = capacityView !== 'all' && !filterZone && !filterEvent && !searchQuery;
+    
+    // Use server-computed stats when available and no complex filters are active
+    // We can handle capacityView using server's capacityBreakdown
+    if (serverStats && (!hasActiveFilter || onlyCapacityFilter)) {
       // Build zoneBreakdown as Record
       const zoneBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
       (serverStats.zoneBreakdown || []).forEach((z: any) => {
@@ -194,21 +205,30 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         });
       }
 
+      // Apply capacityView filter to totals using capacityBreakdown
+      let filteredTickets = serverStats.totalTickets || 0;
+      let filteredRevenue = serverStats.totalRevenue || 0;
+      if (capacityView !== 'all' && serverStats.capacityBreakdown) {
+        const cap = serverStats.capacityBreakdown[capacityView];
+        filteredTickets = cap?.tickets || 0;
+        filteredRevenue = cap?.revenue || 0;
+      }
+
       return {
         uniqueEmails: serverStats.uniqueCustomers || 0,
         uniqueCustomers: serverStats.uniqueCustomers || 0,
-        uniqueCorps: 0,
-        totalRevenue: serverStats.totalRevenue || 0,
-        totalCommercialValue: serverStats.totalRevenue || 0,
+        uniqueCorps: serverStats.uniqueCorps || 0,
+        totalRevenue: filteredRevenue,
+        totalCommercialValue: filteredRevenue,
         corpCommercialValue: 0,
-        totalTickets: serverStats.totalTickets || 0,
+        totalTickets: filteredTickets,
         zoneBreakdown,
         eventBreakdown: {} as Record<string, { count: number; revenue: number }>,
         rawSellTypeBreakdown,
         groupedSellTypeBreakdown,
         paymentBreakdown: serverPaymentBreakdown,
         discountBreakdown: {} as Record<string, { count: number; revenue: number }>,
-        topCorps: [] as Array<{ name: string; count: number; revenue: number; value: number; principalZone: string; secondaryZone: string }>,
+        topCorps: serverStats.topCorps || [],
         allCustomers: serverStats.topCustomers || [],
         ageBreakdown: serverStats.ageBreakdown || {},
         locationBreakdown: serverStats.locationBreakdown || {},
@@ -219,7 +239,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         monthBreakdown: {} as Record<string, { count: number; value: number }>,
         zoneByAge: serverStats.zoneByAge || {},
         zoneByLocation: serverStats.zoneByLocation || {},
-        corporateTickets: 0
+        corporateTickets: serverStats.corporateTickets || 0,
+        capacityBreakdown: serverStats.capacityBreakdown
       };
     }
     

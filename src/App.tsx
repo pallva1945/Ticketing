@@ -1008,15 +1008,6 @@ const App: React.FC = () => {
           setDataSources(prev => ({...prev, crm: 'bigquery'}));
           setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
           console.log(`CRM loaded from BigQuery: ${crmResult.stats.totalRecords} records (server-processed)`);
-        } else if (crmResult.rawRows && crmResult.rawRows.length > 0) {
-          // Fallback to client-side processing if stats not available
-          const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
-          if (loadedCRM.length > 0) {
-            setCrmData(loadedCRM);
-            setDataSources(prev => ({...prev, crm: 'bigquery'}));
-            setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
-            console.log(`CRM loaded from BigQuery: ${loadedCRM.length} records (client-processed)`);
-          }
         }
       }
     } catch (crmError) {
