@@ -1427,6 +1427,26 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         const selectedClient = searchSelectedClient ? allClients.find(c => c.key === searchSelectedClient) : null;
         const clientGames: string[] = selectedClient ? [...new Set(selectedClient.records.map((r: CRMRecord) => r.game || r.event).filter(Boolean))] as string[] : [];
 
+        // Helper to clean seat display - removes redundant zone prefix
+        const cleanSeat = (seat: string): string => {
+          if (!seat) return '—';
+          // Remove common zone prefixes (TRIBUNA GOLD, TRIBUNA SILVER, etc.)
+          const zonePrefixes = [
+            'TRIBUNA GOLD', 'TRIBUNA SILVER', 'TRIBUNA ROSSA', 'TRIBUNA BLU',
+            'CURVA NORD', 'CURVA SUD', 'PARTERRE', 'VIP', 'HOSPITALITY'
+          ];
+          let cleaned = seat;
+          for (const prefix of zonePrefixes) {
+            if (cleaned.toUpperCase().startsWith(prefix)) {
+              cleaned = cleaned.substring(prefix.length).trim();
+              // Remove leading separators
+              cleaned = cleaned.replace(/^[\s\-_,\.]+/, '');
+              break;
+            }
+          }
+          return cleaned || seat;
+        };
+
         const getTicketRows = () => {
           if (!selectedClient) return [];
           let records = selectedClient.records as CRMRecord[];
@@ -1450,7 +1470,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             subGroups[key].push(r);
           });
           Object.entries(subGroups).forEach(([_key, recs]) => {
-            const seats = [...new Set(recs.map(r => r.seat).filter(Boolean))];
+            const seats = [...new Set(recs.map(r => cleanSeat(r.seat || '')).filter(s => s && s !== '—'))];
             const totalValue = recs.reduce((sum, r) => sum + (Number(r.commercialValue) || 0), 0);
             const leadDays = recs.map(r => {
               if (r.buyTimestamp && r.gmDateTime) {
@@ -1483,7 +1503,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             grouped.push({
               isGrouped: false,
               zone: r.pvZone || r.zone || '—',
-              seats: r.seat || '—',
+              seats: cleanSeat(r.seat || ''),
               discountType: r.discountType || '—',
               value: Number(r.commercialValue) || 0,
               leadDays,
@@ -1650,7 +1670,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                             <th className="text-left py-2 px-2 font-semibold text-gray-600">Discount</th>
                             <th className="text-right py-2 px-2 font-semibold text-gray-600">Value</th>
                             <th className="text-center py-2 px-2 font-semibold text-gray-600">Days Before</th>
-                            <th className="text-left py-2 px-2 font-semibold text-gray-600">Giveaway</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -1669,12 +1688,11 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                               <td className="py-2 px-2 text-xs text-gray-600">{row.discountType}</td>
                               <td className="py-2 px-2 text-right font-medium text-green-600">{formatCurrency(row.value)}</td>
                               <td className="py-2 px-2 text-center text-xs">{row.leadDays !== null ? row.leadDays : '—'}</td>
-                              <td className="py-2 px-2 text-xs text-gray-600">{row.giveawayType || '—'}</td>
                             </tr>
                           ))}
                           {getTicketRows().length === 0 && (
                             <tr>
-                              <td colSpan={8} className="py-8 text-center text-gray-400">No tickets found for this filter</td>
+                              <td colSpan={7} className="py-8 text-center text-gray-400">No tickets found for this filter</td>
                             </tr>
                           )}
                         </tbody>
