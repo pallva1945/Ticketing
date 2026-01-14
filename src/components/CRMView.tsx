@@ -153,33 +153,56 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const stats = useMemo(() => {
     // Use server-computed stats when available and no filters are active (fast path)
     if (serverStats && !hasActiveFilter) {
+      // Build zoneBreakdown as Record
+      const zoneBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
+      (serverStats.zoneBreakdown || []).forEach((z: any) => {
+        zoneBreakdown[z.zone] = { count: z.tickets, revenue: z.revenue, value: z.revenue };
+      });
+      
+      // Build rawSellTypeBreakdown from server data
+      const rawSellTypeBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
+      const groupedSellTypeBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
+      (serverStats.sellTypeBreakdown || []).forEach((s: any) => {
+        rawSellTypeBreakdown[s.type] = { count: s.tickets, revenue: s.revenue, value: s.revenue };
+        // Group into categories
+        const typeLower = (s.type || '').toLowerCase();
+        let category = s.type;
+        if (['mp', 'tix', 'vb'].includes(typeLower)) category = 'GameDay';
+        else if (['corp', 'abb'].includes(typeLower)) category = 'Fixed';
+        else if (['protocol', 'giveaway', 'giveaways'].includes(typeLower)) category = 'Giveaway';
+        
+        if (!groupedSellTypeBreakdown[category]) groupedSellTypeBreakdown[category] = { count: 0, revenue: 0, value: 0 };
+        groupedSellTypeBreakdown[category].count += s.tickets;
+        groupedSellTypeBreakdown[category].revenue += s.revenue;
+        groupedSellTypeBreakdown[category].value += s.revenue;
+      });
+
       return {
-        uniqueEmails: serverStats.uniqueCustomers,
-        uniqueCustomers: serverStats.uniqueCustomers,
+        uniqueEmails: serverStats.uniqueCustomers || 0,
+        uniqueCustomers: serverStats.uniqueCustomers || 0,
         uniqueCorps: 0,
-        totalRevenue: serverStats.totalRevenue,
-        totalCommercialValue: serverStats.totalRevenue,
+        totalRevenue: serverStats.totalRevenue || 0,
+        totalCommercialValue: serverStats.totalRevenue || 0,
         corpCommercialValue: 0,
-        totalTickets: serverStats.totalTickets,
-        zones: serverStats.zoneBreakdown.map(z => ({ zone: z.zone, count: z.tickets, revenue: z.revenue, value: z.revenue })),
-        events: [],
-        sellTypes: serverStats.sellTypeBreakdown.map(s => ({ type: s.type, count: s.tickets, revenue: s.revenue, value: s.revenue })),
-        groupedSellTypes: [],
-        payments: [],
-        discounts: [],
-        topCorps: [],
-        allCustomers: serverStats.topCustomers,
+        totalTickets: serverStats.totalTickets || 0,
+        zoneBreakdown,
+        eventBreakdown: {} as Record<string, { count: number; revenue: number }>,
+        rawSellTypeBreakdown,
+        groupedSellTypeBreakdown,
+        paymentBreakdown: {} as Record<string, { count: number; revenue: number }>,
+        discountBreakdown: {} as Record<string, { count: number; revenue: number }>,
+        topCorps: [] as Array<{ name: string; count: number; revenue: number; value: number; principalZone: string; secondaryZone: string }>,
+        allCustomers: serverStats.topCustomers || [],
         ageBreakdown: {} as Record<string, { count: number; value: number }>,
         locationBreakdown: {} as Record<string, { count: number; value: number }>,
         zoneStats: {} as Record<string, { totalValue: number; totalTickets: number; totalAdvanceDays: number; advanceCount: number }>,
-        salesChannels: [],
-        purchaseHourBreakdown: {} as Record<string, { count: number; revenue: number }>,
-        purchaseDayBreakdown: {} as Record<string, { count: number; revenue: number }>,
-        advanceBookingBreakdown: {} as Record<string, { count: number; revenue: number }>,
-        monthBreakdown: {} as Record<string, { count: number; revenue: number; value: number }>,
+        purchaseHourBreakdown: {} as Record<string, { count: number; value: number }>,
+        purchaseDayBreakdown: {} as Record<string, { count: number; value: number }>,
+        advanceBookingBreakdown: {} as Record<string, { count: number; value: number }>,
+        monthBreakdown: {} as Record<string, { count: number; value: number }>,
         zoneByAge: {} as Record<string, Record<string, number>>,
         zoneByLocation: {} as Record<string, Record<string, number>>,
-        corporateTickets: [] as Array<{ name: string; tickets: number; revenue: number; value: number }>
+        corporateTickets: 0
       };
     }
     
