@@ -391,12 +391,15 @@ export function convertBigQueryRowsToGameDayCSV(rows: any[]): string {
   
   const columns = Object.keys(rows[0]);
   
-  // Convert column names: underscore to space, Eur to $, Num to #, Pct to %
+  // Convert column names: special patterns first, then underscore to space, then symbols
   const headerRow = columns.map(col => {
-    let header = col.replace(/_/g, ' ');
-    header = header.replace(/\bEur\b/gi, '$');
-    header = header.replace(/\bNum\b/gi, '#');
-    header = header.replace(/\bPct\b/gi, '%');
+    let header = col;
+    // Handle special patterns before general underscore replacement
+    header = header.replace(/F_B/gi, 'F&B');  // F_B → F&B
+    header = header.replace(/_/g, ' ');        // remaining underscores to spaces
+    header = header.replace(/\bEur\b/gi, '$'); // Eur → $
+    header = header.replace(/\bNum\b/gi, '#'); // Num → #
+    header = header.replace(/\bPct\b/gi, '%'); // Pct → %
     return header;
   }).join(',');
   
