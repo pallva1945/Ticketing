@@ -965,9 +965,24 @@ const App: React.FC = () => {
         setSponsorDataSource('local');
     }
 
-    // 2b. CRM DATA LOADING - Start empty, user syncs from BigQuery
-    // No automatic loading - CRM data comes from BigQuery on demand
-    setCrmData([]);
+    // 2b. CRM DATA LOADING - Auto-sync from BigQuery
+    try {
+      const crmResponse = await fetch('/api/crm/bigquery');
+      if (crmResponse.ok) {
+        const crmResult = await crmResponse.json();
+        if (crmResult.success && crmResult.rawRows && crmResult.rawRows.length > 0) {
+          const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
+          if (loadedCRM.length > 0) {
+            setCrmData(loadedCRM);
+            setDataSources(prev => ({...prev, crm: 'bigquery'}));
+            setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
+            console.log(`CRM loaded from BigQuery: ${loadedCRM.length} records`);
+          }
+        }
+      }
+    } catch (crmError) {
+      console.warn('Failed to load CRM from BigQuery:', crmError);
+    }
 
     // 3. TICKETING DATA LOADING (Cloud storage first for zone details, fallback to local)
     try {
@@ -2151,7 +2166,7 @@ const App: React.FC = () => {
           ) : activeModule === 'ticketing' ? (
             <>
                 {/* EXISTING TICKETING LOGIC */}
-                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingData} onSyncFromBigQuery={refreshCRMFromBigQuery} isRefreshingBigQuery={isRefreshingCRM} />}
+                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingData} />}
                 {activeTab === 'dashboard' && (
                     <div className="pt-6">
                     {/* DIRECTOR'S NOTE */}

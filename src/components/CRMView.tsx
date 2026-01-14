@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, Upload, X, Filter, BarChart3, PieChart, Euro, Award, ChevronUp, ChevronDown, ChevronLeft, User, Database, Loader2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, X, Filter, BarChart3, PieChart, Euro, Award, ChevronUp, ChevronDown, ChevronLeft, User, Loader2 } from 'lucide-react';
 import { CRMRecord, SponsorData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
@@ -25,9 +25,6 @@ const formatCompact = (value: number) => {
 interface CRMViewProps {
   data: CRMRecord[];
   sponsorData?: SponsorData[];
-  onUploadCsv?: (content: string) => void;
-  onSyncFromBigQuery?: () => Promise<boolean>;
-  isRefreshingBigQuery?: boolean;
   isLoading?: boolean;
 }
 
@@ -58,8 +55,7 @@ const normalizeCompanyName = (name: string): string => {
     .trim();
 };
 
-export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUploadCsv, onSyncFromBigQuery, isRefreshingBigQuery = false, isLoading = false }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
+export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoading = false }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterZone, setFilterZone] = useState<string | null>(null);
   const [filterEvent, setFilterEvent] = useState<string | null>(null);
@@ -87,19 +83,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
     setFilterEvent(null);
     setCapacityView('all');
     setSearchQuery('');
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && onUploadCsv) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const content = event.target?.result as string;
-        onUploadCsv(content);
-      };
-      reader.readAsText(file);
-    }
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const filteredData = useMemo(() => {
@@ -570,18 +553,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
         </div>
         <h2 className="text-3xl font-bold text-gray-800 mb-2">CRM System</h2>
         <p className="text-gray-500 max-w-md mb-8">
-          Sync CRM data from BigQuery to analyze customer data and gain insights into your fan base.
+          Loading CRM data from BigQuery...
         </p>
-        {onSyncFromBigQuery && (
-          <button
-            onClick={onSyncFromBigQuery}
-            disabled={isRefreshingBigQuery}
-            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
-          >
-            {isRefreshingBigQuery ? <Loader2 size={20} className="animate-spin" /> : <Database size={20} />}
-            Sync from BigQuery
-          </button>
-        )}
+        <div className="flex items-center gap-2 text-gray-400">
+          <Loader2 size={20} className="animate-spin" />
+          <span>Please wait</span>
+        </div>
       </div>
     );
   }
@@ -597,16 +574,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
           <p className="text-sm text-gray-500 mt-1">{stats.totalTickets.toLocaleString()} tickets from {stats.uniqueCustomers.toLocaleString()} customers</p>
         </div>
         <div className="flex items-center gap-3">
-          {onSyncFromBigQuery && (
-            <button
-              onClick={onSyncFromBigQuery}
-              disabled={isRefreshingBigQuery}
-              className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
-            >
-              {isRefreshingBigQuery ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
-              Sync from BigQuery
-            </button>
-          )}
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
