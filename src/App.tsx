@@ -1183,10 +1183,11 @@ const App: React.FC = () => {
   const reloadTicketingFromCloud = async () => {
     setIsRefreshingTicketing(true);
     try {
-      const cloudData = await loadTicketingFromCloud();
-      if (cloudData && cloudData.length > 0) {
+      const cloudTicketing = await getCsvFromFirebase('ticketing');
+      if (cloudTicketing && cloudTicketing.content) {
+        const cloudData = processGameData(cloudTicketing.content);
         // Validate that cloud data has meaningful totals
-        const totalRevenue = cloudData.reduce((sum, g) => sum + g.revenue, 0);
+        const totalRevenue = cloudData.reduce((sum: number, g: GameData) => sum + g.totalRevenue, 0);
         if (totalRevenue > 0) {
           setData(cloudData);
           setDataSources(prev => ({...prev, ticketing: 'cloud'}));
@@ -2013,11 +2014,6 @@ const App: React.FC = () => {
                           <button onClick={triggerFileUpload} disabled={isUploading} className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-gray-600 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors shadow-sm active:bg-gray-50 hover:shadow-md hover:text-gray-900">
                               {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} 
                               Upload {activeModule === 'gameday' ? 'GameDay' : 'Sponsor'} CSV
-                          </button>
-                        )}
-                        {activeModule === 'ticketing' && (
-                          <button onClick={triggerCRMFileUpload} className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors shadow-sm active:bg-purple-100 hover:shadow-md hover:text-purple-700">
-                            <Upload size={14} /> Upload CRM CSV
                           </button>
                         )}
                      </>

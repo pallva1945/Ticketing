@@ -49,7 +49,8 @@ server/
   - Server returns rawRows alongside aggregate data for full zone processing
   - `convertBigQueryToGameData` now uses `processGameData` for consistent parsing
   - Zone analytics, seat maps, and detailed breakdowns work with BigQuery data
-  - Added "Reload from Cloud" button for ticketing data management
+  - Removed CSV upload from Ticketing section (BigQuery/Cloud are primary sources)
+  - CRM CSV upload moved exclusively to CRM section
 
 - January 14, 2026: Fixed Executive Overview Data Display
   - Fixed gamesPlayed prop to use filteredGames.length directly (was incorrectly using viewData.length)
