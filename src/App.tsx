@@ -24,7 +24,45 @@ import { GAMEDAY_CSV_CONTENT } from './data/gameDayData';
 import { SPONSOR_CSV_CONTENT } from './data/sponsorData';
 import { CRM_CSV_CONTENT } from './data/crmData';
 import { processGameData, processGameDayData, processSponsorData, processCRMData, convertBigQueryToGameData, convertBigQueryToCRMData, BigQueryTicketingRow } from './utils/dataProcessor';
-import { convertBigQueryRowsToGameDayCSV, convertBigQueryRowsToSponsorCSV } from './services/bigQueryService';
+
+// Client-safe CSV converters (avoid importing server-side BigQuery code)
+function convertBigQueryRowsToGameDayCSV(rows: any[]): string {
+  if (!rows || rows.length === 0) return '';
+  const columns = Object.keys(rows[0]);
+  const headerRow = columns.map(col => {
+    let header = col;
+    header = header.replace(/F_B/gi, 'F&B');
+    header = header.replace(/_/g, ' ');
+    header = header.replace(/\bEur\b/gi, '$');
+    header = header.replace(/\bNum\b/gi, '#');
+    header = header.replace(/\bPct\b/gi, '%');
+    return header;
+  }).join(',');
+  const formatValue = (val: any): string => {
+    if (val === null || val === undefined) return '';
+    if (typeof val === 'object' && val.value) return String(val.value);
+    if (typeof val === 'number') return val.toString();
+    const str = String(val);
+    return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
+  };
+  const dataRows = rows.map(row => columns.map(col => formatValue(row[col])).join(','));
+  return [headerRow, ...dataRows].join('\n');
+}
+
+function convertBigQueryRowsToSponsorCSV(rows: any[]): string {
+  if (!rows || rows.length === 0) return '';
+  const columns = Object.keys(rows[0]);
+  const headerRow = columns.map(col => col.replace(/_/g, ' ')).join(',');
+  const formatValue = (val: any): string => {
+    if (val === null || val === undefined) return '';
+    if (typeof val === 'object' && val.value) return String(val.value);
+    if (typeof val === 'number') return val.toString();
+    const str = String(val);
+    return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str.replace(/"/g, '""')}"` : str;
+  };
+  const dataRows = rows.map(row => columns.map(col => formatValue(row[col])).join(','));
+  return [headerRow, ...dataRows].join('\n');
+}
 import { getCsvFromFirebase, saveCsvToFirebase } from './services/dbService';
 import { isFirebaseConfigured } from './firebaseConfig';
 
