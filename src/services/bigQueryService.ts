@@ -212,10 +212,10 @@ export async function fetchTicketingFromBigQuery(): Promise<{ success: boolean; 
   try {
     const client = getBigQueryClient();
     
-    // Fetch all columns - don't limit fields
+    // Fetch all columns - don't limit fields, disable cache for fresh data
     const query = `SELECT * FROM \`${PROJECT_ID}.${DATASET_ID}.${TABLE_ID}\` ORDER BY Data DESC LIMIT 1000`;
     
-    const [rows] = await client.query({ query });
+    const [rows] = await client.query({ query, useQueryCache: false });
     
     const parseNumeric = (val: any): number => {
       if (val === null || val === undefined) return 0;
@@ -288,10 +288,10 @@ export async function fetchCRMFromBigQuery(): Promise<{ success: boolean; rawRow
   try {
     const client = getBigQueryClient();
     
-    // Fetch all columns from CRM table
+    // Fetch all columns from CRM table - disable cache to get fresh data
     const query = `SELECT * FROM \`${PROJECT_ID}.${DATASET_ID}.${CRM_TABLE_ID}\` LIMIT 100000`;
     
-    const [rows] = await client.query({ query });
+    const [rows] = await client.query({ query, useQueryCache: false });
     
     if (!rows || rows.length === 0) {
       return {
@@ -357,10 +357,10 @@ export async function fetchGameDayFromBigQuery(): Promise<{ success: boolean; ra
   try {
     const client = getBigQueryClient();
     
-    // Fetch all columns from gameday table
+    // Fetch all columns from gameday table - disable cache for fresh data
     const query = `SELECT * FROM \`${PROJECT_ID}.${DATASET_ID}.${GAMEDAY_TABLE_ID}\` LIMIT 50000`;
     
-    const [rows] = await client.query({ query });
+    const [rows] = await client.query({ query, useQueryCache: false });
     
     if (!rows || rows.length === 0) {
       return {
@@ -443,10 +443,10 @@ export async function fetchSponsorshipFromBigQuery(): Promise<{ success: boolean
   try {
     const client = getBigQueryClient();
     
-    // Fetch all columns from sponsor table
+    // Fetch all columns from sponsor table - disable cache for fresh data
     const query = `SELECT * FROM \`${PROJECT_ID}.${DATASET_ID}.${SPONSOR_TABLE_ID}\` LIMIT 50000`;
     
-    const [rows] = await client.query({ query });
+    const [rows] = await client.query({ query, useQueryCache: false });
     
     if (!rows || rows.length === 0) {
       return {
