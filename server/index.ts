@@ -286,9 +286,10 @@ const computeCRMStats = (rawRows: any[]) => {
       const timePart = buyDateStr.split(' ')[1] || '';
       const hourMatch = timePart.match(/^(\d{1,2})/);
       if (hourMatch) {
-        // Skip 00:00 times - they indicate missing time data, not midnight purchases
-        const isZeroTime = timePart === '00:00' || timePart === '0:00' || timePart.startsWith('00:00');
-        if (!isZeroTime) {
+        const hourNum = parseInt(hourMatch[1]);
+        // Skip hour 0 (midnight) times - they indicate missing time data, not actual midnight purchases
+        // This catches 00:00, 0:00, 00:00:00, 0.00, etc.
+        if (hourNum !== 0) {
           const hour = `${hourMatch[1].padStart(2, '0')}:00`;
           if (!purchaseHourBreakdown[hour]) purchaseHourBreakdown[hour] = { count: 0, value: 0 };
           purchaseHourBreakdown[hour].count += qty;
