@@ -237,13 +237,44 @@ export const processGameData = (csvContent: string): GameData[] => {
     const giveawayDetails: Record<string, number> = {};
     let giveawaySum = 0;
     
-    Object.entries(giveawayMap).forEach(([label, keys]) => {
-      const val = parseInteger(getValue(keys));
-      if (val > 0) {
-        giveawayDetails[label] = (giveawayDetails[label] || 0) + val;
-        giveawaySum += val;
+    // First, try to get Total_GA as the authoritative giveaway count
+    const totalGA = parseInteger(getValue(['Total_GA', 'Total GA', 'TotalGA', 'Total Giveaways']));
+    
+    // If Total_GA exists, use it directly
+    if (totalGA > 0) {
+      giveawaySum = totalGA;
+      giveawayDetails['Total'] = totalGA;
+    } else {
+      // Fallback: sum from individual giveaway columns
+      Object.entries(giveawayMap).forEach(([label, keys]) => {
+        const val = parseInteger(getValue(keys));
+        if (val > 0) {
+          giveawayDetails[label] = (giveawayDetails[label] || 0) + val;
+          giveawaySum += val;
+        }
+      });
+      
+      // Also add per-zone protocol and free quantities
+      Object.keys(zonePrefixes).forEach(prefix => {
+        const protQty = parseInteger(getValue([`${prefix} Prot`]));
+        if (protQty > 0) {
+          giveawayDetails['Protocol'] = (giveawayDetails['Protocol'] || 0) + protQty;
+          giveawaySum += protQty;
+        }
+        const freeQty = parseInteger(getValue([`${prefix} Free Num`]));
+        if (freeQty > 0) {
+          giveawayDetails['Free'] = (giveawayDetails['Free'] || 0) + freeQty;
+          giveawaySum += freeQty;
+        }
+      });
+      
+      // Add Ospiti Free
+      const ospitiFree = parseInteger(getValue(['Ospiti Free Num', 'Ospiti Free', 'Guests Free']));
+      if (ospitiFree > 0) {
+        giveawayDetails['Ospiti Free'] = ospitiFree;
+        giveawaySum += ospitiFree;
       }
-    });
+    }
 
     const ticketTypeBreakdown: TicketTypeBreakdown = {
       full: fullPrice,
