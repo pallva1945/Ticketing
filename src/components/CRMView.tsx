@@ -505,25 +505,26 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
   const ageChartData = useMemo(() => {
     const order = ['Under 25', '25-44', '45-64', '65+'];
-    return Object.entries(stats.ageBreakdown)
+    return Object.entries(stats.ageBreakdown || {})
       .filter(([age]) => age !== 'Unknown')
-      .map(([age, val]) => ({ age, tickets: val.count, value: val.value }))
+      .map(([age, val]: [string, any]) => ({ age, tickets: val.count, value: val.value }))
       .sort((a, b) => order.indexOf(a.age) - order.indexOf(b.age));
   }, [stats.ageBreakdown]);
 
   const locationChartData = useMemo(() => 
-    Object.entries(stats.locationBreakdown)
+    Object.entries(stats.locationBreakdown || {})
       .filter(([location]) => location !== 'Unknown')
-      .map(([location, val]) => ({ location, tickets: val.count, value: val.value }))
+      .map(([location, val]: [string, any]) => ({ location, tickets: val.count, value: val.value }))
       .sort((a, b) => b.value - a.value)
       .slice(0, 10),
   [stats.locationBreakdown]);
 
   const hourChartData = useMemo(() => {
     const hours = [];
+    const breakdown = stats.purchaseHourBreakdown || {};
     for (let i = 0; i < 24; i++) {
       const label = `${i.toString().padStart(2, '0')}:00`;
-      const data = stats.purchaseHourBreakdown[label] || { count: 0, value: 0 };
+      const data = breakdown[label] || { count: 0, value: 0 };
       hours.push({ hour: label, tickets: data.count, value: data.value });
     }
     return hours;
@@ -531,39 +532,41 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
   const dayChartData = useMemo(() => {
     const order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const breakdown = stats.purchaseDayBreakdown || {};
     return order.map(day => ({
       day,
-      tickets: stats.purchaseDayBreakdown[day]?.count || 0,
-      value: stats.purchaseDayBreakdown[day]?.value || 0
+      tickets: breakdown[day]?.count || 0,
+      value: breakdown[day]?.value || 0
     }));
   }, [stats.purchaseDayBreakdown]);
 
   const advanceChartData = useMemo(() => {
     const order = ['Same Day', '1-3 Days', '4-7 Days', '1-2 Weeks', '2-4 Weeks', '1+ Month'];
+    const breakdown = stats.advanceBookingBreakdown || {};
     return order.map(label => ({
       label,
-      tickets: stats.advanceBookingBreakdown[label]?.count || 0,
-      value: stats.advanceBookingBreakdown[label]?.value || 0
+      tickets: breakdown[label]?.count || 0,
+      value: breakdown[label]?.value || 0
     })).filter(d => d.tickets > 0);
   }, [stats.advanceBookingBreakdown]);
 
   const paymentChartData = useMemo(() => 
-    Object.entries(stats.paymentBreakdown)
-      .map(([method, val]) => ({ method, tickets: val.count, revenue: val.revenue }))
+    Object.entries(stats.paymentBreakdown || {})
+      .map(([method, val]: [string, any]) => ({ method, tickets: val.count, revenue: val.revenue }))
       .sort((a, b) => b.tickets - a.tickets)
       .slice(0, 8),
   [stats.paymentBreakdown]);
 
   const salesChannelChartData = useMemo(() => 
-    Object.entries(stats.rawSellTypeBreakdown)
+    Object.entries(stats.rawSellTypeBreakdown || {})
       .filter(([name]) => !['PROTOCOL', 'GIVEAWAY', 'GIVEAWAYS'].includes(name.toUpperCase()))
-      .map(([name, val]) => ({ name, tickets: val.count, value: val.value }))
+      .map(([name, val]: [string, any]) => ({ name, tickets: val.count, value: val.value }))
       .sort((a, b) => b.value - a.value),
   [stats.rawSellTypeBreakdown]);
 
   const ticketTypeDistributionData = useMemo(() => 
-    Object.entries(stats.groupedSellTypeBreakdown)
-      .map(([name, val]) => ({ name, tickets: val.count, value: val.value }))
+    Object.entries(stats.groupedSellTypeBreakdown || {})
+      .map(([name, val]: [string, any]) => ({ name, tickets: val.count, value: val.value }))
       .sort((a, b) => b.value - a.value),
   [stats.groupedSellTypeBreakdown]);
 
@@ -1064,14 +1067,14 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {Object.entries(stats.zoneByAge)
+                  {Object.entries(stats.zoneByAge || {})
                     .sort((a, b) => Object.values(b[1]).reduce((s, v) => s + v, 0) - Object.values(a[1]).reduce((s, v) => s + v, 0))
                     .slice(0, 10)
                     .map(([zone, ages]) => {
-                      const locations = stats.zoneByLocation[zone] || {};
+                      const locations = (stats.zoneByLocation || {})[zone] || {};
                       const topLoc = Object.entries(locations).filter(([loc]) => loc !== 'Unknown').sort((a, b) => b[1] - a[1])[0];
                       const zoneTotal = Object.values(ages).reduce((s, v) => s + v, 0);
-                      const zs = stats.zoneStats[zone];
+                      const zs = (stats.zoneStats || {})[zone];
                       const avgPrice = zs && zs.totalTickets > 0 ? zs.totalValue / zs.totalTickets : 0;
                       const ageGroups = ['Under 25', '25-44', '45-64', '65+'];
                       const getColorIntensity = (pct: number) => {
