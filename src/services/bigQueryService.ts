@@ -281,6 +281,75 @@ export async function fetchTicketingFromBigQuery(): Promise<{ success: boolean; 
   }
 }
 
+// Fetch CRM data from BigQuery
+const CRM_TABLE_ID = process.env.BIGQUERY_CRM_TABLE_ID || 'crm_2526';
+
+export async function fetchCRMFromBigQuery(): Promise<{ success: boolean; rawRows?: any[]; message: string }> {
+  try {
+    const client = getBigQueryClient();
+    
+    // Fetch all columns from CRM table
+    const query = `SELECT * FROM \`${PROJECT_ID}.${DATASET_ID}.${CRM_TABLE_ID}\` LIMIT 100000`;
+    
+    const [rows] = await client.query({ query });
+    
+    if (!rows || rows.length === 0) {
+      return {
+        success: false,
+        message: 'No CRM data found in BigQuery'
+      };
+    }
+    
+    return {
+      success: true,
+      rawRows: rows as any[],
+      message: `Fetched ${rows.length} CRM records from BigQuery`
+    };
+  } catch (error: any) {
+    console.error('BigQuery CRM fetch error:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to fetch CRM from BigQuery'
+    };
+  }
+}
+
+// Convert BigQuery CRM rows to CSV format for processing by processCRMData
+export function convertBigQueryRowsToCRMCSV(rows: any[]): string {
+  if (!rows || rows.length === 0) return '';
+  
+  const columns = Object.keys(rows[0]);
+  
+  // Convert underscore column names to lowercase for CSV compatibility
+  const headerRow = columns.map(col => col.toLowerCase()).join(',');
+  
+  const formatValue = (val: any): string => {
+    if (val === null || val === undefined) return '';
+    
+    // Handle BigQuery date/timestamp objects
+    if (typeof val === 'object' && val.value) {
+      return String(val.value);
+    }
+    
+    // Handle numbers - convert American format (dot decimal) to plain number
+    if (typeof val === 'number') {
+      return val.toString();
+    }
+    
+    const strVal = String(val);
+    if (strVal.includes(',') || strVal.includes('"') || strVal.includes('\n')) {
+      return `"${strVal.replace(/"/g, '""')}"`;
+    }
+    return strVal;
+  };
+  
+  const dataRows = rows.map(row => 
+    columns.map(col => formatValue(row[col])).join(',')
+  );
+  
+  return [headerRow, ...dataRows].join('\n');
+}
+
 // Convert BigQuery raw rows to CSV format for processing by processGameData
 // BigQuery uses underscores in headers; this normalizes them to spaces
 export function convertBigQueryRowsToCSV(rows: any[]): string {

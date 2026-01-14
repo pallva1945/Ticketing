@@ -675,6 +675,54 @@ const convertBigQueryRowsToCSV = (rows: any[]): string => {
   return [headerRow, ...dataRows].join('\n');
 };
 
+// Convert BigQuery CRM rows to CSV format for processing by processCRMData
+const convertBigQueryRowsToCRMCSV = (rows: any[]): string => {
+  if (!rows || rows.length === 0) return '';
+  
+  const columns = Object.keys(rows[0]);
+  
+  // Convert column names to lowercase for CSV compatibility
+  const headerRow = columns.map(col => col.toLowerCase()).join(',');
+  
+  const formatValue = (val: any): string => {
+    if (val === null || val === undefined) return '';
+    
+    // Handle BigQuery date/timestamp objects
+    if (typeof val === 'object' && val.value) {
+      return String(val.value);
+    }
+    
+    // Handle numbers
+    if (typeof val === 'number') {
+      return val.toString();
+    }
+    
+    const strVal = String(val);
+    if (strVal.includes(',') || strVal.includes('"') || strVal.includes('\n')) {
+      return `"${strVal.replace(/"/g, '""')}"`;
+    }
+    return strVal;
+  };
+  
+  const dataRows = rows.map(row => 
+    columns.map(col => formatValue(row[col])).join(',')
+  );
+  
+  return [headerRow, ...dataRows].join('\n');
+};
+
+// Convert BigQuery CRM data to CRMRecord array
+export const convertBigQueryToCRMData = (rawRows: any[]): CRMRecord[] => {
+  if (!rawRows || rawRows.length === 0) return [];
+  
+  const csvContent = convertBigQueryRowsToCRMCSV(rawRows);
+  if (!csvContent) return [];
+  
+  const crmData = processCRMData(csvContent);
+  console.log(`Processed ${crmData.length} CRM records from BigQuery`);
+  return crmData;
+};
+
 // Convert BigQuery data to GameData - supports both legacy aggregate data and full raw rows
 export const convertBigQueryToGameData = (
   aggregateRows: BigQueryTicketingRow[], 

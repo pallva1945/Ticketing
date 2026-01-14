@@ -23,7 +23,7 @@ import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { GAMEDAY_CSV_CONTENT } from './data/gameDayData';
 import { SPONSOR_CSV_CONTENT } from './data/sponsorData';
 import { CRM_CSV_CONTENT } from './data/crmData';
-import { processGameData, processGameDayData, processSponsorData, processCRMData, convertBigQueryToGameData, BigQueryTicketingRow } from './utils/dataProcessor';
+import { processGameData, processGameDayData, processSponsorData, processCRMData, convertBigQueryToGameData, convertBigQueryToCRMData, BigQueryTicketingRow } from './utils/dataProcessor';
 import { getCsvFromFirebase, saveCsvToFirebase } from './services/dbService';
 import { isFirebaseConfigured } from './firebaseConfig';
 
@@ -1207,6 +1207,37 @@ const App: React.FC = () => {
     }
   };
 
+  const [isRefreshingCRM, setIsRefreshingCRM] = useState(false);
+  
+  const refreshCRMFromBigQuery = async () => {
+    setIsRefreshingCRM(true);
+    try {
+      const response = await fetch('/api/crm/bigquery?refresh=true');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.rawRows && result.rawRows.length > 0) {
+          const loadedCRM = convertBigQueryToCRMData(result.rawRows);
+          
+          if (loadedCRM.length > 0) {
+            setCrmData(loadedCRM);
+            console.log(`Refreshed ${loadedCRM.length} CRM records from BigQuery`);
+            alert(`Loaded ${loadedCRM.length} CRM records from BigQuery.`);
+            return true;
+          }
+        }
+      }
+      console.warn('BigQuery CRM refresh failed');
+      alert('Failed to refresh CRM from BigQuery. Check console for details.');
+      return false;
+    } catch (error) {
+      console.error('Error refreshing CRM from BigQuery:', error);
+      alert('Error connecting to BigQuery for CRM data. Check console for details.');
+      return false;
+    } finally {
+      setIsRefreshingCRM(false);
+    }
+  };
+
   const handleCRMFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -2133,7 +2164,7 @@ const App: React.FC = () => {
           ) : activeModule === 'ticketing' ? (
             <>
                 {/* EXISTING TICKETING LOGIC */}
-                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingData} onUploadCsv={(content) => setCrmData(processCRMData(content))} />}
+                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingData} onSyncFromBigQuery={refreshCRMFromBigQuery} isRefreshingBigQuery={isRefreshingCRM} />}
                 {activeTab === 'dashboard' && (
                     <div className="pt-6">
                     {/* DIRECTOR'S NOTE */}

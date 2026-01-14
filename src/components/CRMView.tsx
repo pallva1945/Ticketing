@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, Upload, X, Filter, BarChart3, PieChart, Euro, Award, ChevronUp, ChevronDown, ChevronLeft, User } from 'lucide-react';
+import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, Upload, X, Filter, BarChart3, PieChart, Euro, Award, ChevronUp, ChevronDown, ChevronLeft, User, Database, Loader2 } from 'lucide-react';
 import { CRMRecord, SponsorData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
@@ -26,6 +26,8 @@ interface CRMViewProps {
   data: CRMRecord[];
   sponsorData?: SponsorData[];
   onUploadCsv?: (content: string) => void;
+  onSyncFromBigQuery?: () => Promise<boolean>;
+  isRefreshingBigQuery?: boolean;
   isLoading?: boolean;
 }
 
@@ -56,7 +58,7 @@ const normalizeCompanyName = (name: string): string => {
     .trim();
 };
 
-export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUploadCsv, isLoading = false }) => {
+export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUploadCsv, onSyncFromBigQuery, isRefreshingBigQuery = false, isLoading = false }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterZone, setFilterZone] = useState<string | null>(null);
@@ -568,22 +570,18 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
         </div>
         <h2 className="text-3xl font-bold text-gray-800 mb-2">CRM System</h2>
         <p className="text-gray-500 max-w-md mb-8">
-          Upload your CRM CSV file to analyze customer data and gain insights into your fan base.
+          Sync CRM data from BigQuery to analyze customer data and gain insights into your fan base.
         </p>
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileUpload}
-          accept=".csv"
-          className="hidden"
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-colors font-medium"
-        >
-          <Upload size={20} />
-          Upload CRM CSV
-        </button>
+        {onSyncFromBigQuery && (
+          <button
+            onClick={onSyncFromBigQuery}
+            disabled={isRefreshingBigQuery}
+            className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+          >
+            {isRefreshingBigQuery ? <Loader2 size={20} className="animate-spin" /> : <Database size={20} />}
+            Sync from BigQuery
+          </button>
+        )}
       </div>
     );
   }
@@ -599,6 +597,16 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
           <p className="text-sm text-gray-500 mt-1">{stats.totalTickets.toLocaleString()} tickets from {stats.uniqueCustomers.toLocaleString()} customers</p>
         </div>
         <div className="flex items-center gap-3">
+          {onSyncFromBigQuery && (
+            <button
+              onClick={onSyncFromBigQuery}
+              disabled={isRefreshingBigQuery}
+              className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+            >
+              {isRefreshingBigQuery ? <Loader2 size={14} className="animate-spin" /> : <Database size={14} />}
+              Sync from BigQuery
+            </button>
+          )}
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input

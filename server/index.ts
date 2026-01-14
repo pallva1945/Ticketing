@@ -3,7 +3,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery } from "../src/services/bigQueryService";
+import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery } from "../src/services/bigQueryService";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -106,6 +106,42 @@ app.get("/api/ticketing", async (req, res) => {
     });
   } catch (error: any) {
     res.status(500).json({ success: false, data: [], rawRows: [], message: error.message });
+  }
+});
+
+// CRM BigQuery endpoint
+let crmCache: { rawRows: any[]; timestamp: number } | null = null;
+const CRM_CACHE_TTL = 60 * 1000;
+
+app.get("/api/crm/bigquery", async (req, res) => {
+  try {
+    const now = Date.now();
+    const forceRefresh = req.query.refresh === 'true';
+    
+    if (!forceRefresh && crmCache && (now - crmCache.timestamp) < CRM_CACHE_TTL) {
+      return res.json({ 
+        success: true, 
+        rawRows: crmCache.rawRows,
+        cached: true,
+        message: `Served ${crmCache.rawRows.length} CRM records from cache` 
+      });
+    }
+    
+    const result = await fetchCRMFromBigQuery();
+    
+    if (result.success && result.rawRows) {
+      crmCache = { 
+        rawRows: result.rawRows,
+        timestamp: now 
+      };
+    }
+    
+    res.json({ 
+      ...result, 
+      cached: false 
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, rawRows: [], message: error.message });
   }
 });
 

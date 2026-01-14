@@ -42,15 +42,15 @@ server/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
-- January 14, 2026: BigQuery Full Zone Data Integration
-  - BigQuery now properly reads ALL columns including zone-level data (Par_O_Abb_Num, Trib_G_Tix_Eur, etc.)
-  - Column headers with underscores are normalized to spaces for CSV parsing compatibility
+- January 14, 2026: BigQuery Integration for Both Ticketing and CRM
+  - **Ticketing**: BigQuery reads ALL columns including zone-level data (Par_O_Abb_Num, Trib_G_Tix_Eur, etc.)
+  - **CRM**: BigQuery reads from `ticketing_migration.crm_2526` table with full customer data
+  - Column headers with underscores normalized to spaces/lowercase for CSV parsing compatibility
   - American number format (comma thousands, dot decimal) properly handled
-  - Server returns rawRows alongside aggregate data for full zone processing
-  - `convertBigQueryToGameData` now uses `processGameData` for consistent parsing
-  - Zone analytics, seat maps, and detailed breakdowns work with BigQuery data
-  - Removed CSV upload from Ticketing section (BigQuery/Cloud are primary sources)
-  - CRM CSV upload moved exclusively to CRM section
+  - Server returns rawRows alongside aggregate data for full processing
+  - Removed "Reload from Cloud" button from Ticketing (BigQuery is the single source)
+  - CRM section now syncs from BigQuery instead of CSV uploads
+  - "Sync from BigQuery" button available in CRM header for data refresh
 
 - January 14, 2026: Fixed Executive Overview Data Display
   - Fixed gamesPlayed prop to use filteredGames.length directly (was incorrectly using viewData.length)
