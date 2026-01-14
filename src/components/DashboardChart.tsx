@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   Line, ComposedChart, ScatterChart, Scatter, ReferenceLine, ZAxis, Label, ReferenceArea
 } from 'recharts';
 import { GameData } from '../types';
+
+type ViewMode = 'total' | 'gameday';
 
 interface DashboardChartProps {
   data: GameData[];
@@ -76,6 +78,7 @@ const calculateTrendLine = (dataPoints: any[]) => {
 };
 
 export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiencyData, onFilterChange }) => {
+  const [viewMode, setViewMode] = useState<ViewMode>('gameday');
   
   // 1. Revenue & Attendance Trend (Composed)
   const uniqueOpponents = new Set(data.map(d => d.opponent));
@@ -175,14 +178,19 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
 
 
   // 3. Ticket Type Breakdown (Stacked Bar)
+  // - Total view: shows protocol + free giveaways
+  // - GameDay view: shows only free giveaways (no protocol)
   const ticketTypeData = sortedData.map(game => {
-      const breakdown = game.ticketTypeBreakdown || { full: 0, discount: 0, giveaway: 0 };
+      const breakdown = game.ticketTypeBreakdown || { full: 0, discount: 0, giveaway: 0, giveawayGameDay: 0 };
+      const giveawayValue = viewMode === 'total' 
+          ? breakdown.giveaway                    // Total: protocol + free
+          : (breakdown.giveawayGameDay ?? breakdown.giveaway);  // GameDay: free only
       return {
           name: isComparisonMode ? `${game.season}` : game.opponent.substring(0, 8),
           fullLabel: game.opponent,
           full: breakdown.full,
           discount: breakdown.discount,
-          free: breakdown.giveaway
+          free: giveawayValue
       };
   });
 
@@ -239,7 +247,9 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
           {/* Yield vs Occupancy Quadrant */}
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col h-[520px]">
               <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-lg font-semibold text-gray-800">GameDay Efficiency Matrix</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                      {viewMode === 'total' ? 'Total Efficiency Matrix' : 'GameDay Efficiency Matrix'}
+                  </h3>
               </div>
               
               <div className="flex-1 min-h-0 w-full">
@@ -330,12 +340,31 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
               {/* Bottom Legends Panel */}
               <div className="mt-4 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-4">
                   
-                  {/* Group 1: View Mode */}
+                  {/* Group 1: View Mode Toggle */}
                   <div className="flex flex-col gap-1">
                       <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">View Mode</span>
-                      <span className="text-[10px] bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-100 font-semibold w-fit">
-                          Game Day
-                      </span>
+                      <div className="flex items-center gap-1">
+                          <button
+                              onClick={() => setViewMode('gameday')}
+                              className={`text-[10px] px-2 py-0.5 rounded border font-semibold transition-colors ${
+                                  viewMode === 'gameday' 
+                                      ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                                      : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+                              }`}
+                          >
+                              GameDay
+                          </button>
+                          <button
+                              onClick={() => setViewMode('total')}
+                              className={`text-[10px] px-2 py-0.5 rounded border font-semibold transition-colors ${
+                                  viewMode === 'total' 
+                                      ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                                      : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100'
+                              }`}
+                          >
+                              Total
+                          </button>
+                      </div>
                   </div>
 
                   {/* Group 2: Season */}
@@ -378,7 +407,9 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
 
           {/* Ticket Type Breakdown */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-[520px]">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Ticket Type Breakdown</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Ticket Type Breakdown {viewMode === 'total' ? '(incl. Protocol)' : '(GameDay)'}
+              </h3>
               <div className="flex-1 min-h-0">
                   <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={ticketTypeData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
