@@ -199,8 +199,10 @@ const computeCRMStats = (rawRows: any[]) => {
     const commercialValue = (isSeasonOrPack && perGamePrice > 0) ? perGamePrice : fullCommercialValue;
     
     const pvZone = row.pv_zone || row.Pv_Zone || row.PV_Zone || row.zone || row.Zone || 'Unknown';
-    // Sales channel from "sell" column - check all case variations
-    const sellType = row.sell || row.Sell || row.SELL || row.type || row.Type || 'Unknown';
+    // Sales channel from "sell" column - check all case variations and normalize
+    const rawSellType = row.sell || row.Sell || row.SELL || row.type || row.Type || 'Unknown';
+    // Normalize sell types: Corp/CORP -> Corp, Abb/ABB -> Abb, etc.
+    const sellType = rawSellType.charAt(0).toUpperCase() + rawSellType.slice(1).toLowerCase();
     const ticketType = (row.ticket_type || row.Ticket_Type || row.TICKET_TYPE || '').toUpperCase();
     
     // Calculate revenue = price * qty for proper totals
