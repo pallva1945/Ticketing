@@ -35,7 +35,9 @@ export interface SalesDataPoint {
 export interface TicketTypeBreakdown {
   full: number;
   discount: number;
-  giveaway: number;
+  giveaway: number;           // Total view: protocol + free
+  giveawayGameDay?: number;   // GameDay view: free only (no protocol)
+  giveawayProtocol?: number;  // Protocol portion (fixed capacity)
   discountDetails: Record<string, number>;
   giveawayDetails: Record<string, number>;
 }
