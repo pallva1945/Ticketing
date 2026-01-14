@@ -118,6 +118,7 @@ const computeCRMStats = (rawRows: any[]) => {
   const customerMap: Record<string, any> = {};
   let totalTickets = 0;
   let totalRevenue = 0;
+  let corpCommercialValue = 0;
   const zoneStats: Record<string, { tickets: number; revenue: number }> = {};
   const sellTypeStats: Record<string, { tickets: number; revenue: number }> = {};
   
@@ -155,6 +156,27 @@ const computeCRMStats = (rawRows: any[]) => {
     return '65+';
   };
   
+  // Location normalization: "Varese Varese VA" -> "Varese"
+  const normalizeLocation = (loc: string): string => {
+    if (!loc || loc === 'Unknown') return 'Unknown';
+    // Split by spaces and process
+    const parts = loc.trim().split(/\s+/);
+    // Remove province codes (2-letter uppercase at end like "VA", "MI", "CO")
+    const filtered = parts.filter(p => !(p.length === 2 && p === p.toUpperCase() && /^[A-Z]{2}$/.test(p)));
+    // Remove duplicates (case-insensitive)
+    const seen = new Set<string>();
+    const unique: string[] = [];
+    for (const p of filtered) {
+      const lower = p.toLowerCase();
+      if (!seen.has(lower) && p.length > 0) {
+        seen.add(lower);
+        // Capitalize first letter
+        unique.push(p.charAt(0).toUpperCase() + p.slice(1).toLowerCase());
+      }
+    }
+    return unique.length > 0 ? unique.join(' ') : 'Unknown';
+  };
+  
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   
   for (const row of rawRows) {
@@ -163,9 +185,22 @@ const computeCRMStats = (rawRows: any[]) => {
     const fullName = [lastName, firstName].filter(Boolean).join(' ') || 'Unknown';
     const key = `${lastName.toLowerCase()}_${firstName.toLowerCase()}_${row.dob || row.email || ''}`;
     const qty = Number(row.quantity) || 1;
-    const price = Number(row.price) || 0;
+    
+    // For season tickets/packs, use per-game price instead of full bundle price
+    const eventLower = (row.event || '').toLowerCase();
+    const isSeasonOrPack = eventLower.includes('abbonamento') || eventLower.includes('pack');
+    const perGamePrice = Number(row.abb_mp_price_gm) || 0;
+    const fullPrice = Number(row.price) || 0;
+    // Use per-game price if available for season/pack tickets, otherwise use full price
+    const price = (isSeasonOrPack && perGamePrice > 0) ? perGamePrice : fullPrice;
+    
+    // Commercial value - use per-game for season/packs too
+    const fullCommercialValue = Number(row.commercial_value) || price;
+    const commercialValue = (isSeasonOrPack && perGamePrice > 0) ? perGamePrice : fullCommercialValue;
+    
     const pvZone = row.pv_zone || row.zone || 'Unknown';
     const sellType = row.sell || row.type || 'Unknown';
+    const ticketType = (row.ticket_type || '').toUpperCase();
     
     totalTickets += qty;
     totalRevenue += price;
@@ -180,20 +215,21 @@ const computeCRMStats = (rawRows: any[]) => {
     sellTypeStats[sellType].tickets += qty;
     sellTypeStats[sellType].revenue += price;
     
-    // Corporate breakdown - track Corp sell type
+    // Corporate breakdown - track Corp sell type or ticket type
     const sellTypeLower = sellType.toLowerCase();
-    if (sellTypeLower === 'corp') {
+    const isCorp = sellTypeLower === 'corp' || ticketType === 'CORP';
+    if (isCorp) {
       corporateTickets += qty;
-      const corpName = fullName || row.group || 'Unknown';
+      corpCommercialValue += commercialValue;
+      const corpName = row.group || fullName || 'Unknown';
       if (!corpBreakdown[corpName]) corpBreakdown[corpName] = { count: 0, revenue: 0, value: 0, zones: {} };
       corpBreakdown[corpName].count += qty;
       corpBreakdown[corpName].revenue += price;
-      corpBreakdown[corpName].value += price;
+      corpBreakdown[corpName].value += commercialValue;
       corpBreakdown[corpName].zones[pvZone] = (corpBreakdown[corpName].zones[pvZone] || 0) + qty;
     }
     
-    // Fixed vs Flexible capacity breakdown
-    const eventLower = (row.event || '').toLowerCase();
+    // Fixed vs Flexible capacity breakdown (eventLower already defined above)
     if (eventLower.includes('abbonamento') && eventLower.includes('lba')) {
       capacityBreakdown.fixed.tickets += qty;
       capacityBreakdown.fixed.revenue += price;
@@ -208,8 +244,9 @@ const computeCRMStats = (rawRows: any[]) => {
     ageBreakdown[ageGroup].count += qty;
     ageBreakdown[ageGroup].value += price;
     
-    // Location breakdown
-    const location = row.province || row.pob || 'Unknown';
+    // Location breakdown - normalize locations like "Varese Varese VA" -> "Varese"
+    const rawLocation = row.province || row.pob || 'Unknown';
+    const location = normalizeLocation(rawLocation);
     if (!locationBreakdown[location]) locationBreakdown[location] = { count: 0, value: 0 };
     locationBreakdown[location].count += qty;
     locationBreakdown[location].value += price;
@@ -218,7 +255,7 @@ const computeCRMStats = (rawRows: any[]) => {
     if (!zoneByAge[pvZone]) zoneByAge[pvZone] = {};
     zoneByAge[pvZone][ageGroup] = (zoneByAge[pvZone][ageGroup] || 0) + qty;
     
-    // Zone by location
+    // Zone by location (normalized)
     if (!zoneByLocation[pvZone]) zoneByLocation[pvZone] = {};
     zoneByLocation[pvZone][location] = (zoneByLocation[pvZone][location] || 0) + qty;
     
@@ -280,7 +317,7 @@ const computeCRMStats = (rawRows: any[]) => {
         games: new Set<string>(),
         transactions: 0,
         age: row.dob || '',
-        location: row.province || row.pob || '',
+        location: location,
         advanceDays: [] as number[]
       };
     }
@@ -382,6 +419,7 @@ const computeCRMStats = (rawRows: any[]) => {
     totalRecords: rawRows.length,
     totalTickets,
     totalRevenue,
+    corpCommercialValue,
     uniqueCustomers: allCustomers.length,
     topCustomers: allCustomers.slice(0, 100),
     zoneBreakdown: Object.entries(zoneStats).map(([zone, stats]) => ({ zone, ...stats })).sort((a, b) => b.revenue - a.revenue),

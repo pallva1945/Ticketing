@@ -61,6 +61,7 @@ interface CRMStats {
     fixed: { tickets: number; revenue: number };
     flexible: { tickets: number; revenue: number };
   };
+  corpCommercialValue?: number;
 }
 
 interface CRMViewProps {
@@ -220,7 +221,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         uniqueCorps: serverStats.uniqueCorps || 0,
         totalRevenue: filteredRevenue,
         totalCommercialValue: filteredRevenue,
-        corpCommercialValue: 0,
+        corpCommercialValue: serverStats.corpCommercialValue || 0,
         totalTickets: filteredTickets,
         zoneBreakdown,
         eventBreakdown: {} as Record<string, { count: number; revenue: number }>,
