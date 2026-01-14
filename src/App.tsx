@@ -993,22 +993,22 @@ const App: React.FC = () => {
         if (isFirebaseConfigured) {
             const cloudTicketing = await getCsvFromFirebase('ticketing');
             if (cloudTicketing) {
-                // Validate cloud data has actual content AND zone breakdown for ALL games
+                // Validate cloud data has actual content AND zone breakdown
                 const testData = processGameData(cloudTicketing.content);
                 const testRevenue = testData.reduce((sum, g) => sum + g.totalRevenue, 0);
                 
-                // Check zone-level data - require ALL games to have zone breakdown
-                const allGamesHaveZoneData = testData.length > 0 && 
-                    testData.every(g => g.salesBreakdown && g.salesBreakdown.length > 0);
+                // Check zone-level data - at least SOME games should have zone breakdown
+                const gamesWithZoneData = testData.filter(g => g.salesBreakdown && g.salesBreakdown.length > 0);
+                const hasZoneData = gamesWithZoneData.length > 0;
                 
-                if (testData.length > 0 && testRevenue > 0 && allGamesHaveZoneData) {
+                if (testData.length > 0 && testRevenue > 0 && hasZoneData) {
                     ticketingCsv = cloudTicketing.content;
                     setLastUploadTimes(prev => ({...prev, ticketing: cloudTicketing.updatedAt}));
                     ticketingSource = 'cloud';
                 } else if (testData.length > 0 && testRevenue > 0) {
-                    // Cloud has data but some games missing zones - use local for complete zone analytics
-                    const gamesWithoutZones = testData.filter(g => !g.salesBreakdown || g.salesBreakdown.length === 0);
-                    console.warn(`Cloud ticketing has ${gamesWithoutZones.length} games without zone breakdown, using local data`);
+                    // Cloud has aggregate data but no zones - still use it for revenue
+                    ticketingCsv = cloudTicketing.content;
+                    ticketingSource = 'cloud';
                 }
             }
         }
@@ -2036,7 +2036,7 @@ const App: React.FC = () => {
                     setActiveModule('ticketing');
                     setActiveTab('chat');
                 }}
-                gamesPlayed={viewData.length}
+                gamesPlayed={filteredGames.length}
                 seasonFilter={selectedSeasons[0]}
                 onSeasonChange={(s) => setSelectedSeasons([s])}
                 yoyStats={yoyComparisonStats}

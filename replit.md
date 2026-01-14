@@ -42,6 +42,13 @@ server/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 14, 2026: Fixed Executive Overview Data Display
+  - Fixed gamesPlayed prop to use filteredGames.length directly (was incorrectly using viewData.length)
+  - Improved zone data validation: requires at least SOME games to have zone breakdown before accepting cloud data
+  - Cloud ticketing data loads correctly: 46 games, €3.8M total, all games have zone breakdown
+  - Season 25-26 filter returns 8 games with ~€800k ticketing revenue
+  - Executive Overview now correctly displays ticketing revenue and games played count
+
 - January 13, 2026: Cloud Storage as Primary Data Source for Ticketing (with Zone Details)
   - **Cloud storage (Firebase) is the primary source** for ticketing data with full zone breakdown
   - BigQuery available as secondary source for aggregate data (lacks zone-level details for seat map)
