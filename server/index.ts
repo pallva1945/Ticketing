@@ -236,8 +236,12 @@ const computeCRMStats = (rawRows: any[]) => {
       corpBreakdown[corpName].zones[pvZone] = (corpBreakdown[corpName].zones[pvZone] || 0) + qty;
     }
     
-    // Fixed vs Flexible capacity breakdown (eventLower already defined above)
-    if (eventLower.includes('abbonamento') && eventLower.includes('lba')) {
+    // Fixed vs Flexible capacity breakdown
+    // Fixed = event is exactly "ABBONAMENTO LBA 2025/26" (case-insensitive)
+    // Flexible = everything else
+    const eventRaw = (row.event || row.Event || row.EVENT || '').trim();
+    const isFixedCapacity = eventRaw.toLowerCase() === 'abbonamento lba 2025/26';
+    if (isFixedCapacity) {
       capacityBreakdown.fixed.tickets += qty;
       capacityBreakdown.fixed.revenue += rowRevenue;
     } else {
