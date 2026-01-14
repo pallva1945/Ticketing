@@ -859,10 +859,11 @@ const App: React.FC = () => {
   // Sources separated by vertical
   const [dataSources, setDataSources] = useState<Record<string, 'live' | 'cloud' | 'local' | 'bigquery'>>({
       ticketing: 'local',
-      gameday: isFirebaseConfigured ? 'cloud' : 'local'
+      gameday: isFirebaseConfigured ? 'cloud' : 'local',
+      crm: 'local'
   });
   
-  const [lastUploadTimes, setLastUploadTimes] = useState<Record<string, string | null>>({ ticketing: null, gameday: null });
+  const [lastUploadTimes, setLastUploadTimes] = useState<Record<string, string | null>>({ ticketing: null, gameday: null, crm: null });
   const [isUploading, setIsUploading] = useState(false);
   const [showSetupModal, setShowSetupModal] = useState(!isFirebaseConfigured);
   const [showRulesError, setShowRulesError] = useState(false);
@@ -1204,6 +1205,8 @@ const App: React.FC = () => {
           
           if (loadedCRM.length > 0) {
             setCrmData(loadedCRM);
+            setDataSources(prev => ({...prev, crm: 'bigquery'}));
+            setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
             console.log(`Refreshed ${loadedCRM.length} CRM records from BigQuery`);
             alert(`Loaded ${loadedCRM.length} CRM records from BigQuery.`);
             return true;

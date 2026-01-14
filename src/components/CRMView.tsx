@@ -817,16 +817,16 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
           <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <Award size={20} className="text-amber-500" />
-              Top 10 Customers
+              Top Customers
               <span className="text-xs font-normal text-gray-400 ml-2">
                 (sorted by {sortColumn === 'value' ? 'Total Paid' : sortColumn === 'tickets' ? 'Tickets' : sortColumn === 'avgPerGame' ? 'Avg/Gm' : sortColumn === 'avgPerTxn' ? 'Avg/Txn' : sortColumn === 'avgAdvance' ? 'Avg Advance' : sortColumn === 'age' ? 'Age' : sortColumn.replace(/([A-Z])/g, ' $1').trim()})
               </span>
             </h3>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
               <table className="w-full text-sm">
-                <thead>
+                <thead className="sticky top-0 bg-white z-10">
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-2 font-semibold text-gray-600">#</th>
+                    <th className="text-left py-2 px-2 font-semibold text-gray-600 bg-white">#</th>
                     <th 
                       className="text-left py-2 px-2 font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 select-none"
                       onClick={() => { setSortColumn('name'); setSortDirection(sortColumn === 'name' && sortDirection === 'asc' ? 'desc' : 'asc'); }}
@@ -922,7 +922,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], onUplo
                     if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
                     if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
                     return 0;
-                  }).slice(0, 10).map((c, i) => {
+                  }).slice(0, 100).map((c, i) => {
                     let ageDisplay = '-';
                     if (c.age) {
                       const parts = c.age.split('/');
