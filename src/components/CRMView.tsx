@@ -620,7 +620,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     };
   }, [selectedCustomer, filteredData]);
 
-  if (isLoading && data.length === 0) {
+  if (isLoading && data.length === 0 && !serverStats) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8 animate-fade-in pt-6">
         <div className="w-16 h-16 border-4 border-gray-200 border-t-red-600 rounded-full animate-spin mb-6"></div>
@@ -629,7 +629,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     );
   }
 
-  if (data.length === 0) {
+  if (data.length === 0 && !serverStats) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8 animate-fade-in pt-6">
         <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6 shadow-inner relative overflow-hidden">
