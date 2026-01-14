@@ -350,6 +350,89 @@ export function convertBigQueryRowsToCRMCSV(rows: any[]): string {
   return [headerRow, ...dataRows].join('\n');
 }
 
+// Fetch GameDay data from BigQuery
+const GAMEDAY_TABLE_ID = process.env.BIGQUERY_GAMEDAY_TABLE_ID || 'gameday_db';
+
+export async function fetchGameDayFromBigQuery(): Promise<{ success: boolean; rawRows?: any[]; message: string }> {
+  try {
+    const client = getBigQueryClient();
+    
+    // Fetch all columns from gameday table
+    const query = `SELECT * FROM \`${PROJECT_ID}.${DATASET_ID}.${GAMEDAY_TABLE_ID}\` LIMIT 50000`;
+    
+    const [rows] = await client.query({ query });
+    
+    if (!rows || rows.length === 0) {
+      return {
+        success: false,
+        message: 'No GameDay data found in BigQuery'
+      };
+    }
+    
+    return {
+      success: true,
+      rawRows: rows as any[],
+      message: `Fetched ${rows.length} GameDay records from BigQuery`
+    };
+  } catch (error: any) {
+    console.error('BigQuery GameDay fetch error:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to fetch GameDay from BigQuery'
+    };
+  }
+}
+
+// Convert BigQuery GameDay rows to CSV format for processing by processGameDayData
+// BigQuery format: underscores in headers, Eur instead of $, Num instead of #, Pct instead of %
+// US number format (dot decimal, comma thousands)
+export function convertBigQueryRowsToGameDayCSV(rows: any[]): string {
+  if (!rows || rows.length === 0) return '';
+  
+  const columns = Object.keys(rows[0]);
+  
+  // Convert column names: underscore to space, Eur to $, Num to #, Pct to %
+  const headerRow = columns.map(col => {
+    let header = col.replace(/_/g, ' ');
+    header = header.replace(/\bEur\b/gi, '$');
+    header = header.replace(/\bNum\b/gi, '#');
+    header = header.replace(/\bPct\b/gi, '%');
+    return header;
+  }).join(',');
+  
+  const formatValue = (val: any): string => {
+    if (val === null || val === undefined) return '';
+    
+    // Handle BigQuery date/timestamp objects
+    if (typeof val === 'object' && val.value) {
+      let dateStr = val.value;
+      // Convert ISO date (YYYY-MM-DD) to DD/MM/YYYY
+      if (dateStr && dateStr.includes('-') && !dateStr.includes('/')) {
+        const [year, month, day] = dateStr.split('-');
+        dateStr = `${day}/${month}/${year}`;
+      }
+      return dateStr;
+    }
+    
+    // Handle numbers
+    if (typeof val === 'number') {
+      return val.toString();
+    }
+    
+    const strVal = String(val);
+    if (strVal.includes(',') || strVal.includes('"') || strVal.includes('\n')) {
+      return `"${strVal.replace(/"/g, '""')}"`;
+    }
+    return strVal;
+  };
+  
+  const dataRows = rows.map(row => 
+    columns.map(col => formatValue(row[col])).join(',')
+  );
+  
+  return [headerRow, ...dataRows].join('\n');
+}
+
 // Fetch Sponsorship data from BigQuery
 const SPONSOR_TABLE_ID = process.env.BIGQUERY_SPONSOR_TABLE_ID || 'sponsor_db';
 

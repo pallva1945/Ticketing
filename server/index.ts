@@ -3,7 +3,7 @@ import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV } from "../src/services/bigQueryService";
+import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV } from "../src/services/bigQueryService";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -282,6 +282,27 @@ app.get("/api/sponsorship/bigquery", async (req, res) => {
         csvContent,
         rowCount: result.rawRows.length,
         message: `Fetched ${result.rawRows.length} sponsorship records from BigQuery`
+      });
+    } else {
+      res.json(result);
+    }
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// GameDay BigQuery endpoint
+app.get("/api/gameday/bigquery", async (req, res) => {
+  try {
+    const result = await fetchGameDayFromBigQuery();
+    
+    if (result.success && result.rawRows) {
+      const csvContent = convertBigQueryRowsToGameDayCSV(result.rawRows);
+      res.json({ 
+        success: true,
+        csvContent,
+        rowCount: result.rawRows.length,
+        message: `Fetched ${result.rawRows.length} GameDay records from BigQuery`
       });
     } else {
       res.json(result);

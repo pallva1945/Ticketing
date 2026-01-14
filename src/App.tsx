@@ -914,12 +914,28 @@ const App: React.FC = () => {
     let loadedTicketing: GameData[] = [];
     let loadedGameDay: GameDayData[] = [];
     
-    // 1. GAME DAY DATA LOADING
+    // 1. GAME DAY DATA LOADING - BigQuery first, then cloud storage, then local fallback
     try {
         let gdCsv = GAMEDAY_CSV_CONTENT;
-        let gdSource: 'local' | 'cloud' = 'local';
+        let gdSource: 'local' | 'cloud' | 'bigquery' = 'local';
         
-        if (isFirebaseConfigured) {
+        // Try BigQuery first
+        try {
+            const gdResponse = await fetch('/api/gameday/bigquery');
+            if (gdResponse.ok) {
+                const gdResult = await gdResponse.json();
+                if (gdResult.success && gdResult.csvContent) {
+                    gdCsv = gdResult.csvContent;
+                    gdSource = 'bigquery';
+                    console.log(`GameDay loaded from BigQuery: ${gdResult.rowCount} records`);
+                }
+            }
+        } catch (bqError) {
+            console.warn('BigQuery GameDay fetch failed, trying cloud storage...', bqError);
+        }
+        
+        // Fallback to cloud storage if BigQuery didn't work
+        if (gdSource === 'local' && isFirebaseConfigured) {
             const cloudGd = await getCsvFromFirebase('gameday');
             if (cloudGd) {
                 gdCsv = cloudGd.content;
@@ -2026,31 +2042,14 @@ const App: React.FC = () => {
                      <>
                         <div className="text-[10px] text-gray-500 mb-1 px-1 flex items-center gap-1">
                             Current Source: 
-                            <strong className={`flex items-center gap-1 ${
-                                activeModule === 'ticketing' || activeModule === 'crm' || activeModule === 'sponsorship'
-                                    ? 'text-blue-600'
-                                    : (dataSources.gameday === 'cloud' ? 'text-green-600' : 'text-orange-600')
-                            }`}>
-                                {activeModule === 'ticketing' || activeModule === 'crm' || activeModule === 'sponsorship'
-                                    ? <Database size={10} />
-                                    : (dataSources.gameday === 'cloud' ? <Cloud size={10} /> : <Database size={10} />)
-                                }
-                                {activeModule === 'ticketing' || activeModule === 'crm' || activeModule === 'sponsorship'
-                                    ? 'BIGQUERY'
-                                    : dataSources.gameday.toUpperCase()
-                                }
+                            <strong className={`flex items-center gap-1 text-blue-600`}>
+                                <Database size={10} />
+                                BIGQUERY
                             </strong>
                         </div>
-                        {activeModule === 'ticketing' || activeModule === 'crm' || activeModule === 'sponsorship' ? (
-                          <div className="text-center py-2 px-3 text-[10px] text-blue-600 bg-blue-50 border border-blue-200 rounded-lg">
-                            Auto-synced from BigQuery
-                          </div>
-                        ) : (
-                          <button onClick={triggerFileUpload} disabled={isUploading} className="w-full flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-gray-600 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors shadow-sm active:bg-gray-50 hover:shadow-md hover:text-gray-900">
-                              {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />} 
-                              Upload GameDay CSV
-                          </button>
-                        )}
+                        <div className="text-center py-2 px-3 text-[10px] text-blue-600 bg-blue-50 border border-blue-200 rounded-lg">
+                          Auto-synced from BigQuery
+                        </div>
                      </>
                  ) : (
                      <div className="text-center p-2 bg-white rounded border border-gray-200">
