@@ -42,6 +42,15 @@ server/
 - `npm run preview` - Preview production build
 
 ## Recent Changes
+- January 14, 2026: BigQuery Full Zone Data Integration
+  - BigQuery now properly reads ALL columns including zone-level data (Par_O_Abb_Num, Trib_G_Tix_Eur, etc.)
+  - Column headers with underscores are normalized to spaces for CSV parsing compatibility
+  - American number format (comma thousands, dot decimal) properly handled
+  - Server returns rawRows alongside aggregate data for full zone processing
+  - `convertBigQueryToGameData` now uses `processGameData` for consistent parsing
+  - Zone analytics, seat maps, and detailed breakdowns work with BigQuery data
+  - Added "Reload from Cloud" button for ticketing data management
+
 - January 14, 2026: Fixed Executive Overview Data Display
   - Fixed gamesPlayed prop to use filteredGames.length directly (was incorrectly using viewData.length)
   - Improved zone data validation: requires at least SOME games to have zone breakdown before accepting cloud data
