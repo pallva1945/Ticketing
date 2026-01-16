@@ -71,7 +71,7 @@ app.post("/api/bigquery/sync", async (req, res) => {
 });
 
 let ticketingCache: { data: any[]; rawRows: any[]; timestamp: number } | null = null;
-const CACHE_TTL = 60 * 1000;
+const CACHE_TTL = 30 * 60 * 1000; // 30 minutes cache for faster loads
 
 app.get("/api/ticketing", async (req, res) => {
   try {
@@ -111,7 +111,7 @@ app.get("/api/ticketing", async (req, res) => {
 
 // CRM BigQuery endpoint with server-side processing for faster loads
 let crmCache: { rawRows: any[]; processedStats: any; fixedStats: any; flexibleStats: any; timestamp: number } | null = null;
-const CRM_CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+const CRM_CACHE_TTL = 30 * 60 * 1000; // 30 minutes cache for faster loads
 
 // Parse European number format (1.234,56) and American format (1,234.56)
 const parseNumber = (val: any): number => {

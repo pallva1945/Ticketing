@@ -953,12 +953,12 @@ const App: React.FC = () => {
     let loadedTicketing: GameData[] = [];
     let loadedGameDay: GameDayData[] = [];
     
-    // Start all BigQuery fetches in parallel for faster loading
-    const [ticketingResponse, gdResponse, sponsorResponse, crmResponse] = await Promise.all([
+    // Start essential BigQuery fetches in parallel for faster loading
+    // CRM is loaded lazily when user navigates to CRM tab
+    const [ticketingResponse, gdResponse, sponsorResponse] = await Promise.all([
       fetch('/api/ticketing').catch(e => { console.warn('Ticketing fetch failed:', e); return null; }),
       fetch('/api/gameday/bigquery').catch(e => { console.warn('GameDay fetch failed:', e); return null; }),
-      fetch('/api/sponsorship/bigquery').catch(e => { console.warn('Sponsorship fetch failed:', e); return null; }),
-      fetch('/api/crm/bigquery?full=true').catch(e => { console.warn('CRM fetch failed:', e); return null; })
+      fetch('/api/sponsorship/bigquery').catch(e => { console.warn('Sponsorship fetch failed:', e); return null; })
     ]);
     
     // 1. TICKETING DATA - Process first (most critical for Executive Overview)
@@ -1088,34 +1088,43 @@ const App: React.FC = () => {
         setSponsorDataSource('local');
     }
 
-    // 4. CRM DATA - Process parallel response
+    // CRM is loaded lazily - see loadCRMData function
+    setIsLoadingData(false);
+  };
+
+  // Lazy load CRM data only when user navigates to CRM tab
+  const crmLoadedRef = React.useRef(false);
+  const [isLoadingCRM, setIsLoadingCRM] = useState(false);
+  
+  const loadCRMData = async () => {
+    if (crmLoadedRef.current || isLoadingCRM) return;
+    setIsLoadingCRM(true);
+    
     try {
+      const crmResponse = await fetch('/api/crm/bigquery?full=true');
       if (crmResponse && crmResponse.ok) {
         const crmResult = await crmResponse.json();
         if (crmResult.success && crmResult.stats) {
-          // Use server-computed stats for fast initial load (all, fixed, flexible)
           setCrmStats({
             all: crmResult.stats,
             fixed: crmResult.fixedStats,
             flexible: crmResult.flexibleStats
           });
-          // Also load full raw data for client search functionality
           if (crmResult.rawRows && crmResult.rawRows.length > 0) {
             const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
             setCrmData(loadedCRM);
             console.log(`CRM loaded from BigQuery: ${loadedCRM.length} records (with client search data)`);
-          } else {
-            console.log(`CRM loaded from BigQuery: ${crmResult.stats.totalRecords} records (stats only)`);
           }
           setDataSources(prev => ({...prev, crm: 'bigquery'}));
           setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
+          crmLoadedRef.current = true;
         }
       }
     } catch (crmError) {
       console.warn('Failed to load CRM from BigQuery:', crmError);
+    } finally {
+      setIsLoadingCRM(false);
     }
-    
-    setIsLoadingData(false);
   };
 
   const dataLoadedRef = React.useRef(false);
@@ -1125,6 +1134,13 @@ const App: React.FC = () => {
     dataLoadedRef.current = true;
     loadData();
   }, []);
+
+  // Lazy load CRM when user navigates to CRM tab
+  useEffect(() => {
+    if (activeTab === 'crm' && !crmLoadedRef.current) {
+      loadCRMData();
+    }
+  }, [activeTab]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -2328,7 +2344,7 @@ const App: React.FC = () => {
           ) : activeModule === 'ticketing' ? (
             <>
                 {/* EXISTING TICKETING LOGIC */}
-                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingData} serverStats={crmStats} />}
+                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} serverStats={crmStats} />}
                 {activeTab === 'dashboard' && (
                     <div className="pt-6">
                     {/* DIRECTOR'S NOTE */}
