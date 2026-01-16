@@ -1417,7 +1417,24 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         });
 
         const query = clientSearchQuery.toLowerCase().trim();
+        
+        // Check if query is a zone + seat search (e.g., "par o, 210" or "curva, 45")
+        const zoneSeatMatch = query.match(/^([a-z\s]+)[,\s]+(\d+)$/i);
+        
         const matchingClients = query.length >= 2 ? allClients.filter(c => {
+          // If zone + seat search pattern detected
+          if (zoneSeatMatch) {
+            const zoneQuery = zoneSeatMatch[1].trim().toLowerCase();
+            const seatQuery = zoneSeatMatch[2];
+            // Check if any record matches the zone and seat
+            return c.records.some((r: CRMRecord) => {
+              const zone = (r.pvZone || r.zone || '').toLowerCase();
+              const seatNum = cleanSeat(r.seat || '');
+              return zone.includes(zoneQuery) && seatNum === seatQuery;
+            });
+          }
+          
+          // Standard search by name, email, etc.
           const searchStr = [
             c.name, c.firstName, c.lastName, c.email, c.phone, c.cell, c.address, c.nationality, c.dob, c.pob, c.province, c.age
           ].filter(Boolean).join(' ').toLowerCase();
@@ -1427,24 +1444,20 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         const selectedClient = searchSelectedClient ? allClients.find(c => c.key === searchSelectedClient) : null;
         const clientGames: string[] = selectedClient ? [...new Set(selectedClient.records.map((r: CRMRecord) => r.game || r.event).filter(Boolean))] as string[] : [];
 
-        // Helper to clean seat display - removes redundant zone prefix
+        // Helper to extract seat number - only the number after "Posto"
         const cleanSeat = (seat: string): string => {
           if (!seat) return '—';
-          // Remove common zone prefixes (TRIBUNA GOLD, TRIBUNA SILVER, etc.)
-          const zonePrefixes = [
-            'TRIBUNA GOLD', 'TRIBUNA SILVER', 'TRIBUNA ROSSA', 'TRIBUNA BLU',
-            'CURVA NORD', 'CURVA SUD', 'PARTERRE', 'VIP', 'HOSPITALITY'
-          ];
-          let cleaned = seat;
-          for (const prefix of zonePrefixes) {
-            if (cleaned.toUpperCase().startsWith(prefix)) {
-              cleaned = cleaned.substring(prefix.length).trim();
-              // Remove leading separators
-              cleaned = cleaned.replace(/^[\s\-_,\.]+/, '');
-              break;
-            }
+          // Look for "Posto" followed by a number and extract just the number
+          const postoMatch = seat.match(/Posto\s*(\d+)/i);
+          if (postoMatch) {
+            return postoMatch[1]; // Return just the seat number
           }
-          return cleaned || seat;
+          // Fallback: try to find any number in the string
+          const numberMatch = seat.match(/\d+/);
+          if (numberMatch) {
+            return numberMatch[0];
+          }
+          return '—';
         };
 
         const getTicketRows = () => {
@@ -1528,7 +1541,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search by name, email, phone, address, DOB, nationality..."
+                    placeholder="Search by name, email, phone... or zone + seat (e.g., par o, 210)"
                     value={clientSearchQuery}
                     onChange={(e) => {
                       setClientSearchQuery(e.target.value);
