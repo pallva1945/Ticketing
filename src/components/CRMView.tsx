@@ -98,6 +98,22 @@ const normalizeCompanyName = (name: string): string => {
     .trim();
 };
 
+// Helper to extract seat number - only the number after "Posto"
+const cleanSeat = (seat: string): string => {
+  if (!seat) return '—';
+  // Look for "Posto" followed by a number and extract just the number
+  const postoMatch = seat.match(/Posto\s*(\d+)/i);
+  if (postoMatch) {
+    return postoMatch[1]; // Return just the seat number
+  }
+  // Fallback: try to find any number in the string
+  const numberMatch = seat.match(/\d+/);
+  if (numberMatch) {
+    return numberMatch[0];
+  }
+  return '—';
+};
+
 export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoading = false, serverStats = null }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterZone, setFilterZone] = useState<string | null>(null);
@@ -1443,22 +1459,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
         const selectedClient = searchSelectedClient ? allClients.find(c => c.key === searchSelectedClient) : null;
         const clientGames: string[] = selectedClient ? [...new Set(selectedClient.records.map((r: CRMRecord) => r.game || r.event).filter(Boolean))] as string[] : [];
-
-        // Helper to extract seat number - only the number after "Posto"
-        const cleanSeat = (seat: string): string => {
-          if (!seat) return '—';
-          // Look for "Posto" followed by a number and extract just the number
-          const postoMatch = seat.match(/Posto\s*(\d+)/i);
-          if (postoMatch) {
-            return postoMatch[1]; // Return just the seat number
-          }
-          // Fallback: try to find any number in the string
-          const numberMatch = seat.match(/\d+/);
-          if (numberMatch) {
-            return numberMatch[0];
-          }
-          return '—';
-        };
 
         const getTicketRows = () => {
           if (!selectedClient) return [];
