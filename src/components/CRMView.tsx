@@ -1456,33 +1456,32 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             
             return c.records.some((r: CRMRecord) => {
               // Handle various BigQuery column name formats
-              const zone = ((r as any).pvZone || (r as any).pv_zone || (r as any).Pv_Zone || (r as any).zone || (r as any).Zone || '').toLowerCase();
-              const area = ((r as any).area || (r as any).Area || (r as any).AREA || (r as any).settore || (r as any).Settore || (r as any).section || (r as any).Section || '').toLowerCase();
+              // pv_zone is abbreviated (e.g., "TRIB G O"), zone is full (e.g., "TRIBUNA GOLD OVEST")
+              const pvZone = ((r as any).pvZone || (r as any).pv_zone || (r as any).Pv_Zone || '').toLowerCase();
+              const fullZone = ((r as any).zone || (r as any).Zone || '').toLowerCase();
+              const area = ((r as any).area || (r as any).Area || (r as any).AREA || (r as any).settore || (r as any).Settore || '').toLowerCase();
               const seat = ((r as any).seat || (r as any).Seat || (r as any).SEAT || (r as any).posto || (r as any).Posto || '').toString().trim();
               
-              if (parts.length === 1) {
-                // Single part: match zone only
-                return zone.includes(parts[0]);
-              } else if (parts.length === 2) {
-                // Two parts: could be zone+area, zone+seat, or area-seat format like "a-21"
-                const [p1, p2] = parts;
-                // Check if p2 is area-seat format (e.g., "a-21")
-                const areaSeatMatch = p2.match(/^([a-z]+)-?(\d+)$/i);
-                if (areaSeatMatch) {
-                  return zone.includes(p1) && area === areaSeatMatch[1].toLowerCase() && seat === areaSeatMatch[2];
-                }
-                // Check if p2 is just a number (zone + seat)
-                if (/^\d+$/.test(p2)) {
-                  return zone.includes(p1) && seat === p2;
-                }
-                // Otherwise treat as zone + area
-                return zone.includes(p1) && area.includes(p2);
-              } else if (parts.length >= 3) {
-                // Three parts: zone + area + seat
-                const [zoneQ, areaQ, seatQ] = parts;
-                return zone.includes(zoneQ) && area.includes(areaQ) && seat === seatQ;
+              // Combined zone string for flexible matching
+              const combinedZone = `${pvZone} ${fullZone} ${area}`.toLowerCase();
+              
+              // Check if the last part is a seat number
+              const lastPart = parts[parts.length - 1];
+              const isLastPartSeat = /^\d+$/.test(lastPart);
+              
+              if (isLastPartSeat && parts.length >= 2) {
+                // Last part is seat number, everything before is zone/area search
+                const zoneParts = parts.slice(0, -1);
+                const seatQuery = lastPart;
+                
+                // All zone parts must match somewhere in the combined zone string
+                const allZonePartsMatch = zoneParts.every(p => combinedZone.includes(p));
+                return allZonePartsMatch && seat === seatQuery;
+              } else {
+                // No seat number - just match all parts against zone
+                const allPartsMatch = parts.every(p => combinedZone.includes(p));
+                return allPartsMatch;
               }
-              return false;
             });
           }
         }).slice(0, 20) : [];
