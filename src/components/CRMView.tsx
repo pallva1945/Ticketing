@@ -98,20 +98,27 @@ const normalizeCompanyName = (name: string): string => {
     .trim();
 };
 
-// Helper to extract seat number - only the number after "Posto"
+// Helper to format seat location: combines area and seat number
+const formatSeatLocation = (area: string, seat: string): string => {
+  const cleanArea = (area || '').trim();
+  const cleanSeatNum = (seat || '').trim();
+  
+  if (cleanArea && cleanSeatNum) {
+    return `${cleanArea}-${cleanSeatNum}`;
+  }
+  if (cleanSeatNum) return cleanSeatNum;
+  if (cleanArea) return cleanArea;
+  return '—';
+};
+
+// Legacy helper for backwards compatibility with old seat format
 const cleanSeat = (seat: string): string => {
   if (!seat) return '—';
-  // Look for "Posto" followed by a number and extract just the number
   const postoMatch = seat.match(/Posto\s*(\d+)/i);
-  if (postoMatch) {
-    return postoMatch[1]; // Return just the seat number
-  }
-  // Fallback: try to find any number in the string
+  if (postoMatch) return postoMatch[1];
   const numberMatch = seat.match(/\d+/);
-  if (numberMatch) {
-    return numberMatch[0];
-  }
-  return '—';
+  if (numberMatch) return numberMatch[0];
+  return seat || '—';
 };
 
 export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoading = false, serverStats = null }) => {
@@ -1434,19 +1441,35 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
         const query = clientSearchQuery.toLowerCase().trim();
         
-        // Check if query is a zone + seat search (e.g., "par o, 210" or "curva, 45")
+        // Check for zone + area + seat pattern (e.g., "par o, D, 121")
+        const zoneAreaSeatMatch = query.match(/^([a-z\s]+)[,\s]+([a-z0-9]+)[,\s]+(\d+)$/i);
+        // Check for zone + seat pattern (e.g., "par o, 210")
         const zoneSeatMatch = query.match(/^([a-z\s]+)[,\s]+(\d+)$/i);
         
         const matchingClients = query.length >= 2 ? allClients.filter(c => {
-          // If zone + seat search pattern detected
+          // If zone + area + seat search pattern detected (e.g., "par o, D, 121")
+          if (zoneAreaSeatMatch) {
+            const zoneQuery = zoneAreaSeatMatch[1].trim().toLowerCase();
+            const areaQuery = zoneAreaSeatMatch[2].trim().toLowerCase();
+            const seatQuery = zoneAreaSeatMatch[3];
+            return c.records.some((r: CRMRecord) => {
+              const zone = (r.pvZone || r.zone || '').toLowerCase();
+              const area = (r.area || '').toLowerCase();
+              const seat = (r.seat || '').trim();
+              return zone.includes(zoneQuery) && area.includes(areaQuery) && seat === seatQuery;
+            });
+          }
+          
+          // If zone + seat search pattern detected (e.g., "par o, 210")
           if (zoneSeatMatch) {
             const zoneQuery = zoneSeatMatch[1].trim().toLowerCase();
             const seatQuery = zoneSeatMatch[2];
-            // Check if any record matches the zone and seat
             return c.records.some((r: CRMRecord) => {
               const zone = (r.pvZone || r.zone || '').toLowerCase();
-              const seatNum = cleanSeat(r.seat || '');
-              return zone.includes(zoneQuery) && seatNum === seatQuery;
+              const seat = (r.seat || '').trim();
+              // Also try legacy cleanSeat for backwards compatibility
+              const legacySeat = cleanSeat(r.seat || '');
+              return zone.includes(zoneQuery) && (seat === seatQuery || legacySeat === seatQuery);
             });
           }
           
@@ -1483,7 +1506,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             subGroups[key].push(r);
           });
           Object.entries(subGroups).forEach(([_key, recs]) => {
-            const seats = [...new Set(recs.map(r => cleanSeat(r.seat || '')).filter(s => s && s !== '—'))];
+            const seats = [...new Set(recs.map(r => formatSeatLocation(r.area || '', r.seat || '')).filter(s => s && s !== '—'))];
             const totalValue = recs.reduce((sum, r) => sum + (Number(r.commercialValue) || 0), 0);
             const leadDays = recs.map(r => {
               if (r.buyTimestamp && r.gmDateTime) {
@@ -1516,7 +1539,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             grouped.push({
               isGrouped: false,
               zone: r.pvZone || r.zone || '—',
-              seats: cleanSeat(r.seat || ''),
+              seats: formatSeatLocation(r.area || '', r.seat || ''),
               discountType: r.discountType || '—',
               value: Number(r.commercialValue) || 0,
               leadDays,
@@ -1541,7 +1564,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search by name, email, phone... or zone + seat (e.g., par o, 210)"
+                    placeholder="Search by name, email... or seat (e.g., par o, D, 121)"
                     value={clientSearchQuery}
                     onChange={(e) => {
                       setClientSearchQuery(e.target.value);

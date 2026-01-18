@@ -168,7 +168,8 @@ export interface CRMRecord {
   event: string;
   zone: string;
   group: string;
-  seat: string;
+  area: string;      // Seat area (D, 1, CRT, etc.)
+  seat: string;      // Seat number (121, 21, etc.)
   ticketType: string;
   net: number;
   iva: number;

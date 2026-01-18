@@ -557,6 +557,7 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
   const eventIdx = getIdx(['event', 'evento']);
   const zoneIdx = getIdx(['zone', 'zona']);
   const groupIdx = getIdx(['group', 'gruppo', 'company']);
+  const areaIdx = getIdx(['area', 'settore', 'section']);
   const seatIdx = getIdx(['seat', 'posto']);
   const typeIdx = getIdx(['type', 'tipo']);
   const netIdx = getIdx(['net', 'netto']);
@@ -628,6 +629,7 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
       event: getVal(eventIdx),
       zone: getVal(zoneIdx),
       group: getVal(groupIdx),
+      area: getVal(areaIdx),
       seat: getVal(seatIdx),
       ticketType: getVal(typeIdx),
       net: parseCurrency(getVal(netIdx)),
