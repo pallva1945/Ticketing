@@ -1455,9 +1455,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             const parts = query.split(/[,\s]+/).map(p => p.trim()).filter(p => p);
             
             return c.records.some((r: CRMRecord) => {
-              const zone = (r.pvZone || r.zone || '').toLowerCase();
-              const area = (r.area || '').toLowerCase();
-              const seat = (r.seat || '').trim();
+              // Handle various BigQuery column name formats
+              const zone = ((r as any).pvZone || (r as any).pv_zone || (r as any).Pv_Zone || (r as any).zone || (r as any).Zone || '').toLowerCase();
+              const area = ((r as any).area || (r as any).Area || (r as any).AREA || (r as any).settore || (r as any).Settore || (r as any).section || (r as any).Section || '').toLowerCase();
+              const seat = ((r as any).seat || (r as any).Seat || (r as any).SEAT || (r as any).posto || (r as any).Posto || '').toString().trim();
               
               if (parts.length === 1) {
                 // Single part: match zone only
