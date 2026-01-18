@@ -200,6 +200,92 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     return lookup;
   }, [sponsorData]);
 
+  // Memoized seat history computation for seat search mode (must be at component level)
+  const seatHistoryData = useMemo(() => {
+    const query = clientSearchQuery.toLowerCase().trim();
+    if (searchMode !== 'seat' || query.length < 2) return null;
+    
+    const parts = query.split(/[,\s]+/).map((p: string) => p.trim()).filter((p: string) => p);
+    
+    let seatNumber: string | null = null;
+    let areaFromHyphen: string | null = null;
+    let zoneParts: string[] = parts;
+    
+    const lastPart = parts[parts.length - 1];
+    const hyphenMatch = lastPart.match(/^([a-z]+)-?(\d+)$/i);
+    
+    if (hyphenMatch) {
+      areaFromHyphen = hyphenMatch[1].toLowerCase();
+      seatNumber = hyphenMatch[2];
+      zoneParts = parts.slice(0, -1);
+    } else if (/^\d+$/.test(lastPart)) {
+      seatNumber = lastPart;
+      zoneParts = parts.slice(0, -1);
+    }
+
+    const matchingRecords = data.filter((r: any) => {
+      const pvZone = ((r as any).pvZone || (r as any).pv_zone || (r as any).Pv_Zone || '').toLowerCase();
+      const fullZone = ((r as any).zone || (r as any).Zone || '').toLowerCase();
+      const area = ((r as any).area || (r as any).Area || '').toLowerCase();
+      const seat = ((r as any).seat || (r as any).Seat || '').toString().trim();
+      const combinedZone = `${pvZone} ${fullZone} ${area}`.toLowerCase();
+
+      const allZonePartsMatch = zoneParts.length === 0 || zoneParts.every((p: string) => combinedZone.includes(p));
+      const areaMatches = !areaFromHyphen || area === areaFromHyphen;
+      const seatMatches = !seatNumber || seat === seatNumber;
+      
+      return allZonePartsMatch && areaMatches && seatMatches;
+    });
+
+    const firstMatch = matchingRecords[0] as any;
+    const seatLocation = firstMatch ? {
+      zone: (firstMatch.zone || firstMatch.Zone || firstMatch.pv_zone || ''),
+      area: areaFromHyphen || (firstMatch.area || firstMatch.Area || ''),
+      seat: seatNumber || 'All seats'
+    } : null;
+
+    const seatHistory = games.map(game => {
+      const gameDate = game.date;
+      
+      const gameRecords = matchingRecords.filter((r: any) => {
+        const recordDate = (r.Gm_Date_time || r.gm_date_time || '').split(' ')[0];
+        if (recordDate && gameDate && recordDate === gameDate) return true;
+        
+        const recordGame = (r.gm || r.game || '').toLowerCase().trim();
+        const gameOpp = game.opponent.toLowerCase().trim();
+        if (recordGame && gameOpp) {
+          return recordGame.includes(gameOpp) || gameOpp.includes(recordGame);
+        }
+        return false;
+      });
+      
+      if (gameRecords.length > 0) {
+        const rec = gameRecords[0] as any;
+        return {
+          date: game.date,
+          opponent: game.opponent,
+          occupied: true,
+          occupant: `${rec.name || rec.firstName || ''} ${rec.last_name || rec.lastName || ''}`.trim() || 'Unknown',
+          sellType: rec.sell || rec.sellType || rec.type || '—',
+          price: Number(rec.price) || Number(rec.comercial_value) || 0,
+          email: rec.email || '—'
+        };
+      } else {
+        return {
+          date: game.date,
+          opponent: game.opponent,
+          occupied: false,
+          occupant: '',
+          sellType: '',
+          price: 0,
+          email: ''
+        };
+      }
+    });
+
+    return { seatLocation, seatHistory, matchingRecords };
+  }, [searchMode, clientSearchQuery, data, games]);
+
   const stats = useMemo(() => {
     // Use server-computed stats when no complex filters (search, zone, event) are active
     // For capacity filter, we can use the pre-computed fixed/flexible stats from server
@@ -1660,182 +1746,85 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 )
               )}
 
-              {query.length >= 2 && searchMode === 'seat' && (() => {
-                // Parse the search query - support multiple formats
-                const parts = query.split(/[,\s]+/).map((p: string) => p.trim()).filter((p: string) => p);
-                
-                // Check for hyphenated area-seat format (e.g., "a-21" or "D-121")
-                let seatNumber: string | null = null;
-                let areaFromHyphen: string | null = null;
-                let zoneParts: string[] = parts;
-                
-                const lastPart = parts[parts.length - 1];
-                const hyphenMatch = lastPart.match(/^([a-z]+)-?(\d+)$/i);
-                
-                if (hyphenMatch) {
-                  // Last part is area-seat like "a-21"
-                  areaFromHyphen = hyphenMatch[1].toLowerCase();
-                  seatNumber = hyphenMatch[2];
-                  zoneParts = parts.slice(0, -1);
-                } else if (/^\d+$/.test(lastPart)) {
-                  // Last part is pure number (seat)
-                  seatNumber = lastPart;
-                  zoneParts = parts.slice(0, -1);
-                }
-
-                // Find all CRM records matching this seat location
-                const matchingRecords = data.filter((r: any) => {
-                  const pvZone = ((r as any).pvZone || (r as any).pv_zone || (r as any).Pv_Zone || '').toLowerCase();
-                  const fullZone = ((r as any).zone || (r as any).Zone || '').toLowerCase();
-                  const area = ((r as any).area || (r as any).Area || '').toLowerCase();
-                  const seat = ((r as any).seat || (r as any).Seat || '').toString().trim();
-                  const combinedZone = `${pvZone} ${fullZone} ${area}`.toLowerCase();
-
-                  // All zone parts must match
-                  const allZonePartsMatch = zoneParts.length === 0 || zoneParts.every((p: string) => combinedZone.includes(p));
-                  
-                  // If we have an area from hyphenated format, check it
-                  const areaMatches = !areaFromHyphen || area === areaFromHyphen;
-                  
-                  // If we have a seat number, check it
-                  const seatMatches = !seatNumber || seat === seatNumber;
-                  
-                  return allZonePartsMatch && areaMatches && seatMatches;
-                });
-
-                // Get unique zone description from first match
-                const firstMatch = matchingRecords[0] as any;
-                const seatLocation = firstMatch ? {
-                  zone: (firstMatch.zone || firstMatch.Zone || firstMatch.pv_zone || ''),
-                  area: areaFromHyphen || (firstMatch.area || firstMatch.Area || ''),
-                  seat: seatNumber || 'All seats'
-                } : null;
-
-                // Build seat history by game - match by date (more reliable than opponent name)
-                const seatHistory = games.map(game => {
-                  // Parse game date for comparison
-                  const gameDate = game.date;
-                  
-                  // Find records for this game and seat by matching date or opponent
-                  const gameRecords = matchingRecords.filter((r: any) => {
-                    // Try matching by game date first
-                    const recordDate = (r.Gm_Date_time || r.gm_date_time || '').split(' ')[0];
-                    if (recordDate && gameDate && recordDate === gameDate) return true;
-                    
-                    // Fall back to opponent matching
-                    const recordGame = (r.gm || r.game || '').toLowerCase().trim();
-                    const gameOpp = game.opponent.toLowerCase().trim();
-                    // Match if opponent name is contained in either direction
-                    if (recordGame && gameOpp) {
-                      return recordGame.includes(gameOpp) || gameOpp.includes(recordGame);
-                    }
-                    return false;
-                  });
-                  
-                  if (gameRecords.length > 0) {
-                    const rec = gameRecords[0] as any;
-                    return {
-                      date: game.date,
-                      opponent: game.opponent,
-                      occupied: true,
-                      occupant: `${rec.name || rec.firstName || ''} ${rec.last_name || rec.lastName || ''}`.trim() || 'Unknown',
-                      sellType: rec.sell || rec.sellType || rec.type || '—',
-                      price: Number(rec.price) || Number(rec.comercial_value) || 0,
-                      email: rec.email || '—'
-                    };
-                  } else {
-                    return {
-                      date: game.date,
-                      opponent: game.opponent,
-                      occupied: false,
-                      occupant: '',
-                      sellType: '',
-                      price: 0,
-                      email: ''
-                    };
-                  }
-                });
-
-                return (
-                  <div className="space-y-4">
-                    {seatLocation && (
-                      <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-blue-600 text-white rounded-lg p-3">
-                            <MapPin size={24} />
-                          </div>
-                          <div>
-                            <p className="text-xs text-blue-600 uppercase font-semibold">Seat Location</p>
-                            <p className="text-lg font-bold text-gray-800">
-                              {seatLocation.zone} {seatLocation.area && `- Section ${seatLocation.area}`} {seatLocation.seat !== 'All seats' && `- Seat ${seatLocation.seat}`}
-                            </p>
-                          </div>
+              {query.length >= 2 && searchMode === 'seat' && seatHistoryData && (
+                <div className="space-y-4">
+                  {seatHistoryData.seatLocation && (
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-blue-600 text-white rounded-lg p-3">
+                          <MapPin size={24} />
+                        </div>
+                        <div>
+                          <p className="text-xs text-blue-600 uppercase font-semibold">Seat Location</p>
+                          <p className="text-lg font-bold text-gray-800">
+                            {seatHistoryData.seatLocation.zone} {seatHistoryData.seatLocation.area && `- Section ${seatHistoryData.seatLocation.area}`} {seatHistoryData.seatLocation.seat !== 'All seats' && `- Seat ${seatHistoryData.seatLocation.seat}`}
+                          </p>
                         </div>
                       </div>
-                    )}
-
-                    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                      <div className="p-4 border-b border-gray-100 bg-gray-50">
-                        <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                          <Ticket size={18} className="text-blue-500" />
-                          Seat History ({seatHistory.filter(g => g.occupied).length}/{seatHistory.length} games occupied)
-                        </h4>
-                      </div>
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead>
-                            <tr className="border-b border-gray-200 bg-gray-50">
-                              <th className="text-left py-2 px-3 font-semibold text-gray-600">Date</th>
-                              <th className="text-left py-2 px-3 font-semibold text-gray-600">Opponent</th>
-                              <th className="text-left py-2 px-3 font-semibold text-gray-600">Status</th>
-                              <th className="text-left py-2 px-3 font-semibold text-gray-600">Occupant</th>
-                              <th className="text-left py-2 px-3 font-semibold text-gray-600">Type</th>
-                              <th className="text-right py-2 px-3 font-semibold text-gray-600">Value</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100">
-                            {seatHistory.length === 0 ? (
-                              <tr>
-                                <td colSpan={6} className="py-8 text-center text-gray-500">
-                                  <MapPin size={32} className="mx-auto mb-2 opacity-30" />
-                                  <p>No games found. Make sure game data is loaded.</p>
-                                </td>
-                              </tr>
-                            ) : seatHistory.map((row, i) => (
-                              <tr key={i} className={`hover:bg-gray-50 ${!row.occupied ? 'bg-gray-50/50' : ''}`}>
-                                <td className="py-2 px-3 text-gray-600">{row.date}</td>
-                                <td className="py-2 px-3 font-medium">{row.opponent}</td>
-                                <td className="py-2 px-3">
-                                  {row.occupied ? (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                      Occupied
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
-                                      Empty
-                                    </span>
-                                  )}
-                                </td>
-                                <td className="py-2 px-3">{row.occupant || '—'}</td>
-                                <td className="py-2 px-3 text-gray-600">{row.sellType || '—'}</td>
-                                <td className="py-2 px-3 text-right font-medium">
-                                  {row.price > 0 ? formatCurrency(row.price) : '—'}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
                     </div>
+                  )}
 
-                    {matchingRecords.length > 0 && (
-                      <p className="text-xs text-gray-500">
-                        Found {matchingRecords.length} ticket records for this location
-                      </p>
-                    )}
+                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 bg-gray-50">
+                      <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                        <Ticket size={18} className="text-blue-500" />
+                        Seat History ({seatHistoryData.seatHistory.filter(g => g.occupied).length}/{seatHistoryData.seatHistory.length} games occupied)
+                      </h4>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-200 bg-gray-50">
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600">Date</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600">Opponent</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600">Status</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600">Occupant</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600">Type</th>
+                            <th className="text-right py-2 px-3 font-semibold text-gray-600">Value</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {seatHistoryData.seatHistory.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="py-8 text-center text-gray-500">
+                                <MapPin size={32} className="mx-auto mb-2 opacity-30" />
+                                <p>No games found. Make sure game data is loaded.</p>
+                              </td>
+                            </tr>
+                          ) : seatHistoryData.seatHistory.map((row, i) => (
+                            <tr key={i} className={`hover:bg-gray-50 ${!row.occupied ? 'bg-gray-50/50' : ''}`}>
+                              <td className="py-2 px-3 text-gray-600">{row.date}</td>
+                              <td className="py-2 px-3 font-medium">{row.opponent}</td>
+                              <td className="py-2 px-3">
+                                {row.occupied ? (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Occupied
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                    Empty
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-2 px-3">{row.occupant || '—'}</td>
+                              <td className="py-2 px-3 text-gray-600">{row.sellType || '—'}</td>
+                              <td className="py-2 px-3 text-right font-medium">
+                                {row.price > 0 ? formatCurrency(row.price) : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                );
-              })()}
+
+                  {seatHistoryData.matchingRecords.length > 0 && (
+                    <p className="text-xs text-gray-500">
+                      Found {seatHistoryData.matchingRecords.length} ticket records for this location
+                    </p>
+                  )}
+                </div>
+              )}
 
               {selectedClient && (
                 <div className="space-y-6">
