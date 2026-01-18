@@ -1441,12 +1441,27 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
         const query = clientSearchQuery.toLowerCase().trim();
         
+        // Check for zone + area-seat pattern (e.g., "par ex, a-21" or "par o, D-121")
+        const zoneAreaSeatHyphenMatch = query.match(/^([a-z\s]+)[,\s]+([a-z]+)-?(\d+)$/i);
         // Check for zone + area + seat pattern (e.g., "par o, D, 121")
         const zoneAreaSeatMatch = query.match(/^([a-z\s]+)[,\s]+([a-z0-9]+)[,\s]+(\d+)$/i);
         // Check for zone + seat pattern (e.g., "par o, 210")
         const zoneSeatMatch = query.match(/^([a-z\s]+)[,\s]+(\d+)$/i);
         
         const matchingClients = query.length >= 2 ? allClients.filter(c => {
+          // If zone + area-seat pattern detected (e.g., "par ex, a-21")
+          if (zoneAreaSeatHyphenMatch) {
+            const zoneQuery = zoneAreaSeatHyphenMatch[1].trim().toLowerCase();
+            const areaQuery = zoneAreaSeatHyphenMatch[2].trim().toLowerCase();
+            const seatQuery = zoneAreaSeatHyphenMatch[3];
+            return c.records.some((r: CRMRecord) => {
+              const zone = (r.pvZone || r.zone || '').toLowerCase();
+              const area = (r.area || '').toLowerCase();
+              const seat = (r.seat || '').trim();
+              return zone.includes(zoneQuery) && area.toLowerCase() === areaQuery && seat === seatQuery;
+            });
+          }
+          
           // If zone + area + seat search pattern detected (e.g., "par o, D, 121")
           if (zoneAreaSeatMatch) {
             const zoneQuery = zoneAreaSeatMatch[1].trim().toLowerCase();
@@ -1467,9 +1482,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             return c.records.some((r: CRMRecord) => {
               const zone = (r.pvZone || r.zone || '').toLowerCase();
               const seat = (r.seat || '').trim();
-              // Also try legacy cleanSeat for backwards compatibility
-              const legacySeat = cleanSeat(r.seat || '');
-              return zone.includes(zoneQuery) && (seat === seatQuery || legacySeat === seatQuery);
+              return zone.includes(zoneQuery) && seat === seatQuery;
             });
           }
           
