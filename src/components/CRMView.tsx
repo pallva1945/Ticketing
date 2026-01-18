@@ -1447,6 +1447,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         const zoneAreaSeatMatch = query.match(/^([a-z\s]+)[,\s]+([a-z0-9]+)[,\s]+(\d+)$/i);
         // Check for zone + seat pattern (e.g., "par o, 210")
         const zoneSeatMatch = query.match(/^([a-z\s]+)[,\s]+(\d+)$/i);
+        // Check for zone-only pattern (e.g., "par o" or "curva")
+        const zoneOnlyMatch = query.match(/^[a-z\s]+$/i) && query.includes(' ');
         
         const matchingClients = query.length >= 2 ? allClients.filter(c => {
           // If zone + area-seat pattern detected (e.g., "par ex, a-21")
@@ -1486,11 +1488,26 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             });
           }
           
-          // Standard search by name, email, etc.
+          // If zone-only search pattern detected (e.g., "par o", "par ex", "curva n")
+          if (zoneOnlyMatch) {
+            return c.records.some((r: CRMRecord) => {
+              const zone = (r.pvZone || r.zone || '').toLowerCase();
+              return zone.includes(query);
+            });
+          }
+          
+          // Standard search by name, email, zone, etc.
           const searchStr = [
             c.name, c.firstName, c.lastName, c.email, c.phone, c.cell, c.address, c.nationality, c.dob, c.pob, c.province, c.age
           ].filter(Boolean).join(' ').toLowerCase();
-          return searchStr.includes(query);
+          
+          // Also check if query matches zone (for single word zone searches like "curva")
+          const matchesZone = c.records.some((r: CRMRecord) => {
+            const zone = (r.pvZone || r.zone || '').toLowerCase();
+            return zone.includes(query);
+          });
+          
+          return searchStr.includes(query) || matchesZone;
         }).slice(0, 20) : [];
 
         const selectedClient = searchSelectedClient ? allClients.find(c => c.key === searchSelectedClient) : null;
