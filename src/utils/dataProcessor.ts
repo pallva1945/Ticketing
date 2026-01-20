@@ -312,13 +312,12 @@ export const processGameData = (csvContent: string): GameData[] => {
         }
       });
 
-      // Protocol (Fixed Giveaway)
+      // Protocol (Fixed Giveaway) - from per-zone Prot columns
       const protQty = parseInteger(getValue([`${prefix} Prot`]));
       if (protQty > 0) salesBreakdown.push({ zone, channel: SalesChannel.PROTOCOL, quantity: protQty, revenue: 0 });
       
-      // Free (Dynamic Giveaway)
-      const freeQty = parseInteger(getValue([`${prefix} Free Num`]));
-      if (freeQty > 0) salesBreakdown.push({ zone, channel: SalesChannel.GIVEAWAY, quantity: freeQty, revenue: 0 });
+      // NOTE: Per-zone "Free Num" columns contain ticket counts, NOT giveaways
+      // Do NOT use them for GIVEAWAY channel - use Total_GA instead (see below)
     });
 
     const ospitiQty = parseInteger(getValue(['Ospiti Tix Num', 'Guests Num']));
@@ -327,10 +326,11 @@ export const processGameData = (csvContent: string): GameData[] => {
       salesBreakdown.push({ zone: TicketZone.OSPITI, channel: SalesChannel.TIX, quantity: ospitiQty, revenue: ospitiRev });
     }
     
-    // NEW LOGIC: Ospiti Free Num
-    const ospitiFreeQty = parseInteger(getValue(['Ospiti Free Num', 'Ospiti Free', 'Guests Free']));
-    if (ospitiFreeQty > 0) {
-        salesBreakdown.push({ zone: TicketZone.OSPITI, channel: SalesChannel.GIVEAWAY, quantity: ospitiFreeQty, revenue: 0 });
+    // Add aggregate GIVEAWAY entry using authoritative freeSum from Total_GA
+    // This represents non-protocol giveaways (dynamic giveaways for GameDay view)
+    if (freeSum > 0) {
+      // Assign to Curva as default zone for aggregate giveaways (or could be distributed)
+      salesBreakdown.push({ zone: TicketZone.CURVA, channel: SalesChannel.GIVEAWAY, quantity: freeSum, revenue: 0 });
     }
 
     // GameDay attendance = paid attendance + free giveaways (no protocol)

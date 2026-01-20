@@ -123,13 +123,8 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
       const revenue = viewMode === 'total'
           ? game.totalRevenue
           : (game.revenueGameDay ?? game.totalRevenue);
-      // GameDay capacity excludes protocol allocations (fixed seats)
-      const protocolSeats = game.ticketTypeBreakdown?.giveawayProtocol || 0;
-      const effectiveCapacity = viewMode === 'total' 
-          ? game.capacity 
-          : Math.max(1, game.capacity - protocolSeats);
       return {
-          x: effectiveCapacity > 0 ? (attendance / effectiveCapacity) * 100 : 0,
+          x: game.capacity > 0 ? (attendance / game.capacity) * 100 : 0,
           y: attendance > 0 ? revenue / attendance : 0
       };
   });
@@ -145,13 +140,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
           ? game.totalRevenue
           : (game.revenueGameDay ?? game.totalRevenue);
       
-      // GameDay capacity excludes protocol allocations (fixed seats)
-      const protocolSeats = game.ticketTypeBreakdown?.giveawayProtocol || 0;
-      const effectiveCapacity = viewMode === 'total' 
-          ? game.capacity 
-          : Math.max(1, game.capacity - protocolSeats);
-      
-      const occupancy = effectiveCapacity > 0 ? (attendance / effectiveCapacity) * 100 : 0;
+      const occupancy = game.capacity > 0 ? (attendance / game.capacity) * 100 : 0;
       const yieldVal = attendance > 0 ? revenue / attendance : 0;
       
       // Calculate Z (Size) based on Tier. 
@@ -169,7 +158,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
           season: game.season,
           date: game.date,
           attendance,
-          capacity: effectiveCapacity,
+          capacity: game.capacity,
           revenue
       };
   });
