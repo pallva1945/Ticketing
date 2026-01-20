@@ -258,17 +258,20 @@ export const processGameData = (csvContent: string): GameData[] => {
       giveawayDetails['Free'] = freeSum;
     }
 
-    // For GameDay view, ticket counts exclude protocol allocations
-    // Full price and discount are the same in both views (they're paid tickets)
-    // Only giveaways differ (protocol excluded in GameDay)
+    // For GameDay view, ticket counts exclude presold channels (ABB, CORP) and protocol
+    // GameDay = TIX + MP + VB + FREE only
+    // Total = ABB + CORP + TIX + MP + VB + PROTOCOL + FREE
+    
+    // Calculate paid tickets by channel group (will be used after salesBreakdown is built)
+    // For now, set placeholders - will recalculate below after salesBreakdown
     const ticketTypeBreakdown: TicketTypeBreakdown = {
-      // Total view (includes protocol)
+      // Total view (includes all channels)
       full: fullPrice,
       discount: discountSum,
       giveaway: giveawaySum,
-      // GameDay view (excludes protocol)
-      fullGameDay: fullPrice,        // Same as total
-      discountGameDay: discountSum,  // Same as total
+      // GameDay view (placeholders - calculated after salesBreakdown)
+      fullGameDay: 0,
+      discountGameDay: 0,
       giveawayGameDay: freeSum,      // Free only, no protocol
       // Protocol portion
       giveawayProtocol: protocolSum,
@@ -337,6 +340,24 @@ export const processGameData = (csvContent: string): GameData[] => {
     // Total attendance = paid + protocol + free
     const gameDayAttendance = attendance + freeSum;  // paid + free
     const totalAttendanceCalc = totalAttendance || (attendance + protocolSum + freeSum);
+
+    // Calculate GameDay ticket type breakdown from salesBreakdown
+    // GameDay channels: TIX, MP, VB (excludes ABB, CORP, PROTOCOL)
+    const gameDayChannels = [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB];
+    const totalPaidChannels = [SalesChannel.ABB, SalesChannel.CORP, SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB];
+    
+    const gameDayPaidQty = salesBreakdown
+      .filter(s => gameDayChannels.includes(s.channel))
+      .reduce((sum, s) => sum + s.quantity, 0);
+    const totalPaidQty = salesBreakdown
+      .filter(s => totalPaidChannels.includes(s.channel))
+      .reduce((sum, s) => sum + s.quantity, 0);
+    
+    // Apply ratio to full/discount for GameDay view
+    // If no total paid, ratio is 0 (no GameDay tickets)
+    const gameDayRatio = totalPaidQty > 0 ? gameDayPaidQty / totalPaidQty : 0;
+    ticketTypeBreakdown.fullGameDay = Math.round(fullPrice * gameDayRatio);
+    ticketTypeBreakdown.discountGameDay = Math.round(discountSum * gameDayRatio);
 
     return {
       id, opponent, date, 
