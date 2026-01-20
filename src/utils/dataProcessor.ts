@@ -346,12 +346,12 @@ export const processGameData = (csvContent: string): GameData[] => {
     const gameDayChannels = [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB];
     const totalPaidChannels = [SalesChannel.ABB, SalesChannel.CORP, SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB];
     
-    // Get CORP total (always full price, needs to be added to full count for Total view)
+    // Get CORP total (always full price)
     const corpQty = salesBreakdown
       .filter(s => s.channel === SalesChannel.CORP)
       .reduce((sum, s) => sum + s.quantity, 0);
     
-    // Get ABB total (has both full and discount, already included in Full Price and discount columns)
+    // Get ABB total (has both full and discount - apply same ratio as individual tickets)
     const abbQty = salesBreakdown
       .filter(s => s.channel === SalesChannel.ABB)
       .reduce((sum, s) => sum + s.quantity, 0);
@@ -363,9 +363,19 @@ export const processGameData = (csvContent: string): GameData[] => {
       .filter(s => totalPaidChannels.includes(s.channel))
       .reduce((sum, s) => sum + s.quantity, 0);
     
-    // Update Total view: Add CORP to full price (CORP is always full price)
-    // ABB is already included in Full Price and discount columns
-    ticketTypeBreakdown.full = fullPrice + corpQty;
+    // Calculate full/discount ratio from individual ticket columns
+    const individualTotal = fullPrice + discountSum;
+    const fullRatio = individualTotal > 0 ? fullPrice / individualTotal : 0.5;
+    
+    // Split ABB into full and discount using the same ratio as individual tickets
+    const abbFullQty = Math.round(abbQty * fullRatio);
+    const abbDiscountQty = abbQty - abbFullQty;
+    
+    // Update Total view: 
+    // Full = individual full price + CORP (always full) + ABB full portion
+    // Discount = individual discount + ABB discount portion
+    ticketTypeBreakdown.full = fullPrice + corpQty + abbFullQty;
+    ticketTypeBreakdown.discount = discountSum + abbDiscountQty;
     
     // Apply ratio to full/discount for GameDay view (excludes ABB and CORP)
     // If no total paid, ratio is 0 (no GameDay tickets)
