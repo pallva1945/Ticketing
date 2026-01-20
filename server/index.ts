@@ -249,15 +249,7 @@ const computeCRMStats = (rawRows: any[]) => {
     const fullCommercialValue = parseNumber(row.comercial_value) || parseNumber(row.commercial_value) || price;
     const commercialValue = (isSeasonOrPack && perGamePrice > 0) ? perGamePrice : fullCommercialValue;
     
-    // Get raw zone values - check full zone name for Ospiti detection
-    const rawFullZone = (row.zone || row.Zone || '').toLowerCase().trim();
-    let pvZone = row.pv_zone || row.Pv_Zone || row.PV_Zone || row.zone || row.Zone || 'Unknown';
-    
-    // Zone normalization: "Galleria G" (not "Galleria Gold") should map to Ospiti
-    // From Cantu game onwards, Zona Ospiti was renamed to "Galleria G" in the database
-    if (rawFullZone.startsWith('galleria g') && !rawFullZone.startsWith('galleria gold')) {
-      pvZone = 'OSPITI';
-    }
+    const pvZone = row.pv_zone || row.Pv_Zone || row.PV_Zone || row.zone || row.Zone || 'Unknown';
     // Sales channel from "sell" column - check all case variations and normalize
     const rawSellType = row.sell || row.Sell || row.SELL || row.type || row.Type || 'Unknown';
     // Normalize sell types: Corp/CORP -> Corp, Abb/ABB -> Abb, etc.

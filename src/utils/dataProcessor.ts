@@ -610,23 +610,6 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
     const firstName = getVal(nameIdx);
     const fullName = [lastName, firstName].filter(Boolean).join(' ') || 'Unknown';
     const buyDateStr = getVal(buyDateIdx);
-    
-    // Get raw zone values
-    const rawZone = getVal(zoneIdx);
-    const rawPvZone = getVal(pvZoneIdx);
-    
-    // Zone normalization: "Galleria G" (not "Galleria Gold") should map to Ospiti
-    // This applies from Cantu game onwards where Zona Ospiti was renamed
-    let normalizedZone = rawZone;
-    let normalizedPvZone = rawPvZone;
-    
-    const zoneLower = rawZone.toLowerCase().trim();
-    // Check if zone starts with "galleria g" but NOT "galleria gold" or "galleria g " followed by letters
-    // "Galleria G" alone (ospiti) vs "GALLERIA GOLD" with area letters A/B/C/D
-    if (zoneLower.startsWith('galleria g') && !zoneLower.startsWith('galleria gold')) {
-      normalizedZone = 'OSPITI';
-      normalizedPvZone = 'OSPITI';
-    }
 
     return {
       id: `crm-${idx}`,
@@ -644,7 +627,7 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
       buyDate: buyDateStr,
       buyTimestamp: parseBuyDate(buyDateStr),
       event: getVal(eventIdx),
-      zone: normalizedZone,
+      zone: getVal(zoneIdx),
       group: getVal(groupIdx),
       area: getVal(areaIdx),
       seat: getVal(seatIdx),
@@ -654,7 +637,7 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
       price: parseCurrency(getVal(priceIdx)),
       payment: getVal(paymentIdx),
       quantity: parseInteger(getVal(quantityIdx)) || 1,
-      pvZone: normalizedPvZone,
+      pvZone: getVal(pvZoneIdx),
       abbMpPriceGm: parseCurrency(getVal(abbMpPriceIdx)),
       abbCorpPvPrice: parseCurrency(getVal(abbCorpPriceIdx)),
       game: getVal(gmIdx),
