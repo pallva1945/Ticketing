@@ -342,12 +342,16 @@ export const processGameData = (csvContent: string): GameData[] => {
     const totalAttendanceCalc = totalAttendance || (attendance + protocolSum + freeSum);
 
     // Calculate ticket type breakdown
-    // Total view: Full Price column + CORP, Discount columns, Free = giveaways
+    // Total view: Full Price column + CORP, Discount = discountSum + ABB, Free = giveaways
     // GameDay view: Only TIX + MP + VB paid tickets, Free = giveaways (no protocol)
     
-    // Get CORP total (always full price, add to Full)
+    // Get channel quantities from salesBreakdown
     const corpQty = salesBreakdown
       .filter(s => s.channel === SalesChannel.CORP)
+      .reduce((sum, s) => sum + s.quantity, 0);
+    
+    const abbQty = salesBreakdown
+      .filter(s => s.channel === SalesChannel.ABB)
       .reduce((sum, s) => sum + s.quantity, 0);
     
     // Get GameDay paid tickets (TIX + MP + VB only)
@@ -357,10 +361,10 @@ export const processGameData = (csvContent: string): GameData[] => {
     
     // Total view breakdown:
     // Full = "Full Price" column + CORP (CORP is always full price)
-    // Discount = discount columns sum (everything not full or corp or free)
+    // Discount = discount columns + ABB (ABB not in Full Price/discount columns, add here)
     // Free = giveaways (Total_GA)
     ticketTypeBreakdown.full = fullPrice + corpQty;
-    ticketTypeBreakdown.discount = discountSum;
+    ticketTypeBreakdown.discount = discountSum + abbQty;
     ticketTypeBreakdown.giveaway = giveawaySum;
     
     // GameDay view breakdown:
