@@ -294,7 +294,6 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                             type="number" 
                             dataKey="x" 
                             name="Occupancy" 
-                            unit="%" 
                             domain={[xDomainMin, xDomainMax]} 
                             tick={{fontSize: 10}}
                             tickFormatter={(val) => `${val.toFixed(0)}%`}
