@@ -1649,13 +1649,14 @@ const App: React.FC = () => {
 
   const efficiencyData = useMemo(() => {
     return filteredGames.map(game => {
-      // GameDay channels (excludes PROTOCOL)
+      // GameDay channels: Only tickets sold on game day (TIX, MP, VB) + giveaways
+      // Excludes: ABB (season tickets), CORP (corporate), PROTOCOL (fixed allocations)
       let gameDaySales = game.salesBreakdown.filter(s => 
           [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel)
       );
-      // Total channels (includes PROTOCOL)
+      // Total channels: All tickets including presold (ABB, CORP) and protocol
       let totalSales = game.salesBreakdown.filter(s => 
-          [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY, SalesChannel.PROTOCOL].includes(s.channel)
+          [SalesChannel.ABB, SalesChannel.CORP, SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY, SalesChannel.PROTOCOL].includes(s.channel)
       );
 
       if (ignoreOspiti) {
@@ -1667,11 +1668,11 @@ const App: React.FC = () => {
         totalSales = totalSales.filter(s => selectedZones.includes(s.zone));
       }
 
-      // GameDay = excludes protocol
+      // GameDay = only game day sales (TIX + MP + VB + GIVEAWAY)
       const gameDayRevenue = gameDaySales.reduce((acc, curr) => acc + curr.revenue, 0);
       const gameDayAttendance = gameDaySales.reduce((acc, curr) => acc + curr.quantity, 0);
       
-      // Total = includes protocol
+      // Total = all tickets including presold (ABB + CORP + TIX + MP + VB + GIVEAWAY + PROTOCOL)
       const totalRevenue = totalSales.reduce((acc, curr) => acc + curr.revenue, 0);
       const totalAttendance = totalSales.reduce((acc, curr) => acc + curr.quantity, 0);
 
@@ -1689,10 +1690,10 @@ const App: React.FC = () => {
           filteredZoneCapacities = newCapMap;
       }
 
-      // Total capacity (before deductions)
+      // Total capacity (full arena)
       Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
       
-      // GameDay capacity (after fixed deductions for protocol)
+      // GameDay capacity = Total - FIXED (ABB + CORP + PROTOCOL presold seats)
       Object.keys(filteredZoneCapacities).forEach(z => {
           const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
           gameDayCapacity += Math.max(0, filteredZoneCapacities[z] - fixedDeduction);
@@ -1700,12 +1701,12 @@ const App: React.FC = () => {
 
       return {
         ...game,
-        attendance: totalAttendance,           // Total view: includes protocol
-        attendanceGameDay: gameDayAttendance,  // GameDay view: excludes protocol
+        attendance: totalAttendance,           // Total view: all tickets
+        attendanceGameDay: gameDayAttendance,  // GameDay view: only game day sales
         totalRevenue: totalRevenue,            // Total view revenue
         revenueGameDay: gameDayRevenue,        // GameDay view revenue
         capacity: zoneCapacity,                // Total capacity
-        capacityGameDay: gameDayCapacity,      // GameDay capacity (reduced by protocol)
+        capacityGameDay: gameDayCapacity,      // GameDay capacity (seats available on game day)
         salesBreakdown: totalSales,
         zoneCapacities: filteredZoneCapacities
       };
