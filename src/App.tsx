@@ -2254,30 +2254,28 @@ const App: React.FC = () => {
              <div className="bg-white border border-gray-200 rounded-lg p-3">
                 <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Data Source Info</p>
                 <div className="flex flex-col">
-                    {/* Prioritize showing Upload Time if available, regardless of whether it was just uploaded or loaded from cloud */}
-                    {lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing'] ? (
+                    {lastGame ? (
                         <>
-                            <div className="flex items-center gap-1 text-green-600 mb-0.5">
-                                <Clock size={10} />
-                                <span className="text-[10px] font-bold uppercase">Last Uploaded</span>
+                            <div className="flex items-center gap-1 text-blue-600 mb-0.5">
+                                <Calendar size={10} />
+                                <span className="text-[10px] font-bold uppercase">Latest Game</span>
                             </div>
-                            <span className="text-xs font-bold text-gray-800">
-                                {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleDateString()}
-                            </span>
-                            <span className="text-[10px] text-gray-500">
-                                {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </span>
+                            <span className="text-xs font-bold text-gray-800 truncate">{lastGame.opponent}</span>
+                            <span className="text-[10px] text-gray-500">{lastGame.season} • {lastGame.date}</span>
+                            {lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing'] && (
+                                <div className="mt-2 pt-2 border-t border-gray-100">
+                                    <div className="flex items-center gap-1 text-green-600 mb-0.5">
+                                        <Clock size={10} />
+                                        <span className="text-[10px] font-bold uppercase">Last Synced</span>
+                                    </div>
+                                    <span className="text-[10px] text-gray-500">
+                                        {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleDateString()} at {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    </span>
+                                </div>
+                            )}
                         </>
                     ) : (
-                        /* Fallback to Last Game info if no upload time is tracked (e.g. local fallback data) */
-                        lastGame ? (
-                            <>
-                                <span className="text-xs font-bold text-gray-800 truncate">{lastGame.opponent}</span>
-                                <span className="text-[10px] text-gray-500">{lastGame.season} • {lastGame.date}</span>
-                            </>
-                        ) : (
-                            <span className="text-[10px] text-gray-400">No data loaded</span>
-                        )
+                        <span className="text-[10px] text-gray-400">No data loaded</span>
                     )}
                 </div>
              </div>
