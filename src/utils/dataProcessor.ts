@@ -236,7 +236,10 @@ export const processGameData = (csvContent: string): GameData[] => {
 
     const giveawayDetails: Record<string, number> = {};
     let protocolSum = 0;  // Protocol = fixed capacity, Total view only
-    let freeSum = 0;      // Free = both GameDay and Total view
+    
+    // IMPORTANT: Use Total_GA from CSV as the authoritative giveaway count
+    // The per-zone "Free Num" columns contain ticket counts, NOT giveaways
+    const totalGAFromCSV = parseInteger(getValue(['Total_GA', 'Total GA', 'TotalGA']));
     
     // Calculate per-zone protocol quantities (fixed capacity - Total view only)
     Object.keys(zonePrefixes).forEach(prefix => {
@@ -247,34 +250,14 @@ export const processGameData = (csvContent: string): GameData[] => {
       }
     });
     
-    // Calculate per-zone free quantities (both views)
-    Object.keys(zonePrefixes).forEach(prefix => {
-      const freeQty = parseInteger(getValue([`${prefix} Free Num`]));
-      if (freeQty > 0) {
-        giveawayDetails['Free'] = (giveawayDetails['Free'] || 0) + freeQty;
-        freeSum += freeQty;
-      }
-    });
+    // Use Total_GA as the giveaway count (which includes protocol)
+    // freeSum = total giveaways minus protocol
+    const giveawaySum = totalGAFromCSV > 0 ? totalGAFromCSV : protocolSum;
+    const freeSum = Math.max(0, giveawaySum - protocolSum);
     
-    // Add Ospiti Free (both views)
-    const ospitiFree = parseInteger(getValue(['Ospiti Free Num', 'Ospiti Free', 'Guests Free']));
-    if (ospitiFree > 0) {
-      giveawayDetails['Ospiti Free'] = ospitiFree;
-      freeSum += ospitiFree;
+    if (freeSum > 0) {
+      giveawayDetails['Free'] = freeSum;
     }
-    
-    // Add individual GA columns (these are also "free" type giveaways)
-    Object.entries(giveawayMap).forEach(([label, keys]) => {
-      const val = parseInteger(getValue(keys));
-      if (val > 0) {
-        giveawayDetails[label] = (giveawayDetails[label] || 0) + val;
-        freeSum += val;
-      }
-    });
-    
-    // Total giveaway = protocol + free (for Total view)
-    // GameDay giveaway = free only (no protocol)
-    const giveawaySum = protocolSum + freeSum;
 
     // For GameDay view, ticket counts exclude protocol allocations
     // Full price and discount are the same in both views (they're paid tickets)
