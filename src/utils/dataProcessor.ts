@@ -236,7 +236,9 @@ export const processGameData = (csvContent: string): GameData[] => {
 
     const giveawayDetails: Record<string, number> = {};
     let protocolSum = 0;  // Protocol = fixed capacity, Total view only
-    let gaColumnsSum = 0; // Sum of individual GA columns (the correct giveaway count)
+    
+    // Use Total_GA from BigQuery as the authoritative giveaway count
+    const totalGAFromData = parseInteger(getValue(['Total_GA', 'Total GA', 'TotalGA']));
     
     // Calculate per-zone protocol quantities (fixed capacity - Total view only)
     Object.keys(zonePrefixes).forEach(prefix => {
@@ -247,25 +249,14 @@ export const processGameData = (csvContent: string): GameData[] => {
       }
     });
     
-    // Sum individual GA columns - these are the correct giveaway counts
-    Object.entries(giveawayMap).forEach(([label, keys]) => {
-      const val = parseInteger(getValue(keys));
-      if (val > 0) {
-        giveawayDetails[label] = (giveawayDetails[label] || 0) + val;
-        gaColumnsSum += val;
-      }
-    });
+    // Total giveaway = Total_GA from data source (authoritative)
+    // freeSum = giveaways minus protocol (for GameDay view)
+    const giveawaySum = totalGAFromData > 0 ? totalGAFromData : protocolSum;
+    const freeSum = Math.max(0, giveawaySum - protocolSum);
     
-    // Add Ospiti Free (guest giveaways)
-    const ospitiFree = parseInteger(getValue(['Ospiti Free Num', 'Ospiti Free', 'Guests Free']));
-    if (ospitiFree > 0) {
-      giveawayDetails['Ospiti Free'] = ospitiFree;
-      gaColumnsSum += ospitiFree;
+    if (freeSum > 0) {
+      giveawayDetails['Free'] = freeSum;
     }
-    
-    // Total giveaway = protocol + GA columns sum
-    const freeSum = gaColumnsSum;
-    const giveawaySum = protocolSum + gaColumnsSum;
 
     // For GameDay view, ticket counts exclude protocol allocations
     // Full price and discount are the same in both views (they're paid tickets)
