@@ -341,47 +341,35 @@ export const processGameData = (csvContent: string): GameData[] => {
     const gameDayAttendance = attendance + freeSum;  // paid + free
     const totalAttendanceCalc = totalAttendance || (attendance + protocolSum + freeSum);
 
-    // Calculate ticket type breakdown by channel
-    // GameDay channels: TIX, MP, VB (excludes ABB, CORP, PROTOCOL)
-    const gameDayChannels = [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB];
-    const totalPaidChannels = [SalesChannel.ABB, SalesChannel.CORP, SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB];
+    // Calculate ticket type breakdown
+    // Total view: Full Price column + CORP, Discount columns, Free = giveaways
+    // GameDay view: Only TIX + MP + VB paid tickets, Free = giveaways (no protocol)
     
-    // Get CORP total (always full price)
+    // Get CORP total (always full price, add to Full)
     const corpQty = salesBreakdown
       .filter(s => s.channel === SalesChannel.CORP)
       .reduce((sum, s) => sum + s.quantity, 0);
     
-    // Get ABB total (has both full and discount - apply same ratio as individual tickets)
-    const abbQty = salesBreakdown
-      .filter(s => s.channel === SalesChannel.ABB)
-      .reduce((sum, s) => sum + s.quantity, 0);
-    
+    // Get GameDay paid tickets (TIX + MP + VB only)
     const gameDayPaidQty = salesBreakdown
-      .filter(s => gameDayChannels.includes(s.channel))
-      .reduce((sum, s) => sum + s.quantity, 0);
-    const totalPaidQty = salesBreakdown
-      .filter(s => totalPaidChannels.includes(s.channel))
+      .filter(s => [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB].includes(s.channel))
       .reduce((sum, s) => sum + s.quantity, 0);
     
-    // Calculate full/discount ratio from individual ticket columns
-    const individualTotal = fullPrice + discountSum;
-    const fullRatio = individualTotal > 0 ? fullPrice / individualTotal : 0.5;
+    // Total view breakdown:
+    // Full = "Full Price" column + CORP (CORP is always full price)
+    // Discount = discount columns sum (everything not full or corp or free)
+    // Free = giveaways (Total_GA)
+    ticketTypeBreakdown.full = fullPrice + corpQty;
+    ticketTypeBreakdown.discount = discountSum;
+    ticketTypeBreakdown.giveaway = giveawaySum;
     
-    // Split ABB into full and discount using the same ratio as individual tickets
-    const abbFullQty = Math.round(abbQty * fullRatio);
-    const abbDiscountQty = abbQty - abbFullQty;
-    
-    // Update Total view: 
-    // Full = individual full price + CORP (always full) + ABB full portion
-    // Discount = individual discount + ABB discount portion
-    ticketTypeBreakdown.full = fullPrice + corpQty + abbFullQty;
-    ticketTypeBreakdown.discount = discountSum + abbDiscountQty;
-    
-    // Apply ratio to full/discount for GameDay view (excludes ABB and CORP)
-    // If no total paid, ratio is 0 (no GameDay tickets)
-    const gameDayRatio = totalPaidQty > 0 ? gameDayPaidQty / totalPaidQty : 0;
-    ticketTypeBreakdown.fullGameDay = Math.round(fullPrice * gameDayRatio);
-    ticketTypeBreakdown.discountGameDay = Math.round(discountSum * gameDayRatio);
+    // GameDay view breakdown:
+    // Use the same full/discount ratio but applied only to GameDay paid quantity
+    const paidTotal = fullPrice + discountSum;
+    const fullRatioForGameDay = paidTotal > 0 ? fullPrice / paidTotal : 0;
+    ticketTypeBreakdown.fullGameDay = Math.round(gameDayPaidQty * fullRatioForGameDay);
+    ticketTypeBreakdown.discountGameDay = gameDayPaidQty - ticketTypeBreakdown.fullGameDay;
+    ticketTypeBreakdown.giveawayGameDay = freeSum; // Free only, no protocol
 
     return {
       id, opponent, date, 
