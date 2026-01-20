@@ -1649,17 +1649,35 @@ const App: React.FC = () => {
 
   const efficiencyData = useMemo(() => {
     return filteredGames.map(game => {
-      let zoneSales = game.salesBreakdown.filter(s => 
+      // GameDay channels (excludes PROTOCOL)
+      let gameDaySales = game.salesBreakdown.filter(s => 
           [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel)
       );
+      // Total channels (includes PROTOCOL)
+      let totalSales = game.salesBreakdown.filter(s => 
+          [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY, SalesChannel.PROTOCOL].includes(s.channel)
+      );
 
-      if (ignoreOspiti) zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
-      if (!selectedZones.includes('All')) zoneSales = zoneSales.filter(s => selectedZones.includes(s.zone));
+      if (ignoreOspiti) {
+        gameDaySales = gameDaySales.filter(s => s.zone !== TicketZone.OSPITI);
+        totalSales = totalSales.filter(s => s.zone !== TicketZone.OSPITI);
+      }
+      if (!selectedZones.includes('All')) {
+        gameDaySales = gameDaySales.filter(s => selectedZones.includes(s.zone));
+        totalSales = totalSales.filter(s => selectedZones.includes(s.zone));
+      }
 
-      const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
-      const zoneAttendance = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
+      // GameDay = excludes protocol
+      const gameDayRevenue = gameDaySales.reduce((acc, curr) => acc + curr.revenue, 0);
+      const gameDayAttendance = gameDaySales.reduce((acc, curr) => acc + curr.quantity, 0);
+      
+      // Total = includes protocol
+      const totalRevenue = totalSales.reduce((acc, curr) => acc + curr.revenue, 0);
+      const totalAttendance = totalSales.reduce((acc, curr) => acc + curr.quantity, 0);
 
+      // Capacity calculation
       let zoneCapacity = 0;
+      let gameDayCapacity = 0;
       let filteredZoneCapacities = { ...game.zoneCapacities };
       if (ignoreOspiti) delete filteredZoneCapacities[TicketZone.OSPITI];
       
@@ -1671,19 +1689,24 @@ const App: React.FC = () => {
           filteredZoneCapacities = newCapMap;
       }
 
+      // Total capacity (before deductions)
+      Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
+      
+      // GameDay capacity (after fixed deductions for protocol)
       Object.keys(filteredZoneCapacities).forEach(z => {
           const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
-          filteredZoneCapacities[z] = Math.max(0, filteredZoneCapacities[z] - fixedDeduction);
+          gameDayCapacity += Math.max(0, filteredZoneCapacities[z] - fixedDeduction);
       });
-
-      Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
 
       return {
         ...game,
-        attendance: zoneAttendance,
-        totalRevenue: zoneRevenue,
-        capacity: zoneCapacity,
-        salesBreakdown: zoneSales,
+        attendance: totalAttendance,           // Total view: includes protocol
+        attendanceGameDay: gameDayAttendance,  // GameDay view: excludes protocol
+        totalRevenue: totalRevenue,            // Total view revenue
+        revenueGameDay: gameDayRevenue,        // GameDay view revenue
+        capacity: zoneCapacity,                // Total capacity
+        capacityGameDay: gameDayCapacity,      // GameDay capacity (reduced by protocol)
+        salesBreakdown: totalSales,
         zoneCapacities: filteredZoneCapacities
       };
     });
