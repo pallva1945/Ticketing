@@ -1771,16 +1771,16 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                         Seat History ({seatHistoryData.seatHistory.filter(g => g.occupied).length}/{seatHistoryData.seatHistory.length} games occupied)
                       </h4>
                     </div>
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
                       <table className="w-full text-sm">
-                        <thead>
+                        <thead className="sticky top-0 z-10">
                           <tr className="border-b border-gray-200 bg-gray-50">
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600">Date</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600">Opponent</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600">Status</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600">Occupant</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600">Type</th>
-                            <th className="text-right py-2 px-3 font-semibold text-gray-600">Value</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 bg-gray-50">Date</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 bg-gray-50">Opponent</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 bg-gray-50">Status</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 bg-gray-50">Occupant</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 bg-gray-50">Type</th>
+                            <th className="text-right py-2 px-3 font-semibold text-gray-600 bg-gray-50">Value</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
