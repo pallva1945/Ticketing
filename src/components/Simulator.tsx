@@ -1,7 +1,30 @@
 import React, { useState, useMemo } from 'react';
-import { GameData, SalesChannel } from '../types';
+import { GameData, SalesChannel, TicketZone } from '../types';
 import { FIXED_CAPACITY_25_26 } from '../constants';
 import { Calculator, TrendingUp, TrendingDown, RefreshCcw, Plus, Trash2, Sun, Snowflake, ArrowRight } from 'lucide-react';
+
+// Total capacities for 25-26 season (used as baseline)
+const TOTAL_CAPACITIES: Record<string, number> = {
+  [TicketZone.PAR_O]: 373,
+  [TicketZone.PAR_EX]: 75,
+  [TicketZone.PAR_E]: 200,
+  [TicketZone.TRIB_G]: 2209,
+  [TicketZone.TRIB_S]: 367,
+  [TicketZone.GALL_G]: 389,
+  [TicketZone.GALL_S]: 669,
+  [TicketZone.CURVA]: 458,
+  [TicketZone.COURTSIDE]: 44,
+  [TicketZone.OSPITI]: 233,
+  [TicketZone.SKYBOX]: 60
+};
+
+// GameDay availability = Total - Fixed (pre-sold ABB/CORP/Protocol)
+const GAMEDAY_CAPACITIES: Record<string, number> = Object.fromEntries(
+  Object.entries(TOTAL_CAPACITIES).map(([zone, total]) => [
+    zone,
+    total - (FIXED_CAPACITY_25_26[zone] || 0)
+  ])
+);
 
 interface SimulatorProps {
   data: GameData[];
@@ -51,27 +74,25 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
 
   // Calculate Baseline for ALL zones (to show total impact)
   const baselineStats = useMemo(() => {
-      const stats: Record<string, { totalRev: number, totalSold: number, maxCapacity: number }> = {};
+      const stats: Record<string, { totalRev: number, totalSold: number }> = {};
       
-      data.forEach(g => {
-          // Get total capacity for zone from source data
-          if (g.zoneCapacities) {
-              Object.entries(g.zoneCapacities).forEach(([z, cap]) => {
-                  if (!stats[z]) stats[z] = { totalRev: 0, totalSold: 0, maxCapacity: 0 };
-                  if ((cap as number) > stats[z].maxCapacity) stats[z].maxCapacity = cap as number;
-              });
-          }
+      // Initialize all zones from capacity constants
+      Object.keys(TOTAL_CAPACITIES).forEach(zone => {
+          stats[zone] = { totalRev: 0, totalSold: 0 };
       });
 
       processedData.forEach(g => {
           g.salesBreakdown.forEach(s => {
-              if (!stats[s.zone]) stats[s.zone] = { totalRev: 0, totalSold: 0, maxCapacity: 0 };
+              if (!stats[s.zone]) stats[s.zone] = { totalRev: 0, totalSold: 0 };
               stats[s.zone].totalRev += s.revenue;
               stats[s.zone].totalSold += s.quantity;
           });
       });
 
       const gameCount = data.length || 1;
+      
+      // Use correct capacity based on mode
+      const capacities = mode === 'SUMMER' ? TOTAL_CAPACITIES : GAMEDAY_CAPACITIES;
 
       const zoneBaselines: Record<string, { avgPrice: number, avgVol: number, avgRev: number, totalCapacity: number }> = {};
       
@@ -79,11 +100,12 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
           const avgVol = val.totalSold / gameCount;
           const avgRev = val.totalRev / gameCount;
           const avgPrice = val.totalSold > 0 ? val.totalRev / val.totalSold : 0;
-          zoneBaselines[z] = { avgPrice, avgVol, avgRev, totalCapacity: val.maxCapacity };
+          // Use the mode-appropriate capacity
+          zoneBaselines[z] = { avgPrice, avgVol, avgRev, totalCapacity: capacities[z] || 0 };
       });
 
       return zoneBaselines;
-  }, [processedData, data]);
+  }, [processedData, data, mode]);
 
   const addDecision = () => {
       const newDecision: Decision = {
@@ -123,14 +145,8 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
           if (mod) {
               const newPrice = Math.max(0, base.avgPrice + mod.priceDelta);
               
-              // CAPACITY CONSTRAINT LOGIC
-              let availableCapacity = base.totalCapacity;
-              if (mode === 'IN_SEASON') {
-                  // If In-Season, available capacity is Total - Fixed (Summer Sales)
-                  const fixedSold = FIXED_CAPACITY_25_26[z] || 0;
-                  availableCapacity = Math.max(0, base.totalCapacity - fixedSold);
-              }
-              // If Summer, available capacity is full stadium (theoretical max)
+              // Capacity is already mode-appropriate (Total for Summer, GameDay for In-Season)
+              const availableCapacity = base.totalCapacity;
 
               const calculatedVol = Math.max(0, base.avgVol * (1 + mod.volDeltaPercent / 100));
               
@@ -155,11 +171,8 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
   
   const previewNewPrice = Math.max(0, currentZoneBaseline.avgPrice + priceAdjustment);
   
-  let previewAvailableCap = currentZoneBaseline.totalCapacity;
-  if (mode === 'IN_SEASON') {
-      const fixedSold = FIXED_CAPACITY_25_26[selectedZone] || 0;
-      previewAvailableCap = Math.max(0, currentZoneBaseline.totalCapacity - fixedSold);
-  }
+  // Capacity is already mode-appropriate
+  const previewAvailableCap = currentZoneBaseline.totalCapacity;
 
   const previewCalculatedVol = Math.max(0, currentZoneBaseline.avgVol * (1 + demandElasticity / 100));
   const previewFinalVol = Math.min(previewCalculatedVol, previewAvailableCap);
