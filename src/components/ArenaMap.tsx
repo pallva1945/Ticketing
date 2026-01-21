@@ -2,13 +2,17 @@ import React, { useMemo, useState } from 'react';
 import { GameData, TicketZone, SalesChannel } from '../types';
 import { PV_LOGO_URL } from '../constants';
 
-// GameDay channels: TIX + MP + VB + GIVEAWAY (excludes ABB, CORP, PROTOCOL)
-const GAMEDAY_CHANNELS = [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY];
+// Per-zone attributable channels (FREE giveaways are aggregate, not zone-specific)
+// GameDay: TIX + MP + VB (FREE is aggregate, tracked separately)
+// Total: TIX + MP + VB + ABB + CORP + PROTOCOL (FREE is aggregate, tracked separately)
+const GAMEDAY_ZONE_CHANNELS = [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB];
+const TOTAL_ZONE_CHANNELS = [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.ABB, SalesChannel.CORP, SalesChannel.PROTOCOL];
 
 interface ArenaMapProps {
   data: GameData[];
   onZoneClick: (zone: string) => void;
   selectedZone: string;
+  viewMode?: 'gameday' | 'total';
 }
 
 interface ZoneMetrics {
@@ -18,6 +22,7 @@ interface ZoneMetrics {
 }
 
 type MapMetric = 'revenue' | 'occupancy' | 'yield';
+type ViewMode = 'gameday' | 'total';
 
 // --- GEOMETRY HELPERS ---
 const describeSector = (
