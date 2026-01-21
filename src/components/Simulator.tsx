@@ -386,7 +386,10 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                {decisions.map((d) => (
+                                {decisions.map((d) => {
+                                    const zoneBase = baselineStats[d.zone];
+                                    const seatChange = zoneBase ? Math.round(zoneBase.avgVol * (d.demandAdj / 100)) : 0;
+                                    return (
                                     <div key={d.id} className="group flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all hover:border-indigo-100">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs">
@@ -399,7 +402,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                                                         Price: {d.priceAdj > 0 ? '+' : ''}{d.priceAdj}€
                                                     </span>
                                                     <span className={`${d.demandAdj > 0 ? 'text-green-600' : 'text-red-600'} font-medium bg-gray-50 px-1.5 rounded`}>
-                                                        Vol: {d.demandAdj > 0 ? '+' : ''}{d.demandAdj}%
+                                                        Vol: {d.demandAdj > 0 ? '+' : ''}{d.demandAdj}% ({seatChange > 0 ? '+' : ''}{seatChange} seats)
                                                     </span>
                                                 </div>
                                             </div>
@@ -411,7 +414,8 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                                             <Trash2 size={18} />
                                         </button>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
