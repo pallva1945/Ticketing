@@ -1,6 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { GameData, TicketZone } from '../types';
+import { GameData, TicketZone, SalesChannel } from '../types';
 import { PV_LOGO_URL } from '../constants';
+
+// GameDay channels: TIX + MP + VB + GIVEAWAY (excludes ABB, CORP, PROTOCOL)
+const GAMEDAY_CHANNELS = [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY];
 
 interface ArenaMapProps {
   data: GameData[];
@@ -60,10 +63,17 @@ const getZoneMetrics = (data: GameData[]) => {
         });
     }
 
+    // Only count GameDay channels for sold: TIX + MP + VB + GIVEAWAY (no ABB, CORP, PROTOCOL)
     game.salesBreakdown.forEach(s => {
       if (!stats[s.zone]) stats[s.zone] = { revenue: 0, sold: 0, capacity: 0 };
+      
+      // Revenue from all channels
       stats[s.zone].revenue += s.revenue;
-      stats[s.zone].sold += s.quantity;
+      
+      // Sold count only from GameDay channels
+      if (GAMEDAY_CHANNELS.includes(s.channel)) {
+        stats[s.zone].sold += s.quantity;
+      }
     });
   });
   
