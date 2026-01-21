@@ -311,9 +311,21 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                                       style={{ width: '100%' }} // Fill remaining space implies overflow
                                     ></div>
                                 )}
+                                {/* Season Average Marker */}
+                                <div 
+                                    className="absolute top-0 h-full w-0.5 bg-gray-600"
+                                    style={{ left: `${Math.min((currentZoneBaseline.avgVol / previewAvailableCap) * 100, 100)}%` }}
+                                    title={`Avg: ${Math.round(currentZoneBaseline.avgVol)}`}
+                                ></div>
                             </div>
-                            <div className="flex justify-between text-[9px] text-gray-400 mt-1">
+                            <div className="flex justify-between text-[9px] text-gray-400 mt-1 relative">
                                 <span>0</span>
+                                <span 
+                                    className="absolute text-gray-600 font-medium"
+                                    style={{ left: `${Math.min((currentZoneBaseline.avgVol / previewAvailableCap) * 100, 100)}%`, transform: 'translateX(-50%)' }}
+                                >
+                                    Avg: {Math.round(currentZoneBaseline.avgVol)}
+                                </span>
                                 <span className="font-bold text-indigo-600">{Math.round(previewFinalVol)}</span>
                                 <span>Cap: {Math.round(previewAvailableCap)}</span>
                             </div>
