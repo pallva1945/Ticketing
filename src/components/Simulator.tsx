@@ -363,9 +363,19 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm min-h-[300px] flex flex-col">
                     <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-2xl">
                         <h3 className="font-bold text-gray-800">Active Decisions</h3>
-                        <span className="text-xs font-medium px-2 py-1 bg-white border border-gray-200 rounded text-gray-500">
-                            {decisions.length} Applied
-                        </span>
+                        <div className="flex items-center gap-2">
+                            {decisions.length > 0 && (
+                                <button 
+                                    onClick={() => setDecisions([])} 
+                                    className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-all"
+                                >
+                                    <RefreshCcw size={12} /> Reset
+                                </button>
+                            )}
+                            <span className="text-xs font-medium px-2 py-1 bg-white border border-gray-200 rounded text-gray-500">
+                                {decisions.length} Applied
+                            </span>
+                        </div>
                     </div>
                     
                     <div className="flex-1 p-2">
@@ -406,13 +416,6 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                         )}
                     </div>
                     
-                    {decisions.length > 0 && (
-                        <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
-                            <button onClick={() => setDecisions([])} className="text-xs text-red-600 font-bold hover:underline flex items-center gap-1">
-                                <RefreshCcw size={12} /> Clear Strategy
-                            </button>
-                        </div>
-                    )}
                 </div>
 
             </div>
