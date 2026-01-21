@@ -315,12 +315,13 @@ export const processGameData = (csvContent: string): GameData[] => {
         }
       });
 
-      // Protocol (Fixed Giveaway) - from per-zone Prot columns
+      // Protocol - from per-zone Prot columns (Total view only)
       const protQty = parseInteger(getValue([`${prefix} Prot`]));
       if (protQty > 0) salesBreakdown.push({ zone, channel: SalesChannel.PROTOCOL, quantity: protQty, revenue: 0 });
       
-      // NOTE: Per-zone "Free Num" columns contain ticket counts, NOT giveaways
-      // Do NOT use them for GIVEAWAY channel - use Total_GA instead (see below)
+      // Free giveaways - from per-zone Free Num columns (GameDay includes these)
+      const freeQty = parseInteger(getValue([`${prefix} Free Num`]));
+      if (freeQty > 0) salesBreakdown.push({ zone, channel: SalesChannel.GIVEAWAY, quantity: freeQty, revenue: 0 });
     });
 
     const ospitiQty = parseInteger(getValue(['Ospiti Tix Num', 'Guests Num']));
