@@ -179,6 +179,8 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
   
   const previewImpact = (previewNewPrice * previewFinalVol) - currentZoneBaseline.avgRev;
   const isCapped = previewCalculatedVol > previewAvailableCap;
+  const seatsLost = demandElasticity < 0 ? Math.round(currentZoneBaseline.avgVol - previewFinalVol) : 0;
+  const seatsCapped = isCapped ? Math.round(previewCalculatedVol - previewAvailableCap) : 0;
   
   // Calculate percentage of bar to be "capped" (red)
   // const capOverflowWidth = isCapped ? Math.min(((previewCalculatedVol - previewAvailableCap) / previewAvailableCap) * 100, 100) : 0; // Removed unused variable
@@ -289,8 +291,14 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                             </div>
                             
                             {isCapped && (
+                                <div className="mt-2 text-[10px] text-white bg-amber-500 px-2 py-1 rounded font-bold text-center border border-amber-600 relative z-10">
+                                    CAPPED AT CAPACITY: +{seatsCapped} OVERFLOW
+                                </div>
+                            )}
+                            
+                            {seatsLost > 0 && !isCapped && (
                                 <div className="mt-2 text-[10px] text-white bg-red-500 px-2 py-1 rounded font-bold text-center border border-red-600 relative z-10 animate-pulse">
-                                    UNFULFILLED DEMAND: {Math.round(previewCalculatedVol - previewAvailableCap)} SEATS LOST
+                                    DEMAND DROP: {seatsLost} SEATS LOST
                                 </div>
                             )}
 
