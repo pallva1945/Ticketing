@@ -271,7 +271,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                                 </span>
                             </div>
                             <input 
-                                type="range" min="-50" max="100" step="5" 
+                                type="range" min="-50" max="200" step="5" 
                                 value={demandElasticity}
                                 onChange={(e) => setDemandElasticity(parseFloat(e.target.value))}
                                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
@@ -314,6 +314,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                             </div>
                             <div className="flex justify-between text-[9px] text-gray-400 mt-1">
                                 <span>0</span>
+                                <span className="font-bold text-indigo-600">{Math.round(previewFinalVol)}</span>
                                 <span>Cap: {Math.round(previewAvailableCap)}</span>
                             </div>
                         </div>
