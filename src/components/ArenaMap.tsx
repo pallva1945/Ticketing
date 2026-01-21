@@ -92,8 +92,7 @@ const getZoneMetrics = (data: GameData[], viewMode: ViewMode) => {
 };
 
 export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZone, viewMode = 'gameday' }) => {
-  const [arenaViewMode, setArenaViewMode] = useState<ViewMode>(viewMode);
-  const { stats, maxRevenue } = useMemo(() => getZoneMetrics(data, arenaViewMode), [data, arenaViewMode]);
+  const { stats, maxRevenue } = useMemo(() => getZoneMetrics(data, viewMode), [data, viewMode]);
   const [hoveredZone, setHoveredZone] = useState<string | null>(null);
   const [metric, setMetric] = useState<MapMetric>('revenue');
 
@@ -188,16 +187,10 @@ export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZ
 
       {/* Header controls */}
       <div className="w-full flex justify-between items-center mb-2 z-10 px-4 absolute top-4 left-0 right-0">
-        <div className="flex items-center gap-3">
-          <h3 className="text-lg font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2 drop-shadow-md">
-             <span className="w-1.5 h-5 bg-red-600 rounded-sm"></span>
-             Arena Map
-          </h3>
-          <div className="flex bg-slate-800/80 rounded-md p-0.5 border border-slate-700">
-            <button onClick={() => setArenaViewMode('gameday')} className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-all ${arenaViewMode === 'gameday' ? 'bg-amber-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}>GameDay</button>
-            <button onClick={() => setArenaViewMode('total')} className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-all ${arenaViewMode === 'total' ? 'bg-sky-600 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Total</button>
-          </div>
-        </div>
+        <h3 className="text-lg font-bold text-gray-200 uppercase tracking-wider flex items-center gap-2 drop-shadow-md">
+           <span className="w-1.5 h-5 bg-red-600 rounded-sm"></span>
+           Arena Map
+        </h3>
         
         <div className="flex bg-slate-900/80 backdrop-blur-sm rounded-lg p-0.5 border border-slate-700 shadow-lg">
             <button onClick={() => setMetric('revenue')} className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase transition-all ${metric === 'revenue' ? 'bg-red-700 text-white' : 'text-slate-500 hover:text-slate-300'}`}>Revenue</button>

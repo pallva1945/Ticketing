@@ -2444,7 +2444,8 @@ const App: React.FC = () => {
                                     <ArenaMap 
                                         data={viewData} 
                                         onZoneClick={handleZoneClick} 
-                                        selectedZone={selectedZones.includes('All') ? 'All' : selectedZones[0]} 
+                                        selectedZone={selectedZones.includes('All') ? 'All' : selectedZones[0]}
+                                        viewMode={viewMode}
                                     />
                                 </div>
 
