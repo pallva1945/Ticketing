@@ -324,10 +324,23 @@ export const processGameData = (csvContent: string): GameData[] => {
       if (freeQty > 0) salesBreakdown.push({ zone, channel: SalesChannel.GIVEAWAY, quantity: freeQty, revenue: 0 });
     });
 
+    // Ospiti zone - TIX
     const ospitiQty = parseInteger(getValue(['Ospiti Tix Num', 'Guests Num']));
     const ospitiRev = parseCurrency(getValue(['Ospiti Tix Eur', 'Guests Rev']));
     if (ospitiQty > 0 || ospitiRev > 0) {
       salesBreakdown.push({ zone: TicketZone.OSPITI, channel: SalesChannel.TIX, quantity: ospitiQty, revenue: ospitiRev });
+    }
+    
+    // Ospiti zone - FREE
+    const ospitiFreeQty = parseInteger(getValue(['Ospiti Free Num']));
+    if (ospitiFreeQty > 0) {
+      salesBreakdown.push({ zone: TicketZone.OSPITI, channel: SalesChannel.GIVEAWAY, quantity: ospitiFreeQty, revenue: 0 });
+    }
+    
+    // Ospiti zone - PROTOCOL
+    const ospitiProtQty = parseInteger(getValue(['Ospiti Prot']));
+    if (ospitiProtQty > 0) {
+      salesBreakdown.push({ zone: TicketZone.OSPITI, channel: SalesChannel.PROTOCOL, quantity: ospitiProtQty, revenue: 0 });
     }
     
     // NOTE: Aggregate giveaways (freeSum from Total_GA) are NOT zone-attributable
