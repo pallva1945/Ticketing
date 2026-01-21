@@ -318,15 +318,10 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                                     title={`Avg: ${Math.round(currentZoneBaseline.avgVol)}`}
                                 ></div>
                             </div>
-                            <div className="flex justify-between text-[9px] text-gray-400 mt-1 relative">
+                            <div className="flex justify-between text-[9px] text-gray-400 mt-1">
                                 <span>0</span>
-                                <span 
-                                    className="absolute text-gray-600 font-medium"
-                                    style={{ left: `${Math.min((currentZoneBaseline.avgVol / previewAvailableCap) * 100, 100)}%`, transform: 'translateX(-50%)' }}
-                                >
-                                    Avg: {Math.round(currentZoneBaseline.avgVol)}
-                                </span>
-                                <span className="font-bold text-indigo-600">{Math.round(previewFinalVol)}</span>
+                                <span className="text-gray-600 font-medium">Avg: {Math.round(currentZoneBaseline.avgVol)}</span>
+                                <span className="font-bold text-indigo-600">Proj: {Math.round(previewFinalVol)}</span>
                                 <span>Cap: {Math.round(previewAvailableCap)}</span>
                             </div>
                         </div>
