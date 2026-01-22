@@ -487,13 +487,6 @@ const computeCRMStats = (rawRows: any[]) => {
   // Count unique corps
   const uniqueCorps = Object.keys(corpBreakdown).length;
   
-  // Debug: Log commercial value breakdown by sell type
-  console.log('Commercial Value by Sell Type:');
-  for (const [type, stats] of Object.entries(sellTypeStats)) {
-    console.log(`  ${type}: €${(stats as any).commercialValue?.toLocaleString('it-IT') || 0} (${(stats as any).tickets} tickets)`)
-  }
-  console.log(`  TOTAL: €${totalCommercialValue.toLocaleString('it-IT')}`);
-
   return {
     totalRecords: rawRows.length,
     totalTickets, // Net tickets (purchases minus returns)
