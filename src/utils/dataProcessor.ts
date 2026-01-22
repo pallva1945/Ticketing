@@ -236,9 +236,7 @@ export const processGameData = (csvContent: string): GameData[] => {
 
     const giveawayDetails: Record<string, number> = {};
     let protocolSum = 0;  // Protocol = fixed capacity, Total view only
-    
-    // Use Total_GA from BigQuery as the authoritative giveaway count
-    const totalGAFromData = parseInteger(getValue(['Total_GA', 'Total GA', 'TotalGA']));
+    let freeSum = 0;      // Free = both GameDay and Total view
     
     // Calculate per-zone protocol quantities (fixed capacity - Total view only)
     Object.keys(zonePrefixes).forEach(prefix => {
@@ -249,29 +247,46 @@ export const processGameData = (csvContent: string): GameData[] => {
       }
     });
     
-    // Total giveaway = Total_GA from data source (authoritative)
-    // freeSum = giveaways minus protocol (for GameDay view)
-    const giveawaySum = totalGAFromData > 0 ? totalGAFromData : protocolSum;
-    const freeSum = Math.max(0, giveawaySum - protocolSum);
+    // Calculate per-zone free quantities (both views)
+    Object.keys(zonePrefixes).forEach(prefix => {
+      const freeQty = parseInteger(getValue([`${prefix} Free Num`]));
+      if (freeQty > 0) {
+        giveawayDetails['Free'] = (giveawayDetails['Free'] || 0) + freeQty;
+        freeSum += freeQty;
+      }
+    });
     
-    if (freeSum > 0) {
-      giveawayDetails['Free'] = freeSum;
+    // Add Ospiti Free (both views)
+    const ospitiFree = parseInteger(getValue(['Ospiti Free Num', 'Ospiti Free', 'Guests Free']));
+    if (ospitiFree > 0) {
+      giveawayDetails['Ospiti Free'] = ospitiFree;
+      freeSum += ospitiFree;
     }
-
-    // For GameDay view, ticket counts exclude presold channels (ABB, CORP) and protocol
-    // GameDay = TIX + MP + VB + FREE only
-    // Total = ABB + CORP + TIX + MP + VB + PROTOCOL + FREE
     
-    // Calculate paid tickets by channel group (will be used after salesBreakdown is built)
-    // For now, set placeholders - will recalculate below after salesBreakdown
+    // Add individual GA columns (these are also "free" type giveaways)
+    Object.entries(giveawayMap).forEach(([label, keys]) => {
+      const val = parseInteger(getValue(keys));
+      if (val > 0) {
+        giveawayDetails[label] = (giveawayDetails[label] || 0) + val;
+        freeSum += val;
+      }
+    });
+    
+    // Total giveaway = protocol + free (for Total view)
+    // GameDay giveaway = free only (no protocol)
+    const giveawaySum = protocolSum + freeSum;
+
+    // For GameDay view, ticket counts exclude protocol allocations
+    // Full price and discount are the same in both views (they're paid tickets)
+    // Only giveaways differ (protocol excluded in GameDay)
     const ticketTypeBreakdown: TicketTypeBreakdown = {
-      // Total view (includes all channels)
+      // Total view (includes protocol)
       full: fullPrice,
       discount: discountSum,
       giveaway: giveawaySum,
-      // GameDay view (placeholders - calculated after salesBreakdown)
-      fullGameDay: 0,
-      discountGameDay: 0,
+      // GameDay view (excludes protocol)
+      fullGameDay: fullPrice,        // Same as total
+      discountGameDay: discountSum,  // Same as total
       giveawayGameDay: freeSum,      // Free only, no protocol
       // Protocol portion
       giveawayProtocol: protocolSum,
@@ -315,67 +330,31 @@ export const processGameData = (csvContent: string): GameData[] => {
         }
       });
 
-      // Protocol - from per-zone Prot columns (Total view only)
+      // Protocol (Fixed Giveaway)
       const protQty = parseInteger(getValue([`${prefix} Prot`]));
       if (protQty > 0) salesBreakdown.push({ zone, channel: SalesChannel.PROTOCOL, quantity: protQty, revenue: 0 });
       
-      // Free giveaways - from per-zone Free Num columns (GameDay includes these)
+      // Free (Dynamic Giveaway)
       const freeQty = parseInteger(getValue([`${prefix} Free Num`]));
       if (freeQty > 0) salesBreakdown.push({ zone, channel: SalesChannel.GIVEAWAY, quantity: freeQty, revenue: 0 });
     });
 
-    // Ospiti zone - TIX
     const ospitiQty = parseInteger(getValue(['Ospiti Tix Num', 'Guests Num']));
     const ospitiRev = parseCurrency(getValue(['Ospiti Tix Eur', 'Guests Rev']));
     if (ospitiQty > 0 || ospitiRev > 0) {
       salesBreakdown.push({ zone: TicketZone.OSPITI, channel: SalesChannel.TIX, quantity: ospitiQty, revenue: ospitiRev });
     }
     
-    // Ospiti zone - FREE
-    const ospitiFreeQty = parseInteger(getValue(['Ospiti Free Num']));
+    // NEW LOGIC: Ospiti Free Num
+    const ospitiFreeQty = parseInteger(getValue(['Ospiti Free Num', 'Ospiti Free', 'Guests Free']));
     if (ospitiFreeQty > 0) {
-      salesBreakdown.push({ zone: TicketZone.OSPITI, channel: SalesChannel.GIVEAWAY, quantity: ospitiFreeQty, revenue: 0 });
+        salesBreakdown.push({ zone: TicketZone.OSPITI, channel: SalesChannel.GIVEAWAY, quantity: ospitiFreeQty, revenue: 0 });
     }
-    
-    // Ospiti zone - PROTOCOL
-    const ospitiProtQty = parseInteger(getValue(['Ospiti Prot']));
-    if (ospitiProtQty > 0) {
-      salesBreakdown.push({ zone: TicketZone.OSPITI, channel: SalesChannel.PROTOCOL, quantity: ospitiProtQty, revenue: 0 });
-    }
-    
-    // NOTE: Aggregate giveaways (freeSum from Total_GA) are NOT zone-attributable
-    // They should not be added to salesBreakdown per-zone data to avoid inflating any zone
-    // Giveaways are tracked separately via giveawaySum for ticket type breakdown
 
     // GameDay attendance = paid attendance + free giveaways (no protocol)
     // Total attendance = paid + protocol + free
     const gameDayAttendance = attendance + freeSum;  // paid + free
     const totalAttendanceCalc = totalAttendance || (attendance + protocolSum + freeSum);
-
-    // Calculate ticket type breakdown
-    // Total must equal totalAttendanceCalc (authoritative from "Total num" column)
-    // Full = "Full Price" column, Discount = everything else paid, Free = giveaways
-    
-    // Get GameDay paid tickets (TIX + MP + VB only) for GameDay view
-    const gameDayPaidQty = salesBreakdown
-      .filter(s => [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB].includes(s.channel))
-      .reduce((sum, s) => sum + s.quantity, 0);
-    
-    // Total view breakdown - must sum to totalAttendanceCalc:
-    // Full = "Full Price" column (as-is from data)
-    // Discount = total paid - full price = (totalAttendance - giveaways) - fullPrice
-    // Free = giveaways (Total_GA)
-    const totalPaid = totalAttendanceCalc - giveawaySum;
-    ticketTypeBreakdown.full = fullPrice;
-    ticketTypeBreakdown.discount = Math.max(0, totalPaid - fullPrice);
-    ticketTypeBreakdown.giveaway = giveawaySum;
-    
-    // GameDay view breakdown:
-    // Paid = TIX + MP + VB only, Free = giveaways without protocol
-    const paidRatio = totalPaid > 0 ? fullPrice / totalPaid : 0;
-    ticketTypeBreakdown.fullGameDay = Math.round(gameDayPaidQty * paidRatio);
-    ticketTypeBreakdown.discountGameDay = gameDayPaidQty - ticketTypeBreakdown.fullGameDay;
-    ticketTypeBreakdown.giveawayGameDay = freeSum; // Free only, no protocol
 
     return {
       id, opponent, date, 

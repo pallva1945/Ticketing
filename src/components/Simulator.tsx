@@ -1,30 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { GameData, SalesChannel, TicketZone } from '../types';
+import { GameData, SalesChannel } from '../types';
 import { FIXED_CAPACITY_25_26 } from '../constants';
 import { Calculator, TrendingUp, TrendingDown, RefreshCcw, Plus, Trash2, Sun, Snowflake, ArrowRight } from 'lucide-react';
-
-// Total capacities for 25-26 season (used as baseline)
-const TOTAL_CAPACITIES: Record<string, number> = {
-  [TicketZone.PAR_O]: 373,
-  [TicketZone.PAR_EX]: 75,
-  [TicketZone.PAR_E]: 200,
-  [TicketZone.TRIB_G]: 2209,
-  [TicketZone.TRIB_S]: 367,
-  [TicketZone.GALL_G]: 389,
-  [TicketZone.GALL_S]: 669,
-  [TicketZone.CURVA]: 458,
-  [TicketZone.COURTSIDE]: 44,
-  [TicketZone.OSPITI]: 233,
-  [TicketZone.SKYBOX]: 60
-};
-
-// GameDay availability = Total - Fixed (pre-sold ABB/CORP/Protocol)
-const GAMEDAY_CAPACITIES: Record<string, number> = Object.fromEntries(
-  Object.entries(TOTAL_CAPACITIES).map(([zone, total]) => [
-    zone,
-    total - (FIXED_CAPACITY_25_26[zone] || 0)
-  ])
-);
 
 interface SimulatorProps {
   data: GameData[];
@@ -59,12 +36,11 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
       return games.map(g => {
           let relevantSales = g.salesBreakdown;
           if (mode === 'SUMMER') {
-              // Summer: Full view - all channels (Total capacity planning)
-              // Include everything: ABB, TIX, MP, VB, FREE, PROTOCOL, CORP
+              relevantSales = relevantSales.filter(s => s.channel === SalesChannel.ABB);
           } else {
-              // Game Day: Tix, MP, VB, Giveaway (Exclude ABB, Corp, Protocol)
+              // Game Day: Tix, MP, VB (Exclude ABB, Corp, Protocol, Giveaway)
               relevantSales = relevantSales.filter(s => 
-                  [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel)
+                  [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB].includes(s.channel)
               );
           }
           return { ...g, salesBreakdown: relevantSales };
@@ -75,25 +51,27 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
 
   // Calculate Baseline for ALL zones (to show total impact)
   const baselineStats = useMemo(() => {
-      const stats: Record<string, { totalRev: number, totalSold: number }> = {};
+      const stats: Record<string, { totalRev: number, totalSold: number, maxCapacity: number }> = {};
       
-      // Initialize all zones from capacity constants
-      Object.keys(TOTAL_CAPACITIES).forEach(zone => {
-          stats[zone] = { totalRev: 0, totalSold: 0 };
+      data.forEach(g => {
+          // Get total capacity for zone from source data
+          if (g.zoneCapacities) {
+              Object.entries(g.zoneCapacities).forEach(([z, cap]) => {
+                  if (!stats[z]) stats[z] = { totalRev: 0, totalSold: 0, maxCapacity: 0 };
+                  if ((cap as number) > stats[z].maxCapacity) stats[z].maxCapacity = cap as number;
+              });
+          }
       });
 
       processedData.forEach(g => {
           g.salesBreakdown.forEach(s => {
-              if (!stats[s.zone]) stats[s.zone] = { totalRev: 0, totalSold: 0 };
+              if (!stats[s.zone]) stats[s.zone] = { totalRev: 0, totalSold: 0, maxCapacity: 0 };
               stats[s.zone].totalRev += s.revenue;
               stats[s.zone].totalSold += s.quantity;
           });
       });
 
       const gameCount = data.length || 1;
-      
-      // Use correct capacity based on mode
-      const capacities = mode === 'SUMMER' ? TOTAL_CAPACITIES : GAMEDAY_CAPACITIES;
 
       const zoneBaselines: Record<string, { avgPrice: number, avgVol: number, avgRev: number, totalCapacity: number }> = {};
       
@@ -101,12 +79,11 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
           const avgVol = val.totalSold / gameCount;
           const avgRev = val.totalRev / gameCount;
           const avgPrice = val.totalSold > 0 ? val.totalRev / val.totalSold : 0;
-          // Use the mode-appropriate capacity
-          zoneBaselines[z] = { avgPrice, avgVol, avgRev, totalCapacity: capacities[z] || 0 };
+          zoneBaselines[z] = { avgPrice, avgVol, avgRev, totalCapacity: val.maxCapacity };
       });
 
       return zoneBaselines;
-  }, [processedData, data, mode]);
+  }, [processedData, data]);
 
   const addDecision = () => {
       const newDecision: Decision = {
@@ -146,8 +123,14 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
           if (mod) {
               const newPrice = Math.max(0, base.avgPrice + mod.priceDelta);
               
-              // Capacity is already mode-appropriate (Total for Summer, GameDay for In-Season)
-              const availableCapacity = base.totalCapacity;
+              // CAPACITY CONSTRAINT LOGIC
+              let availableCapacity = base.totalCapacity;
+              if (mode === 'IN_SEASON') {
+                  // If In-Season, available capacity is Total - Fixed (Summer Sales)
+                  const fixedSold = FIXED_CAPACITY_25_26[z] || 0;
+                  availableCapacity = Math.max(0, base.totalCapacity - fixedSold);
+              }
+              // If Summer, available capacity is full stadium (theoretical max)
 
               const calculatedVol = Math.max(0, base.avgVol * (1 + mod.volDeltaPercent / 100));
               
@@ -172,16 +155,17 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
   
   const previewNewPrice = Math.max(0, currentZoneBaseline.avgPrice + priceAdjustment);
   
-  // Capacity is already mode-appropriate
-  const previewAvailableCap = currentZoneBaseline.totalCapacity;
+  let previewAvailableCap = currentZoneBaseline.totalCapacity;
+  if (mode === 'IN_SEASON') {
+      const fixedSold = FIXED_CAPACITY_25_26[selectedZone] || 0;
+      previewAvailableCap = Math.max(0, currentZoneBaseline.totalCapacity - fixedSold);
+  }
 
   const previewCalculatedVol = Math.max(0, currentZoneBaseline.avgVol * (1 + demandElasticity / 100));
   const previewFinalVol = Math.min(previewCalculatedVol, previewAvailableCap);
   
   const previewImpact = (previewNewPrice * previewFinalVol) - currentZoneBaseline.avgRev;
   const isCapped = previewCalculatedVol > previewAvailableCap;
-  const seatsLost = demandElasticity < 0 ? Math.round(currentZoneBaseline.avgVol - previewFinalVol) : 0;
-  const seatsCapped = isCapped ? Math.round(previewCalculatedVol - previewAvailableCap) : 0;
   
   // Calculate percentage of bar to be "capped" (red)
   // const capOverflowWidth = isCapped ? Math.min(((previewCalculatedVol - previewAvailableCap) / previewAvailableCap) * 100, 100) : 0; // Removed unused variable
@@ -272,7 +256,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                                 </span>
                             </div>
                             <input 
-                                type="range" min="-50" max="200" step="5" 
+                                type="range" min="-50" max="100" step="5" 
                                 value={demandElasticity}
                                 onChange={(e) => setDemandElasticity(parseFloat(e.target.value))}
                                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
@@ -292,14 +276,8 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                             </div>
                             
                             {isCapped && (
-                                <div className="mt-2 text-[10px] text-white bg-amber-500 px-2 py-1 rounded font-bold text-center border border-amber-600 relative z-10">
-                                    CAPPED AT CAPACITY: +{seatsCapped} OVERFLOW
-                                </div>
-                            )}
-                            
-                            {seatsLost > 0 && !isCapped && (
                                 <div className="mt-2 text-[10px] text-white bg-red-500 px-2 py-1 rounded font-bold text-center border border-red-600 relative z-10 animate-pulse">
-                                    DEMAND DROP: {seatsLost} SEATS LOST
+                                    UNFULFILLED DEMAND: {Math.round(previewCalculatedVol - previewAvailableCap)} SEATS LOST
                                 </div>
                             )}
 
@@ -312,17 +290,9 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                                       style={{ width: '100%' }} // Fill remaining space implies overflow
                                     ></div>
                                 )}
-                                {/* Season Average Marker */}
-                                <div 
-                                    className="absolute top-0 h-full w-0.5 bg-gray-600"
-                                    style={{ left: `${Math.min((currentZoneBaseline.avgVol / previewAvailableCap) * 100, 100)}%` }}
-                                    title={`Avg: ${Math.round(currentZoneBaseline.avgVol)}`}
-                                ></div>
                             </div>
                             <div className="flex justify-between text-[9px] text-gray-400 mt-1">
                                 <span>0</span>
-                                <span className="text-gray-600 font-medium">Avg: {Math.round(currentZoneBaseline.avgVol)}</span>
-                                <span className="font-bold text-indigo-600">Proj: {Math.round(previewFinalVol)}</span>
                                 <span>Cap: {Math.round(previewAvailableCap)}</span>
                             </div>
                         </div>
@@ -372,19 +342,9 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                 <div className="bg-white rounded-2xl border border-gray-200 shadow-sm min-h-[300px] flex flex-col">
                     <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-2xl">
                         <h3 className="font-bold text-gray-800">Active Decisions</h3>
-                        <div className="flex items-center gap-2">
-                            {decisions.length > 0 && (
-                                <button 
-                                    onClick={() => setDecisions([])} 
-                                    className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-all"
-                                >
-                                    <RefreshCcw size={12} /> Reset
-                                </button>
-                            )}
-                            <span className="text-xs font-medium px-2 py-1 bg-white border border-gray-200 rounded text-gray-500">
-                                {decisions.length} Applied
-                            </span>
-                        </div>
+                        <span className="text-xs font-medium px-2 py-1 bg-white border border-gray-200 rounded text-gray-500">
+                            {decisions.length} Applied
+                        </span>
                     </div>
                     
                     <div className="flex-1 p-2">
@@ -395,10 +355,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                {decisions.map((d) => {
-                                    const zoneBase = baselineStats[d.zone];
-                                    const seatChange = zoneBase ? Math.round(zoneBase.avgVol * (d.demandAdj / 100)) : 0;
-                                    return (
+                                {decisions.map((d) => (
                                     <div key={d.id} className="group flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all hover:border-indigo-100">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs">
@@ -411,7 +368,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                                                         Price: {d.priceAdj > 0 ? '+' : ''}{d.priceAdj}€
                                                     </span>
                                                     <span className={`${d.demandAdj > 0 ? 'text-green-600' : 'text-red-600'} font-medium bg-gray-50 px-1.5 rounded`}>
-                                                        Vol: {d.demandAdj > 0 ? '+' : ''}{d.demandAdj}% ({seatChange > 0 ? '+' : ''}{seatChange} seats)
+                                                        Vol: {d.demandAdj > 0 ? '+' : ''}{d.demandAdj}%
                                                     </span>
                                                 </div>
                                             </div>
@@ -423,12 +380,18 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                                             <Trash2 size={18} />
                                         </button>
                                     </div>
-                                    );
-                                })}
+                                ))}
                             </div>
                         )}
                     </div>
                     
+                    {decisions.length > 0 && (
+                        <div className="p-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+                            <button onClick={() => setDecisions([])} className="text-xs text-red-600 font-bold hover:underline flex items-center gap-1">
+                                <RefreshCcw size={12} /> Clear Strategy
+                            </button>
+                        </div>
+                    )}
                 </div>
 
             </div>

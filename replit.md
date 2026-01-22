@@ -7,7 +7,7 @@ The PV Ticketing Dashboard is a React-based application designed for Pallacanest
 Not specified.
 
 ## System Architecture
-The application uses a modern web stack with React 18 and TypeScript for the frontend, styled with Tailwind CSS (via PostCSS/autoprefixer) and charting capabilities provided by Recharts. The backend is an Express.js server running on port 5001. Vite serves the frontend on port 5000 and acts as a proxy for backend API calls. Data is processed to handle international number formats (Italian and American), normalize headers, and deduplicate entries. Key architectural decisions include:
+The application uses a modern web stack with React 18 and TypeScript for the frontend, styled with Tailwind CSS (via CDN) and charting capabilities provided by Recharts. The backend is an Express.js server running on port 5001. Vite serves the frontend on port 5000 and acts as a proxy for backend API calls. Data is processed to handle international number formats (Italian and American), normalize headers, and deduplicate entries. Key architectural decisions include:
 - **Parallel Data Loading**: All data modules (Ticketing, GameDay, Sponsorship, CRM) fetch data in parallel using `Promise.all()` for faster initial render times.
 - **Server-Side Processing**: Critical data processing and aggregation for CRM, corporate commercial value, demographics, and behavioral analytics are performed on the Express backend and cached for performance.
 - **Data Source Prioritization**: Cloud storage (Firebase) is the primary source for detailed ticketing data, especially for zone-level information, with BigQuery used for aggregate data and other modules.
@@ -16,8 +16,6 @@ The application uses a modern web stack with React 18 and TypeScript for the fro
 - **Financial Metric Adjustments**: The dashboard includes a toggle for "Accounting" vs. "Realistic" views, allowing corporate tickets to be shifted between Ticketing and Sponsorship revenue calculations, with "Realistic" as the default.
 - **Pacing Logic**: Season pacing incorporates variable (games-based) and absolute (percentage-based) logic, with prorated pacing for sponsorship revenue.
 - **Deal Quality Metric**: Sponsorship analytics include a "Deal Quality" metric based on the `Delta` column (Revenue Received - Value Given) to categorize deals.
-- **Error Boundaries**: All major module renders (Revenue Center, GameDay, Ticketing, CRM, Sponsorship) are wrapped with React Error Boundaries for graceful failure handling.
-- **Performance Optimizations**: Key computed values use useMemo for memoization (filteredGames, viewData, filteredGameDayData). Skeleton loaders are available for perceived performance improvement.
 
 ## External Dependencies
 - **Firebase**: Used for cloud storage, serving as the primary data source for ticketing and persistence for other modules.

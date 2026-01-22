@@ -123,12 +123,8 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
       const revenue = viewMode === 'total'
           ? game.totalRevenue
           : (game.revenueGameDay ?? game.totalRevenue);
-      // Use capacityGameDay for GameDay view (excludes protocol seats)
-      const capacity = viewMode === 'total'
-          ? game.capacity
-          : ((game as any).capacityGameDay ?? game.capacity);
       return {
-          x: capacity > 0 ? (attendance / capacity) * 100 : 0,
+          x: game.capacity > 0 ? (attendance / game.capacity) * 100 : 0,
           y: attendance > 0 ? revenue / attendance : 0
       };
   });
@@ -143,12 +139,8 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
       const revenue = viewMode === 'total'
           ? game.totalRevenue
           : (game.revenueGameDay ?? game.totalRevenue);
-      // Use capacityGameDay for GameDay view (excludes protocol seats)
-      const capacity = viewMode === 'total'
-          ? game.capacity
-          : ((game as any).capacityGameDay ?? game.capacity);
       
-      const occupancy = capacity > 0 ? (attendance / capacity) * 100 : 0;
+      const occupancy = game.capacity > 0 ? (attendance / game.capacity) * 100 : 0;
       const yieldVal = attendance > 0 ? revenue / attendance : 0;
       
       // Calculate Z (Size) based on Tier. 
@@ -166,7 +158,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
           season: game.season,
           date: game.date,
           attendance,
-          capacity,
+          capacity: game.capacity,
           revenue
       };
   });
@@ -294,6 +286,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                             type="number" 
                             dataKey="x" 
                             name="Occupancy" 
+                            unit="%" 
                             domain={[xDomainMin, xDomainMax]} 
                             tick={{fontSize: 10}}
                             tickFormatter={(val) => `${val.toFixed(0)}%`}

@@ -1,8 +1,6 @@
 
-import React, { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Bell, Users, FileText, ChevronDown, Target, Shield, RefreshCw } from 'lucide-react';
-import { ErrorBoundary, ModuleErrorBoundary } from './components/ErrorBoundary';
-import { DashboardSkeleton, CRMSkeleton, ChartSkeleton } from './components/SkeletonLoader';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -14,11 +12,11 @@ import { MultiSelect } from './components/MultiSelect';
 import { PacingWidget } from './components/PacingWidget';
 import { DistressedZones } from './components/DistressedZones';
 import { CompKillerWidget } from './components/CompKillerWidget';
+import { GameDayDashboard } from './components/GameDayDashboard';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
 import { BoardReportModal } from './components/BoardReportModal';
 import { CRMView } from './components/CRMView';
 import { SponsorshipDashboard } from './components/SponsorshipDashboard';
-import { GameDayDashboard } from './components/GameDayDashboard';
 import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, SponsorData, CRMRecord, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
@@ -1103,33 +1101,25 @@ const App: React.FC = () => {
     setIsLoadingCRM(true);
     
     try {
-      // First load stats only (fast) - this is cached on the server
-      const statsResponse = await fetch('/api/crm/bigquery');
-      if (statsResponse && statsResponse.ok) {
-        const statsResult = await statsResponse.json();
-        if (statsResult.success && statsResult.stats) {
-          setCrmStats({
-            all: statsResult.stats,
-            fixed: statsResult.fixedStats,
-            flexible: statsResult.flexibleStats
-          });
-          setDataSources(prev => ({...prev, crm: 'bigquery'}));
-          setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
-          console.log(`CRM stats loaded from BigQuery (${statsResult.cached ? 'cached' : 'fresh'})`);
-        }
-      }
-      
-      // Then load full data for search (slower, but in background)
       const crmResponse = await fetch('/api/crm/bigquery?full=true');
       if (crmResponse && crmResponse.ok) {
         const crmResult = await crmResponse.json();
-        if (crmResult.success && crmResult.rawRows && crmResult.rawRows.length > 0) {
-          const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
-          setCrmData(loadedCRM);
-          console.log(`CRM loaded from BigQuery: ${loadedCRM.length} records (with client search data)`);
+        if (crmResult.success && crmResult.stats) {
+          setCrmStats({
+            all: crmResult.stats,
+            fixed: crmResult.fixedStats,
+            flexible: crmResult.flexibleStats
+          });
+          if (crmResult.rawRows && crmResult.rawRows.length > 0) {
+            const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
+            setCrmData(loadedCRM);
+            console.log(`CRM loaded from BigQuery: ${loadedCRM.length} records (with client search data)`);
+          }
+          setDataSources(prev => ({...prev, crm: 'bigquery'}));
+          setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
+          crmLoadedRef.current = true;
         }
       }
-      crmLoadedRef.current = true;
     } catch (crmError) {
       console.warn('Failed to load CRM from BigQuery:', crmError);
     } finally {
@@ -1659,36 +1649,17 @@ const App: React.FC = () => {
 
   const efficiencyData = useMemo(() => {
     return filteredGames.map(game => {
-      // GameDay channels: Only tickets sold on game day (TIX, MP, VB) + giveaways
-      // Excludes: ABB (season tickets), CORP (corporate), PROTOCOL (fixed allocations)
-      let gameDaySales = game.salesBreakdown.filter(s => 
+      let zoneSales = game.salesBreakdown.filter(s => 
           [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel)
       );
-      // Total channels: All tickets including presold (ABB, CORP) and protocol
-      let totalSales = game.salesBreakdown.filter(s => 
-          [SalesChannel.ABB, SalesChannel.CORP, SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY, SalesChannel.PROTOCOL].includes(s.channel)
-      );
 
-      if (ignoreOspiti) {
-        gameDaySales = gameDaySales.filter(s => s.zone !== TicketZone.OSPITI);
-        totalSales = totalSales.filter(s => s.zone !== TicketZone.OSPITI);
-      }
-      if (!selectedZones.includes('All')) {
-        gameDaySales = gameDaySales.filter(s => selectedZones.includes(s.zone));
-        totalSales = totalSales.filter(s => selectedZones.includes(s.zone));
-      }
+      if (ignoreOspiti) zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
+      if (!selectedZones.includes('All')) zoneSales = zoneSales.filter(s => selectedZones.includes(s.zone));
 
-      // GameDay = only game day sales (TIX + MP + VB + GIVEAWAY)
-      const gameDayRevenue = gameDaySales.reduce((acc, curr) => acc + curr.revenue, 0);
-      const gameDayAttendance = gameDaySales.reduce((acc, curr) => acc + curr.quantity, 0);
-      
-      // Total = all tickets including presold (ABB + CORP + TIX + MP + VB + GIVEAWAY + PROTOCOL)
-      const totalRevenue = totalSales.reduce((acc, curr) => acc + curr.revenue, 0);
-      const totalAttendance = totalSales.reduce((acc, curr) => acc + curr.quantity, 0);
+      const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
+      const zoneAttendance = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
 
-      // Capacity calculation
       let zoneCapacity = 0;
-      let gameDayCapacity = 0;
       let filteredZoneCapacities = { ...game.zoneCapacities };
       if (ignoreOspiti) delete filteredZoneCapacities[TicketZone.OSPITI];
       
@@ -1700,24 +1671,19 @@ const App: React.FC = () => {
           filteredZoneCapacities = newCapMap;
       }
 
-      // Total capacity (full arena)
-      Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
-      
-      // GameDay capacity = Total - FIXED (ABB + CORP + PROTOCOL presold seats)
       Object.keys(filteredZoneCapacities).forEach(z => {
           const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
-          gameDayCapacity += Math.max(0, filteredZoneCapacities[z] - fixedDeduction);
+          filteredZoneCapacities[z] = Math.max(0, filteredZoneCapacities[z] - fixedDeduction);
       });
+
+      Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
 
       return {
         ...game,
-        attendance: totalAttendance,           // Total view: all tickets
-        attendanceGameDay: gameDayAttendance,  // GameDay view: only game day sales
-        totalRevenue: totalRevenue,            // Total view revenue
-        revenueGameDay: gameDayRevenue,        // GameDay view revenue
-        capacity: zoneCapacity,                // Total capacity
-        capacityGameDay: gameDayCapacity,      // GameDay capacity (seats available on game day)
-        salesBreakdown: totalSales,
+        attendance: zoneAttendance,
+        totalRevenue: zoneRevenue,
+        capacity: zoneCapacity,
+        salesBreakdown: zoneSales,
         zoneCapacities: filteredZoneCapacities
       };
     });
@@ -2264,28 +2230,30 @@ const App: React.FC = () => {
              <div className="bg-white border border-gray-200 rounded-lg p-3">
                 <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Data Source Info</p>
                 <div className="flex flex-col">
-                    {lastGame ? (
+                    {/* Prioritize showing Upload Time if available, regardless of whether it was just uploaded or loaded from cloud */}
+                    {lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing'] ? (
                         <>
-                            <div className="flex items-center gap-1 text-blue-600 mb-0.5">
-                                <Calendar size={10} />
-                                <span className="text-[10px] font-bold uppercase">Latest Game</span>
+                            <div className="flex items-center gap-1 text-green-600 mb-0.5">
+                                <Clock size={10} />
+                                <span className="text-[10px] font-bold uppercase">Last Uploaded</span>
                             </div>
-                            <span className="text-xs font-bold text-gray-800 truncate">{lastGame.opponent}</span>
-                            <span className="text-[10px] text-gray-500">{lastGame.season} • {lastGame.date}</span>
-                            {lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing'] && (
-                                <div className="mt-2 pt-2 border-t border-gray-100">
-                                    <div className="flex items-center gap-1 text-green-600 mb-0.5">
-                                        <Clock size={10} />
-                                        <span className="text-[10px] font-bold uppercase">Last Synced</span>
-                                    </div>
-                                    <span className="text-[10px] text-gray-500">
-                                        {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleDateString()} at {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                    </span>
-                                </div>
-                            )}
+                            <span className="text-xs font-bold text-gray-800">
+                                {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleDateString()}
+                            </span>
+                            <span className="text-[10px] text-gray-500">
+                                {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            </span>
                         </>
                     ) : (
-                        <span className="text-[10px] text-gray-400">No data loaded</span>
+                        /* Fallback to Last Game info if no upload time is tracked (e.g. local fallback data) */
+                        lastGame ? (
+                            <>
+                                <span className="text-xs font-bold text-gray-800 truncate">{lastGame.opponent}</span>
+                                <span className="text-[10px] text-gray-500">{lastGame.season} • {lastGame.date}</span>
+                            </>
+                        ) : (
+                            <span className="text-[10px] text-gray-400">No data loaded</span>
+                        )
                     )}
                 </div>
              </div>
@@ -2308,24 +2276,22 @@ const App: React.FC = () => {
           {/* --- CONTENT AREA SWITCHER --- */}
           
           {activeModule === 'home' ? (
-              <ErrorBoundary moduleName="Revenue Center">
-                <RevenueHome 
-                  modules={MODULES} 
-                  ticketingRevenue={totalStats.totalRevenue}
-                  gameDayTicketing={gameDayTicketingRevenue}
-                  gameDayRevenue={gameDayRevenueNet} 
-                  sponsorshipRevenue={sponsorshipStats.pureSponsorship}
-                  onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
-                  onAiClick={() => {
-                      setActiveModule('ticketing');
-                      setActiveTab('chat');
-                  }}
-                  gamesPlayed={filteredGames.length}
-                  seasonFilter={selectedSeasons[0]}
-                  onSeasonChange={(s) => setSelectedSeasons([s])}
-                  yoyStats={yoyComparisonStats}
-                />
-              </ErrorBoundary>
+              <RevenueHome 
+                modules={MODULES} 
+                ticketingRevenue={totalStats.totalRevenue}
+                gameDayTicketing={gameDayTicketingRevenue}
+                gameDayRevenue={gameDayRevenueNet} 
+                sponsorshipRevenue={sponsorshipStats.pureSponsorship}
+                onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
+                onAiClick={() => {
+                    setActiveModule('ticketing');
+                    setActiveTab('chat');
+                }}
+                gamesPlayed={filteredGames.length}
+                seasonFilter={selectedSeasons[0]}
+                onSeasonChange={(s) => setSelectedSeasons([s])}
+                yoyStats={yoyComparisonStats}
+              />
           ) : activeModule === 'gameday' ? (
               <div className="pt-6">
                 {!isLoadingData && (
@@ -2373,18 +2339,12 @@ const App: React.FC = () => {
                 
                 <FilterBar />
                 
-                <ErrorBoundary moduleName="GameDay">
-                  <GameDayDashboard data={filteredGameDayData} includeTicketing={gameDayIncludeTicketing} />
-                </ErrorBoundary>
+                <GameDayDashboard data={filteredGameDayData} includeTicketing={gameDayIncludeTicketing} />
               </div>
           ) : activeModule === 'ticketing' ? (
             <>
                 {/* EXISTING TICKETING LOGIC */}
-                {activeTab === 'crm' && (
-                  <ErrorBoundary moduleName="CRM">
-                    <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} serverStats={crmStats} games={filteredGames.map(g => ({ id: g.id, opponent: g.opponent, date: g.date }))} />
-                  </ErrorBoundary>
-                )}
+                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} serverStats={crmStats} />}
                 {activeTab === 'dashboard' && (
                     <div className="pt-6">
                     {/* DIRECTOR'S NOTE */}
@@ -2462,8 +2422,7 @@ const App: React.FC = () => {
                                     <ArenaMap 
                                         data={viewData} 
                                         onZoneClick={handleZoneClick} 
-                                        selectedZone={selectedZones.includes('All') ? 'All' : selectedZones[0]}
-                                        viewMode={viewMode}
+                                        selectedZone={selectedZones.includes('All') ? 'All' : selectedZones[0]} 
                                     />
                                 </div>
 
@@ -2548,7 +2507,7 @@ const App: React.FC = () => {
 
                 {activeTab === 'simulator' && (
                     <div className="pt-6">
-                        <Simulator data={totalViewData} />
+                        <Simulator data={viewData} />
                     </div>
                 )}
 
@@ -2564,22 +2523,20 @@ const App: React.FC = () => {
             </>
           ) : activeModule === 'sponsorship' ? (
               <div className="pt-6">
-                <ErrorBoundary moduleName="Sponsorship">
-                  <SponsorshipDashboard 
-                    data={sponsorData}
-                    onUploadCsv={async (content: string) => {
-                      const newData = processSponsorData(content);
-                      setSponsorData(newData);
-                      if (isFirebaseConfigured) {
-                        await saveCsvToFirebase('sponsor', content);
-                        setSponsorDataSource('cloud');
-                        setSponsorLastUpdated(new Date().toLocaleString());
-                      }
-                    }}
-                    dataSource={sponsorDataSource}
-                    lastUpdated={sponsorLastUpdated}
-                  />
-                </ErrorBoundary>
+                <SponsorshipDashboard 
+                  data={sponsorData}
+                  onUploadCsv={async (content: string) => {
+                    const newData = processSponsorData(content);
+                    setSponsorData(newData);
+                    if (isFirebaseConfigured) {
+                      await saveCsvToFirebase('sponsor', content);
+                      setSponsorDataSource('cloud');
+                      setSponsorLastUpdated(new Date().toLocaleString());
+                    }
+                  }}
+                  dataSource={sponsorDataSource}
+                  lastUpdated={sponsorLastUpdated}
+                />
               </div>
           ) : (
               <PlaceholderView 
