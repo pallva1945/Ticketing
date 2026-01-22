@@ -3,6 +3,7 @@ import cors from "cors";
 import compression from "compression";
 import path from "path";
 import { fileURLToPath } from "url";
+import { GoogleGenAI } from "@google/genai";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV } from "../src/services/bigQueryService";
 
@@ -614,6 +615,51 @@ app.get("/api/gameday/bigquery", async (req, res) => {
     }
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// AI Analytics endpoint using Gemini
+const geminiAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+
+app.post("/api/ai/analyze", async (req, res) => {
+  try {
+    const { question, context } = req.body;
+    
+    if (!question) {
+      return res.status(400).json({ success: false, message: "Question is required" });
+    }
+    
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(500).json({ success: false, message: "AI service not configured" });
+    }
+    
+    const systemPrompt = `You are a sports business analytics expert for Pallacanestro Varese, an Italian basketball team.
+You have access to data about ticketing, sponsorship, CRM, and merchandising.
+Analyze the provided data context and answer questions in a helpful, concise manner.
+Focus on actionable insights and business recommendations.
+Format numbers in European style (comma for decimals, period for thousands).
+Keep responses focused and under 300 words unless more detail is specifically requested.`;
+
+    const prompt = `${systemPrompt}
+
+DATA CONTEXT:
+${JSON.stringify(context, null, 2)}
+
+USER QUESTION: ${question}
+
+Provide a clear, insightful answer:`;
+
+    const response = await geminiAI.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+
+    const answer = response.text || "Unable to generate analysis";
+    
+    res.json({ success: true, answer });
+  } catch (error: any) {
+    console.error("AI Analysis error:", error.message);
+    res.status(500).json({ success: false, message: "AI analysis failed: " + error.message });
   }
 });
 
