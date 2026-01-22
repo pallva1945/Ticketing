@@ -1,32 +1,60 @@
 import React, { useMemo } from 'react';
-import { GameData, SalesChannel } from '../types';
+import { GameData, SalesChannel, CRMRecord } from '../types';
 import { AlertOctagon, TrendingDown } from 'lucide-react';
 
 interface CompKillerWidgetProps {
   data: GameData[];
+  crmData?: CRMRecord[];
+  capacityView?: 'all' | 'fixed' | 'flexible';
 }
 
-export const CompKillerWidget: React.FC<CompKillerWidgetProps> = ({ data }) => {
+export const CompKillerWidget: React.FC<CompKillerWidgetProps> = ({ data, crmData = [], capacityView = 'all' }) => {
   const analysis = useMemo(() => {
+    // If CRM data is available, use commercial_value from giveaway/protocol records
+    if (crmData.length > 0) {
+      // Filter giveaway records based on capacityView toggle
+      const giveawayRecords = crmData.filter(r => {
+        const sellLower = (r.sellType || '').toLowerCase().trim();
+        const isGiveaway = sellLower === 'giveaway' || sellLower === 'giveaways';
+        const isProtocol = sellLower === 'protocol';
+        
+        if (capacityView === 'all') {
+          return isGiveaway || isProtocol;
+        } else if (capacityView === 'fixed') {
+          return isProtocol;
+        } else { // flexible
+          return isGiveaway;
+        }
+      });
+      
+      // Sum up commercial_value and ticket counts
+      let totalLostRevenue = 0;
+      let totalGiveawayCount = 0;
+      
+      giveawayRecords.forEach(r => {
+        totalLostRevenue += (r.commercialValue || 0) * (r.quantity || 1);
+        totalGiveawayCount += r.quantity || 1;
+      });
+      
+      // Calculate total paid tickets for comp rate
+      const paidRecords = crmData.filter(r => {
+        const sellLower = (r.sellType || '').toLowerCase().trim();
+        return sellLower !== 'giveaway' && sellLower !== 'giveaways' && sellLower !== 'protocol';
+      });
+      const totalPaidCount = paidRecords.reduce((sum, r) => sum + (r.quantity || 1), 0);
+      
+      const totalTickets = totalPaidCount + totalGiveawayCount;
+      const compRate = totalTickets > 0 ? (totalGiveawayCount / totalTickets) * 100 : 0;
+      
+      return { totalLostRevenue, totalGiveawayCount, compRate };
+    }
+    
+    // Fallback to GameData-based calculation if no CRM data
     let totalLostRevenue = 0;
     let totalGiveawayCount = 0;
     let totalPaidCount = 0;
     
-    // Per game, per zone analysis to get accurate pricing
     data.forEach(game => {
-        // 1. Calculate Average Paid Price (ATP) per Zone for this Game
-        const zonePrices: Record<string, number> = {};
-        
-        game.salesBreakdown.forEach(s => {
-            if ([SalesChannel.TIX, SalesChannel.MP, SalesChannel.ABB, SalesChannel.CORP, SalesChannel.VB].includes(s.channel)) {
-                if (!zonePrices[s.zone]) {
-                    // Initialize if needed, but we calculate per channel line item actually
-                }
-                // We will aggregate paid revenue and quantity per zone first
-            }
-        });
-
-        // Simpler approach: Aggregate Paid Rev and Paid Qty per zone first
         const zoneStats: Record<string, { paidRev: number, paidQty: number, compQty: number }> = {};
 
         game.salesBreakdown.forEach(s => {
@@ -42,11 +70,8 @@ export const CompKillerWidget: React.FC<CompKillerWidgetProps> = ({ data }) => {
             }
         });
 
-        // 2. Calculate Opportunity Cost
         Object.values(zoneStats).forEach(stats => {
             if (stats.compQty > 0) {
-                // If there were paid tickets, use that ATP. 
-                // If NO paid tickets in that zone (rare), assume a floor price or 0 (conservative).
                 const atp = stats.paidQty > 0 ? stats.paidRev / stats.paidQty : 0;
                 totalLostRevenue += (stats.compQty * atp);
             }
@@ -56,12 +81,8 @@ export const CompKillerWidget: React.FC<CompKillerWidgetProps> = ({ data }) => {
     const totalTickets = totalPaidCount + totalGiveawayCount;
     const compRate = totalTickets > 0 ? (totalGiveawayCount / totalTickets) * 100 : 0;
 
-    return {
-        totalLostRevenue,
-        totalGiveawayCount,
-        compRate
-    };
-  }, [data]);
+    return { totalLostRevenue, totalGiveawayCount, compRate };
+  }, [data, crmData, capacityView]);
 
   return (
     <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 h-full shadow-sm relative overflow-hidden flex flex-col justify-between">
