@@ -2511,7 +2511,7 @@ const App: React.FC = () => {
                                     </div>
                                     {/* 30% Height */}
                                     <div className="flex-[3] min-h-0">
-                                        <CompKillerWidget data={viewData} crmData={crmData} />
+                                        <CompKillerWidget data={viewData} />
                                     </div>
                                 </div>
                             </div>
