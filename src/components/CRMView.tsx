@@ -34,6 +34,7 @@ interface CRMStats {
   totalRecords: number;
   totalTickets: number;
   totalRevenue: number;
+  totalCommercialValue?: number;
   uniqueCustomers: number;
   topCustomers: Array<{
     key: string;
@@ -362,7 +363,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         uniqueCustomers: statsToUse.uniqueCustomers || 0,
         uniqueCorps: statsToUse.uniqueCorps || 0,
         totalRevenue: statsToUse.totalRevenue || 0,
-        totalCommercialValue: statsToUse.totalRevenue || 0,
+        totalCommercialValue: statsToUse.totalCommercialValue || statsToUse.totalRevenue || 0,
         corpCommercialValue: statsToUse.corpCommercialValue || 0,
         totalTickets: statsToUse.totalTickets || 0,
         zoneBreakdown,

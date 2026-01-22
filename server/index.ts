@@ -150,6 +150,7 @@ const computeCRMStats = (rawRows: any[]) => {
   const customerMap: Record<string, any> = {};
   let totalTickets = 0;
   let totalRevenue = 0;
+  let totalCommercialValue = 0;
   let corpCommercialValue = 0;
   const zoneStats: Record<string, { tickets: number; revenue: number }> = {};
   const sellTypeStats: Record<string, { tickets: number; revenue: number }> = {};
@@ -265,6 +266,7 @@ const computeCRMStats = (rawRows: any[]) => {
     
     totalTickets += qty;
     totalRevenue += rowRevenue;
+    totalCommercialValue += rowCommercialValue;
     
     // Zone stats
     if (!zoneStats[pvZone]) zoneStats[pvZone] = { tickets: 0, revenue: 0 };
@@ -487,6 +489,7 @@ const computeCRMStats = (rawRows: any[]) => {
     totalRecords: rawRows.length,
     totalTickets, // Net tickets (purchases minus returns)
     totalRevenue,
+    totalCommercialValue,
     corpCommercialValue,
     uniqueCustomers: allCustomers.length,
     topCustomers: allCustomers.slice(0, 100),
