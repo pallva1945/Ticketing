@@ -1101,25 +1101,33 @@ const App: React.FC = () => {
     setIsLoadingCRM(true);
     
     try {
+      // First load stats only (fast) - this is cached on the server
+      const statsResponse = await fetch('/api/crm/bigquery');
+      if (statsResponse && statsResponse.ok) {
+        const statsResult = await statsResponse.json();
+        if (statsResult.success && statsResult.stats) {
+          setCrmStats({
+            all: statsResult.stats,
+            fixed: statsResult.fixedStats,
+            flexible: statsResult.flexibleStats
+          });
+          setDataSources(prev => ({...prev, crm: 'bigquery'}));
+          setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
+          console.log(`CRM stats loaded from BigQuery (${statsResult.cached ? 'cached' : 'fresh'})`);
+        }
+      }
+      
+      // Then load full data for search (slower, but in background)
       const crmResponse = await fetch('/api/crm/bigquery?full=true');
       if (crmResponse && crmResponse.ok) {
         const crmResult = await crmResponse.json();
-        if (crmResult.success && crmResult.stats) {
-          setCrmStats({
-            all: crmResult.stats,
-            fixed: crmResult.fixedStats,
-            flexible: crmResult.flexibleStats
-          });
-          if (crmResult.rawRows && crmResult.rawRows.length > 0) {
-            const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
-            setCrmData(loadedCRM);
-            console.log(`CRM loaded from BigQuery: ${loadedCRM.length} records (with client search data)`);
-          }
-          setDataSources(prev => ({...prev, crm: 'bigquery'}));
-          setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
-          crmLoadedRef.current = true;
+        if (crmResult.success && crmResult.rawRows && crmResult.rawRows.length > 0) {
+          const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
+          setCrmData(loadedCRM);
+          console.log(`CRM loaded from BigQuery: ${loadedCRM.length} records (with client search data)`);
         }
       }
+      crmLoadedRef.current = true;
     } catch (crmError) {
       console.warn('Failed to load CRM from BigQuery:', crmError);
     } finally {
