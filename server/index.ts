@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
+import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import * as bqService from "../src/services/bigQueryService";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,24 +26,8 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-// Lazy-loaded BigQuery service - only loads when first API call is made
-let bqService: any = null;
-async function getBigQueryService() {
-  if (!bqService) {
-    bqService = await import("../src/services/bigQueryService");
-  }
-  return bqService;
-}
-
-// Lazy-loaded object storage
-let objectStorageRegistered = false;
-async function ensureObjectStorage() {
-  if (!objectStorageRegistered) {
-    const { registerObjectStorageRoutes } = await import("./replit_integrations/object_storage");
-    registerObjectStorageRoutes(app);
-    objectStorageRegistered = true;
-  }
-}
+// Register object storage routes
+registerObjectStorageRoutes(app);
 
 const validateBigQueryRequest = (req: express.Request, res: express.Response): boolean => {
   const isInternalRequest = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip?.includes('127.0.0.1') || req.ip === '::ffff:127.0.0.1';
@@ -69,8 +55,7 @@ app.get("/api/bigquery/test", async (req, res) => {
   if (!validateBigQueryRequest(req, res)) return;
   
   try {
-    const bq = await getBigQueryService();
-    const result = await bq.testBigQueryConnection();
+    const result = await bqService.testBigQueryConnection();
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -85,8 +70,7 @@ app.post("/api/bigquery/sync", async (req, res) => {
     if (!csvContent) {
       return res.status(400).json({ success: false, message: 'csvContent is required' });
     }
-    const bq = await getBigQueryService();
-    const result = await bq.syncTicketingToBigQuery(csvContent);
+    const result = await bqService.syncTicketingToBigQuery(csvContent);
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -111,8 +95,7 @@ app.get("/api/ticketing", async (req, res) => {
       });
     }
     
-    const bq = await getBigQueryService();
-    const result = await bq.fetchTicketingFromBigQuery();
+    const result = await bqService.fetchTicketingFromBigQuery();
     
     if (result.success) {
       ticketingCache = { 
@@ -501,8 +484,7 @@ app.get("/api/crm/bigquery", async (req, res) => {
       });
     }
     
-    const bq = await getBigQueryService();
-    const result = await bq.fetchCRMFromBigQuery();
+    const result = await bqService.fetchCRMFromBigQuery();
     
     if (result.success && result.rawRows) {
       const processedStats = computeCRMStats(result.rawRows);
@@ -538,7 +520,6 @@ app.get("/api/crm/bigquery", async (req, res) => {
 
 app.post("/api/crm/upload", async (req, res) => {
   try {
-    await ensureObjectStorage();
     const { content, filename } = req.body;
     if (!content) {
       return res.status(400).json({ success: false, message: 'content is required' });
@@ -551,10 +532,9 @@ app.post("/api/crm/upload", async (req, res) => {
 
 app.get("/api/sponsorship", async (req, res) => {
   try {
-    const bq = await getBigQueryService();
-    const result = await bq.fetchSponsorshipFromBigQuery();
+    const result = await bqService.fetchSponsorshipFromBigQuery();
     if (result.success && result.rawRows) {
-      const csvContent = bq.convertBigQueryRowsToSponsorCSV(result.rawRows);
+      const csvContent = bqService.convertBigQueryRowsToSponsorCSV(result.rawRows);
       return res.json({ success: true, data: result.rawRows, csvContent, message: result.message });
     }
     res.json(result);
@@ -565,10 +545,9 @@ app.get("/api/sponsorship", async (req, res) => {
 
 app.get("/api/gameday", async (req, res) => {
   try {
-    const bq = await getBigQueryService();
-    const result = await bq.fetchGameDayFromBigQuery();
+    const result = await bqService.fetchGameDayFromBigQuery();
     if (result.success && result.rawRows) {
-      const csvContent = bq.convertBigQueryRowsToGameDayCSV(result.rawRows);
+      const csvContent = bqService.convertBigQueryRowsToGameDayCSV(result.rawRows);
       return res.json({ success: true, data: result.rawRows, csvContent, message: result.message });
     }
     res.json(result);
