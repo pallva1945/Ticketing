@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect, useRef, Suspense, lazy, useCallback, memo } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback, memo } from 'react';
 import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Bell, Users, FileText, ChevronDown, Target, Shield, RefreshCw } from 'lucide-react';
 import { ErrorBoundary, ModuleErrorBoundary } from './components/ErrorBoundary';
 import { DashboardSkeleton, CRMSkeleton, ChartSkeleton } from './components/SkeletonLoader';
@@ -16,10 +16,9 @@ import { DistressedZones } from './components/DistressedZones';
 import { CompKillerWidget } from './components/CompKillerWidget';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
 import { BoardReportModal } from './components/BoardReportModal';
-
-const CRMView = lazy(() => import('./components/CRMView').then(m => ({ default: m.CRMView })));
-const SponsorshipDashboard = lazy(() => import('./components/SponsorshipDashboard').then(m => ({ default: m.SponsorshipDashboard })));
-const GameDayDashboard = lazy(() => import('./components/GameDayDashboard').then(m => ({ default: m.GameDayDashboard })));
+import { CRMView } from './components/CRMView';
+import { SponsorshipDashboard } from './components/SponsorshipDashboard';
+import { GameDayDashboard } from './components/GameDayDashboard';
 import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, SponsorData, CRMRecord, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
@@ -2375,9 +2374,7 @@ const App: React.FC = () => {
                 <FilterBar />
                 
                 <ErrorBoundary moduleName="GameDay">
-                  <Suspense fallback={<DashboardSkeleton />}>
-                    <GameDayDashboard data={filteredGameDayData} includeTicketing={gameDayIncludeTicketing} />
-                  </Suspense>
+                  <GameDayDashboard data={filteredGameDayData} includeTicketing={gameDayIncludeTicketing} />
                 </ErrorBoundary>
               </div>
           ) : activeModule === 'ticketing' ? (
@@ -2385,9 +2382,7 @@ const App: React.FC = () => {
                 {/* EXISTING TICKETING LOGIC */}
                 {activeTab === 'crm' && (
                   <ErrorBoundary moduleName="CRM">
-                    <Suspense fallback={<CRMSkeleton />}>
-                      <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} serverStats={crmStats} games={filteredGames.map(g => ({ id: g.id, opponent: g.opponent, date: g.date }))} />
-                    </Suspense>
+                    <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} serverStats={crmStats} games={filteredGames.map(g => ({ id: g.id, opponent: g.opponent, date: g.date }))} />
                   </ErrorBoundary>
                 )}
                 {activeTab === 'dashboard' && (
@@ -2570,22 +2565,20 @@ const App: React.FC = () => {
           ) : activeModule === 'sponsorship' ? (
               <div className="pt-6">
                 <ErrorBoundary moduleName="Sponsorship">
-                  <Suspense fallback={<DashboardSkeleton />}>
-                    <SponsorshipDashboard 
-                      data={sponsorData}
-                      onUploadCsv={async (content: string) => {
-                        const newData = processSponsorData(content);
-                        setSponsorData(newData);
-                        if (isFirebaseConfigured) {
-                          await saveCsvToFirebase('sponsor', content);
-                          setSponsorDataSource('cloud');
-                          setSponsorLastUpdated(new Date().toLocaleString());
-                        }
-                      }}
-                      dataSource={sponsorDataSource}
-                      lastUpdated={sponsorLastUpdated}
-                    />
-                  </Suspense>
+                  <SponsorshipDashboard 
+                    data={sponsorData}
+                    onUploadCsv={async (content: string) => {
+                      const newData = processSponsorData(content);
+                      setSponsorData(newData);
+                      if (isFirebaseConfigured) {
+                        await saveCsvToFirebase('sponsor', content);
+                        setSponsorDataSource('cloud');
+                        setSponsorLastUpdated(new Date().toLocaleString());
+                      }
+                    }}
+                    dataSource={sponsorDataSource}
+                    lastUpdated={sponsorLastUpdated}
+                  />
                 </ErrorBoundary>
               </div>
           ) : (
