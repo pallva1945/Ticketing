@@ -143,6 +143,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [sortColumn, setSortColumn] = useState<string>('value');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedCorporate, setSelectedCorporate] = useState<string | null>(null);
+  const [selectedGame, setSelectedGame] = useState<string | null>(null);
 
   const hasActiveFilter = filterZone || filterEvent || capacityView !== 'all' || searchQuery;
 
@@ -1449,6 +1450,119 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               .map(([event, data]) => ({ event, ...data, zones: Array.from(data.zones) }))
               .sort((a, b) => b.tickets - a.tickets);
             
+            // Get tickets for selected game (third level drill-down)
+            const gameTickets = selectedGame 
+              ? corpRecords.filter(r => (r.game || r.event || 'Unknown Game') === selectedGame)
+              : [];
+            
+            // Third level: Individual tickets for selected game
+            if (selectedGame) {
+              return (
+                <>
+                  {/* Breadcrumb navigation */}
+                  <div className="flex items-center gap-2 mb-4 text-sm">
+                    <button 
+                      onClick={() => { setSelectedCorporate(null); setSelectedGame(null); }}
+                      className="text-amber-600 hover:text-amber-800 hover:underline"
+                    >
+                      Corporate List
+                    </button>
+                    <ChevronRight size={16} className="text-gray-400" />
+                    <button 
+                      onClick={() => setSelectedGame(null)}
+                      className="text-amber-600 hover:text-amber-800 hover:underline"
+                    >
+                      {selectedCorporate}
+                    </button>
+                    <ChevronRight size={16} className="text-gray-400" />
+                    <span className="text-gray-600 font-medium">{selectedGame}</span>
+                  </div>
+                  
+                  {/* Game header */}
+                  <div className="bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl p-6 text-white shadow-lg mb-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <Calendar size={28} />
+                          <div>
+                            <h2 className="text-2xl font-bold">{selectedGame}</h2>
+                            <p className="text-blue-200 text-sm mt-1">{selectedCorporate}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-3xl font-bold">{gameTickets.length}</p>
+                        <p className="text-blue-100 text-sm">Tickets</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/20">
+                      <div>
+                        <p className="text-2xl font-bold">{formatCurrency(gameTickets.reduce((sum, t) => sum + (t.commercialValue * (t.quantity || 1)), 0))}</p>
+                        <p className="text-blue-100 text-sm">Total Value</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{new Set(gameTickets.map(t => t.pvZone || t.zone)).size}</p>
+                        <p className="text-blue-100 text-sm">Zones</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{formatCurrency(gameTickets.reduce((sum, t) => sum + (t.commercialValue * (t.quantity || 1)), 0) / (gameTickets.length || 1))}</p>
+                        <p className="text-blue-100 text-sm">Avg Value/Ticket</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Individual tickets table */}
+                  <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="p-4 border-b border-gray-100">
+                      <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                        <Ticket size={18} className="text-blue-500" />
+                        Individual Tickets ({gameTickets.length})
+                      </h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 text-gray-600">
+                          <tr>
+                            <th className="text-left py-3 px-4 font-medium">#</th>
+                            <th className="text-left py-3 px-4 font-medium">Name</th>
+                            <th className="text-left py-3 px-4 font-medium">Zone</th>
+                            <th className="text-left py-3 px-4 font-medium">Area</th>
+                            <th className="text-left py-3 px-4 font-medium">Seat</th>
+                            <th className="text-right py-3 px-4 font-medium">Price</th>
+                            <th className="text-right py-3 px-4 font-medium">Commercial Value</th>
+                            <th className="text-left py-3 px-4 font-medium">Ticket Type</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {gameTickets.map((t, i) => (
+                            <tr key={i} className="hover:bg-gray-50">
+                              <td className="py-3 px-4 text-gray-400">{i + 1}</td>
+                              <td className="py-3 px-4 font-medium text-gray-800">{t.fullName || '—'}</td>
+                              <td className="py-3 px-4">
+                                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
+                                  {t.pvZone || t.zone || '—'}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-gray-600">{t.area || '—'}</td>
+                              <td className="py-3 px-4 text-gray-600">{t.seat || '—'}</td>
+                              <td className="py-3 px-4 text-right text-gray-600">{formatCurrency(t.price || 0)}</td>
+                              <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency(t.commercialValue * (t.quantity || 1))}</td>
+                              <td className="py-3 px-4">
+                                <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs">
+                                  {t.ticketType || t.sellType || '—'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              );
+            }
+            
+            // Second level: Games list for selected corporation
             return (
               <>
                 {/* Back button and header */}
@@ -1500,13 +1614,14 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   </div>
                 </div>
                 
-                {/* Games/Events table */}
+                {/* Games table */}
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                   <div className="p-4 border-b border-gray-100">
                     <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                       <Calendar size={18} className="text-amber-500" />
                       Games ({gameList.length})
                     </h3>
+                    <p className="text-xs text-gray-500 mt-1">Click on a game to view individual tickets</p>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -1517,11 +1632,16 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                           <th className="text-right py-3 px-4 font-medium">Tickets</th>
                           <th className="text-right py-3 px-4 font-medium">Value</th>
                           <th className="text-left py-3 px-4 font-medium">Seats</th>
+                          <th className="w-8"></th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {gameList.map((g, i) => (
-                          <tr key={i} className="hover:bg-gray-50">
+                          <tr 
+                            key={i} 
+                            className="hover:bg-amber-50 cursor-pointer transition-colors"
+                            onClick={() => setSelectedGame(g.event)}
+                          >
                             <td className="py-3 px-4 font-medium text-gray-800">{g.event}</td>
                             <td className="py-3 px-4">
                               <div className="flex flex-wrap gap-1">
@@ -1544,6 +1664,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                                   <span className="px-1.5 py-0.5 bg-gray-200 text-gray-500 rounded text-xs">+{g.seats.length - 5}</span>
                                 )}
                               </div>
+                            </td>
+                            <td className="py-3 px-4 text-gray-400">
+                              <ChevronRight size={16} />
                             </td>
                           </tr>
                         ))}
