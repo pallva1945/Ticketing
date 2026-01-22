@@ -250,7 +250,9 @@ const computeCRMStats = (rawRows: any[]) => {
     
     // Commercial value - use the full value from the database, NOT per-game
     // Note: BigQuery column is spelled "comercial_value" (one 'm') not "commercial_value"
-    const commercialValue = parseNumber(row.comercial_value) || parseNumber(row.commercial_value) || fullPrice;
+    // Important: 0 is a valid commercial value (for giveaways/protocol), only fallback to price if column is null/undefined
+    const rawCommercialValue = row.comercial_value ?? row.commercial_value;
+    const commercialValue = rawCommercialValue !== null && rawCommercialValue !== undefined ? parseNumber(rawCommercialValue) : fullPrice;
     
     const pvZone = row.pv_zone || row.Pv_Zone || row.PV_Zone || row.zone || row.Zone || 'Unknown';
     // Sales channel from "sell" column - check all case variations and normalize
