@@ -1096,33 +1096,53 @@ const App: React.FC = () => {
   const crmLoadedRef = React.useRef(false);
   const [isLoadingCRM, setIsLoadingCRM] = useState(false);
   
+  const crmStatsLoadedRef = React.useRef(false);
+  const crmFullDataLoadedRef = React.useRef(false);
+  
   const loadCRMData = async () => {
     if (crmLoadedRef.current || isLoadingCRM) return;
     setIsLoadingCRM(true);
     
     try {
-      const crmResponse = await fetch('/api/crm/bigquery?full=true');
-      if (crmResponse && crmResponse.ok) {
-        const crmResult = await crmResponse.json();
-        if (crmResult.success && crmResult.stats) {
-          setCrmStats({
-            all: crmResult.stats,
-            fixed: crmResult.fixedStats,
-            flexible: crmResult.flexibleStats
-          });
-          if (crmResult.rawRows && crmResult.rawRows.length > 0) {
-            const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
-            setCrmData(loadedCRM);
-            console.log(`CRM loaded from BigQuery: ${loadedCRM.length} records (with client search data)`);
+      // Phase 1: Load stats only (fast) - this is what dashboard needs
+      if (!crmStatsLoadedRef.current) {
+        const statsResponse = await fetch('/api/crm/bigquery');
+        if (statsResponse && statsResponse.ok) {
+          const statsResult = await statsResponse.json();
+          if (statsResult.success && statsResult.stats) {
+            setCrmStats({
+              all: statsResult.stats,
+              fixed: statsResult.fixedStats,
+              flexible: statsResult.flexibleStats
+            });
+            console.log(`CRM stats loaded from BigQuery (${statsResult.cached ? 'cached' : 'fresh'})`);
+            crmStatsLoadedRef.current = true;
+            setDataSources(prev => ({...prev, crm: 'bigquery'}));
+            setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
+            // Show UI immediately after stats load
+            setIsLoadingCRM(false);
           }
-          setDataSources(prev => ({...prev, crm: 'bigquery'}));
-          setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
-          crmLoadedRef.current = true;
         }
       }
+      
+      // Phase 2: Load full data for client search (background, non-blocking)
+      if (!crmFullDataLoadedRef.current) {
+        fetch('/api/crm/bigquery?full=true').then(async crmResponse => {
+          if (crmResponse && crmResponse.ok) {
+            const crmResult = await crmResponse.json();
+            if (crmResult.success && crmResult.rawRows && crmResult.rawRows.length > 0) {
+              const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
+              setCrmData(loadedCRM);
+              console.log(`CRM full data loaded: ${loadedCRM.length} records`);
+              crmFullDataLoadedRef.current = true;
+            }
+          }
+        }).catch(err => console.warn('CRM full data load error:', err));
+      }
+      
+      crmLoadedRef.current = true;
     } catch (crmError) {
       console.warn('Failed to load CRM from BigQuery:', crmError);
-    } finally {
       setIsLoadingCRM(false);
     }
   };
