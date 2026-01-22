@@ -289,7 +289,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const stats = useMemo(() => {
     // Use server-computed stats when no complex filters (search, zone, event) are active
     // For capacity filter, we can use the pre-computed fixed/flexible stats from server
-    const hasComplexFilter = !!filterZone || !!filterEvent || !!searchQuery;
+    const hasComplexFilter = !!filterZone || !!filterEvent || !!searchQuery || clientSearchQuery.length >= 2;
     
     if (serverStats && !hasComplexFilter) {
       // Select the appropriate pre-computed stats based on capacityView
@@ -692,7 +692,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       advanceBookingBreakdown,
       monthBreakdown
     };
-  }, [filteredData, sectorLookup, serverStats, hasActiveFilter]);
+  }, [filteredData, sectorLookup, serverStats, hasActiveFilter, clientSearchQuery, searchMode, searchSelectedClient, searchGameFilter, games]);
 
 
   const ageChartData = useMemo(() => {
