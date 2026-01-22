@@ -5,6 +5,8 @@ import { sendMessageToGemini } from '../services/geminiService';
 
 interface ChatInterfaceProps {
   contextData: string;
+  initialPrompt?: string;
+  onPromptConsumed?: () => void;
 }
 
 // Exported for use in App.tsx to maintain visual consistency
@@ -72,7 +74,7 @@ export const AIAvatar: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' 
   );
 };
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initialPrompt, onPromptConsumed }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'model',
@@ -83,6 +85,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData }) => 
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const initialPromptSent = useRef(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -91,6 +94,36 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData }) => 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    if (initialPrompt && !initialPromptSent.current && !isLoading) {
+      initialPromptSent.current = true;
+      const sendInitialPrompt = async () => {
+        const userMsg: ChatMessage = {
+          role: 'user',
+          text: initialPrompt,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, userMsg]);
+        setIsLoading(true);
+        try {
+          const responseText = await sendMessageToGemini(initialPrompt, contextData);
+          const botMsg: ChatMessage = {
+            role: 'model',
+            text: responseText,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, botMsg]);
+        } catch (error) {
+          console.error("Chat error", error);
+        } finally {
+          setIsLoading(false);
+          onPromptConsumed?.();
+        }
+      };
+      sendInitialPrompt();
+    }
+  }, [initialPrompt, contextData, isLoading, onPromptConsumed]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;

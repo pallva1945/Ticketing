@@ -109,7 +109,7 @@ const RevenueHome = ({
     gameDayRevenue: number, 
     sponsorshipRevenue: number,
     onNavigate: (id: RevenueModule) => void,
-    onAiClick: () => void,
+    onAiClick: (prompt: string) => void,
     gamesPlayed: number,
     seasonFilter: string,
     onSeasonChange: (s: string) => void,
@@ -310,8 +310,8 @@ const RevenueHome = ({
                 <div className="absolute top-4 right-4 opacity-30">
                     <AIAvatar size="sm" />
                 </div>
-                <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start md:items-center">
-                    <div className="flex-1">
+                <div className="relative z-10">
+                    <div className="mb-4">
                         <h3 className="font-bold text-sm mb-2 flex items-center gap-2 text-slate-300 uppercase tracking-wide">
                             <MessageSquare size={16} /> Strategic Assessment
                         </h3>
@@ -322,9 +322,20 @@ const RevenueHome = ({
                             }
                         </p>
                     </div>
-                    <button onClick={onAiClick} className="shrink-0 bg-white/10 backdrop-blur-md text-white px-5 py-3 rounded-xl text-sm font-bold hover:bg-white/20 transition-colors border border-white/20 flex items-center gap-2">
-                        Full Analysis <ArrowRight size={16} />
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                        <button onClick={() => onAiClick("Give me a full executive summary of our revenue performance. Where are we strong and where do we need to focus?")} className="bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors border border-white/20">
+                            Executive Summary
+                        </button>
+                        <button onClick={() => onAiClick("Which revenue vertical is most at risk of missing target? What specific actions should we take this week?")} className="bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors border border-white/20">
+                            Risk Assessment
+                        </button>
+                        <button onClick={() => onAiClick("What are the top 3 revenue opportunities we should prioritize right now to close the gap to target?")} className="bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors border border-white/20">
+                            Top Opportunities
+                        </button>
+                        <button onClick={() => onAiClick("Compare our year-over-year performance. Are we ahead or behind last season and why?")} className="bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors border border-white/20">
+                            YoY Comparison
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -881,6 +892,12 @@ const App: React.FC = () => {
     return validTabs.includes(saved || '') ? (saved as 'dashboard' | 'comparison' | 'simulator' | 'crm') : 'dashboard';
   });
   const [showAIAdvisor, setShowAIAdvisor] = useState(false);
+  const [aiInitialPrompt, setAiInitialPrompt] = useState<string | undefined>(undefined);
+  
+  const openAIWithPrompt = (prompt: string) => {
+    setAiInitialPrompt(prompt);
+    setShowAIAdvisor(true);
+  };
   
   useEffect(() => {
     localStorage.setItem('activeTab', activeTab);
@@ -2363,7 +2380,7 @@ const App: React.FC = () => {
                 gameDayRevenue={gameDayRevenueNet} 
                 sponsorshipRevenue={sponsorshipStats.pureSponsorship}
                 onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
-                onAiClick={() => setShowAIAdvisor(true)}
+                onAiClick={(prompt: string) => openAIWithPrompt(prompt)}
                 gamesPlayed={filteredGames.length}
                 seasonFilter={selectedSeasons[0]}
                 onSeasonChange={(s) => setSelectedSeasons([s])}
@@ -2373,32 +2390,25 @@ const App: React.FC = () => {
               <div className="pt-6">
                 {!isLoadingData && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                        <div className="hidden md:block lg:col-span-2 relative bg-gradient-to-br from-indigo-800 to-slate-900 rounded-xl p-6 text-white shadow-lg overflow-hidden group border border-indigo-700">
-                            <div className="absolute top-4 right-4 opacity-50 group-hover:opacity-100 transition-opacity duration-500">
-                            <AIAvatar size="sm" />
-                            </div>
-                            <div className="relative z-10 pr-20">
-                                <h3 className="font-bold text-lg mb-2 flex items-center gap-2 text-indigo-100 uppercase tracking-wide">
-                                AI Director's Briefing
+                        <div className="hidden md:block lg:col-span-2 relative bg-gradient-to-br from-indigo-800 to-slate-900 rounded-xl p-6 text-white shadow-lg overflow-hidden border border-indigo-700">
+                            <div className="relative z-10">
+                                <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-indigo-200 uppercase tracking-wide">
+                                  <MessageSquare size={16} /> Ask AI Advisor
                                 </h3>
-                                <p className="text-white/90 text-sm leading-relaxed mb-4">
-                                {filteredGameDayData.length > 0 ? (
-                                    <>
-                                    Monitoring <strong>{filteredGameDayData.length} GameDay events</strong>. 
-                                    {gameDayIncludeTicketing ? (
-                                        <>Tracking <strong>Total Net Revenue</strong> against the <strong>€2.9M Budget</strong> (Includes Tix + Spons + TV + Variable).</>
-                                    ) : (
-                                        <>Tracking <strong>Net Revenue (Excl. Tix)</strong> against the <strong>€1.25M Budget</strong> (Includes Spons + TV + Variable).</>
-                                    )}
-                                    Look for correlations between Merchandising spikes and specific opponents.
-                                    </>
-                                ) : (
-                                    "No GameDay data matches your current filter selection."
-                                )}
-                                </p>
-                                <button onClick={() => setShowAIAdvisor(true)} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-500 transition-colors shadow-lg border border-indigo-500">
-                                OPEN AI ADVISOR
-                                </button>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                  <button onClick={() => openAIWithPrompt("Which GameDay revenue streams are underperforming? Identify the biggest opportunities to increase spend per head.")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
+                                    Spend per head optimization opportunities
+                                  </button>
+                                  <button onClick={() => openAIWithPrompt("Analyze merchandising revenue by opponent. Which matchups drive the highest merch sales and why?")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
+                                    Merch sales by opponent analysis
+                                  </button>
+                                  <button onClick={() => openAIWithPrompt("Compare F&B revenue across all games. Which games had low F&B performance and what factors might explain it?")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
+                                    F&B performance breakdown
+                                  </button>
+                                  <button onClick={() => openAIWithPrompt("Are we on pace to hit the GameDay budget targets? What's the revenue gap and how can we close it?")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
+                                    GameDay pacing and gap analysis
+                                  </button>
+                                </div>
                             </div>
                             <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-indigo-600/20 rounded-full blur-3xl"></div>
                         </div>
@@ -2427,30 +2437,25 @@ const App: React.FC = () => {
                     {/* DIRECTOR'S NOTE */}
                     {!isLoadingData && (
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                            <div className="hidden md:block lg:col-span-2 relative bg-gradient-to-br from-red-700 to-slate-900 rounded-xl p-6 text-white shadow-lg overflow-hidden group border border-red-900">
-                                <div className="absolute top-4 right-4 opacity-50 group-hover:opacity-100 transition-opacity duration-500">
-                                <AIAvatar size="sm" />
-                                </div>
-                                <div className="relative z-10 pr-20">
-                                    <h3 className="font-bold text-lg mb-2 flex items-center gap-2 text-red-100 uppercase tracking-wide">
-                                    AI Director's Briefing
+                            <div className="hidden md:block lg:col-span-2 relative bg-gradient-to-br from-red-700 to-slate-900 rounded-xl p-6 text-white shadow-lg overflow-hidden border border-red-900">
+                                <div className="relative z-10">
+                                    <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-red-200 uppercase tracking-wide">
+                                      <MessageSquare size={16} /> Ask AI Advisor
                                     </h3>
-                                    <p className="text-white/90 text-sm leading-relaxed mb-4">
-                                    {viewData.length > 0 ? (
-                                        <>
-                                        Analyzing <strong>{viewData.length} games</strong> matching criteria. 
-                                        {!selectedOpponents.includes('All') && selectedSeasons.length > 1 
-                                            ? ` You are reviewing a YoY comparison for ${selectedOpponents.length === 1 ? selectedOpponents[0] : 'selected opponents'}. Note the variance in Yield.` 
-                                            : ` Trend analysis indicates fluctuations in attendance efficiency. Review the Distressed Inventory report below.`
-                                        }
-                                        </>
-                                    ) : (
-                                        "No data matches your current filter selection."
-                                    )}
-                                    </p>
-                                    <button onClick={() => setShowAIAdvisor(true)} className="bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-red-500 transition-colors shadow-lg border border-red-500">
-                                    OPEN AI ADVISOR
-                                    </button>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      <button onClick={() => openAIWithPrompt("Which zones have occupancy below 70%? What pricing or promo strategy should we use to fill them?")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
+                                        Low occupancy zones strategy
+                                      </button>
+                                      <button onClick={() => openAIWithPrompt("Analyze our giveaway and protocol tickets. What's the opportunity cost and are we over-comping any zones?")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
+                                        Giveaway opportunity cost analysis
+                                      </button>
+                                      <button onClick={() => openAIWithPrompt("Which premium zones (Parterre, Courtside) have yield upside? Should we raise prices for high-demand games?")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
+                                        Premium zone yield opportunities
+                                      </button>
+                                      <button onClick={() => openAIWithPrompt("Are we on pace to hit the €1.65M ticketing target? Break down the gap by zone and sell type.")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
+                                        Ticketing pacing by zone
+                                      </button>
+                                    </div>
                                 </div>
                                 <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-red-600/20 rounded-full blur-3xl"></div>
                             </div>
@@ -2639,7 +2644,11 @@ const App: React.FC = () => {
               </button>
             </div>
             <div className="flex-1 overflow-hidden">
-              <ChatInterface contextData={aiContext} />
+              <ChatInterface 
+                contextData={aiContext} 
+                initialPrompt={aiInitialPrompt}
+                onPromptConsumed={() => setAiInitialPrompt(undefined)}
+              />
             </div>
           </div>
         </div>
