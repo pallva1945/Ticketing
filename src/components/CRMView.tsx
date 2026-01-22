@@ -1528,9 +1528,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                             <th className="text-left py-3 px-4 font-medium">Zone</th>
                             <th className="text-left py-3 px-4 font-medium">Area</th>
                             <th className="text-left py-3 px-4 font-medium">Seat</th>
-                            <th className="text-right py-3 px-4 font-medium">Price</th>
+                            <th className="text-center py-3 px-4 font-medium">Age</th>
+                            <th className="text-left py-3 px-4 font-medium">Location</th>
                             <th className="text-right py-3 px-4 font-medium">Commercial Value</th>
-                            <th className="text-left py-3 px-4 font-medium">Ticket Type</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -1545,13 +1545,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                               </td>
                               <td className="py-3 px-4 text-gray-600">{t.area || '—'}</td>
                               <td className="py-3 px-4 text-gray-600">{t.seat || '—'}</td>
-                              <td className="py-3 px-4 text-right text-gray-600">{formatCurrency(t.price || 0)}</td>
+                              <td className="py-3 px-4 text-center text-gray-600">{t.age || '—'}</td>
+                              <td className="py-3 px-4 text-gray-600">{t.city || t.location || '—'}</td>
                               <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency(t.commercialValue * (t.quantity || 1))}</td>
-                              <td className="py-3 px-4">
-                                <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-xs">
-                                  {t.ticketType || t.sellType || '—'}
-                                </span>
-                              </td>
                             </tr>
                           ))}
                         </tbody>
