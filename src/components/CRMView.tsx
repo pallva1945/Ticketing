@@ -1430,18 +1430,18 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             });
             const corpInfo = stats.topCorps.find(c => c.name === selectedCorporate);
             
-            // Group by game/event
+            // Group by game (using Game column, not Event)
             const gameBreakdown = corpRecords.reduce((acc, r) => {
-              const eventKey = r.event || 'Unknown Event';
-              if (!acc[eventKey]) {
-                acc[eventKey] = { tickets: 0, value: 0, seats: [] as string[], zones: new Set<string>() };
+              const gameKey = r.game || r.event || 'Unknown Game';
+              if (!acc[gameKey]) {
+                acc[gameKey] = { tickets: 0, value: 0, seats: [] as string[], zones: new Set<string>() };
               }
-              acc[eventKey].tickets += r.quantity || 1;
-              acc[eventKey].value += r.commercialValue * (r.quantity || 1);
+              acc[gameKey].tickets += r.quantity || 1;
+              acc[gameKey].value += r.commercialValue * (r.quantity || 1);
               if (r.area || r.seat) {
-                acc[eventKey].seats.push(formatSeatLocation(r.area || '', r.seat || ''));
+                acc[gameKey].seats.push(formatSeatLocation(r.area || '', r.seat || ''));
               }
-              if (r.zone || r.pvZone) acc[eventKey].zones.add(r.pvZone || r.zone);
+              if (r.zone || r.pvZone) acc[gameKey].zones.add(r.pvZone || r.zone);
               return acc;
             }, {} as Record<string, { tickets: number; value: number; seats: string[]; zones: Set<string> }>);
             
@@ -1491,7 +1491,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     </div>
                     <div>
                       <p className="text-2xl font-bold">{gameList.length}</p>
-                      <p className="text-amber-100 text-sm">Events Attended</p>
+                      <p className="text-amber-100 text-sm">Games Attended</p>
                     </div>
                     <div>
                       <p className="text-2xl font-bold">{formatCurrency((corpInfo?.value || 0) / (corpRecords.length || 1))}</p>
@@ -1505,14 +1505,14 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   <div className="p-4 border-b border-gray-100">
                     <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                       <Calendar size={18} className="text-amber-500" />
-                      Events & Games ({gameList.length})
+                      Games ({gameList.length})
                     </h3>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50 text-gray-600">
                         <tr>
-                          <th className="text-left py-3 px-4 font-medium">Event / Game</th>
+                          <th className="text-left py-3 px-4 font-medium">Game</th>
                           <th className="text-left py-3 px-4 font-medium">Zones</th>
                           <th className="text-right py-3 px-4 font-medium">Tickets</th>
                           <th className="text-right py-3 px-4 font-medium">Value</th>
