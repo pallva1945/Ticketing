@@ -286,7 +286,11 @@ const computeCRMStats = (rawRows: any[]) => {
     if (isCorp) {
       corporateTickets += qty;
       corpCommercialValue += rowCommercialValue;
-      const corpName = row.group || fullName || 'Unknown';
+      // Use group column for company name, apply title case
+      const rawCorpName = row.group || 'Unknown Company';
+      const corpName = rawCorpName.split(' ').map((word: string) => 
+        word.length <= 2 ? word.toUpperCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+      ).join(' ');
       if (!corpBreakdown[corpName]) corpBreakdown[corpName] = { count: 0, revenue: 0, value: 0, zones: {} };
       corpBreakdown[corpName].count += qty;
       corpBreakdown[corpName].revenue += rowRevenue;
