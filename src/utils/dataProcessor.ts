@@ -569,6 +569,8 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
   const emailIdx = getIdx(['email', 'e-mail']);
   const dobIdx = getIdx(['dob', 'data_nascita', 'birth']);
   const pobIdx = getIdx(['pob', 'luogo_nascita', 'place_of_birth']);
+  const cityIdx = getIdx(['city', 'citta', 'città', 'comune', 'town']);
+  const locationIdx = getIdx(['location', 'localita', 'località', 'residence', 'residenza']);
   const nationalityIdx = getIdx(['nationality', 'nazionalita']);
   const provinceIdx = getIdx(['province', 'provincia']);
   const phoneIdx = getIdx(['phone', 'telefono']);
@@ -704,7 +706,38 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
       sellType: getVal(sellIdx),
       giveawayType: getVal(giveawayTypeIdx),
       discountType: getVal(discountTypeIdx),
-      season: getVal(seasonIdx)
+      season: getVal(seasonIdx),
+      age: (() => {
+        const dob = getVal(dobIdx);
+        if (!dob) return undefined;
+        // Parse date formats: DD/MM/YYYY, YYYY-MM-DD, or Excel serial
+        let birthYear: number | null = null;
+        if (dob.includes('/')) {
+          const parts = dob.split('/');
+          if (parts.length === 3) {
+            birthYear = parseInt(parts[2], 10);
+          }
+        } else if (dob.includes('-')) {
+          const parts = dob.split('-');
+          if (parts.length === 3) {
+            birthYear = parseInt(parts[0], 10);
+          }
+        } else {
+          // Try as Excel serial number
+          const serial = parseFloat(dob.replace(/\./g, '').replace(',', '.'));
+          if (!isNaN(serial) && serial > 1000) {
+            const date = new Date((serial - 25569) * 86400 * 1000);
+            birthYear = date.getFullYear();
+          }
+        }
+        if (birthYear && birthYear > 1900 && birthYear < new Date().getFullYear()) {
+          const age = new Date().getFullYear() - birthYear;
+          return age.toString();
+        }
+        return undefined;
+      })(),
+      city: getVal(cityIdx) || undefined,
+      location: getVal(locationIdx) || getVal(pobIdx) || getVal(provinceIdx) || undefined
     };
   }).filter(r => r.fullName || r.email || r.group);
 };
