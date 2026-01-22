@@ -131,7 +131,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [searchSelectedClient, setSearchSelectedClient] = useState<string | null>(null);
   const [searchGameFilter, setSearchGameFilter] = useState<string>('all');
-  const [searchMode, setSearchMode] = useState<'client' | 'seat'>('client');
   const [sortColumn, setSortColumn] = useState<string>('value');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -782,7 +781,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             {view === 'behavior' && <TrendingUp size={14} className="inline mr-2" />}
             {view === 'corporate' && <Building2 size={14} className="inline mr-2" />}
             {view === 'search' && <Search size={14} className="inline mr-2" />}
-            {view === 'search' ? 'Find Customer' : view.charAt(0).toUpperCase() + view.slice(1)}
+            {view === 'search' ? 'Client Search' : view.charAt(0).toUpperCase() + view.slice(1)}
           </button>
         ))}
       </div>
@@ -1442,48 +1441,73 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
         const query = clientSearchQuery.toLowerCase().trim();
         
+        // Check for zone + area-seat pattern (e.g., "par ex, a-21" or "par o, D-121")
+        const zoneAreaSeatHyphenMatch = query.match(/^([a-z\s]+)[,\s]+([a-z]+)-?(\d+)$/i);
+        // Check for zone + area + seat pattern (e.g., "par o, D, 121")
+        const zoneAreaSeatMatch = query.match(/^([a-z\s]+)[,\s]+([a-z0-9]+)[,\s]+(\d+)$/i);
+        // Check for zone + seat pattern (e.g., "par o, 210")
+        const zoneSeatMatch = query.match(/^([a-z\s]+)[,\s]+(\d+)$/i);
+        // Check for zone-only pattern (e.g., "par o" or "curva")
+        const zoneOnlyMatch = query.match(/^[a-z\s]+$/i) && query.includes(' ');
+        
         const matchingClients = query.length >= 2 ? allClients.filter(c => {
-          if (searchMode === 'client') {
-            // Client search: search by name, email, phone, address, etc. (no zone/seat)
-            const searchStr = [
-              c.name, c.firstName, c.lastName, c.email, c.phone, c.cell, c.address, c.nationality, c.dob, c.pob, c.province, c.age
-            ].filter(Boolean).join(' ').toLowerCase();
-            return searchStr.includes(query);
-          } else {
-            // Seat search: search by zone, area, and seat only
-            // Parse the query into parts (comma or space separated)
-            const parts = query.split(/[,\s]+/).map(p => p.trim()).filter(p => p);
-            
+          // If zone + area-seat pattern detected (e.g., "par ex, a-21")
+          if (zoneAreaSeatHyphenMatch) {
+            const zoneQuery = zoneAreaSeatHyphenMatch[1].trim().toLowerCase();
+            const areaQuery = zoneAreaSeatHyphenMatch[2].trim().toLowerCase();
+            const seatQuery = zoneAreaSeatHyphenMatch[3];
             return c.records.some((r: CRMRecord) => {
               const zone = (r.pvZone || r.zone || '').toLowerCase();
               const area = (r.area || '').toLowerCase();
               const seat = (r.seat || '').trim();
-              
-              if (parts.length === 1) {
-                // Single part: match zone only
-                return zone.includes(parts[0]);
-              } else if (parts.length === 2) {
-                // Two parts: could be zone+area, zone+seat, or area-seat format like "a-21"
-                const [p1, p2] = parts;
-                // Check if p2 is area-seat format (e.g., "a-21")
-                const areaSeatMatch = p2.match(/^([a-z]+)-?(\d+)$/i);
-                if (areaSeatMatch) {
-                  return zone.includes(p1) && area === areaSeatMatch[1].toLowerCase() && seat === areaSeatMatch[2];
-                }
-                // Check if p2 is just a number (zone + seat)
-                if (/^\d+$/.test(p2)) {
-                  return zone.includes(p1) && seat === p2;
-                }
-                // Otherwise treat as zone + area
-                return zone.includes(p1) && area.includes(p2);
-              } else if (parts.length >= 3) {
-                // Three parts: zone + area + seat
-                const [zoneQ, areaQ, seatQ] = parts;
-                return zone.includes(zoneQ) && area.includes(areaQ) && seat === seatQ;
-              }
-              return false;
+              return zone.includes(zoneQuery) && area.toLowerCase() === areaQuery && seat === seatQuery;
             });
           }
+          
+          // If zone + area + seat search pattern detected (e.g., "par o, D, 121")
+          if (zoneAreaSeatMatch) {
+            const zoneQuery = zoneAreaSeatMatch[1].trim().toLowerCase();
+            const areaQuery = zoneAreaSeatMatch[2].trim().toLowerCase();
+            const seatQuery = zoneAreaSeatMatch[3];
+            return c.records.some((r: CRMRecord) => {
+              const zone = (r.pvZone || r.zone || '').toLowerCase();
+              const area = (r.area || '').toLowerCase();
+              const seat = (r.seat || '').trim();
+              return zone.includes(zoneQuery) && area.includes(areaQuery) && seat === seatQuery;
+            });
+          }
+          
+          // If zone + seat search pattern detected (e.g., "par o, 210")
+          if (zoneSeatMatch) {
+            const zoneQuery = zoneSeatMatch[1].trim().toLowerCase();
+            const seatQuery = zoneSeatMatch[2];
+            return c.records.some((r: CRMRecord) => {
+              const zone = (r.pvZone || r.zone || '').toLowerCase();
+              const seat = (r.seat || '').trim();
+              return zone.includes(zoneQuery) && seat === seatQuery;
+            });
+          }
+          
+          // If zone-only search pattern detected (e.g., "par o", "par ex", "curva n")
+          if (zoneOnlyMatch) {
+            return c.records.some((r: CRMRecord) => {
+              const zone = (r.pvZone || r.zone || '').toLowerCase();
+              return zone.includes(query);
+            });
+          }
+          
+          // Standard search by name, email, zone, etc.
+          const searchStr = [
+            c.name, c.firstName, c.lastName, c.email, c.phone, c.cell, c.address, c.nationality, c.dob, c.pob, c.province, c.age
+          ].filter(Boolean).join(' ').toLowerCase();
+          
+          // Also check if query matches zone (for single word zone searches like "curva")
+          const matchesZone = c.records.some((r: CRMRecord) => {
+            const zone = (r.pvZone || r.zone || '').toLowerCase();
+            return zone.includes(query);
+          });
+          
+          return searchStr.includes(query) || matchesZone;
         }).slice(0, 20) : [];
 
         const selectedClient = searchSelectedClient ? allClients.find(c => c.key === searchSelectedClient) : null;
@@ -1563,43 +1587,14 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                 <Search size={20} className="text-red-500" />
-                Find Customer
+                Client Search
               </h3>
-              
-              <div className="flex gap-2 mb-4">
-                <button
-                  onClick={() => { setSearchMode('client'); setClientSearchQuery(''); setSearchSelectedClient(null); }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                    searchMode === 'client' 
-                      ? 'bg-red-600 text-white' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <User size={16} />
-                  Client Search
-                </button>
-                <button
-                  onClick={() => { setSearchMode('seat'); setClientSearchQuery(''); setSearchSelectedClient(null); }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                    searchMode === 'seat' 
-                      ? 'bg-red-600 text-white' 
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <MapPin size={16} />
-                  Seat Search
-                </button>
-              </div>
-              
               <div className="mb-6">
                 <div className="relative max-w-xl">
                   <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    placeholder={searchMode === 'client' 
-                      ? "Search by name, email, phone..." 
-                      : "Search by zone, area, seat (e.g., par o, D, 121)"
-                    }
+                    placeholder="Search by name, email... or seat (e.g., par o, D, 121)"
                     value={clientSearchQuery}
                     onChange={(e) => {
                       setClientSearchQuery(e.target.value);
@@ -1617,12 +1612,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {searchMode === 'client' 
-                    ? "Enter at least 2 characters to find a client by name, email, or phone" 
-                    : "Search examples: par o, par ex D 121, curva n"
-                  }
-                </p>
+                <p className="text-xs text-gray-500 mt-2">Enter at least 2 characters to find a client</p>
               </div>
 
               {query.length >= 2 && !selectedClient && (
