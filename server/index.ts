@@ -2,8 +2,6 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import * as bqService from "../src/services/bigQueryService";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,7 +10,7 @@ const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
 const PORT = isProduction ? 5000 : Number(process.env.SERVER_PORT || 5001);
 
-// Health check endpoints FIRST - before any middleware that could slow things down
+// Health check endpoints FIRST - before ANY imports or middleware
 app.get("/", (req, res) => {
   res.status(200).send("OK");
 });
@@ -21,13 +19,50 @@ app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// Standard middleware
-app.use(cors());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+// Start server IMMEDIATELY to pass health checks
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT} (${isProduction ? 'production' : 'development'})`);
+  console.log('Health check endpoints ready');
+  
+  // Initialize remaining routes after server is listening
+  initializeApp();
+});
 
-// Register object storage routes
-registerObjectStorageRoutes(app);
+// Lazy-loaded services
+let bqService: any = null;
+async function getBqService() {
+  if (!bqService) {
+    bqService = await import("../src/services/bigQueryService");
+  }
+  return bqService;
+}
+
+async function initializeApp() {
+  // Add middleware
+  app.use(cors());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  
+  // Register object storage routes
+  const { registerObjectStorageRoutes } = await import("./replit_integrations/object_storage");
+  registerObjectStorageRoutes(app);
+  
+  // Register all API routes
+  registerAPIRoutes();
+  
+  // Production static file serving (must be last)
+  if (isProduction) {
+    const distPath = path.join(__dirname, '..', 'dist');
+    app.use(express.static(distPath));
+    app.use((req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+  
+  console.log('All routes initialized');
+}
+
+function registerAPIRoutes() {
 
 const validateBigQueryRequest = (req: express.Request, res: express.Response): boolean => {
   const isInternalRequest = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip?.includes('127.0.0.1') || req.ip === '::ffff:127.0.0.1';
@@ -55,7 +90,8 @@ app.get("/api/bigquery/test", async (req, res) => {
   if (!validateBigQueryRequest(req, res)) return;
   
   try {
-    const result = await bqService.testBigQueryConnection();
+    const bq = await getBqService();
+    const result = await bq.testBigQueryConnection();
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -70,7 +106,8 @@ app.post("/api/bigquery/sync", async (req, res) => {
     if (!csvContent) {
       return res.status(400).json({ success: false, message: 'csvContent is required' });
     }
-    const result = await bqService.syncTicketingToBigQuery(csvContent);
+    const bq = await getBqService();
+    const result = await bq.syncTicketingToBigQuery(csvContent);
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
@@ -95,7 +132,8 @@ app.get("/api/ticketing", async (req, res) => {
       });
     }
     
-    const result = await bqService.fetchTicketingFromBigQuery();
+    const bq = await getBqService();
+    const result = await bq.fetchTicketingFromBigQuery();
     
     if (result.success) {
       ticketingCache = { 
@@ -484,7 +522,8 @@ app.get("/api/crm/bigquery", async (req, res) => {
       });
     }
     
-    const result = await bqService.fetchCRMFromBigQuery();
+    const bq = await getBqService();
+    const result = await bq.fetchCRMFromBigQuery();
     
     if (result.success && result.rawRows) {
       const processedStats = computeCRMStats(result.rawRows);
@@ -532,9 +571,10 @@ app.post("/api/crm/upload", async (req, res) => {
 
 app.get("/api/sponsorship", async (req, res) => {
   try {
-    const result = await bqService.fetchSponsorshipFromBigQuery();
+    const bq = await getBqService();
+    const result = await bq.fetchSponsorshipFromBigQuery();
     if (result.success && result.rawRows) {
-      const csvContent = bqService.convertBigQueryRowsToSponsorCSV(result.rawRows);
+      const csvContent = bq.convertBigQueryRowsToSponsorCSV(result.rawRows);
       return res.json({ success: true, data: result.rawRows, csvContent, message: result.message });
     }
     res.json(result);
@@ -545,9 +585,10 @@ app.get("/api/sponsorship", async (req, res) => {
 
 app.get("/api/gameday", async (req, res) => {
   try {
-    const result = await bqService.fetchGameDayFromBigQuery();
+    const bq = await getBqService();
+    const result = await bq.fetchGameDayFromBigQuery();
     if (result.success && result.rawRows) {
-      const csvContent = bqService.convertBigQueryRowsToGameDayCSV(result.rawRows);
+      const csvContent = bq.convertBigQueryRowsToGameDayCSV(result.rawRows);
       return res.json({ success: true, data: result.rawRows, csvContent, message: result.message });
     }
     res.json(result);
@@ -556,17 +597,4 @@ app.get("/api/gameday", async (req, res) => {
   }
 });
 
-// Production static file serving
-if (isProduction) {
-  const distPath = path.join(__dirname, '..', 'dist');
-  app.use(express.static(distPath));
-  app.use((req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
-  });
-}
-
-// Start server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT} (${isProduction ? 'production' : 'development'})`);
-  console.log('Health check endpoints ready at / and /api/health');
-});
+} // End of registerAPIRoutes function
