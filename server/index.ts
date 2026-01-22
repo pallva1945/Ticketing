@@ -273,9 +273,10 @@ const computeCRMStats = (rawRows: any[]) => {
     zoneStats[pvZone].revenue += rowRevenue;
     
     // Sell type stats
-    if (!sellTypeStats[sellType]) sellTypeStats[sellType] = { tickets: 0, revenue: 0 };
+    if (!sellTypeStats[sellType]) sellTypeStats[sellType] = { tickets: 0, revenue: 0, commercialValue: 0 };
     sellTypeStats[sellType].tickets += qty;
     sellTypeStats[sellType].revenue += rowRevenue;
+    sellTypeStats[sellType].commercialValue += rowCommercialValue;
     
     // Corporate breakdown - track Corp sell type or ticket type
     const sellTypeLower = sellType.toLowerCase();
@@ -483,6 +484,13 @@ const computeCRMStats = (rawRows: any[]) => {
   
   // Count unique corps
   const uniqueCorps = Object.keys(corpBreakdown).length;
+  
+  // Debug: Log commercial value breakdown by sell type
+  console.log('Commercial Value by Sell Type:');
+  for (const [type, stats] of Object.entries(sellTypeStats)) {
+    console.log(`  ${type}: €${(stats as any).commercialValue?.toLocaleString('it-IT') || 0} (${(stats as any).tickets} tickets)`)
+  }
+  console.log(`  TOTAL: €${totalCommercialValue.toLocaleString('it-IT')}`);
 
   return {
     totalRecords: rawRows.length,
