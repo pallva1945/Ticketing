@@ -1,6 +1,8 @@
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, Suspense, lazy, useCallback, memo } from 'react';
 import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Bell, Users, FileText, ChevronDown, Target, Shield, RefreshCw } from 'lucide-react';
+import { ErrorBoundary, ModuleErrorBoundary } from './components/ErrorBoundary';
+import { DashboardSkeleton, CRMSkeleton, ChartSkeleton } from './components/SkeletonLoader';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -12,11 +14,12 @@ import { MultiSelect } from './components/MultiSelect';
 import { PacingWidget } from './components/PacingWidget';
 import { DistressedZones } from './components/DistressedZones';
 import { CompKillerWidget } from './components/CompKillerWidget';
-import { GameDayDashboard } from './components/GameDayDashboard';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
 import { BoardReportModal } from './components/BoardReportModal';
-import { CRMView } from './components/CRMView';
-import { SponsorshipDashboard } from './components/SponsorshipDashboard';
+
+const CRMView = lazy(() => import('./components/CRMView').then(m => ({ default: m.CRMView })));
+const SponsorshipDashboard = lazy(() => import('./components/SponsorshipDashboard').then(m => ({ default: m.SponsorshipDashboard })));
+const GameDayDashboard = lazy(() => import('./components/GameDayDashboard').then(m => ({ default: m.GameDayDashboard })));
 import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, SponsorData, CRMRecord, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
@@ -2306,22 +2309,24 @@ const App: React.FC = () => {
           {/* --- CONTENT AREA SWITCHER --- */}
           
           {activeModule === 'home' ? (
-              <RevenueHome 
-                modules={MODULES} 
-                ticketingRevenue={totalStats.totalRevenue}
-                gameDayTicketing={gameDayTicketingRevenue}
-                gameDayRevenue={gameDayRevenueNet} 
-                sponsorshipRevenue={sponsorshipStats.pureSponsorship}
-                onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
-                onAiClick={() => {
-                    setActiveModule('ticketing');
-                    setActiveTab('chat');
-                }}
-                gamesPlayed={filteredGames.length}
-                seasonFilter={selectedSeasons[0]}
-                onSeasonChange={(s) => setSelectedSeasons([s])}
-                yoyStats={yoyComparisonStats}
-              />
+              <ErrorBoundary moduleName="Revenue Center">
+                <RevenueHome 
+                  modules={MODULES} 
+                  ticketingRevenue={totalStats.totalRevenue}
+                  gameDayTicketing={gameDayTicketingRevenue}
+                  gameDayRevenue={gameDayRevenueNet} 
+                  sponsorshipRevenue={sponsorshipStats.pureSponsorship}
+                  onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
+                  onAiClick={() => {
+                      setActiveModule('ticketing');
+                      setActiveTab('chat');
+                  }}
+                  gamesPlayed={filteredGames.length}
+                  seasonFilter={selectedSeasons[0]}
+                  onSeasonChange={(s) => setSelectedSeasons([s])}
+                  yoyStats={yoyComparisonStats}
+                />
+              </ErrorBoundary>
           ) : activeModule === 'gameday' ? (
               <div className="pt-6">
                 {!isLoadingData && (
@@ -2369,12 +2374,22 @@ const App: React.FC = () => {
                 
                 <FilterBar />
                 
-                <GameDayDashboard data={filteredGameDayData} includeTicketing={gameDayIncludeTicketing} />
+                <ErrorBoundary moduleName="GameDay">
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <GameDayDashboard data={filteredGameDayData} includeTicketing={gameDayIncludeTicketing} />
+                  </Suspense>
+                </ErrorBoundary>
               </div>
           ) : activeModule === 'ticketing' ? (
             <>
                 {/* EXISTING TICKETING LOGIC */}
-                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} serverStats={crmStats} games={filteredGames.map(g => ({ id: g.id, opponent: g.opponent, date: g.date }))} />}
+                {activeTab === 'crm' && (
+                  <ErrorBoundary moduleName="CRM">
+                    <Suspense fallback={<CRMSkeleton />}>
+                      <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} serverStats={crmStats} games={filteredGames.map(g => ({ id: g.id, opponent: g.opponent, date: g.date }))} />
+                    </Suspense>
+                  </ErrorBoundary>
+                )}
                 {activeTab === 'dashboard' && (
                     <div className="pt-6">
                     {/* DIRECTOR'S NOTE */}
@@ -2554,20 +2569,24 @@ const App: React.FC = () => {
             </>
           ) : activeModule === 'sponsorship' ? (
               <div className="pt-6">
-                <SponsorshipDashboard 
-                  data={sponsorData}
-                  onUploadCsv={async (content: string) => {
-                    const newData = processSponsorData(content);
-                    setSponsorData(newData);
-                    if (isFirebaseConfigured) {
-                      await saveCsvToFirebase('sponsor', content);
-                      setSponsorDataSource('cloud');
-                      setSponsorLastUpdated(new Date().toLocaleString());
-                    }
-                  }}
-                  dataSource={sponsorDataSource}
-                  lastUpdated={sponsorLastUpdated}
-                />
+                <ErrorBoundary moduleName="Sponsorship">
+                  <Suspense fallback={<DashboardSkeleton />}>
+                    <SponsorshipDashboard 
+                      data={sponsorData}
+                      onUploadCsv={async (content: string) => {
+                        const newData = processSponsorData(content);
+                        setSponsorData(newData);
+                        if (isFirebaseConfigured) {
+                          await saveCsvToFirebase('sponsor', content);
+                          setSponsorDataSource('cloud');
+                          setSponsorLastUpdated(new Date().toLocaleString());
+                        }
+                      }}
+                      dataSource={sponsorDataSource}
+                      lastUpdated={sponsorLastUpdated}
+                    />
+                  </Suspense>
+                </ErrorBoundary>
               </div>
           ) : (
               <PlaceholderView 
