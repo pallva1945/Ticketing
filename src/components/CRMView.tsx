@@ -145,6 +145,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [selectedCorporate, setSelectedCorporate] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
   const [selectedGiveawayRecipient, setSelectedGiveawayRecipient] = useState<string | null>(null);
+  const [selectedGiveawayType, setSelectedGiveawayType] = useState<string | null>(null);
 
   const hasActiveFilter = filterZone || filterEvent || capacityView !== 'all' || searchQuery;
 
@@ -1797,11 +1798,21 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
         // Group by giveaway type (only use giveawayType column, removing GA suffix)
         // Use opportunity cost based on zone average prices
+        // Helper to normalize giveaway type names
+        const normalizeGiveawayType = (gType: string): string => {
+          let type = (gType || '').replace(/\s*GA$/i, '').trim();
+          // Normalize "Agent/Sponsor" to just "Agent"
+          if (type.toLowerCase().includes('agent/sponsor') || type.toLowerCase() === 'agent/sponsor') {
+            type = 'Agent';
+          }
+          return type || 'Unknown';
+        };
+
         const giveawayTypeBreakdown = giveawayRecords.reduce((acc, r) => {
           // Only use records that have an actual giveawayType value
           if (!r.giveawayType || r.giveawayType.trim() === '') return acc;
-          // Remove 'GA' suffix from the end of the type
-          let type = r.giveawayType.replace(/\s*GA$/i, '').trim() || 'Unknown';
+          // Normalize the type name
+          let type = normalizeGiveawayType(r.giveawayType);
           if (!acc[type]) {
             acc[type] = { tickets: 0, value: 0, recipients: new Set<string>() };
           }
@@ -1835,16 +1846,17 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           acc[name].tickets += r.quantity || 1;
           // Opportunity cost = zone average price for the season
           acc[name].value += getOpportunityCost(r);
-          // Only add giveawayType if it has a value
+          // Only add giveawayType if it has a value (normalized)
           if (r.giveawayType && r.giveawayType.trim() !== '') {
-            let gType = r.giveawayType.replace(/\s*GA$/i, '').trim();
-            if (gType) acc[name].types.add(gType);
+            const gType = normalizeGiveawayType(r.giveawayType);
+            if (gType && gType !== 'Unknown') acc[name].types.add(gType);
           }
+          // Capture age and location from records that have them
+          if (r.age && r.age.trim() !== '' && !acc[name].age) acc[name].age = r.age;
+          if ((r.city || r.location) && !acc[name].location) acc[name].location = r.city || r.location;
           if (r.game || r.event) acc[name].games.add(r.game || r.event);
           if (r.pvZone || r.zone) acc[name].zones.add(r.pvZone || r.zone);
           if (!acc[name].email && r.email) acc[name].email = r.email;
-          if (!acc[name].age && r.age) acc[name].age = r.age;
-          if (!acc[name].location && (r.city || r.location)) acc[name].location = r.city || r.location;
           return acc;
         }, {} as Record<string, { tickets: number; value: number; types: Set<string>; games: Set<string>; zones: Set<string>; email?: string; age?: string; location?: string }>);
 
@@ -1977,8 +1989,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                           {recipientTickets.map((t, i) => {
-                            // giveawayType is always populated when sellType indicates giveaway
-                            const gType = (t.giveawayType || '').replace(/\s*GA$/i, '').trim();
+                            // giveawayType is always populated - normalize it
+                            const gType = normalizeGiveawayType(t.giveawayType || '');
                             return (
                               <tr key={i} className="hover:bg-gray-50">
                                 <td className="py-3 px-4 text-gray-400">{i + 1}</td>
@@ -2005,6 +2017,120 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   </div>
                 </>
               );
+            })() : selectedGiveawayType ? (() => {
+              // Show recipients filtered by type
+              const filteredByType = recipientList.filter(r => r.types.includes(selectedGiveawayType));
+              const typeData = typeList.find(t => t.type === selectedGiveawayType);
+              
+              return (
+                <>
+                  {/* Breadcrumb navigation */}
+                  <div className="flex items-center gap-2 mb-4 text-sm">
+                    <button 
+                      onClick={() => setSelectedGiveawayType(null)}
+                      className="text-purple-600 hover:text-purple-800 hover:underline"
+                    >
+                      Giveaway Types
+                    </button>
+                    <ChevronRight size={16} className="text-gray-400" />
+                    <span className="text-gray-600 font-medium">{selectedGiveawayType}</span>
+                  </div>
+                  
+                  {/* Type header */}
+                  <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl p-6 text-white shadow-lg mb-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h2 className="text-2xl font-bold">{selectedGiveawayType}</h2>
+                        <p className="text-purple-200 text-sm mt-1">Giveaway Type</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-3xl font-bold">{typeData?.tickets.toLocaleString() || 0}</p>
+                        <p className="text-purple-100 text-sm">Total Tickets</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-white/20">
+                      <div>
+                        <p className="text-2xl font-bold">{formatCurrency(typeData?.value || 0)}</p>
+                        <p className="text-purple-100 text-sm">Opportunity Cost</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{filteredByType.length}</p>
+                        <p className="text-purple-100 text-sm">Recipients</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Recipients for this type */}
+                  <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="p-4 border-b border-gray-100">
+                      <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                        <Users size={18} className="text-purple-500" />
+                        Recipients ({filteredByType.length})
+                      </h3>
+                      <p className="text-xs text-gray-500 mt-1">Click on a name to view ticket details</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 text-gray-600">
+                          <tr>
+                            <th className="text-left py-3 px-4 font-medium">#</th>
+                            <th className="text-left py-3 px-4 font-medium">Name</th>
+                            <th className="text-right py-3 px-4 font-medium">Tickets</th>
+                            <th className="text-right py-3 px-4 font-medium">Games</th>
+                            <th className="text-left py-3 px-4 font-medium">Zones</th>
+                            <th className="text-center py-3 px-4 font-medium">Age</th>
+                            <th className="text-left py-3 px-4 font-medium">Location</th>
+                            <th className="text-right py-3 px-4 font-medium">Opportunity Cost</th>
+                            <th className="w-8"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {filteredByType.slice(0, 100).map((r, i) => (
+                            <tr 
+                              key={i} 
+                              className="hover:bg-purple-50 cursor-pointer transition-colors"
+                              onClick={() => setSelectedGiveawayRecipient(r.name)}
+                            >
+                              <td className="py-3 px-4 text-gray-400">{i + 1}</td>
+                              <td className="py-3 px-4 font-medium text-purple-700 hover:text-purple-900">{r.name}</td>
+                              <td className="py-3 px-4 text-right font-medium">{r.tickets}</td>
+                              <td className="py-3 px-4 text-right">{r.games.length}</td>
+                              <td className="py-3 px-4">
+                                <div className="flex flex-wrap gap-1">
+                                  {r.zones.slice(0, 2).map(z => (
+                                    <span key={z} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{z}</span>
+                                  ))}
+                                  {r.zones.length > 2 && (
+                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">+{r.zones.length - 2}</span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 text-center text-gray-600">{r.age || '—'}</td>
+                              <td className="py-3 px-4 text-gray-600">{r.location || '—'}</td>
+                              <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency(r.value)}</td>
+                              <td className="py-3 px-4 text-gray-400">
+                                <ChevronRight size={16} />
+                              </td>
+                            </tr>
+                          ))}
+                          {filteredByType.length === 0 && (
+                            <tr>
+                              <td colSpan={9} className="py-8 text-center text-gray-400">
+                                No recipients found for this type
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                      {filteredByType.length > 100 && (
+                        <div className="p-4 text-center text-sm text-gray-500 border-t border-gray-100">
+                          Showing first 100 of {filteredByType.length} recipients
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              );
             })() : (
               <>
                 {/* Giveaway Types breakdown with Pie Chart */}
@@ -2014,6 +2140,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       <PieChart size={18} className="text-purple-500" />
                       Giveaway Types Breakdown
                     </h3>
+                    <p className="text-xs text-gray-500 mt-1">Click on a type to see recipients</p>
                   </div>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
                     {/* Pie Chart */}
@@ -2031,9 +2158,11 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                               dataKey="value"
                               label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                               labelLine={false}
+                              onClick={(data) => setSelectedGiveawayType(data.name)}
+                              style={{ cursor: 'pointer' }}
                             >
                               {typeList.map((_, i) => (
-                                <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                                <Cell key={i} fill={COLORS[i % COLORS.length]} style={{ cursor: 'pointer' }} />
                               ))}
                             </Pie>
                             <Tooltip formatter={(value: number) => [value.toLocaleString(), 'Tickets']} />
@@ -2053,19 +2182,27 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                             <th className="text-left py-2 px-3 font-medium">Type</th>
                             <th className="text-right py-2 px-3 font-medium">Tickets</th>
                             <th className="text-right py-2 px-3 font-medium">Cost</th>
+                            <th className="w-8"></th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                           {typeList.map((t, i) => (
-                            <tr key={i} className="hover:bg-gray-50">
+                            <tr 
+                              key={i} 
+                              className="hover:bg-purple-50 cursor-pointer transition-colors"
+                              onClick={() => setSelectedGiveawayType(t.type)}
+                            >
                               <td className="py-2 px-3">
                                 <div className="flex items-center gap-2">
                                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
-                                  <span className="font-medium">{t.type}</span>
+                                  <span className="font-medium text-purple-700">{t.type}</span>
                                 </div>
                               </td>
                               <td className="py-2 px-3 text-right">{t.tickets.toLocaleString()}</td>
                               <td className="py-2 px-3 text-right font-bold text-green-600">{formatCurrency(t.value)}</td>
+                              <td className="py-2 px-3 text-gray-400">
+                                <ChevronRight size={14} />
+                              </td>
                             </tr>
                           ))}
                         </tbody>
@@ -2079,7 +2216,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   <div className="p-4 border-b border-gray-100">
                     <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                       <Users size={18} className="text-purple-500" />
-                      Giveaway Recipients ({recipientList.length})
+                      All Giveaway Recipients ({recipientList.length})
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">Click on a name to view ticket details</p>
                   </div>
