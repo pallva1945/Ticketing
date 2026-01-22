@@ -616,40 +616,5 @@ if (isProduction) {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT} (${isProduction ? 'production' : 'development'})`);
-  
-  // Pre-warm CRM cache in background AFTER server passes health checks
-  // Delay by 10 seconds to ensure deployment health checks complete first
-  setTimeout(() => {
-    console.log('Pre-warming CRM cache in background...');
-    
-    // Add 60 second timeout for the BigQuery operation
-    const warmingTimeout = setTimeout(() => {
-      console.log('CRM pre-warm timeout: operation took too long, skipping');
-    }, 60000);
-    
-    fetchCRMFromBigQuery().then(result => {
-      clearTimeout(warmingTimeout);
-      if (result.success && result.rawRows) {
-        const processedStats = computeCRMStats(result.rawRows);
-        const fixedRows = result.rawRows.filter(isRowFixedCapacity);
-        const fixedStats = computeCRMStats(fixedRows);
-        const flexibleRows = result.rawRows.filter((row: any) => !isRowFixedCapacity(row));
-        const flexibleStats = computeCRMStats(flexibleRows);
-        
-        crmCache = { 
-          rawRows: result.rawRows,
-          processedStats,
-          fixedStats,
-          flexibleStats,
-          timestamp: Date.now() 
-        };
-        console.log(`CRM cache pre-warmed: ${result.rawRows.length} records ready`);
-      } else {
-        console.log('CRM pre-warm failed:', result.message);
-      }
-    }).catch(err => {
-      clearTimeout(warmingTimeout);
-      console.log('CRM pre-warm error:', err.message);
-    });
-  }, 10000); // 10 second delay before starting cache warming
+  console.log('Server ready to accept requests. CRM cache will be warmed on first request.');
 });
