@@ -1095,6 +1095,7 @@ const App: React.FC = () => {
   // Lazy load CRM data only when user navigates to CRM tab
   const crmLoadedRef = React.useRef(false);
   const [isLoadingCRM, setIsLoadingCRM] = useState(false);
+  const [isLoadingCRMSearch, setIsLoadingCRMSearch] = useState(false);
   
   const crmStatsLoadedRef = React.useRef(false);
   const crmFullDataLoadedRef = React.useRef(false);
@@ -1127,6 +1128,7 @@ const App: React.FC = () => {
       
       // Phase 2: Load full data for client search (background, non-blocking)
       if (!crmFullDataLoadedRef.current) {
+        setIsLoadingCRMSearch(true);
         fetch('/api/crm/bigquery?full=true').then(async crmResponse => {
           if (crmResponse && crmResponse.ok) {
             const crmResult = await crmResponse.json();
@@ -1137,7 +1139,11 @@ const App: React.FC = () => {
               crmFullDataLoadedRef.current = true;
             }
           }
-        }).catch(err => console.warn('CRM full data load error:', err));
+          setIsLoadingCRMSearch(false);
+        }).catch(err => {
+          console.warn('CRM full data load error:', err);
+          setIsLoadingCRMSearch(false);
+        });
       }
       
       crmLoadedRef.current = true;
@@ -2386,7 +2392,7 @@ const App: React.FC = () => {
           ) : activeModule === 'ticketing' ? (
             <>
                 {/* EXISTING TICKETING LOGIC */}
-                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} serverStats={crmStats} games={filteredGames.map(g => ({ id: g.id, opponent: g.opponent, date: g.date }))} />}
+                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} isLoadingSearch={isLoadingCRMSearch} serverStats={crmStats} games={filteredGames.map(g => ({ id: g.id, opponent: g.opponent, date: g.date }))} />}
                 {activeTab === 'dashboard' && (
                     <div className="pt-6">
                     {/* DIRECTOR'S NOTE */}

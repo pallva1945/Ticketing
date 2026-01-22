@@ -74,6 +74,7 @@ interface CRMViewProps {
   data: CRMRecord[];
   sponsorData?: SponsorData[];
   isLoading?: boolean;
+  isLoadingSearch?: boolean; // True while full client data is loading for search
   serverStats?: { all: CRMStats; fixed: CRMStats; flexible: CRMStats } | null; // Pre-computed stats from server for fast loading
   games?: GameInfo[]; // Game schedule for seat history view
 }
@@ -128,7 +129,7 @@ const cleanSeat = (seat: string): string => {
   return seat || '—';
 };
 
-export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoading = false, serverStats = null, games = [] }) => {
+export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoading = false, isLoadingSearch = false, serverStats = null, games = [] }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterZone, setFilterZone] = useState<string | null>(null);
   const [filterEvent, setFilterEvent] = useState<string | null>(null);
@@ -1485,6 +1486,19 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       )}
 
       {activeView === 'search' && (() => {
+        // Show loading indicator if search data is still loading
+        if (isLoadingSearch && data.length === 0) {
+          return (
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mb-4"></div>
+                <p className="text-gray-600 font-medium">Loading client search data...</p>
+                <p className="text-gray-400 text-sm mt-2">This may take a few seconds</p>
+              </div>
+            </div>
+          );
+        }
+        
         const allClients = Object.entries(
           data.reduce((acc, r) => {
             const key = getCustomerKey(r);
