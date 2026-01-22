@@ -248,10 +248,9 @@ const computeCRMStats = (rawRows: any[]) => {
     // Use per-game price if available for season/pack tickets, otherwise use full price
     const price = (isSeasonOrPack && perGamePrice > 0) ? perGamePrice : fullPrice;
     
-    // Commercial value - use per-game for season/packs too
+    // Commercial value - use the full value from the database, NOT per-game
     // Note: BigQuery column is spelled "comercial_value" (one 'm') not "commercial_value"
-    const fullCommercialValue = parseNumber(row.comercial_value) || parseNumber(row.commercial_value) || price;
-    const commercialValue = (isSeasonOrPack && perGamePrice > 0) ? perGamePrice : fullCommercialValue;
+    const commercialValue = parseNumber(row.comercial_value) || parseNumber(row.commercial_value) || fullPrice;
     
     const pvZone = row.pv_zone || row.Pv_Zone || row.PV_Zone || row.zone || row.Zone || 'Unknown';
     // Sales channel from "sell" column - check all case variations and normalize
