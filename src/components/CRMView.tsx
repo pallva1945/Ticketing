@@ -1502,6 +1502,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               dob: r.dob,
               pob: r.pob,
               province: r.province,
+              group: r.group,
               records: [] as CRMRecord[],
               payments: {} as Record<string, number>,
               leadDays: [] as number[]
@@ -1512,6 +1513,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             if (!acc[key].address && r.address) acc[key].address = r.address;
             if (!acc[key].nationality && r.nationality) acc[key].nationality = r.nationality;
             if (!acc[key].pob && r.pob) acc[key].pob = r.pob;
+            if (!acc[key].group && r.group) acc[key].group = r.group;
             const payment = (r.payment || '').toLowerCase().replace(/[^a-z]/g, '');
             if (payment) acc[key].payments[payment] = (acc[key].payments[payment] || 0) + (Number(r.quantity) || 1);
             if (r.buyTimestamp && r.gmDateTime) {
@@ -1536,13 +1538,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         });
 
         const query = clientSearchQuery.toLowerCase().trim();
-        console.log('Find Customer Debug:', { query, dataLength: data.length, allClientsLength: allClients.length, searchMode });
         
         const matchingClients = query.length >= 2 ? allClients.filter(c => {
           if (searchMode === 'client') {
-            // Client search: search by name, email, phone, address, etc. (no zone/seat)
+            // Client search: search by name, email, phone, address, group (company), etc. (no zone/seat)
             const searchStr = [
-              c.name, c.firstName, c.lastName, c.email, c.phone, c.cell, c.address, c.nationality, c.dob, c.pob, c.province, c.age
+              c.name, c.firstName, c.lastName, c.email, c.phone, c.cell, c.address, c.nationality, c.dob, c.pob, c.province, c.age, c.group
             ].filter(Boolean).join(' ').toLowerCase();
             return searchStr.includes(query);
           } else {
