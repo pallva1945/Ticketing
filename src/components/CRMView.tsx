@@ -1762,8 +1762,43 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                  ticketLower.includes('gift') || ticketLower.includes('omaggio');
         });
 
+        // Calculate average zone prices from paid tickets (non-giveaway) for opportunity cost
+        const paidTickets = filteredData.filter(r => {
+          const sellLower = (r.sellType || '').toLowerCase();
+          const ticketLower = (r.ticketType || '').toLowerCase();
+          const isGiveaway = sellLower.includes('omaggi') || sellLower.includes('giveaway') || 
+                 sellLower.includes('comp') || sellLower.includes('free') || 
+                 sellLower.includes('gift') || sellLower.includes('omaggio') ||
+                 ticketLower.includes('omaggi') || ticketLower.includes('giveaway') ||
+                 ticketLower.includes('comp') || ticketLower.includes('free') ||
+                 ticketLower.includes('gift') || ticketLower.includes('omaggio');
+          return !isGiveaway && r.price > 0;
+        });
+        
+        const zoneStats = paidTickets.reduce((acc, r) => {
+          const zone = r.pvZone || r.zone || 'Unknown';
+          if (!acc[zone]) {
+            acc[zone] = { totalRevenue: 0, totalTickets: 0 };
+          }
+          acc[zone].totalRevenue += r.price * (r.quantity || 1);
+          acc[zone].totalTickets += r.quantity || 1;
+          return acc;
+        }, {} as Record<string, { totalRevenue: number; totalTickets: number }>);
+        
+        const zoneAvgPrices: Record<string, number> = {};
+        Object.entries(zoneStats).forEach(([zone, stats]) => {
+          zoneAvgPrices[zone] = stats.totalTickets > 0 ? stats.totalRevenue / stats.totalTickets : 0;
+        });
+        
+        // Helper to get opportunity cost for a ticket based on zone average
+        const getOpportunityCost = (r: CRMRecord) => {
+          const zone = r.pvZone || r.zone || 'Unknown';
+          const avgPrice = zoneAvgPrices[zone] || 0;
+          return avgPrice * (r.quantity || 1);
+        };
+
         // Group by giveaway type (only use giveawayType column, removing GA suffix)
-        // Use opportunity cost (price) instead of commercial value
+        // Use opportunity cost based on zone average prices
         const giveawayTypeBreakdown = giveawayRecords.reduce((acc, r) => {
           // Only use records that have an actual giveawayType value
           if (!r.giveawayType || r.giveawayType.trim() === '') return acc;
@@ -1773,8 +1808,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             acc[type] = { tickets: 0, value: 0, recipients: new Set<string>() };
           }
           acc[type].tickets += r.quantity || 1;
-          // Opportunity cost = price (what the ticket would sell for)
-          acc[type].value += (r.commercialValue || 0) * (r.quantity || 1);
+          // Opportunity cost = zone average price for the season
+          acc[type].value += getOpportunityCost(r);
           const recipientKey = r.fullName || `${r.firstName || ''} ${r.lastName || ''}`.trim() || r.email || 'Unknown';
           acc[type].recipients.add(recipientKey);
           return acc;
@@ -1800,8 +1835,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             };
           }
           acc[name].tickets += r.quantity || 1;
-          // Opportunity cost = price (what the ticket would sell for)
-          acc[name].value += (r.commercialValue || 0) * (r.quantity || 1);
+          // Opportunity cost = zone average price for the season
+          acc[name].value += getOpportunityCost(r);
           // Only add giveawayType if it has a value
           if (r.giveawayType && r.giveawayType.trim() !== '') {
             let gType = r.giveawayType.replace(/\s*GA$/i, '').trim();
@@ -1826,8 +1861,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           .sort((a, b) => b.tickets - a.tickets);
 
         const totalGiveawayTickets = giveawayRecords.reduce((sum, r) => sum + (r.quantity || 1), 0);
-        // Opportunity cost = price (what the ticket would sell for)
-        const totalGiveawayValue = giveawayRecords.reduce((sum, r) => sum + ((r.commercialValue || 0) * (r.quantity || 1)), 0);
+        // Opportunity cost = zone average price for the season
+        const totalGiveawayValue = giveawayRecords.reduce((sum, r) => sum + getOpportunityCost(r), 0);
 
         return (
           <>
@@ -1962,7 +1997,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                                 </td>
                                 <td className="py-3 px-4 text-gray-600">{t.area || '—'}</td>
                                 <td className="py-3 px-4 text-gray-600">{t.seat || '—'}</td>
-                                <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency((t.commercialValue || 0) * (t.quantity || 1))}</td>
+                                <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency(getOpportunityCost(t))}</td>
                               </tr>
                             );
                           })}
