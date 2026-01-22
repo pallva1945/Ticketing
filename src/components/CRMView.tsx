@@ -1774,7 +1774,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           }
           acc[type].tickets += r.quantity || 1;
           // Opportunity cost = price (what the ticket would sell for)
-          acc[type].value += (r.price || 0) * (r.quantity || 1);
+          acc[type].value += (r.commercialValue || 0) * (r.quantity || 1);
           const recipientKey = r.fullName || `${r.firstName || ''} ${r.lastName || ''}`.trim() || r.email || 'Unknown';
           acc[type].recipients.add(recipientKey);
           return acc;
@@ -1801,7 +1801,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           }
           acc[name].tickets += r.quantity || 1;
           // Opportunity cost = price (what the ticket would sell for)
-          acc[name].value += (r.price || 0) * (r.quantity || 1);
+          acc[name].value += (r.commercialValue || 0) * (r.quantity || 1);
           // Only add giveawayType if it has a value
           if (r.giveawayType && r.giveawayType.trim() !== '') {
             let gType = r.giveawayType.replace(/\s*GA$/i, '').trim();
@@ -1827,7 +1827,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
         const totalGiveawayTickets = giveawayRecords.reduce((sum, r) => sum + (r.quantity || 1), 0);
         // Opportunity cost = price (what the ticket would sell for)
-        const totalGiveawayValue = giveawayRecords.reduce((sum, r) => sum + ((r.price || 0) * (r.quantity || 1)), 0);
+        const totalGiveawayValue = giveawayRecords.reduce((sum, r) => sum + ((r.commercialValue || 0) * (r.quantity || 1)), 0);
 
         return (
           <>
@@ -1962,7 +1962,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                                 </td>
                                 <td className="py-3 px-4 text-gray-600">{t.area || '—'}</td>
                                 <td className="py-3 px-4 text-gray-600">{t.seat || '—'}</td>
-                                <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency((t.price || 0) * (t.quantity || 1))}</td>
+                                <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency((t.commercialValue || 0) * (t.quantity || 1))}</td>
                               </tr>
                             );
                           })}
