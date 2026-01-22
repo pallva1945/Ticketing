@@ -59,11 +59,12 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
       return games.map(g => {
           let relevantSales = g.salesBreakdown;
           if (mode === 'SUMMER') {
-              relevantSales = relevantSales.filter(s => s.channel === SalesChannel.ABB);
+              // Summer: Full view - all channels (Total capacity planning)
+              // Include everything: ABB, TIX, MP, VB, FREE, PROTOCOL, CORP
           } else {
-              // Game Day: Tix, MP, VB (Exclude ABB, Corp, Protocol, Giveaway)
+              // Game Day: Tix, MP, VB, Giveaway (Exclude ABB, Corp, Protocol)
               relevantSales = relevantSales.filter(s => 
-                  [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB].includes(s.channel)
+                  [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel)
               );
           }
           return { ...g, salesBreakdown: relevantSales };
