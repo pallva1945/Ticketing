@@ -1980,21 +1980,68 @@ const App: React.FC = () => {
   // END INSERTION
 
   const aiContext = useMemo(() => {
+    const buildZoneAnalysis = (games: typeof viewData) => {
+      const zoneMap: Record<string, { tickets: number; revenue: number; capacity: number }> = {};
+      
+      games.forEach(game => {
+        game.salesBreakdown?.forEach(sale => {
+          const zoneName = sale.zone;
+          if (!zoneMap[zoneName]) {
+            zoneMap[zoneName] = { tickets: 0, revenue: 0, capacity: 0 };
+          }
+          zoneMap[zoneName].tickets += sale.quantity;
+          zoneMap[zoneName].revenue += sale.revenue;
+        });
+        Object.entries(game.zoneCapacities || {}).forEach(([zone, cap]) => {
+          if (zoneMap[zone]) zoneMap[zone].capacity += cap as number;
+        });
+      });
+      
+      return Object.entries(zoneMap).map(([name, data]) => ({
+        zone: name,
+        tickets: data.tickets,
+        revenue: Math.round(data.revenue),
+        capacity: data.capacity,
+        occupancy: data.capacity > 0 ? Math.round((data.tickets / data.capacity) * 100) : 0,
+        avgTicketPrice: data.tickets > 0 ? Math.round(data.revenue / data.tickets) : 0
+      })).sort((a, b) => b.revenue - a.revenue);
+    };
+
+    const zoneAnalysis = buildZoneAnalysis(viewData);
+    
+    const crmSummary = crmStats ? {
+      totalTickets: crmStats.all?.totalTickets || 0,
+      totalRevenue: Math.round(crmStats.all?.totalRevenue || 0),
+      totalCommercialValue: Math.round(crmStats.all?.totalCommercialValue || 0),
+      sellTypeBreakdown: crmStats.all?.sellBreakdown || {},
+      giveawayCount: (crmStats.all?.sellBreakdown?.Giveaway?.tickets || 0) + (crmStats.all?.sellBreakdown?.Protocol?.tickets || 0),
+      giveawayOpportunityCost: Math.round(crmStats.all?.giveawayOpportunityCost || 0)
+    } : null;
+
     if (activeModule === 'home') {
-        const totalLiveTix = totalStats.totalRevenue; // Uses total stats (unaffected by viewMode)
-        const totalLiveGD = filteredGameDayRevForPacing; // Uses filtered data
+        const totalLiveTix = totalStats.totalRevenue;
+        const totalLiveGD = filteredGameDayRevForPacing;
+        const ticketingTarget = 1650000;
+        const gameDayTarget = 1250000;
+        const sponsorshipTarget = 2100000;
+        const gamesPlayed = viewData.length;
+        const totalGames = 15;
+        const pacePct = gamesPlayed / totalGames;
         
         return JSON.stringify({
-            context_filter: { seasons: selectedSeasons, leagues: selectedLeagues },
-            view_mode: 'HOME_OVERVIEW',
-            totals: {
-                ticketingRevenue: totalLiveTix,
-                gameDayRevenue: totalLiveGD,
-                sponsorshipRevenue: 800000,
-                vareseBasketballRevenue: 550000,
-                merchRevenue: 90000,
-                gamesCount: viewData.length
-            }
+            module: 'EXECUTIVE_OVERVIEW',
+            season: selectedSeasons[0],
+            gamesPlayed,
+            totalGames,
+            targets: { ticketing: ticketingTarget, gameDay: gameDayTarget, sponsorship: sponsorshipTarget },
+            actual: { ticketing: Math.round(totalLiveTix), gameDay: Math.round(totalLiveGD), sponsorship: 1130000 },
+            pacing: {
+                ticketingVsTarget: Math.round((totalLiveTix / (ticketingTarget * pacePct)) * 100 - 100),
+                gameDayVsTarget: Math.round((totalLiveGD / (gameDayTarget * pacePct)) * 100 - 100),
+                sponsorshipVsTarget: Math.round((1130000 / (sponsorshipTarget * pacePct)) * 100 - 100)
+            },
+            zoneBreakdown: zoneAnalysis.slice(0, 8),
+            crmInsights: crmSummary
         });
     }
 
@@ -2004,28 +2051,56 @@ const App: React.FC = () => {
         const totalFb = filteredGameDayData.reduce((acc, g) => acc + g.fbRevenue, 0);
         const totalAtt = filteredGameDayData.reduce((acc, g) => acc + g.attendance, 0);
         const sph = totalAtt > 0 ? totalNet / totalAtt : 0;
+        
+        const byGame = filteredGameDayData.map(g => ({
+            opponent: g.opponent,
+            date: g.date,
+            attendance: g.attendance,
+            merch: Math.round(g.merchRevenue),
+            fb: Math.round(g.fbRevenue),
+            sph: g.attendance > 0 ? Math.round((g.totalRevenue - g.tixRevenue) / g.attendance * 100) / 100 : 0
+        })).sort((a, b) => b.sph - a.sph);
 
         return JSON.stringify({
-            context_filter: { seasons: selectedSeasons, leagues: selectedLeagues },
-            view_mode: 'GAMEDAY_ANCILLARY',
+            module: 'GAMEDAY',
+            gamesCount: filteredGameDayData.length,
             totals: {
-                totalRevenue: totalNet,
-                merchRevenue: totalMerch,
-                fbRevenue: totalFb,
-                sph: sph,
-                attendance: totalAtt
+                netRevenue: Math.round(totalNet),
+                merchRevenue: Math.round(totalMerch),
+                fbRevenue: Math.round(totalFb),
+                attendance: totalAtt,
+                avgSpendPerHead: Math.round(sph * 100) / 100
             },
-            games_in_view: filteredGameDayData.length
+            target: 1250000,
+            pacing: Math.round((totalNet / (1250000 * (filteredGameDayData.length / 15))) * 100 - 100),
+            topGames: byGame.slice(0, 5),
+            worstGames: byGame.slice(-3).reverse()
         });
     }
 
+    const totalTickets = viewData.reduce((acc, g) => acc + g.attendance, 0);
+    const totalCapacity = viewData.reduce((acc, g) => acc + g.capacity, 0);
+
     return JSON.stringify({
-      context_filter: { seasons: selectedSeasons, leagues: selectedLeagues, zones: selectedZones },
-      view_mode: viewMode,
-      totals: stats,
-      games_in_view: viewData.length
+      module: 'TICKETING',
+      season: selectedSeasons[0],
+      viewMode: viewMode,
+      gamesCount: viewData.length,
+      totals: {
+        tickets: totalTickets,
+        revenue: Math.round(stats.totalRevenue),
+        avgTicketPrice: totalTickets > 0 ? Math.round(stats.totalRevenue / totalTickets) : 0,
+        occupancy: Math.round(stats.occupancyRate),
+        capacity: totalCapacity
+      },
+      target: viewMode === 'gameday' ? 495000 : 1650000,
+      pacing: Math.round((stats.totalRevenue / ((viewMode === 'gameday' ? 495000 : 1650000) * (viewData.length / 15))) * 100 - 100),
+      zoneBreakdown: zoneAnalysis,
+      crmInsights: crmSummary,
+      premiumZones: zoneAnalysis.filter(z => z.zone.toLowerCase().includes('parterre') || z.zone.toLowerCase().includes('courtside')),
+      volumeZones: zoneAnalysis.filter(z => z.zone.toLowerCase().includes('curva') || z.zone.toLowerCase().includes('galleria'))
     });
-  }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, viewMode, activeModule, filteredGameDayData, filteredGameDayRevForPacing, totalStats]);
+  }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, viewMode, activeModule, filteredGameDayData, filteredGameDayRevForPacing, totalStats, crmStats]);
 
   const lastGame = useMemo(() => {
     if (data.length === 0) return null;
