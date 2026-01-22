@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, X, Filter, BarChart3, PieChart, Euro, Award, ChevronUp, ChevronDown, ChevronLeft, User, Loader2 } from 'lucide-react';
+import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, X, Filter, BarChart3, PieChart, Euro, Award, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, User, Loader2, Calendar } from 'lucide-react';
 import { CRMRecord, SponsorData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
@@ -142,6 +142,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [searchMode, setSearchMode] = useState<'client' | 'seat'>('client');
   const [sortColumn, setSortColumn] = useState<string>('value');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [selectedCorporate, setSelectedCorporate] = useState<string | null>(null);
 
   const hasActiveFilter = filterZone || filterEvent || capacityView !== 'all' || searchQuery;
 
@@ -1417,71 +1418,213 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
       {activeView === 'corporate' && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-gradient-to-br from-amber-600 to-amber-800 rounded-xl p-5 text-white shadow-lg">
-              <Building2 size={24} className="mb-3 opacity-80" />
-              <p className="text-3xl font-bold">{stats.uniqueCorps}</p>
-              <p className="text-amber-100 text-sm">Corporate Accounts</p>
-            </div>
-            <div className="bg-gradient-to-br from-slate-700 to-slate-900 rounded-xl p-5 text-white shadow-lg">
-              <Ticket size={24} className="mb-3 opacity-80" />
-              <p className="text-3xl font-bold">{stats.corporateTickets.toLocaleString()}</p>
-              <p className="text-slate-300 text-sm">Corp Tickets Sold</p>
-            </div>
-            <div className="bg-gradient-to-br from-green-600 to-green-800 rounded-xl p-5 text-white shadow-lg">
-              <Euro size={24} className="mb-3 opacity-80" />
-              <p className="text-3xl font-bold">{formatCompact(stats.topCorps.reduce((sum, c) => sum + c.value, 0))}</p>
-              <p className="text-green-100 text-sm">Corp Commercial Value</p>
-            </div>
-          </div>
+          {selectedCorporate ? (() => {
+            // Corporate detail view - show tickets and games for selected corporation
+            // Corporate records are identified by sellType or ticketType being 'corp'
+            // and matched by group or fullName
+            const corpRecords = filteredData.filter(r => {
+              const isCorp = (r.sellType || '').toLowerCase() === 'corp' || (r.ticketType || '').toLowerCase() === 'corp';
+              if (!isCorp) return false;
+              const corpKey = r.group || r.fullName || 'Unknown';
+              return normalizeCompanyName(corpKey) === normalizeCompanyName(selectedCorporate);
+            });
+            const corpInfo = stats.topCorps.find(c => c.name === selectedCorporate);
+            
+            // Group by game/event
+            const gameBreakdown = corpRecords.reduce((acc, r) => {
+              const eventKey = r.event || 'Unknown Event';
+              if (!acc[eventKey]) {
+                acc[eventKey] = { tickets: 0, value: 0, seats: [] as string[], zones: new Set<string>() };
+              }
+              acc[eventKey].tickets += r.quantity || 1;
+              acc[eventKey].value += r.commercialValue * (r.quantity || 1);
+              if (r.area || r.seat) {
+                acc[eventKey].seats.push(formatSeatLocation(r.area || '', r.seat || ''));
+              }
+              if (r.zone || r.pvZone) acc[eventKey].zones.add(r.pvZone || r.zone);
+              return acc;
+            }, {} as Record<string, { tickets: number; value: number; seats: string[]; zones: Set<string> }>);
+            
+            const gameList = Object.entries(gameBreakdown)
+              .map(([event, data]) => ({ event, ...data, zones: Array.from(data.zones) }))
+              .sort((a, b) => b.tickets - a.tickets);
+            
+            return (
+              <>
+                {/* Back button and header */}
+                <div className="flex items-center gap-4 mb-4">
+                  <button 
+                    onClick={() => setSelectedCorporate(null)}
+                    className="flex items-center gap-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <ChevronLeft size={20} />
+                    <span>Back to List</span>
+                  </button>
+                </div>
+                
+                {/* Corporation header */}
+                <div className="bg-gradient-to-br from-amber-600 to-amber-800 rounded-xl p-6 text-white shadow-lg mb-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <Building2 size={28} />
+                        <h2 className="text-2xl font-bold">{selectedCorporate}</h2>
+                      </div>
+                      <div className="flex flex-wrap gap-4 text-amber-100 text-sm mt-3">
+                        {corpInfo?.principalZone && corpInfo.principalZone !== '—' && (
+                          <span className="px-2 py-1 bg-white/20 rounded">Principal: {corpInfo.principalZone}</span>
+                        )}
+                        {corpInfo?.secondaryZone && corpInfo.secondaryZone !== '—' && (
+                          <span className="px-2 py-1 bg-white/20 rounded">Secondary: {corpInfo.secondaryZone}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-3xl font-bold">{corpRecords.length}</p>
+                      <p className="text-amber-100 text-sm">Total Tickets</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/20">
+                    <div>
+                      <p className="text-2xl font-bold">{formatCurrency(corpInfo?.value || 0)}</p>
+                      <p className="text-amber-100 text-sm">Commercial Value</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{gameList.length}</p>
+                      <p className="text-amber-100 text-sm">Events Attended</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{formatCurrency((corpInfo?.value || 0) / (corpRecords.length || 1))}</p>
+                      <p className="text-amber-100 text-sm">Avg Value/Ticket</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Games/Events table */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-gray-100">
+                    <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                      <Calendar size={18} className="text-amber-500" />
+                      Events & Games ({gameList.length})
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 text-gray-600">
+                        <tr>
+                          <th className="text-left py-3 px-4 font-medium">Event / Game</th>
+                          <th className="text-left py-3 px-4 font-medium">Zones</th>
+                          <th className="text-right py-3 px-4 font-medium">Tickets</th>
+                          <th className="text-right py-3 px-4 font-medium">Value</th>
+                          <th className="text-left py-3 px-4 font-medium">Seats</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {gameList.map((g, i) => (
+                          <tr key={i} className="hover:bg-gray-50">
+                            <td className="py-3 px-4 font-medium text-gray-800">{g.event}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex flex-wrap gap-1">
+                                {g.zones.slice(0, 3).map(z => (
+                                  <span key={z} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{z}</span>
+                                ))}
+                                {g.zones.length > 3 && (
+                                  <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">+{g.zones.length - 3}</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-right font-medium">{g.tickets}</td>
+                            <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency(g.value)}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex flex-wrap gap-1 max-w-xs">
+                                {g.seats.slice(0, 5).map((s, si) => (
+                                  <span key={si} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{s}</span>
+                                ))}
+                                {g.seats.length > 5 && (
+                                  <span className="px-1.5 py-0.5 bg-gray-200 text-gray-500 rounded text-xs">+{g.seats.length - 5}</span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            );
+          })() : (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-gradient-to-br from-amber-600 to-amber-800 rounded-xl p-5 text-white shadow-lg">
+                  <Building2 size={24} className="mb-3 opacity-80" />
+                  <p className="text-3xl font-bold">{stats.uniqueCorps}</p>
+                  <p className="text-amber-100 text-sm">Corporate Accounts</p>
+                </div>
+                <div className="bg-gradient-to-br from-slate-700 to-slate-900 rounded-xl p-5 text-white shadow-lg">
+                  <Ticket size={24} className="mb-3 opacity-80" />
+                  <p className="text-3xl font-bold">{stats.corporateTickets.toLocaleString()}</p>
+                  <p className="text-slate-300 text-sm">Corp Tickets Sold</p>
+                </div>
+                <div className="bg-gradient-to-br from-green-600 to-green-800 rounded-xl p-5 text-white shadow-lg">
+                  <Euro size={24} className="mb-3 opacity-80" />
+                  <p className="text-3xl font-bold">{formatCompact(stats.topCorps.reduce((sum, c) => sum + c.value, 0))}</p>
+                  <p className="text-green-100 text-sm">Corp Commercial Value</p>
+                </div>
+              </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-gray-100">
-              <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                <Building2 size={18} className="text-amber-500" />
-                Top Corporate Accounts
-              </h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-600">
-                  <tr>
-                    <th className="text-left py-3 px-4 font-medium">#</th>
-                    <th className="text-left py-3 px-4 font-medium">Company</th>
-                    <th className="text-left py-3 px-4 font-medium">Principal Zone</th>
-                    <th className="text-left py-3 px-4 font-medium">Secondary Zone</th>
-                    <th className="text-right py-3 px-4 font-medium">Total Tickets</th>
-                    <th className="text-right py-3 px-4 font-medium">Commercial Value</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {stats.topCorps.map((c, i) => (
-                    <tr key={c.name} className="hover:bg-gray-50 cursor-pointer" onClick={() => {
-                      setSearchQuery(c.name);
-                      setActiveView('overview');
-                    }}>
-                      <td className="py-3 px-4">
-                        <span className="w-6 h-6 bg-amber-600 text-white rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
-                      </td>
-                      <td className="py-3 px-4 font-medium text-gray-800">{c.name}</td>
-                      <td className="py-3 px-4">
-                        {c.principalZone !== '—' ? (
-                          <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">{c.principalZone}</span>
-                        ) : '—'}
-                      </td>
-                      <td className="py-3 px-4">
-                        {c.secondaryZone !== '—' ? (
-                          <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">{c.secondaryZone}</span>
-                        ) : '—'}
-                      </td>
-                      <td className="py-3 px-4 text-right">{c.count}</td>
-                      <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency(c.value)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+              <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-gray-100">
+                  <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                    <Building2 size={18} className="text-amber-500" />
+                    Top Corporate Accounts
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">Click on a company to view ticket and game details</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-gray-600">
+                      <tr>
+                        <th className="text-left py-3 px-4 font-medium">#</th>
+                        <th className="text-left py-3 px-4 font-medium">Company</th>
+                        <th className="text-left py-3 px-4 font-medium">Principal Zone</th>
+                        <th className="text-left py-3 px-4 font-medium">Secondary Zone</th>
+                        <th className="text-right py-3 px-4 font-medium">Total Tickets</th>
+                        <th className="text-right py-3 px-4 font-medium">Commercial Value</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {stats.topCorps.map((c, i) => (
+                        <tr key={c.name} className="hover:bg-amber-50 cursor-pointer transition-colors" onClick={() => {
+                          setSelectedCorporate(c.name);
+                        }}>
+                          <td className="py-3 px-4">
+                            <span className="w-6 h-6 bg-amber-600 text-white rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
+                          </td>
+                          <td className="py-3 px-4 font-medium text-gray-800 flex items-center gap-2">
+                            {c.name}
+                            <ChevronRight size={16} className="text-gray-400" />
+                          </td>
+                          <td className="py-3 px-4">
+                            {c.principalZone !== '—' ? (
+                              <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">{c.principalZone}</span>
+                            ) : '—'}
+                          </td>
+                          <td className="py-3 px-4">
+                            {c.secondaryZone !== '—' ? (
+                              <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">{c.secondaryZone}</span>
+                            ) : '—'}
+                          </td>
+                          <td className="py-3 px-4 text-right">{c.count}</td>
+                          <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency(c.value)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
 
