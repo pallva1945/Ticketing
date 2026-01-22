@@ -1456,8 +1456,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 <tbody className="divide-y divide-gray-100">
                   {stats.topCorps.map((c, i) => (
                     <tr key={c.name} className="hover:bg-gray-50 cursor-pointer" onClick={() => {
-                      setSearchQuery(c.name);
-                      setActiveView('overview');
+                      setClientSearchQuery(c.name);
+                      setSearchSelectedClient(null);
+                      setSearchMode('client');
+                      setActiveView('search');
                     }}>
                       <td className="py-3 px-4">
                         <span className="w-6 h-6 bg-amber-600 text-white rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
@@ -1534,6 +1536,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         });
 
         const query = clientSearchQuery.toLowerCase().trim();
+        console.log('Find Customer Debug:', { query, dataLength: data.length, allClientsLength: allClients.length, searchMode });
         
         const matchingClients = query.length >= 2 ? allClients.filter(c => {
           if (searchMode === 'client') {
