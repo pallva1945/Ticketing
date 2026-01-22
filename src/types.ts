@@ -187,4 +187,7 @@ export interface CRMRecord {
   giveawayType: string;
   discountType: string;
   season: string;
+  age: string;
+  city: string;
+  location: string;
 }

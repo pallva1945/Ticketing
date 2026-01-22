@@ -134,7 +134,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [filterZone, setFilterZone] = useState<string | null>(null);
   const [filterEvent, setFilterEvent] = useState<string | null>(null);
   const [capacityView, setCapacityView] = useState<'all' | 'fixed' | 'flexible'>('all');
-  const [activeView, setActiveView] = useState<'overview' | 'demographics' | 'behavior' | 'customers' | 'corporate' | 'search'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'demographics' | 'behavior' | 'customers' | 'corporate' | 'giveaways' | 'search'>('overview');
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [searchSelectedClient, setSearchSelectedClient] = useState<string | null>(null);
@@ -863,7 +863,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        {['overview', 'demographics', 'behavior', 'corporate', 'search'].map(view => (
+        {['overview', 'demographics', 'behavior', 'corporate', 'giveaways', 'search'].map(view => (
           <button
             key={view}
             onClick={() => setActiveView(view as any)}
@@ -877,6 +877,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             {view === 'demographics' && <Users size={14} className="inline mr-2" />}
             {view === 'behavior' && <TrendingUp size={14} className="inline mr-2" />}
             {view === 'corporate' && <Building2 size={14} className="inline mr-2" />}
+            {view === 'giveaways' && <Award size={14} className="inline mr-2" />}
             {view === 'search' && <Search size={14} className="inline mr-2" />}
             {view === 'search' ? 'Find Customer' : view.charAt(0).toUpperCase() + view.slice(1)}
           </button>
@@ -1746,6 +1747,223 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           )}
         </>
       )}
+
+      {activeView === 'giveaways' && (() => {
+        // Filter giveaway records - typically sellType contains 'omaggi', 'giveaway', 'comp', 'free', 'gift'
+        const giveawayRecords = filteredData.filter(r => {
+          const sellLower = (r.sellType || '').toLowerCase();
+          const ticketLower = (r.ticketType || '').toLowerCase();
+          return sellLower.includes('omaggi') || sellLower.includes('giveaway') || 
+                 sellLower.includes('comp') || sellLower.includes('free') || 
+                 sellLower.includes('gift') || sellLower.includes('omaggio') ||
+                 ticketLower.includes('omaggi') || ticketLower.includes('giveaway') ||
+                 ticketLower.includes('comp') || ticketLower.includes('free') ||
+                 ticketLower.includes('gift') || ticketLower.includes('omaggio');
+        });
+
+        // Group by giveaway type
+        const giveawayTypeBreakdown = giveawayRecords.reduce((acc, r) => {
+          const type = r.sellType || r.ticketType || 'Unknown';
+          if (!acc[type]) {
+            acc[type] = { tickets: 0, value: 0, recipients: new Set<string>() };
+          }
+          acc[type].tickets += r.quantity || 1;
+          acc[type].value += r.commercialValue * (r.quantity || 1);
+          const recipientKey = r.fullName || `${r.firstName || ''} ${r.lastName || ''}`.trim() || r.email || 'Unknown';
+          acc[type].recipients.add(recipientKey);
+          return acc;
+        }, {} as Record<string, { tickets: number; value: number; recipients: Set<string> }>);
+
+        const typeList = Object.entries(giveawayTypeBreakdown)
+          .map(([type, data]) => ({ type, ...data, recipientCount: data.recipients.size }))
+          .sort((a, b) => b.tickets - a.tickets);
+
+        // Group by recipient
+        const recipientBreakdown = giveawayRecords.reduce((acc, r) => {
+          const name = r.fullName || `${r.firstName || ''} ${r.lastName || ''}`.trim() || 'Unknown';
+          if (!acc[name]) {
+            acc[name] = { 
+              tickets: 0, 
+              value: 0, 
+              types: new Set<string>(), 
+              games: new Set<string>(),
+              zones: new Set<string>(),
+              email: r.email,
+              age: r.age,
+              location: r.city || r.location
+            };
+          }
+          acc[name].tickets += r.quantity || 1;
+          acc[name].value += r.commercialValue * (r.quantity || 1);
+          acc[name].types.add(r.sellType || r.ticketType || 'Unknown');
+          if (r.game || r.event) acc[name].games.add(r.game || r.event);
+          if (r.pvZone || r.zone) acc[name].zones.add(r.pvZone || r.zone);
+          if (!acc[name].email && r.email) acc[name].email = r.email;
+          if (!acc[name].age && r.age) acc[name].age = r.age;
+          if (!acc[name].location && (r.city || r.location)) acc[name].location = r.city || r.location;
+          return acc;
+        }, {} as Record<string, { tickets: number; value: number; types: Set<string>; games: Set<string>; zones: Set<string>; email?: string; age?: string; location?: string }>);
+
+        const recipientList = Object.entries(recipientBreakdown)
+          .map(([name, data]) => ({ 
+            name, 
+            ...data, 
+            types: Array.from(data.types), 
+            games: Array.from(data.games),
+            zones: Array.from(data.zones)
+          }))
+          .sort((a, b) => b.tickets - a.tickets);
+
+        const totalGiveawayTickets = giveawayRecords.reduce((sum, r) => sum + (r.quantity || 1), 0);
+        const totalGiveawayValue = giveawayRecords.reduce((sum, r) => sum + (r.commercialValue * (r.quantity || 1)), 0);
+
+        return (
+          <>
+            {/* Summary stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl p-5 text-white shadow-lg">
+                <Award size={24} className="mb-3 opacity-80" />
+                <p className="text-3xl font-bold">{totalGiveawayTickets.toLocaleString()}</p>
+                <p className="text-purple-100 text-sm">Total Giveaway Tickets</p>
+              </div>
+              <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-xl p-5 text-white shadow-lg">
+                <Euro size={24} className="mb-3 opacity-80" />
+                <p className="text-3xl font-bold">{formatCompact(totalGiveawayValue)}</p>
+                <p className="text-indigo-100 text-sm">Commercial Value</p>
+              </div>
+              <div className="bg-gradient-to-br from-slate-600 to-slate-800 rounded-xl p-5 text-white shadow-lg">
+                <Users size={24} className="mb-3 opacity-80" />
+                <p className="text-3xl font-bold">{recipientList.length.toLocaleString()}</p>
+                <p className="text-slate-200 text-sm">Recipients</p>
+              </div>
+              <div className="bg-gradient-to-br from-pink-600 to-pink-800 rounded-xl p-5 text-white shadow-lg">
+                <Ticket size={24} className="mb-3 opacity-80" />
+                <p className="text-3xl font-bold">{typeList.length}</p>
+                <p className="text-pink-100 text-sm">Giveaway Types</p>
+              </div>
+            </div>
+
+            {/* Giveaway Types breakdown */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <PieChart size={18} className="text-purple-500" />
+                  Giveaway Types Breakdown
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-gray-600">
+                    <tr>
+                      <th className="text-left py-3 px-4 font-medium">Type</th>
+                      <th className="text-right py-3 px-4 font-medium">Tickets</th>
+                      <th className="text-right py-3 px-4 font-medium">Recipients</th>
+                      <th className="text-right py-3 px-4 font-medium">Commercial Value</th>
+                      <th className="text-right py-3 px-4 font-medium">% of Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {typeList.map((t, i) => (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="py-3 px-4">
+                          <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium">
+                            {t.type}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-right font-medium">{t.tickets.toLocaleString()}</td>
+                        <td className="py-3 px-4 text-right">{t.recipientCount.toLocaleString()}</td>
+                        <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency(t.value)}</td>
+                        <td className="py-3 px-4 text-right text-gray-500">
+                          {totalGiveawayTickets > 0 ? ((t.tickets / totalGiveawayTickets) * 100).toFixed(1) : 0}%
+                        </td>
+                      </tr>
+                    ))}
+                    {typeList.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="py-8 text-center text-gray-400">
+                          No giveaway records found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Recipients list */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                  <Users size={18} className="text-purple-500" />
+                  Giveaway Recipients ({recipientList.length})
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-gray-600">
+                    <tr>
+                      <th className="text-left py-3 px-4 font-medium">#</th>
+                      <th className="text-left py-3 px-4 font-medium">Name</th>
+                      <th className="text-left py-3 px-4 font-medium">Giveaway Types</th>
+                      <th className="text-right py-3 px-4 font-medium">Tickets</th>
+                      <th className="text-right py-3 px-4 font-medium">Games</th>
+                      <th className="text-left py-3 px-4 font-medium">Zones</th>
+                      <th className="text-center py-3 px-4 font-medium">Age</th>
+                      <th className="text-left py-3 px-4 font-medium">Location</th>
+                      <th className="text-right py-3 px-4 font-medium">Commercial Value</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {recipientList.slice(0, 100).map((r, i) => (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="py-3 px-4 text-gray-400">{i + 1}</td>
+                        <td className="py-3 px-4 font-medium text-gray-800">{r.name}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-wrap gap-1">
+                            {r.types.slice(0, 2).map(t => (
+                              <span key={t} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">{t}</span>
+                            ))}
+                            {r.types.length > 2 && (
+                              <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">+{r.types.length - 2}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-right font-medium">{r.tickets}</td>
+                        <td className="py-3 px-4 text-right">{r.games.length}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex flex-wrap gap-1">
+                            {r.zones.slice(0, 2).map(z => (
+                              <span key={z} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{z}</span>
+                            ))}
+                            {r.zones.length > 2 && (
+                              <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">+{r.zones.length - 2}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-center text-gray-600">{r.age || '—'}</td>
+                        <td className="py-3 px-4 text-gray-600">{r.location || '—'}</td>
+                        <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency(r.value)}</td>
+                      </tr>
+                    ))}
+                    {recipientList.length === 0 && (
+                      <tr>
+                        <td colSpan={9} className="py-8 text-center text-gray-400">
+                          No giveaway recipients found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+                {recipientList.length > 100 && (
+                  <div className="p-4 text-center text-sm text-gray-500 border-t border-gray-100">
+                    Showing first 100 of {recipientList.length} recipients
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        );
+      })()}
 
       {activeView === 'search' && (() => {
         // Show loading indicator if search data is still loading
