@@ -1976,6 +1976,17 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                           {recipientTickets.map((t, i) => {
                             let gType = t.giveawayType || '';
                             gType = gType.replace(/\s*GA$/i, '').trim();
+                            // Fallback to sellType or ticketType if giveawayType is empty
+                            if (!gType) {
+                              const sellLower = (t.sellType || '').toLowerCase();
+                              const ticketLower = (t.ticketType || '').toLowerCase();
+                              if (sellLower.includes('omaggi') || ticketLower.includes('omaggi')) gType = 'Omaggio';
+                              else if (sellLower.includes('giveaway') || ticketLower.includes('giveaway')) gType = 'Giveaway';
+                              else if (sellLower.includes('comp') || ticketLower.includes('comp')) gType = 'Comp';
+                              else if (sellLower.includes('free') || ticketLower.includes('free')) gType = 'Free';
+                              else if (sellLower.includes('gift') || ticketLower.includes('gift')) gType = 'Gift';
+                              else gType = t.sellType || t.ticketType || '';
+                            }
                             return (
                               <tr key={i} className="hover:bg-gray-50">
                                 <td className="py-3 px-4 text-gray-400">{i + 1}</td>
