@@ -1761,9 +1761,11 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                  ticketLower.includes('gift') || ticketLower.includes('omaggio');
         });
 
-        // Group by giveaway type
+        // Group by giveaway type (using giveawayType column, removing GA suffix)
         const giveawayTypeBreakdown = giveawayRecords.reduce((acc, r) => {
-          const type = r.sellType || r.ticketType || 'Unknown';
+          let type = r.giveawayType || r.sellType || r.ticketType || 'Unknown';
+          // Remove 'GA' suffix from the end of the type
+          type = type.replace(/\s*GA$/i, '').trim() || 'Unknown';
           if (!acc[type]) {
             acc[type] = { tickets: 0, value: 0, recipients: new Set<string>() };
           }
@@ -1795,7 +1797,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           }
           acc[name].tickets += r.quantity || 1;
           acc[name].value += r.commercialValue * (r.quantity || 1);
-          acc[name].types.add(r.sellType || r.ticketType || 'Unknown');
+          let gType = r.giveawayType || r.sellType || r.ticketType || 'Unknown';
+          gType = gType.replace(/\s*GA$/i, '').trim() || 'Unknown';
+          acc[name].types.add(gType);
           if (r.game || r.event) acc[name].games.add(r.game || r.event);
           if (r.pvZone || r.zone) acc[name].zones.add(r.pvZone || r.zone);
           if (!acc[name].email && r.email) acc[name].email = r.email;
