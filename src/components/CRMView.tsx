@@ -1763,14 +1763,16 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         const giveawayRecords = filteredData.filter(r => {
           const sellLower = (r.sellType || '').toLowerCase();
           const ticketLower = (r.ticketType || '').toLowerCase();
-          // Include if giveawayType is populated OR sellType/ticketType indicates giveaway
+          // Include if giveawayType is populated OR sellType/ticketType indicates giveaway/protocol
           const hasGiveawayType = r.giveawayType && r.giveawayType.trim() !== '';
           const sellTypeIndicatesGiveaway = sellLower.includes('omaggi') || sellLower.includes('giveaway') || 
                  sellLower.includes('comp') || sellLower.includes('free') || 
-                 sellLower.includes('gift') || sellLower.includes('omaggio');
+                 sellLower.includes('gift') || sellLower.includes('omaggio') ||
+                 sellLower.includes('protocol');
           const ticketTypeIndicatesGiveaway = ticketLower.includes('omaggi') || ticketLower.includes('giveaway') ||
                  ticketLower.includes('comp') || ticketLower.includes('free') ||
-                 ticketLower.includes('gift') || ticketLower.includes('omaggio');
+                 ticketLower.includes('gift') || ticketLower.includes('omaggio') ||
+                 ticketLower.includes('protocol');
           return hasGiveawayType || sellTypeIndicatesGiveaway || ticketTypeIndicatesGiveaway;
         });
 
@@ -1817,10 +1819,20 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         };
 
         const giveawayTypeBreakdown = giveawayRecords.reduce((acc, r) => {
-          // Only use records that have an actual giveawayType value
-          if (!r.giveawayType || r.giveawayType.trim() === '') return acc;
-          // Normalize the type name
-          let type = normalizeGiveawayType(r.giveawayType);
+          // Determine the giveaway type - use giveawayType if available, otherwise infer from sellType/ticketType
+          let type: string;
+          if (r.giveawayType && r.giveawayType.trim() !== '') {
+            type = normalizeGiveawayType(r.giveawayType);
+          } else {
+            // Infer type from sellType or ticketType
+            const sellLower = (r.sellType || '').toLowerCase();
+            const ticketLower = (r.ticketType || '').toLowerCase();
+            if (sellLower.includes('protocol') || ticketLower.includes('protocol')) {
+              type = 'Protocol';
+            } else {
+              type = 'Other';
+            }
+          }
           if (!acc[type]) {
             acc[type] = { tickets: 0, value: 0, recipients: new Set<string>() };
           }
@@ -1854,11 +1866,20 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           acc[name].tickets += r.quantity || 1;
           // Opportunity cost = zone average price for the season
           acc[name].value += getOpportunityCost(r);
-          // Only add giveawayType if it has a value (normalized)
+          // Add giveaway type - use giveawayType if available, otherwise infer from sellType/ticketType
+          let gType: string;
           if (r.giveawayType && r.giveawayType.trim() !== '') {
-            const gType = normalizeGiveawayType(r.giveawayType);
-            if (gType && gType !== 'Unknown') acc[name].types.add(gType);
+            gType = normalizeGiveawayType(r.giveawayType);
+          } else {
+            const sellLower = (r.sellType || '').toLowerCase();
+            const ticketLower = (r.ticketType || '').toLowerCase();
+            if (sellLower.includes('protocol') || ticketLower.includes('protocol')) {
+              gType = 'Protocol';
+            } else {
+              gType = 'Other';
+            }
           }
+          if (gType && gType !== 'Unknown') acc[name].types.add(gType);
           // Capture age and location from records that have them
           if (r.age && r.age.trim() !== '' && !acc[name].age) acc[name].age = r.age;
           if ((r.city || r.location) && !acc[name].location) acc[name].location = r.city || r.location;
@@ -1997,8 +2018,19 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                           {recipientTickets.map((t, i) => {
-                            // giveawayType is always populated - normalize it
-                            const gType = normalizeGiveawayType(t.giveawayType || '');
+                            // Determine giveaway type - use giveawayType if available, otherwise infer
+                            let gType: string;
+                            if (t.giveawayType && t.giveawayType.trim() !== '') {
+                              gType = normalizeGiveawayType(t.giveawayType);
+                            } else {
+                              const sellLower = (t.sellType || '').toLowerCase();
+                              const ticketLower = (t.ticketType || '').toLowerCase();
+                              if (sellLower.includes('protocol') || ticketLower.includes('protocol')) {
+                                gType = 'Protocol';
+                              } else {
+                                gType = 'Other';
+                              }
+                            }
                             return (
                               <tr key={i} className="hover:bg-gray-50">
                                 <td className="py-3 px-4 text-gray-400">{i + 1}</td>
