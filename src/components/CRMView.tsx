@@ -1750,16 +1750,19 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       )}
 
       {activeView === 'giveaways' && (() => {
-        // Filter giveaway records - typically sellType contains 'omaggi', 'giveaway', 'comp', 'free', 'gift'
+        // Filter giveaway records - sellType contains 'giveaway' and giveawayType is populated
         const giveawayRecords = filteredData.filter(r => {
           const sellLower = (r.sellType || '').toLowerCase();
           const ticketLower = (r.ticketType || '').toLowerCase();
-          return sellLower.includes('omaggi') || sellLower.includes('giveaway') || 
+          // Include if giveawayType is populated OR sellType/ticketType indicates giveaway
+          const hasGiveawayType = r.giveawayType && r.giveawayType.trim() !== '';
+          const sellTypeIndicatesGiveaway = sellLower.includes('omaggi') || sellLower.includes('giveaway') || 
                  sellLower.includes('comp') || sellLower.includes('free') || 
-                 sellLower.includes('gift') || sellLower.includes('omaggio') ||
-                 ticketLower.includes('omaggi') || ticketLower.includes('giveaway') ||
+                 sellLower.includes('gift') || sellLower.includes('omaggio');
+          const ticketTypeIndicatesGiveaway = ticketLower.includes('omaggi') || ticketLower.includes('giveaway') ||
                  ticketLower.includes('comp') || ticketLower.includes('free') ||
                  ticketLower.includes('gift') || ticketLower.includes('omaggio');
+          return hasGiveawayType || sellTypeIndicatesGiveaway || ticketTypeIndicatesGiveaway;
         });
 
         // Calculate average commercial value from season ticket holders (abb) for each zone
@@ -1974,27 +1977,16 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                           {recipientTickets.map((t, i) => {
-                            let gType = t.giveawayType || '';
-                            gType = gType.replace(/\s*GA$/i, '').trim();
-                            // Fallback to sellType or ticketType if giveawayType is empty
-                            if (!gType) {
-                              const sellLower = (t.sellType || '').toLowerCase();
-                              const ticketLower = (t.ticketType || '').toLowerCase();
-                              if (sellLower.includes('omaggi') || ticketLower.includes('omaggi')) gType = 'Omaggio';
-                              else if (sellLower.includes('giveaway') || ticketLower.includes('giveaway')) gType = 'Giveaway';
-                              else if (sellLower.includes('comp') || ticketLower.includes('comp')) gType = 'Comp';
-                              else if (sellLower.includes('free') || ticketLower.includes('free')) gType = 'Free';
-                              else if (sellLower.includes('gift') || ticketLower.includes('gift')) gType = 'Gift';
-                              else gType = t.sellType || t.ticketType || '';
-                            }
+                            // giveawayType is always populated when sellType indicates giveaway
+                            const gType = (t.giveawayType || '').replace(/\s*GA$/i, '').trim();
                             return (
                               <tr key={i} className="hover:bg-gray-50">
                                 <td className="py-3 px-4 text-gray-400">{i + 1}</td>
                                 <td className="py-3 px-4 font-medium text-gray-800">{t.game || t.event || '—'}</td>
                                 <td className="py-3 px-4">
-                                  {gType ? (
-                                    <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">{gType}</span>
-                                  ) : '—'}
+                                  <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">
+                                    {gType || t.giveawayType || '—'}
+                                  </span>
                                 </td>
                                 <td className="py-3 px-4">
                                   <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
