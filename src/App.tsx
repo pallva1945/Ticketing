@@ -1126,24 +1126,49 @@ const App: React.FC = () => {
         }
       }
       
-      // Phase 2: Load full data for client search (background, non-blocking)
+      // Phase 2: Load full data for client search (background, non-blocking with retry)
       if (!crmFullDataLoadedRef.current) {
         setIsLoadingCRMSearch(true);
-        fetch('/api/crm/bigquery?full=true').then(async crmResponse => {
-          if (crmResponse && crmResponse.ok) {
-            const crmResult = await crmResponse.json();
-            if (crmResult.success && crmResult.rawRows && crmResult.rawRows.length > 0) {
-              const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
-              setCrmData(loadedCRM);
-              console.log(`CRM full data loaded: ${loadedCRM.length} records`);
-              crmFullDataLoadedRef.current = true;
+        
+        const fetchWithRetry = async (retries = 3, delay = 2000): Promise<void> => {
+          for (let attempt = 1; attempt <= retries; attempt++) {
+            try {
+              console.log(`CRM full data fetch attempt ${attempt}/${retries}`);
+              const crmResponse = await fetch('/api/crm/bigquery?full=true');
+              console.log('CRM full data fetch response:', crmResponse.status, crmResponse.ok);
+              
+              if (crmResponse && crmResponse.ok) {
+                const crmResult = await crmResponse.json();
+                console.log('CRM full data result:', crmResult.success, 'rawRows:', crmResult.rawRows?.length || 0);
+                
+                if (crmResult.success && crmResult.rawRows && crmResult.rawRows.length > 0) {
+                  const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
+                  setCrmData(loadedCRM);
+                  console.log(`CRM full data loaded: ${loadedCRM.length} records`);
+                  crmFullDataLoadedRef.current = true;
+                  return;
+                } else {
+                  console.warn(`CRM full data attempt ${attempt}: No rawRows in response`);
+                }
+              } else {
+                console.warn(`CRM full data attempt ${attempt} failed:`, crmResponse.status);
+              }
+              
+              // Wait before retry (but not after last attempt)
+              if (attempt < retries) {
+                await new Promise(r => setTimeout(r, delay));
+              }
+            } catch (err) {
+              console.warn(`CRM full data attempt ${attempt} error:`, err);
+              if (attempt < retries) {
+                await new Promise(r => setTimeout(r, delay));
+              }
             }
           }
-          setIsLoadingCRMSearch(false);
-        }).catch(err => {
-          console.warn('CRM full data load error:', err);
-          setIsLoadingCRMSearch(false);
-        });
+          console.warn('CRM full data: All retry attempts exhausted');
+        };
+        
+        fetchWithRetry().finally(() => setIsLoadingCRMSearch(false));
       }
       
       crmLoadedRef.current = true;

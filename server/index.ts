@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import path from "path";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
@@ -12,6 +13,8 @@ const app = express();
 const isProduction = process.env.NODE_ENV === 'production';
 const PORT = isProduction ? 5000 : Number(process.env.SERVER_PORT || 5001);
 
+// Enable compression for all responses (helps with large CRM payloads)
+app.use(compression());
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
@@ -511,7 +514,10 @@ app.get("/api/crm/bigquery", async (req, res) => {
     const forceRefresh = req.query.refresh === 'true';
     const fullData = req.query.full === 'true'; // Only return full rawRows if explicitly requested
     
+    console.log(`CRM API request: full=${fullData}, forceRefresh=${forceRefresh}, cacheValid=${crmCache && (now - crmCache.timestamp) < CRM_CACHE_TTL}`);
+    
     if (!forceRefresh && crmCache && (now - crmCache.timestamp) < CRM_CACHE_TTL) {
+      console.log(`CRM API: Returning from cache, rawRows=${fullData ? crmCache.rawRows?.length : 'not-requested'}`);
       return res.json({ 
         success: true, 
         stats: crmCache.processedStats,
