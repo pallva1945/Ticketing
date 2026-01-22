@@ -144,6 +144,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedCorporate, setSelectedCorporate] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
+  const [selectedGiveawayRecipient, setSelectedGiveawayRecipient] = useState<string | null>(null);
 
   const hasActiveFilter = filterZone || filterEvent || capacityView !== 'all' || searchQuery;
 
@@ -1854,124 +1855,274 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               </div>
             </div>
 
-            {/* Giveaway Types breakdown */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-100">
-                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <PieChart size={18} className="text-purple-500" />
-                  Giveaway Types Breakdown
-                </h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-gray-600">
-                    <tr>
-                      <th className="text-left py-3 px-4 font-medium">Type</th>
-                      <th className="text-right py-3 px-4 font-medium">Tickets</th>
-                      <th className="text-right py-3 px-4 font-medium">Recipients</th>
-                      <th className="text-right py-3 px-4 font-medium">Opportunity Cost</th>
-                      <th className="text-right py-3 px-4 font-medium">% of Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {typeList.map((t, i) => (
-                      <tr key={i} className="hover:bg-gray-50">
-                        <td className="py-3 px-4">
-                          <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs font-medium">
-                            {t.type}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-right font-medium">{t.tickets.toLocaleString()}</td>
-                        <td className="py-3 px-4 text-right">{t.recipientCount.toLocaleString()}</td>
-                        <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency(t.value)}</td>
-                        <td className="py-3 px-4 text-right text-gray-500">
-                          {totalGiveawayTickets > 0 ? ((t.tickets / totalGiveawayTickets) * 100).toFixed(1) : 0}%
-                        </td>
-                      </tr>
-                    ))}
-                    {typeList.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="py-8 text-center text-gray-400">
-                          No giveaway records found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Recipients list */}
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="p-4 border-b border-gray-100">
-                <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                  <Users size={18} className="text-purple-500" />
-                  Giveaway Recipients ({recipientList.length})
-                </h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-gray-600">
-                    <tr>
-                      <th className="text-left py-3 px-4 font-medium">#</th>
-                      <th className="text-left py-3 px-4 font-medium">Name</th>
-                      <th className="text-left py-3 px-4 font-medium">Giveaway Types</th>
-                      <th className="text-right py-3 px-4 font-medium">Tickets</th>
-                      <th className="text-right py-3 px-4 font-medium">Games</th>
-                      <th className="text-left py-3 px-4 font-medium">Zones</th>
-                      <th className="text-center py-3 px-4 font-medium">Age</th>
-                      <th className="text-left py-3 px-4 font-medium">Location</th>
-                      <th className="text-right py-3 px-4 font-medium">Opportunity Cost</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {recipientList.slice(0, 100).map((r, i) => (
-                      <tr key={i} className="hover:bg-gray-50">
-                        <td className="py-3 px-4 text-gray-400">{i + 1}</td>
-                        <td className="py-3 px-4 font-medium text-gray-800">{r.name}</td>
-                        <td className="py-3 px-4">
-                          <div className="flex flex-wrap gap-1">
-                            {r.types.slice(0, 2).map(t => (
-                              <span key={t} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">{t}</span>
-                            ))}
-                            {r.types.length > 2 && (
-                              <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">+{r.types.length - 2}</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-right font-medium">{r.tickets}</td>
-                        <td className="py-3 px-4 text-right">{r.games.length}</td>
-                        <td className="py-3 px-4">
-                          <div className="flex flex-wrap gap-1">
-                            {r.zones.slice(0, 2).map(z => (
-                              <span key={z} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{z}</span>
-                            ))}
-                            {r.zones.length > 2 && (
-                              <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">+{r.zones.length - 2}</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-center text-gray-600">{r.age || '—'}</td>
-                        <td className="py-3 px-4 text-gray-600">{r.location || '—'}</td>
-                        <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency(r.value)}</td>
-                      </tr>
-                    ))}
-                    {recipientList.length === 0 && (
-                      <tr>
-                        <td colSpan={9} className="py-8 text-center text-gray-400">
-                          No giveaway recipients found
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-                {recipientList.length > 100 && (
-                  <div className="p-4 text-center text-sm text-gray-500 border-t border-gray-100">
-                    Showing first 100 of {recipientList.length} recipients
+            {/* Show recipient detail view if selected */}
+            {selectedGiveawayRecipient ? (() => {
+              const recipientData = recipientList.find(r => r.name === selectedGiveawayRecipient);
+              const recipientTickets = giveawayRecords.filter(r => {
+                const name = r.fullName || `${r.firstName || ''} ${r.lastName || ''}`.trim() || 'Unknown';
+                return name === selectedGiveawayRecipient;
+              });
+              
+              return (
+                <>
+                  {/* Breadcrumb navigation */}
+                  <div className="flex items-center gap-2 mb-4 text-sm">
+                    <button 
+                      onClick={() => setSelectedGiveawayRecipient(null)}
+                      className="text-purple-600 hover:text-purple-800 hover:underline"
+                    >
+                      Giveaway Recipients
+                    </button>
+                    <ChevronRight size={16} className="text-gray-400" />
+                    <span className="text-gray-600 font-medium">{selectedGiveawayRecipient}</span>
                   </div>
-                )}
-              </div>
-            </div>
+                  
+                  {/* Recipient header */}
+                  <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl p-6 text-white shadow-lg mb-4">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-3 mb-2">
+                          <User size={28} />
+                          <div>
+                            <h2 className="text-2xl font-bold">{selectedGiveawayRecipient}</h2>
+                            {recipientData?.location && (
+                              <p className="text-purple-200 text-sm mt-1">{recipientData.location}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {recipientData?.types.map(t => (
+                            <span key={t} className="px-2 py-1 bg-white/20 rounded text-sm">{t}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-3xl font-bold">{recipientTickets.length}</p>
+                        <p className="text-purple-100 text-sm">Total Tickets</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-white/20">
+                      <div>
+                        <p className="text-2xl font-bold">{formatCurrency(recipientData?.value || 0)}</p>
+                        <p className="text-purple-100 text-sm">Opportunity Cost</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{recipientData?.games.length || 0}</p>
+                        <p className="text-purple-100 text-sm">Games</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{recipientData?.zones.length || 0}</p>
+                        <p className="text-purple-100 text-sm">Zones</p>
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{recipientData?.age || '—'}</p>
+                        <p className="text-purple-100 text-sm">Age</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Individual tickets table */}
+                  <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="p-4 border-b border-gray-100">
+                      <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                        <Ticket size={18} className="text-purple-500" />
+                        Individual Tickets ({recipientTickets.length})
+                      </h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 text-gray-600">
+                          <tr>
+                            <th className="text-left py-3 px-4 font-medium">#</th>
+                            <th className="text-left py-3 px-4 font-medium">Game</th>
+                            <th className="text-left py-3 px-4 font-medium">Giveaway Type</th>
+                            <th className="text-left py-3 px-4 font-medium">Zone</th>
+                            <th className="text-left py-3 px-4 font-medium">Area</th>
+                            <th className="text-left py-3 px-4 font-medium">Seat</th>
+                            <th className="text-right py-3 px-4 font-medium">Opportunity Cost</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {recipientTickets.map((t, i) => {
+                            let gType = t.giveawayType || '';
+                            gType = gType.replace(/\s*GA$/i, '').trim();
+                            return (
+                              <tr key={i} className="hover:bg-gray-50">
+                                <td className="py-3 px-4 text-gray-400">{i + 1}</td>
+                                <td className="py-3 px-4 font-medium text-gray-800">{t.game || t.event || '—'}</td>
+                                <td className="py-3 px-4">
+                                  {gType ? (
+                                    <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">{gType}</span>
+                                  ) : '—'}
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
+                                    {t.pvZone || t.zone || '—'}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-gray-600">{t.area || '—'}</td>
+                                <td className="py-3 px-4 text-gray-600">{t.seat || '—'}</td>
+                                <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency((t.price || 0) * (t.quantity || 1))}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              );
+            })() : (
+              <>
+                {/* Giveaway Types breakdown with Pie Chart */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-gray-100">
+                    <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                      <PieChart size={18} className="text-purple-500" />
+                      Giveaway Types Breakdown
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
+                    {/* Pie Chart */}
+                    <div className="h-72">
+                      {typeList.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsPie>
+                            <Pie
+                              data={typeList.map(t => ({ name: t.type, value: t.tickets }))}
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={90}
+                              innerRadius={50}
+                              paddingAngle={2}
+                              dataKey="value"
+                              label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                              labelLine={false}
+                            >
+                              {typeList.map((_, i) => (
+                                <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                              ))}
+                            </Pie>
+                            <Tooltip formatter={(value: number) => [value.toLocaleString(), 'Tickets']} />
+                          </RechartsPie>
+                        </ResponsiveContainer>
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-gray-400">
+                          No giveaway data
+                        </div>
+                      )}
+                    </div>
+                    {/* Table */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead className="bg-gray-50 text-gray-600">
+                          <tr>
+                            <th className="text-left py-2 px-3 font-medium">Type</th>
+                            <th className="text-right py-2 px-3 font-medium">Tickets</th>
+                            <th className="text-right py-2 px-3 font-medium">Cost</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {typeList.map((t, i) => (
+                            <tr key={i} className="hover:bg-gray-50">
+                              <td className="py-2 px-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
+                                  <span className="font-medium">{t.type}</span>
+                                </div>
+                              </td>
+                              <td className="py-2 px-3 text-right">{t.tickets.toLocaleString()}</td>
+                              <td className="py-2 px-3 text-right font-bold text-green-600">{formatCurrency(t.value)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recipients list */}
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                  <div className="p-4 border-b border-gray-100">
+                    <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                      <Users size={18} className="text-purple-500" />
+                      Giveaway Recipients ({recipientList.length})
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">Click on a name to view ticket details</p>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 text-gray-600">
+                        <tr>
+                          <th className="text-left py-3 px-4 font-medium">#</th>
+                          <th className="text-left py-3 px-4 font-medium">Name</th>
+                          <th className="text-left py-3 px-4 font-medium">Giveaway Types</th>
+                          <th className="text-right py-3 px-4 font-medium">Tickets</th>
+                          <th className="text-right py-3 px-4 font-medium">Games</th>
+                          <th className="text-left py-3 px-4 font-medium">Zones</th>
+                          <th className="text-center py-3 px-4 font-medium">Age</th>
+                          <th className="text-left py-3 px-4 font-medium">Location</th>
+                          <th className="text-right py-3 px-4 font-medium">Opportunity Cost</th>
+                          <th className="w-8"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {recipientList.slice(0, 100).map((r, i) => (
+                          <tr 
+                            key={i} 
+                            className="hover:bg-purple-50 cursor-pointer transition-colors"
+                            onClick={() => setSelectedGiveawayRecipient(r.name)}
+                          >
+                            <td className="py-3 px-4 text-gray-400">{i + 1}</td>
+                            <td className="py-3 px-4 font-medium text-purple-700 hover:text-purple-900">{r.name}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex flex-wrap gap-1">
+                                {r.types.slice(0, 2).map(t => (
+                                  <span key={t} className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">{t}</span>
+                                ))}
+                                {r.types.length > 2 && (
+                                  <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">+{r.types.length - 2}</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-right font-medium">{r.tickets}</td>
+                            <td className="py-3 px-4 text-right">{r.games.length}</td>
+                            <td className="py-3 px-4">
+                              <div className="flex flex-wrap gap-1">
+                                {r.zones.slice(0, 2).map(z => (
+                                  <span key={z} className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">{z}</span>
+                                ))}
+                                {r.zones.length > 2 && (
+                                  <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">+{r.zones.length - 2}</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-center text-gray-600">{r.age || '—'}</td>
+                            <td className="py-3 px-4 text-gray-600">{r.location || '—'}</td>
+                            <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency(r.value)}</td>
+                            <td className="py-3 px-4 text-gray-400">
+                              <ChevronRight size={16} />
+                            </td>
+                          </tr>
+                        ))}
+                        {recipientList.length === 0 && (
+                          <tr>
+                            <td colSpan={10} className="py-8 text-center text-gray-400">
+                              No giveaway recipients found
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                    {recipientList.length > 100 && (
+                      <div className="p-4 text-center text-sm text-gray-500 border-t border-gray-100">
+                        Showing first 100 of {recipientList.length} recipients
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </>
         );
       })()}
