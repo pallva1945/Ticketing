@@ -1762,32 +1762,27 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                  ticketLower.includes('gift') || ticketLower.includes('omaggio');
         });
 
-        // Calculate average zone prices from paid tickets (non-giveaway) for opportunity cost
-        const paidTickets = filteredData.filter(r => {
+        // Calculate average commercial value from season ticket holders (abb) for each zone
+        const abbTickets = filteredData.filter(r => {
           const sellLower = (r.sellType || '').toLowerCase();
           const ticketLower = (r.ticketType || '').toLowerCase();
-          const isGiveaway = sellLower.includes('omaggi') || sellLower.includes('giveaway') || 
-                 sellLower.includes('comp') || sellLower.includes('free') || 
-                 sellLower.includes('gift') || sellLower.includes('omaggio') ||
-                 ticketLower.includes('omaggi') || ticketLower.includes('giveaway') ||
-                 ticketLower.includes('comp') || ticketLower.includes('free') ||
-                 ticketLower.includes('gift') || ticketLower.includes('omaggio');
-          return !isGiveaway && r.price > 0;
+          // Filter for season ticket holders (abb/abbonamento)
+          return sellLower.includes('abb') || ticketLower.includes('abb');
         });
         
-        const zoneStats = paidTickets.reduce((acc, r) => {
+        const zoneStats = abbTickets.reduce((acc, r) => {
           const zone = r.pvZone || r.zone || 'Unknown';
           if (!acc[zone]) {
-            acc[zone] = { totalRevenue: 0, totalTickets: 0 };
+            acc[zone] = { totalCommercialValue: 0, totalTickets: 0 };
           }
-          acc[zone].totalRevenue += r.price * (r.quantity || 1);
+          acc[zone].totalCommercialValue += (r.commercialValue || 0) * (r.quantity || 1);
           acc[zone].totalTickets += r.quantity || 1;
           return acc;
-        }, {} as Record<string, { totalRevenue: number; totalTickets: number }>);
+        }, {} as Record<string, { totalCommercialValue: number; totalTickets: number }>);
         
         const zoneAvgPrices: Record<string, number> = {};
         Object.entries(zoneStats).forEach(([zone, stats]) => {
-          zoneAvgPrices[zone] = stats.totalTickets > 0 ? stats.totalRevenue / stats.totalTickets : 0;
+          zoneAvgPrices[zone] = stats.totalTickets > 0 ? stats.totalCommercialValue / stats.totalTickets : 0;
         });
         
         // Helper to get opportunity cost for a ticket based on zone average
