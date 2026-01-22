@@ -1762,6 +1762,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         });
 
         // Group by giveaway type (only use giveawayType column, removing GA suffix)
+        // Use opportunity cost (price) instead of commercial value
         const giveawayTypeBreakdown = giveawayRecords.reduce((acc, r) => {
           // Only use records that have an actual giveawayType value
           if (!r.giveawayType || r.giveawayType.trim() === '') return acc;
@@ -1771,11 +1772,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             acc[type] = { tickets: 0, value: 0, recipients: new Set<string>() };
           }
           acc[type].tickets += r.quantity || 1;
-          acc[type].value += r.commercialValue * (r.quantity || 1);
+          // Opportunity cost = price (what the ticket would sell for)
+          acc[type].value += (r.price || 0) * (r.quantity || 1);
           const recipientKey = r.fullName || `${r.firstName || ''} ${r.lastName || ''}`.trim() || r.email || 'Unknown';
           acc[type].recipients.add(recipientKey);
           return acc;
-        }, {} as Record<string, { tickets: number; value: number; recipients: Set<string> }>);
+        }, {} as Record<string, { tickets: number; value: 0, recipients: Set<string> }>);
 
         const typeList = Object.entries(giveawayTypeBreakdown)
           .map(([type, data]) => ({ type, ...data, recipientCount: data.recipients.size }))
@@ -1797,7 +1799,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             };
           }
           acc[name].tickets += r.quantity || 1;
-          acc[name].value += r.commercialValue * (r.quantity || 1);
+          // Opportunity cost = price (what the ticket would sell for)
+          acc[name].value += (r.price || 0) * (r.quantity || 1);
           // Only add giveawayType if it has a value
           if (r.giveawayType && r.giveawayType.trim() !== '') {
             let gType = r.giveawayType.replace(/\s*GA$/i, '').trim();
@@ -1822,7 +1825,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           .sort((a, b) => b.tickets - a.tickets);
 
         const totalGiveawayTickets = giveawayRecords.reduce((sum, r) => sum + (r.quantity || 1), 0);
-        const totalGiveawayValue = giveawayRecords.reduce((sum, r) => sum + (r.commercialValue * (r.quantity || 1)), 0);
+        // Opportunity cost = price (what the ticket would sell for)
+        const totalGiveawayValue = giveawayRecords.reduce((sum, r) => sum + ((r.price || 0) * (r.quantity || 1)), 0);
 
         return (
           <>
@@ -1836,7 +1840,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-xl p-5 text-white shadow-lg">
                 <Euro size={24} className="mb-3 opacity-80" />
                 <p className="text-3xl font-bold">{formatCompact(totalGiveawayValue)}</p>
-                <p className="text-indigo-100 text-sm">Commercial Value</p>
+                <p className="text-indigo-100 text-sm">Opportunity Cost</p>
               </div>
               <div className="bg-gradient-to-br from-slate-600 to-slate-800 rounded-xl p-5 text-white shadow-lg">
                 <Users size={24} className="mb-3 opacity-80" />
@@ -1865,7 +1869,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       <th className="text-left py-3 px-4 font-medium">Type</th>
                       <th className="text-right py-3 px-4 font-medium">Tickets</th>
                       <th className="text-right py-3 px-4 font-medium">Recipients</th>
-                      <th className="text-right py-3 px-4 font-medium">Commercial Value</th>
+                      <th className="text-right py-3 px-4 font-medium">Opportunity Cost</th>
                       <th className="text-right py-3 px-4 font-medium">% of Total</th>
                     </tr>
                   </thead>
@@ -1917,7 +1921,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       <th className="text-left py-3 px-4 font-medium">Zones</th>
                       <th className="text-center py-3 px-4 font-medium">Age</th>
                       <th className="text-left py-3 px-4 font-medium">Location</th>
-                      <th className="text-right py-3 px-4 font-medium">Commercial Value</th>
+                      <th className="text-right py-3 px-4 font-medium">Opportunity Cost</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
