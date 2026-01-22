@@ -1,11 +1,18 @@
 import React, { useMemo, useState } from 'react';
-import { GameData, TicketZone } from '../types';
+import { GameData, TicketZone, SalesChannel } from '../types';
 import { PV_LOGO_URL } from '../constants';
+
+// Channel filters for view modes
+// GameDay: TIX + MP + VB + FREE (giveaways without protocol)
+// Total: TIX + MP + VB + FREE + PROTOCOL + CORP + ABB
+const GAMEDAY_CHANNELS = [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY];
+const TOTAL_CHANNELS = [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY, SalesChannel.PROTOCOL, SalesChannel.CORP, SalesChannel.ABB];
 
 interface ArenaMapProps {
   data: GameData[];
   onZoneClick: (zone: string) => void;
   selectedZone: string;
+  viewMode?: 'gameday' | 'total';
 }
 
 interface ZoneMetrics {
@@ -15,6 +22,7 @@ interface ZoneMetrics {
 }
 
 type MapMetric = 'revenue' | 'occupancy' | 'yield';
+type ViewMode = 'gameday' | 'total';
 
 // --- GEOMETRY HELPERS ---
 const describeSector = (
@@ -48,9 +56,12 @@ const describeSector = (
 };
 
 // --- DATA HELPERS ---
-const getZoneMetrics = (data: GameData[]) => {
+const getZoneMetrics = (data: GameData[], viewMode: ViewMode) => {
   const stats: Record<string, ZoneMetrics> = {};
   let maxRevenue = 0;
+  
+  // Select channels based on view mode
+  const channelFilter = viewMode === 'gameday' ? GAMEDAY_CHANNELS : TOTAL_CHANNELS;
   
   data.forEach(game => {
     if (game.zoneCapacities) {
@@ -62,8 +73,14 @@ const getZoneMetrics = (data: GameData[]) => {
 
     game.salesBreakdown.forEach(s => {
       if (!stats[s.zone]) stats[s.zone] = { revenue: 0, sold: 0, capacity: 0 };
+      
+      // Revenue from all channels
       stats[s.zone].revenue += s.revenue;
-      stats[s.zone].sold += s.quantity;
+      
+      // Sold count based on view mode filter
+      if (channelFilter.includes(s.channel)) {
+        stats[s.zone].sold += s.quantity;
+      }
     });
   });
   
@@ -74,8 +91,8 @@ const getZoneMetrics = (data: GameData[]) => {
   return { stats, maxRevenue };
 };
 
-export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZone }) => {
-  const { stats, maxRevenue } = useMemo(() => getZoneMetrics(data), [data]);
+export const ArenaMap: React.FC<ArenaMapProps> = ({ data, onZoneClick, selectedZone, viewMode = 'gameday' }) => {
+  const { stats, maxRevenue } = useMemo(() => getZoneMetrics(data, viewMode), [data, viewMode]);
   const [hoveredZone, setHoveredZone] = useState<string | null>(null);
   const [metric, setMetric] = useState<MapMetric>('revenue');
 

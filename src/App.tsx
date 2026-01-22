@@ -1649,17 +1649,36 @@ const App: React.FC = () => {
 
   const efficiencyData = useMemo(() => {
     return filteredGames.map(game => {
-      let zoneSales = game.salesBreakdown.filter(s => 
+      // GameDay channels: Only tickets sold on game day (TIX, MP, VB) + giveaways
+      // Excludes: ABB (season tickets), CORP (corporate), PROTOCOL (fixed allocations)
+      let gameDaySales = game.salesBreakdown.filter(s => 
           [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel)
       );
+      // Total channels: All tickets including presold (ABB, CORP) and protocol
+      let totalSales = game.salesBreakdown.filter(s => 
+          [SalesChannel.ABB, SalesChannel.CORP, SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY, SalesChannel.PROTOCOL].includes(s.channel)
+      );
 
-      if (ignoreOspiti) zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
-      if (!selectedZones.includes('All')) zoneSales = zoneSales.filter(s => selectedZones.includes(s.zone));
+      if (ignoreOspiti) {
+        gameDaySales = gameDaySales.filter(s => s.zone !== TicketZone.OSPITI);
+        totalSales = totalSales.filter(s => s.zone !== TicketZone.OSPITI);
+      }
+      if (!selectedZones.includes('All')) {
+        gameDaySales = gameDaySales.filter(s => selectedZones.includes(s.zone));
+        totalSales = totalSales.filter(s => selectedZones.includes(s.zone));
+      }
 
-      const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
-      const zoneAttendance = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
+      // GameDay = only game day sales (TIX + MP + VB + GIVEAWAY)
+      const gameDayRevenue = gameDaySales.reduce((acc, curr) => acc + curr.revenue, 0);
+      const gameDayAttendance = gameDaySales.reduce((acc, curr) => acc + curr.quantity, 0);
+      
+      // Total = all tickets including presold (ABB + CORP + TIX + MP + VB + GIVEAWAY + PROTOCOL)
+      const totalRevenue = totalSales.reduce((acc, curr) => acc + curr.revenue, 0);
+      const totalAttendance = totalSales.reduce((acc, curr) => acc + curr.quantity, 0);
 
+      // Capacity calculation
       let zoneCapacity = 0;
+      let gameDayCapacity = 0;
       let filteredZoneCapacities = { ...game.zoneCapacities };
       if (ignoreOspiti) delete filteredZoneCapacities[TicketZone.OSPITI];
       
@@ -1671,19 +1690,24 @@ const App: React.FC = () => {
           filteredZoneCapacities = newCapMap;
       }
 
+      // Total capacity (full arena)
+      Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
+      
+      // GameDay capacity = Total - FIXED (ABB + CORP + PROTOCOL presold seats)
       Object.keys(filteredZoneCapacities).forEach(z => {
           const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
-          filteredZoneCapacities[z] = Math.max(0, filteredZoneCapacities[z] - fixedDeduction);
+          gameDayCapacity += Math.max(0, filteredZoneCapacities[z] - fixedDeduction);
       });
-
-      Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
 
       return {
         ...game,
-        attendance: zoneAttendance,
-        totalRevenue: zoneRevenue,
-        capacity: zoneCapacity,
-        salesBreakdown: zoneSales,
+        attendance: totalAttendance,           // Total view: all tickets
+        attendanceGameDay: gameDayAttendance,  // GameDay view: only game day sales
+        totalRevenue: totalRevenue,            // Total view revenue
+        revenueGameDay: gameDayRevenue,        // GameDay view revenue
+        capacity: zoneCapacity,                // Total capacity
+        capacityGameDay: gameDayCapacity,      // GameDay capacity (seats available on game day)
+        salesBreakdown: totalSales,
         zoneCapacities: filteredZoneCapacities
       };
     });
@@ -2230,30 +2254,28 @@ const App: React.FC = () => {
              <div className="bg-white border border-gray-200 rounded-lg p-3">
                 <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Data Source Info</p>
                 <div className="flex flex-col">
-                    {/* Prioritize showing Upload Time if available, regardless of whether it was just uploaded or loaded from cloud */}
-                    {lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing'] ? (
+                    {lastGame ? (
                         <>
-                            <div className="flex items-center gap-1 text-green-600 mb-0.5">
-                                <Clock size={10} />
-                                <span className="text-[10px] font-bold uppercase">Last Uploaded</span>
+                            <div className="flex items-center gap-1 text-blue-600 mb-0.5">
+                                <Calendar size={10} />
+                                <span className="text-[10px] font-bold uppercase">Latest Game</span>
                             </div>
-                            <span className="text-xs font-bold text-gray-800">
-                                {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleDateString()}
-                            </span>
-                            <span className="text-[10px] text-gray-500">
-                                {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                            </span>
+                            <span className="text-xs font-bold text-gray-800 truncate">{lastGame.opponent}</span>
+                            <span className="text-[10px] text-gray-500">{lastGame.season} • {lastGame.date}</span>
+                            {lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing'] && (
+                                <div className="mt-2 pt-2 border-t border-gray-100">
+                                    <div className="flex items-center gap-1 text-green-600 mb-0.5">
+                                        <Clock size={10} />
+                                        <span className="text-[10px] font-bold uppercase">Last Synced</span>
+                                    </div>
+                                    <span className="text-[10px] text-gray-500">
+                                        {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleDateString()} at {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    </span>
+                                </div>
+                            )}
                         </>
                     ) : (
-                        /* Fallback to Last Game info if no upload time is tracked (e.g. local fallback data) */
-                        lastGame ? (
-                            <>
-                                <span className="text-xs font-bold text-gray-800 truncate">{lastGame.opponent}</span>
-                                <span className="text-[10px] text-gray-500">{lastGame.season} • {lastGame.date}</span>
-                            </>
-                        ) : (
-                            <span className="text-[10px] text-gray-400">No data loaded</span>
-                        )
+                        <span className="text-[10px] text-gray-400">No data loaded</span>
                     )}
                 </div>
              </div>
@@ -2344,7 +2366,7 @@ const App: React.FC = () => {
           ) : activeModule === 'ticketing' ? (
             <>
                 {/* EXISTING TICKETING LOGIC */}
-                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} serverStats={crmStats} />}
+                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} serverStats={crmStats} games={filteredGames.map(g => ({ id: g.id, opponent: g.opponent, date: g.date }))} />}
                 {activeTab === 'dashboard' && (
                     <div className="pt-6">
                     {/* DIRECTOR'S NOTE */}
@@ -2422,7 +2444,8 @@ const App: React.FC = () => {
                                     <ArenaMap 
                                         data={viewData} 
                                         onZoneClick={handleZoneClick} 
-                                        selectedZone={selectedZones.includes('All') ? 'All' : selectedZones[0]} 
+                                        selectedZone={selectedZones.includes('All') ? 'All' : selectedZones[0]}
+                                        viewMode={viewMode}
                                     />
                                 </div>
 
@@ -2507,7 +2530,7 @@ const App: React.FC = () => {
 
                 {activeTab === 'simulator' && (
                     <div className="pt-6">
-                        <Simulator data={viewData} />
+                        <Simulator data={totalViewData} />
                     </div>
                 )}
 

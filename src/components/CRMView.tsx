@@ -64,11 +64,18 @@ interface CRMStats {
   corpCommercialValue?: number;
 }
 
+interface GameInfo {
+  id: string;
+  opponent: string;
+  date: string;
+}
+
 interface CRMViewProps {
   data: CRMRecord[];
   sponsorData?: SponsorData[];
   isLoading?: boolean;
   serverStats?: { all: CRMStats; fixed: CRMStats; flexible: CRMStats } | null; // Pre-computed stats from server for fast loading
+  games?: GameInfo[]; // Game schedule for seat history view
 }
 
 const getCustomerKey = (r: CRMRecord): string => {
@@ -121,7 +128,7 @@ const cleanSeat = (seat: string): string => {
   return seat || '—';
 };
 
-export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoading = false, serverStats = null }) => {
+export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoading = false, serverStats = null, games = [] }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterZone, setFilterZone] = useState<string | null>(null);
   const [filterEvent, setFilterEvent] = useState<string | null>(null);
@@ -131,6 +138,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [searchSelectedClient, setSearchSelectedClient] = useState<string | null>(null);
   const [searchGameFilter, setSearchGameFilter] = useState<string>('all');
+  const [searchMode, setSearchMode] = useState<'client' | 'seat'>('client');
   const [sortColumn, setSortColumn] = useState<string>('value');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -191,6 +199,92 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     });
     return lookup;
   }, [sponsorData]);
+
+  // Memoized seat history computation for seat search mode (must be at component level)
+  const seatHistoryData = useMemo(() => {
+    const query = clientSearchQuery.toLowerCase().trim();
+    if (searchMode !== 'seat' || query.length < 2) return null;
+    
+    const parts = query.split(/[,\s]+/).map((p: string) => p.trim()).filter((p: string) => p);
+    
+    let seatNumber: string | null = null;
+    let areaFromHyphen: string | null = null;
+    let zoneParts: string[] = parts;
+    
+    const lastPart = parts[parts.length - 1];
+    const hyphenMatch = lastPart.match(/^([a-z]+)-?(\d+)$/i);
+    
+    if (hyphenMatch) {
+      areaFromHyphen = hyphenMatch[1].toLowerCase();
+      seatNumber = hyphenMatch[2];
+      zoneParts = parts.slice(0, -1);
+    } else if (/^\d+$/.test(lastPart)) {
+      seatNumber = lastPart;
+      zoneParts = parts.slice(0, -1);
+    }
+
+    const matchingRecords = data.filter((r: any) => {
+      const pvZone = ((r as any).pvZone || (r as any).pv_zone || (r as any).Pv_Zone || '').toLowerCase();
+      const fullZone = ((r as any).zone || (r as any).Zone || '').toLowerCase();
+      const area = ((r as any).area || (r as any).Area || '').toLowerCase();
+      const seat = ((r as any).seat || (r as any).Seat || '').toString().trim();
+      const combinedZone = `${pvZone} ${fullZone} ${area}`.toLowerCase();
+
+      const allZonePartsMatch = zoneParts.length === 0 || zoneParts.every((p: string) => combinedZone.includes(p));
+      const areaMatches = !areaFromHyphen || area === areaFromHyphen;
+      const seatMatches = !seatNumber || seat === seatNumber;
+      
+      return allZonePartsMatch && areaMatches && seatMatches;
+    });
+
+    const firstMatch = matchingRecords[0] as any;
+    const seatLocation = firstMatch ? {
+      zone: (firstMatch.zone || firstMatch.Zone || firstMatch.pv_zone || ''),
+      area: areaFromHyphen || (firstMatch.area || firstMatch.Area || ''),
+      seat: seatNumber || 'All seats'
+    } : null;
+
+    const seatHistory = games.map(game => {
+      const gameDate = game.date;
+      
+      const gameRecords = matchingRecords.filter((r: any) => {
+        const recordDate = (r.Gm_Date_time || r.gm_date_time || '').split(' ')[0];
+        if (recordDate && gameDate && recordDate === gameDate) return true;
+        
+        const recordGame = (r.gm || r.game || '').toLowerCase().trim();
+        const gameOpp = game.opponent.toLowerCase().trim();
+        if (recordGame && gameOpp) {
+          return recordGame.includes(gameOpp) || gameOpp.includes(recordGame);
+        }
+        return false;
+      });
+      
+      if (gameRecords.length > 0) {
+        const rec = gameRecords[0] as any;
+        return {
+          date: game.date,
+          opponent: game.opponent,
+          occupied: true,
+          occupant: `${rec.name || rec.firstName || ''} ${rec.last_name || rec.lastName || ''}`.trim() || 'Unknown',
+          sellType: rec.sell || rec.sellType || rec.type || '—',
+          price: Number(rec.price) || Number(rec.comercial_value) || 0,
+          email: rec.email || '—'
+        };
+      } else {
+        return {
+          date: game.date,
+          opponent: game.opponent,
+          occupied: false,
+          occupant: '',
+          sellType: '',
+          price: 0,
+          email: ''
+        };
+      }
+    });
+
+    return { seatLocation, seatHistory, matchingRecords };
+  }, [searchMode, clientSearchQuery, data, games]);
 
   const stats = useMemo(() => {
     // Use server-computed stats when no complex filters (search, zone, event) are active
@@ -781,7 +875,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             {view === 'behavior' && <TrendingUp size={14} className="inline mr-2" />}
             {view === 'corporate' && <Building2 size={14} className="inline mr-2" />}
             {view === 'search' && <Search size={14} className="inline mr-2" />}
-            {view === 'search' ? 'Client Search' : view.charAt(0).toUpperCase() + view.slice(1)}
+            {view === 'search' ? 'Find Customer' : view.charAt(0).toUpperCase() + view.slice(1)}
           </button>
         ))}
       </div>
@@ -1441,73 +1535,48 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
         const query = clientSearchQuery.toLowerCase().trim();
         
-        // Check for zone + area-seat pattern (e.g., "par ex, a-21" or "par o, D-121")
-        const zoneAreaSeatHyphenMatch = query.match(/^([a-z\s]+)[,\s]+([a-z]+)-?(\d+)$/i);
-        // Check for zone + area + seat pattern (e.g., "par o, D, 121")
-        const zoneAreaSeatMatch = query.match(/^([a-z\s]+)[,\s]+([a-z0-9]+)[,\s]+(\d+)$/i);
-        // Check for zone + seat pattern (e.g., "par o, 210")
-        const zoneSeatMatch = query.match(/^([a-z\s]+)[,\s]+(\d+)$/i);
-        // Check for zone-only pattern (e.g., "par o" or "curva")
-        const zoneOnlyMatch = query.match(/^[a-z\s]+$/i) && query.includes(' ');
-        
         const matchingClients = query.length >= 2 ? allClients.filter(c => {
-          // If zone + area-seat pattern detected (e.g., "par ex, a-21")
-          if (zoneAreaSeatHyphenMatch) {
-            const zoneQuery = zoneAreaSeatHyphenMatch[1].trim().toLowerCase();
-            const areaQuery = zoneAreaSeatHyphenMatch[2].trim().toLowerCase();
-            const seatQuery = zoneAreaSeatHyphenMatch[3];
+          if (searchMode === 'client') {
+            // Client search: search by name, email, phone, address, etc. (no zone/seat)
+            const searchStr = [
+              c.name, c.firstName, c.lastName, c.email, c.phone, c.cell, c.address, c.nationality, c.dob, c.pob, c.province, c.age
+            ].filter(Boolean).join(' ').toLowerCase();
+            return searchStr.includes(query);
+          } else {
+            // Seat search: search by zone, area, and seat only
+            // Parse the query into parts (comma or space separated)
+            const parts = query.split(/[,\s]+/).map(p => p.trim()).filter(p => p);
+            
             return c.records.some((r: CRMRecord) => {
-              const zone = (r.pvZone || r.zone || '').toLowerCase();
-              const area = (r.area || '').toLowerCase();
-              const seat = (r.seat || '').trim();
-              return zone.includes(zoneQuery) && area.toLowerCase() === areaQuery && seat === seatQuery;
+              // Handle various BigQuery column name formats
+              // pv_zone is abbreviated (e.g., "TRIB G O"), zone is full (e.g., "TRIBUNA GOLD OVEST")
+              const pvZone = ((r as any).pvZone || (r as any).pv_zone || (r as any).Pv_Zone || '').toLowerCase();
+              const fullZone = ((r as any).zone || (r as any).Zone || '').toLowerCase();
+              const area = ((r as any).area || (r as any).Area || (r as any).AREA || (r as any).settore || (r as any).Settore || '').toLowerCase();
+              const seat = ((r as any).seat || (r as any).Seat || (r as any).SEAT || (r as any).posto || (r as any).Posto || '').toString().trim();
+              
+              // Combined zone string for flexible matching
+              const combinedZone = `${pvZone} ${fullZone} ${area}`.toLowerCase();
+              
+              // Check if the last part is a seat number
+              const lastPart = parts[parts.length - 1];
+              const isLastPartSeat = /^\d+$/.test(lastPart);
+              
+              if (isLastPartSeat && parts.length >= 2) {
+                // Last part is seat number, everything before is zone/area search
+                const zoneParts = parts.slice(0, -1);
+                const seatQuery = lastPart;
+                
+                // All zone parts must match somewhere in the combined zone string
+                const allZonePartsMatch = zoneParts.every(p => combinedZone.includes(p));
+                return allZonePartsMatch && seat === seatQuery;
+              } else {
+                // No seat number - just match all parts against zone
+                const allPartsMatch = parts.every(p => combinedZone.includes(p));
+                return allPartsMatch;
+              }
             });
           }
-          
-          // If zone + area + seat search pattern detected (e.g., "par o, D, 121")
-          if (zoneAreaSeatMatch) {
-            const zoneQuery = zoneAreaSeatMatch[1].trim().toLowerCase();
-            const areaQuery = zoneAreaSeatMatch[2].trim().toLowerCase();
-            const seatQuery = zoneAreaSeatMatch[3];
-            return c.records.some((r: CRMRecord) => {
-              const zone = (r.pvZone || r.zone || '').toLowerCase();
-              const area = (r.area || '').toLowerCase();
-              const seat = (r.seat || '').trim();
-              return zone.includes(zoneQuery) && area.includes(areaQuery) && seat === seatQuery;
-            });
-          }
-          
-          // If zone + seat search pattern detected (e.g., "par o, 210")
-          if (zoneSeatMatch) {
-            const zoneQuery = zoneSeatMatch[1].trim().toLowerCase();
-            const seatQuery = zoneSeatMatch[2];
-            return c.records.some((r: CRMRecord) => {
-              const zone = (r.pvZone || r.zone || '').toLowerCase();
-              const seat = (r.seat || '').trim();
-              return zone.includes(zoneQuery) && seat === seatQuery;
-            });
-          }
-          
-          // If zone-only search pattern detected (e.g., "par o", "par ex", "curva n")
-          if (zoneOnlyMatch) {
-            return c.records.some((r: CRMRecord) => {
-              const zone = (r.pvZone || r.zone || '').toLowerCase();
-              return zone.includes(query);
-            });
-          }
-          
-          // Standard search by name, email, zone, etc.
-          const searchStr = [
-            c.name, c.firstName, c.lastName, c.email, c.phone, c.cell, c.address, c.nationality, c.dob, c.pob, c.province, c.age
-          ].filter(Boolean).join(' ').toLowerCase();
-          
-          // Also check if query matches zone (for single word zone searches like "curva")
-          const matchesZone = c.records.some((r: CRMRecord) => {
-            const zone = (r.pvZone || r.zone || '').toLowerCase();
-            return zone.includes(query);
-          });
-          
-          return searchStr.includes(query) || matchesZone;
         }).slice(0, 20) : [];
 
         const selectedClient = searchSelectedClient ? allClients.find(c => c.key === searchSelectedClient) : null;
@@ -1587,14 +1656,43 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                 <Search size={20} className="text-red-500" />
-                Client Search
+                Find Customer
               </h3>
+              
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => { setSearchMode('client'); setClientSearchQuery(''); setSearchSelectedClient(null); }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                    searchMode === 'client' 
+                      ? 'bg-red-600 text-white' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <User size={16} />
+                  Client Search
+                </button>
+                <button
+                  onClick={() => { setSearchMode('seat'); setClientSearchQuery(''); setSearchSelectedClient(null); }}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                    searchMode === 'seat' 
+                      ? 'bg-red-600 text-white' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <MapPin size={16} />
+                  Seat Search
+                </button>
+              </div>
+              
               <div className="mb-6">
                 <div className="relative max-w-xl">
                   <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search by name, email... or seat (e.g., par o, D, 121)"
+                    placeholder={searchMode === 'client' 
+                      ? "Search by name, email, phone..." 
+                      : "Search by zone, area, seat (e.g., par o, D, 121)"
+                    }
                     value={clientSearchQuery}
                     onChange={(e) => {
                       setClientSearchQuery(e.target.value);
@@ -1612,10 +1710,15 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     </button>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 mt-2">Enter at least 2 characters to find a client</p>
+                <p className="text-xs text-gray-500 mt-2">
+                  {searchMode === 'client' 
+                    ? "Enter at least 2 characters to find a client by name, email, or phone" 
+                    : "Search examples: par o, par ex D 121, curva n"
+                  }
+                </p>
               </div>
 
-              {query.length >= 2 && !selectedClient && (
+              {query.length >= 2 && !selectedClient && searchMode === 'client' && (
                 matchingClients.length === 0 ? (
                   <div className="text-center py-12 text-gray-500">
                     <Users size={48} className="mx-auto mb-4 opacity-30" />
@@ -1641,6 +1744,86 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     ))}
                   </div>
                 )
+              )}
+
+              {query.length >= 2 && searchMode === 'seat' && seatHistoryData && (
+                <div className="space-y-4">
+                  {seatHistoryData.seatLocation && (
+                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-blue-600 text-white rounded-lg p-3">
+                          <MapPin size={24} />
+                        </div>
+                        <div>
+                          <p className="text-xs text-blue-600 uppercase font-semibold">Seat Location</p>
+                          <p className="text-lg font-bold text-gray-800">
+                            {seatHistoryData.seatLocation.zone} {seatHistoryData.seatLocation.area && `- Section ${seatHistoryData.seatLocation.area}`} {seatHistoryData.seatLocation.seat !== 'All seats' && `- Seat ${seatHistoryData.seatLocation.seat}`}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 bg-gray-50">
+                      <h4 className="font-semibold text-gray-800 flex items-center gap-2">
+                        <Ticket size={18} className="text-blue-500" />
+                        Seat History ({seatHistoryData.seatHistory.filter(g => g.occupied).length}/{seatHistoryData.seatHistory.length} games occupied)
+                      </h4>
+                    </div>
+                    <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
+                      <table className="w-full text-sm">
+                        <thead className="sticky top-0 z-10">
+                          <tr className="border-b border-gray-200 bg-gray-50">
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 bg-gray-50">Date</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 bg-gray-50">Opponent</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 bg-gray-50">Status</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 bg-gray-50">Occupant</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 bg-gray-50">Type</th>
+                            <th className="text-right py-2 px-3 font-semibold text-gray-600 bg-gray-50">Value</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {seatHistoryData.seatHistory.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="py-8 text-center text-gray-500">
+                                <MapPin size={32} className="mx-auto mb-2 opacity-30" />
+                                <p>No games found. Make sure game data is loaded.</p>
+                              </td>
+                            </tr>
+                          ) : seatHistoryData.seatHistory.map((row, i) => (
+                            <tr key={i} className={`hover:bg-gray-50 ${!row.occupied ? 'bg-gray-50/50' : ''}`}>
+                              <td className="py-2 px-3 text-gray-600">{row.date}</td>
+                              <td className="py-2 px-3 font-medium">{row.opponent}</td>
+                              <td className="py-2 px-3">
+                                {row.occupied ? (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Occupied
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                    Empty
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-2 px-3">{row.occupant || '—'}</td>
+                              <td className="py-2 px-3 text-gray-600">{row.sellType || '—'}</td>
+                              <td className="py-2 px-3 text-right font-medium">
+                                {row.price > 0 ? formatCurrency(row.price) : '—'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {seatHistoryData.matchingRecords.length > 0 && (
+                    <p className="text-xs text-gray-500">
+                      Found {seatHistoryData.matchingRecords.length} ticket records for this location
+                    </p>
+                  )}
+                </div>
               )}
 
               {selectedClient && (
