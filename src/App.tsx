@@ -2530,7 +2530,7 @@ const App: React.FC = () => {
 
                 {activeTab === 'simulator' && (
                     <div className="pt-6">
-                        <Simulator data={viewData} />
+                        <Simulator data={totalViewData} />
                     </div>
                 )}
 
