@@ -3,6 +3,38 @@ import { Send, Sparkles, Loader2, Brain, Ticket } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { sendMessageToGemini } from '../services/geminiService';
 
+const renderMarkdown = (text: string): React.ReactNode => {
+  const lines = text.split('\n');
+  return lines.map((line, lineIdx) => {
+    let parts: React.ReactNode[] = [];
+    let remaining = line;
+    let keyIdx = 0;
+    
+    while (remaining.length > 0) {
+      const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
+      if (boldMatch && boldMatch.index !== undefined) {
+        if (boldMatch.index > 0) {
+          parts.push(remaining.substring(0, boldMatch.index));
+        }
+        parts.push(<strong key={`b-${lineIdx}-${keyIdx++}`} className="font-semibold text-gray-900">{boldMatch[1]}</strong>);
+        remaining = remaining.substring(boldMatch.index + boldMatch[0].length);
+      } else {
+        parts.push(remaining);
+        remaining = '';
+      }
+    }
+    
+    if (line.startsWith('- ')) {
+      return <div key={lineIdx} className="flex gap-2 ml-2"><span className="text-red-500">•</span><span>{parts.slice(1)}</span></div>;
+    }
+    if (line.match(/^\d+\.\s/)) {
+      return <div key={lineIdx} className="ml-2">{parts}</div>;
+    }
+    
+    return <div key={lineIdx}>{parts.length > 0 ? parts : '\u00A0'}</div>;
+  });
+};
+
 interface ChatInterfaceProps {
   contextData: string;
   initialPrompt?: string;
@@ -206,7 +238,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
                 </div>
               )}
               
-              <div className="text-sm leading-relaxed whitespace-pre-wrap text-gray-700">{msg.text}</div>
+              <div className="text-sm leading-relaxed text-gray-700">{renderMarkdown(msg.text)}</div>
               <div className="text-[10px] mt-2 text-right text-gray-300 font-medium">
                 {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
