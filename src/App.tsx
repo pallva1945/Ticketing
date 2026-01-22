@@ -875,10 +875,12 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('activeModule', activeModule);
   }, [activeModule]);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'simulator' | 'chat' | 'crm'>(() => {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'comparison' | 'simulator' | 'crm'>(() => {
     const saved = localStorage.getItem('activeTab');
-    return (saved as 'dashboard' | 'comparison' | 'simulator' | 'chat' | 'crm') || 'dashboard';
+    const validTabs = ['dashboard', 'comparison', 'simulator', 'crm'];
+    return validTabs.includes(saved || '') ? (saved as 'dashboard' | 'comparison' | 'simulator' | 'crm') : 'dashboard';
   });
+  const [showAIAdvisor, setShowAIAdvisor] = useState(false);
   
   useEffect(() => {
     localStorage.setItem('activeTab', activeTab);
@@ -2129,6 +2131,14 @@ const App: React.FC = () => {
              </div>
           </div>
           <div className="hidden md:flex items-center gap-3">
+             <button 
+                onClick={() => setShowAIAdvisor(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-sm font-bold hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg hover:shadow-xl"
+             >
+                <MessageSquare size={16} />
+                AI Advisor
+             </button>
+             <div className="h-6 w-px bg-gray-200"></div>
              <div className="text-right">
                  <p className="text-xs font-bold text-gray-900">{TEAM_NAME}</p>
                  <p className="text-[10px] text-gray-500 uppercase">Revenue Intelligence</p>
@@ -2176,9 +2186,6 @@ const App: React.FC = () => {
                             </button>
                     <button onClick={() => { setActiveTab('simulator'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'simulator' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
                         <Calculator size={18} /> <span className="inline md:hidden lg:inline text-sm">Simulator</span>
-                    </button>
-                    <button onClick={() => { setActiveTab('chat'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'chat' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
-                        <MessageSquare size={18} /> <span className="inline md:hidden lg:inline text-sm">AI Strategist</span>
                     </button>
 
                     {(activeTab === 'dashboard' || activeTab === 'comparison') && (
@@ -2356,10 +2363,7 @@ const App: React.FC = () => {
                 gameDayRevenue={gameDayRevenueNet} 
                 sponsorshipRevenue={sponsorshipStats.pureSponsorship}
                 onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
-                onAiClick={() => {
-                    setActiveModule('ticketing');
-                    setActiveTab('chat');
-                }}
+                onAiClick={() => setShowAIAdvisor(true)}
                 gamesPlayed={filteredGames.length}
                 seasonFilter={selectedSeasons[0]}
                 onSeasonChange={(s) => setSelectedSeasons([s])}
@@ -2392,8 +2396,8 @@ const App: React.FC = () => {
                                     "No GameDay data matches your current filter selection."
                                 )}
                                 </p>
-                                <button onClick={() => { setActiveModule('ticketing'); setActiveTab('chat'); }} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-500 transition-colors shadow-lg border border-indigo-500">
-                                OPEN STRATEGY CHAT
+                                <button onClick={() => setShowAIAdvisor(true)} className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-indigo-500 transition-colors shadow-lg border border-indigo-500">
+                                OPEN AI ADVISOR
                                 </button>
                             </div>
                             <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-indigo-600/20 rounded-full blur-3xl"></div>
@@ -2444,8 +2448,8 @@ const App: React.FC = () => {
                                         "No data matches your current filter selection."
                                     )}
                                     </p>
-                                    <button onClick={() => setActiveTab('chat')} className="bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-red-500 transition-colors shadow-lg border border-red-500">
-                                    OPEN STRATEGY CHAT
+                                    <button onClick={() => setShowAIAdvisor(true)} className="bg-red-600 text-white px-4 py-2 rounded-lg text-xs font-bold hover:bg-red-500 transition-colors shadow-lg border border-red-500">
+                                    OPEN AI ADVISOR
                                     </button>
                                 </div>
                                 <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-red-600/20 rounded-full blur-3xl"></div>
@@ -2584,15 +2588,6 @@ const App: React.FC = () => {
                     </div>
                 )}
 
-                {activeTab === 'chat' && (
-                    <div className="h-full animate-fade-in max-w-4xl mx-auto pt-6">
-                        <div className="mb-6 text-center">
-                        <h2 className="text-2xl font-bold text-gray-900">Strategy Assistant</h2>
-                        <p className="text-gray-500">Analyze "What If" scenarios for the current selection</p>
-                        </div>
-                        <ChatInterface contextData={aiContext} />
-                    </div>
-                )}
             </>
           ) : activeModule === 'sponsorship' ? (
               <div className="pt-6">
@@ -2619,6 +2614,36 @@ const App: React.FC = () => {
           )}
         </div>
       </main>
+
+      {showAIAdvisor && (
+        <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowAIAdvisor(false)}>
+          <div 
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                  <MessageSquare size={20} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-white">AI Strategy Advisor</h2>
+                  <p className="text-xs text-white/70">Powered by comprehensive business intelligence</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowAIAdvisor(false)}
+                className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30 transition-colors"
+              >
+                <X size={18} className="text-white" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <ChatInterface contextData={aiContext} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
