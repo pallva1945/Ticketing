@@ -2417,7 +2417,7 @@ const App: React.FC = () => {
           ) : activeModule === 'ticketing' ? (
             <>
                 {/* EXISTING TICKETING LOGIC */}
-                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} isLoadingSearch={isLoadingCRMSearch} serverStats={crmStats} games={filteredGames.map(g => ({ id: g.id, opponent: g.opponent, date: g.date }))} />}
+                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} isLoadingSearch={isLoadingCRMSearch} serverStats={crmStats} games={filteredGames.map(g => ({ id: g.id, opponent: g.opponent, date: g.date }))} viewMode={viewMode} />}
                 {activeTab === 'dashboard' && (
                     <div className="pt-6">
                     {/* DIRECTOR'S NOTE */}
@@ -2496,7 +2496,6 @@ const App: React.FC = () => {
                                         data={viewData} 
                                         onZoneClick={handleZoneClick} 
                                         selectedZone={selectedZones.includes('All') ? 'All' : selectedZones[0]}
-                                        viewMode={viewMode}
                                     />
                                 </div>
 

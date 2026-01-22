@@ -85,6 +85,7 @@ interface CRMViewProps {
   isLoadingSearch?: boolean; // True while full client data is loading for search
   serverStats?: { all: CRMStats; fixed: CRMStats; flexible: CRMStats } | null; // Pre-computed stats from server for fast loading
   games?: GameInfo[]; // Game schedule for seat history view
+  viewMode?: 'total' | 'gameday'; // View mode from parent
 }
 
 const getCustomerKey = (r: CRMRecord): string => {
@@ -137,7 +138,7 @@ const cleanSeat = (seat: string): string => {
   return seat || '—';
 };
 
-export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoading = false, isLoadingSearch = false, serverStats = null, games = [] }) => {
+export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoading = false, isLoadingSearch = false, serverStats = null, games = [], viewMode = 'total' }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterZone, setFilterZone] = useState<string | null>(null);
   const [filterEvent, setFilterEvent] = useState<string | null>(null);
@@ -1765,14 +1766,14 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           const ticketLower = (r.ticketType || '').toLowerCase();
           // Include if giveawayType is populated OR sellType/ticketType indicates giveaway/protocol
           const hasGiveawayType = r.giveawayType && r.giveawayType.trim() !== '';
+          // Check for protocol - only include in Total view
+          const isProtocol = sellLower.includes('protocol') || ticketLower.includes('protocol');
+          if (isProtocol && viewMode === 'gameday') return false; // Exclude protocol in GameDay
+          
           const sellTypeIndicatesGiveaway = sellLower.includes('omaggi') || sellLower.includes('giveaway') || 
-                 sellLower.includes('comp') || sellLower.includes('free') || 
-                 sellLower.includes('gift') || sellLower.includes('omaggio') ||
-                 sellLower.includes('protocol');
+                 sellLower.includes('omaggio') || isProtocol;
           const ticketTypeIndicatesGiveaway = ticketLower.includes('omaggi') || ticketLower.includes('giveaway') ||
-                 ticketLower.includes('comp') || ticketLower.includes('free') ||
-                 ticketLower.includes('gift') || ticketLower.includes('omaggio') ||
-                 ticketLower.includes('protocol');
+                 ticketLower.includes('omaggio') || isProtocol;
           return hasGiveawayType || sellTypeIndicatesGiveaway || ticketTypeIndicatesGiveaway;
         });
 
