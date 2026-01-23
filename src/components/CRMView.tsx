@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, X, Filter, BarChart3, PieChart, Euro, Award, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, User, Loader2, Calendar } from 'lucide-react';
 import { CRMRecord, SponsorData } from '../types';
+import { ZONE_OPPORTUNITY_COST } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
 const COLORS = ['#dc2626', '#2563eb', '#16a34a', '#ca8a04', '#9333ea', '#0891b2', '#be185d', '#65a30d'];
@@ -1779,35 +1780,11 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           }
         });
 
-        // Calculate average ABB price for each zone (for opportunity cost calculation)
-        const abbTickets = filteredData.filter(r => {
-          const sellLower = (r.sellType || '').toLowerCase();
-          const ticketLower = (r.ticketType || '').toLowerCase();
-          // Filter for season ticket holders (abb/abbonamento)
-          return sellLower.includes('abb') || ticketLower.includes('abb');
-        });
-        
-        const zoneStats = abbTickets.reduce((acc, r) => {
-          const zone = r.pvZone || r.zone || 'Unknown';
-          if (!acc[zone]) {
-            acc[zone] = { totalPrice: 0, totalTickets: 0 };
-          }
-          // Use the actual ticket price for ABB average calculation
-          acc[zone].totalPrice += (r.price || 0) * (r.quantity || 1);
-          acc[zone].totalTickets += r.quantity || 1;
-          return acc;
-        }, {} as Record<string, { totalPrice: number; totalTickets: number }>);
-        
-        const zoneAvgAbbPrices: Record<string, number> = {};
-        Object.entries(zoneStats).forEach(([zone, stats]) => {
-          zoneAvgAbbPrices[zone] = stats.totalTickets > 0 ? stats.totalPrice / stats.totalTickets : 0;
-        });
-        
-        // Helper to get opportunity cost for a ticket based on zone's average ABB price
+        // Helper to get opportunity cost for a ticket based on zone's hardcoded ABB price
         const getOpportunityCost = (r: CRMRecord) => {
-          const zone = r.pvZone || r.zone || 'Unknown';
-          const avgAbbPrice = zoneAvgAbbPrices[zone] || 0;
-          return avgAbbPrice * (r.quantity || 1);
+          const zone = (r.pvZone || r.zone || '').toUpperCase().trim();
+          const cost = ZONE_OPPORTUNITY_COST[zone] || 0;
+          return cost * (r.quantity || 1);
         };
 
         // Group by giveaway type (only use giveawayType column, removing GA suffix)

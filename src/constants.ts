@@ -6,6 +6,20 @@ export const TEAM_NAME = "Pallacanestro Varese";
 export const MAX_CAPACITY = 5177;
 export const PV_LOGO_URL = "https://i.imgur.com/r1fWDF1.png";
 
+// --- OPPORTUNITY COST PER ZONE (Average ABB price per zone) ---
+export const ZONE_OPPORTUNITY_COST: Record<string, number> = {
+  'PAR O': 44.93,
+  'PAR EX': 71.41,
+  'PAR E': 25.10,
+  'TRIB G': 19.90,
+  'GALL G': 12.90,
+  'GALL S': 12.00,
+  'CURVA': 10.85,
+  'OSPITI': 10.85,
+  'SKYBOXES': 94.88,
+  'COURTSIDE': 122.95,
+};
+
 // --- TARGET CONFIGURATION ---
 export const SEASON_TARGET_TOTAL = 1650000;   // €1.65M Ticketing Core
 export const SEASON_TARGET_GAMEDAY = 1250000;  // €1.25M Variable Target (Net minus Tix) - For GameDay Module

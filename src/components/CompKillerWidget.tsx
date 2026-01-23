@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { GameData, SalesChannel } from '../types';
 import { AlertOctagon, TrendingDown } from 'lucide-react';
+import { ZONE_OPPORTUNITY_COST } from '../constants';
 
 interface CompKillerWidgetProps {
   data: GameData[];
@@ -30,11 +31,12 @@ export const CompKillerWidget: React.FC<CompKillerWidgetProps> = ({ data }) => {
             }
         });
 
-        // Calculate Opportunity Cost
-        Object.values(zoneStats).forEach(stats => {
+        // Calculate Opportunity Cost using hardcoded ABB prices per zone
+        Object.entries(zoneStats).forEach(([zone, stats]) => {
             if (stats.compQty > 0) {
-                const atp = stats.paidQty > 0 ? stats.paidRev / stats.paidQty : 0;
-                totalLostRevenue += (stats.compQty * atp);
+                const zoneUpper = zone.toUpperCase().trim();
+                const oppCost = ZONE_OPPORTUNITY_COST[zoneUpper] || 0;
+                totalLostRevenue += (stats.compQty * oppCost);
             }
         });
     });
