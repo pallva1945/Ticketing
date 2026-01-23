@@ -1780,8 +1780,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         });
 
         // Calculate average ABB price for each zone (for opportunity cost calculation)
-        // Use FULL data (not filtered) to get ABB averages across all tickets
-        const abbTickets = data.filter((r: CRMRecord) => {
+        const abbTickets = filteredData.filter(r => {
           const sellLower = (r.sellType || '').toLowerCase();
           const ticketLower = (r.ticketType || '').toLowerCase();
           // Filter for season ticket holders (abb/abbonamento)
