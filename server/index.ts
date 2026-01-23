@@ -153,7 +153,7 @@ const computeCRMStats = (rawRows: any[]) => {
   let totalCommercialValue = 0;
   let corpCommercialValue = 0;
   const zoneStats: Record<string, { tickets: number; revenue: number }> = {};
-  const sellTypeStats: Record<string, { tickets: number; revenue: number }> = {};
+  const sellTypeStats: Record<string, { tickets: number; revenue: number; commercialValue: number }> = {};
   
   // Demographics & behavior breakdowns
   const ageBreakdown: Record<string, { count: number; value: number }> = {};

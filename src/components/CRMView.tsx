@@ -337,7 +337,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       const rawSellTypeBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
       const groupedSellTypeBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
       (statsToUse.sellTypeBreakdown || []).forEach((s: any) => {
-        rawSellTypeBreakdown[s.type] = { count: s.tickets, revenue: s.revenue, value: s.revenue };
+        rawSellTypeBreakdown[s.type] = { count: s.tickets, revenue: s.revenue, value: s.commercialValue || s.revenue };
         // Group into categories
         const typeLower = (s.type || '').toLowerCase();
         let category = s.type;
@@ -348,7 +348,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         if (!groupedSellTypeBreakdown[category]) groupedSellTypeBreakdown[category] = { count: 0, revenue: 0, value: 0 };
         groupedSellTypeBreakdown[category].count += s.tickets;
         groupedSellTypeBreakdown[category].revenue += s.revenue;
-        groupedSellTypeBreakdown[category].value += s.revenue;
+        groupedSellTypeBreakdown[category].value += s.commercialValue || s.revenue;
       });
 
       // Build paymentBreakdown from server data
