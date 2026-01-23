@@ -54,3 +54,5 @@ run = ["npm", "run", "start"]
 BIGQUERY_PROJECT_ID = "ticketing-migration"
 BIGQUERY_DATASET_ID = "ticketing_migration"
 BIGQUERY_TABLE_ID = "extended_db_final"
+SHOPIFY_STORE_NAME = "pallacanestro-varese"
+SHOPIFY_API_VERSION = "2026-01"

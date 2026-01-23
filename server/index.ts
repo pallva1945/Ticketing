@@ -6,6 +6,10 @@ import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV } from "../src/services/bigQueryService";
 
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE_NAME || 'pallacanestro-varese';
+const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
+const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2026-01';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -666,4 +670,271 @@ app.listen(PORT, '0.0.0.0', () => {
   }).catch(err => {
     console.log('CRM pre-warm error:', err.message);
   });
+});
+
+// --- SHOPIFY API INTEGRATION ---
+
+interface ShopifyOrder {
+  id: string;
+  orderNumber: string;
+  createdAt: string;
+  totalPrice: number;
+  currency: string;
+  customerName: string;
+  customerEmail: string;
+  itemCount: number;
+  lineItems: {
+    title: string;
+    quantity: number;
+    price: number;
+    sku: string;
+    productId: string;
+  }[];
+  financialStatus: string;
+  fulfillmentStatus: string;
+}
+
+interface ShopifyProduct {
+  id: string;
+  title: string;
+  productType: string;
+  vendor: string;
+  status: string;
+  totalInventory: number;
+  variants: {
+    id: string;
+    title: string;
+    price: number;
+    inventoryQuantity: number;
+    sku: string;
+  }[];
+  images: { src: string }[];
+}
+
+interface ShopifyCustomer {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  ordersCount: number;
+  totalSpent: number;
+  createdAt: string;
+  tags: string[];
+}
+
+let shopifyCache: { orders: ShopifyOrder[]; products: ShopifyProduct[]; customers: ShopifyCustomer[]; lastUpdated: string; timestamp: number } | null = null;
+const SHOPIFY_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+
+async function fetchShopifyAPI(endpoint: string): Promise<any> {
+  if (!SHOPIFY_ACCESS_TOKEN) {
+    throw new Error('Shopify access token not configured');
+  }
+  
+  const url = `https://${SHOPIFY_STORE}.myshopify.com/admin/api/${SHOPIFY_API_VERSION}/${endpoint}`;
+  const response = await fetch(url, {
+    headers: {
+      'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN,
+      'Content-Type': 'application/json'
+    }
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Shopify API error (${response.status}): ${errorText}`);
+  }
+  
+  return response.json();
+}
+
+async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
+  const orders: ShopifyOrder[] = [];
+  let pageInfo: string | null = null;
+  
+  do {
+    const endpoint = pageInfo 
+      ? `orders.json?limit=250&page_info=${pageInfo}` 
+      : 'orders.json?limit=250&status=any';
+    
+    const response = await fetchShopifyAPI(endpoint);
+    
+    for (const order of response.orders || []) {
+      const customerName = order.customer 
+        ? `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim()
+        : order.billing_address?.name || 'Guest';
+      
+      orders.push({
+        id: String(order.id),
+        orderNumber: String(order.order_number),
+        createdAt: order.created_at,
+        totalPrice: parseFloat(order.total_price) || 0,
+        currency: order.currency,
+        customerName,
+        customerEmail: order.customer?.email || order.email || '',
+        itemCount: order.line_items?.reduce((sum: number, li: any) => sum + li.quantity, 0) || 0,
+        lineItems: (order.line_items || []).map((li: any) => ({
+          title: li.title,
+          quantity: li.quantity,
+          price: parseFloat(li.price) || 0,
+          sku: li.sku || '',
+          productId: String(li.product_id)
+        })),
+        financialStatus: order.financial_status || 'unknown',
+        fulfillmentStatus: order.fulfillment_status || 'unfulfilled'
+      });
+    }
+    
+    // Check for pagination via Link header
+    const linkHeader = response.headers?.get?.('Link') || '';
+    const nextMatch = linkHeader.match(/page_info=([^>&]+)>; rel="next"/);
+    pageInfo = nextMatch ? nextMatch[1] : null;
+    
+    // Break if no next page or if we got less than limit
+    if (!response.orders || response.orders.length < 250) break;
+    
+  } while (pageInfo);
+  
+  return orders;
+}
+
+async function fetchAllShopifyProducts(): Promise<ShopifyProduct[]> {
+  const products: ShopifyProduct[] = [];
+  let pageInfo: string | null = null;
+  
+  do {
+    const endpoint = pageInfo 
+      ? `products.json?limit=250&page_info=${pageInfo}` 
+      : 'products.json?limit=250';
+    
+    const response = await fetchShopifyAPI(endpoint);
+    
+    for (const product of response.products || []) {
+      products.push({
+        id: String(product.id),
+        title: product.title,
+        productType: product.product_type || '',
+        vendor: product.vendor || '',
+        status: product.status || 'active',
+        totalInventory: product.variants?.reduce((sum: number, v: any) => sum + (v.inventory_quantity || 0), 0) || 0,
+        variants: (product.variants || []).map((v: any) => ({
+          id: String(v.id),
+          title: v.title,
+          price: parseFloat(v.price) || 0,
+          inventoryQuantity: v.inventory_quantity || 0,
+          sku: v.sku || ''
+        })),
+        images: (product.images || []).map((img: any) => ({ src: img.src }))
+      });
+    }
+    
+    if (!response.products || response.products.length < 250) break;
+    
+  } while (pageInfo);
+  
+  return products;
+}
+
+async function fetchAllShopifyCustomers(): Promise<ShopifyCustomer[]> {
+  const customers: ShopifyCustomer[] = [];
+  let pageInfo: string | null = null;
+  
+  do {
+    const endpoint = pageInfo 
+      ? `customers.json?limit=250&page_info=${pageInfo}` 
+      : 'customers.json?limit=250';
+    
+    const response = await fetchShopifyAPI(endpoint);
+    
+    for (const customer of response.customers || []) {
+      customers.push({
+        id: String(customer.id),
+        email: customer.email || '',
+        firstName: customer.first_name || '',
+        lastName: customer.last_name || '',
+        ordersCount: customer.orders_count || 0,
+        totalSpent: parseFloat(customer.total_spent) || 0,
+        createdAt: customer.created_at,
+        tags: customer.tags ? customer.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : []
+      });
+    }
+    
+    if (!response.customers || response.customers.length < 250) break;
+    
+  } while (pageInfo);
+  
+  return customers;
+}
+
+app.get("/api/shopify/data", async (req, res) => {
+  try {
+    if (!SHOPIFY_ACCESS_TOKEN) {
+      return res.status(400).json({ success: false, message: 'Shopify access token not configured. Please add SHOPIFY_ACCESS_TOKEN secret.' });
+    }
+    
+    const forceRefresh = req.query.refresh === 'true';
+    
+    // Return cached data if still valid
+    if (shopifyCache && !forceRefresh && (Date.now() - shopifyCache.timestamp) < SHOPIFY_CACHE_TTL) {
+      return res.json(shopifyCache);
+    }
+    
+    console.log('Fetching fresh Shopify data...');
+    
+    // Fetch all data in parallel
+    const [orders, products, customers] = await Promise.all([
+      fetchAllShopifyOrders(),
+      fetchAllShopifyProducts(),
+      fetchAllShopifyCustomers()
+    ]);
+    
+    shopifyCache = {
+      orders,
+      products,
+      customers,
+      lastUpdated: new Date().toISOString(),
+      timestamp: Date.now()
+    };
+    
+    console.log(`Shopify data loaded: ${orders.length} orders, ${products.length} products, ${customers.length} customers`);
+    
+    res.json(shopifyCache);
+  } catch (error: any) {
+    console.error('Shopify API error:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/shopify/orders", async (req, res) => {
+  try {
+    if (!SHOPIFY_ACCESS_TOKEN) {
+      return res.status(400).json({ success: false, message: 'Shopify access token not configured' });
+    }
+    const orders = await fetchAllShopifyOrders();
+    res.json({ success: true, orders, count: orders.length });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/shopify/products", async (req, res) => {
+  try {
+    if (!SHOPIFY_ACCESS_TOKEN) {
+      return res.status(400).json({ success: false, message: 'Shopify access token not configured' });
+    }
+    const products = await fetchAllShopifyProducts();
+    res.json({ success: true, products, count: products.length });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/shopify/customers", async (req, res) => {
+  try {
+    if (!SHOPIFY_ACCESS_TOKEN) {
+      return res.status(400).json({ success: false, message: 'Shopify access token not configured' });
+    }
+    const customers = await fetchAllShopifyCustomers();
+    res.json({ success: true, customers, count: customers.length });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
