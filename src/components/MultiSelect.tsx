@@ -6,7 +6,6 @@ interface MultiSelectProps {
   options: string[];
   selected: string[];
   onChange: (selected: string[]) => void;
-  // placeholder?: string; // Removed unused prop
 }
 
 export const MultiSelect: React.FC<MultiSelectProps> = ({ 
@@ -18,7 +17,9 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  const isAllSelected = selected.includes('All') || selected.length === options.length;
+  const effectiveSelected = isAllSelected ? options : selected;
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -32,26 +33,27 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   const toggleOption = (option: string) => {
     let newSelected: string[];
     
-    if (option === 'All') {
-      // If clicking All (if it exists in options), set to All
-      newSelected = ['All'];
+    if (isAllSelected) {
+      newSelected = options.filter(o => o !== option);
     } else {
-      // If clicking a specific option
-      if (selected.includes('All')) {
-        // If All was previously selected, remove All and add the new option
-        newSelected = [option];
+      if (selected.includes(option)) {
+        newSelected = selected.filter(item => item !== option);
       } else {
-        if (selected.includes(option)) {
-          newSelected = selected.filter(item => item !== option);
-        } else {
-          newSelected = [...selected, option];
+        newSelected = [...selected, option];
+        if (newSelected.length === options.length) {
+          newSelected = ['All'];
         }
       }
     }
     onChange(newSelected);
   };
 
-  const displayText = selected.includes('All') 
+  const selectOnly = (option: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange([option]);
+  };
+
+  const displayText = isAllSelected 
     ? 'All' 
     : selected.length === 0 
       ? 'None' 
@@ -90,12 +92,12 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
           
           <div className="p-1">
             {options.map((option) => {
-              const isSelected = selected.includes(option);
+              const isSelected = effectiveSelected.includes(option);
               return (
                 <div
                   key={option}
                   onClick={() => toggleOption(option)}
-                  className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${
+                  className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md cursor-pointer transition-colors group ${
                     isSelected ? 'bg-red-50 text-red-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
@@ -104,7 +106,13 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                   }`}>
                     {isSelected && <Check size={12} className="text-white" />}
                   </div>
-                  <span className="truncate">{option}</span>
+                  <span className="truncate flex-1">{option}</span>
+                  <button
+                    onClick={(e) => selectOnly(option, e)}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity font-medium"
+                  >
+                    only
+                  </button>
                 </div>
               );
             })}

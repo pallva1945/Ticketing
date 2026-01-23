@@ -1957,6 +1957,21 @@ const App: React.FC = () => {
           const order = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
           return arr.sort((a,b) => order.indexOf(a) - order.indexOf(b));
       }
+      if (targetField === 'opponent') {
+          const opponentDates: Record<string, Date> = {};
+          filtered.forEach(d => {
+              const opp = d.opponent;
+              const gameDate = new Date(d.date);
+              if (!opponentDates[opp] || gameDate < opponentDates[opp]) {
+                  opponentDates[opp] = gameDate;
+              }
+          });
+          return arr.sort((a, b) => {
+              const dateA = opponentDates[a]?.getTime() || 0;
+              const dateB = opponentDates[b]?.getTime() || 0;
+              return dateA - dateB;
+          });
+      }
       return arr.sort();
   };
 
