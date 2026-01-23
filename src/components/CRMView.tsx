@@ -1779,7 +1779,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           }
         });
 
-        // Calculate average commercial value from season ticket holders (abb) for each zone
+        // Calculate average ABB price for each zone (for opportunity cost calculation)
         const abbTickets = filteredData.filter(r => {
           const sellLower = (r.sellType || '').toLowerCase();
           const ticketLower = (r.ticketType || '').toLowerCase();
@@ -1790,23 +1790,24 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         const zoneStats = abbTickets.reduce((acc, r) => {
           const zone = r.pvZone || r.zone || 'Unknown';
           if (!acc[zone]) {
-            acc[zone] = { totalCommercialValue: 0, totalTickets: 0 };
+            acc[zone] = { totalPrice: 0, totalTickets: 0 };
           }
-          acc[zone].totalCommercialValue += (r.commercialValue || 0) * (r.quantity || 1);
+          // Use the actual ticket price for ABB average calculation
+          acc[zone].totalPrice += (r.price || 0) * (r.quantity || 1);
           acc[zone].totalTickets += r.quantity || 1;
           return acc;
-        }, {} as Record<string, { totalCommercialValue: number; totalTickets: number }>);
+        }, {} as Record<string, { totalPrice: number; totalTickets: number }>);
         
-        const zoneAvgPrices: Record<string, number> = {};
+        const zoneAvgAbbPrices: Record<string, number> = {};
         Object.entries(zoneStats).forEach(([zone, stats]) => {
-          zoneAvgPrices[zone] = stats.totalTickets > 0 ? stats.totalCommercialValue / stats.totalTickets : 0;
+          zoneAvgAbbPrices[zone] = stats.totalTickets > 0 ? stats.totalPrice / stats.totalTickets : 0;
         });
         
-        // Helper to get opportunity cost for a ticket based on zone average
+        // Helper to get opportunity cost for a ticket based on zone's average ABB price
         const getOpportunityCost = (r: CRMRecord) => {
           const zone = r.pvZone || r.zone || 'Unknown';
-          const avgPrice = zoneAvgPrices[zone] || 0;
-          return avgPrice * (r.quantity || 1);
+          const avgAbbPrice = zoneAvgAbbPrices[zone] || 0;
+          return avgAbbPrice * (r.quantity || 1);
         };
 
         // Group by giveaway type (only use giveawayType column, removing GA suffix)
