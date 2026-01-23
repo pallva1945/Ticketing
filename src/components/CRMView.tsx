@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, X, Filter, BarChart3, PieChart, Euro, Award, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, User, Loader2, Calendar } from 'lucide-react';
 import { CRMRecord, SponsorData } from '../types';
 import { ZONE_OPPORTUNITY_COST } from '../constants';
+import { MultiSelect } from './MultiSelect';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 
 const COLORS = ['#dc2626', '#2563eb', '#16a34a', '#ca8a04', '#9333ea', '#0891b2', '#be185d', '#65a30d'];
@@ -141,9 +142,9 @@ const cleanSeat = (seat: string): string => {
 };
 
 export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoading = false, isLoadingSearch = false, serverStats = null, games = [], viewMode = 'total' }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterZone, setFilterZone] = useState<string | null>(null);
-  const [filterEvent, setFilterEvent] = useState<string | null>(null);
+  const [selectedZones, setSelectedZones] = useState<string[]>(['All']);
+  const [selectedGames, setSelectedGames] = useState<string[]>(['All']);
+  const [selectedSellTypes, setSelectedSellTypes] = useState<string[]>(['All']);
   const [capacityView, setCapacityView] = useState<'all' | 'fixed' | 'flexible'>('all');
   const [activeView, setActiveView] = useState<'overview' | 'demographics' | 'behavior' | 'customers' | 'corporate' | 'giveaways' | 'search'>('overview');
   const [clientSearchQuery, setClientSearchQuery] = useState('');
@@ -158,7 +159,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [selectedGiveawayRecipient, setSelectedGiveawayRecipient] = useState<string | null>(null);
   const [selectedGiveawayType, setSelectedGiveawayType] = useState<string | null>(null);
 
-  const hasActiveFilter = filterZone || filterEvent || capacityView !== 'all' || searchQuery;
+  const hasActiveFilter = !selectedZones.includes('All') || !selectedGames.includes('All') || !selectedSellTypes.includes('All') || capacityView !== 'all';
 
   const getCapacityBucket = (r: CRMRecord): 'fixed' | 'flexible' => {
     // Fixed = event equals "ABBONAMENTO LBA 2025/26" (case-insensitive)
@@ -171,39 +172,50 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   };
 
   const clearAllFilters = () => {
-    setFilterZone(null);
-    setFilterEvent(null);
+    setSelectedZones(['All']);
+    setSelectedGames(['All']);
+    setSelectedSellTypes(['All']);
     setCapacityView('all');
-    setSearchQuery('');
   };
+  
+  // Filter options from data
+  const filterOptions = useMemo(() => {
+    const zones = ['All', ...new Set(data.map(r => r.pvZone).filter(Boolean))].sort((a, b) => a === 'All' ? -1 : b === 'All' ? 1 : a.localeCompare(b));
+    const sellTypes = ['All', ...new Set(data.map(r => r.sellType).filter(Boolean))].sort((a, b) => a === 'All' ? -1 : b === 'All' ? 1 : a.localeCompare(b));
+    const gamesList = [...new Set(data.map(r => r.game).filter(Boolean))];
+    // Sort games by date (most recent first)
+    const sortedGames = gamesList.sort((a, b) => {
+      const getDate = (g: string) => {
+        const match = g.match(/\d{2}\/\d{2}\/\d{4}/);
+        if (match) {
+          const [d, m, y] = match[0].split('/').map(Number);
+          return new Date(y, m - 1, d).getTime();
+        }
+        return 0;
+      };
+      return getDate(b) - getDate(a);
+    });
+    return { zones, sellTypes, games: ['All', ...sortedGames] };
+  }, [data]);
 
   const filteredData = useMemo(() => {
     let result = [...data];
     
-    if (searchQuery) {
-      const queries = searchQuery.split(',').map(q => q.trim().toLowerCase()).filter(q => q);
-      result = result.filter(r => 
-        queries.every(q => 
-          (r.fullName || '').toLowerCase().includes(q) ||
-          (r.email || '').toLowerCase().includes(q) ||
-          (r.group || '').toLowerCase().includes(q) ||
-          (r.address || '').toLowerCase().includes(q) ||
-          (r.pvZone || '').toLowerCase().includes(q) ||
-          (r.sellType || '').toLowerCase().includes(q) ||
-          (r.ticketType || '').toLowerCase().includes(q) ||
-          (r.event || '').toLowerCase().includes(q) ||
-          (r.game || '').toLowerCase().includes(q)
-        )
-      );
+    if (!selectedZones.includes('All')) {
+      result = result.filter(r => selectedZones.includes(r.pvZone));
     }
-    if (filterZone) result = result.filter(r => r.pvZone === filterZone);
-    if (filterEvent) result = result.filter(r => (r.event || '').includes(filterEvent));
+    if (!selectedGames.includes('All')) {
+      result = result.filter(r => selectedGames.includes(r.game));
+    }
+    if (!selectedSellTypes.includes('All')) {
+      result = result.filter(r => selectedSellTypes.includes(r.sellType));
+    }
     if (capacityView !== 'all') {
       result = result.filter(r => getCapacityBucket(r) === capacityView);
     }
     
     return result;
-  }, [data, searchQuery, filterZone, filterEvent, capacityView]);
+  }, [data, selectedZones, selectedGames, selectedSellTypes, capacityView]);
 
   const sectorLookup = useMemo(() => {
     const lookup: Record<string, { sector: string; sector2?: string }> = {};
@@ -305,7 +317,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const stats = useMemo(() => {
     // Use server-computed stats when no complex filters (search, zone, event) are active
     // For capacity filter, we can use the pre-computed fixed/flexible stats from server
-    const hasComplexFilter = !!filterZone || !!filterEvent || !!searchQuery;
+    const hasComplexFilter = !selectedZones.includes('All') || !selectedGames.includes('All') || !selectedSellTypes.includes('All');
     
     if (serverStats && !hasComplexFilter) {
       // Select the appropriate pre-computed stats based on capacityView
@@ -842,37 +854,39 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           </h1>
           <p className="text-sm text-gray-500 mt-1">{stats.totalTickets.toLocaleString()} tickets from {stats.uniqueCustomers.toLocaleString()} customers</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Filter: name, zone, type..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent w-64"
-            />
-          </div>
-          <div className="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1">
-            {[
-              { key: 'all', label: 'All' },
-              { key: 'fixed', label: 'Fix Sell (Summer)' },
-              { key: 'flexible', label: 'Flexible Sell (inSeason)' }
-            ].map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setCapacityView(key as 'all' | 'fixed' | 'flexible')}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  capacityView === key
-                    ? 'bg-white text-gray-800 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        <div className="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1">
+          {[
+            { key: 'all', label: 'All' },
+            { key: 'fixed', label: 'Fix Sell (Summer)' },
+            { key: 'flexible', label: 'Flexible Sell (inSeason)' }
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setCapacityView(key as 'all' | 'fixed' | 'flexible')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                capacityView === key
+                  ? 'bg-white text-gray-800 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
+      </div>
+
+      {/* Filter Row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div><MultiSelect label="Game" options={filterOptions.games} selected={selectedGames} onChange={setSelectedGames} /></div>
+        <div><MultiSelect label="Zone" options={filterOptions.zones} selected={selectedZones} onChange={setSelectedZones} /></div>
+        <div><MultiSelect label="Sell Type" options={filterOptions.sellTypes} selected={selectedSellTypes} onChange={setSelectedSellTypes} /></div>
+        {hasActiveFilter && (
+          <div className="flex items-end">
+            <button onClick={clearAllFilters} className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-800 underline">
+              Clear All Filters
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -898,43 +912,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       </div>
 
       {hasActiveFilter && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm">
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-2">
-              <Filter size={16} className="text-amber-600" />
-              <span className="text-sm font-medium text-amber-800">Active Filters:</span>
-              <div className="flex items-center gap-2 flex-wrap">
-                {searchQuery && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
-                    Search: "{searchQuery}"
-                    <button onClick={() => setSearchQuery('')} className="hover:text-amber-600"><X size={12} /></button>
-                  </span>
-                )}
-                {filterZone && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
-                    Zone: {filterZone}
-                    <button onClick={() => setFilterZone(null)} className="hover:text-amber-600"><X size={12} /></button>
-                  </span>
-                )}
-                {filterEvent && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
-                    Event: {filterEvent}
-                    <button onClick={() => setFilterEvent(null)} className="hover:text-amber-600"><X size={12} /></button>
-                  </span>
-                )}
-                {capacityView !== 'all' && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
-                    View: {capacityView === 'fixed' ? 'Fix Sell (Summer)' : 'Flexible Sell (inSeason)'}
-                    <button onClick={() => setCapacityView('all')} className="hover:text-amber-600"><X size={12} /></button>
-                  </span>
-                )}
-              </div>
-            </div>
-            <button onClick={clearAllFilters} className="text-xs font-medium text-amber-700 hover:text-amber-900 underline">
-              Clear All
-            </button>
-          </div>
-          <p className="text-xs text-amber-600 mt-2">
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 shadow-sm">
+          <p className="text-xs text-amber-600">
             Showing {filteredData.length.toLocaleString()} of {data.length.toLocaleString()} records
           </p>
         </div>
