@@ -234,7 +234,21 @@ const computeCRMStats = (rawRows: any[]) => {
     const lastName = row.last_name || '';
     const firstName = row.name || '';
     const fullName = [lastName, firstName].filter(Boolean).join(' ') || 'Unknown';
-    const key = `${lastName.toLowerCase()}_${firstName.toLowerCase()}_${row.dob || row.email || ''}`;
+    // Key format must match client-side getCustomerKey in CRMView.tsx
+    const lastNameKey = lastName.trim().toLowerCase();
+    const firstNameKey = firstName.trim().toLowerCase();
+    const dob = (row.dob || '').trim();
+    const email = (row.email || '').trim().toLowerCase();
+    let key: string;
+    if (lastNameKey && firstNameKey && dob) {
+      key = `${lastNameKey}|${firstNameKey}|${dob}`;
+    } else if (lastNameKey && firstNameKey && email) {
+      key = `${lastNameKey}|${firstNameKey}|${email}`;
+    } else if (email) {
+      key = `email:${email}`;
+    } else {
+      key = `name:${fullName.trim().toLowerCase()}`; 
+    }
     // Check both quantity and Quantity (BigQuery column casing varies)
     // Allow negative values for returns (-1 = return)
     const rawQty = row.quantity ?? row.Quantity ?? row.QUANTITY ?? 1;
