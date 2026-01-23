@@ -281,7 +281,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           date: game.date,
           opponent: game.opponent,
           occupied: true,
-          occupant: `${rec.name || rec.firstName || ''} ${rec.last_name || rec.lastName || ''}`.trim() || 'Unknown',
+          occupant: `${rec.firstName || rec.name || ''} ${rec.lastName || rec.last_name || ''}`.trim() || 'Unknown',
           sellType: rec.sell || rec.sellType || rec.type || '—',
           price: Number(rec.price) || Number(rec.comercial_value) || 0,
           email: rec.email || '—'
@@ -1821,7 +1821,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           acc[type].tickets += r.quantity || 1;
           // Opportunity cost = zone average price for the season
           acc[type].value += getOpportunityCost(r);
-          const recipientKey = toTitleCase(r.fullName || `${r.firstName || ''} ${r.lastName || ''}`.trim()) || r.email || 'Unknown';
+          const recipientKey = toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName) || r.email || 'Unknown';
           acc[type].recipients.add(recipientKey);
           return acc;
         }, {} as Record<string, { tickets: number; value: 0, recipients: Set<string> }>);
@@ -1832,7 +1832,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
         // Group by recipient
         const recipientBreakdown = giveawayRecords.reduce((acc, r) => {
-          const name = toTitleCase(r.fullName || `${r.firstName || ''} ${r.lastName || ''}`.trim()) || 'Unknown';
+          const name = toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName) || 'Unknown';
           if (!acc[name]) {
             acc[name] = { 
               tickets: 0, 
@@ -1916,7 +1916,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             {selectedGiveawayRecipient ? (() => {
               const recipientData = recipientList.find(r => r.name === selectedGiveawayRecipient);
               const recipientTickets = giveawayRecords.filter(r => {
-                const name = toTitleCase(r.fullName || `${r.firstName || ''} ${r.lastName || ''}`.trim()) || 'Unknown';
+                const name = toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName) || 'Unknown';
                 return name === selectedGiveawayRecipient;
               });
               
@@ -2339,7 +2339,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           data.reduce((acc, r) => {
             const key = getCustomerKey(r);
             if (!acc[key]) acc[key] = {
-              name: toTitleCase(r.fullName || `${r.firstName} ${r.lastName}`.trim()),
+              name: toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName),
               firstName: toTitleCase(r.firstName),
               lastName: toTitleCase(r.lastName),
               email: r.email,
