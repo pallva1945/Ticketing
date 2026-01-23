@@ -492,7 +492,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       nonCorpData.reduce((acc, r) => {
         const key = getCustomerKey(r);
         if (!acc[key]) acc[key] = { 
-          name: toTitleCase(r.fullName), 
+          name: toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName), 
           email: r.email, 
           tickets: 0, 
           revenue: 0, 
@@ -791,7 +791,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     const games = [...new Set(records.map(r => r.game).filter(Boolean))];
     
     return {
-      name: first.fullName,
+      name: toTitleCase(`${first.firstName || ''} ${first.lastName || ''}`.trim() || first.fullName),
       email: first.email,
       phone: first.cell || first.phone,
       address: first.address,
