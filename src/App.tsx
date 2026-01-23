@@ -1969,7 +1969,7 @@ const App: React.FC = () => {
           return arr.sort((a, b) => {
               const dateA = opponentDates[a]?.getTime() || 0;
               const dateB = opponentDates[b]?.getTime() || 0;
-              return dateA - dateB;
+              return dateB - dateA;
           });
       }
       return arr.sort();
