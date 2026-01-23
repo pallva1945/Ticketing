@@ -7,7 +7,9 @@ export const MAX_CAPACITY = 5177;
 export const PV_LOGO_URL = "https://i.imgur.com/r1fWDF1.png";
 
 // --- OPPORTUNITY COST PER ZONE (Average ABB price per zone) ---
+// Includes both abbreviated names (CRM data) and full names (Ticketing data)
 export const ZONE_OPPORTUNITY_COST: Record<string, number> = {
+  // Abbreviated names (CRM)
   'PAR O': 44.93,
   'PAR EX': 71.41,
   'PAR E': 25.10,
@@ -18,6 +20,14 @@ export const ZONE_OPPORTUNITY_COST: Record<string, number> = {
   'OSPITI': 10.85,
   'SKYBOXES': 94.88,
   'COURTSIDE': 122.95,
+  // Full names (Ticketing/GameData)
+  'PARTERRE OVEST': 44.93,
+  'PARTERRE EXCLUSIVE': 71.41,
+  'PARTERRE EST': 25.10,
+  'TRIBUNA GOLD': 19.90,
+  'TRIBUNA SILVER': 19.90,
+  'GALLERIA GOLD': 12.90,
+  'GALLERIA SILVER': 12.00,
 };
 
 // --- TARGET CONFIGURATION ---
