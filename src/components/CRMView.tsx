@@ -144,7 +144,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [searchQuery, setSearchQuery] = useState('');
   const [filterZone, setFilterZone] = useState<string | null>(null);
   const [filterEvent, setFilterEvent] = useState<string | null>(null);
-  const [filterGame, setFilterGame] = useState<string | null>(null);
   const [capacityView, setCapacityView] = useState<'all' | 'fixed' | 'flexible'>('all');
   const [activeView, setActiveView] = useState<'overview' | 'demographics' | 'behavior' | 'customers' | 'corporate' | 'giveaways' | 'search'>('overview');
   const [clientSearchQuery, setClientSearchQuery] = useState('');
@@ -159,7 +158,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [selectedGiveawayRecipient, setSelectedGiveawayRecipient] = useState<string | null>(null);
   const [selectedGiveawayType, setSelectedGiveawayType] = useState<string | null>(null);
 
-  const hasActiveFilter = filterZone || filterEvent || filterGame || capacityView !== 'all' || searchQuery;
+  const hasActiveFilter = filterZone || filterEvent || capacityView !== 'all' || searchQuery;
 
   const getCapacityBucket = (r: CRMRecord): 'fixed' | 'flexible' => {
     // Fixed = event equals "ABBONAMENTO LBA 2025/26" (case-insensitive)
@@ -174,7 +173,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const clearAllFilters = () => {
     setFilterZone(null);
     setFilterEvent(null);
-    setFilterGame(null);
     setCapacityView('all');
     setSearchQuery('');
   };
@@ -200,7 +198,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     }
     if (filterZone) result = result.filter(r => r.pvZone === filterZone);
     if (filterEvent) result = result.filter(r => (r.event || '').includes(filterEvent));
-    if (filterGame) result = result.filter(r => r.game === filterGame);
     if (capacityView !== 'all') {
       result = result.filter(r => getCapacityBucket(r) === capacityView);
     }
@@ -308,7 +305,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const stats = useMemo(() => {
     // Use server-computed stats when no complex filters (search, zone, event) are active
     // For capacity filter, we can use the pre-computed fixed/flexible stats from server
-    const hasComplexFilter = !!filterZone || !!filterEvent || !!filterGame || !!searchQuery;
+    const hasComplexFilter = !!filterZone || !!filterEvent || !!searchQuery;
     
     if (serverStats && !hasComplexFilter) {
       // Select the appropriate pre-computed stats based on capacityView
@@ -856,29 +853,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               className="pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent w-64"
             />
           </div>
-          <select
-            value={filterGame || ''}
-            onChange={(e) => setFilterGame(e.target.value || null)}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white"
-          >
-            <option value="">All Games</option>
-            {[...new Set(data.map(r => r.game).filter(Boolean))]
-              .sort((a, b) => {
-                const getDate = (g: string) => {
-                  const match = g.match(/\d{2}\/\d{2}\/\d{4}/);
-                  if (match) {
-                    const [d, m, y] = match[0].split('/').map(Number);
-                    return new Date(y, m - 1, d).getTime();
-                  }
-                  return 0;
-                };
-                return getDate(b) - getDate(a);
-              })
-              .map(game => (
-                <option key={game} value={game}>{game}</option>
-              ))
-            }
-          </select>
           <div className="inline-flex rounded-lg border border-gray-200 bg-gray-100 p-1">
             {[
               { key: 'all', label: 'All' },
@@ -946,12 +920,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
                     Event: {filterEvent}
                     <button onClick={() => setFilterEvent(null)} className="hover:text-amber-600"><X size={12} /></button>
-                  </span>
-                )}
-                {filterGame && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
-                    Game: {filterGame}
-                    <button onClick={() => setFilterGame(null)} className="hover:text-amber-600"><X size={12} /></button>
                   </span>
                 )}
                 {capacityView !== 'all' && (
