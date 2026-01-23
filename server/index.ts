@@ -233,7 +233,7 @@ const computeCRMStats = (rawRows: any[]) => {
   for (const row of rawRows) {
     const lastName = row.last_name || '';
     const firstName = row.name || '';
-    const fullName = [lastName, firstName].filter(Boolean).join(' ') || 'Unknown';
+    const fullName = [firstName, lastName].filter(Boolean).join(' ') || 'Unknown';
     // Key format must match client-side getCustomerKey in CRMView.tsx
     const lastNameKey = lastName.trim().toLowerCase();
     const firstNameKey = firstName.trim().toLowerCase();
