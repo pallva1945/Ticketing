@@ -1962,7 +1962,7 @@ const App: React.FC = () => {
           filtered.forEach(d => {
               const opp = d.opponent;
               const gameDate = new Date(d.date);
-              if (!opponentDates[opp] || gameDate < opponentDates[opp]) {
+              if (!opponentDates[opp] || gameDate > opponentDates[opp]) {
                   opponentDates[opp] = gameDate;
               }
           });
