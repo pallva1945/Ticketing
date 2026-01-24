@@ -108,15 +108,27 @@ export const MerchandisingView: React.FC = () => {
   const stats = useMemo(() => {
     if (!data) return null;
     
-    const totalRevenue = data.orders.reduce((sum, o) => sum + o.totalPrice, 0);
-    const totalOrders = data.orders.length;
+    // Filter out "Felpa Pre Season" adjustments from previous seasons
+    const isPreSeasonAdjustment = (title: string) => 
+      title.toLowerCase().includes('felpa pre season') || title.toLowerCase().includes('pre season');
+    
+    const filteredOrders = data.orders.map(order => ({
+      ...order,
+      lineItems: order.lineItems.filter(item => !isPreSeasonAdjustment(item.title)),
+      totalPrice: order.lineItems
+        .filter(item => !isPreSeasonAdjustment(item.title))
+        .reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    })).filter(order => order.lineItems.length > 0);
+    
+    const totalRevenue = filteredOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+    const totalOrders = filteredOrders.length;
     const totalCustomers = data.customers.length;
     const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
     const totalProducts = data.products.length;
     const totalInventory = data.products.reduce((sum, p) => sum + p.totalInventory, 0);
     
     const productSales: Record<string, { title: string; revenue: number; quantity: number; type: string }> = {};
-    data.orders.forEach(order => {
+    filteredOrders.forEach(order => {
       order.lineItems.forEach(item => {
         if (!productSales[item.productId]) {
           productSales[item.productId] = { title: item.title, revenue: 0, quantity: 0, type: '' };
@@ -132,7 +144,7 @@ export const MerchandisingView: React.FC = () => {
       .slice(0, 10);
     
     const categoryRevenue: Record<string, number> = {};
-    data.orders.forEach(order => {
+    filteredOrders.forEach(order => {
       order.lineItems.forEach(item => {
         const product = data.products.find(p => p.id === item.productId);
         const category = product?.productType || 'Other';
@@ -145,11 +157,12 @@ export const MerchandisingView: React.FC = () => {
       .sort((a, b) => b.value - a.value);
     
     const monthlyRevenue: Record<string, number> = {};
-    data.orders.forEach(order => {
+    filteredOrders.forEach(order => {
       const month = new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
       monthlyRevenue[month] = (monthlyRevenue[month] || 0) + order.totalPrice;
     });
     
+    // Only show months with actual data
     const monthlyData = Object.entries(monthlyRevenue)
       .map(([month, revenue]) => ({ month, revenue }))
       .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
@@ -157,15 +170,6 @@ export const MerchandisingView: React.FC = () => {
     const topCustomers = [...data.customers]
       .sort((a, b) => b.totalSpent - a.totalSpent)
       .slice(0, 10);
-    
-    // Generate last 12 months with 0 revenue for months without orders
-    const allMonths: { month: string; revenue: number }[] = [];
-    const now = new Date();
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthKey = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-      allMonths.push({ month: monthKey, revenue: monthlyRevenue[monthKey] || 0 });
-    }
     
     return {
       totalRevenue,
@@ -176,7 +180,7 @@ export const MerchandisingView: React.FC = () => {
       totalInventory,
       topProducts,
       categoryData,
-      monthlyData: allMonths,
+      monthlyData,
       topCustomers
     };
   }, [data]);
