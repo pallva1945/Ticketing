@@ -108,15 +108,17 @@ export const MerchandisingView: React.FC = () => {
   const stats = useMemo(() => {
     if (!data) return null;
     
-    // Filter out "Felpa Pre Season" adjustments from previous seasons
-    const isPreSeasonAdjustment = (title: string) => 
-      title.toLowerCase().includes('felpa pre season') || title.toLowerCase().includes('pre season');
+    // Filter out specific legacy/adjustment items from previous seasons
+    const isLegacyItem = (title: string) => {
+      const lower = title.toLowerCase();
+      return lower.includes('felpa pre season') || lower.includes('pv 23 portachiave');
+    };
     
     const filteredOrders = data.orders.map(order => ({
       ...order,
-      lineItems: order.lineItems.filter(item => !isPreSeasonAdjustment(item.title)),
+      lineItems: order.lineItems.filter(item => !isLegacyItem(item.title)),
       totalPrice: order.lineItems
-        .filter(item => !isPreSeasonAdjustment(item.title))
+        .filter(item => !isLegacyItem(item.title))
         .reduce((sum, item) => sum + (item.price * item.quantity), 0)
     })).filter(order => order.lineItems.length > 0);
     
