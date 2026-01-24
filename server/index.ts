@@ -678,6 +678,7 @@ interface ShopifyOrder {
   id: string;
   orderNumber: string;
   createdAt: string;
+  processedAt: string;
   totalPrice: number;
   currency: string;
   customerName: string;
@@ -766,6 +767,7 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
         id: String(order.id),
         orderNumber: String(order.order_number),
         createdAt: order.created_at,
+        processedAt: order.processed_at || order.created_at,
         totalPrice: parseFloat(order.total_price) || 0,
         currency: order.currency,
         customerName,

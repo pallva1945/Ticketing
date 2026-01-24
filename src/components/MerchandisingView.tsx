@@ -6,6 +6,7 @@ interface ShopifyOrder {
   id: string;
   orderNumber: string;
   createdAt: string;
+  processedAt: string;
   totalPrice: number;
   currency: string;
   customerName: string;
@@ -146,7 +147,8 @@ export const MerchandisingView: React.FC = () => {
     
     const monthlyRevenue: Record<string, number> = {};
     data.orders.forEach(order => {
-      const month = new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+      const orderDate = order.processedAt || order.createdAt;
+      const month = new Date(orderDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
       monthlyRevenue[month] = (monthlyRevenue[month] || 0) + order.totalPrice;
     });
     
