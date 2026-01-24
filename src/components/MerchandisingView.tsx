@@ -145,9 +145,12 @@ export const MerchandisingView: React.FC = () => {
       .map(([name, value]) => ({ name: name || 'Uncategorized', value }))
       .sort((a, b) => b.value - a.value);
     
+    // Use processedAt as the actual purchase date (when payment was processed)
+    const getOrderDate = (order: ShopifyOrder) => new Date(order.processedAt);
+    
     const monthlyRevenue: Record<string, number> = {};
     data.orders.forEach(order => {
-      const d = new Date(order.createdAt);
+      const d = getOrderDate(order);
       const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + order.totalPrice;
     });
@@ -159,7 +162,7 @@ export const MerchandisingView: React.FC = () => {
     // Generate all months from earliest order to now, filling in 0 for months without orders
     const allMonths: { month: string; revenue: number }[] = [];
     if (data.orders.length > 0) {
-      const orderDates = data.orders.map(o => new Date(o.createdAt));
+      const orderDates = data.orders.map(o => getOrderDate(o));
       const earliest = new Date(Math.min(...orderDates.map(d => d.getTime())));
       const now = new Date();
       
@@ -560,7 +563,7 @@ export const MerchandisingView: React.FC = () => {
                 {data.orders.slice(0, ordersLimit).map((order) => (
                   <tr key={order.id} className="border-t border-gray-100 hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-800">#{order.orderNumber}</td>
-                    <td className="px-4 py-3 text-gray-600">{formatDate(order.createdAt)}</td>
+                    <td className="px-4 py-3 text-gray-600">{formatDate(order.processedAt)}</td>
                     <td className="px-4 py-3">
                       <p className="text-gray-800">{order.customerName}</p>
                       <p className="text-xs text-gray-500">{order.customerEmail}</p>
