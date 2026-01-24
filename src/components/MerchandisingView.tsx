@@ -147,8 +147,7 @@ export const MerchandisingView: React.FC = () => {
     
     const monthlyRevenue: Record<string, number> = {};
     data.orders.forEach(order => {
-      const orderDate = order.processedAt || order.createdAt;
-      const month = new Date(orderDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+      const month = new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
       monthlyRevenue[month] = (monthlyRevenue[month] || 0) + order.totalPrice;
     });
     
@@ -163,7 +162,7 @@ export const MerchandisingView: React.FC = () => {
     // Generate all months from earliest order to now, filling in 0 for months without orders
     const allMonths: { month: string; revenue: number }[] = [];
     if (data.orders.length > 0) {
-      const orderDates = data.orders.map(o => new Date(o.processedAt || o.createdAt));
+      const orderDates = data.orders.map(o => new Date(o.createdAt));
       const earliest = new Date(Math.min(...orderDates.map(d => d.getTime())));
       const now = new Date();
       
