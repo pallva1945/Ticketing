@@ -114,7 +114,8 @@ export const MerchandisingView: React.FC = () => {
       return lower.includes('felpa pre season') || 
              lower.includes('pv 23 portachiave') || 
              lower.includes('pv-23-00035') ||
-             lower.includes('portachiavi apr');
+             lower.includes('portachiavi apr') ||
+             lower.includes('pv-23-00003');
     };
     
     const filteredOrders = data.orders.map(order => ({
