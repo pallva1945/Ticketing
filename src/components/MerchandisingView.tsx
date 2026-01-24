@@ -147,13 +147,10 @@ export const MerchandisingView: React.FC = () => {
     
     const monthlyRevenue: Record<string, number> = {};
     data.orders.forEach(order => {
-      const month = new Date(order.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-      monthlyRevenue[month] = (monthlyRevenue[month] || 0) + order.totalPrice;
+      const d = new Date(order.createdAt);
+      const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + order.totalPrice;
     });
-    
-    const monthlyData = Object.entries(monthlyRevenue)
-      .map(([month, revenue]) => ({ month, revenue }))
-      .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
     
     const topCustomers = [...data.customers]
       .sort((a, b) => b.totalSpent - a.totalSpent)
@@ -171,8 +168,9 @@ export const MerchandisingView: React.FC = () => {
       
       let current = new Date(startDate);
       while (current <= endDate) {
-        const monthKey = current.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-        allMonths.push({ month: monthKey, revenue: monthlyRevenue[monthKey] || 0 });
+        const monthKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+        const displayMonth = current.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+        allMonths.push({ month: displayMonth, revenue: monthlyRevenue[monthKey] || 0 });
         current.setMonth(current.getMonth() + 1);
       }
     }
