@@ -111,7 +111,10 @@ export const MerchandisingView: React.FC = () => {
     // Filter out specific legacy/adjustment items from previous seasons
     const isLegacyItem = (title: string) => {
       const lower = title.toLowerCase();
-      return lower.includes('felpa pre season') || lower.includes('pv 23 portachiave');
+      return lower.includes('felpa pre season') || 
+             lower.includes('pv 23 portachiave') || 
+             lower.includes('pv-23-00035') ||
+             lower.includes('portachiavi apr');
     };
     
     const filteredOrders = data.orders.map(order => ({
