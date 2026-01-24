@@ -145,8 +145,8 @@ export const MerchandisingView: React.FC = () => {
       .map(([name, value]) => ({ name: name || 'Uncategorized', value }))
       .sort((a, b) => b.value - a.value);
     
-    // Use createdAt as the order date
-    const getOrderDate = (order: ShopifyOrder) => new Date(order.createdAt);
+    // Use processedAt as the order date
+    const getOrderDate = (order: ShopifyOrder) => new Date(order.processedAt);
     
     const monthlyRevenue: Record<string, number> = {};
     data.orders.forEach(order => {
@@ -563,7 +563,7 @@ export const MerchandisingView: React.FC = () => {
                 {data.orders.slice(0, ordersLimit).map((order) => (
                   <tr key={order.id} className="border-t border-gray-100 hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-800">#{order.orderNumber}</td>
-                    <td className="px-4 py-3 text-gray-600">{formatDate(order.createdAt)}</td>
+                    <td className="px-4 py-3 text-gray-600">{formatDate(order.processedAt)}</td>
                     <td className="px-4 py-3">
                       <p className="text-gray-800">{order.customerName}</p>
                       <p className="text-xs text-gray-500">{order.customerEmail}</p>
