@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import compression from "compression";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV } from "../src/services/bigQueryService";
@@ -726,6 +727,178 @@ interface ShopifyCustomer {
 let shopifyCache: { orders: ShopifyOrder[]; products: ShopifyProduct[]; customers: ShopifyCustomer[]; lastUpdated: string; timestamp: number } | null = null;
 const SHOPIFY_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 
+// CSV parsing for merch data
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === ',' && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
+function parseDate(dateStr: string): string {
+  if (!dateStr) return new Date().toISOString();
+  // Format: "2025-10-17 11:14:59 +0200" -> ISO format
+  const cleaned = dateStr.trim().replace(/\s+\+/, '+').replace(' ', 'T');
+  try {
+    return new Date(cleaned).toISOString();
+  } catch {
+    return new Date().toISOString();
+  }
+}
+
+function parseMerchCSV(): { orders: ShopifyOrder[]; products: ShopifyProduct[]; customers: ShopifyCustomer[] } {
+  const csvPath = path.join(__dirname, '..', 'data', 'merch.csv');
+  
+  if (!fs.existsSync(csvPath)) {
+    console.log('Merch CSV not found at:', csvPath);
+    return { orders: [], products: [], customers: [] };
+  }
+  
+  const content = fs.readFileSync(csvPath, 'utf-8');
+  // Handle Windows line endings
+  const lines = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(line => line.trim());
+  
+  if (lines.length < 2) {
+    return { orders: [], products: [], customers: [] };
+  }
+  
+  const headers = parseCSVLine(lines[0]);
+  const headerIndex: Record<string, number> = {};
+  headers.forEach((h, i) => headerIndex[h] = i);
+  
+  const ordersMap = new Map<string, ShopifyOrder>();
+  const productsMap = new Map<string, ShopifyProduct>();
+  const customersMap = new Map<string, ShopifyCustomer>();
+  
+  for (let i = 1; i < lines.length; i++) {
+    const values = parseCSVLine(lines[i]);
+    const get = (col: string) => (values[headerIndex[col]] || '').trim();
+    
+    const orderId = get('ID');
+    if (!orderId || !/^\d+$/.test(orderId)) continue; // Skip invalid IDs
+    
+    const orderNumber = get('Number');
+    const processedAt = get('Processed_At');
+    const createdAt = get('Created_At');
+    const totalPrice = parseFloat(get('Price_Total')) || 0;
+    const currency = get('Currency') || 'EUR';
+    const customerEmail = get('Customer_Email') || get('Email') || '';
+    const customerFirstName = get('Customer_First_Name') || get('Billing_First_Name') || '';
+    const customerLastName = get('Customer_Last_Name') || get('Billing_Last_Name') || '';
+    const customerName = `${customerFirstName} ${customerLastName}`.trim() || 'Guest';
+    const financialStatus = get('Payment_Status') || 'unknown';
+    const fulfillmentStatus = get('Order_Fulfillment_Status') || 'unfulfilled';
+    const lineType = get('Line_Type');
+    const topRow = get('Top_Row');
+    
+    // Create order on first row (Top_Row = TRUE)
+    if (orderId && topRow === 'TRUE' && !ordersMap.has(orderId)) {
+      ordersMap.set(orderId, {
+        id: orderId,
+        orderNumber: orderNumber,
+        createdAt: parseDate(createdAt),
+        processedAt: parseDate(processedAt),
+        totalPrice,
+        currency,
+        customerName,
+        customerEmail,
+        itemCount: 0,
+        lineItems: [],
+        financialStatus,
+        fulfillmentStatus
+      });
+    }
+    
+    // Add line items (Line_Type = "Line Item")
+    if (lineType === 'Line Item') {
+      const lineProductId = get('Line_Product_ID');
+      const lineTitle = get('Line_Title') || get('Line_Name') || '';
+      const lineQuantity = parseInt(get('Line_Quantity')) || 0;
+      const linePrice = parseFloat(get('Line_Price')) || 0;
+      const lineSku = get('Line_SKU') || get('Line_Variant_SKU') || '';
+      const lineProductType = get('Line_Product_Type') || '';
+      const lineVendor = get('Line_Vendor') || '';
+      
+      const order = ordersMap.get(orderId);
+      if (order && lineProductId && lineQuantity > 0) {
+        order.lineItems.push({
+          title: lineTitle,
+          quantity: lineQuantity,
+          price: linePrice,
+          sku: lineSku,
+          productId: lineProductId
+        });
+        order.itemCount += lineQuantity;
+      }
+      
+      // Track products
+      if (lineProductId && lineTitle && !productsMap.has(lineProductId)) {
+        productsMap.set(lineProductId, {
+          id: lineProductId,
+          title: lineTitle,
+          productType: lineProductType,
+          vendor: lineVendor,
+          status: 'active',
+          totalInventory: parseInt(get('Line_Variant_Inventory_Qty')) || 0,
+          variants: [{
+            id: get('Line_Variant_ID') || lineProductId,
+            title: get('Line_Variant_Title') || 'Default',
+            price: linePrice,
+            inventoryQuantity: parseInt(get('Line_Variant_Inventory_Qty')) || 0,
+            sku: lineSku
+          }],
+          images: []
+        });
+      }
+    }
+    
+    // Track customers (on first row of each order)
+    if (topRow === 'TRUE') {
+      const customerId = get('Customer_ID');
+      if (customerId && customerEmail && !customersMap.has(customerId)) {
+        customersMap.set(customerId, {
+          id: customerId,
+          email: customerEmail,
+          firstName: customerFirstName,
+          lastName: customerLastName,
+          ordersCount: parseInt(get('Customer_Orders_Count')) || 1,
+          totalSpent: parseFloat(get('Customer_Total_Spent')) || 0,
+          createdAt: parseDate(createdAt),
+          tags: get('Customer_Tags') ? get('Customer_Tags').split(',').map(t => t.trim()) : []
+        });
+      }
+    }
+  }
+  
+  const orders = Array.from(ordersMap.values()).sort((a, b) => 
+    new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime()
+  );
+  const products = Array.from(productsMap.values());
+  const customers = Array.from(customersMap.values());
+  
+  console.log(`Parsed merch CSV: ${orders.length} orders, ${products.length} products, ${customers.length} customers`);
+  
+  return { orders, products, customers };
+}
+
 async function fetchShopifyAPI(endpoint: string): Promise<any> {
   if (!SHOPIFY_ACCESS_TOKEN) {
     throw new Error('Shopify access token not configured');
@@ -868,10 +1041,6 @@ async function fetchAllShopifyCustomers(): Promise<ShopifyCustomer[]> {
 
 app.get("/api/shopify/data", async (req, res) => {
   try {
-    if (!SHOPIFY_ACCESS_TOKEN) {
-      return res.status(400).json({ success: false, message: 'Shopify access token not configured. Please add SHOPIFY_ACCESS_TOKEN secret.' });
-    }
-    
     const forceRefresh = req.query.refresh === 'true';
     
     // Return cached data if still valid
@@ -879,14 +1048,10 @@ app.get("/api/shopify/data", async (req, res) => {
       return res.json(shopifyCache);
     }
     
-    console.log('Fetching fresh Shopify data...');
+    console.log('Loading merch data from CSV...');
     
-    // Fetch all data in parallel
-    const [orders, products, customers] = await Promise.all([
-      fetchAllShopifyOrders(),
-      fetchAllShopifyProducts(),
-      fetchAllShopifyCustomers()
-    ]);
+    // Parse CSV file
+    const { orders, products, customers } = parseMerchCSV();
     
     shopifyCache = {
       orders,
@@ -896,11 +1061,11 @@ app.get("/api/shopify/data", async (req, res) => {
       timestamp: Date.now()
     };
     
-    console.log(`Shopify data loaded: ${orders.length} orders, ${products.length} products, ${customers.length} customers`);
+    console.log(`Merch data loaded: ${orders.length} orders, ${products.length} products, ${customers.length} customers`);
     
     res.json(shopifyCache);
   } catch (error: any) {
-    console.error('Shopify API error:', error.message);
+    console.error('Merch data error:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 });
