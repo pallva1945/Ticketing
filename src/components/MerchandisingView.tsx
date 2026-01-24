@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShoppingBag, Package, Users, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, Layers } from 'lucide-react';
+import { ShoppingBag, Package, Users, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, Layers, Search } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line } from 'recharts';
 
 interface ShopifyOrder {
@@ -73,6 +73,15 @@ export const MerchandisingView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'customers'>('overview');
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
+  
+  // Search states
+  const [productSearch, setProductSearch] = useState('');
+  const [customerSearch, setCustomerSearch] = useState('');
+  
+  // Pagination states
+  const [productsLimit, setProductsLimit] = useState(50);
+  const [ordersLimit, setOrdersLimit] = useState(50);
+  const [customersLimit, setCustomersLimit] = useState(50);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -149,6 +158,15 @@ export const MerchandisingView: React.FC = () => {
       .sort((a, b) => b.totalSpent - a.totalSpent)
       .slice(0, 10);
     
+    // Generate last 12 months with 0 revenue for months without orders
+    const allMonths: { month: string; revenue: number }[] = [];
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthKey = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+      allMonths.push({ month: monthKey, revenue: monthlyRevenue[monthKey] || 0 });
+    }
+    
     return {
       totalRevenue,
       totalOrders,
@@ -158,10 +176,35 @@ export const MerchandisingView: React.FC = () => {
       totalInventory,
       topProducts,
       categoryData,
-      monthlyData,
+      monthlyData: allMonths,
       topCustomers
     };
   }, [data]);
+
+  // Filtered products based on search
+  const filteredProducts = useMemo(() => {
+    if (!data) return [];
+    if (!productSearch.trim()) return data.products;
+    const searchLower = productSearch.toLowerCase();
+    return data.products.filter(p => 
+      p.title.toLowerCase().includes(searchLower) ||
+      p.productType?.toLowerCase().includes(searchLower) ||
+      p.variants.some(v => v.sku?.toLowerCase().includes(searchLower))
+    );
+  }, [data, productSearch]);
+
+  // Filtered customers based on search
+  const filteredCustomers = useMemo(() => {
+    if (!data) return [];
+    if (!customerSearch.trim()) return data.customers;
+    const searchLower = customerSearch.toLowerCase();
+    return data.customers.filter(c => 
+      c.firstName?.toLowerCase().includes(searchLower) ||
+      c.lastName?.toLowerCase().includes(searchLower) ||
+      c.email?.toLowerCase().includes(searchLower) ||
+      c.tags?.some(t => t.toLowerCase().includes(searchLower))
+    );
+  }, [data, customerSearch]);
 
   if (isLoading) {
     return (
@@ -378,6 +421,18 @@ export const MerchandisingView: React.FC = () => {
 
       {activeTab === 'products' && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search products by name, type, or SKU..."
+                value={productSearch}
+                onChange={(e) => { setProductSearch(e.target.value); setProductsLimit(50); }}
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              />
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
@@ -391,7 +446,7 @@ export const MerchandisingView: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {data.products.map((product) => (
+                {filteredProducts.slice(0, productsLimit).map((product) => (
                   <React.Fragment key={product.id}>
                     <tr className="border-t border-gray-100 hover:bg-gray-50">
                       <td className="px-4 py-3">
@@ -460,6 +515,21 @@ export const MerchandisingView: React.FC = () => {
               </tbody>
             </table>
           </div>
+          {filteredProducts.length > productsLimit ? (
+            <div className="px-4 py-3 bg-gray-50 text-center">
+              <span className="text-sm text-gray-500 mr-3">Showing {productsLimit} of {filteredProducts.length} products</span>
+              <button 
+                onClick={() => setProductsLimit(l => l + 50)}
+                className="px-4 py-1.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                Load More
+              </button>
+            </div>
+          ) : filteredProducts.length > 0 && (
+            <div className="px-4 py-3 bg-gray-50 text-center text-sm text-gray-500">
+              Showing all {filteredProducts.length} products
+            </div>
+          )}
         </div>
       )}
 
@@ -479,7 +549,7 @@ export const MerchandisingView: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {data.orders.slice(0, 50).map((order) => (
+                {data.orders.slice(0, ordersLimit).map((order) => (
                   <tr key={order.id} className="border-t border-gray-100 hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-800">#{order.orderNumber}</td>
                     <td className="px-4 py-3 text-gray-600">{formatDate(order.createdAt)}</td>
@@ -512,9 +582,19 @@ export const MerchandisingView: React.FC = () => {
               </tbody>
             </table>
           </div>
-          {data.orders.length > 50 && (
+          {data.orders.length > ordersLimit ? (
+            <div className="px-4 py-3 bg-gray-50 text-center">
+              <span className="text-sm text-gray-500 mr-3">Showing {ordersLimit} of {data.orders.length} orders</span>
+              <button 
+                onClick={() => setOrdersLimit(l => l + 50)}
+                className="px-4 py-1.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                Load More
+              </button>
+            </div>
+          ) : (
             <div className="px-4 py-3 bg-gray-50 text-center text-sm text-gray-500">
-              Showing 50 of {data.orders.length} orders
+              Showing all {data.orders.length} orders
             </div>
           )}
         </div>
@@ -522,6 +602,18 @@ export const MerchandisingView: React.FC = () => {
 
       {activeTab === 'customers' && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search customers by name, email, or tag..."
+                value={customerSearch}
+                onChange={(e) => { setCustomerSearch(e.target.value); setCustomersLimit(50); }}
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              />
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
@@ -535,7 +627,7 @@ export const MerchandisingView: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {data.customers.slice(0, 50).map((customer) => (
+                {filteredCustomers.slice(0, customersLimit).map((customer) => (
                   <tr key={customer.id} className="border-t border-gray-100 hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-800">{customer.firstName} {customer.lastName}</td>
                     <td className="px-4 py-3 text-gray-600">{customer.email}</td>
@@ -557,9 +649,19 @@ export const MerchandisingView: React.FC = () => {
               </tbody>
             </table>
           </div>
-          {data.customers.length > 50 && (
+          {filteredCustomers.length > customersLimit ? (
+            <div className="px-4 py-3 bg-gray-50 text-center">
+              <span className="text-sm text-gray-500 mr-3">Showing {customersLimit} of {filteredCustomers.length} customers</span>
+              <button 
+                onClick={() => setCustomersLimit(l => l + 50)}
+                className="px-4 py-1.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
+              >
+                Load More
+              </button>
+            </div>
+          ) : filteredCustomers.length > 0 && (
             <div className="px-4 py-3 bg-gray-50 text-center text-sm text-gray-500">
-              Showing 50 of {data.customers.length} customers
+              Showing all {filteredCustomers.length} customers
             </div>
           )}
         </div>
