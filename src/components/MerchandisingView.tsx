@@ -160,13 +160,22 @@ export const MerchandisingView: React.FC = () => {
       .sort((a, b) => b.totalSpent - a.totalSpent)
       .slice(0, 10);
     
-    // Generate last 12 months with 0 revenue for months without orders
+    // Generate all months from earliest order to now, filling in 0 for months without orders
     const allMonths: { month: string; revenue: number }[] = [];
-    const now = new Date();
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const monthKey = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-      allMonths.push({ month: monthKey, revenue: monthlyRevenue[monthKey] || 0 });
+    if (data.orders.length > 0) {
+      const orderDates = data.orders.map(o => new Date(o.processedAt || o.createdAt));
+      const earliest = new Date(Math.min(...orderDates.map(d => d.getTime())));
+      const now = new Date();
+      
+      const startDate = new Date(earliest.getFullYear(), earliest.getMonth(), 1);
+      const endDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      
+      let current = new Date(startDate);
+      while (current <= endDate) {
+        const monthKey = current.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+        allMonths.push({ month: monthKey, revenue: monthlyRevenue[monthKey] || 0 });
+        current.setMonth(current.getMonth() + 1);
+      }
     }
     
     return {
