@@ -145,8 +145,17 @@ export const MerchandisingView: React.FC = () => {
       .map(([name, value]) => ({ name: name || 'Uncategorized', value }))
       .sort((a, b) => b.value - a.value);
     
-    // Use processedAt as the actual purchase date (when payment was processed)
-    const getOrderDate = (order: ShopifyOrder) => new Date(order.processedAt);
+    // Smart date selection: use processedAt for imported orders, createdAt for new orders
+    // If processedAt is more than 1 day before createdAt, it's an imported historical order
+    const getOrderDate = (order: ShopifyOrder) => {
+      const created = new Date(order.createdAt);
+      const processed = new Date(order.processedAt);
+      const dayInMs = 24 * 60 * 60 * 1000;
+      
+      // If processed is more than 1 day before created, it's imported - use processedAt
+      // Otherwise it's a new order - use createdAt
+      return (created.getTime() - processed.getTime() > dayInMs) ? processed : created;
+    };
     
     const monthlyRevenue: Record<string, number> = {};
     data.orders.forEach(order => {
@@ -563,7 +572,12 @@ export const MerchandisingView: React.FC = () => {
                 {data.orders.slice(0, ordersLimit).map((order) => (
                   <tr key={order.id} className="border-t border-gray-100 hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-800">#{order.orderNumber}</td>
-                    <td className="px-4 py-3 text-gray-600">{formatDate(order.processedAt)}</td>
+                    <td className="px-4 py-3 text-gray-600">{formatDate(
+                      // Use processedAt for imported orders, createdAt for new orders
+                      new Date(order.createdAt).getTime() - new Date(order.processedAt).getTime() > 86400000 
+                        ? order.processedAt 
+                        : order.createdAt
+                    )}</td>
                     <td className="px-4 py-3">
                       <p className="text-gray-800">{order.customerName}</p>
                       <p className="text-xs text-gray-500">{order.customerEmail}</p>
