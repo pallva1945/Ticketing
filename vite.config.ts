@@ -21,11 +21,11 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:5001',
+        target: 'http://localhost:3000',
         changeOrigin: true,
       },
       '/objects': {
-        target: 'http://localhost:5001',
+        target: 'http://localhost:3000',
         changeOrigin: true,
       },
     },
