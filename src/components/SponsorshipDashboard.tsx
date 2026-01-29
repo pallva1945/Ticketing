@@ -346,8 +346,9 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   }, [chartFilteredData]);
 
   // Historical data for selected sponsor (same company across all seasons)
+  // Combines base company with _CM (cambio merche) variant
   const sponsorHistory = useMemo(() => {
-    if (!selectedSponsor) return { past: [], current: [], future: [], all: [] };
+    if (!selectedSponsor) return { past: [], current: [], future: [], all: [], hasCM: false };
     
     // Helper to extract start year from season (handles both "25-26" and "25/26" formats)
     const getSeasonYear = (season: string): number => {
@@ -355,12 +356,49 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       return match ? parseInt(match[1]) : 0;
     };
     
-    // Normalize company name for comparison (case-insensitive, trimmed)
-    const normalizeCompany = (name: string) => name.toLowerCase().trim();
+    // Normalize company name for comparison (case-insensitive, trimmed, remove _cm suffix)
+    const normalizeCompany = (name: string) => name.toLowerCase().trim().replace(/_cm$/i, '').replace(/-cm$/i, '');
     const selectedCompanyNorm = normalizeCompany(selectedSponsor.company);
     
-    const allContracts = data
-      .filter(d => normalizeCompany(d.company) === selectedCompanyNorm)
+    // Find all contracts for this company (including _CM variants)
+    const allRelatedContracts = data.filter(d => normalizeCompany(d.company) === selectedCompanyNorm);
+    
+    // Separate CM and non-CM contracts
+    const isCM = (name: string) => /_cm$/i.test(name) || /-cm$/i.test(name);
+    const cmContracts = allRelatedContracts.filter(d => isCM(d.company));
+    const cashContracts = allRelatedContracts.filter(d => !isCM(d.company));
+    
+    // Combine contracts by season (merge CM data into base contract)
+    const contractsBySeason = new Map<string, SponsorData>();
+    
+    // First add all cash contracts
+    cashContracts.forEach(c => {
+      contractsBySeason.set(c.season, { ...c });
+    });
+    
+    // Then merge CM contracts into same season or add if season doesn't exist
+    cmContracts.forEach(cm => {
+      const existing = contractsBySeason.get(cm.season);
+      if (existing) {
+        // Merge CM data - add CM values to existing contract
+        existing.commercialValue += cm.commercialValue;
+        existing.delta += cm.delta;
+        existing.sponsorReconciliation += cm.sponsorReconciliation;
+        existing.vbReconciliation += cm.vbReconciliation;
+        existing.csrReconciliation += cm.csrReconciliation;
+        existing.corpTixReconciliation += cm.corpTixReconciliation;
+        existing.gamedayReconciliation += cm.gamedayReconciliation;
+        // Mark as having CM component
+        (existing as any).hasCMComponent = true;
+        (existing as any).cmCommercialValue = cm.commercialValue;
+      } else {
+        // Add CM-only contract for this season
+        const cmContract = { ...cm, hasCMComponent: true, cmCommercialValue: cm.commercialValue };
+        contractsBySeason.set(cm.season, cmContract as SponsorData);
+      }
+    });
+    
+    const allContracts = Array.from(contractsBySeason.values())
       .sort((a, b) => getSeasonYear(a.season) - getSeasonYear(b.season));
     
     // Current season is 25/26 (Jan 2026)
@@ -370,7 +408,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     const current = allContracts.filter(c => getSeasonYear(c.season) === currentSeasonYear);
     const future = allContracts.filter(c => getSeasonYear(c.season) > currentSeasonYear);
     
-    return { past, current, future, all: allContracts };
+    return { past, current, future, all: allContracts, hasCM: cmContracts.length > 0 };
   }, [data, selectedSponsor]);
 
   // Monthly payment breakdown for selected sponsor
@@ -1324,9 +1362,14 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                                 </span>
                               </td>
                               <td className="py-2 px-3">
-                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
-                                  {hist.contractType}
-                                </span>
+                                <div className="flex items-center gap-1">
+                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
+                                    {hist.contractType}
+                                  </span>
+                                  {(hist as any).hasCMComponent && (
+                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">+CM</span>
+                                  )}
+                                </div>
                               </td>
                               <td className="py-2 px-3 text-right font-medium text-blue-900">{formatCurrency(hist.commercialValue)}</td>
                               <td className="py-2 px-3 text-right text-blue-800">{formatCurrency(hist.sponsorReconciliation)}</td>
@@ -1384,9 +1427,14 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                                 </span>
                               </td>
                               <td className="py-2 px-3">
-                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
-                                  {hist.contractType}
-                                </span>
+                                <div className="flex items-center gap-1">
+                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
+                                    {hist.contractType}
+                                  </span>
+                                  {(hist as any).hasCMComponent && (
+                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">+CM</span>
+                                  )}
+                                </div>
                               </td>
                               <td className="py-2 px-3 text-right font-medium text-red-900">{formatCurrency(hist.commercialValue)}</td>
                               <td className="py-2 px-3 text-right text-red-800">{formatCurrency(hist.sponsorReconciliation)}</td>
@@ -1438,9 +1486,14 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                                 </span>
                               </td>
                               <td className="py-2 px-3">
-                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
-                                  {hist.contractType}
-                                </span>
+                                <div className="flex items-center gap-1">
+                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
+                                    {hist.contractType}
+                                  </span>
+                                  {(hist as any).hasCMComponent && (
+                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">+CM</span>
+                                  )}
+                                </div>
                               </td>
                               <td className="py-2 px-3 text-right font-medium">{formatCurrency(hist.commercialValue)}</td>
                               <td className="py-2 px-3 text-right">{formatCurrency(hist.sponsorReconciliation)}</td>
