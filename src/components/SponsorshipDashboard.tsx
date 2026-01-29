@@ -355,11 +355,15 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       return match ? parseInt(match[1]) : 0;
     };
     
+    // Normalize company name for comparison (case-insensitive, trimmed)
+    const normalizeCompany = (name: string) => name.toLowerCase().trim();
+    const selectedCompanyNorm = normalizeCompany(selectedSponsor.company);
+    
     const allContracts = data
-      .filter(d => d.company === selectedSponsor.company)
+      .filter(d => normalizeCompany(d.company) === selectedCompanyNorm)
       .sort((a, b) => getSeasonYear(a.season) - getSeasonYear(b.season));
     
-    // Current season is 25-26 (Jan 2026)
+    // Current season is 25/26 (Jan 2026)
     const currentSeasonYear = 25;
     
     const past = allContracts.filter(c => getSeasonYear(c.season) < currentSeasonYear);
@@ -1344,6 +1348,60 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                           </td>
                         </tr>
                       </tfoot>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Current Contract */}
+              {sponsorHistory.current.length > 0 && (
+                <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-5">
+                  <h3 className="text-sm font-semibold text-red-700 mb-4 flex items-center gap-2">
+                    <Clock size={16} /> Current Contract (25/26 Season)
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-red-200">
+                          <th className="text-left py-2 px-3 font-medium text-red-600">Season</th>
+                          <th className="text-left py-2 px-3 font-medium text-red-600">Type</th>
+                          <th className="text-right py-2 px-3 font-medium text-red-600">Commercial Value</th>
+                          <th className="text-right py-2 px-3 font-medium text-red-600">Sponsorship</th>
+                          <th className="text-right py-2 px-3 font-medium text-red-600">Delta</th>
+                          <th className="text-center py-2 px-3 font-medium text-red-600">Quality</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sponsorHistory.current.map((hist) => {
+                          const histQuality = getDealQuality(hist.delta, hist.commercialValue);
+                          const HistIcon = histQuality.icon;
+                          return (
+                            <tr key={hist.id} className="border-b border-red-100 bg-red-50/50">
+                              <td className="py-2 px-3">
+                                <span className="font-medium text-red-800 flex items-center gap-1">
+                                  <Clock size={12} className="text-red-500" />
+                                  {hist.season}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3">
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
+                                  {hist.contractType}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3 text-right font-medium text-red-900">{formatCurrency(hist.commercialValue)}</td>
+                              <td className="py-2 px-3 text-right text-red-800">{formatCurrency(hist.sponsorReconciliation)}</td>
+                              <td className={`py-2 px-3 text-right font-medium ${hist.delta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                {hist.delta >= 0 ? '+' : ''}{formatCompactCurrency(hist.delta)}
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${histQuality.bgColor} ${histQuality.color}`}>
+                                  <HistIcon size={10} /> {histQuality.label}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
                     </table>
                   </div>
                 </div>
