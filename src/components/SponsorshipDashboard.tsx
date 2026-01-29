@@ -219,8 +219,16 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     const GAMES_PER_SEASON = 15; // GameDay reconciliation values are per-game, multiply by 15 for season total
     
     const totalCommercial = dataSource.reduce((sum, d) => sum + d.commercialValue, 0);
-    const totalCash = dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.commercialValue, 0);
-    const totalCM = dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.commercialValue, 0);
+    // For CM calculation: use cmCommercialValue from combined sponsors + pure CM contract types
+    const totalCM = dataSource.reduce((sum, d) => {
+      // If sponsor has CM component tracked, use that value
+      const cmValue = (d as any).cmCommercialValue || 0;
+      // If it's a pure CM contract (no merge happened), add full commercial value
+      const pureCM = d.contractType === 'CM' && !cmValue ? d.commercialValue : 0;
+      return sum + cmValue + pureCM;
+    }, 0);
+    // Cash is total minus CM portion
+    const totalCash = totalCommercial - totalCM;
     const totalSponsors = dataSource.length;
     const uniqueCompanies = new Set(dataSource.map(d => d.company)).size;
     
@@ -245,24 +253,16 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         - (excludeGameDay ? totalGameday : 0)
         - (excludeVB ? totalVB : 0);
     
-    // For Cash/CM breakdown when all excluded, use reconciliation-based values
-    const cashSponsorRec = dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.sponsorReconciliation, 0);
-    const cashCSR = dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.csrReconciliation, 0);
-    const cmSponsorRec = dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.sponsorReconciliation, 0);
-    const cmCSR = dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.csrReconciliation, 0);
-    
+    // For Cash/CM breakdown - CM portion is tracked in cmCommercialValue
+    // Adjusted CM stays the same (it's the CM commercial value portion)
+    const adjustedCM = totalCM; // CM portion doesn't have VB/CorpTix/GameDay to exclude
+    // Adjusted Cash = adjusted total minus CM
     const adjustedCash = allExcluded
-      ? cashSponsorRec + cashCSR
+      ? pureSponsorship - totalCM
       : totalCash 
-        - (excludeCorpTix ? dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.corpTixReconciliation, 0) : 0)
-        - (excludeGameDay ? dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.gamedayReconciliation, 0) * GAMES_PER_SEASON : 0)
-        - (excludeVB ? dataSource.filter(d => d.contractType === 'CASH').reduce((sum, d) => sum + d.vbReconciliation, 0) : 0);
-    const adjustedCM = allExcluded
-      ? cmSponsorRec + cmCSR
-      : totalCM 
-        - (excludeCorpTix ? dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.corpTixReconciliation, 0) : 0)
-        - (excludeGameDay ? dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.gamedayReconciliation, 0) * GAMES_PER_SEASON : 0)
-        - (excludeVB ? dataSource.filter(d => d.contractType === 'CM').reduce((sum, d) => sum + d.vbReconciliation, 0) : 0);
+        - (excludeCorpTix ? totalCorpTix : 0)
+        - (excludeGameDay ? totalGameday : 0)
+        - (excludeVB ? totalVB : 0);
     
     return {
       totalCommercial,
