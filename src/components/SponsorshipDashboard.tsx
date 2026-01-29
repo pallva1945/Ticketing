@@ -347,8 +347,9 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
   // Historical data for selected sponsor (same company across all seasons)
   const sponsorHistory = useMemo(() => {
-    if (!selectedSponsor) return [];
-    return data
+    if (!selectedSponsor) return { past: [], current: [], future: [], all: [] };
+    
+    const allContracts = data
       .filter(d => d.company === selectedSponsor.company)
       .sort((a, b) => {
         // Sort seasons chronologically (e.g., 23/24, 24/25, 25/26)
@@ -356,6 +357,26 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         const bYear = parseInt(b.season.split('/')[0]) || 0;
         return aYear - bYear;
       });
+    
+    // Current season is 25/26 (Jan 2026)
+    const currentSeasonYear = 25;
+    
+    const past = allContracts.filter(c => {
+      const year = parseInt(c.season.split('/')[0]) || 0;
+      return year < currentSeasonYear;
+    });
+    
+    const current = allContracts.filter(c => {
+      const year = parseInt(c.season.split('/')[0]) || 0;
+      return year === currentSeasonYear;
+    });
+    
+    const future = allContracts.filter(c => {
+      const year = parseInt(c.season.split('/')[0]) || 0;
+      return year > currentSeasonYear;
+    });
+    
+    return { past, current, future, all: allContracts };
   }, [data, selectedSponsor]);
 
   // Monthly payment breakdown for selected sponsor
@@ -1280,11 +1301,69 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Historical Data */}
-              {sponsorHistory.length > 1 && (
+              {/* Future Contracts */}
+              {sponsorHistory.future.length > 0 && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5">
+                  <h3 className="text-sm font-semibold text-blue-700 mb-4 flex items-center gap-2">
+                    <Calendar size={16} /> Future Contracts ({sponsorHistory.future.length} {sponsorHistory.future.length === 1 ? 'season' : 'seasons'})
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-blue-200">
+                          <th className="text-left py-2 px-3 font-medium text-blue-600">Season</th>
+                          <th className="text-left py-2 px-3 font-medium text-blue-600">Type</th>
+                          <th className="text-right py-2 px-3 font-medium text-blue-600">Commercial Value</th>
+                          <th className="text-right py-2 px-3 font-medium text-blue-600">Sponsorship</th>
+                          <th className="text-right py-2 px-3 font-medium text-blue-600">Delta</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sponsorHistory.future.map((hist) => {
+                          const histQuality = getDealQuality(hist.delta, hist.commercialValue);
+                          return (
+                            <tr key={hist.id} className="border-b border-blue-100 hover:bg-blue-100/50">
+                              <td className="py-2 px-3">
+                                <span className="font-medium text-blue-800 flex items-center gap-1">
+                                  <Circle size={8} className="text-blue-400" />
+                                  {hist.season}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3">
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
+                                  {hist.contractType}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3 text-right font-medium text-blue-900">{formatCurrency(hist.commercialValue)}</td>
+                              <td className="py-2 px-3 text-right text-blue-800">{formatCurrency(hist.sponsorReconciliation)}</td>
+                              <td className={`py-2 px-3 text-right font-medium ${hist.delta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                {hist.delta >= 0 ? '+' : ''}{formatCompactCurrency(hist.delta)}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-blue-100/50 font-semibold">
+                          <td className="py-2 px-3 text-blue-700">Future Total</td>
+                          <td className="py-2 px-3"></td>
+                          <td className="py-2 px-3 text-right text-blue-900">{formatCurrency(sponsorHistory.future.reduce((sum, h) => sum + h.commercialValue, 0))}</td>
+                          <td className="py-2 px-3 text-right text-blue-800">{formatCurrency(sponsorHistory.future.reduce((sum, h) => sum + h.sponsorReconciliation, 0))}</td>
+                          <td className="py-2 px-3 text-right text-emerald-600">
+                            +{formatCompactCurrency(sponsorHistory.future.reduce((sum, h) => sum + h.delta, 0))}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Historical Data (Past Contracts) */}
+              {sponsorHistory.past.length > 0 && (
                 <div className="bg-white border border-gray-100 rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                    <History size={16} /> Historical & Future Contracts
+                    <History size={16} /> Past Contracts ({sponsorHistory.past.length} {sponsorHistory.past.length === 1 ? 'season' : 'seasons'})
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -1299,18 +1378,15 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                         </tr>
                       </thead>
                       <tbody>
-                        {sponsorHistory.map((hist) => {
-                          const isCurrentSeason = hist.season === selectedSponsor.season;
+                        {sponsorHistory.past.map((hist) => {
                           const histQuality = getDealQuality(hist.delta, hist.commercialValue);
                           const HistIcon = histQuality.icon;
                           return (
-                            <tr 
-                              key={hist.id} 
-                              className={`border-b border-gray-50 ${isCurrentSeason ? 'bg-red-50' : 'hover:bg-gray-50'}`}
-                            >
+                            <tr key={hist.id} className="border-b border-gray-50 hover:bg-gray-50">
                               <td className="py-2 px-3">
-                                <span className={`font-medium ${isCurrentSeason ? 'text-red-700' : 'text-gray-900'}`}>
-                                  {hist.season} {isCurrentSeason && '(Current)'}
+                                <span className="font-medium text-gray-600 flex items-center gap-1">
+                                  <CheckCircle size={12} className="text-green-500" />
+                                  {hist.season}
                                 </span>
                               </td>
                               <td className="py-2 px-3">
@@ -1334,17 +1410,42 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                       </tbody>
                       <tfoot>
                         <tr className="bg-gray-50 font-semibold">
-                          <td className="py-2 px-3 text-gray-700">Total ({sponsorHistory.length} seasons)</td>
+                          <td className="py-2 px-3 text-gray-700">Past Total</td>
                           <td className="py-2 px-3"></td>
-                          <td className="py-2 px-3 text-right">{formatCurrency(sponsorHistory.reduce((sum, h) => sum + h.commercialValue, 0))}</td>
-                          <td className="py-2 px-3 text-right">{formatCurrency(sponsorHistory.reduce((sum, h) => sum + h.sponsorReconciliation, 0))}</td>
+                          <td className="py-2 px-3 text-right">{formatCurrency(sponsorHistory.past.reduce((sum, h) => sum + h.commercialValue, 0))}</td>
+                          <td className="py-2 px-3 text-right">{formatCurrency(sponsorHistory.past.reduce((sum, h) => sum + h.sponsorReconciliation, 0))}</td>
                           <td className="py-2 px-3 text-right text-emerald-600">
-                            +{formatCompactCurrency(sponsorHistory.reduce((sum, h) => sum + h.delta, 0))}
+                            +{formatCompactCurrency(sponsorHistory.past.reduce((sum, h) => sum + h.delta, 0))}
                           </td>
                           <td className="py-2 px-3"></td>
                         </tr>
                       </tfoot>
                     </table>
+                  </div>
+                </div>
+              )}
+
+              {/* All-Time Summary */}
+              {sponsorHistory.all.length > 1 && (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-slate-700 mb-3">Lifetime Partnership Summary</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div>
+                      <p className="text-2xl font-bold text-slate-900">{sponsorHistory.all.length}</p>
+                      <p className="text-xs text-slate-500">Total Seasons</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-slate-900">{formatCurrency(sponsorHistory.all.reduce((sum, h) => sum + h.commercialValue, 0))}</p>
+                      <p className="text-xs text-slate-500">Total Value</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-green-600">{formatCurrency(sponsorHistory.all.reduce((sum, h) => sum + h.sponsorReconciliation, 0))}</p>
+                      <p className="text-xs text-slate-500">Total Sponsorship</p>
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-emerald-600">+{formatCurrency(sponsorHistory.all.reduce((sum, h) => sum + h.delta, 0))}</p>
+                      <p className="text-xs text-slate-500">Lifetime Delta</p>
+                    </div>
                   </div>
                 </div>
               )}
