@@ -1291,8 +1291,9 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
               {/* What We Give In Exchange */}
               <div className="bg-white border border-gray-100 rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                  <Gift size={16} /> What We Give In Exchange
+                <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center justify-between">
+                  <span className="flex items-center gap-2"><Gift size={16} /> What We Give In Exchange</span>
+                  <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">Season {selectedSponsor.season}</span>
                 </h3>
                 <div className="space-y-3">
                   {[
