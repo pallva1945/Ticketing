@@ -124,9 +124,58 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     return s.length > 0 ? s : ['24/25'];
   }, [data]);
 
+  // Combine sponsors with their _CM variants
+  const combinedData = useMemo(() => {
+    // Helper to get base company name (without _CM suffix)
+    const getBaseCompany = (name: string) => name.replace(/[-_]cm$/i, '').trim();
+    const isCM = (name: string) => /[-_]cm$/i.test(name);
+    
+    // Group by base company name + season
+    const combined = new Map<string, SponsorData>();
+    
+    data.forEach(d => {
+      const baseCompany = getBaseCompany(d.company);
+      const key = `${baseCompany.toLowerCase()}|${d.season}`;
+      
+      const existing = combined.get(key);
+      if (existing) {
+        // Merge: add values together
+        existing.commercialValue += d.commercialValue;
+        existing.delta += d.delta;
+        existing.sponsorReconciliation += d.sponsorReconciliation;
+        existing.vbReconciliation += d.vbReconciliation;
+        existing.csrReconciliation += d.csrReconciliation;
+        existing.corpTixReconciliation += d.corpTixReconciliation;
+        existing.gamedayReconciliation += d.gamedayReconciliation;
+        existing.bonusPlayoff += d.bonusPlayoff;
+        // Track CM component
+        if (isCM(d.company)) {
+          (existing as any).hasCMComponent = true;
+          (existing as any).cmCommercialValue = ((existing as any).cmCommercialValue || 0) + d.commercialValue;
+        }
+        // If this is the base (non-CM), update the contract type
+        if (!isCM(d.company)) {
+          existing.contractType = d.contractType;
+          existing.company = d.company; // Use base company name
+        }
+      } else {
+        // First entry for this company+season
+        const entry = { ...d };
+        if (isCM(d.company)) {
+          entry.company = baseCompany.toUpperCase(); // Normalize to base name
+          (entry as any).hasCMComponent = true;
+          (entry as any).cmCommercialValue = d.commercialValue;
+        }
+        combined.set(key, entry);
+      }
+    });
+    
+    return Array.from(combined.values());
+  }, [data]);
+
   const filteredData = useMemo(() => {
-    return data.filter(d => d.season === selectedSeason);
-  }, [data, selectedSeason]);
+    return combinedData.filter(d => d.season === selectedSeason);
+  }, [combinedData, selectedSeason]);
 
   const chartFilteredData = useMemo(() => {
     let result = [...filteredData];
@@ -346,7 +395,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   }, [chartFilteredData]);
 
   // Historical data for selected sponsor (same company across all seasons)
-  // Combines base company with _CM (cambio merche) variant
+  // Uses combinedData which already has _CM variants merged
   const sponsorHistory = useMemo(() => {
     if (!selectedSponsor) return { past: [], current: [], future: [], all: [], hasCM: false };
     
@@ -356,49 +405,13 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       return match ? parseInt(match[1]) : 0;
     };
     
-    // Normalize company name for comparison (case-insensitive, trimmed, remove _cm suffix)
-    const normalizeCompany = (name: string) => name.toLowerCase().trim().replace(/_cm$/i, '').replace(/-cm$/i, '');
+    // Normalize company name for comparison (case-insensitive, trimmed)
+    const normalizeCompany = (name: string) => name.toLowerCase().trim();
     const selectedCompanyNorm = normalizeCompany(selectedSponsor.company);
     
-    // Find all contracts for this company (including _CM variants)
-    const allRelatedContracts = data.filter(d => normalizeCompany(d.company) === selectedCompanyNorm);
-    
-    // Separate CM and non-CM contracts
-    const isCM = (name: string) => /_cm$/i.test(name) || /-cm$/i.test(name);
-    const cmContracts = allRelatedContracts.filter(d => isCM(d.company));
-    const cashContracts = allRelatedContracts.filter(d => !isCM(d.company));
-    
-    // Combine contracts by season (merge CM data into base contract)
-    const contractsBySeason = new Map<string, SponsorData>();
-    
-    // First add all cash contracts
-    cashContracts.forEach(c => {
-      contractsBySeason.set(c.season, { ...c });
-    });
-    
-    // Then merge CM contracts into same season or add if season doesn't exist
-    cmContracts.forEach(cm => {
-      const existing = contractsBySeason.get(cm.season);
-      if (existing) {
-        // Merge CM data - add CM values to existing contract
-        existing.commercialValue += cm.commercialValue;
-        existing.delta += cm.delta;
-        existing.sponsorReconciliation += cm.sponsorReconciliation;
-        existing.vbReconciliation += cm.vbReconciliation;
-        existing.csrReconciliation += cm.csrReconciliation;
-        existing.corpTixReconciliation += cm.corpTixReconciliation;
-        existing.gamedayReconciliation += cm.gamedayReconciliation;
-        // Mark as having CM component
-        (existing as any).hasCMComponent = true;
-        (existing as any).cmCommercialValue = cm.commercialValue;
-      } else {
-        // Add CM-only contract for this season
-        const cmContract = { ...cm, hasCMComponent: true, cmCommercialValue: cm.commercialValue };
-        contractsBySeason.set(cm.season, cmContract as SponsorData);
-      }
-    });
-    
-    const allContracts = Array.from(contractsBySeason.values())
+    // Find all contracts for this company (combinedData already has _CM merged)
+    const allContracts = combinedData
+      .filter(d => normalizeCompany(d.company) === selectedCompanyNorm)
       .sort((a, b) => getSeasonYear(a.season) - getSeasonYear(b.season));
     
     // Current season is 25/26 (Jan 2026)
@@ -408,8 +421,10 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     const current = allContracts.filter(c => getSeasonYear(c.season) === currentSeasonYear);
     const future = allContracts.filter(c => getSeasonYear(c.season) > currentSeasonYear);
     
-    return { past, current, future, all: allContracts, hasCM: cmContracts.length > 0 };
-  }, [data, selectedSponsor]);
+    const hasCM = allContracts.some(c => (c as any).hasCMComponent);
+    
+    return { past, current, future, all: allContracts, hasCM };
+  }, [combinedData, selectedSponsor]);
 
   // Monthly payment breakdown for selected sponsor
   const selectedSponsorMonthly = useMemo(() => {
