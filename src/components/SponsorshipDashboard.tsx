@@ -1303,7 +1303,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                     { label: 'VB (Youth)', desc: 'Youth team sponsorship, academy branding', value: selectedSponsor.vbReconciliation, color: 'bg-amber-100 text-amber-700', icon: '⭐' },
                     { label: 'CSR', desc: 'Corporate social responsibility activities', value: selectedSponsor.csrReconciliation, color: 'bg-slate-100 text-slate-700', icon: '🤝' },
                     { label: 'Corporate Tickets', desc: 'Tickets, parking, VIP access, hospitality (x15 games)', value: selectedSponsor.corpTixReconciliation + ((selectedSponsor.hospitalityReconciliation + selectedSponsor.parkingReconciliation) * 15), color: 'bg-blue-100 text-blue-700', icon: '🎟️' },
-                    { label: 'GameDay', desc: 'F&B, merchandising, media, other gameday benefits (x15 games)', value: selectedSponsor.gamedayReconciliation * 15, color: 'bg-emerald-100 text-emerald-700', icon: '🏀' }
+                    { label: 'GameDay Visibility', desc: 'LED displays, naming rights, jersey, banners (x15 games)', value: selectedSponsor.gamedayReconciliation * 15, color: 'bg-emerald-100 text-emerald-700', icon: '📺' }
                   ].filter(item => item.value > 0).map(item => (
                     <div key={item.label} className={`rounded-lg p-4 ${item.color} flex items-center justify-between`}>
                       <div className="flex items-center gap-3">
