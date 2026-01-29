@@ -4,7 +4,7 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import { SponsorData } from '../types';
-import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet, X, Filter, Target, Ticket, Award, TrendingUp, TrendingDown, Minus, Search } from 'lucide-react';
+import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet, X, Filter, Target, Ticket, Award, TrendingUp, TrendingDown, Minus, Search, Calendar, Mail, User, Clock, History, ArrowRight, CheckCircle, Circle } from 'lucide-react';
 import { SEASON_TARGET_SPONSORSHIP } from '../constants';
 
 const SPONSOR_TIERS = {
@@ -106,6 +106,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   const [filterTier, setFilterTier] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRecType, setFilterRecType] = useState<'sponsorship' | 'vb' | 'csr' | 'corptix' | 'gameday' | null>(null);
+  const [selectedSponsor, setSelectedSponsor] = useState<SponsorData | null>(null);
   
   const hasActiveFilter = filterCompany || filterSector || filterContractType || filterTier || searchQuery || filterRecType;
   
@@ -343,6 +344,43 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       worst5: sorted.slice(-5).reverse()
     };
   }, [chartFilteredData]);
+
+  // Historical data for selected sponsor (same company across all seasons)
+  const sponsorHistory = useMemo(() => {
+    if (!selectedSponsor) return [];
+    return data
+      .filter(d => d.company === selectedSponsor.company)
+      .sort((a, b) => {
+        // Sort seasons chronologically (e.g., 23/24, 24/25, 25/26)
+        const aYear = parseInt(a.season.split('/')[0]) || 0;
+        const bYear = parseInt(b.season.split('/')[0]) || 0;
+        return aYear - bYear;
+      });
+  }, [data, selectedSponsor]);
+
+  // Monthly payment breakdown for selected sponsor
+  const selectedSponsorMonthly = useMemo(() => {
+    if (!selectedSponsor) return [];
+    const months = ['july', 'august', 'september', 'october', 'november', 'december', 
+                    'january', 'february', 'march', 'april', 'may', 'june'];
+    const monthLabels = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    
+    // Determine current month for highlighting future payments
+    const now = new Date();
+    const currentMonthIndex = now.getMonth(); // 0-11
+    // Map calendar month to fiscal month (July = 0)
+    const fiscalMonthMap: Record<number, number> = { 6: 0, 7: 1, 8: 2, 9: 3, 10: 4, 11: 5, 0: 6, 1: 7, 2: 8, 3: 9, 4: 10, 5: 11 };
+    const currentFiscalMonth = fiscalMonthMap[currentMonthIndex] ?? 0;
+    
+    return months.map((m, i) => ({
+      name: monthLabels[i],
+      month: m,
+      value: selectedSponsor.monthlyPayments[m] || 0,
+      isPast: i < currentFiscalMonth,
+      isCurrent: i === currentFiscalMonth,
+      isFuture: i > currentFiscalMonth
+    }));
+  }, [selectedSponsor]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -1006,13 +1044,18 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 const quality = getDealQuality(sponsor.delta, sponsor.commercialValue);
                 const QualityIcon = quality.icon;
                 return (
-                <tr key={sponsor.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                <tr 
+                  key={sponsor.id} 
+                  className="border-b border-gray-50 hover:bg-red-50 transition-colors cursor-pointer group"
+                  onClick={() => setSelectedSponsor(sponsor)}
+                >
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-600">
+                      <span className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-600 group-hover:bg-red-100 group-hover:text-red-700 transition-colors">
                         {idx + 1}
                       </span>
-                      <span className="font-medium text-gray-900">{sponsor.company}</span>
+                      <span className="font-medium text-gray-900 group-hover:text-red-700 transition-colors">{sponsor.company}</span>
+                      <ArrowRight size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </td>
                   <td className="py-3 px-2 text-center">
@@ -1065,6 +1108,261 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
           </table>
         </div>
       </div>
+
+      {/* Sponsor Detail Modal */}
+      {selectedSponsor && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedSponsor(null)}>
+          <div 
+            className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getSponsorTier(selectedSponsor.commercialValue).bgColor}`}>
+                  <Building2 size={24} className="text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">{selectedSponsor.company}</h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${getSponsorTier(selectedSponsor.commercialValue).bgColor} ${getSponsorTier(selectedSponsor.commercialValue).textColor}`}>
+                      {getSponsorTier(selectedSponsor.commercialValue).name}
+                    </span>
+                    <span className="text-sm text-gray-500">{selectedSponsor.sector || 'N/A'}</span>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${selectedSponsor.contractType === 'CASH' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
+                      {selectedSponsor.contractType}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedSponsor(null)}
+                className="w-10 h-10 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
+              >
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Contact & Contract Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
+                    <User size={16} /> Contact Information
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 w-16">Contact:</span>
+                      <span className="font-medium text-gray-900">{selectedSponsor.contact || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 w-16">Email:</span>
+                      <span className="font-medium text-gray-900">{selectedSponsor.email || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 w-16">Size:</span>
+                      <span className="font-medium text-gray-900">{selectedSponsor.dimension || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
+                    <Calendar size={16} /> Contract Details
+                  </h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 w-16">Season:</span>
+                      <span className="font-medium text-gray-900">{selectedSponsor.season}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 w-16">Duration:</span>
+                      <span className="font-medium text-gray-900">{selectedSponsor.contractDuration || 'N/A'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 w-16">Level:</span>
+                      <span className="font-medium text-gray-900">{selectedSponsor.level || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Summary */}
+              <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-gray-700 mb-4">Financial Summary</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(selectedSponsor.commercialValue)}</p>
+                    <p className="text-xs text-gray-500 mt-1">Commercial Value</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">{formatCurrency(selectedSponsor.sponsorReconciliation)}</p>
+                    <p className="text-xs text-gray-500 mt-1">Sponsorship</p>
+                  </div>
+                  <div className="text-center">
+                    <p className={`text-2xl font-bold ${selectedSponsor.delta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {selectedSponsor.delta >= 0 ? '+' : ''}{formatCurrency(selectedSponsor.delta)}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Delta (Profit/Loss)</p>
+                  </div>
+                  <div className="text-center">
+                    {(() => {
+                      const quality = getDealQuality(selectedSponsor.delta, selectedSponsor.commercialValue);
+                      const Icon = quality.icon;
+                      return (
+                        <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg ${quality.bgColor} ${quality.color}`}>
+                          <Icon size={16} />
+                          <span className="font-bold">{quality.label}</span>
+                        </div>
+                      );
+                    })()}
+                    <p className="text-xs text-gray-500 mt-1">Deal Quality</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Revenue Breakdown */}
+              <div className="bg-white border border-gray-100 rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-gray-700 mb-4">Revenue Breakdown</h3>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  {[
+                    { label: 'Sponsorship', value: selectedSponsor.sponsorReconciliation, color: 'bg-red-100 text-red-700' },
+                    { label: 'VB (Youth)', value: selectedSponsor.vbReconciliation, color: 'bg-amber-100 text-amber-700' },
+                    { label: 'CSR', value: selectedSponsor.csrReconciliation, color: 'bg-slate-100 text-slate-700' },
+                    { label: 'Corp Tickets', value: selectedSponsor.corpTixReconciliation, color: 'bg-blue-100 text-blue-700' },
+                    { label: 'GameDay', value: selectedSponsor.gamedayReconciliation * 15, color: 'bg-emerald-100 text-emerald-700' }
+                  ].map(item => (
+                    <div key={item.label} className={`rounded-lg p-3 ${item.color}`}>
+                      <p className="text-lg font-bold">{formatCompactCurrency(item.value)}</p>
+                      <p className="text-xs mt-1">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Monthly Payment Schedule */}
+              <div className="bg-white border border-gray-100 rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                  <Clock size={16} /> Monthly Payment Schedule
+                </h3>
+                <div className="grid grid-cols-6 md:grid-cols-12 gap-2">
+                  {selectedSponsorMonthly.map((month) => (
+                    <div 
+                      key={month.month}
+                      className={`text-center p-2 rounded-lg border ${
+                        month.isCurrent 
+                          ? 'border-red-500 bg-red-50 ring-2 ring-red-200' 
+                          : month.isPast 
+                            ? 'border-gray-200 bg-gray-50' 
+                            : 'border-blue-200 bg-blue-50'
+                      }`}
+                    >
+                      <p className="text-[10px] font-medium text-gray-500">{month.name}</p>
+                      <p className={`text-xs font-bold mt-1 ${month.value > 0 ? 'text-gray-900' : 'text-gray-300'}`}>
+                        {month.value > 0 ? formatCompactCurrency(month.value) : '-'}
+                      </p>
+                      <div className="mt-1">
+                        {month.isPast ? (
+                          <CheckCircle size={12} className="mx-auto text-green-500" />
+                        ) : month.isCurrent ? (
+                          <Clock size={12} className="mx-auto text-red-500" />
+                        ) : (
+                          <Circle size={12} className="mx-auto text-blue-300" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                  <span className="flex items-center gap-1"><CheckCircle size={12} className="text-green-500" /> Paid</span>
+                  <span className="flex items-center gap-1"><Clock size={12} className="text-red-500" /> Current</span>
+                  <span className="flex items-center gap-1"><Circle size={12} className="text-blue-300" /> Upcoming</span>
+                </div>
+              </div>
+
+              {/* Historical Data */}
+              {sponsorHistory.length > 1 && (
+                <div className="bg-white border border-gray-100 rounded-xl p-5">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                    <History size={16} /> Historical & Future Contracts
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100">
+                          <th className="text-left py-2 px-3 font-medium text-gray-600">Season</th>
+                          <th className="text-left py-2 px-3 font-medium text-gray-600">Type</th>
+                          <th className="text-right py-2 px-3 font-medium text-gray-600">Commercial Value</th>
+                          <th className="text-right py-2 px-3 font-medium text-gray-600">Sponsorship</th>
+                          <th className="text-right py-2 px-3 font-medium text-gray-600">Delta</th>
+                          <th className="text-center py-2 px-3 font-medium text-gray-600">Quality</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sponsorHistory.map((hist) => {
+                          const isCurrentSeason = hist.season === selectedSponsor.season;
+                          const histQuality = getDealQuality(hist.delta, hist.commercialValue);
+                          const HistIcon = histQuality.icon;
+                          return (
+                            <tr 
+                              key={hist.id} 
+                              className={`border-b border-gray-50 ${isCurrentSeason ? 'bg-red-50' : 'hover:bg-gray-50'}`}
+                            >
+                              <td className="py-2 px-3">
+                                <span className={`font-medium ${isCurrentSeason ? 'text-red-700' : 'text-gray-900'}`}>
+                                  {hist.season} {isCurrentSeason && '(Current)'}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3">
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
+                                  {hist.contractType}
+                                </span>
+                              </td>
+                              <td className="py-2 px-3 text-right font-medium">{formatCurrency(hist.commercialValue)}</td>
+                              <td className="py-2 px-3 text-right">{formatCurrency(hist.sponsorReconciliation)}</td>
+                              <td className={`py-2 px-3 text-right font-medium ${hist.delta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                {hist.delta >= 0 ? '+' : ''}{formatCompactCurrency(hist.delta)}
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${histQuality.bgColor} ${histQuality.color}`}>
+                                  <HistIcon size={10} /> {histQuality.label}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot>
+                        <tr className="bg-gray-50 font-semibold">
+                          <td className="py-2 px-3 text-gray-700">Total ({sponsorHistory.length} seasons)</td>
+                          <td className="py-2 px-3"></td>
+                          <td className="py-2 px-3 text-right">{formatCurrency(sponsorHistory.reduce((sum, h) => sum + h.commercialValue, 0))}</td>
+                          <td className="py-2 px-3 text-right">{formatCurrency(sponsorHistory.reduce((sum, h) => sum + h.sponsorReconciliation, 0))}</td>
+                          <td className="py-2 px-3 text-right text-emerald-600">
+                            +{formatCompactCurrency(sponsorHistory.reduce((sum, h) => sum + h.delta, 0))}
+                          </td>
+                          <td className="py-2 px-3"></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Bonus Info */}
+              {selectedSponsor.bonusPlayoff > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                    <Award size={16} /> Playoff Bonus
+                  </h3>
+                  <p className="text-lg font-bold text-amber-700">{formatCurrency(selectedSponsor.bonusPlayoff)}</p>
+                  <p className="text-xs text-amber-600 mt-1">Additional bonus if team qualifies for playoffs</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
