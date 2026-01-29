@@ -349,32 +349,22 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   const sponsorHistory = useMemo(() => {
     if (!selectedSponsor) return { past: [], current: [], future: [], all: [] };
     
+    // Helper to extract start year from season (handles both "25-26" and "25/26" formats)
+    const getSeasonYear = (season: string): number => {
+      const match = season.match(/(\d+)/);
+      return match ? parseInt(match[1]) : 0;
+    };
+    
     const allContracts = data
       .filter(d => d.company === selectedSponsor.company)
-      .sort((a, b) => {
-        // Sort seasons chronologically (e.g., 23/24, 24/25, 25/26)
-        const aYear = parseInt(a.season.split('/')[0]) || 0;
-        const bYear = parseInt(b.season.split('/')[0]) || 0;
-        return aYear - bYear;
-      });
+      .sort((a, b) => getSeasonYear(a.season) - getSeasonYear(b.season));
     
-    // Current season is 25/26 (Jan 2026)
+    // Current season is 25-26 (Jan 2026)
     const currentSeasonYear = 25;
     
-    const past = allContracts.filter(c => {
-      const year = parseInt(c.season.split('/')[0]) || 0;
-      return year < currentSeasonYear;
-    });
-    
-    const current = allContracts.filter(c => {
-      const year = parseInt(c.season.split('/')[0]) || 0;
-      return year === currentSeasonYear;
-    });
-    
-    const future = allContracts.filter(c => {
-      const year = parseInt(c.season.split('/')[0]) || 0;
-      return year > currentSeasonYear;
-    });
+    const past = allContracts.filter(c => getSeasonYear(c.season) < currentSeasonYear);
+    const current = allContracts.filter(c => getSeasonYear(c.season) === currentSeasonYear);
+    const future = allContracts.filter(c => getSeasonYear(c.season) > currentSeasonYear);
     
     return { past, current, future, all: allContracts };
   }, [data, selectedSponsor]);
