@@ -4,7 +4,7 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import { SponsorData } from '../types';
-import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet, X, Filter, Target, Ticket, Award, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet, X, Filter, Target, Ticket, Award, TrendingUp, TrendingDown, Minus, Search } from 'lucide-react';
 import { SEASON_TARGET_SPONSORSHIP } from '../constants';
 
 const SPONSOR_TIERS = {
@@ -104,14 +104,18 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   const [filterSector, setFilterSector] = useState<string | null>(null);
   const [filterContractType, setFilterContractType] = useState<'CASH' | 'CM' | null>(null);
   const [filterTier, setFilterTier] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterRecType, setFilterRecType] = useState<'sponsorship' | 'vb' | 'csr' | 'corptix' | 'gameday' | null>(null);
   
-  const hasActiveFilter = filterCompany || filterSector || filterContractType || filterTier;
+  const hasActiveFilter = filterCompany || filterSector || filterContractType || filterTier || searchQuery || filterRecType;
   
   const clearAllFilters = () => {
     setFilterCompany(null);
     setFilterSector(null);
     setFilterContractType(null);
     setFilterTier(null);
+    setSearchQuery('');
+    setFilterRecType(null);
   };
 
   const seasons = useMemo(() => {
@@ -125,6 +129,13 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
   const chartFilteredData = useMemo(() => {
     let result = [...filteredData];
+    
+    // Search filter - search by company name
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      result = result.filter(d => d.company.toLowerCase().includes(query));
+    }
+    
     if (filterCompany) {
       result = result.filter(d => d.company === filterCompany);
     }
@@ -137,8 +148,21 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     if (filterTier) {
       result = result.filter(d => getSponsorTier(d.commercialValue).name === filterTier);
     }
+    // Reconciliation type filter - filter sponsors who have value in that category
+    if (filterRecType) {
+      result = result.filter(d => {
+        switch (filterRecType) {
+          case 'sponsorship': return d.sponsorReconciliation > 0;
+          case 'vb': return d.vbReconciliation > 0;
+          case 'csr': return d.csrReconciliation > 0;
+          case 'corptix': return d.corpTixReconciliation > 0;
+          case 'gameday': return d.gamedayReconciliation > 0;
+          default: return true;
+        }
+      });
+    }
     return result;
-  }, [filteredData, filterCompany, filterSector, filterContractType, filterTier]);
+  }, [filteredData, searchQuery, filterCompany, filterSector, filterContractType, filterTier, filterRecType]);
 
   const stats = useMemo(() => {
     const dataSource = chartFilteredData;
@@ -365,7 +389,41 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
           </p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search Box */}
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search sponsors..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-4 py-2 w-48 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Type Filter Dropdown */}
+          <select
+            value={filterRecType || ''}
+            onChange={(e) => setFilterRecType(e.target.value as any || null)}
+            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            <option value="">All Types</option>
+            <option value="sponsorship">Sponsorship</option>
+            <option value="vb">VB (Youth)</option>
+            <option value="csr">CSR</option>
+            <option value="corptix">Corp Tickets</option>
+            <option value="gameday">GameDay</option>
+          </select>
+
           <div className="relative">
             <button 
               onClick={() => setShowSeasonDropdown(!showSeasonDropdown)}
@@ -428,6 +486,22 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
                     Tier: {filterTier}
                     <button onClick={() => setFilterTier(null)} className="hover:text-amber-600">
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+                {searchQuery && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
+                    Search: "{searchQuery}"
+                    <button onClick={() => setSearchQuery('')} className="hover:text-amber-600">
+                      <X size={12} />
+                    </button>
+                  </span>
+                )}
+                {filterRecType && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
+                    Type: {filterRecType === 'vb' ? 'VB (Youth)' : filterRecType === 'csr' ? 'CSR' : filterRecType === 'corptix' ? 'Corp Tickets' : filterRecType === 'gameday' ? 'GameDay' : 'Sponsorship'}
+                    <button onClick={() => setFilterRecType(null)} className="hover:text-amber-600">
                       <X size={12} />
                     </button>
                   </span>

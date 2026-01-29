@@ -604,6 +604,7 @@ app.get("/api/sponsorship/bigquery", async (req, res) => {
       res.json({ 
         success: true,
         csvContent,
+        rawRows: result.rawRows,
         rowCount: result.rawRows.length,
         message: `Fetched ${result.rawRows.length} sponsorship records from BigQuery`
       });
