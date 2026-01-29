@@ -147,6 +147,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         existing.csrReconciliation += d.csrReconciliation;
         existing.corpTixReconciliation += d.corpTixReconciliation;
         existing.gamedayReconciliation += d.gamedayReconciliation;
+        existing.hospitalityReconciliation += d.hospitalityReconciliation;
+        existing.parkingReconciliation += d.parkingReconciliation;
         existing.bonusPlayoff += d.bonusPlayoff;
         // Track CM component
         if (isCM(d.company)) {
@@ -1301,7 +1303,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                     { label: 'VB (Youth)', desc: 'Youth team sponsorship, academy branding', value: selectedSponsor.vbReconciliation, color: 'bg-amber-100 text-amber-700', icon: '⭐' },
                     { label: 'CSR', desc: 'Corporate social responsibility activities', value: selectedSponsor.csrReconciliation, color: 'bg-slate-100 text-slate-700', icon: '🤝' },
                     { label: 'Corporate Tickets', desc: 'Season tickets, VIP access, premium seating', value: selectedSponsor.corpTixReconciliation, color: 'bg-blue-100 text-blue-700', icon: '🎟️' },
-                    { label: 'GameDay Hospitality', desc: 'Hospitality packages, lounge access, catering (x15 games)', value: selectedSponsor.gamedayReconciliation * 15, color: 'bg-emerald-100 text-emerald-700', icon: '🍽️' }
+                    { label: 'Hospitality', desc: 'Parking access, hospitality lounge, premium services', value: (selectedSponsor.hospitalityReconciliation + selectedSponsor.parkingReconciliation) * 15, color: 'bg-purple-100 text-purple-700', icon: '🅿️' },
+                    { label: 'GameDay', desc: 'F&B, merchandising, media, other gameday benefits (x15 games)', value: selectedSponsor.gamedayReconciliation * 15, color: 'bg-emerald-100 text-emerald-700', icon: '🏀' }
                   ].filter(item => item.value > 0).map(item => (
                     <div key={item.label} className={`rounded-lg p-4 ${item.color} flex items-center justify-between`}>
                       <div className="flex items-center gap-3">
@@ -1314,7 +1317,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                       <p className="text-xl font-bold">{formatCurrency(item.value)}</p>
                     </div>
                   ))}
-                  {[selectedSponsor.sponsorReconciliation, selectedSponsor.vbReconciliation, selectedSponsor.csrReconciliation, selectedSponsor.corpTixReconciliation, selectedSponsor.gamedayReconciliation].every(v => v === 0) && (
+                  {[selectedSponsor.sponsorReconciliation, selectedSponsor.vbReconciliation, selectedSponsor.csrReconciliation, selectedSponsor.corpTixReconciliation, selectedSponsor.gamedayReconciliation, selectedSponsor.hospitalityReconciliation, selectedSponsor.parkingReconciliation].every(v => v === 0) && (
                     <p className="text-gray-500 text-sm italic">No benefits breakdown available for this contract</p>
                   )}
                 </div>
@@ -1326,6 +1329,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                       selectedSponsor.vbReconciliation + 
                       selectedSponsor.csrReconciliation + 
                       selectedSponsor.corpTixReconciliation + 
+                      ((selectedSponsor.hospitalityReconciliation + selectedSponsor.parkingReconciliation) * 15) +
                       (selectedSponsor.gamedayReconciliation * 15)
                     )}
                   </span>

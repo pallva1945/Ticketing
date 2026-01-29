@@ -142,6 +142,8 @@ export interface SponsorData {
   bonusPlayoff: number;
   netOfTicketing: number;
   gamedayReconciliation: number;
+  hospitalityReconciliation: number;
+  parkingReconciliation: number;
   vbReconciliation: number;
   csrReconciliation: number;
   corpTixReconciliation: number;
