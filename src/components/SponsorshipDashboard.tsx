@@ -235,10 +235,10 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   }, [chartFilteredData, excludeCorpTix, excludeGameDay, excludeVB]);
 
   const topSponsors = useMemo(() => {
-    return [...filteredData]
+    return [...chartFilteredData]
       .sort((a, b) => b.commercialValue - a.commercialValue)
       .slice(0, 10);
-  }, [filteredData]);
+  }, [chartFilteredData]);
 
   const tableFilteredData = useMemo(() => {
     return [...chartFilteredData].sort((a, b) => b.commercialValue - a.commercialValue);
@@ -246,7 +246,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
   const sectorData = useMemo(() => {
     const sectorMap: Record<string, { value: number, count: number }> = {};
-    filteredData.forEach(d => {
+    chartFilteredData.forEach(d => {
       const sector = d.sector || 'Other';
       if (!sectorMap[sector]) sectorMap[sector] = { value: 0, count: 0 };
       sectorMap[sector].value += d.commercialValue;
@@ -255,7 +255,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     return Object.entries(sectorMap)
       .map(([name, { value, count }]) => ({ name, value, count }))
       .sort((a, b) => b.value - a.value);
-  }, [filteredData]);
+  }, [chartFilteredData]);
 
   const contractTypeData = useMemo(() => {
     return [
@@ -282,15 +282,15 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     const monthLabels = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
     
     return months.map((m, i) => {
-      const total = filteredData.reduce((sum, d) => sum + (d.monthlyPayments[m] || 0), 0);
+      const total = chartFilteredData.reduce((sum, d) => sum + (d.monthlyPayments[m] || 0), 0);
       return { name: monthLabels[i], value: total, month: m };
     });
-  }, [filteredData]);
+  }, [chartFilteredData]);
 
   const tierStats = useMemo(() => {
     const tiers = Object.values(SPONSOR_TIERS).map(tier => ({
       ...tier,
-      sponsors: filteredData.filter(d => getSponsorTier(d.commercialValue).name === tier.name),
+      sponsors: chartFilteredData.filter(d => getSponsorTier(d.commercialValue).name === tier.name),
       count: 0,
       totalValue: 0,
       avgDealQuality: 0
@@ -308,13 +308,13 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     });
 
     return tiers;
-  }, [filteredData]);
+  }, [chartFilteredData]);
 
   const dealQualityStats = useMemo(() => {
     const qualityBuckets = { excellent: 0, good: 0, fair: 0, below: 0, poor: 0 };
     let totalDelta = 0;
     
-    filteredData.forEach(sponsor => {
+    chartFilteredData.forEach(sponsor => {
       totalDelta += sponsor.delta;
       const quality = getDealQuality(sponsor.delta, sponsor.commercialValue);
       if (quality.label === 'Excellent') qualityBuckets.excellent++;
@@ -324,15 +324,15 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       else if (quality.label === 'Poor') qualityBuckets.poor++;
     });
 
-    const avgQualityScore = filteredData.length > 0 
-      ? filteredData.reduce((sum, s) => sum + getDealQuality(s.delta, s.commercialValue).score, 0) / filteredData.length 
+    const avgQualityScore = chartFilteredData.length > 0 
+      ? chartFilteredData.reduce((sum, s) => sum + getDealQuality(s.delta, s.commercialValue).score, 0) / chartFilteredData.length 
       : 0;
 
-    return { ...qualityBuckets, totalDelta, avgQualityScore, total: filteredData.length };
-  }, [filteredData]);
+    return { ...qualityBuckets, totalDelta, avgQualityScore, total: chartFilteredData.length };
+  }, [chartFilteredData]);
 
   const topAndWorstDeals = useMemo(() => {
-    const withDelta = filteredData.map(s => ({
+    const withDelta = chartFilteredData.map(s => ({
       ...s,
       delta: s.delta,
       quality: getDealQuality(s.delta, s.commercialValue)
@@ -342,7 +342,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       top5: sorted.slice(0, 5),
       worst5: sorted.slice(-5).reverse()
     };
-  }, [filteredData]);
+  }, [chartFilteredData]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
