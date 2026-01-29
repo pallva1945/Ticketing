@@ -4,7 +4,7 @@ import {
   PieChart, Pie, Cell
 } from 'recharts';
 import { SponsorData } from '../types';
-import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet, X, Filter, Target, Ticket, Award, TrendingUp, TrendingDown, Minus, Search, Calendar, Mail, User, Clock, History, ArrowRight, CheckCircle, Circle } from 'lucide-react';
+import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet, X, Filter, Target, Ticket, Award, TrendingUp, TrendingDown, Minus, Search, Calendar, Mail, User, Clock, History, ArrowRight, CheckCircle, Circle, Gift } from 'lucide-react';
 import { SEASON_TARGET_SPONSORSHIP } from '../constants';
 
 const SPONSOR_TIERS = {
@@ -1289,22 +1289,45 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Revenue Breakdown */}
+              {/* What We Give In Exchange */}
               <div className="bg-white border border-gray-100 rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">Revenue Breakdown</h3>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                  <Gift size={16} /> What We Give In Exchange
+                </h3>
+                <div className="space-y-3">
                   {[
-                    { label: 'Sponsorship', value: selectedSponsor.sponsorReconciliation, color: 'bg-red-100 text-red-700' },
-                    { label: 'VB (Youth)', value: selectedSponsor.vbReconciliation, color: 'bg-amber-100 text-amber-700' },
-                    { label: 'CSR', value: selectedSponsor.csrReconciliation, color: 'bg-slate-100 text-slate-700' },
-                    { label: 'Corp Tickets', value: selectedSponsor.corpTixReconciliation, color: 'bg-blue-100 text-blue-700' },
-                    { label: 'GameDay', value: selectedSponsor.gamedayReconciliation * 15, color: 'bg-emerald-100 text-emerald-700' }
-                  ].map(item => (
-                    <div key={item.label} className={`rounded-lg p-3 ${item.color}`}>
-                      <p className="text-lg font-bold">{formatCompactCurrency(item.value)}</p>
-                      <p className="text-xs mt-1">{item.label}</p>
+                    { label: 'Sponsorship', desc: 'Brand visibility, jersey/arena signage, media exposure', value: selectedSponsor.sponsorReconciliation, color: 'bg-red-100 text-red-700', icon: '🎯' },
+                    { label: 'VB (Youth)', desc: 'Youth team sponsorship, academy branding', value: selectedSponsor.vbReconciliation, color: 'bg-amber-100 text-amber-700', icon: '⭐' },
+                    { label: 'CSR', desc: 'Corporate social responsibility activities', value: selectedSponsor.csrReconciliation, color: 'bg-slate-100 text-slate-700', icon: '🤝' },
+                    { label: 'Corporate Tickets', desc: 'Season tickets, VIP access, premium seating', value: selectedSponsor.corpTixReconciliation, color: 'bg-blue-100 text-blue-700', icon: '🎟️' },
+                    { label: 'GameDay Hospitality', desc: 'Hospitality packages, lounge access, catering (x15 games)', value: selectedSponsor.gamedayReconciliation * 15, color: 'bg-emerald-100 text-emerald-700', icon: '🍽️' }
+                  ].filter(item => item.value > 0).map(item => (
+                    <div key={item.label} className={`rounded-lg p-4 ${item.color} flex items-center justify-between`}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{item.icon}</span>
+                        <div>
+                          <p className="font-semibold">{item.label}</p>
+                          <p className="text-xs opacity-75">{item.desc}</p>
+                        </div>
+                      </div>
+                      <p className="text-xl font-bold">{formatCurrency(item.value)}</p>
                     </div>
                   ))}
+                  {[selectedSponsor.sponsorReconciliation, selectedSponsor.vbReconciliation, selectedSponsor.csrReconciliation, selectedSponsor.corpTixReconciliation, selectedSponsor.gamedayReconciliation].every(v => v === 0) && (
+                    <p className="text-gray-500 text-sm italic">No benefits breakdown available for this contract</p>
+                  )}
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-600">Total Value Given</span>
+                  <span className="text-xl font-bold text-gray-900">
+                    {formatCurrency(
+                      selectedSponsor.sponsorReconciliation + 
+                      selectedSponsor.vbReconciliation + 
+                      selectedSponsor.csrReconciliation + 
+                      selectedSponsor.corpTixReconciliation + 
+                      (selectedSponsor.gamedayReconciliation * 15)
+                    )}
+                  </span>
                 </div>
               </div>
 
