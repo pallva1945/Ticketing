@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShoppingBag, Package, Users, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, Layers, Search } from 'lucide-react';
+import { ShoppingBag, Package, Users, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, Layers, Search, Target } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line } from 'recharts';
 
 interface ShopifyOrder {
@@ -60,8 +60,21 @@ interface MerchandisingData {
 
 const COLORS = ['#dc2626', '#ea580c', '#d97706', '#ca8a04', '#65a30d', '#16a34a', '#0d9488', '#0891b2', '#0284c7', '#2563eb', '#7c3aed', '#c026d3'];
 
+const SEASON_GOAL = 131000;
+
 const formatCurrency = (value: number) => 
   new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
+
+const getSeasonFromDate = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  if (month >= 7) {
+    return `${String(year).slice(2)}/${String(year + 1).slice(2)}`;
+  } else {
+    return `${String(year - 1).slice(2)}/${String(year).slice(2)}`;
+  }
+};
 
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -74,6 +87,9 @@ export const MerchandisingView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'customers'>('overview');
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
+  
+  // Season filter
+  const [selectedSeason, setSelectedSeason] = useState<string>('25/26');
   
   // Search states
   const [productSearch, setProductSearch] = useState('');
@@ -106,18 +122,33 @@ export const MerchandisingView: React.FC = () => {
     loadData();
   }, []);
 
+  const availableSeasons = useMemo(() => {
+    if (!data) return ['25/26'];
+    const seasons = new Set<string>();
+    data.orders.forEach(order => {
+      seasons.add(getSeasonFromDate(order.processedAt));
+    });
+    return Array.from(seasons).sort().reverse();
+  }, [data]);
+
+  const filteredOrders = useMemo(() => {
+    if (!data) return [];
+    return data.orders.filter(order => getSeasonFromDate(order.processedAt) === selectedSeason);
+  }, [data, selectedSeason]);
+
   const stats = useMemo(() => {
     if (!data) return null;
     
-    const totalRevenue = data.orders.reduce((sum, o) => sum + o.totalPrice, 0);
-    const totalOrders = data.orders.length;
-    const totalCustomers = data.customers.length;
+    const totalRevenue = filteredOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+    const totalOrders = filteredOrders.length;
     const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const totalCustomers = data.customers.length;
+    const goalProgress = (totalRevenue / SEASON_GOAL) * 100;
     const totalProducts = data.products.length;
     const totalInventory = data.products.reduce((sum, p) => sum + p.totalInventory, 0);
     
     const productSales: Record<string, { title: string; revenue: number; quantity: number; type: string }> = {};
-    data.orders.forEach(order => {
+    filteredOrders.forEach(order => {
       order.lineItems.forEach(item => {
         if (!productSales[item.productId]) {
           productSales[item.productId] = { title: item.title, revenue: 0, quantity: 0, type: '' };
@@ -133,7 +164,7 @@ export const MerchandisingView: React.FC = () => {
       .slice(0, 10);
     
     const categoryRevenue: Record<string, number> = {};
-    data.orders.forEach(order => {
+    filteredOrders.forEach(order => {
       order.lineItems.forEach(item => {
         const product = data.products.find(p => p.id === item.productId);
         const category = product?.productType || 'Other';
@@ -149,7 +180,7 @@ export const MerchandisingView: React.FC = () => {
     const getOrderDate = (order: ShopifyOrder) => new Date(order.processedAt);
     
     const monthlyRevenue: Record<string, number> = {};
-    data.orders.forEach(order => {
+    filteredOrders.forEach(order => {
       const d = getOrderDate(order);
       const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + order.totalPrice;
@@ -161,8 +192,8 @@ export const MerchandisingView: React.FC = () => {
     
     // Generate all months from earliest order to now, filling in 0 for months without orders
     const allMonths: { month: string; revenue: number }[] = [];
-    if (data.orders.length > 0) {
-      const orderDates = data.orders.map(o => getOrderDate(o));
+    if (filteredOrders.length > 0) {
+      const orderDates = filteredOrders.map(o => getOrderDate(o));
       const earliest = new Date(Math.min(...orderDates.map(d => d.getTime())));
       const now = new Date();
       
@@ -188,9 +219,10 @@ export const MerchandisingView: React.FC = () => {
       topProducts,
       categoryData,
       monthlyData: allMonths,
-      topCustomers
+      topCustomers,
+      goalProgress
     };
-  }, [data]);
+  }, [data, filteredOrders]);
 
   // Filtered products based on search
   const filteredProducts = useMemo(() => {
@@ -264,12 +296,23 @@ export const MerchandisingView: React.FC = () => {
             {data.lastUpdated && <span className="ml-2">• Updated {formatDate(data.lastUpdated)}</span>}
           </p>
         </div>
-        <button 
-          onClick={loadData} 
-          className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2"
-        >
-          <RefreshCw size={16} /> Refresh Data
-        </button>
+        <div className="flex items-center gap-3">
+          <select
+            value={selectedSeason}
+            onChange={(e) => setSelectedSeason(e.target.value)}
+            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+          >
+            {availableSeasons.map(season => (
+              <option key={season} value={season}>Season {season}</option>
+            ))}
+          </select>
+          <button 
+            onClick={loadData} 
+            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2"
+          >
+            <RefreshCw size={16} /> Refresh Data
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -348,6 +391,34 @@ export const MerchandisingView: React.FC = () => {
               </div>
               <p className="text-xs text-gray-500 mb-1">Inventory Units</p>
               <p className="text-lg font-bold text-gray-800">{stats.totalInventory.toLocaleString()}</p>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-xl p-5 shadow-lg text-white">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Target size={20} className="text-white" />
+                </div>
+                <div>
+                  <p className="text-sm text-white/80">Season {selectedSeason} Goal</p>
+                  <p className="text-2xl font-bold">{formatCurrency(SEASON_GOAL)}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-white/80">Current Revenue</p>
+                <p className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
+              </div>
+            </div>
+            <div className="relative h-4 bg-white/20 rounded-full overflow-hidden">
+              <div 
+                className="absolute inset-y-0 left-0 bg-white rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(stats.goalProgress, 100)}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-2 text-sm">
+              <span className="text-white/80">{stats.goalProgress.toFixed(1)}% achieved</span>
+              <span className="text-white/80">{formatCurrency(Math.max(0, SEASON_GOAL - stats.totalRevenue))} remaining</span>
             </div>
           </div>
 
@@ -560,7 +631,7 @@ export const MerchandisingView: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {data.orders.slice(0, ordersLimit).map((order) => (
+                {filteredOrders.slice(0, ordersLimit).map((order) => (
                   <tr key={order.id} className="border-t border-gray-100 hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-800">#{order.orderNumber}</td>
                     <td className="px-4 py-3 text-gray-600">{formatDate(order.processedAt)}</td>
@@ -593,9 +664,9 @@ export const MerchandisingView: React.FC = () => {
               </tbody>
             </table>
           </div>
-          {data.orders.length > ordersLimit ? (
+          {filteredOrders.length > ordersLimit ? (
             <div className="px-4 py-3 bg-gray-50 text-center">
-              <span className="text-sm text-gray-500 mr-3">Showing {ordersLimit} of {data.orders.length} orders</span>
+              <span className="text-sm text-gray-500 mr-3">Showing {ordersLimit} of {filteredOrders.length} orders</span>
               <button 
                 onClick={() => setOrdersLimit(l => l + 50)}
                 className="px-4 py-1.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
@@ -605,7 +676,7 @@ export const MerchandisingView: React.FC = () => {
             </div>
           ) : (
             <div className="px-4 py-3 bg-gray-50 text-center text-sm text-gray-500">
-              Showing all {data.orders.length} orders
+              Showing all {filteredOrders.length} orders for season {selectedSeason}
             </div>
           )}
         </div>
