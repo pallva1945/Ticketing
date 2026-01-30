@@ -637,43 +637,6 @@ app.get("/api/gameday/bigquery", async (req, res) => {
   }
 });
 
-if (isProduction) {
-  const distPath = path.join(__dirname, '..', 'dist');
-  app.use(express.static(distPath));
-  app.use((req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
-  });
-}
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT} (${isProduction ? 'production' : 'development'})`);
-  
-  // Pre-warm CRM cache in background for faster first load
-  console.log('Pre-warming CRM cache in background...');
-  fetchCRMFromBigQuery().then(result => {
-    if (result.success && result.rawRows) {
-      const processedStats = computeCRMStats(result.rawRows);
-      const fixedRows = result.rawRows.filter(isRowFixedCapacity);
-      const fixedStats = computeCRMStats(fixedRows);
-      const flexibleRows = result.rawRows.filter((row: any) => !isRowFixedCapacity(row));
-      const flexibleStats = computeCRMStats(flexibleRows);
-      
-      crmCache = { 
-        rawRows: result.rawRows,
-        processedStats,
-        fixedStats,
-        flexibleStats,
-        timestamp: Date.now() 
-      };
-      console.log(`CRM cache pre-warmed: ${result.rawRows.length} records ready`);
-    } else {
-      console.log('CRM pre-warm failed:', result.message);
-    }
-  }).catch(err => {
-    console.log('CRM pre-warm error:', err.message);
-  });
-});
-
 // --- SHOPIFY API INTEGRATION ---
 
 interface ShopifyOrder {
@@ -1105,4 +1068,42 @@ app.get("/api/shopify/customers", async (req, res) => {
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
+});
+
+// --- PRODUCTION STATIC FILE SERVING (must be after all API routes) ---
+if (isProduction) {
+  const distPath = path.join(__dirname, '..', 'dist');
+  app.use(express.static(distPath));
+  app.use((req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT} (${isProduction ? 'production' : 'development'})`);
+  
+  // Pre-warm CRM cache in background for faster first load
+  console.log('Pre-warming CRM cache in background...');
+  fetchCRMFromBigQuery().then(result => {
+    if (result.success && result.rawRows) {
+      const processedStats = computeCRMStats(result.rawRows);
+      const fixedRows = result.rawRows.filter(isRowFixedCapacity);
+      const fixedStats = computeCRMStats(fixedRows);
+      const flexibleRows = result.rawRows.filter((row: any) => !isRowFixedCapacity(row));
+      const flexibleStats = computeCRMStats(flexibleRows);
+      
+      crmCache = { 
+        rawRows: result.rawRows,
+        processedStats,
+        fixedStats,
+        flexibleStats,
+        timestamp: Date.now() 
+      };
+      console.log(`CRM cache pre-warmed: ${result.rawRows.length} records ready`);
+    } else {
+      console.log('CRM pre-warm failed:', result.message);
+    }
+  }).catch(err => {
+    console.log('CRM pre-warm error:', err.message);
+  });
 });
