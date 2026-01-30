@@ -2596,6 +2596,7 @@ const App: React.FC = () => {
                                         data={viewData} 
                                         onZoneClick={handleZoneClick} 
                                         selectedZone={selectedZones.includes('All') ? 'All' : selectedZones[0]}
+                                        viewMode={viewMode}
                                     />
                                 </div>
 
