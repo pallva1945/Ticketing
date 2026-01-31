@@ -888,10 +888,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       </div>
 
       {/* Filter Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <div><MultiSelect label="Game" options={filterOptions.games} selected={selectedGames} onChange={setSelectedGames} /></div>
         <div><MultiSelect label="Zone" options={filterOptions.zones} selected={selectedZones} onChange={setSelectedZones} /></div>
-        <div><MultiSelect label="Sell Type" options={filterOptions.sellTypes} selected={selectedSellTypes} onChange={setSelectedSellTypes} /></div>
         {hasActiveFilter && (
           <div className="flex items-end">
             <button onClick={clearAllFilters} className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-800 underline">
@@ -1020,10 +1019,17 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
                 <BarChart3 size={20} className="text-green-500" />
                 Sales Channel Breakdown
+                {!selectedSellTypes.includes('All') && (
+                  <span className="text-xs font-normal text-green-600 ml-2">
+                    (Filtered: {selectedSellTypes.join(', ')})
+                    <button onClick={() => setSelectedSellTypes(['All'])} className="ml-2 text-red-500 hover:text-red-700">✕</button>
+                  </span>
+                )}
               </h3>
+              <p className="text-xs text-gray-400 mb-2">Click a bar to filter by that channel</p>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={salesChannelChartData}>
+                  <BarChart data={salesChannelChartData} style={{ cursor: 'pointer' }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                     <YAxis tickFormatter={(v) => formatCompact(v)} tick={{ fontSize: 11 }} />
@@ -1035,6 +1041,16 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       dataKey="value" 
                       fill="#16a34a" 
                       radius={[4, 4, 0, 0]}
+                      cursor="pointer"
+                      onClick={(data: any) => {
+                        if (data?.name) {
+                          setSelectedSellTypes(prev => 
+                            prev.includes(data.name) && !prev.includes('All') 
+                              ? ['All'] 
+                              : [data.name]
+                          );
+                        }
+                      }}
                     />
                   </BarChart>
                 </ResponsiveContainer>

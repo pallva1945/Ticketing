@@ -560,11 +560,9 @@ app.get("/api/crm/bigquery", async (req, res) => {
       });
     }
     
-    console.log('CRM API: Fetching fresh data from BigQuery...');
     const result = await fetchCRMFromBigQuery();
-    console.log(`CRM API: BigQuery result - success=${result.success}, rawRows=${result.rawRows?.length || 0}, message=${result.message}`);
     
-    if (result.success && result.rawRows && result.rawRows.length > 0) {
+    if (result.success && result.rawRows) {
       // Compute stats for all data
       const processedStats = computeCRMStats(result.rawRows);
       // Compute stats for fixed capacity only (event = "ABBONAMENTO LBA 2025/26")
@@ -592,19 +590,6 @@ app.get("/api/crm/bigquery", async (req, res) => {
         message: `Processed ${result.rawRows.length} CRM records`
       });
     } else {
-      // If fresh fetch failed but we have cache, return cached data
-      if (crmCache && crmCache.rawRows?.length > 0) {
-        console.log('CRM API: Fresh fetch failed, falling back to cache');
-        return res.json({ 
-          success: true, 
-          stats: crmCache.processedStats,
-          fixedStats: crmCache.fixedStats,
-          flexibleStats: crmCache.flexibleStats,
-          rawRows: fullData ? crmCache.rawRows : undefined,
-          cached: true,
-          message: `Fallback to cache: ${crmCache.processedStats.totalRecords} records (fresh fetch returned empty)` 
-        });
-      }
       res.json(result);
     }
   } catch (error: any) {
