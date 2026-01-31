@@ -1801,21 +1801,11 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         };
 
         const giveawayTypeBreakdown = giveawayRecords.reduce((acc, r) => {
-          // Determine the giveaway type - use giveawayType if available, otherwise infer from sellType
-          let type: string;
-          if (r.giveawayType && r.giveawayType.trim() !== '') {
-            type = normalizeGiveawayType(r.giveawayType);
-          } else {
-            // Infer type from sellType
-            const sellLower = (r.sellType || '').toLowerCase().trim();
-            if (sellLower === 'protocol') {
-              type = 'Protocol';
-            } else if (sellLower === 'giveaway' || sellLower === 'giveaways') {
-              type = 'Giveaway';
-            } else {
-              type = 'Other';
-            }
+          // Only use actual giveawayType column values - don't infer types
+          if (!r.giveawayType || r.giveawayType.trim() === '') {
+            return acc; // Skip records without a giveawayType
           }
+          const type = normalizeGiveawayType(r.giveawayType);
           if (!acc[type]) {
             acc[type] = { tickets: 0, value: 0, recipients: new Set<string>() };
           }
@@ -1850,21 +1840,11 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           acc[name].tickets += r.quantity || 1;
           // Opportunity cost = zone average price for the season
           acc[name].value += getOpportunityCost(r);
-          // Add giveaway type - use giveawayType if available, otherwise infer from sellType
-          let gType: string;
+          // Add giveaway type - only use actual giveawayType column values
           if (r.giveawayType && r.giveawayType.trim() !== '') {
-            gType = normalizeGiveawayType(r.giveawayType);
-          } else {
-            const sellLower = (r.sellType || '').toLowerCase().trim();
-            if (sellLower === 'protocol') {
-              gType = 'Protocol';
-            } else if (sellLower === 'giveaway' || sellLower === 'giveaways') {
-              gType = 'Giveaway';
-            } else {
-              gType = 'Other';
-            }
+            const gType = normalizeGiveawayType(r.giveawayType);
+            if (gType && gType !== 'Unknown') acc[name].types.add(gType);
           }
-          if (gType && gType !== 'Unknown') acc[name].types.add(gType);
           // Capture age, location, and company from records that have them
           if (r.age && r.age.trim() !== '' && !acc[name].age) acc[name].age = r.age;
           if ((r.city || r.location) && !acc[name].location) acc[name].location = r.city || r.location;
