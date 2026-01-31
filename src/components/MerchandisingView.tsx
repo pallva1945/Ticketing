@@ -65,8 +65,13 @@ const COLORS = ['#dc2626', '#ea580c', '#d97706', '#ca8a04', '#65a30d', '#16a34a'
 
 const SEASON_GOAL = 131000;
 
-const formatCurrency = (value: number) => 
-  new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
+const formatCurrency = (value: number) => {
+  const formatted = new Intl.NumberFormat('de-DE', { 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  }).format(value);
+  return `${formatted} €`;
+};
 
 const getSeasonFromDate = (dateStr: string): string => {
   const date = new Date(dateStr);
