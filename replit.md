@@ -23,3 +23,8 @@ The application uses a modern web stack with React 18 and TypeScript for the fro
 - **Replit App Storage**: Utilized for large file uploads, particularly for CRM data, bypassing size limitations of other services.
 - **BigQuery**: Serves as a data source for Ticketing, CRM, Sponsorship, and GameDay modules, providing comprehensive dataset access.
 - **Shopify Admin API**: Integrated for merchandising analytics. Fetches orders, products, and customers from the Pallacanestro Varese store (pallacanestro-varese.myshopify.com). Uses API version 2024-01 with 15-minute cache for performance. Required secret: `SHOPIFY_ACCESS_TOKEN` (Admin API token starting with `shpat_`).
+
+## CRM Data Structure
+- **Sales Channel ("Sell" column)**: Exactly 5 types - ABB, Tix, CORP, MP, VB
+- **Ticket Types (separate column)**: Includes categories like "promotion", "ridotto", "staff" - these are NOT sales channels
+- Sales channel breakdown in CRM analytics uses only the "Sell" column values
