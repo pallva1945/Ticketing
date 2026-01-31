@@ -1890,6 +1890,11 @@ const App: React.FC = () => {
       }, 0);
   }, [filteredGameDayData]);
 
+  // GameDay Merch Revenue (for deducting from total merch in Executive Overview)
+  const gameDayMerchRevenue = useMemo(() => {
+      return filteredGameDayData.reduce((acc, game) => acc + game.merchRevenue, 0);
+  }, [filteredGameDayData]);
+
   // Filtered Game Day Revenue for PACING WIDGET
   const filteredGameDayRevForPacing = useMemo(() => {
       return filteredGameDayData.reduce((acc, game) => {
@@ -2537,7 +2542,7 @@ const App: React.FC = () => {
                 gameDayTicketing={gameDayTicketingRevenue}
                 gameDayRevenue={gameDayRevenueNet} 
                 sponsorshipRevenue={sponsorshipStats.pureSponsorship}
-                merchRevenue={merchRevenue}
+                merchRevenue={merchRevenue - gameDayMerchRevenue}
                 onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
                 onAiClick={(prompt: string) => openAIWithPrompt(prompt)}
                 gamesPlayed={filteredGames.length}
