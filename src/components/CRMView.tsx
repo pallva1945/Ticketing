@@ -350,17 +350,20 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       const groupedSellTypeBreakdown: Record<string, { count: number; revenue: number; value: number }> = {};
       (statsToUse.sellTypeBreakdown || []).forEach((s: any) => {
         rawSellTypeBreakdown[s.type] = { count: s.tickets, revenue: s.revenue, value: s.commercialValue || s.revenue };
-        // Group into categories
+        // Group into ticket type categories - only valid sell types (ABB, TIX, CORP, MP, VB)
         const typeLower = (s.type || '').toLowerCase();
-        let category = s.type;
+        let category: string | null = null;
         if (['mp', 'tix', 'vb'].includes(typeLower)) category = 'GameDay';
         else if (['corp', 'abb'].includes(typeLower)) category = 'Fixed';
         else if (['protocol', 'giveaway', 'giveaways'].includes(typeLower)) category = 'Giveaway';
         
-        if (!groupedSellTypeBreakdown[category]) groupedSellTypeBreakdown[category] = { count: 0, revenue: 0, value: 0 };
-        groupedSellTypeBreakdown[category].count += s.tickets;
-        groupedSellTypeBreakdown[category].revenue += s.revenue;
-        groupedSellTypeBreakdown[category].value += s.commercialValue || s.revenue;
+        // Only add to grouped breakdown if it's a valid category
+        if (category) {
+          if (!groupedSellTypeBreakdown[category]) groupedSellTypeBreakdown[category] = { count: 0, revenue: 0, value: 0 };
+          groupedSellTypeBreakdown[category].count += s.tickets;
+          groupedSellTypeBreakdown[category].revenue += s.revenue;
+          groupedSellTypeBreakdown[category].value += s.commercialValue || s.revenue;
+        }
       });
 
       // Build paymentBreakdown from server data
@@ -441,20 +444,22 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       rawSellTypeBreakdown[normalizedSellType].revenue += r.price;
       rawSellTypeBreakdown[normalizedSellType].value += r.commercialValue;
       
-      let sellCategory: string;
+      // Only categorize valid sell types (ABB, TIX, CORP, MP, VB) into ticket type groups
+      let sellCategory: string | null = null;
       if (['mp', 'tix', 'vb'].includes(rawSell) || ['mp', 'tix', 'vb'].includes(rawTicketType)) {
         sellCategory = 'GameDay';
       } else if (['corp', 'abb'].includes(rawSell) || ['corp', 'abb'].includes(rawTicketType)) {
         sellCategory = 'Fixed';
       } else if (['protocol', 'giveaway', 'giveaways'].includes(rawSell) || ['protocol', 'giveaway', 'giveaways'].includes(rawTicketType)) {
         sellCategory = 'Giveaway';
-      } else {
-        sellCategory = r.sellType || r.ticketType || 'Unknown';
       }
-      if (!groupedSellTypeBreakdown[sellCategory]) groupedSellTypeBreakdown[sellCategory] = { count: 0, revenue: 0, value: 0 };
-      groupedSellTypeBreakdown[sellCategory].count += r.quantity;
-      groupedSellTypeBreakdown[sellCategory].revenue += r.price;
-      groupedSellTypeBreakdown[sellCategory].value += r.commercialValue;
+      // Only add to grouped breakdown if valid category
+      if (sellCategory) {
+        if (!groupedSellTypeBreakdown[sellCategory]) groupedSellTypeBreakdown[sellCategory] = { count: 0, revenue: 0, value: 0 };
+        groupedSellTypeBreakdown[sellCategory].count += r.quantity;
+        groupedSellTypeBreakdown[sellCategory].revenue += r.price;
+        groupedSellTypeBreakdown[sellCategory].value += r.commercialValue;
+      }
 
       let payment = r.payment || 'Unknown';
       const paymentLower = payment.toLowerCase().replace(/[^a-z]/g, '');
@@ -777,15 +782,20 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       .slice(0, 8),
   [stats.paymentBreakdown]);
 
+  // Sales Channel: Only show the 5 valid sell types from "Sell" column
+  const VALID_SALES_CHANNELS = ['ABB', 'TIX', 'CORP', 'MP', 'VB'];
   const salesChannelChartData = useMemo(() => 
     Object.entries(stats.rawSellTypeBreakdown || {})
-      .filter(([name]) => !['PROTOCOL', 'GIVEAWAY', 'GIVEAWAYS'].includes(name.toUpperCase()))
-      .map(([name, val]: [string, any]) => ({ name, tickets: val.count, value: val.value }))
+      .filter(([name]) => VALID_SALES_CHANNELS.includes(name.toUpperCase()))
+      .map(([name, val]: [string, any]) => ({ name: name.toUpperCase(), tickets: val.count, value: val.value }))
       .sort((a, b) => b.value - a.value),
   [stats.rawSellTypeBreakdown]);
 
+  // Ticket Type: Only show Fixed, GameDay, Giveaway
+  const VALID_TICKET_TYPES = ['Fixed', 'GameDay', 'Giveaway'];
   const ticketTypeDistributionData = useMemo(() => 
     Object.entries(stats.groupedSellTypeBreakdown || {})
+      .filter(([name]) => VALID_TICKET_TYPES.includes(name))
       .map(([name, val]: [string, any]) => ({ name, tickets: val.count, value: val.value }))
       .sort((a, b) => b.value - a.value),
   [stats.groupedSellTypeBreakdown]);
