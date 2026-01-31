@@ -1842,6 +1842,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               games: new Set<string>(),
               zones: new Set<string>(),
               email: r.email,
+              company: toTitleCase(r.group || ''),
               age: r.age,
               location: toTitleCase(r.city || r.location)
             };
@@ -1864,14 +1865,15 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             }
           }
           if (gType && gType !== 'Unknown') acc[name].types.add(gType);
-          // Capture age and location from records that have them
+          // Capture age, location, and company from records that have them
           if (r.age && r.age.trim() !== '' && !acc[name].age) acc[name].age = r.age;
           if ((r.city || r.location) && !acc[name].location) acc[name].location = r.city || r.location;
+          if (r.group && !acc[name].company) acc[name].company = toTitleCase(r.group);
           if (r.game || r.event) acc[name].games.add(r.game || r.event);
           if (r.pvZone || r.zone) acc[name].zones.add(r.pvZone || r.zone);
           if (!acc[name].email && r.email) acc[name].email = r.email;
           return acc;
-        }, {} as Record<string, { tickets: number; value: number; types: Set<string>; games: Set<string>; zones: Set<string>; email?: string; age?: string; location?: string }>);
+        }, {} as Record<string, { tickets: number; value: number; types: Set<string>; games: Set<string>; zones: Set<string>; email?: string; company?: string; age?: string; location?: string }>);
 
         const recipientList = Object.entries(recipientBreakdown)
           .map(([name, data]) => ({ 
@@ -2251,7 +2253,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                         <tr>
                           <th className="text-left py-3 px-4 font-medium">#</th>
                           <th className="text-left py-3 px-4 font-medium">Name</th>
-                          <th className="text-left py-3 px-4 font-medium">Giveaway Types</th>
+                          <th className="text-left py-3 px-4 font-medium">Company</th>
+                          <th className="text-left py-3 px-4 font-medium">Types</th>
                           <th className="text-right py-3 px-4 font-medium">Tickets</th>
                           <th className="text-right py-3 px-4 font-medium">Games</th>
                           <th className="text-left py-3 px-4 font-medium">Zones</th>
@@ -2270,6 +2273,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                           >
                             <td className="py-3 px-4 text-gray-400">{i + 1}</td>
                             <td className="py-3 px-4 font-medium text-purple-700 hover:text-purple-900">{r.name}</td>
+                            <td className="py-3 px-4 text-gray-600 text-xs">{r.company || '—'}</td>
                             <td className="py-3 px-4">
                               <div className="flex flex-wrap gap-1">
                                 {r.types.slice(0, 2).map(t => (
@@ -2302,7 +2306,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                         ))}
                         {recipientList.length === 0 && (
                           <tr>
-                            <td colSpan={10} className="py-8 text-center text-gray-400">
+                            <td colSpan={11} className="py-8 text-center text-gray-400">
                               No giveaway recipients found
                             </td>
                           </tr>
