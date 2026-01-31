@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShoppingBag, Package, Users, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, Layers, Search, Target, X, CreditCard, Eye } from 'lucide-react';
+import { ShoppingBag, Package, Users, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, Layers, Search, Target, X, CreditCard, Eye, ToggleLeft, ToggleRight } from 'lucide-react';
+import { GameDayData } from '../types';
+import { processGameDayData } from '../utils/dataProcessor';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line } from 'recharts';
 
 interface ShopifyOrder {
@@ -88,6 +90,7 @@ const getPaymentMethod = (order: ShopifyOrder): string => {
 
 export const MerchandisingView: React.FC = () => {
   const [data, setData] = useState<MerchandisingData | null>(null);
+  const [gameDayData, setGameDayData] = useState<GameDayData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'customers'>('overview');
@@ -95,6 +98,7 @@ export const MerchandisingView: React.FC = () => {
   
   const [selectedSeason, setSelectedSeason] = useState<string>('25/26');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [excludeGameDayMerch, setExcludeGameDayMerch] = useState(true);
   
   const [productSearch, setProductSearch] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
@@ -112,13 +116,25 @@ export const MerchandisingView: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/shopify/data');
-      if (!response.ok) {
-        const errData = await response.json();
+      const [shopifyResponse, gameDayResponse] = await Promise.all([
+        fetch('/api/shopify/data'),
+        fetch('/api/gameday/bigquery')
+      ]);
+      
+      if (!shopifyResponse.ok) {
+        const errData = await shopifyResponse.json();
         throw new Error(errData.message || 'Failed to fetch Shopify data');
       }
-      const result = await response.json();
-      setData(result);
+      const shopifyResult = await shopifyResponse.json();
+      setData(shopifyResult);
+      
+      if (gameDayResponse.ok) {
+        const gdResult = await gameDayResponse.json();
+        if (gdResult.success && gdResult.csvContent) {
+          const processedGD = processGameDayData(gdResult.csvContent);
+          setGameDayData(processedGD);
+        }
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -154,12 +170,39 @@ export const MerchandisingView: React.FC = () => {
     return orders;
   }, [data, selectedSeason, selectedMonth]);
 
+  const gameDayMerchByMonth = useMemo(() => {
+    const merchByMonth: Record<string, number> = {};
+    const normalizedSeason = selectedSeason.replace('/', '-');
+    
+    gameDayData
+      .filter(gd => gd.season === normalizedSeason)
+      .forEach(gd => {
+        const dateParts = gd.date.split('/');
+        if (dateParts.length === 3) {
+          const day = parseInt(dateParts[0]);
+          const month = parseInt(dateParts[1]) - 1;
+          const year = parseInt(dateParts[2]) + (dateParts[2].length === 2 ? 2000 : 0);
+          const d = new Date(year, month, day);
+          const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          merchByMonth[monthKey] = (merchByMonth[monthKey] || 0) + (gd.merchRevenue || 0);
+        }
+      });
+    
+    return merchByMonth;
+  }, [gameDayData, selectedSeason]);
+
+  const totalGameDayMerch = useMemo(() => {
+    return Object.values(gameDayMerchByMonth).reduce((sum, val) => sum + val, 0);
+  }, [gameDayMerchByMonth]);
+
   const stats = useMemo(() => {
     if (!data) return null;
     
-    const totalRevenue = filteredOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+    const grossRevenue = filteredOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+    const gameDayDeduction = excludeGameDayMerch ? totalGameDayMerch : 0;
+    const totalRevenue = Math.max(0, grossRevenue - gameDayDeduction);
     const totalOrders = filteredOrders.length;
-    const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const avgOrderValue = totalOrders > 0 ? grossRevenue / totalOrders : 0;
     const totalCustomers = data.customers.length;
     const goalProgress = (totalRevenue / SEASON_GOAL) * 100;
     const totalProducts = data.products.length;
@@ -225,7 +268,7 @@ export const MerchandisingView: React.FC = () => {
       .sort((a, b) => b.spent - a.spent)
       .slice(0, 10);
     
-    const allMonths: { month: string; revenue: number; monthKey: string }[] = [];
+    const allMonths: { month: string; revenue: number; gameDayMerch: number; onlineRevenue: number; monthKey: string }[] = [];
     if (allSeasonOrders.length > 0) {
       const orderDates = allSeasonOrders.map(o => getOrderDate(o));
       const earliest = new Date(Math.min(...orderDates.map(d => d.getTime())));
@@ -238,13 +281,24 @@ export const MerchandisingView: React.FC = () => {
       while (current <= endDate) {
         const monthKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
         const displayMonth = current.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-        allMonths.push({ month: displayMonth, revenue: monthlyRevenue[monthKey] || 0, monthKey: displayMonth });
+        const totalMonthRevenue = monthlyRevenue[monthKey] || 0;
+        const gameDayMerch = gameDayMerchByMonth[monthKey] || 0;
+        const onlineRevenue = excludeGameDayMerch ? Math.max(0, totalMonthRevenue - gameDayMerch) : totalMonthRevenue;
+        allMonths.push({ 
+          month: displayMonth, 
+          revenue: totalMonthRevenue,
+          gameDayMerch: gameDayMerch,
+          onlineRevenue: onlineRevenue,
+          monthKey: displayMonth 
+        });
         current.setMonth(current.getMonth() + 1);
       }
     }
     
     return {
       totalRevenue,
+      grossRevenue,
+      gameDayDeduction,
       totalOrders,
       totalCustomers,
       avgOrderValue,
@@ -256,7 +310,7 @@ export const MerchandisingView: React.FC = () => {
       topCustomers,
       goalProgress
     };
-  }, [data, filteredOrders, selectedSeason]);
+  }, [data, filteredOrders, selectedSeason, excludeGameDayMerch, totalGameDayMerch, gameDayMerchByMonth]);
 
   const filteredProducts = useMemo(() => {
     if (!data) return [];
@@ -410,7 +464,22 @@ export const MerchandisingView: React.FC = () => {
             {data.lastUpdated && <span className="ml-2">• Updated {formatDate(data.lastUpdated)}</span>}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => setExcludeGameDayMerch(!excludeGameDayMerch)}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+              excludeGameDayMerch 
+                ? 'bg-red-100 text-red-700 border border-red-200' 
+                : 'bg-gray-100 text-gray-600 border border-gray-200'
+            }`}
+            title={excludeGameDayMerch ? 'GameDay merch is excluded (no double counting)' : 'GameDay merch is included (may double count)'}
+          >
+            {excludeGameDayMerch ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+            Exclude GameDay
+            {totalGameDayMerch > 0 && (
+              <span className="text-xs opacity-75">({formatCurrency(totalGameDayMerch)})</span>
+            )}
+          </button>
           {selectedMonth && (
             <button
               onClick={clearMonthFilter}
@@ -571,7 +640,15 @@ export const MerchandisingView: React.FC = () => {
 
             <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-gray-700">Monthly Revenue Trend</h3>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700">Monthly Revenue Trend</h3>
+                  {excludeGameDayMerch && totalGameDayMerch > 0 && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      <span className="inline-block w-2 h-2 bg-red-400 rounded mr-1"></span>
+                      GameDay merch shown in red (excluded from totals)
+                    </p>
+                  )}
+                </div>
                 <p className="text-xs text-gray-500">Click a bar to filter by month</p>
               </div>
               <ResponsiveContainer width="100%" height={300}>
@@ -579,22 +656,62 @@ export const MerchandisingView: React.FC = () => {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={(v) => `€${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                  <Bar 
-                    dataKey="revenue" 
-                    fill="#ea580c" 
-                    radius={[4, 4, 0, 0]}
-                    cursor="pointer"
-                  >
-                    {stats.monthlyData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={selectedMonth === entry.month ? '#c2410c' : '#ea580c'} 
-                        stroke={selectedMonth === entry.month ? '#9a3412' : 'none'}
-                        strokeWidth={selectedMonth === entry.month ? 2 : 0}
-                      />
-                    ))}
-                  </Bar>
+                  <Tooltip 
+                    formatter={(value: number, name: string) => [
+                      formatCurrency(value), 
+                      name === 'onlineRevenue' ? 'Online Sales' : name === 'gameDayMerch' ? 'GameDay Sales' : 'Revenue'
+                    ]}
+                  />
+                  {excludeGameDayMerch ? (
+                    <>
+                      <Bar 
+                        dataKey="onlineRevenue" 
+                        stackId="a"
+                        fill="#ea580c" 
+                        name="Online Sales"
+                        cursor="pointer"
+                      >
+                        {stats.monthlyData.map((entry, index) => (
+                          <Cell 
+                            key={`online-${index}`} 
+                            fill={selectedMonth === entry.month ? '#c2410c' : '#ea580c'} 
+                          />
+                        ))}
+                      </Bar>
+                      <Bar 
+                        dataKey="gameDayMerch" 
+                        stackId="a"
+                        fill="#ef4444" 
+                        name="GameDay Sales"
+                        radius={[4, 4, 0, 0]}
+                        cursor="pointer"
+                      >
+                        {stats.monthlyData.map((entry, index) => (
+                          <Cell 
+                            key={`gameday-${index}`} 
+                            fill={selectedMonth === entry.month ? '#dc2626' : '#fca5a5'} 
+                          />
+                        ))}
+                      </Bar>
+                    </>
+                  ) : (
+                    <Bar 
+                      dataKey="revenue" 
+                      fill="#ea580c" 
+                      radius={[4, 4, 0, 0]}
+                      cursor="pointer"
+                    >
+                      {stats.monthlyData.map((entry, index) => (
+                        <Cell 
+                          key={`cell-${index}`} 
+                          fill={selectedMonth === entry.month ? '#c2410c' : '#ea580c'} 
+                          stroke={selectedMonth === entry.month ? '#9a3412' : 'none'}
+                          strokeWidth={selectedMonth === entry.month ? 2 : 0}
+                        />
+                      ))}
+                    </Bar>
+                  )}
+                  {excludeGameDayMerch && <Legend />}
                 </BarChart>
               </ResponsiveContainer>
             </div>
