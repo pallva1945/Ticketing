@@ -208,7 +208,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       result = result.filter(r => selectedGames.includes(r.game));
     }
     if (!selectedSellTypes.includes('All')) {
-      result = result.filter(r => selectedSellTypes.includes(r.sellType));
+      result = result.filter(r => selectedSellTypes.includes((r.sellType || '').toUpperCase()));
     }
     if (capacityView !== 'all') {
       result = result.filter(r => getCapacityBucket(r) === capacityView);
@@ -294,7 +294,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           opponent: game.opponent,
           occupied: true,
           occupant: `${rec.firstName || rec.name || ''} ${rec.lastName || rec.last_name || ''}`.trim() || 'Unknown',
-          sellType: rec.sell || rec.sellType || rec.type || '—',
+          sellType: (rec.sell || rec.sellType || rec.type || '—').toUpperCase(),
           price: Number(rec.price) || Number(rec.comercial_value) || 0,
           email: rec.email || '—'
         };
