@@ -626,6 +626,7 @@ app.get("/api/gameday/bigquery", async (req, res) => {
       res.json({ 
         success: true,
         csvContent,
+        rawRows: result.rawRows,
         rowCount: result.rawRows.length,
         message: `Fetched ${result.rawRows.length} GameDay records from BigQuery`
       });
