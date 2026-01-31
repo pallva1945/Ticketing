@@ -666,7 +666,7 @@ export const MerchandisingView: React.FC = () => {
                   <Tooltip 
                     formatter={(value: number, name: string) => [
                       formatCurrency(value), 
-                      name === 'onlineRevenue' ? 'Online' : name === 'gameDayMerch' ? 'GameDay' : 'Revenue'
+                      name === 'Online Sales' ? 'Online' : name === 'GameDay Sales' ? 'GameDay' : 'Revenue'
                     ]}
                   />
                   {excludeGameDayMerch ? (
