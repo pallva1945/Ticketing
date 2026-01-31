@@ -1470,53 +1470,90 @@ const App: React.FC = () => {
       ]);
       
       let results = { ticketing: false, crm: false, gameDay: false, sponsor: false };
+      let errors: string[] = [];
       
       // Process Ticketing
-      if (ticketingRes.ok) {
-        const result = await ticketingRes.json();
-        if (result.success && result.data?.length > 0) {
-          const loadedData = convertBigQueryToGameData(result.data, result.rawRows);
-          setData(loadedData);
-          setDataSources(prev => ({...prev, ticketing: 'bigquery'}));
-          results.ticketing = true;
-          console.log(`Synced ${loadedData.length} ticketing games`);
+      try {
+        if (ticketingRes.ok) {
+          const result = await ticketingRes.json();
+          if (result.success && result.data?.length > 0) {
+            const loadedData = convertBigQueryToGameData(result.data, result.rawRows);
+            setData(loadedData);
+            setDataSources(prev => ({...prev, ticketing: 'bigquery'}));
+            results.ticketing = true;
+            console.log(`Synced ${loadedData.length} ticketing games`);
+          } else {
+            errors.push(`Ticketing: ${result.message || 'No data returned'}`);
+          }
+        } else {
+          errors.push(`Ticketing: HTTP ${ticketingRes.status}`);
         }
+      } catch (e: any) {
+        errors.push(`Ticketing: ${e.message}`);
       }
       
       // Process CRM
-      if (crmRes.ok) {
-        const result = await crmRes.json();
-        if (result.success && result.rawRows?.length > 0) {
-          const loadedCRM = convertBigQueryToCRMData(result.rawRows);
-          setCrmData(loadedCRM);
-          setDataSources(prev => ({...prev, crm: 'bigquery'}));
-          results.crm = true;
-          console.log(`Synced ${loadedCRM.length} CRM records`);
+      try {
+        if (crmRes.ok) {
+          const result = await crmRes.json();
+          if (result.success && result.rawRows?.length > 0) {
+            const loadedCRM = convertBigQueryToCRMData(result.rawRows);
+            setCrmData(loadedCRM);
+            setDataSources(prev => ({...prev, crm: 'bigquery'}));
+            results.crm = true;
+            console.log(`Synced ${loadedCRM.length} CRM records`);
+          } else {
+            errors.push(`CRM: ${result.message || 'No data returned'}`);
+          }
+        } else {
+          errors.push(`CRM: HTTP ${crmRes.status}`);
         }
+      } catch (e: any) {
+        errors.push(`CRM: ${e.message}`);
       }
       
       // Process GameDay
-      if (gameDayRes.ok) {
-        const result = await gameDayRes.json();
-        if (result.success && result.rawRows?.length > 0) {
-          const loadedGameDay = processGameDayData(convertBigQueryRowsToGameDayCSV(result.rawRows));
-          setGameDayData(loadedGameDay);
-          setDataSources(prev => ({...prev, gameday: 'bigquery'}));
-          results.gameDay = true;
-          console.log(`Synced ${loadedGameDay.length} GameDay records`);
+      try {
+        if (gameDayRes.ok) {
+          const result = await gameDayRes.json();
+          if (result.success && result.rawRows?.length > 0) {
+            const loadedGameDay = processGameDayData(convertBigQueryRowsToGameDayCSV(result.rawRows));
+            setGameDayData(loadedGameDay);
+            setDataSources(prev => ({...prev, gameday: 'bigquery'}));
+            results.gameDay = true;
+            console.log(`Synced ${loadedGameDay.length} GameDay records`);
+          } else {
+            errors.push(`GameDay: ${result.message || 'No data returned'}`);
+          }
+        } else {
+          errors.push(`GameDay: HTTP ${gameDayRes.status}`);
         }
+      } catch (e: any) {
+        errors.push(`GameDay: ${e.message}`);
       }
       
       // Process Sponsorship
-      if (sponsorRes.ok) {
-        const result = await sponsorRes.json();
-        if (result.success && result.rawRows?.length > 0) {
-          const loadedSponsors = processSponsorData(convertBigQueryRowsToSponsorCSV(result.rawRows));
-          setSponsorData(loadedSponsors);
-          setDataSources(prev => ({...prev, sponsor: 'bigquery'}));
-          results.sponsor = true;
-          console.log(`Synced ${loadedSponsors.length} Sponsor records`);
+      try {
+        if (sponsorRes.ok) {
+          const result = await sponsorRes.json();
+          if (result.success && result.rawRows?.length > 0) {
+            const loadedSponsors = processSponsorData(convertBigQueryRowsToSponsorCSV(result.rawRows));
+            setSponsorData(loadedSponsors);
+            setDataSources(prev => ({...prev, sponsor: 'bigquery'}));
+            results.sponsor = true;
+            console.log(`Synced ${loadedSponsors.length} Sponsor records`);
+          } else {
+            errors.push(`Sponsorship: ${result.message || 'No data returned'}`);
+          }
+        } else {
+          errors.push(`Sponsorship: HTTP ${sponsorRes.status}`);
         }
+      } catch (e: any) {
+        errors.push(`Sponsorship: ${e.message}`);
+      }
+      
+      if (errors.length > 0) {
+        console.warn('Sync errors:', errors);
       }
       
       const successCount = Object.values(results).filter(Boolean).length;
