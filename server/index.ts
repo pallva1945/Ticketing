@@ -274,10 +274,10 @@ const computeCRMStats = (rawRows: any[]) => {
     const commercialValue = rawCommercialValue !== null && rawCommercialValue !== undefined ? parseNumber(rawCommercialValue) : fullPrice;
     
     const pvZone = row.pv_zone || row.Pv_Zone || row.PV_Zone || row.zone || row.Zone || 'Unknown';
-    // Sales channel from "sell" column - check all case variations and normalize
+    // Sales channel from "sell" column - check all case variations and normalize to UPPERCASE
     const rawSellType = row.sell || row.Sell || row.SELL || row.type || row.Type || 'Unknown';
-    // Normalize sell types: Corp/CORP -> Corp, Abb/ABB -> Abb, etc.
-    const sellType = rawSellType.charAt(0).toUpperCase() + rawSellType.slice(1).toLowerCase();
+    // Normalize sell types to uppercase: Abb/abb -> ABB, Corp/corp -> CORP, etc.
+    const sellType = rawSellType.toUpperCase();
     const ticketType = (row.ticket_type || row.Ticket_Type || row.TICKET_TYPE || '').toUpperCase();
     
     // Calculate revenue = price * qty for proper totals
@@ -300,8 +300,7 @@ const computeCRMStats = (rawRows: any[]) => {
     sellTypeStats[sellType].commercialValue += rowCommercialValue;
     
     // Corporate breakdown - track Corp sell type or ticket type
-    const sellTypeLower = sellType.toLowerCase();
-    const isCorp = sellTypeLower === 'corp' || ticketType === 'CORP';
+    const isCorp = sellType === 'CORP' || ticketType === 'CORP';
     if (isCorp) {
       corporateTickets += qty;
       corpCommercialValue += rowCommercialValue;
