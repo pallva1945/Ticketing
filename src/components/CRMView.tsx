@@ -496,17 +496,27 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       }
     });
 
-    const nonCorpData = filteredData.filter(r => {
-      const sellLower = (r.sellType || '').toLowerCase();
-      const ticketLower = (r.ticketType || '').toLowerCase();
-      const isCorp = sellLower === 'corp' || ticketLower === 'corp';
-      const isAbb = sellLower === 'abb' || ticketLower === 'abb';
-      const isGiveaway = ['protocol', 'giveaway', 'giveaways'].includes(sellLower) || ['protocol', 'giveaway', 'giveaways'].includes(ticketLower);
-      return !isCorp && !isAbb && !isGiveaway;
-    });
+    const isFilteringByAbbOrCorp = !selectedSellTypes.includes('All') && 
+      (selectedSellTypes.includes('ABB') || selectedSellTypes.includes('CORP'));
+    
+    const customerData = isFilteringByAbbOrCorp 
+      ? filteredData.filter(r => {
+          const sellLower = (r.sellType || '').toLowerCase();
+          const ticketLower = (r.ticketType || '').toLowerCase();
+          const isGiveaway = ['protocol', 'giveaway', 'giveaways'].includes(sellLower) || ['protocol', 'giveaway', 'giveaways'].includes(ticketLower);
+          return !isGiveaway;
+        })
+      : filteredData.filter(r => {
+          const sellLower = (r.sellType || '').toLowerCase();
+          const ticketLower = (r.ticketType || '').toLowerCase();
+          const isCorp = sellLower === 'corp' || ticketLower === 'corp';
+          const isAbb = sellLower === 'abb' || ticketLower === 'abb';
+          const isGiveaway = ['protocol', 'giveaway', 'giveaways'].includes(sellLower) || ['protocol', 'giveaway', 'giveaways'].includes(ticketLower);
+          return !isCorp && !isAbb && !isGiveaway;
+        });
 
     const allCustomers = Object.entries(
-      nonCorpData.reduce((acc, r) => {
+      customerData.reduce((acc, r) => {
         const key = getCustomerKey(r);
         if (!acc[key]) acc[key] = { 
           name: toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName), 
