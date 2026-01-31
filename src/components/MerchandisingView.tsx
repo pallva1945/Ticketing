@@ -204,7 +204,8 @@ export const MerchandisingView: React.FC = () => {
     const totalOrders = filteredOrders.length;
     const avgOrderValue = totalOrders > 0 ? grossRevenue / totalOrders : 0;
     const totalCustomers = data.customers.length;
-    const goalProgress = (totalRevenue / SEASON_GOAL) * 100;
+    const realisticRevenue = Math.max(0, grossRevenue - totalGameDayMerch);
+    const goalProgress = (realisticRevenue / SEASON_GOAL) * 100;
     const totalProducts = data.products.length;
     const totalInventory = data.products.reduce((sum, p) => sum + p.totalInventory, 0);
     
@@ -298,6 +299,7 @@ export const MerchandisingView: React.FC = () => {
     return {
       totalRevenue,
       grossRevenue,
+      realisticRevenue,
       gameDayDeduction,
       totalOrders,
       totalCustomers,
@@ -609,7 +611,7 @@ export const MerchandisingView: React.FC = () => {
             </div>
             <div className="flex justify-between mt-2 text-sm">
               <span className="text-white/80">{stats.goalProgress.toFixed(1)}% achieved</span>
-              <span className="text-white/80">{formatCurrency(Math.max(0, SEASON_GOAL - stats.totalRevenue))} remaining</span>
+              <span className="text-white/80">{formatCurrency(Math.max(0, SEASON_GOAL - stats.realisticRevenue))} remaining</span>
             </div>
           </div>
 
@@ -659,7 +661,7 @@ export const MerchandisingView: React.FC = () => {
                   <Tooltip 
                     formatter={(value: number, name: string) => [
                       formatCurrency(value), 
-                      name === 'onlineRevenue' ? 'Online Sales' : name === 'gameDayMerch' ? 'GameDay Sales' : 'Revenue'
+                      name === 'onlineRevenue' ? 'Online' : name === 'gameDayMerch' ? 'GameDay' : 'Revenue'
                     ]}
                   />
                   {excludeGameDayMerch ? (
