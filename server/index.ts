@@ -405,6 +405,7 @@ const computeCRMStats = (rawRows: any[]) => {
         key,
         name: fullName,
         email: row.email || '',
+        company: row.group || '',
         tickets: 0,
         value: 0,
         zones: {} as Record<string, number>,
@@ -424,6 +425,7 @@ const computeCRMStats = (rawRows: any[]) => {
     cust.zones[pvZone] = (cust.zones[pvZone] || 0) + qty;
     cust.sellTypes[sellType] = (cust.sellTypes[sellType] || 0) + qty;
     if (row.game_id) cust.games.add(row.game_id);
+    if (!cust.company && row.group) cust.company = row.group;
     
     // Advance days calculation
     const gmDateTimeStr = row.Gm_Date_time || row.gm_date_time || '';
@@ -477,6 +479,7 @@ const computeCRMStats = (rawRows: any[]) => {
       key: c.key,
       name: c.name,
       email: c.email,
+      company: c.company || '',
       tickets: c.tickets,
       value: c.value,
       principalZone,

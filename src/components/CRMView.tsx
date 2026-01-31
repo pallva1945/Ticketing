@@ -511,6 +511,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         if (!acc[key]) acc[key] = { 
           name: toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName), 
           email: r.email, 
+          company: toTitleCase(r.group || ''),
           tickets: 0, 
           revenue: 0, 
           value: 0,
@@ -533,6 +534,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         if (r.game || r.event) acc[key].games.add(r.game || r.event);
         if (!acc[key].age && r.dob) acc[key].age = r.dob;
         if (!acc[key].location && (r.province || r.pob)) acc[key].location = toTitleCase(r.province || r.pob || '');
+        if (!acc[key].company && r.group) acc[key].company = toTitleCase(r.group);
         
         const buyTs = r.buyTimestamp && r.buyTimestamp instanceof Date && !isNaN(r.buyTimestamp.getTime()) ? r.buyTimestamp : null;
         if (buyTs && r.gmDateTime && r.gmDateTime > 0) {
@@ -543,7 +545,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           }
         }
         return acc;
-      }, {} as Record<string, { name: string; email: string; tickets: number; revenue: number; value: number; zones: Record<string, number>; sellTypes: Record<string, number>; games: Set<string>; transactions: number; age: string; location: string; advanceDays: number[] }>)
+      }, {} as Record<string, { name: string; email: string; company: string; tickets: number; revenue: number; value: number; zones: Record<string, number>; sellTypes: Record<string, number>; games: Set<string>; transactions: number; age: string; location: string; advanceDays: number[] }>)
     ).map(([key, val]) => {
       const sortedZones = Object.entries(val.zones).sort((a, b) => b[1] - a[1]);
       const principalZone = sortedZones[0]?.[0] || '—';
@@ -1061,6 +1063,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     </th>
                     <th 
                       className="text-left py-2 px-2 font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 select-none"
+                      onClick={() => { setSortColumn('company'); setSortDirection(sortColumn === 'company' && sortDirection === 'asc' ? 'desc' : 'asc'); }}
+                    >
+                      <span className="flex items-center gap-1">Company {sortColumn === 'company' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                    </th>
+                    <th 
+                      className="text-left py-2 px-2 font-semibold text-gray-600 cursor-pointer hover:bg-gray-50 select-none"
                       onClick={() => { setSortColumn('topSellType'); setSortDirection(sortColumn === 'topSellType' && sortDirection === 'asc' ? 'desc' : 'asc'); }}
                     >
                       <span className="flex items-center gap-1">Sell Type {sortColumn === 'topSellType' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
@@ -1133,6 +1141,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     let aVal: any, bVal: any;
                     switch (sortColumn) {
                       case 'name': aVal = a.name?.toLowerCase() || ''; bVal = b.name?.toLowerCase() || ''; break;
+                      case 'company': aVal = ((a as any).company || '').toLowerCase(); bVal = ((b as any).company || '').toLowerCase(); break;
                       case 'topSellType': aVal = a.topSellType?.toLowerCase() || ''; bVal = b.topSellType?.toLowerCase() || ''; break;
                       case 'tickets': aVal = a.tickets; bVal = b.tickets; break;
                       case 'value': aVal = a.value; bVal = b.value; break;
@@ -1170,6 +1179,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                         </td>
                         <td className="py-2 px-2">
                           <p className="font-medium text-gray-800">{c.name}</p>
+                        </td>
+                        <td className="py-2 px-2 text-gray-600 text-xs">
+                          {(c as any).company || '-'}
                         </td>
                         <td className="py-2 px-2">
                           <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">{c.topSellType}</span>
