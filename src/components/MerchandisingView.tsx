@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShoppingBag, Package, Users, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, Layers, Search, Target } from 'lucide-react';
+import { ShoppingBag, Package, Users, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, Layers, Search, Target, X, CreditCard, Eye } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line } from 'recharts';
 
 interface ShopifyOrder {
@@ -12,6 +12,7 @@ interface ShopifyOrder {
   customerName: string;
   customerEmail: string;
   itemCount: number;
+  paymentMethod: string;
   lineItems: {
     title: string;
     quantity: number;
@@ -81,6 +82,10 @@ const formatDate = (dateStr: string) => {
   return date.toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
+const getPaymentMethod = (order: ShopifyOrder): string => {
+  return order.paymentMethod || 'Unknown';
+};
+
 export const MerchandisingView: React.FC = () => {
   const [data, setData] = useState<MerchandisingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -88,17 +93,20 @@ export const MerchandisingView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'customers'>('overview');
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   
-  // Season filter
   const [selectedSeason, setSelectedSeason] = useState<string>('25/26');
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   
-  // Search states
   const [productSearch, setProductSearch] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
+  const [orderSearch, setOrderSearch] = useState('');
   
-  // Pagination states
   const [productsLimit, setProductsLimit] = useState(50);
   const [ordersLimit, setOrdersLimit] = useState(50);
   const [customersLimit, setCustomersLimit] = useState(50);
+
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -133,8 +141,18 @@ export const MerchandisingView: React.FC = () => {
 
   const filteredOrders = useMemo(() => {
     if (!data) return [];
-    return data.orders.filter(order => getSeasonFromDate(order.processedAt) === selectedSeason);
-  }, [data, selectedSeason]);
+    let orders = data.orders.filter(order => getSeasonFromDate(order.processedAt) === selectedSeason);
+    
+    if (selectedMonth) {
+      orders = orders.filter(order => {
+        const d = new Date(order.processedAt);
+        const monthKey = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+        return monthKey === selectedMonth;
+      });
+    }
+    
+    return orders;
+  }, [data, selectedSeason, selectedMonth]);
 
   const stats = useMemo(() => {
     if (!data) return null;
@@ -176,24 +194,40 @@ export const MerchandisingView: React.FC = () => {
       .map(([name, value]) => ({ name: name || 'Uncategorized', value }))
       .sort((a, b) => b.value - a.value);
     
-    // Use processedAt as the order date
     const getOrderDate = (order: ShopifyOrder) => new Date(order.processedAt);
     
     const monthlyRevenue: Record<string, number> = {};
-    filteredOrders.forEach(order => {
+    const allSeasonOrders = data.orders.filter(order => getSeasonFromDate(order.processedAt) === selectedSeason);
+    allSeasonOrders.forEach(order => {
       const d = getOrderDate(order);
       const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + order.totalPrice;
     });
     
-    const topCustomers = [...data.customers]
-      .sort((a, b) => b.totalSpent - a.totalSpent)
+    const customerSpending: Record<string, { email: string; firstName: string; lastName: string; spent: number; orders: number }> = {};
+    filteredOrders.forEach(order => {
+      const email = order.customerEmail || 'guest';
+      if (!customerSpending[email]) {
+        const nameParts = order.customerName.split(' ');
+        customerSpending[email] = {
+          email,
+          firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' ') || '',
+          spent: 0,
+          orders: 0
+        };
+      }
+      customerSpending[email].spent += order.totalPrice;
+      customerSpending[email].orders += 1;
+    });
+    
+    const topCustomers = Object.values(customerSpending)
+      .sort((a, b) => b.spent - a.spent)
       .slice(0, 10);
     
-    // Generate all months from earliest order to now, filling in 0 for months without orders
-    const allMonths: { month: string; revenue: number }[] = [];
-    if (filteredOrders.length > 0) {
-      const orderDates = filteredOrders.map(o => getOrderDate(o));
+    const allMonths: { month: string; revenue: number; monthKey: string }[] = [];
+    if (allSeasonOrders.length > 0) {
+      const orderDates = allSeasonOrders.map(o => getOrderDate(o));
       const earliest = new Date(Math.min(...orderDates.map(d => d.getTime())));
       const now = new Date();
       
@@ -204,7 +238,7 @@ export const MerchandisingView: React.FC = () => {
       while (current <= endDate) {
         const monthKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
         const displayMonth = current.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
-        allMonths.push({ month: displayMonth, revenue: monthlyRevenue[monthKey] || 0 });
+        allMonths.push({ month: displayMonth, revenue: monthlyRevenue[monthKey] || 0, monthKey: displayMonth });
         current.setMonth(current.getMonth() + 1);
       }
     }
@@ -222,9 +256,8 @@ export const MerchandisingView: React.FC = () => {
       topCustomers,
       goalProgress
     };
-  }, [data, filteredOrders]);
+  }, [data, filteredOrders, selectedSeason]);
 
-  // Filtered products based on search
   const filteredProducts = useMemo(() => {
     if (!data) return [];
     if (!productSearch.trim()) return data.products;
@@ -236,7 +269,21 @@ export const MerchandisingView: React.FC = () => {
     );
   }, [data, productSearch]);
 
-  // Filtered customers based on search
+  const searchedOrders = useMemo(() => {
+    if (!orderSearch.trim()) return filteredOrders;
+    const searchLower = orderSearch.toLowerCase();
+    return filteredOrders.filter(o =>
+      o.orderNumber.toLowerCase().includes(searchLower) ||
+      o.customerName.toLowerCase().includes(searchLower) ||
+      o.customerEmail.toLowerCase().includes(searchLower) ||
+      formatDate(o.processedAt).toLowerCase().includes(searchLower) ||
+      o.totalPrice.toString().includes(searchLower) ||
+      o.financialStatus.toLowerCase().includes(searchLower) ||
+      o.fulfillmentStatus?.toLowerCase().includes(searchLower) ||
+      (o.paymentMethod || '').toLowerCase().includes(searchLower)
+    );
+  }, [filteredOrders, orderSearch]);
+
   const filteredCustomers = useMemo(() => {
     if (!data) return [];
     if (!customerSearch.trim()) return data.customers;
@@ -248,6 +295,67 @@ export const MerchandisingView: React.FC = () => {
       c.tags?.some(t => t.toLowerCase().includes(searchLower))
     );
   }, [data, customerSearch]);
+
+  const getProductOrders = (productId: string) => {
+    if (!data) return [];
+    return filteredOrders.filter(order => 
+      order.lineItems.some(item => item.productId === productId)
+    ).map(order => ({
+      ...order,
+      purchasedItems: order.lineItems.filter(item => item.productId === productId)
+    }));
+  };
+
+  const getCustomerOrders = (email: string) => {
+    if (!data) return [];
+    return filteredOrders.filter(order => order.customerEmail === email);
+  };
+
+  const getProductStats = (productId: string) => {
+    const product = data?.products.find(p => p.id === productId);
+    if (!product) return null;
+    
+    const orders = getProductOrders(productId);
+    const totalSold = orders.reduce((sum, o) => 
+      sum + o.purchasedItems.reduce((s, item) => s + item.quantity, 0), 0
+    );
+    const totalRevenue = orders.reduce((sum, o) => 
+      sum + o.purchasedItems.reduce((s, item) => s + item.price * item.quantity, 0), 0
+    );
+    
+    const monthlySales: Record<string, { month: string; quantity: number; revenue: number }> = {};
+    orders.forEach(order => {
+      const d = new Date(order.processedAt);
+      const monthKey = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+      if (!monthlySales[monthKey]) {
+        monthlySales[monthKey] = { month: monthKey, quantity: 0, revenue: 0 };
+      }
+      order.purchasedItems.forEach(item => {
+        monthlySales[monthKey].quantity += item.quantity;
+        monthlySales[monthKey].revenue += item.price * item.quantity;
+      });
+    });
+    
+    return {
+      product,
+      orders,
+      totalSold,
+      totalRevenue,
+      monthlySales: Object.values(monthlySales).sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime())
+    };
+  };
+
+  const clearMonthFilter = () => {
+    setSelectedMonth(null);
+  };
+
+  const handleMonthClick = (monthData: any) => {
+    if (selectedMonth === monthData.month) {
+      setSelectedMonth(null);
+    } else {
+      setSelectedMonth(monthData.month);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -283,6 +391,11 @@ export const MerchandisingView: React.FC = () => {
     );
   }
 
+  const selectedProductStats = selectedProductId ? getProductStats(selectedProductId) : null;
+  const selectedCustomerOrders = selectedCustomerId ? getCustomerOrders(selectedCustomerId) : [];
+  const selectedOrder = selectedOrderId ? filteredOrders.find(o => o.id === selectedOrderId) : null;
+  const selectedCustomer = selectedCustomerId ? data.customers.find(c => c.email === selectedCustomerId) : null;
+
   return (
     <div className="space-y-6 pt-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -293,13 +406,22 @@ export const MerchandisingView: React.FC = () => {
           </h1>
           <p className="text-sm text-gray-500 mt-1">
             {stats.totalOrders.toLocaleString()} orders | {formatCurrency(stats.totalRevenue)} revenue
+            {selectedMonth && <span className="ml-2 text-orange-600">• Filtered: {selectedMonth}</span>}
             {data.lastUpdated && <span className="ml-2">• Updated {formatDate(data.lastUpdated)}</span>}
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {selectedMonth && (
+            <button
+              onClick={clearMonthFilter}
+              className="px-3 py-2 bg-orange-100 text-orange-700 rounded-lg text-sm font-medium hover:bg-orange-200 transition-colors flex items-center gap-2"
+            >
+              <X size={14} /> Clear Month Filter
+            </button>
+          )}
           <select
             value={selectedSeason}
-            onChange={(e) => setSelectedSeason(e.target.value)}
+            onChange={(e) => { setSelectedSeason(e.target.value); setSelectedMonth(null); }}
             className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
             {availableSeasons.map(season => (
@@ -448,15 +570,32 @@ export const MerchandisingView: React.FC = () => {
             </div>
 
             <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">Monthly Revenue Trend</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-gray-700">Monthly Revenue Trend</h3>
+                <p className="text-xs text-gray-500">Click a bar to filter by month</p>
+              </div>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={stats.monthlyData}>
+                <BarChart data={stats.monthlyData} onClick={(data) => data?.activePayload && handleMonthClick(data.activePayload[0]?.payload)}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
                   <YAxis tickFormatter={(v) => `€${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(value: number) => formatCurrency(value)} />
-                  <Line type="monotone" dataKey="revenue" stroke="#ea580c" strokeWidth={2} dot={{ fill: '#ea580c' }} />
-                </LineChart>
+                  <Bar 
+                    dataKey="revenue" 
+                    fill="#ea580c" 
+                    radius={[4, 4, 0, 0]}
+                    cursor="pointer"
+                  >
+                    {stats.monthlyData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={selectedMonth === entry.month ? '#c2410c' : '#ea580c'} 
+                        stroke={selectedMonth === entry.month ? '#9a3412' : 'none'}
+                        strokeWidth={selectedMonth === entry.month ? 2 : 0}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
@@ -466,7 +605,11 @@ export const MerchandisingView: React.FC = () => {
               <h3 className="text-sm font-semibold text-gray-700 mb-4">Top Selling Products</h3>
               <div className="space-y-3">
                 {stats.topProducts.slice(0, 5).map((product, i) => (
-                  <div key={product.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div 
+                    key={product.id} 
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => setSelectedProductId(product.id)}
+                  >
                     <div className="flex items-center gap-3">
                       <span className="w-6 h-6 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
                       <div>
@@ -474,7 +617,10 @@ export const MerchandisingView: React.FC = () => {
                         <p className="text-xs text-gray-500">{product.quantity} units sold</p>
                       </div>
                     </div>
-                    <p className="text-sm font-semibold text-green-600">{formatCurrency(product.revenue)}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-green-600">{formatCurrency(product.revenue)}</p>
+                      <Eye size={14} className="text-gray-400" />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -484,15 +630,22 @@ export const MerchandisingView: React.FC = () => {
               <h3 className="text-sm font-semibold text-gray-700 mb-4">Top Customers</h3>
               <div className="space-y-3">
                 {stats.topCustomers.slice(0, 5).map((customer, i) => (
-                  <div key={customer.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div 
+                    key={customer.email} 
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                    onClick={() => setSelectedCustomerId(customer.email)}
+                  >
                     <div className="flex items-center gap-3">
                       <span className="w-6 h-6 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
                       <div>
                         <p className="text-sm font-medium text-gray-800">{customer.firstName} {customer.lastName}</p>
-                        <p className="text-xs text-gray-500">{customer.ordersCount} orders</p>
+                        <p className="text-xs text-gray-500">{customer.orders} orders</p>
                       </div>
                     </div>
-                    <p className="text-sm font-semibold text-green-600">{formatCurrency(customer.totalSpent)}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-green-600">{formatCurrency(customer.spent)}</p>
+                      <Eye size={14} className="text-gray-400" />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -524,13 +677,16 @@ export const MerchandisingView: React.FC = () => {
                   <th className="text-right px-4 py-3 font-semibold text-gray-700">Price</th>
                   <th className="text-right px-4 py-3 font-semibold text-gray-700">Inventory</th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-700">Status</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-700"></th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredProducts.slice(0, productsLimit).map((product) => (
                   <React.Fragment key={product.id}>
-                    <tr className="border-t border-gray-100 hover:bg-gray-50">
+                    <tr 
+                      className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                      onClick={() => setSelectedProductId(product.id)}
+                    >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           {product.images[0] ? (
@@ -563,35 +719,14 @@ export const MerchandisingView: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        {product.variants.length > 1 && (
-                          <button 
-                            onClick={() => setExpandedProduct(expandedProduct === product.id ? null : product.id)}
-                            className="text-gray-400 hover:text-gray-600"
-                          >
-                            {expandedProduct === product.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                          </button>
-                        )}
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setSelectedProductId(product.id); }}
+                          className="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors"
+                        >
+                          <Eye size={12} className="inline mr-1" /> View
+                        </button>
                       </td>
                     </tr>
-                    {expandedProduct === product.id && product.variants.length > 1 && (
-                      <tr>
-                        <td colSpan={6} className="px-4 py-3 bg-gray-50">
-                          <div className="pl-12 space-y-2">
-                            {product.variants.map(variant => (
-                              <div key={variant.id} className="flex items-center justify-between text-sm">
-                                <span className="text-gray-600">{variant.title}</span>
-                                <div className="flex items-center gap-6">
-                                  <span className="text-gray-800">{formatCurrency(variant.price)}</span>
-                                  <span className={variant.inventoryQuantity <= 0 ? 'text-red-600' : 'text-gray-600'}>
-                                    {variant.inventoryQuantity} in stock
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
                   </React.Fragment>
                 ))}
               </tbody>
@@ -617,6 +752,18 @@ export const MerchandisingView: React.FC = () => {
 
       {activeTab === 'orders' && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search orders by number, date, customer, total, payment..."
+                value={orderSearch}
+                onChange={(e) => { setOrderSearch(e.target.value); setOrdersLimit(50); }}
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              />
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
@@ -628,11 +775,16 @@ export const MerchandisingView: React.FC = () => {
                   <th className="text-right px-4 py-3 font-semibold text-gray-700">Total</th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-700">Payment</th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-700">Fulfillment</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.slice(0, ordersLimit).map((order) => (
-                  <tr key={order.id} className="border-t border-gray-100 hover:bg-gray-50">
+                {searchedOrders.slice(0, ordersLimit).map((order) => (
+                  <tr 
+                    key={order.id} 
+                    className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => setSelectedOrderId(order.id)}
+                  >
                     <td className="px-4 py-3 font-medium text-gray-800">#{order.orderNumber}</td>
                     <td className="px-4 py-3 text-gray-600">{formatDate(order.processedAt)}</td>
                     <td className="px-4 py-3">
@@ -642,12 +794,13 @@ export const MerchandisingView: React.FC = () => {
                     <td className="px-4 py-3 text-right text-gray-600">{order.itemCount}</td>
                     <td className="px-4 py-3 text-right font-medium text-gray-800">{formatCurrency(order.totalPrice)}</td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1 ${
                         order.financialStatus === 'paid' ? 'bg-green-100 text-green-700' :
                         order.financialStatus === 'pending' ? 'bg-amber-100 text-amber-700' :
                         'bg-gray-100 text-gray-600'
                       }`}>
-                        {order.financialStatus}
+                        <CreditCard size={10} />
+                        {getPaymentMethod(order)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -659,14 +812,22 @@ export const MerchandisingView: React.FC = () => {
                         {order.fulfillmentStatus || 'unfulfilled'}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-center">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setSelectedOrderId(order.id); }}
+                        className="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors"
+                      >
+                        <Eye size={12} className="inline mr-1" /> View
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          {filteredOrders.length > ordersLimit ? (
+          {searchedOrders.length > ordersLimit ? (
             <div className="px-4 py-3 bg-gray-50 text-center">
-              <span className="text-sm text-gray-500 mr-3">Showing {ordersLimit} of {filteredOrders.length} orders</span>
+              <span className="text-sm text-gray-500 mr-3">Showing {ordersLimit} of {searchedOrders.length} orders</span>
               <button 
                 onClick={() => setOrdersLimit(l => l + 50)}
                 className="px-4 py-1.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
@@ -676,7 +837,8 @@ export const MerchandisingView: React.FC = () => {
             </div>
           ) : (
             <div className="px-4 py-3 bg-gray-50 text-center text-sm text-gray-500">
-              Showing all {filteredOrders.length} orders for season {selectedSeason}
+              Showing all {searchedOrders.length} orders for season {selectedSeason}
+              {selectedMonth && ` in ${selectedMonth}`}
             </div>
           )}
         </div>
@@ -706,11 +868,16 @@ export const MerchandisingView: React.FC = () => {
                   <th className="text-right px-4 py-3 font-semibold text-gray-700">Total Spent</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-700">Member Since</th>
                   <th className="text-left px-4 py-3 font-semibold text-gray-700">Tags</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-700">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredCustomers.slice(0, customersLimit).map((customer) => (
-                  <tr key={customer.id} className="border-t border-gray-100 hover:bg-gray-50">
+                  <tr 
+                    key={customer.id} 
+                    className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => setSelectedCustomerId(customer.email)}
+                  >
                     <td className="px-4 py-3 font-medium text-gray-800">{customer.firstName} {customer.lastName}</td>
                     <td className="px-4 py-3 text-gray-600">{customer.email}</td>
                     <td className="px-4 py-3 text-right text-gray-600">{customer.ordersCount}</td>
@@ -725,6 +892,14 @@ export const MerchandisingView: React.FC = () => {
                           <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">+{customer.tags.length - 3}</span>
                         )}
                       </div>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setSelectedCustomerId(customer.email); }}
+                        className="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors"
+                      >
+                        <Eye size={12} className="inline mr-1" /> View
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -746,6 +921,277 @@ export const MerchandisingView: React.FC = () => {
               Showing all {filteredCustomers.length} customers
             </div>
           )}
+        </div>
+      )}
+
+      {selectedProductStats && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedProductId(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800">Product Details</h2>
+              <button onClick={() => setSelectedProductId(null)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="flex items-start gap-6">
+                {selectedProductStats.product.images[0] ? (
+                  <img 
+                    src={selectedProductStats.product.images[0].src} 
+                    alt={selectedProductStats.product.title} 
+                    className="w-32 h-32 object-cover rounded-xl"
+                  />
+                ) : (
+                  <div className="w-32 h-32 bg-gray-100 rounded-xl flex items-center justify-center">
+                    <Package size={40} className="text-gray-400" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-800">{selectedProductStats.product.title}</h3>
+                  <p className="text-sm text-gray-500 mt-1">{selectedProductStats.product.productType || 'No category'}</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+                    <div className="bg-green-50 rounded-lg p-3 text-center">
+                      <p className="text-xs text-green-600">Revenue</p>
+                      <p className="text-lg font-bold text-green-700">{formatCurrency(selectedProductStats.totalRevenue)}</p>
+                    </div>
+                    <div className="bg-orange-50 rounded-lg p-3 text-center">
+                      <p className="text-xs text-orange-600">Units Sold</p>
+                      <p className="text-lg font-bold text-orange-700">{selectedProductStats.totalSold}</p>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-3 text-center">
+                      <p className="text-xs text-blue-600">In Stock</p>
+                      <p className="text-lg font-bold text-blue-700">{selectedProductStats.product.totalInventory}</p>
+                    </div>
+                    <div className="bg-purple-50 rounded-lg p-3 text-center">
+                      <p className="text-xs text-purple-600">Price</p>
+                      <p className="text-lg font-bold text-purple-700">
+                        {selectedProductStats.product.variants.length === 1
+                          ? formatCurrency(selectedProductStats.product.variants[0].price)
+                          : `${formatCurrency(Math.min(...selectedProductStats.product.variants.map(v => v.price)))}`
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {selectedProductStats.product.variants.length > 1 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Variants</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {selectedProductStats.product.variants.map(variant => (
+                      <div key={variant.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span className="text-sm text-gray-700">{variant.title}</span>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="font-medium">{formatCurrency(variant.price)}</span>
+                          <span className={variant.inventoryQuantity <= 0 ? 'text-red-600' : 'text-gray-500'}>
+                            {variant.inventoryQuantity} in stock
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedProductStats.monthlySales.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Sales History</h4>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={selectedProductStats.monthlySales}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                      <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                      <YAxis tickFormatter={(v) => v.toString()} tick={{ fontSize: 10 }} />
+                      <Tooltip formatter={(value: number, name: string) => [name === 'quantity' ? value + ' units' : formatCurrency(value), name === 'quantity' ? 'Units' : 'Revenue']} />
+                      <Bar dataKey="quantity" fill="#ea580c" radius={[4, 4, 0, 0]} name="Units Sold" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Recent Purchases ({selectedProductStats.orders.length})</h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {selectedProductStats.orders.slice(0, 20).map(order => (
+                    <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{order.customerName}</p>
+                        <p className="text-xs text-gray-500">{formatDate(order.processedAt)}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-800">
+                          {order.purchasedItems.reduce((sum, item) => sum + item.quantity, 0)} units
+                        </p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          order.financialStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {getPaymentMethod(order)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedCustomerId && selectedCustomerOrders.length > 0 && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedCustomerId(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800">Customer Details</h2>
+              <button onClick={() => setSelectedCustomerId(null)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="flex items-start gap-6">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Users size={28} className="text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-bold text-gray-800">
+                    {selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : selectedCustomerOrders[0]?.customerName || 'Guest'}
+                  </h3>
+                  <p className="text-sm text-gray-500">{selectedCustomer?.email || selectedCustomerId}</p>
+                  {selectedCustomer?.tags && selectedCustomer.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {selectedCustomer.tags.map((tag, i) => (
+                        <span key={i} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+                    <div className="bg-green-50 rounded-lg p-3 text-center">
+                      <p className="text-xs text-green-600">Total Spent</p>
+                      <p className="text-lg font-bold text-green-700">
+                        {formatCurrency(selectedCustomer?.totalSpent || selectedCustomerOrders.reduce((sum, o) => sum + o.totalPrice, 0))}
+                      </p>
+                    </div>
+                    <div className="bg-orange-50 rounded-lg p-3 text-center">
+                      <p className="text-xs text-orange-600">Orders</p>
+                      <p className="text-lg font-bold text-orange-700">{selectedCustomer?.ordersCount || selectedCustomerOrders.length}</p>
+                    </div>
+                    <div className="bg-blue-50 rounded-lg p-3 text-center">
+                      <p className="text-xs text-blue-600">This Season</p>
+                      <p className="text-lg font-bold text-blue-700">{selectedCustomerOrders.length}</p>
+                    </div>
+                    <div className="bg-purple-50 rounded-lg p-3 text-center">
+                      <p className="text-xs text-purple-600">Member Since</p>
+                      <p className="text-sm font-bold text-purple-700">
+                        {selectedCustomer ? formatDate(selectedCustomer.createdAt) : formatDate(selectedCustomerOrders[selectedCustomerOrders.length - 1]?.processedAt || '')}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Purchase History ({selectedCustomerOrders.length})</h4>
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {selectedCustomerOrders.map(order => (
+                    <div key={order.id} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">Order #{order.orderNumber}</p>
+                          <p className="text-xs text-gray-500">{formatDate(order.processedAt)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-green-600">{formatCurrency(order.totalPrice)}</p>
+                          <span className={`text-xs px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
+                            order.financialStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            <CreditCard size={10} />
+                            {getPaymentMethod(order)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        {order.lineItems.map((item, i) => (
+                          <div key={i} className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600">{item.title}</span>
+                            <span className="text-gray-800">{item.quantity} x {formatCurrency(item.price)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedOrder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedOrderId(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800">Order #{selectedOrder.orderNumber}</h2>
+              <button onClick={() => setSelectedOrderId(null)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500">Customer</p>
+                  <p className="text-sm font-medium text-gray-800">{selectedOrder.customerName}</p>
+                  <p className="text-xs text-gray-500">{selectedOrder.customerEmail}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Date</p>
+                  <p className="text-sm font-medium text-gray-800">{formatDate(selectedOrder.processedAt)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Payment Method</p>
+                  <span className={`text-sm px-2 py-1 rounded-full inline-flex items-center gap-1 ${
+                    selectedOrder.financialStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                  }`}>
+                    <CreditCard size={12} />
+                    {getPaymentMethod(selectedOrder)}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Fulfillment</p>
+                  <span className={`text-sm px-2 py-1 rounded-full ${
+                    selectedOrder.fulfillmentStatus === 'fulfilled' ? 'bg-green-100 text-green-700' :
+                    selectedOrder.fulfillmentStatus === 'partial' ? 'bg-amber-100 text-amber-700' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    {selectedOrder.fulfillmentStatus || 'Unfulfilled'}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Items ({selectedOrder.itemCount})</h4>
+                <div className="space-y-2">
+                  {selectedOrder.lineItems.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">{item.title}</p>
+                        {item.sku && <p className="text-xs text-gray-500">SKU: {item.sku}</p>}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-800">{item.quantity} x {formatCurrency(item.price)}</p>
+                        <p className="text-sm font-bold text-green-600">{formatCurrency(item.price * item.quantity)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-gray-200 pt-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-lg font-semibold text-gray-800">Total</span>
+                  <span className="text-xl font-bold text-green-600">{formatCurrency(selectedOrder.totalPrice)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

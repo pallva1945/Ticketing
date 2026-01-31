@@ -649,6 +649,7 @@ interface ShopifyOrder {
   customerName: string;
   customerEmail: string;
   itemCount: number;
+  paymentMethod: string;
   lineItems: {
     title: string;
     quantity: number;
@@ -690,6 +691,21 @@ interface ShopifyCustomer {
 
 let shopifyCache: { orders: ShopifyOrder[]; products: ShopifyProduct[]; customers: ShopifyCustomer[]; lastUpdated: string; timestamp: number } | null = null;
 const SHOPIFY_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+
+// Normalize payment method from various gateway names
+function normalizePaymentMethod(method: string): string {
+  if (!method) return 'Unknown';
+  const lower = method.toLowerCase();
+  if (lower.includes('shopify_payments') || lower.includes('stripe') || lower.includes('visa') || 
+      lower.includes('mastercard') || lower.includes('credit') || lower.includes('debit')) return 'Card';
+  if (lower.includes('paypal')) return 'PayPal';
+  if (lower.includes('cash') || lower.includes('contanti')) return 'Cash';
+  if (lower.includes('wire') || lower.includes('bank') || lower.includes('transfer') || lower.includes('bonifico')) return 'Wire Transfer';
+  if (lower.includes('manual') || lower.includes('pos')) return 'Manual/POS';
+  if (lower.includes('gift_card') || lower.includes('giftcard')) return 'Gift Card';
+  if (method.length > 0) return method.charAt(0).toUpperCase() + method.slice(1).replace(/_/g, ' ');
+  return 'Unknown';
+}
 
 // CSV parsing for merch data
 function parseCSVLine(line: string): string[] {
@@ -770,6 +786,8 @@ function parseMerchCSV(): { orders: ShopifyOrder[]; products: ShopifyProduct[]; 
     const customerName = `${customerFirstName} ${customerLastName}`.trim() || 'Guest';
     const financialStatus = get('Payment_Status') || 'unknown';
     const fulfillmentStatus = get('Order_Fulfillment_Status') || 'unfulfilled';
+    const paymentGateway = get('Transaction_Gateway') || '';
+    const paymentMethod = get('Transaction_Payment_Method') || paymentGateway || '';
     const lineType = get('Line_Type');
     const topRow = get('Top_Row');
     
@@ -787,7 +805,8 @@ function parseMerchCSV(): { orders: ShopifyOrder[]; products: ShopifyProduct[]; 
         itemCount: 0,
         lineItems: [],
         financialStatus,
-        fulfillmentStatus
+        fulfillmentStatus,
+        paymentMethod: normalizePaymentMethod(paymentMethod)
       });
     }
     
@@ -900,6 +919,7 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
         ? `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim()
         : order.billing_address?.name || 'Guest';
       
+      const gateway = order.payment_gateway_names?.[0] || order.gateway || '';
       orders.push({
         id: String(order.id),
         orderNumber: String(order.order_number),
@@ -910,6 +930,7 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
         customerName,
         customerEmail: order.customer?.email || order.email || '',
         itemCount: order.line_items?.reduce((sum: number, li: any) => sum + li.quantity, 0) || 0,
+        paymentMethod: normalizePaymentMethod(gateway),
         lineItems: (order.line_items || []).map((li: any) => ({
           title: li.title,
           quantity: li.quantity,
