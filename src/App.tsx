@@ -1483,7 +1483,7 @@ const App: React.FC = () => {
         }
       }
       
-      // Process CRM
+      // Process CRM - accept either rawRows OR stats with valid record count
       if (crmRes.ok) {
         const result = await crmRes.json();
         if (result.success && result.rawRows?.length > 0) {
@@ -1492,6 +1492,13 @@ const App: React.FC = () => {
           setDataSources(prev => ({...prev, crm: 'bigquery'}));
           results.crm = true;
           console.log(`Synced ${loadedCRM.length} CRM records`);
+        } else if (result.success && result.stats?.totalRecords > 0) {
+          // Cache response with stats but no rawRows - still counts as success
+          setDataSources(prev => ({...prev, crm: 'bigquery'}));
+          results.crm = true;
+          console.log(`CRM synced from cache: ${result.stats.totalRecords} records`);
+        } else {
+          console.warn('CRM sync: No data returned', result.message);
         }
       }
       
