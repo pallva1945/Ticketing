@@ -98,6 +98,7 @@ const RevenueHome = ({
     gameDayTicketing,
     gameDayRevenue, 
     sponsorshipRevenue,
+    merchRevenue,
     onAiClick,
     gamesPlayed,
     seasonFilter,
@@ -109,6 +110,7 @@ const RevenueHome = ({
     gameDayTicketing: number,
     gameDayRevenue: number, 
     sponsorshipRevenue: number,
+    merchRevenue: number,
     onNavigate: (id: RevenueModule) => void,
     onAiClick: (prompt: string) => void,
     gamesPlayed: number,
@@ -201,9 +203,9 @@ const RevenueHome = ({
       { 
           id: 'merchandising', 
           name: 'Merchandising', 
-          current: 0, 
+          current: merchRevenue, 
           target: 131000, 
-          icon: ShoppingBag, colorClass: 'text-orange-600', bgClass: 'bg-orange-50', barClass: 'bg-orange-500', isVariable: false, isProrated: false, hasData: false 
+          icon: ShoppingBag, colorClass: 'text-orange-600', bgClass: 'bg-orange-50', barClass: 'bg-orange-500', isVariable: false, isProrated: false, hasData: merchRevenue > 0 
       },
     ];
 
@@ -914,6 +916,7 @@ const App: React.FC = () => {
   const [crmStats, setCrmStats] = useState<{ all: any; fixed: any; flexible: any } | null>(null); // Server-computed CRM stats for fast loading
   const [sponsorDataSource, setSponsorDataSource] = useState<'local' | 'cloud'>('local');
   const [sponsorLastUpdated, setSponsorLastUpdated] = useState<string | null>(null);
+  const [merchRevenue, setMerchRevenue] = useState<number>(0);
   const [isLoadingData, setIsLoadingData] = useState(true);
   
   // Sources separated by vertical
@@ -975,10 +978,11 @@ const App: React.FC = () => {
     
     // Start essential BigQuery fetches in parallel for faster loading
     // CRM is loaded lazily when user navigates to CRM tab
-    const [ticketingResponse, gdResponse, sponsorResponse] = await Promise.all([
+    const [ticketingResponse, gdResponse, sponsorResponse, merchResponse] = await Promise.all([
       fetch('/api/ticketing').catch(e => { console.warn('Ticketing fetch failed:', e); return null; }),
       fetch('/api/gameday/bigquery').catch(e => { console.warn('GameDay fetch failed:', e); return null; }),
-      fetch('/api/sponsorship/bigquery').catch(e => { console.warn('Sponsorship fetch failed:', e); return null; })
+      fetch('/api/sponsorship/bigquery').catch(e => { console.warn('Sponsorship fetch failed:', e); return null; }),
+      fetch('/api/shopify/data').catch(e => { console.warn('Merch fetch failed:', e); return null; })
     ]);
     
     // 1. TICKETING DATA - Process first (most critical for Executive Overview)
@@ -1106,6 +1110,32 @@ const App: React.FC = () => {
         console.error("Error loading Sponsor data", e);
         setSponsorData(processSponsorData(SPONSOR_CSV_CONTENT));
         setSponsorDataSource('local');
+    }
+
+    // 4. MERCHANDISING DATA - Calculate season-filtered revenue for Executive Overview
+    try {
+        if (merchResponse && merchResponse.ok) {
+            const merchResult = await merchResponse.json();
+            if (merchResult.orders?.length > 0) {
+                // Filter orders by current season (25/26 = Aug 2025 - Jul 2026)
+                const getSeasonFromDate = (dateStr: string): string => {
+                    const date = new Date(dateStr);
+                    const year = date.getFullYear();
+                    const month = date.getMonth();
+                    if (month >= 7) {
+                        return `${String(year).slice(2)}/${String(year + 1).slice(2)}`;
+                    } else {
+                        return `${String(year - 1).slice(2)}/${String(year).slice(2)}`;
+                    }
+                };
+                const seasonOrders = merchResult.orders.filter((o: any) => getSeasonFromDate(o.processedAt) === '25/26');
+                const seasonRevenue = seasonOrders.reduce((sum: number, o: any) => sum + o.totalPrice, 0);
+                setMerchRevenue(seasonRevenue);
+                console.log(`Merch loaded: ${merchResult.orders.length} total orders, ${seasonOrders.length} in 25/26 season - ${seasonRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}`);
+            }
+        }
+    } catch(e) {
+        console.error("Error loading Merch data", e);
     }
 
     // CRM is loaded lazily - see loadCRMData function
@@ -2470,6 +2500,7 @@ const App: React.FC = () => {
                 gameDayTicketing={gameDayTicketingRevenue}
                 gameDayRevenue={gameDayRevenueNet} 
                 sponsorshipRevenue={sponsorshipStats.pureSponsorship}
+                merchRevenue={merchRevenue}
                 onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
                 onAiClick={(prompt: string) => openAIWithPrompt(prompt)}
                 gamesPlayed={filteredGames.length}
