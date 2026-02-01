@@ -1441,7 +1441,7 @@ const App: React.FC = () => {
       let hasMore = true;
       
       while (hasMore) {
-        const response = await fetch(`/api/crm/bigquery?refresh=${page === 0 ? 'true' : 'false'}&full=true&page=${page}&pageSize=5000`);
+        const response = await fetch(`/api/crm/bigquery?refresh=${page === 0 ? 'true' : 'false'}&full=true&page=${page}&pageSize=2000`);
         if (response.ok) {
           const result = await response.json();
           if (result.success && result.rawRows && result.rawRows.length > 0) {
@@ -1523,11 +1523,13 @@ const App: React.FC = () => {
         let hasMore = true;
         
         while (hasMore) {
-          const crmRes = await fetch(`/api/crm/bigquery?refresh=${page === 0 ? 'true' : 'false'}&full=true&page=${page}&pageSize=5000`);
+          console.log(`CRM sync: fetching page ${page}...`);
+          const crmRes = await fetch(`/api/crm/bigquery?refresh=${page === 0 ? 'true' : 'false'}&full=true&page=${page}&pageSize=2000`);
           if (crmRes.ok) {
             const result = await crmRes.json();
             if (result.success && result.rawRows?.length > 0) {
               allCrmRows.push(...result.rawRows);
+              console.log(`CRM sync: page ${page} loaded, ${result.rawRows.length} rows (total: ${allCrmRows.length}/${result.pagination?.totalRecords || '?'})`);
               hasMore = result.pagination?.hasMore || false;
               page++;
             } else {
