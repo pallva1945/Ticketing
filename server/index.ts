@@ -151,6 +151,44 @@ const isRowFixedCapacity = (row: any): boolean => {
   return eventRaw === 'abbonamento lba 2025/26';
 };
 
+// Slim down CRM rows to only essential fields for frontend (reduces ~38MB to ~4MB)
+const slimCRMRows = (rawRows: any[]): any[] => {
+  const essentialFields = [
+    'event', 'Event', 'EVENT',
+    'sell', 'Sell', 'SELL',
+    'ticket_type', 'Ticket_Type', 'TICKET_TYPE',
+    'pv_zone', 'PV_Zone', 'PV_ZONE', 'zone', 'Zone', 'ZONE',
+    'game', 'Game', 'GAME',
+    'price', 'Price', 'PRICE',
+    'quantity', 'Quantity', 'QUANTITY', 'qty', 'Qty', 'QTY',
+    'commercial_value', 'Commercial_Value', 'COMMERCIAL_VALUE',
+    'first_name', 'First_Name', 'FIRST_NAME',
+    'last_name', 'Last_Name', 'LAST_NAME',
+    'full_name', 'Full_Name', 'FULL_NAME',
+    'email', 'Email', 'EMAIL',
+    'cell', 'Cell', 'CELL', 'phone', 'Phone', 'PHONE',
+    'dob', 'DOB', 'Dob',
+    'city', 'City', 'CITY',
+    'province', 'Province', 'PROVINCE',
+    'group', 'Group', 'GROUP',
+    'customer_id', 'Customer_ID', 'CUSTOMER_ID',
+    'purchase_date', 'Purchase_Date', 'PURCHASE_DATE',
+    'advance_days', 'Advance_Days', 'ADVANCE_DAYS',
+    'address', 'Address', 'ADDRESS',
+    'age', 'Age', 'AGE'
+  ];
+  
+  return rawRows.map(row => {
+    const slimRow: any = {};
+    for (const field of essentialFields) {
+      if (row[field] !== undefined && row[field] !== null && row[field] !== '') {
+        slimRow[field] = row[field];
+      }
+    }
+    return slimRow;
+  });
+};
+
 // Server-side CRM stats computation
 const computeCRMStats = (rawRows: any[]) => {
   const customerMap: Record<string, any> = {};
@@ -566,7 +604,7 @@ app.get("/api/crm/bigquery", async (req, res) => {
           stats: crmCache.processedStats,
           fixedStats: crmCache.fixedStats,
           flexibleStats: crmCache.flexibleStats,
-          rawRows: fullData ? crmCache.rawRows : undefined,
+          rawRows: fullData ? slimCRMRows(crmCache.rawRows) : undefined,
           cached: true,
           message: `Served CRM stats from cache (${crmCache.processedStats.totalRecords} records)` 
         });
@@ -598,7 +636,7 @@ app.get("/api/crm/bigquery", async (req, res) => {
         stats: processedStats,
         fixedStats,
         flexibleStats,
-        rawRows: fullData ? result.rawRows : undefined,
+        rawRows: fullData ? slimCRMRows(result.rawRows) : undefined,
         cached: false,
         message: `Processed ${result.rawRows.length} CRM records`
       });
