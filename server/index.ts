@@ -927,7 +927,7 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
   do {
     const endpoint = pageInfo 
       ? `orders.json?limit=250&page_info=${pageInfo}` 
-      : 'orders.json?limit=250&status=any';
+      : 'orders.json?limit=250&status=any&fields=id,name,created_at,processed_at,total_price,currency,financial_status,fulfillment_status,customer,email,billing_address,line_items,payment_gateway_names,gateway,transactions';
     
     const response = await fetchShopifyAPI(endpoint);
     
@@ -936,7 +936,8 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
         ? `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim()
         : order.billing_address?.name || 'Guest';
       
-      const gateway = order.payment_gateway_names?.[0] || order.gateway || '';
+      const transactionGateway = order.transactions?.[0]?.gateway || '';
+      const gateway = order.payment_gateway_names?.[0] || order.gateway || transactionGateway || '';
       orders.push({
         id: String(order.id),
         orderNumber: String(order.order_number),
