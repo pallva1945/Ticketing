@@ -99,10 +99,14 @@ const RevenueHome = ({
     gameDayRevenue, 
     sponsorshipRevenue,
     merchRevenue,
+    merchGameDayRevenue,
+    onNavigate,
     onAiClick,
     gamesPlayed,
     seasonFilter,
     onSeasonChange,
+    activeFilters,
+    onClearFilters,
     yoyStats
 }: { 
     modules: any[], 
@@ -111,11 +115,14 @@ const RevenueHome = ({
     gameDayRevenue: number, 
     sponsorshipRevenue: number,
     merchRevenue: number,
+    merchGameDayRevenue: number,
     onNavigate: (id: RevenueModule) => void,
     onAiClick: (prompt: string) => void,
     gamesPlayed: number,
     seasonFilter: string,
     onSeasonChange: (s: string) => void,
+    activeFilters: { seasons: string[]; leagues: string[]; opponents: string[]; zones: string[] },
+    onClearFilters: () => void,
     yoyStats: {
         seasons: Array<{
             season: string,
@@ -203,7 +210,7 @@ const RevenueHome = ({
       { 
           id: 'merchandising', 
           name: 'Merchandising', 
-          current: merchRevenue, 
+          current: Math.max(0, merchRevenue - merchGameDayRevenue), 
           target: 131000, 
           icon: ShoppingBag, colorClass: 'text-orange-600', bgClass: 'bg-orange-50', barClass: 'bg-orange-500', isVariable: false, isProrated: false, hasData: merchRevenue > 0 
       },
@@ -307,6 +314,28 @@ const RevenueHome = ({
                     </div>
                 </div>
             </div>
+
+            {/* Active Filters Indicator */}
+            {(activeFilters.leagues[0] !== 'LBA' || !activeFilters.opponents.includes('All') || !activeFilters.zones.includes('All')) && (
+                <div className="flex flex-wrap items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <span className="text-xs font-bold text-amber-700">Active Filters:</span>
+                    {activeFilters.leagues[0] !== 'LBA' && (
+                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">League: {activeFilters.leagues.join(', ')}</span>
+                    )}
+                    {!activeFilters.opponents.includes('All') && (
+                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Opponents: {activeFilters.opponents.length}</span>
+                    )}
+                    {!activeFilters.zones.includes('All') && (
+                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Zones: {activeFilters.zones.join(', ')}</span>
+                    )}
+                    <button 
+                        onClick={onClearFilters}
+                        className="ml-auto text-xs font-bold text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                    >
+                        <X size={12} /> Clear All
+                    </button>
+                </div>
+            )}
 
             {/* AI Executive Summary */}
             <div className="hidden md:block relative bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-xl overflow-hidden border border-slate-700">
@@ -475,7 +504,11 @@ const RevenueHome = ({
                         
                         // Card for verticals WITH data
                         return (
-                            <div key={v.id} className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm relative group hover:shadow-md transition-shadow">
+                            <div 
+                                key={v.id} 
+                                className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm relative group hover:shadow-md hover:border-gray-300 transition-all cursor-pointer"
+                                onClick={() => onNavigate(v.id as RevenueModule)}
+                            >
                                 {/* Icon & Name */}
                                 <div className="flex items-center gap-2 mb-3">
                                     <div className={`w-8 h-8 ${v.bgClass} rounded-lg flex items-center justify-center`}>
@@ -1904,6 +1937,11 @@ const App: React.FC = () => {
       }, 0);
   }, [filteredGameDayData]);
 
+  // GameDay Merchandising Revenue (for Executive Overview calculation)
+  const gameDayMerchRevenue = useMemo(() => {
+      return filteredGameDayData.reduce((acc, game) => acc + game.merchRevenue, 0);
+  }, [filteredGameDayData]);
+
   // Filtered Game Day Revenue for PACING WIDGET
   const filteredGameDayRevForPacing = useMemo(() => {
       return filteredGameDayData.reduce((acc, game) => {
@@ -2552,11 +2590,23 @@ const App: React.FC = () => {
                 gameDayRevenue={gameDayRevenueNet} 
                 sponsorshipRevenue={sponsorshipStats.pureSponsorship}
                 merchRevenue={merchRevenue}
+                merchGameDayRevenue={gameDayMerchRevenue}
                 onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
                 onAiClick={(prompt: string) => openAIWithPrompt(prompt)}
                 gamesPlayed={filteredGames.length}
                 seasonFilter={selectedSeasons[0]}
                 onSeasonChange={(s) => setSelectedSeasons([s])}
+                activeFilters={{ 
+                    seasons: selectedSeasons, 
+                    leagues: selectedLeagues, 
+                    opponents: selectedOpponents, 
+                    zones: selectedZones 
+                }}
+                onClearFilters={() => {
+                    setSelectedLeagues(['LBA']);
+                    setSelectedOpponents(['All']);
+                    setSelectedZones(['All']);
+                }}
                 yoyStats={yoyComparisonStats}
               />
           ) : activeModule === 'gameday' ? (
