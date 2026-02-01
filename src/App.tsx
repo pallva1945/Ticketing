@@ -1738,9 +1738,20 @@ const App: React.FC = () => {
       }
 
       if (viewMode === 'gameday') {
+          // Calculate game-by-game CORP tickets per zone (these reduce available capacity)
+          const corpPerZone: Record<string, number> = {};
+          game.salesBreakdown.forEach(s => {
+              if (s.channel === SalesChannel.CORP) {
+                  corpPerZone[s.zone] = (corpPerZone[s.zone] || 0) + s.quantity;
+              }
+          });
+          
           Object.keys(filteredZoneCapacities).forEach(z => {
+              // Deduct fixed capacity (ABB season tickets)
               const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
-              filteredZoneCapacities[z] = Math.max(0, filteredZoneCapacities[z] - fixedDeduction);
+              // Also deduct game-by-game CORP tickets
+              const corpDeduction = corpPerZone[z] || 0;
+              filteredZoneCapacities[z] = Math.max(0, filteredZoneCapacities[z] - fixedDeduction - corpDeduction);
           });
       }
 

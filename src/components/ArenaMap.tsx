@@ -64,10 +64,22 @@ const getZoneMetrics = (data: GameData[], viewMode: ViewMode) => {
   const channelFilter = viewMode === 'gameday' ? GAMEDAY_CHANNELS : TOTAL_CHANNELS;
   
   data.forEach(game => {
+    // In GameDay mode, calculate CORP tickets per zone to deduct from capacity
+    const corpPerZone: Record<string, number> = {};
+    if (viewMode === 'gameday') {
+      game.salesBreakdown.forEach(s => {
+        if (s.channel === SalesChannel.CORP) {
+          corpPerZone[s.zone] = (corpPerZone[s.zone] || 0) + s.quantity;
+        }
+      });
+    }
+    
     if (game.zoneCapacities) {
         Object.entries(game.zoneCapacities).forEach(([zone, cap]) => {
             if (!stats[zone]) stats[zone] = { revenue: 0, sold: 0, capacity: 0 };
-            stats[zone].capacity += (cap as number);
+            // In GameDay mode, also deduct game-by-game CORP tickets from capacity
+            const corpDeduction = viewMode === 'gameday' ? (corpPerZone[zone] || 0) : 0;
+            stats[zone].capacity += Math.max(0, (cap as number) - corpDeduction);
         });
     }
 
