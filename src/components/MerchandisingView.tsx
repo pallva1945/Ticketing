@@ -101,7 +101,7 @@ export const MerchandisingView: React.FC = () => {
   const [gameDayData, setGameDayData] = useState<GameDayData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'customers'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'customers' | 'inventory'>('overview');
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   
   const [selectedSeason, setSelectedSeason] = useState<string>('25/26');
@@ -499,6 +499,77 @@ export const MerchandisingView: React.FC = () => {
     };
   };
 
+  const inventoryStats = useMemo(() => {
+    if (!data) return null;
+    
+    const products = data.products;
+    const totalUnits = products.reduce((sum, p) => sum + p.totalInventory, 0);
+    const totalValue = products.reduce((sum, p) => {
+      return sum + p.variants.reduce((vSum, v) => vSum + (v.price * v.inventoryQuantity), 0);
+    }, 0);
+    
+    const outOfStock = products.filter(p => p.totalInventory <= 0);
+    const lowStock = products.filter(p => p.totalInventory > 0 && p.totalInventory <= 5);
+    const healthyStock = products.filter(p => p.totalInventory > 5);
+    
+    const categoryInventory: Record<string, { units: number; value: number; products: number }> = {};
+    products.forEach(p => {
+      const cat = p.productType || 'Uncategorized';
+      if (!categoryInventory[cat]) categoryInventory[cat] = { units: 0, value: 0, products: 0 };
+      categoryInventory[cat].units += p.totalInventory;
+      categoryInventory[cat].products += 1;
+      p.variants.forEach(v => {
+        categoryInventory[cat].value += v.price * v.inventoryQuantity;
+      });
+    });
+    
+    const byCategory = Object.entries(categoryInventory)
+      .map(([name, data]) => ({ name, ...data }))
+      .sort((a, b) => b.value - a.value);
+    
+    const topStocked = [...products]
+      .filter(p => p.totalInventory > 0)
+      .sort((a, b) => b.totalInventory - a.totalInventory)
+      .slice(0, 10);
+    
+    const allVariants = products.flatMap(p => 
+      p.variants.map(v => ({
+        productTitle: p.title,
+        productType: p.productType,
+        variantTitle: v.title,
+        sku: v.sku,
+        price: v.price,
+        quantity: v.inventoryQuantity,
+        value: v.price * v.inventoryQuantity
+      }))
+    );
+    
+    const lowStockVariants = allVariants
+      .filter(v => v.quantity > 0 && v.quantity <= 5)
+      .sort((a, b) => a.quantity - b.quantity);
+    
+    const outOfStockVariants = allVariants.filter(v => v.quantity <= 0);
+    
+    const avgPrice = allVariants.length > 0 
+      ? allVariants.reduce((sum, v) => sum + v.price, 0) / allVariants.length 
+      : 0;
+    
+    return {
+      totalUnits,
+      totalValue,
+      totalProducts: products.length,
+      totalVariants: allVariants.length,
+      outOfStock,
+      lowStock,
+      healthyStock,
+      byCategory,
+      topStocked,
+      lowStockVariants,
+      outOfStockVariants,
+      avgPrice
+    };
+  }, [data]);
+
   const clearMonthFilter = () => {
     setSelectedMonth(null);
   };
@@ -607,7 +678,7 @@ export const MerchandisingView: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        {(['overview', 'products', 'orders', 'customers'] as const).map(tab => (
+        {(['overview', 'products', 'orders', 'customers', 'inventory'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -621,6 +692,7 @@ export const MerchandisingView: React.FC = () => {
             {tab === 'products' && <Package size={14} className="inline mr-2" />}
             {tab === 'orders' && <ShoppingBag size={14} className="inline mr-2" />}
             {tab === 'customers' && <Users size={14} className="inline mr-2" />}
+            {tab === 'inventory' && <Layers size={14} className="inline mr-2" />}
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
         ))}
@@ -1138,6 +1210,220 @@ export const MerchandisingView: React.FC = () => {
               Showing all {filteredCustomers.length} customers
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'inventory' && inventoryStats && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Layers size={16} className="text-blue-600" />
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mb-1">Total Units</p>
+              <p className="text-xl font-bold text-gray-800">{inventoryStats.totalUnits.toLocaleString()}</p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                  <DollarSign size={16} className="text-green-600" />
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mb-1">Inventory Value</p>
+              <p className="text-xl font-bold text-gray-800">{formatCurrency(inventoryStats.totalValue)}</p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <AlertCircle size={16} className="text-orange-600" />
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mb-1">Low Stock</p>
+              <p className="text-xl font-bold text-orange-600">{inventoryStats.lowStock.length}</p>
+              <p className="text-[10px] text-gray-400">≤5 units</p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                  <X size={16} className="text-red-600" />
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mb-1">Out of Stock</p>
+              <p className="text-xl font-bold text-red-600">{inventoryStats.outOfStock.length}</p>
+              <p className="text-[10px] text-gray-400">{inventoryStats.totalProducts} total products</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <BarChart3 size={16} className="text-gray-400" />
+                Inventory by Category
+              </h3>
+              <div className="space-y-3">
+                {inventoryStats.byCategory.slice(0, 8).map((cat, i) => (
+                  <div key={cat.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                      <span className="text-sm text-gray-700">{cat.name}</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-gray-500">{cat.units.toLocaleString()} units</span>
+                      <span className="font-medium text-gray-800 w-24 text-right">{formatCurrency(cat.value)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {inventoryStats.byCategory.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <ResponsiveContainer width="100%" height={180}>
+                    <PieChart>
+                      <Pie
+                        data={inventoryStats.byCategory.slice(0, 8)}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={70}
+                        paddingAngle={2}
+                      >
+                        {inventoryStats.byCategory.slice(0, 8).map((_, i) => (
+                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <Package size={16} className="text-gray-400" />
+                Top Stocked Products
+              </h3>
+              <div className="space-y-2">
+                {inventoryStats.topStocked.map((product, i) => (
+                  <div key={product.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <span className="text-xs text-gray-400 w-5">{i + 1}.</span>
+                      <span className="text-sm text-gray-700 truncate">{product.title}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400">{product.productType || 'N/A'}</span>
+                      <span className="text-sm font-bold text-gray-800 bg-blue-50 px-2 py-0.5 rounded">
+                        {product.totalInventory.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {inventoryStats.lowStockVariants.length > 0 && (
+            <div className="bg-white rounded-xl border border-orange-200 p-5">
+              <h3 className="text-sm font-semibold text-orange-700 mb-4 flex items-center gap-2">
+                <AlertCircle size={16} />
+                Low Stock Alert ({inventoryStats.lowStockVariants.length} variants)
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-orange-100">
+                      <th className="text-left py-2 px-3 text-gray-600 font-medium">Product</th>
+                      <th className="text-left py-2 px-3 text-gray-600 font-medium">Variant</th>
+                      <th className="text-left py-2 px-3 text-gray-600 font-medium">SKU</th>
+                      <th className="text-right py-2 px-3 text-gray-600 font-medium">Price</th>
+                      <th className="text-right py-2 px-3 text-gray-600 font-medium">Qty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inventoryStats.lowStockVariants.slice(0, 15).map((v, i) => (
+                      <tr key={i} className="border-b border-orange-50 hover:bg-orange-50/50">
+                        <td className="py-2 px-3 text-gray-700">{v.productTitle}</td>
+                        <td className="py-2 px-3 text-gray-500">{v.variantTitle}</td>
+                        <td className="py-2 px-3 text-gray-400 font-mono text-xs">{v.sku || '-'}</td>
+                        <td className="py-2 px-3 text-right text-gray-600">{formatCurrency(v.price)}</td>
+                        <td className="py-2 px-3 text-right">
+                          <span className="font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded">{v.quantity}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {inventoryStats.lowStockVariants.length > 15 && (
+                <p className="text-xs text-gray-400 mt-3 text-center">
+                  Showing 15 of {inventoryStats.lowStockVariants.length} low stock items
+                </p>
+              )}
+            </div>
+          )}
+
+          {inventoryStats.outOfStockVariants.length > 0 && (
+            <div className="bg-white rounded-xl border border-red-200 p-5">
+              <h3 className="text-sm font-semibold text-red-700 mb-4 flex items-center gap-2">
+                <X size={16} />
+                Out of Stock ({inventoryStats.outOfStockVariants.length} variants)
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-red-100">
+                      <th className="text-left py-2 px-3 text-gray-600 font-medium">Product</th>
+                      <th className="text-left py-2 px-3 text-gray-600 font-medium">Variant</th>
+                      <th className="text-left py-2 px-3 text-gray-600 font-medium">SKU</th>
+                      <th className="text-right py-2 px-3 text-gray-600 font-medium">Price</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inventoryStats.outOfStockVariants.slice(0, 20).map((v, i) => (
+                      <tr key={i} className="border-b border-red-50 hover:bg-red-50/50">
+                        <td className="py-2 px-3 text-gray-700">{v.productTitle}</td>
+                        <td className="py-2 px-3 text-gray-500">{v.variantTitle}</td>
+                        <td className="py-2 px-3 text-gray-400 font-mono text-xs">{v.sku || '-'}</td>
+                        <td className="py-2 px-3 text-right text-gray-600">{formatCurrency(v.price)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {inventoryStats.outOfStockVariants.length > 20 && (
+                <p className="text-xs text-gray-400 mt-3 text-center">
+                  Showing 20 of {inventoryStats.outOfStockVariants.length} out of stock items
+                </p>
+              )}
+            </div>
+          )}
+
+          <div className="bg-gray-50 rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Inventory Summary</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <p className="text-gray-500">Products</p>
+                <p className="font-bold text-gray-800">{inventoryStats.totalProducts}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Variants</p>
+                <p className="font-bold text-gray-800">{inventoryStats.totalVariants}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Avg. Price</p>
+                <p className="font-bold text-gray-800">{formatCurrency(inventoryStats.avgPrice)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Stock Health</p>
+                <p className="font-bold text-green-600">
+                  {((inventoryStats.healthyStock.length / inventoryStats.totalProducts) * 100).toFixed(0)}% healthy
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
