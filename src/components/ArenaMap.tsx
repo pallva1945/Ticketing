@@ -74,11 +74,9 @@ const getZoneMetrics = (data: GameData[], viewMode: ViewMode) => {
     game.salesBreakdown.forEach(s => {
       if (!stats[s.zone]) stats[s.zone] = { revenue: 0, sold: 0, capacity: 0 };
       
-      // Revenue from all channels
-      stats[s.zone].revenue += s.revenue;
-      
-      // Sold count based on view mode filter
+      // Only count revenue and sold from filtered channels based on view mode
       if (channelFilter.includes(s.channel)) {
+        stats[s.zone].revenue += s.revenue;
         stats[s.zone].sold += s.quantity;
       }
     });
