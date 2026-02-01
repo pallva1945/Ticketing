@@ -145,21 +145,37 @@ Always structure responses as:
 Use bullet points. Highlight € values. Be direct. No pleasantries.
 `;
 
-// PRE-SOLD CAPACITY (Summer Sales: Abb + Corp + Protocol)
+// PRE-SOLD CAPACITY (Summer Sales: ABB only)
 // Used to calculate "Game Day Availability"
-// Formula: Fixed = Full Capacity - Game Day Capacity
+// Formula: Fixed ABB = Full Capacity - Base GameDay Capacity
 export const FIXED_CAPACITY_25_26: Record<string, number> = {
-  [TicketZone.PAR_O]: 243,    // Total 373 - Gameday 130 = 243 Fixed
-  [TicketZone.PAR_E]: 94,     // Total 200 - Gameday 106 = 94 Fixed
-  [TicketZone.TRIB_G]: 1230,  // Total 2209 - Gameday 979 = 1230 Fixed
-  [TicketZone.TRIB_S]: 261,   // Total 367 - Gameday 106 = 261 Fixed
-  [TicketZone.GALL_G]: 282,   // Total 389 - Gameday 107 = 282 Fixed
-  [TicketZone.GALL_S]: 70,    // Total 669 - Gameday 599 = 70 Fixed
-  [TicketZone.CURVA]: 314,    // Total 458 - Gameday 144 = 314 Fixed
-  [TicketZone.COURTSIDE]: 38, // Total 44 - Gameday 6 = 38 Fixed
-  [TicketZone.SKYBOX]: 60,    // Total 60 - Gameday 0 = 60 Fixed
-  [TicketZone.OSPITI]: 0,     // Total 233 - Gameday 233 = 0 Fixed
-  [TicketZone.PAR_EX]: 66     // Total 75 - Gameday 9 = 66 Fixed
+  [TicketZone.PAR_O]: 243,    // Total 373 - Gameday 130 = 243 Fixed ABB
+  [TicketZone.PAR_E]: 94,     // Total 200 - Gameday 106 = 94 Fixed ABB
+  [TicketZone.TRIB_G]: 1230,  // Total 2209 - Gameday 979 = 1230 Fixed ABB
+  [TicketZone.TRIB_S]: 261,   // Total 367 - Gameday 106 = 261 Fixed ABB
+  [TicketZone.GALL_G]: 282,   // Total 389 - Gameday 107 = 282 Fixed ABB
+  [TicketZone.GALL_S]: 70,    // Total 669 - Gameday 599 = 70 Fixed ABB
+  [TicketZone.CURVA]: 314,    // Total 458 - Gameday 144 = 314 Fixed ABB
+  [TicketZone.COURTSIDE]: 38, // Total 44 - Gameday 6 = 38 Fixed ABB
+  [TicketZone.SKYBOX]: 60,    // Total 60 - Gameday 0 = 60 Fixed ABB
+  [TicketZone.OSPITI]: 0,     // Total 233 - Gameday 233 = 0 Fixed ABB
+  [TicketZone.PAR_EX]: 66     // Total 75 - Gameday 9 = 66 Fixed ABB
+};
+
+// FIXED CORP (Summer season CORP tickets - same every game)
+// Game-by-game CORP = Total CORP in data - Fixed CORP
+export const FIXED_CORP_25_26: Record<string, number> = {
+  [TicketZone.PAR_O]: 162,
+  [TicketZone.PAR_E]: 23,
+  [TicketZone.TRIB_G]: 102,
+  [TicketZone.TRIB_S]: 0,
+  [TicketZone.GALL_G]: 4,
+  [TicketZone.GALL_S]: 1,
+  [TicketZone.CURVA]: 0,
+  [TicketZone.COURTSIDE]: 32,
+  [TicketZone.SKYBOX]: 27,
+  [TicketZone.OSPITI]: 0,
+  [TicketZone.PAR_EX]: 27
 };
 
 // Initial empty state, data is loaded from CSV in App.tsx

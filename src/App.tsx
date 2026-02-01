@@ -18,7 +18,7 @@ import { BoardReportModal } from './components/BoardReportModal';
 import { CRMView } from './components/CRMView';
 import { SponsorshipDashboard } from './components/SponsorshipDashboard';
 import { MerchandisingView } from './components/MerchandisingView';
-import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
+import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, FIXED_CORP_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, SponsorData, CRMRecord, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { GAMEDAY_CSV_CONTENT } from './data/gameDayData';
@@ -1738,20 +1738,23 @@ const App: React.FC = () => {
       }
 
       if (viewMode === 'gameday') {
-          // Calculate game-by-game CORP tickets per zone (these reduce available capacity)
-          const corpPerZone: Record<string, number> = {};
+          // Calculate total CORP tickets per zone from this game's data
+          const totalCorpPerZone: Record<string, number> = {};
           game.salesBreakdown.forEach(s => {
               if (s.channel === SalesChannel.CORP) {
-                  corpPerZone[s.zone] = (corpPerZone[s.zone] || 0) + s.quantity;
+                  totalCorpPerZone[s.zone] = (totalCorpPerZone[s.zone] || 0) + s.quantity;
               }
           });
           
           Object.keys(filteredZoneCapacities).forEach(z => {
               // Deduct fixed capacity (ABB season tickets)
               const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
-              // Also deduct game-by-game CORP tickets
-              const corpDeduction = corpPerZone[z] || 0;
-              filteredZoneCapacities[z] = Math.max(0, filteredZoneCapacities[z] - fixedDeduction - corpDeduction);
+              // Calculate game-by-game CORP = Total CORP - Fixed CORP (summer season)
+              const totalCorp = totalCorpPerZone[z] || 0;
+              const fixedCorp = FIXED_CORP_25_26[z] || 0;
+              const gameByGameCorp = Math.max(0, totalCorp - fixedCorp);
+              // Deduct game-by-game CORP from capacity
+              filteredZoneCapacities[z] = Math.max(0, filteredZoneCapacities[z] - fixedDeduction - gameByGameCorp);
           });
       }
 

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { GameData, TicketZone, SalesChannel } from '../types';
-import { PV_LOGO_URL } from '../constants';
+import { PV_LOGO_URL, FIXED_CORP_25_26 } from '../constants';
 
 // Channel filters for view modes
 // GameDay: TIX + MP + VB + FREE (giveaways without protocol)
@@ -64,12 +64,12 @@ const getZoneMetrics = (data: GameData[], viewMode: ViewMode) => {
   const channelFilter = viewMode === 'gameday' ? GAMEDAY_CHANNELS : TOTAL_CHANNELS;
   
   data.forEach(game => {
-    // In GameDay mode, calculate CORP tickets per zone to deduct from capacity
-    const corpPerZone: Record<string, number> = {};
+    // In GameDay mode, calculate total CORP tickets per zone
+    const totalCorpPerZone: Record<string, number> = {};
     if (viewMode === 'gameday') {
       game.salesBreakdown.forEach(s => {
         if (s.channel === SalesChannel.CORP) {
-          corpPerZone[s.zone] = (corpPerZone[s.zone] || 0) + s.quantity;
+          totalCorpPerZone[s.zone] = (totalCorpPerZone[s.zone] || 0) + s.quantity;
         }
       });
     }
@@ -77,8 +77,13 @@ const getZoneMetrics = (data: GameData[], viewMode: ViewMode) => {
     if (game.zoneCapacities) {
         Object.entries(game.zoneCapacities).forEach(([zone, cap]) => {
             if (!stats[zone]) stats[zone] = { revenue: 0, sold: 0, capacity: 0 };
-            // In GameDay mode, also deduct game-by-game CORP tickets from capacity
-            const corpDeduction = viewMode === 'gameday' ? (corpPerZone[zone] || 0) : 0;
+            // In GameDay mode, deduct game-by-game CORP (Total CORP - Fixed CORP)
+            let corpDeduction = 0;
+            if (viewMode === 'gameday') {
+              const totalCorp = totalCorpPerZone[zone] || 0;
+              const fixedCorp = FIXED_CORP_25_26[zone] || 0;
+              corpDeduction = Math.max(0, totalCorp - fixedCorp);
+            }
             stats[zone].capacity += Math.max(0, (cap as number) - corpDeduction);
         });
     }
