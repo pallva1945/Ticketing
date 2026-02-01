@@ -555,16 +555,22 @@ app.get("/api/crm/bigquery", async (req, res) => {
     console.log(`CRM API request: full=${fullData}, forceRefresh=${forceRefresh}, cacheValid=${crmCache && (now - crmCache.timestamp) < CRM_CACHE_TTL}`);
     
     if (!forceRefresh && crmCache && (now - crmCache.timestamp) < CRM_CACHE_TTL) {
-      console.log(`CRM API: Returning from cache, rawRows=${fullData ? crmCache.rawRows?.length : 'not-requested'}`);
-      return res.json({ 
-        success: true, 
-        stats: crmCache.processedStats,
-        fixedStats: crmCache.fixedStats,
-        flexibleStats: crmCache.flexibleStats,
-        rawRows: fullData ? crmCache.rawRows : undefined,
-        cached: true,
-        message: `Served CRM stats from cache (${crmCache.processedStats.totalRecords} records)` 
-      });
+      // If full data requested but cache has no rawRows, fetch fresh instead of returning empty
+      if (fullData && (!crmCache.rawRows || crmCache.rawRows.length === 0)) {
+        console.log('CRM API: Cache exists but no rawRows, fetching fresh data...');
+        // Fall through to fresh fetch below
+      } else {
+        console.log(`CRM API: Returning from cache, rawRows=${fullData ? crmCache.rawRows?.length : 'not-requested'}`);
+        return res.json({ 
+          success: true, 
+          stats: crmCache.processedStats,
+          fixedStats: crmCache.fixedStats,
+          flexibleStats: crmCache.flexibleStats,
+          rawRows: fullData ? crmCache.rawRows : undefined,
+          cached: true,
+          message: `Served CRM stats from cache (${crmCache.processedStats.totalRecords} records)` 
+        });
+      }
     }
     
     const result = await fetchCRMFromBigQuery();
