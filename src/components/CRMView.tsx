@@ -515,13 +515,46 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           return !isCorp && !isAbb && !isGiveaway;
         });
 
+    // Build customer profile lookup from ALL data (not filtered) to preserve names, company, etc.
+    const customerProfileLookup: Record<string, { name: string; email: string; company: string; age: string; location: string }> = {};
+    data.forEach(r => {
+      const key = getCustomerKey(r);
+      if (!customerProfileLookup[key]) {
+        customerProfileLookup[key] = {
+          name: toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName),
+          email: r.email || '',
+          company: toTitleCase(r.group || ''),
+          age: r.dob || '',
+          location: toTitleCase(r.province || r.pob || '')
+        };
+      } else {
+        // Update with non-empty values if current is empty
+        if (!customerProfileLookup[key].name && (r.firstName || r.lastName || r.fullName)) {
+          customerProfileLookup[key].name = toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName);
+        }
+        if (!customerProfileLookup[key].email && r.email) {
+          customerProfileLookup[key].email = r.email;
+        }
+        if (!customerProfileLookup[key].company && r.group) {
+          customerProfileLookup[key].company = toTitleCase(r.group);
+        }
+        if (!customerProfileLookup[key].age && r.dob) {
+          customerProfileLookup[key].age = r.dob;
+        }
+        if (!customerProfileLookup[key].location && (r.province || r.pob)) {
+          customerProfileLookup[key].location = toTitleCase(r.province || r.pob || '');
+        }
+      }
+    });
+
     const allCustomers = Object.entries(
       customerData.reduce((acc, r) => {
         const key = getCustomerKey(r);
+        const profile = customerProfileLookup[key] || { name: '', email: '', company: '', age: '', location: '' };
         if (!acc[key]) acc[key] = { 
-          name: toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName), 
-          email: r.email, 
-          company: toTitleCase(r.group || ''),
+          name: profile.name || toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName), 
+          email: profile.email || r.email, 
+          company: profile.company || toTitleCase(r.group || ''),
           tickets: 0, 
           revenue: 0, 
           value: 0,
@@ -529,8 +562,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           sellTypes: {} as Record<string, number>,
           games: new Set<string>(),
           transactions: 0,
-          age: r.dob || '',
-          location: toTitleCase(r.province || r.pob || ''),
+          age: profile.age || r.dob || '',
+          location: profile.location || toTitleCase(r.province || r.pob || ''),
           advanceDays: [] as number[]
         };
         const sellType = r.sellType || r.ticketType || 'Unknown';
@@ -542,9 +575,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         const zone = r.pvZone || r.zone || 'Unknown';
         acc[key].zones[zone] = (acc[key].zones[zone] || 0) + (Number(r.quantity) || 1);
         if (r.game || r.event) acc[key].games.add(r.game || r.event);
-        if (!acc[key].age && r.dob) acc[key].age = r.dob;
-        if (!acc[key].location && (r.province || r.pob)) acc[key].location = toTitleCase(r.province || r.pob || '');
-        if (!acc[key].company && r.group) acc[key].company = toTitleCase(r.group);
         
         const buyTs = r.buyTimestamp && r.buyTimestamp instanceof Date && !isNaN(r.buyTimestamp.getTime()) ? r.buyTimestamp : null;
         if (buyTs && r.gmDateTime && r.gmDateTime > 0) {
