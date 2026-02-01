@@ -161,7 +161,7 @@ const slimCRMRows = (rawRows: any[]): any[] => {
     'game', 'Game', 'GAME',
     'price', 'Price', 'PRICE',
     'quantity', 'Quantity', 'QUANTITY', 'qty', 'Qty', 'QTY',
-    'commercial_value', 'Commercial_Value', 'COMMERCIAL_VALUE',
+    'comercial_value', 'Comercial_Value', 'COMERCIAL_VALUE', 'commercial_value', 'Commercial_Value', 'COMMERCIAL_VALUE',
     'first_name', 'First_Name', 'FIRST_NAME',
     'last_name', 'Last_Name', 'LAST_NAME',
     'full_name', 'Full_Name', 'FULL_NAME',
