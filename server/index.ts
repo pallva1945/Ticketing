@@ -592,49 +592,19 @@ app.get("/api/crm/bigquery", async (req, res) => {
     
     console.log(`CRM API request: full=${fullData}, forceRefresh=${forceRefresh}, cacheValid=${crmCache && (now - crmCache.timestamp) < CRM_CACHE_TTL}`);
     
-    // Pagination support for CloudFront deployments (max ~5000 records per page)
-    const page = parseInt(req.query.page as string) || 0;
-    const pageSize = parseInt(req.query.pageSize as string) || 5000;
-    
     if (!forceRefresh && crmCache && (now - crmCache.timestamp) < CRM_CACHE_TTL) {
       // If full data requested but cache has no rawRows, fetch fresh instead of returning empty
       if (fullData && (!crmCache.rawRows || crmCache.rawRows.length === 0)) {
         console.log('CRM API: Cache exists but no rawRows, fetching fresh data...');
         // Fall through to fresh fetch below
       } else {
-        console.log(`CRM API: Returning from cache, rawRows=${fullData ? crmCache.rawRows?.length : 'not-requested'}, page=${page}`);
-        
-        // If full data requested, paginate the response
-        if (fullData) {
-          const allSlimRows = slimCRMRows(crmCache.rawRows);
-          const totalPages = Math.ceil(allSlimRows.length / pageSize);
-          const startIdx = page * pageSize;
-          const endIdx = Math.min(startIdx + pageSize, allSlimRows.length);
-          const pageRows = allSlimRows.slice(startIdx, endIdx);
-          
-          return res.json({ 
-            success: true, 
-            stats: crmCache.processedStats,
-            fixedStats: crmCache.fixedStats,
-            flexibleStats: crmCache.flexibleStats,
-            rawRows: pageRows,
-            pagination: {
-              page,
-              pageSize,
-              totalPages,
-              totalRecords: allSlimRows.length,
-              hasMore: page < totalPages - 1
-            },
-            cached: true,
-            message: `Served CRM page ${page + 1}/${totalPages} from cache` 
-          });
-        }
-        
+        console.log(`CRM API: Returning from cache, rawRows=${fullData ? crmCache.rawRows?.length : 'not-requested'}`);
         return res.json({ 
           success: true, 
           stats: crmCache.processedStats,
           fixedStats: crmCache.fixedStats,
           flexibleStats: crmCache.flexibleStats,
+          rawRows: fullData ? slimCRMRows(crmCache.rawRows) : undefined,
           cached: true,
           message: `Served CRM stats from cache (${crmCache.processedStats.totalRecords} records)` 
         });
@@ -661,40 +631,15 @@ app.get("/api/crm/bigquery", async (req, res) => {
         timestamp: now 
       };
       
-      // If full data requested, paginate the response
-      if (fullData) {
-        const allSlimRows = slimCRMRows(result.rawRows);
-        const totalPages = Math.ceil(allSlimRows.length / pageSize);
-        const startIdx = page * pageSize;
-        const endIdx = Math.min(startIdx + pageSize, allSlimRows.length);
-        const pageRows = allSlimRows.slice(startIdx, endIdx);
-        
-        res.json({ 
-          success: true,
-          stats: processedStats,
-          fixedStats,
-          flexibleStats,
-          rawRows: pageRows,
-          pagination: {
-            page,
-            pageSize,
-            totalPages,
-            totalRecords: allSlimRows.length,
-            hasMore: page < totalPages - 1
-          },
-          cached: false,
-          message: `Processed CRM page ${page + 1}/${totalPages}`
-        });
-      } else {
-        res.json({ 
-          success: true,
-          stats: processedStats,
-          fixedStats,
-          flexibleStats,
-          cached: false,
-          message: `Processed ${result.rawRows.length} CRM records`
-        });
-      }
+      res.json({ 
+        success: true,
+        stats: processedStats,
+        fixedStats,
+        flexibleStats,
+        rawRows: fullData ? slimCRMRows(result.rawRows) : undefined,
+        cached: false,
+        message: `Processed ${result.rawRows.length} CRM records`
+      });
     } else {
       res.json(result);
     }

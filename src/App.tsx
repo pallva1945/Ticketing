@@ -1176,59 +1176,49 @@ const App: React.FC = () => {
         }
       }
       
-      // Phase 2: Load full data for client search (background, non-blocking with pagination)
+      // Phase 2: Load full data for client search (background, non-blocking with retry)
       if (!crmFullDataLoadedRef.current) {
         setIsLoadingCRMSearch(true);
         
-        const fetchAllPages = async (): Promise<void> => {
-          const allRows: any[] = [];
-          let page = 0;
-          let hasMore = true;
-          
-          while (hasMore) {
+        const fetchWithRetry = async (retries = 3, delay = 2000): Promise<void> => {
+          for (let attempt = 1; attempt <= retries; attempt++) {
             try {
-              console.log(`CRM full data fetching page ${page + 1}...`);
-              const crmResponse = await fetch(`/api/crm/bigquery?full=true&page=${page}&pageSize=5000`);
+              console.log(`CRM full data fetch attempt ${attempt}/${retries}`);
+              const crmResponse = await fetch('/api/crm/bigquery?full=true');
+              console.log('CRM full data fetch response:', crmResponse.status, crmResponse.ok);
               
               if (crmResponse && crmResponse.ok) {
                 const crmResult = await crmResponse.json();
+                console.log('CRM full data result:', crmResult.success, 'rawRows:', crmResult.rawRows?.length || 0);
                 
                 if (crmResult.success && crmResult.rawRows && crmResult.rawRows.length > 0) {
-                  allRows.push(...crmResult.rawRows);
-                  
-                  if (crmResult.pagination) {
-                    hasMore = crmResult.pagination.hasMore;
-                    console.log(`CRM page ${page + 1}/${crmResult.pagination.totalPages}: ${crmResult.rawRows.length} rows (total: ${allRows.length}/${crmResult.pagination.totalRecords})`);
-                  } else {
-                    // No pagination info means single page response (backward compat)
-                    hasMore = false;
-                  }
-                  page++;
+                  const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
+                  setCrmData(loadedCRM);
+                  console.log(`CRM full data loaded: ${loadedCRM.length} records`);
+                  crmFullDataLoadedRef.current = true;
+                  return;
                 } else {
-                  console.warn(`CRM page ${page + 1}: No rawRows in response`);
-                  hasMore = false;
+                  console.warn(`CRM full data attempt ${attempt}: No rawRows in response`);
                 }
               } else {
-                console.warn(`CRM page ${page + 1} failed:`, crmResponse.status);
-                hasMore = false;
+                console.warn(`CRM full data attempt ${attempt} failed:`, crmResponse.status);
+              }
+              
+              // Wait before retry (but not after last attempt)
+              if (attempt < retries) {
+                await new Promise(r => setTimeout(r, delay));
               }
             } catch (err) {
-              console.warn(`CRM page ${page + 1} error:`, err);
-              hasMore = false;
+              console.warn(`CRM full data attempt ${attempt} error:`, err);
+              if (attempt < retries) {
+                await new Promise(r => setTimeout(r, delay));
+              }
             }
           }
-          
-          if (allRows.length > 0) {
-            const loadedCRM = convertBigQueryToCRMData(allRows);
-            setCrmData(loadedCRM);
-            console.log(`CRM full data loaded: ${loadedCRM.length} records from ${page} pages`);
-            crmFullDataLoadedRef.current = true;
-          } else {
-            console.warn('CRM full data: No records loaded');
-          }
+          console.warn('CRM full data: All retry attempts exhausted');
         };
         
-        fetchAllPages().finally(() => setIsLoadingCRMSearch(false));
+        fetchWithRetry().finally(() => setIsLoadingCRMSearch(false));
       }
       
       crmLoadedRef.current = true;
@@ -1435,37 +1425,22 @@ const App: React.FC = () => {
   const refreshCRMFromBigQuery = async () => {
     setIsRefreshingCRM(true);
     try {
-      // Use pagination to fetch all CRM data
-      const allRows: any[] = [];
-      let page = 0;
-      let hasMore = true;
-      
-      while (hasMore) {
-        const response = await fetch(`/api/crm/bigquery?refresh=${page === 0 ? 'true' : 'false'}&full=true&page=${page}&pageSize=2000`);
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.rawRows && result.rawRows.length > 0) {
-            allRows.push(...result.rawRows);
-            hasMore = result.pagination?.hasMore || false;
-            page++;
-          } else {
-            hasMore = false;
+      const response = await fetch('/api/crm/bigquery?refresh=true&full=true');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.rawRows && result.rawRows.length > 0) {
+          const loadedCRM = convertBigQueryToCRMData(result.rawRows);
+          
+          if (loadedCRM.length > 0) {
+            setCrmData(loadedCRM);
+            setDataSources(prev => ({...prev, crm: 'bigquery'}));
+            setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
+            console.log(`Refreshed ${loadedCRM.length} CRM records from BigQuery`);
+            alert(`Loaded ${loadedCRM.length} CRM records from BigQuery.`);
+            return true;
           }
-        } else {
-          hasMore = false;
         }
       }
-      
-      if (allRows.length > 0) {
-        const loadedCRM = convertBigQueryToCRMData(allRows);
-        setCrmData(loadedCRM);
-        setDataSources(prev => ({...prev, crm: 'bigquery'}));
-        setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
-        console.log(`Refreshed ${loadedCRM.length} CRM records from BigQuery`);
-        alert(`Loaded ${loadedCRM.length} CRM records from BigQuery.`);
-        return true;
-      }
-      
       console.warn('BigQuery CRM refresh failed');
       alert('Failed to refresh CRM from BigQuery. Check console for details.');
       return false;
@@ -1486,9 +1461,10 @@ const App: React.FC = () => {
     try {
       console.log('Starting full BigQuery sync...');
       
-      // Fetch non-CRM data sources in parallel with force refresh
-      const [ticketingRes, gameDayRes, sponsorRes] = await Promise.all([
+      // Fetch all data sources in parallel with force refresh
+      const [ticketingRes, crmRes, gameDayRes, sponsorRes] = await Promise.all([
         fetch('/api/ticketing?refresh=true'),
+        fetch('/api/crm/bigquery?refresh=true&full=true'),
         fetch('/api/gameday/bigquery?refresh=true'),
         fetch('/api/sponsorship/bigquery?refresh=true')
       ]);
@@ -1516,39 +1492,21 @@ const App: React.FC = () => {
         errors.push(`Ticketing: ${e.message}`);
       }
       
-      // Process CRM with pagination (fetch pages sequentially)
+      // Process CRM
       try {
-        const allCrmRows: any[] = [];
-        let page = 0;
-        let hasMore = true;
-        
-        while (hasMore) {
-          console.log(`CRM sync: fetching page ${page}...`);
-          const crmRes = await fetch(`/api/crm/bigquery?refresh=${page === 0 ? 'true' : 'false'}&full=true&page=${page}&pageSize=2000`);
-          if (crmRes.ok) {
-            const result = await crmRes.json();
-            if (result.success && result.rawRows?.length > 0) {
-              allCrmRows.push(...result.rawRows);
-              console.log(`CRM sync: page ${page} loaded, ${result.rawRows.length} rows (total: ${allCrmRows.length}/${result.pagination?.totalRecords || '?'})`);
-              hasMore = result.pagination?.hasMore || false;
-              page++;
-            } else {
-              hasMore = false;
-            }
+        if (crmRes.ok) {
+          const result = await crmRes.json();
+          if (result.success && result.rawRows?.length > 0) {
+            const loadedCRM = convertBigQueryToCRMData(result.rawRows);
+            setCrmData(loadedCRM);
+            setDataSources(prev => ({...prev, crm: 'bigquery'}));
+            results.crm = true;
+            console.log(`Synced ${loadedCRM.length} CRM records`);
           } else {
-            errors.push(`CRM: HTTP ${crmRes.status}`);
-            hasMore = false;
+            errors.push(`CRM: ${result.message || 'No data returned'}`);
           }
-        }
-        
-        if (allCrmRows.length > 0) {
-          const loadedCRM = convertBigQueryToCRMData(allCrmRows);
-          setCrmData(loadedCRM);
-          setDataSources(prev => ({...prev, crm: 'bigquery'}));
-          results.crm = true;
-          console.log(`Synced ${loadedCRM.length} CRM records from ${page} pages`);
         } else {
-          errors.push('CRM: No data returned');
+          errors.push(`CRM: HTTP ${crmRes.status}`);
         }
       } catch (e: any) {
         errors.push(`CRM: ${e.message}`);
