@@ -118,7 +118,7 @@ export const MerchandisingView: React.FC = () => {
 
   // Sorting state for tables
   const [productSort, setProductSort] = useState<SortConfig<'title' | 'productType' | 'price' | 'inventory' | 'status'>>({ key: 'title', direction: null });
-  const [orderSort, setOrderSort] = useState<SortConfig<'orderNumber' | 'processedAt' | 'customerName' | 'itemCount' | 'totalPrice' | 'financialStatus' | 'fulfillmentStatus'>>({ key: 'processedAt', direction: 'desc' });
+  const [orderSort, setOrderSort] = useState<SortConfig<'orderNumber' | 'processedAt' | 'customerName' | 'itemCount' | 'totalPrice' | 'paymentMethod' | 'fulfillmentStatus'>>({ key: 'processedAt', direction: 'desc' });
   const [customerSort, setCustomerSort] = useState<SortConfig<'name' | 'email' | 'ordersCount' | 'totalSpent' | 'createdAt'>>({ key: 'totalSpent', direction: 'desc' });
 
   const handleSort = <T extends string>(currentSort: SortConfig<T>, key: T, setSort: React.Dispatch<React.SetStateAction<SortConfig<T>>>) => {
@@ -406,7 +406,7 @@ export const MerchandisingView: React.FC = () => {
           case 'customerName': aVal = a.customerName.toLowerCase(); bVal = b.customerName.toLowerCase(); break;
           case 'itemCount': aVal = a.itemCount; bVal = b.itemCount; break;
           case 'totalPrice': aVal = a.totalPrice; bVal = b.totalPrice; break;
-          case 'financialStatus': aVal = a.financialStatus; bVal = b.financialStatus; break;
+          case 'paymentMethod': aVal = (a.paymentMethod || '').toLowerCase(); bVal = (b.paymentMethod || '').toLowerCase(); break;
           case 'fulfillmentStatus': aVal = a.fulfillmentStatus || ''; bVal = b.fulfillmentStatus || ''; break;
           default: return 0;
         }
@@ -990,7 +990,7 @@ export const MerchandisingView: React.FC = () => {
                   <SortableHeader label="Customer" sortKey="customerName" currentSort={orderSort} onSort={() => handleSort(orderSort, 'customerName', setOrderSort)} />
                   <SortableHeader label="Items" sortKey="itemCount" currentSort={orderSort} onSort={() => handleSort(orderSort, 'itemCount', setOrderSort)} align="right" />
                   <SortableHeader label="Total" sortKey="totalPrice" currentSort={orderSort} onSort={() => handleSort(orderSort, 'totalPrice', setOrderSort)} align="right" />
-                  <SortableHeader label="Payment" sortKey="financialStatus" currentSort={orderSort} onSort={() => handleSort(orderSort, 'financialStatus', setOrderSort)} align="center" />
+                  <SortableHeader label="Payment" sortKey="paymentMethod" currentSort={orderSort} onSort={() => handleSort(orderSort, 'paymentMethod', setOrderSort)} align="center" />
                   <SortableHeader label="Fulfillment" sortKey="fulfillmentStatus" currentSort={orderSort} onSort={() => handleSort(orderSort, 'fulfillmentStatus', setOrderSort)} align="center" />
                   <th className="text-center px-4 py-3 font-semibold text-gray-700">Actions</th>
                 </tr>
