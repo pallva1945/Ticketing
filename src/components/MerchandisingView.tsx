@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShoppingBag, Package, Users, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, Layers, Search, Target, X, CreditCard, Eye, ToggleLeft, ToggleRight } from 'lucide-react';
+import { ShoppingBag, Package, Users, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, Layers, Search, Target, X, CreditCard, Eye, ToggleLeft, ToggleRight, ArrowUp, ArrowDown } from 'lucide-react';
+
+type SortDirection = 'asc' | 'desc' | null;
+type SortConfig<T extends string> = { key: T; direction: SortDirection };
 import { GameDayData } from '../types';
 import { processGameDayData } from '../utils/dataProcessor';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line } from 'recharts';
@@ -112,6 +115,34 @@ export const MerchandisingView: React.FC = () => {
   const [productsLimit, setProductsLimit] = useState(50);
   const [ordersLimit, setOrdersLimit] = useState(50);
   const [customersLimit, setCustomersLimit] = useState(50);
+
+  // Sorting state for tables
+  const [productSort, setProductSort] = useState<SortConfig<'title' | 'productType' | 'price' | 'inventory' | 'status'>>({ key: 'title', direction: null });
+  const [orderSort, setOrderSort] = useState<SortConfig<'orderNumber' | 'processedAt' | 'customerName' | 'itemCount' | 'totalPrice' | 'financialStatus' | 'fulfillmentStatus'>>({ key: 'processedAt', direction: 'desc' });
+  const [customerSort, setCustomerSort] = useState<SortConfig<'name' | 'email' | 'ordersCount' | 'totalSpent' | 'createdAt'>>({ key: 'totalSpent', direction: 'desc' });
+
+  const handleSort = <T extends string>(currentSort: SortConfig<T>, key: T, setSort: React.Dispatch<React.SetStateAction<SortConfig<T>>>) => {
+    if (currentSort.key === key) {
+      const nextDir = currentSort.direction === 'asc' ? 'desc' : currentSort.direction === 'desc' ? null : 'asc';
+      setSort({ key, direction: nextDir });
+    } else {
+      setSort({ key, direction: 'asc' });
+    }
+  };
+
+  const SortableHeader = ({ label, sortKey, currentSort, onSort, align = 'left' }: { label: string; sortKey: string; currentSort: { key: string; direction: SortDirection }; onSort: () => void; align?: 'left' | 'right' | 'center' }) => (
+    <th 
+      className={`text-${align} px-4 py-3 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none`}
+      onClick={onSort}
+    >
+      <div className={`flex items-center gap-1 ${align === 'right' ? 'justify-end' : align === 'center' ? 'justify-center' : ''}`}>
+        {label}
+        {currentSort.key === sortKey && currentSort.direction && (
+          currentSort.direction === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />
+        )}
+      </div>
+    </th>
+  );
 
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
@@ -321,41 +352,103 @@ export const MerchandisingView: React.FC = () => {
 
   const filteredProducts = useMemo(() => {
     if (!data) return [];
-    if (!productSearch.trim()) return data.products;
-    const searchLower = productSearch.toLowerCase();
-    return data.products.filter(p => 
-      p.title.toLowerCase().includes(searchLower) ||
-      p.productType?.toLowerCase().includes(searchLower) ||
-      p.variants.some(v => v.sku?.toLowerCase().includes(searchLower))
-    );
-  }, [data, productSearch]);
+    let result = data.products;
+    if (productSearch.trim()) {
+      const searchLower = productSearch.toLowerCase();
+      result = result.filter(p => 
+        p.title.toLowerCase().includes(searchLower) ||
+        p.productType?.toLowerCase().includes(searchLower) ||
+        p.variants.some(v => v.sku?.toLowerCase().includes(searchLower))
+      );
+    }
+    // Apply sorting
+    if (productSort.direction) {
+      result = [...result].sort((a, b) => {
+        let aVal: any, bVal: any;
+        switch (productSort.key) {
+          case 'title': aVal = a.title.toLowerCase(); bVal = b.title.toLowerCase(); break;
+          case 'productType': aVal = (a.productType || '').toLowerCase(); bVal = (b.productType || '').toLowerCase(); break;
+          case 'price': aVal = a.variants[0]?.price || 0; bVal = b.variants[0]?.price || 0; break;
+          case 'inventory': aVal = a.variants.reduce((sum, v) => sum + (v.inventoryQuantity || 0), 0); bVal = b.variants.reduce((sum, v) => sum + (v.inventoryQuantity || 0), 0); break;
+          case 'status': aVal = a.status; bVal = b.status; break;
+          default: return 0;
+        }
+        if (aVal < bVal) return productSort.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return productSort.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return result;
+  }, [data, productSearch, productSort]);
 
   const searchedOrders = useMemo(() => {
-    if (!orderSearch.trim()) return filteredOrders;
-    const searchLower = orderSearch.toLowerCase();
-    return filteredOrders.filter(o =>
-      o.orderNumber.toLowerCase().includes(searchLower) ||
-      o.customerName.toLowerCase().includes(searchLower) ||
-      o.customerEmail.toLowerCase().includes(searchLower) ||
-      formatDate(o.processedAt).toLowerCase().includes(searchLower) ||
-      o.totalPrice.toString().includes(searchLower) ||
-      o.financialStatus.toLowerCase().includes(searchLower) ||
-      o.fulfillmentStatus?.toLowerCase().includes(searchLower) ||
-      (o.paymentMethod || '').toLowerCase().includes(searchLower)
-    );
-  }, [filteredOrders, orderSearch]);
+    let result = filteredOrders;
+    if (orderSearch.trim()) {
+      const searchLower = orderSearch.toLowerCase();
+      result = result.filter(o =>
+        o.orderNumber.toLowerCase().includes(searchLower) ||
+        o.customerName.toLowerCase().includes(searchLower) ||
+        o.customerEmail.toLowerCase().includes(searchLower) ||
+        formatDate(o.processedAt).toLowerCase().includes(searchLower) ||
+        o.totalPrice.toString().includes(searchLower) ||
+        o.financialStatus.toLowerCase().includes(searchLower) ||
+        o.fulfillmentStatus?.toLowerCase().includes(searchLower) ||
+        (o.paymentMethod || '').toLowerCase().includes(searchLower)
+      );
+    }
+    // Apply sorting
+    if (orderSort.direction) {
+      result = [...result].sort((a, b) => {
+        let aVal: any, bVal: any;
+        switch (orderSort.key) {
+          case 'orderNumber': aVal = parseInt(a.orderNumber) || 0; bVal = parseInt(b.orderNumber) || 0; break;
+          case 'processedAt': aVal = new Date(a.processedAt).getTime(); bVal = new Date(b.processedAt).getTime(); break;
+          case 'customerName': aVal = a.customerName.toLowerCase(); bVal = b.customerName.toLowerCase(); break;
+          case 'itemCount': aVal = a.itemCount; bVal = b.itemCount; break;
+          case 'totalPrice': aVal = a.totalPrice; bVal = b.totalPrice; break;
+          case 'financialStatus': aVal = a.financialStatus; bVal = b.financialStatus; break;
+          case 'fulfillmentStatus': aVal = a.fulfillmentStatus || ''; bVal = b.fulfillmentStatus || ''; break;
+          default: return 0;
+        }
+        if (aVal < bVal) return orderSort.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return orderSort.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return result;
+  }, [filteredOrders, orderSearch, orderSort]);
 
   const filteredCustomers = useMemo(() => {
     if (!data) return [];
-    if (!customerSearch.trim()) return data.customers;
-    const searchLower = customerSearch.toLowerCase();
-    return data.customers.filter(c => 
-      c.firstName?.toLowerCase().includes(searchLower) ||
-      c.lastName?.toLowerCase().includes(searchLower) ||
-      c.email?.toLowerCase().includes(searchLower) ||
-      c.tags?.some(t => t.toLowerCase().includes(searchLower))
-    );
-  }, [data, customerSearch]);
+    let result = data.customers;
+    if (customerSearch.trim()) {
+      const searchLower = customerSearch.toLowerCase();
+      result = result.filter(c => 
+        c.firstName?.toLowerCase().includes(searchLower) ||
+        c.lastName?.toLowerCase().includes(searchLower) ||
+        c.email?.toLowerCase().includes(searchLower) ||
+        c.tags?.some(t => t.toLowerCase().includes(searchLower))
+      );
+    }
+    // Apply sorting
+    if (customerSort.direction) {
+      result = [...result].sort((a, b) => {
+        let aVal: any, bVal: any;
+        switch (customerSort.key) {
+          case 'name': aVal = `${a.firstName} ${a.lastName}`.toLowerCase(); bVal = `${b.firstName} ${b.lastName}`.toLowerCase(); break;
+          case 'email': aVal = (a.email || '').toLowerCase(); bVal = (b.email || '').toLowerCase(); break;
+          case 'ordersCount': aVal = a.ordersCount; bVal = b.ordersCount; break;
+          case 'totalSpent': aVal = a.totalSpent; bVal = b.totalSpent; break;
+          case 'createdAt': aVal = new Date(a.createdAt).getTime(); bVal = new Date(b.createdAt).getTime(); break;
+          default: return 0;
+        }
+        if (aVal < bVal) return customerSort.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return customerSort.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return result;
+  }, [data, customerSearch, customerSort]);
 
   const getProductOrders = (productId: string) => {
     if (!data) return [];
@@ -796,11 +889,11 @@ export const MerchandisingView: React.FC = () => {
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-700">Product</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-700">Type</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-700">Price</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-700">Inventory</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-700">Status</th>
+                  <SortableHeader label="Product" sortKey="title" currentSort={productSort} onSort={() => handleSort(productSort, 'title', setProductSort)} />
+                  <SortableHeader label="Type" sortKey="productType" currentSort={productSort} onSort={() => handleSort(productSort, 'productType', setProductSort)} />
+                  <SortableHeader label="Price" sortKey="price" currentSort={productSort} onSort={() => handleSort(productSort, 'price', setProductSort)} align="right" />
+                  <SortableHeader label="Inventory" sortKey="inventory" currentSort={productSort} onSort={() => handleSort(productSort, 'inventory', setProductSort)} align="right" />
+                  <SortableHeader label="Status" sortKey="status" currentSort={productSort} onSort={() => handleSort(productSort, 'status', setProductSort)} align="center" />
                   <th className="text-center px-4 py-3 font-semibold text-gray-700">Actions</th>
                 </tr>
               </thead>
@@ -892,13 +985,13 @@ export const MerchandisingView: React.FC = () => {
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-700">Order</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-700">Date</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-700">Customer</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-700">Items</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-700">Total</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-700">Payment</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-700">Fulfillment</th>
+                  <SortableHeader label="Order" sortKey="orderNumber" currentSort={orderSort} onSort={() => handleSort(orderSort, 'orderNumber', setOrderSort)} />
+                  <SortableHeader label="Date" sortKey="processedAt" currentSort={orderSort} onSort={() => handleSort(orderSort, 'processedAt', setOrderSort)} />
+                  <SortableHeader label="Customer" sortKey="customerName" currentSort={orderSort} onSort={() => handleSort(orderSort, 'customerName', setOrderSort)} />
+                  <SortableHeader label="Items" sortKey="itemCount" currentSort={orderSort} onSort={() => handleSort(orderSort, 'itemCount', setOrderSort)} align="right" />
+                  <SortableHeader label="Total" sortKey="totalPrice" currentSort={orderSort} onSort={() => handleSort(orderSort, 'totalPrice', setOrderSort)} align="right" />
+                  <SortableHeader label="Payment" sortKey="financialStatus" currentSort={orderSort} onSort={() => handleSort(orderSort, 'financialStatus', setOrderSort)} align="center" />
+                  <SortableHeader label="Fulfillment" sortKey="fulfillmentStatus" currentSort={orderSort} onSort={() => handleSort(orderSort, 'fulfillmentStatus', setOrderSort)} align="center" />
                   <th className="text-center px-4 py-3 font-semibold text-gray-700">Actions</th>
                 </tr>
               </thead>
@@ -986,11 +1079,11 @@ export const MerchandisingView: React.FC = () => {
             <table className="w-full text-sm">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-700">Customer</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-700">Email</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-700">Orders</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-700">Total Spent</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-700">Member Since</th>
+                  <SortableHeader label="Customer" sortKey="name" currentSort={customerSort} onSort={() => handleSort(customerSort, 'name', setCustomerSort)} />
+                  <SortableHeader label="Email" sortKey="email" currentSort={customerSort} onSort={() => handleSort(customerSort, 'email', setCustomerSort)} />
+                  <SortableHeader label="Orders" sortKey="ordersCount" currentSort={customerSort} onSort={() => handleSort(customerSort, 'ordersCount', setCustomerSort)} align="right" />
+                  <SortableHeader label="Total Spent" sortKey="totalSpent" currentSort={customerSort} onSort={() => handleSort(customerSort, 'totalSpent', setCustomerSort)} align="right" />
+                  <SortableHeader label="Member Since" sortKey="createdAt" currentSort={customerSort} onSort={() => handleSort(customerSort, 'createdAt', setCustomerSort)} />
                   <th className="text-left px-4 py-3 font-semibold text-gray-700">Tags</th>
                   <th className="text-center px-4 py-3 font-semibold text-gray-700">Actions</th>
                 </tr>
