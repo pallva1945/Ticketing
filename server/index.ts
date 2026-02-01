@@ -119,6 +119,7 @@ app.get("/api/ticketing", async (req, res) => {
 
 // CRM BigQuery endpoint with server-side processing for faster loads
 let crmCache: { rawRows: any[]; processedStats: any; fixedStats: any; flexibleStats: any; timestamp: number } | null = null;
+let crmCacheWarmingPromise: Promise<void> | null = null;
 const CRM_CACHE_TTL = 30 * 60 * 1000; // 30 minutes cache for faster loads
 
 // Parse European number format (1.234,56) and American format (1,234.56)
@@ -543,6 +544,13 @@ app.get("/api/crm/bigquery", async (req, res) => {
     const now = Date.now();
     const forceRefresh = req.query.refresh === 'true';
     const fullData = req.query.full === 'true'; // Only return full rawRows if explicitly requested
+    
+    // Wait for cache warming to complete if in progress (prevents race condition on cold start)
+    if (!forceRefresh && crmCacheWarmingPromise && !crmCache) {
+      console.log('CRM API: Waiting for cache warming to complete...');
+      await crmCacheWarmingPromise;
+      console.log('CRM API: Cache warming complete, continuing');
+    }
     
     console.log(`CRM API request: full=${fullData}, forceRefresh=${forceRefresh}, cacheValid=${crmCache && (now - crmCache.timestamp) < CRM_CACHE_TTL}`);
     
@@ -1108,7 +1116,7 @@ app.listen(PORT, '0.0.0.0', () => {
   
   // Pre-warm CRM cache in background for faster first load
   console.log('Pre-warming CRM cache in background...');
-  fetchCRMFromBigQuery().then(result => {
+  crmCacheWarmingPromise = fetchCRMFromBigQuery().then(result => {
     if (result.success && result.rawRows) {
       const processedStats = computeCRMStats(result.rawRows);
       const fixedRows = result.rawRows.filter(isRowFixedCapacity);
