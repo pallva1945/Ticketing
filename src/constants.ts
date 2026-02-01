@@ -149,7 +149,7 @@ Use bullet points. Highlight € values. Be direct. No pleasantries.
 // Used to calculate "Game Day Availability"
 // Formula: Fixed = Full Capacity - Game Day Capacity
 export const FIXED_CAPACITY_25_26: Record<string, number> = {
-  [TicketZone.PAR_O]: 223,    // Total 373 - Gameday 150 = 223 Fixed
+  [TicketZone.PAR_O]: 243,    // Total 373 - Gameday 130 = 243 Fixed
   [TicketZone.PAR_E]: 94,     // Total 200 - Gameday 106 = 94 Fixed
   [TicketZone.TRIB_G]: 1230,  // Total 2209 - Gameday 979 = 1230 Fixed
   [TicketZone.TRIB_S]: 261,   // Total 367 - Gameday 106 = 261 Fixed
@@ -159,7 +159,7 @@ export const FIXED_CAPACITY_25_26: Record<string, number> = {
   [TicketZone.COURTSIDE]: 38, // Total 44 - Gameday 6 = 38 Fixed
   [TicketZone.SKYBOX]: 60,    // Total 60 - Gameday 0 = 60 Fixed
   [TicketZone.OSPITI]: 0,     // Total 233 - Gameday 233 = 0 Fixed
-  [TicketZone.PAR_EX]: 68     // Total 75 - Gameday 7 = 68 Fixed
+  [TicketZone.PAR_EX]: 66     // Total 75 - Gameday 9 = 66 Fixed
 };
 
 // Initial empty state, data is loaded from CSV in App.tsx
