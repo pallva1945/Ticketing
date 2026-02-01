@@ -823,8 +823,16 @@ function parseMerchCSV(): { orders: ShopifyOrder[]; products: ShopifyProduct[]; 
         lineItems: [],
         financialStatus,
         fulfillmentStatus,
-        paymentMethod: normalizePaymentMethod(paymentMethod)
+        paymentMethod: 'Unknown' // Will be updated from transaction rows
       });
+    }
+    
+    // Update payment method from transaction rows (Line_Type = "Transaction")
+    if (lineType === 'Transaction' && orderId) {
+      const order = ordersMap.get(orderId);
+      if (order && order.paymentMethod === 'Unknown' && (paymentGateway || paymentMethod)) {
+        order.paymentMethod = normalizePaymentMethod(paymentMethod || paymentGateway);
+      }
     }
     
     // Add line items (Line_Type = "Line Item")
