@@ -181,7 +181,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   // Filter options from data
   const filterOptions = useMemo(() => {
     const zones = ['All', ...new Set(data.map(r => r.pvZone).filter(Boolean))].sort((a, b) => a === 'All' ? -1 : b === 'All' ? 1 : a.localeCompare(b));
-    const sellTypes = ['All', ...new Set(data.map(r => r.sellType).filter(Boolean))].sort((a, b) => a === 'All' ? -1 : b === 'All' ? 1 : a.localeCompare(b));
+    const sellTypes = ['All', ...new Set(data.map(r => r.sell || r.sellType).filter(Boolean))].sort((a, b) => a === 'All' ? -1 : b === 'All' ? 1 : a.localeCompare(b));
     const gamesList = [...new Set(data.map(r => r.game).filter(Boolean))];
     // Sort games by date (most recent first)
     const sortedGames = gamesList.sort((a, b) => {
@@ -208,7 +208,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       result = result.filter(r => selectedGames.includes(r.game));
     }
     if (!selectedSellTypes.includes('All')) {
-      result = result.filter(r => selectedSellTypes.includes((r.sellType || '').toUpperCase()));
+      result = result.filter(r => selectedSellTypes.includes((r.sell || r.sellType || '').toUpperCase()));
     }
     if (capacityView !== 'all') {
       result = result.filter(r => getCapacityBucket(r) === capacityView);
@@ -406,7 +406,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     
     const uniqueEmails = new Set(filteredData.filter(r => r.email).map(r => r.email.toLowerCase()));
     const uniqueCustomers = new Set(filteredData.map(r => r.email || r.fullName));
-    const corporateRecords = filteredData.filter(r => r.sellType === 'Corp' || r.ticketType === 'CORP');
+    const corporateRecords = filteredData.filter(r => (r.sell || r.sellType || '').toLowerCase() === 'corp' || (r.ticketType || '').toLowerCase() === 'corp');
     const uniqueCorps = new Set(corporateRecords.map(r => r.group).filter(Boolean));
     
     const totalRevenue = filteredData.reduce((sum, r) => sum + (r.price * r.quantity), 0);
@@ -435,10 +435,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       eventBreakdown[event].count += r.quantity;
       eventBreakdown[event].revenue += r.price;
 
-      const rawSell = (r.sellType || '').toLowerCase();
+      const rawSell = (r.sell || r.sellType || '').toLowerCase();
       const rawTicketType = (r.ticketType || '').toLowerCase();
       
-      const normalizedSellType = (r.sellType || r.ticketType || 'Unknown').toUpperCase();
+      const normalizedSellType = (r.sell || r.sellType || r.ticketType || 'Unknown').toUpperCase();
       if (!rawSellTypeBreakdown[normalizedSellType]) rawSellTypeBreakdown[normalizedSellType] = { count: 0, revenue: 0, value: 0 };
       rawSellTypeBreakdown[normalizedSellType].count += r.quantity;
       rawSellTypeBreakdown[normalizedSellType].revenue += r.price;
@@ -484,7 +484,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       discountBreakdown[discount].count += r.quantity;
       discountBreakdown[discount].revenue += r.price;
 
-      const isCorp = (r.sellType || '').toLowerCase() === 'corp' || (r.ticketType || '').toLowerCase() === 'corp';
+      const isCorp = (r.sell || r.sellType || '').toLowerCase() === 'corp' || (r.ticketType || '').toLowerCase() === 'corp';
       if (isCorp) {
         const corpKey = r.group || r.fullName || 'Unknown';
         if (!corpBreakdown[corpKey]) corpBreakdown[corpKey] = { count: 0, revenue: 0, value: 0, zones: {} as Record<string, number> };
@@ -501,13 +501,13 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     
     const customerData = isFilteringByAbbOrCorp 
       ? filteredData.filter(r => {
-          const sellLower = (r.sellType || '').toLowerCase();
+          const sellLower = (r.sell || r.sellType || '').toLowerCase();
           const ticketLower = (r.ticketType || '').toLowerCase();
           const isGiveaway = ['protocol', 'giveaway', 'giveaways'].includes(sellLower) || ['protocol', 'giveaway', 'giveaways'].includes(ticketLower);
           return !isGiveaway;
         })
       : filteredData.filter(r => {
-          const sellLower = (r.sellType || '').toLowerCase();
+          const sellLower = (r.sell || r.sellType || '').toLowerCase();
           const ticketLower = (r.ticketType || '').toLowerCase();
           const isCorp = sellLower === 'corp' || ticketLower === 'corp';
           const isAbb = sellLower === 'abb' || ticketLower === 'abb';
@@ -566,7 +566,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           location: profile.location || toTitleCase(r.province || r.pob || ''),
           advanceDays: [] as number[]
         };
-        const sellType = r.sellType || r.ticketType || 'Unknown';
+        const sellType = r.sell || r.sellType || r.ticketType || 'Unknown';
         acc[key].sellTypes[sellType] = (acc[key].sellTypes[sellType] || 0) + (Number(r.quantity) || 1);
         acc[key].tickets += Number(r.quantity) || 1;
         acc[key].revenue += Number(r.price) || 0;
@@ -1496,7 +1496,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             // and matched by group (with title case, matching server logic)
             const selectedNormalized = normalizeCompanyName(selectedCorporate);
             const corpRecords = filteredData.filter(r => {
-              const isCorp = (r.sellType || '').toLowerCase() === 'corp' || (r.ticketType || '').toLowerCase() === 'corp';
+              const isCorp = (r.sell || r.sellType || '').toLowerCase() === 'corp' || (r.ticketType || '').toLowerCase() === 'corp';
               if (!isCorp) return false;
               // Match using title case (same as server) or normalized comparison
               const rawGroup = r.group || r.fullName || 'Unknown';
@@ -2485,16 +2485,16 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           const subscriptionTypes = ['abbonamento', 'abb', 'mini'];
           const grouped: any[] = [];
           const subRecords = records.filter(r => {
-            const sellType = (r.sellType || r.ticketType || '').toLowerCase();
+            const sellType = (r.sell || r.sellType || r.ticketType || '').toLowerCase();
             return subscriptionTypes.some(t => sellType.includes(t));
           });
           const otherRecords = records.filter(r => {
-            const sellType = (r.sellType || r.ticketType || '').toLowerCase();
+            const sellType = (r.sell || r.sellType || r.ticketType || '').toLowerCase();
             return !subscriptionTypes.some(t => sellType.includes(t));
           });
           const subGroups: Record<string, CRMRecord[]> = {};
           subRecords.forEach(r => {
-            const key = `${r.sellType || r.ticketType}|${r.pvZone || r.zone}`;
+            const key = `${r.sell || r.sellType || r.ticketType}|${r.pvZone || r.zone}`;
             if (!subGroups[key]) subGroups[key] = [];
             subGroups[key].push(r);
           });
@@ -2536,7 +2536,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               discountType: r.discountType || '—',
               value: Number(r.commercialValue) || 0,
               leadDays,
-              sellType: r.sellType || r.ticketType || '—',
+              sellType: r.sell || r.sellType || r.ticketType || '—',
               giveawayType: r.giveawayType || '',
               quantity: Number(r.quantity) || 1,
               game: r.gm || r.game || r.event || '—'
@@ -2923,7 +2923,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   {(() => {
                     const grouped: Record<string, { label: string; sellType: string; tickets: number; value: number; zone: string }> = {};
                     customerDetail.records.forEach(r => {
-                      const rawSell = (r.sellType || '').toLowerCase();
+                      const rawSell = (r.sell || r.sellType || '').toLowerCase();
                       const isAbb = rawSell === 'abb';
                       const key = isAbb ? 'Season Ticket' : (r.gm || r.game || r.event || 'Unknown');
                       const sellType = rawSell.toUpperCase() || 'N/A';

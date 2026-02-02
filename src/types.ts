@@ -186,6 +186,7 @@ export interface CRMRecord {
   gmDateTime: number;
   commercialValue: number;
   gameId: string;
+  sell: string;
   sellType: string;
   giveawayType: string;
   discountType: string;

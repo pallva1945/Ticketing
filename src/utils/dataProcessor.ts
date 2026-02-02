@@ -710,6 +710,7 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
       })(),
       commercialValue: parseCurrency(getVal(commercialValueIdx)),
       gameId: getVal(gameIdIdx),
+      sell: (getVal(sellIdx) || '').toUpperCase(),
       sellType: (getVal(sellIdx) || '').toUpperCase(),
       giveawayType: getVal(giveawayTypeIdx),
       discountType: getVal(discountTypeIdx),
