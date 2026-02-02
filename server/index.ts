@@ -177,7 +177,9 @@ const slimCRMRows = (rawRows: any[]): any[] => {
     'address', 'Address', 'ADDRESS',
     'age', 'Age', 'AGE',
     'area', 'Area', 'AREA',
-    'seat', 'Seat', 'SEAT'
+    'seat', 'Seat', 'SEAT',
+    'giveawaytype', 'Giveawaytype', 'GIVEAWAYTYPE', 'giveawayType', 'GiveawayType',
+    'discount_type', 'Discount_Type', 'DISCOUNT_TYPE', 'discountType', 'DiscountType'
   ];
   
   return rawRows.map(row => {
