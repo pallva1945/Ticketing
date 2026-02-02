@@ -670,6 +670,7 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
       abbMpPriceGm: parseCurrency(getVal(abbMpPriceIdx)),
       abbCorpPvPrice: parseCurrency(getVal(abbCorpPriceIdx)),
       game: getVal(gmIdx),
+      gm: getVal(gmIdx),
       gmDateTime: (() => {
         const raw = getVal(gmDateTimeIdx);
         if (!raw) return 0;

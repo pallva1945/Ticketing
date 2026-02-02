@@ -182,6 +182,7 @@ export interface CRMRecord {
   abbMpPriceGm: number;
   abbCorpPvPrice: number;
   game: string;
+  gm: string;
   gmDateTime: number;
   commercialValue: number;
   gameId: string;

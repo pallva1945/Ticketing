@@ -574,7 +574,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         acc[key].transactions += 1;
         const zone = r.pvZone || r.zone || 'Unknown';
         acc[key].zones[zone] = (acc[key].zones[zone] || 0) + (Number(r.quantity) || 1);
-        if (r.game || r.event) acc[key].games.add(r.game || r.event);
+        if (r.gm || r.game || r.event) acc[key].games.add(r.gm || r.game || r.event);
         
         const buyTs = r.buyTimestamp && r.buyTimestamp instanceof Date && !isNaN(r.buyTimestamp.getTime()) ? r.buyTimestamp : null;
         if (buyTs && r.gmDateTime && r.gmDateTime > 0) {
@@ -1505,9 +1505,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             });
             const corpInfo = stats.topCorps.find(c => c.name === selectedCorporate);
             
-            // Group by game (using Game column, not Event)
+            // Group by game (using GM column, not Event)
             const gameBreakdown = corpRecords.reduce((acc, r) => {
-              const gameKey = r.game || r.event || 'Unknown Game';
+              const gameKey = r.gm || r.game || r.event || 'Unknown Game';
               if (!acc[gameKey]) {
                 acc[gameKey] = { tickets: 0, value: 0, seats: [] as string[], zones: new Set<string>() };
               }
@@ -1526,7 +1526,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             
             // Get tickets for selected game (third level drill-down)
             const gameTickets = selectedGame 
-              ? corpRecords.filter(r => (r.game || r.event || 'Unknown Game') === selectedGame)
+              ? corpRecords.filter(r => (r.gm || r.game || r.event || 'Unknown Game') === selectedGame)
               : [];
             
             // Third level: Individual tickets for selected game
@@ -1908,7 +1908,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           if (r.age && r.age.trim() !== '' && !acc[name].age) acc[name].age = r.age;
           if ((r.city || r.location) && !acc[name].location) acc[name].location = r.city || r.location;
           if (r.group && !acc[name].company) acc[name].company = toTitleCase(r.group);
-          if (r.game || r.event) acc[name].games.add(r.game || r.event);
+          if (r.gm || r.game || r.event) acc[name].games.add(r.gm || r.game || r.event);
           if (r.pvZone || r.zone) acc[name].zones.add(r.pvZone || r.zone);
           if (!acc[name].email && r.email) acc[name].email = r.email;
           return acc;
@@ -2060,7 +2060,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                             return (
                               <tr key={i} className="hover:bg-gray-50">
                                 <td className="py-3 px-4 text-gray-400">{i + 1}</td>
-                                <td className="py-3 px-4 font-medium text-gray-800">{t.game || t.event || '—'}</td>
+                                <td className="py-3 px-4 font-medium text-gray-800">{t.gm || t.game || t.event || '—'}</td>
                                 <td className="py-3 px-4">
                                   <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-xs">
                                     {gType || t.giveawayType || '—'}
@@ -2474,13 +2474,13 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         }).slice(0, 20) : [];
 
         const selectedClient = searchSelectedClient ? allClients.find(c => c.key === searchSelectedClient) : null;
-        const clientGames: string[] = selectedClient ? [...new Set(selectedClient.records.map((r: CRMRecord) => r.game || r.event).filter(Boolean))] as string[] : [];
+        const clientGames: string[] = selectedClient ? [...new Set(selectedClient.records.map((r: CRMRecord) => r.gm || r.game || r.event).filter(Boolean))] as string[] : [];
 
         const getTicketRows = () => {
           if (!selectedClient) return [];
           let records = selectedClient.records as CRMRecord[];
           if (searchGameFilter !== 'all') {
-            records = records.filter(r => (r.game || r.event) === searchGameFilter);
+            records = records.filter(r => (r.gm || r.game || r.event) === searchGameFilter);
           }
           const subscriptionTypes = ['abbonamento', 'abb', 'mini'];
           const grouped: any[] = [];
@@ -2539,7 +2539,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               sellType: r.sellType || r.ticketType || '—',
               giveawayType: r.giveawayType || '',
               quantity: Number(r.quantity) || 1,
-              game: r.game || r.event || '—'
+              game: r.gm || r.game || r.event || '—'
             });
           });
           return grouped;
@@ -2925,7 +2925,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     customerDetail.records.forEach(r => {
                       const rawSell = (r.sellType || '').toLowerCase();
                       const isAbb = rawSell === 'abb';
-                      const key = isAbb ? 'Season Ticket' : (r.game || r.event || 'Unknown');
+                      const key = isAbb ? 'Season Ticket' : (r.gm || r.game || r.event || 'Unknown');
                       const sellType = rawSell.toUpperCase() || 'N/A';
                       if (!grouped[key]) grouped[key] = { label: key, sellType, tickets: 0, value: 0, zone: r.pvZone || '' };
                       grouped[key].tickets += r.quantity;
