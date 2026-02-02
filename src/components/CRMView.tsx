@@ -1493,12 +1493,15 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           {selectedCorporate ? (() => {
             // Corporate detail view - show tickets and games for selected corporation
             // Corporate records are identified by sellType or ticketType being 'corp'
-            // and matched by group or fullName
+            // and matched by group (with title case, matching server logic)
+            const selectedNormalized = normalizeCompanyName(selectedCorporate);
             const corpRecords = filteredData.filter(r => {
               const isCorp = (r.sellType || '').toLowerCase() === 'corp' || (r.ticketType || '').toLowerCase() === 'corp';
               if (!isCorp) return false;
-              const corpKey = r.group || r.fullName || 'Unknown';
-              return normalizeCompanyName(corpKey) === normalizeCompanyName(selectedCorporate);
+              // Match using title case (same as server) or normalized comparison
+              const rawGroup = r.group || r.fullName || 'Unknown';
+              const titleCaseGroup = toTitleCase(rawGroup);
+              return titleCaseGroup === selectedCorporate || normalizeCompanyName(rawGroup) === selectedNormalized;
             });
             const corpInfo = stats.topCorps.find(c => c.name === selectedCorporate);
             
