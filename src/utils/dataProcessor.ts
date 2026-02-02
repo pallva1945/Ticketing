@@ -585,7 +585,9 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
   const zoneIdx = getIdx(['zone', 'zona']);
   const groupIdx = getIdx(['group', 'gruppo', 'company']);
   const areaIdx = getIdx(['area', 'settore', 'section']);
-  const seatIdx = getIdx(['seat', 'posto']);
+  const seatIdx = getIdx(['seat', 'seat_number', 'posto']);
+  const firstNameAltIdx = getIdx(['first_name']);
+  const areaSectionIdx = getIdx(['area_section']);
   const typeIdx = getIdx(['type', 'tipo']);
   const netIdx = getIdx(['net', 'netto']);
   const ivaIdx = getIdx(['iva', 'vat']);
@@ -634,7 +636,7 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
     const getVal = (colIdx: number) => (colIdx >= 0 && row[colIdx]) ? row[colIdx].trim() : '';
     
     const lastName = getVal(lastNameIdx);
-    const firstName = getVal(nameIdx);
+    const firstName = getVal(nameIdx) || getVal(firstNameAltIdx);
     const fullName = [lastName, firstName].filter(Boolean).join(' ') || 'Unknown';
     const buyDateStr = getVal(buyDateIdx);
 
@@ -656,7 +658,7 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
       event: getVal(eventIdx),
       zone: getVal(zoneIdx),
       group: getVal(groupIdx),
-      area: getVal(areaIdx),
+      area: getVal(areaIdx) || getVal(areaSectionIdx),
       seat: getVal(seatIdx),
       ticketType: getVal(typeIdx),
       net: parseCurrency(getVal(netIdx)),

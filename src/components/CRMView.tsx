@@ -1598,8 +1598,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                         <thead className="bg-gray-50 text-gray-600">
                           <tr>
                             <th className="text-left py-3 px-4 font-medium">#</th>
-                            <th className="text-left py-3 px-4 font-medium">Last Name</th>
+                            <th className="text-left py-3 px-4 font-medium">Name</th>
                             <th className="text-left py-3 px-4 font-medium">Zone</th>
+                            <th className="text-left py-3 px-4 font-medium">Area</th>
+                            <th className="text-left py-3 px-4 font-medium">Seat</th>
                             <th className="text-center py-3 px-4 font-medium">Age</th>
                             <th className="text-left py-3 px-4 font-medium">Province</th>
                             <th className="text-right py-3 px-4 font-medium">Commercial Value</th>
@@ -1609,14 +1611,16 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                           {gameTickets.map((t, i) => (
                             <tr key={i} className="hover:bg-gray-50">
                               <td className="py-3 px-4 text-gray-400">{i + 1}</td>
-                              <td className="py-3 px-4 font-medium text-gray-800">{t.lastName || t.fullName || '—'}</td>
+                              <td className="py-3 px-4 font-medium text-gray-800">{t.fullName || t.lastName || '—'}</td>
                               <td className="py-3 px-4">
                                 <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs">
                                   {t.pvZone || t.zone || '—'}
                                 </span>
                               </td>
+                              <td className="py-3 px-4 text-gray-600">{t.area || '—'}</td>
+                              <td className="py-3 px-4 text-gray-600">{t.seat || '—'}</td>
                               <td className="py-3 px-4 text-center text-gray-600">{t.age || '—'}</td>
-                              <td className="py-3 px-4 text-gray-600">{t.province || t.city || '—'}</td>
+                              <td className="py-3 px-4 text-gray-600">{t.province || '—'}</td>
                               <td className="py-3 px-4 text-right font-bold text-green-600">{formatCurrency(t.commercialValue * (t.quantity || 1))}</td>
                             </tr>
                           ))}
