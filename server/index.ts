@@ -162,7 +162,7 @@ const slimCRMRows = (rawRows: any[]): any[] => {
     'price', 'Price', 'PRICE',
     'quantity', 'Quantity', 'QUANTITY', 'qty', 'Qty', 'QTY',
     'comercial_value', 'Comercial_Value', 'COMERCIAL_VALUE', 'commercial_value', 'Commercial_Value', 'COMMERCIAL_VALUE',
-    'first_name', 'First_Name', 'FIRST_NAME',
+    'first_name', 'First_Name', 'FIRST_NAME', 'name', 'Name', 'NAME',
     'last_name', 'Last_Name', 'LAST_NAME',
     'full_name', 'Full_Name', 'FULL_NAME',
     'email', 'Email', 'EMAIL',
@@ -175,7 +175,9 @@ const slimCRMRows = (rawRows: any[]): any[] => {
     'purchase_date', 'Purchase_Date', 'PURCHASE_DATE',
     'advance_days', 'Advance_Days', 'ADVANCE_DAYS',
     'address', 'Address', 'ADDRESS',
-    'age', 'Age', 'AGE'
+    'age', 'Age', 'AGE',
+    'area', 'Area', 'AREA',
+    'seat', 'Seat', 'SEAT'
   ];
   
   return rawRows.map(row => {

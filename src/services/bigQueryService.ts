@@ -288,12 +288,15 @@ export async function fetchCRMFromBigQuery(): Promise<{ success: boolean; rawRow
   try {
     const client = getBigQueryClient();
     
-    // Use SELECT * and add key columns with IFNULL to ensure they're always present
+    // Explicitly select all needed columns to ensure area/seat are included
     const query = `SELECT 
-      *,
-      IFNULL(name, '') as first_name,
-      IFNULL(area, '') as area_section,
-      IFNULL(CAST(seat AS STRING), '') as seat_number
+      uid, last_name, name, email, dob, pob, nationality, province, cell, address,
+      buy_date, event, zone, \`group\`, type, net, iva, price, payment, state, quantity,
+      pv_zone, abb_mp_price_gm, abb_corp_pvprice, gm, Gm_Date_time, 
+      comercial_value as commercial_value,
+      game_id, sell, giveawaytype, discount_type, season,
+      IFNULL(area, '') as area,
+      IFNULL(CAST(seat AS STRING), '') as seat
     FROM \`${PROJECT_ID}.${DATASET_ID}.${CRM_TABLE_ID}\` LIMIT 100000`;
     
     const [rows] = await client.query({ query, useQueryCache: true });
