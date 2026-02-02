@@ -813,7 +813,14 @@ const convertBigQueryRowsToCSV = (rows: any[]): string => {
 const convertBigQueryRowsToCRMCSV = (rows: any[]): string => {
   if (!rows || rows.length === 0) return '';
   
-  const columns = Object.keys(rows[0]);
+  // Collect ALL unique column names from ALL rows (not just first row)
+  // Some fields like 'group' only exist on certain records
+  const columnSet = new Set<string>();
+  const sampleSize = Math.min(rows.length, 1000);
+  for (let i = 0; i < sampleSize; i++) {
+    Object.keys(rows[i]).forEach(key => columnSet.add(key));
+  }
+  const columns = Array.from(columnSet);
   
   // Convert column names to lowercase for CSV compatibility
   const headerRow = columns.map(col => col.toLowerCase()).join(',');
