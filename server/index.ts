@@ -181,7 +181,8 @@ const slimCRMRows = (rawRows: any[]): any[] => {
     'giveawaytype', 'Giveawaytype', 'GIVEAWAYTYPE', 'giveawayType', 'GiveawayType',
     'discount_type', 'Discount_Type', 'DISCOUNT_TYPE', 'discountType', 'DiscountType',
     'buy_date', 'Buy_Date', 'BUY_DATE', 'buyDate', 'BuyDate',
-    'Gm_Date_time', 'gm_date_time', 'GM_DATE_TIME', 'gmDateTime', 'GmDateTime'
+    'Gm_Date_time', 'gm_date_time', 'GM_DATE_TIME', 'gmDateTime', 'GmDateTime',
+    'payment', 'Payment', 'PAYMENT', 'payment_method', 'Payment_Method', 'PAYMENT_METHOD'
   ];
   
   return rawRows.map(row => {
