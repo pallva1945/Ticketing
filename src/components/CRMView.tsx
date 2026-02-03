@@ -182,7 +182,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const filterOptions = useMemo(() => {
     const zones = ['All', ...new Set(data.map(r => r.pvZone).filter(Boolean))].sort((a, b) => a === 'All' ? -1 : b === 'All' ? 1 : a.localeCompare(b));
     const sellTypes = ['All', ...new Set(data.map(r => r.sell || r.sellType).filter(Boolean))].sort((a, b) => a === 'All' ? -1 : b === 'All' ? 1 : a.localeCompare(b));
-    const gamesList = [...new Set(data.map(r => r.game).filter(Boolean))];
+    const gamesList = [...new Set(data.map(r => r.gm || r.game).filter(Boolean))];
     // Sort games by date (most recent first)
     const sortedGames = gamesList.sort((a, b) => {
       const getDate = (g: string) => {
@@ -205,7 +205,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       result = result.filter(r => selectedZones.includes(r.pvZone));
     }
     if (!selectedGames.includes('All')) {
-      result = result.filter(r => selectedGames.includes(r.game));
+      result = result.filter(r => selectedGames.includes(r.gm || r.game));
     }
     if (!selectedSellTypes.includes('All')) {
       result = result.filter(r => selectedSellTypes.includes((r.sell || r.sellType || '').toUpperCase()));
