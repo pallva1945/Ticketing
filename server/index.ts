@@ -179,7 +179,9 @@ const slimCRMRows = (rawRows: any[]): any[] => {
     'area', 'Area', 'AREA',
     'seat', 'Seat', 'SEAT',
     'giveawaytype', 'Giveawaytype', 'GIVEAWAYTYPE', 'giveawayType', 'GiveawayType',
-    'discount_type', 'Discount_Type', 'DISCOUNT_TYPE', 'discountType', 'DiscountType'
+    'discount_type', 'Discount_Type', 'DISCOUNT_TYPE', 'discountType', 'DiscountType',
+    'buy_date', 'Buy_Date', 'BUY_DATE', 'buyDate', 'BuyDate',
+    'Gm_Date_time', 'gm_date_time', 'GM_DATE_TIME', 'gmDateTime', 'GmDateTime'
   ];
   
   return rawRows.map(row => {
