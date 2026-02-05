@@ -111,6 +111,7 @@ export const MerchandisingView: React.FC = () => {
   const [productSearch, setProductSearch] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
   const [productsLimit, setProductsLimit] = useState(50);
   const [ordersLimit, setOrdersLimit] = useState(50);
@@ -1261,13 +1262,19 @@ export const MerchandisingView: React.FC = () => {
               <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
                 <BarChart3 size={16} className="text-gray-400" />
                 Inventory by Category
+                <span className="text-xs text-gray-400 ml-auto">Click to view products</span>
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {inventoryStats.byCategory.slice(0, 8).map((cat, i) => (
-                  <div key={cat.name} className="flex items-center justify-between">
+                  <div 
+                    key={cat.name} 
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => setSelectedCategory(cat.name)}
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                      <span className="text-sm text-gray-700">{cat.name}</span>
+                      <span className="text-sm text-gray-700 hover:text-blue-600">{cat.name}</span>
+                      <span className="text-xs text-gray-400">({cat.products} products)</span>
                     </div>
                     <div className="flex items-center gap-4 text-sm">
                       <span className="text-gray-500">{cat.units.toLocaleString()} units</span>
@@ -1421,6 +1428,93 @@ export const MerchandisingView: React.FC = () => {
                 <p className="font-bold text-green-600">
                   {((inventoryStats.healthyStock.length / inventoryStats.totalProducts) * 100).toFixed(0)}% healthy
                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedCategory && data && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedCategory(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-800">{selectedCategory}</h2>
+                <p className="text-sm text-gray-500">
+                  {data.products.filter(p => (p.productType || 'Uncategorized') === selectedCategory).length} products in this category
+                </p>
+              </div>
+              <button onClick={() => setSelectedCategory(null)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <X size={20} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      <th className="text-left py-3 px-4 font-semibold text-gray-600">Product</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600">Price</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600">Inventory</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600">Value</th>
+                      <th className="text-center py-3 px-4 font-semibold text-gray-600">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.products
+                      .filter(p => (p.productType || 'Uncategorized') === selectedCategory)
+                      .sort((a, b) => b.totalInventory - a.totalInventory)
+                      .map(product => {
+                        const inventoryValue = product.variants.reduce((sum, v) => sum + (v.price * v.inventoryQuantity), 0);
+                        const avgPrice = product.variants.length > 0 
+                          ? product.variants.reduce((sum, v) => sum + v.price, 0) / product.variants.length 
+                          : 0;
+                        return (
+                          <tr key={product.id} className="border-b border-gray-50 hover:bg-gray-50">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                {product.images[0] ? (
+                                  <img src={product.images[0].src} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                                ) : (
+                                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                    <Package size={16} className="text-gray-400" />
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-medium text-gray-800">{product.title}</p>
+                                  <p className="text-xs text-gray-400">{product.variants.length} variant{product.variants.length !== 1 ? 's' : ''}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-right text-gray-700">{formatCurrency(avgPrice)}</td>
+                            <td className="py-3 px-4 text-right">
+                              <span className={product.totalInventory <= 0 ? 'text-red-600 font-semibold' : product.totalInventory < 10 ? 'text-amber-600' : 'text-gray-800'}>
+                                {product.totalInventory.toLocaleString()}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-right font-medium text-gray-800">{formatCurrency(inventoryValue)}</td>
+                            <td className="py-3 px-4 text-center">
+                              {product.totalInventory <= 0 ? (
+                                <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">Out of Stock</span>
+                              ) : product.totalInventory < 10 ? (
+                                <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">Low Stock</span>
+                              ) : (
+                                <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">In Stock</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center text-sm text-gray-500">
+                <span>
+                  Total: {data.products.filter(p => (p.productType || 'Uncategorized') === selectedCategory).reduce((sum, p) => sum + p.totalInventory, 0).toLocaleString()} units
+                </span>
+                <span>
+                  Value: {formatCurrency(data.products.filter(p => (p.productType || 'Uncategorized') === selectedCategory).reduce((sum, p) => sum + p.variants.reduce((vs, v) => vs + v.price * v.inventoryQuantity, 0), 0))}
+                </span>
               </div>
             </div>
           </div>
