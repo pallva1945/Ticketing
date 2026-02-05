@@ -623,7 +623,7 @@ export const MerchandisingView: React.FC = () => {
 
   const selectedProductStats = selectedProductId ? getProductStats(selectedProductId) : null;
   const selectedCustomerOrders = selectedCustomerId ? getCustomerOrders(selectedCustomerId) : [];
-  const selectedOrder = selectedOrderId ? filteredOrders.find(o => o.id === selectedOrderId) : null;
+  const selectedOrder = selectedOrderId ? (data?.orders.find(o => o.id === selectedOrderId) || filteredOrders.find(o => o.id === selectedOrderId)) : null;
   const selectedCustomer = selectedCustomerId ? data.customers.find(c => c.email === selectedCustomerId) : null;
 
   return (
