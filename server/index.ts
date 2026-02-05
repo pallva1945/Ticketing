@@ -975,16 +975,26 @@ async function fetchShopifyAPI(endpoint: string): Promise<any> {
 
 async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
   const orders: ShopifyOrder[] = [];
-  let pageInfo: string | null = null;
+  let sinceId: string = '0'; // Start from ID 0 to get all orders
+  const maxPages = 50; // Safety limit
+  let pageCount = 0;
   
   do {
-    const endpoint = pageInfo 
-      ? `orders.json?limit=250&page_info=${pageInfo}` 
-      : 'orders.json?limit=250&status=any&fields=id,name,created_at,processed_at,total_price,currency,financial_status,fulfillment_status,customer,email,billing_address,line_items,payment_gateway_names,gateway,transactions';
+    // Use since_id for pagination (works better than created_at_min for getting all orders)
+    const params = new URLSearchParams({
+      limit: '250',
+      status: 'any',
+      since_id: sinceId,
+      fields: 'id,name,order_number,created_at,processed_at,total_price,currency,financial_status,fulfillment_status,customer,email,billing_address,line_items,payment_gateway_names,gateway,transactions'
+    });
     
+    const endpoint = `orders.json?${params.toString()}`;
     const response = await fetchShopifyAPI(endpoint);
+    const batchOrders = response.orders || [];
     
-    for (const order of response.orders || []) {
+    if (batchOrders.length === 0) break;
+    
+    for (const order of batchOrders) {
       const customerName = order.customer 
         ? `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim()
         : order.billing_address?.name || 'Guest';
@@ -993,7 +1003,7 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
       const gateway = order.payment_gateway_names?.[0] || order.gateway || transactionGateway || '';
       orders.push({
         id: String(order.id),
-        orderNumber: String(order.order_number),
+        orderNumber: String(order.order_number || order.name?.replace('#', '') || ''),
         createdAt: order.created_at,
         processedAt: order.processed_at || order.created_at,
         totalPrice: parseFloat(order.total_price) || 0,
@@ -1014,15 +1024,16 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
       });
     }
     
-    // Check for pagination via Link header
-    const linkHeader = response.headers?.get?.('Link') || '';
-    const nextMatch = linkHeader.match(/page_info=([^>&]+)>; rel="next"/);
-    pageInfo = nextMatch ? nextMatch[1] : null;
+    // Get the highest ID for next pagination
+    sinceId = String(batchOrders[batchOrders.length - 1].id);
     
-    // Break if no next page or if we got less than limit
-    if (!response.orders || response.orders.length < 250) break;
+    pageCount++;
+    console.log(`Shopify orders page ${pageCount}: fetched ${batchOrders.length}, total ${orders.length}`);
     
-  } while (pageInfo);
+    // Stop if we got less than a full page
+    if (batchOrders.length < 250) break;
+    
+  } while (pageCount < maxPages);
   
   return orders;
 }
@@ -1101,12 +1112,36 @@ app.get("/api/shopify/data", async (req, res) => {
     
     // Return cached data if still valid
     if (shopifyCache && !forceRefresh && (Date.now() - shopifyCache.timestamp) < SHOPIFY_CACHE_TTL) {
+      console.log(`Returning cached Shopify data: ${shopifyCache.orders.length} orders`);
       return res.json(shopifyCache);
     }
     
-    console.log('Loading merch data from CSV...');
+    // Check if Shopify API is available
+    if (SHOPIFY_ACCESS_TOKEN) {
+      console.log('Fetching live data from Shopify API...');
+      
+      // Fetch all data from Shopify API in parallel
+      const [orders, products, customers] = await Promise.all([
+        fetchAllShopifyOrders(),
+        fetchAllShopifyProducts(),
+        fetchAllShopifyCustomers()
+      ]);
+      
+      shopifyCache = {
+        orders,
+        products,
+        customers,
+        lastUpdated: new Date().toISOString(),
+        timestamp: Date.now()
+      };
+      
+      console.log(`Shopify live data loaded: ${orders.length} orders, ${products.length} products, ${customers.length} customers`);
+      
+      return res.json(shopifyCache);
+    }
     
-    // Parse CSV file
+    // Fallback to CSV if no Shopify token
+    console.log('No Shopify token, loading from CSV fallback...');
     const { orders, products, customers } = parseMerchCSV();
     
     shopifyCache = {
@@ -1117,7 +1152,7 @@ app.get("/api/shopify/data", async (req, res) => {
       timestamp: Date.now()
     };
     
-    console.log(`Merch data loaded: ${orders.length} orders, ${products.length} products, ${customers.length} customers`);
+    console.log(`Merch data loaded from CSV: ${orders.length} orders, ${products.length} products, ${customers.length} customers`);
     
     res.json(shopifyCache);
   } catch (error: any) {
