@@ -895,16 +895,23 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
 
 async function fetchAllShopifyProducts(): Promise<ShopifyProduct[]> {
   const products: ShopifyProduct[] = [];
-  let pageInfo: string | null = null;
+  let sinceId: string = '0';
+  const maxPages = 50;
+  let pageCount = 0;
   
   do {
-    const endpoint = pageInfo 
-      ? `products.json?limit=250&page_info=${pageInfo}` 
-      : 'products.json?limit=250';
+    const params = new URLSearchParams({
+      limit: '250',
+      since_id: sinceId
+    });
     
+    const endpoint = `products.json?${params.toString()}`;
     const response = await fetchShopifyAPI(endpoint);
+    const batchProducts = response.products || [];
     
-    for (const product of response.products || []) {
+    if (batchProducts.length === 0) break;
+    
+    for (const product of batchProducts) {
       products.push({
         id: String(product.id),
         title: product.title,
@@ -923,25 +930,36 @@ async function fetchAllShopifyProducts(): Promise<ShopifyProduct[]> {
       });
     }
     
-    if (!response.products || response.products.length < 250) break;
+    sinceId = String(batchProducts[batchProducts.length - 1].id);
+    pageCount++;
+    console.log(`Shopify products page ${pageCount}: fetched ${batchProducts.length}, total ${products.length}`);
     
-  } while (pageInfo);
+    if (batchProducts.length < 250) break;
+    
+  } while (pageCount < maxPages);
   
   return products;
 }
 
 async function fetchAllShopifyCustomers(): Promise<ShopifyCustomer[]> {
   const customers: ShopifyCustomer[] = [];
-  let pageInfo: string | null = null;
+  let sinceId: string = '0';
+  const maxPages = 50;
+  let pageCount = 0;
   
   do {
-    const endpoint = pageInfo 
-      ? `customers.json?limit=250&page_info=${pageInfo}` 
-      : 'customers.json?limit=250';
+    const params = new URLSearchParams({
+      limit: '250',
+      since_id: sinceId
+    });
     
+    const endpoint = `customers.json?${params.toString()}`;
     const response = await fetchShopifyAPI(endpoint);
+    const batchCustomers = response.customers || [];
     
-    for (const customer of response.customers || []) {
+    if (batchCustomers.length === 0) break;
+    
+    for (const customer of batchCustomers) {
       customers.push({
         id: String(customer.id),
         email: customer.email || '',
@@ -954,9 +972,13 @@ async function fetchAllShopifyCustomers(): Promise<ShopifyCustomer[]> {
       });
     }
     
-    if (!response.customers || response.customers.length < 250) break;
+    sinceId = String(batchCustomers[batchCustomers.length - 1].id);
+    pageCount++;
+    console.log(`Shopify customers page ${pageCount}: fetched ${batchCustomers.length}, total ${customers.length}`);
     
-  } while (pageInfo);
+    if (batchCustomers.length < 250) break;
+    
+  } while (pageCount < maxPages);
   
   return customers;
 }
