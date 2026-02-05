@@ -79,10 +79,11 @@ const formatCurrency = (value: number) => {
 const getSeasonFromDate = (dateStr: string): string => {
   const date = new Date(dateStr);
   const year = date.getFullYear();
-  const month = date.getMonth();
-  if (month >= 7) {
+  const month = date.getMonth(); // 0-indexed: January=0, July=6
+  // Season runs July 1st to June 30th
+  if (month >= 6) { // July (6) or later
     return `${String(year).slice(2)}/${String(year + 1).slice(2)}`;
-  } else {
+  } else { // January-June belongs to previous season
     return `${String(year - 1).slice(2)}/${String(year).slice(2)}`;
   }
 };
