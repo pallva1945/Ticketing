@@ -1141,7 +1141,7 @@ export const MerchandisingView: React.FC = () => {
               <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search customers by name, email, or tag..."
+                placeholder="Search all customers by name, email, or tag..."
                 value={customerSearch}
                 onChange={(e) => { setCustomerSearch(e.target.value); setCustomersLimit(50); }}
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
@@ -1162,7 +1162,7 @@ export const MerchandisingView: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredCustomers.slice(0, customersLimit).map((customer) => (
+                {filteredCustomers.slice(0, customerSearch.trim() ? Math.max(customersLimit, 100) : customersLimit).map((customer) => (
                   <tr 
                     key={customer.id} 
                     className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
@@ -1196,21 +1196,32 @@ export const MerchandisingView: React.FC = () => {
               </tbody>
             </table>
           </div>
-          {filteredCustomers.length > customersLimit ? (
-            <div className="px-4 py-3 bg-gray-50 text-center">
-              <span className="text-sm text-gray-500 mr-3">Showing {customersLimit} of {filteredCustomers.length} customers</span>
-              <button 
-                onClick={() => setCustomersLimit(l => l + 50)}
-                className="px-4 py-1.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
-              >
-                Load More
-              </button>
-            </div>
-          ) : filteredCustomers.length > 0 && (
-            <div className="px-4 py-3 bg-gray-50 text-center text-sm text-gray-500">
-              Showing all {filteredCustomers.length} customers
-            </div>
-          )}
+          {(() => {
+            const displayLimit = customerSearch.trim() ? Math.max(customersLimit, 100) : customersLimit;
+            const isSearching = customerSearch.trim().length > 0;
+            if (filteredCustomers.length > displayLimit) {
+              return (
+                <div className="px-4 py-3 bg-gray-50 text-center">
+                  <span className="text-sm text-gray-500 mr-3">
+                    {isSearching ? `Found ${filteredCustomers.length} customers matching "${customerSearch}" - showing ${displayLimit}` : `Showing ${displayLimit} of ${filteredCustomers.length} customers`}
+                  </span>
+                  <button 
+                    onClick={() => setCustomersLimit(l => l + 100)}
+                    className="px-4 py-1.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
+                  >
+                    Load More
+                  </button>
+                </div>
+              );
+            } else if (filteredCustomers.length > 0) {
+              return (
+                <div className="px-4 py-3 bg-gray-50 text-center text-sm text-gray-500">
+                  {isSearching ? `Found ${filteredCustomers.length} customers matching "${customerSearch}"` : `Showing all ${filteredCustomers.length} customers`}
+                </div>
+              );
+            }
+            return null;
+          })()}
         </div>
       )}
 
