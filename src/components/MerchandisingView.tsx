@@ -423,13 +423,17 @@ export const MerchandisingView: React.FC = () => {
     if (!data) return [];
     let result = data.customers;
     if (customerSearch.trim()) {
-      const searchLower = customerSearch.toLowerCase();
-      result = result.filter(c => 
-        c.firstName?.toLowerCase().includes(searchLower) ||
-        c.lastName?.toLowerCase().includes(searchLower) ||
-        c.email?.toLowerCase().includes(searchLower) ||
-        c.tags?.some(t => t.toLowerCase().includes(searchLower))
-      );
+      const searchLower = customerSearch.toLowerCase().trim();
+      const searchWords = searchLower.split(/\s+/).filter(w => w.length > 0);
+      result = result.filter(c => {
+        const fullName = `${c.firstName || ''} ${c.lastName || ''}`.toLowerCase();
+        const email = (c.email || '').toLowerCase();
+        const tagsStr = (c.tags || []).join(' ').toLowerCase();
+        const searchableText = `${fullName} ${email} ${tagsStr}`;
+        
+        // All search words must match somewhere in the searchable text
+        return searchWords.every(word => searchableText.includes(word));
+      });
     }
     // Apply sorting
     if (customerSort.direction) {
