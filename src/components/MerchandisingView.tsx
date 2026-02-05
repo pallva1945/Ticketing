@@ -467,7 +467,10 @@ export const MerchandisingView: React.FC = () => {
 
   const getCustomerOrders = (email: string) => {
     if (!data) return [];
-    return filteredOrders.filter(order => order.customerEmail === email);
+    // Show ALL orders for this customer, not just filtered by season
+    return data.orders
+      .filter(order => order.customerEmail === email)
+      .sort((a, b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime());
   };
 
   const getProductStats = (productId: string) => {
