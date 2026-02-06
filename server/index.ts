@@ -858,7 +858,7 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
       const gateway = order.payment_gateway_names?.[0] || order.gateway || transactionGateway || '';
       orders.push({
         id: String(order.id),
-        orderNumber: String(order.name || order.order_number || ''),
+        orderNumber: String((order.name || order.order_number || '').replace(/^#/, '')),
         createdAt: order.created_at,
         processedAt: order.processed_at || order.created_at,
         totalPrice: parseFloat(order.total_price) || 0,
