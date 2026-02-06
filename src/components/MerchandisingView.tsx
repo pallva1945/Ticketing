@@ -827,12 +827,6 @@ export const MerchandisingView: React.FC = () => {
               <option key={season} value={season}>Season {season}</option>
             ))}
           </select>
-          <button 
-            onClick={loadData} 
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors flex items-center gap-2"
-          >
-            <RefreshCw size={16} /> Refresh Data
-          </button>
         </div>
       </div>
 
