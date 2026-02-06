@@ -515,9 +515,11 @@ export const MerchandisingView: React.FC = () => {
       if (!monthlySales[monthKey]) {
         monthlySales[monthKey] = { month: monthKey, quantity: 0, revenue: 0 };
       }
+      const taxRate = (order.totalPrice > 0 && (order.totalTax || 0) > 0) ? (order.totalTax || 0) / order.totalPrice : 0;
       order.purchasedItems.forEach(item => {
         monthlySales[monthKey].quantity += item.quantity;
-        monthlySales[monthKey].revenue += item.price * item.quantity;
+        const gross = item.price * item.quantity;
+        monthlySales[monthKey].revenue += gross * (1 - taxRate);
       });
     });
     
@@ -1984,9 +1986,9 @@ export const MerchandisingView: React.FC = () => {
                     <BarChart data={selectedProductStats.monthlySales}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                       <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-                      <YAxis tickFormatter={(v) => v.toString()} tick={{ fontSize: 10 }} />
-                      <Tooltip formatter={(value: number, name: string) => [name === 'quantity' ? value + ' units' : formatCurrency(value), name === 'quantity' ? 'Units' : 'Revenue']} />
-                      <Bar dataKey="quantity" fill="#ea580c" radius={[4, 4, 0, 0]} name="Units Sold" />
+                      <YAxis tickFormatter={(v) => `€${(v/1).toLocaleString('it-IT', { maximumFractionDigits: 0 })}`} tick={{ fontSize: 10 }} />
+                      <Tooltip formatter={(value: number) => [formatCurrency(value), 'Revenue']} />
+                      <Bar dataKey="revenue" fill="#ea580c" radius={[4, 4, 0, 0]} name="Revenue" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
