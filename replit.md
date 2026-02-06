@@ -25,8 +25,9 @@ The application uses a modern web stack with React 18 and TypeScript for the fro
 - **Shopify Admin API**: Integrated for merchandising analytics. Fetches orders, products, and customers from the Pallacanestro Varese store (pallacanestro-varese.myshopify.com). Uses API version 2024-01 with 15-minute cache for performance. Required secret: `SHOPIFY_ACCESS_TOKEN` (Admin API token starting with `shpat_`).
 
 ## Community Intelligence Hub
-- **Location**: Rendered directly below MerchandisingView in the Merchandising tab
+- **Location**: "Community" tab within MerchandisingView (next to Inventory tab)
 - **Data Scope**: Analyzes all 3 years of Shopify order history (all seasons) for behavioral insights
+- **Sidebar**: When on Merchandising module, sidebar shows Shopify source + refresh button (not BigQuery/Latest Game)
 - **RFM Segmentation**: Champions (3+ orders, 100+ EUR), At Risk (2+ orders, no purchase in 6+ months), New Blood (first-time buyers in last 30 days)
 - **Gateway Analysis**: Identifies top entry products (most common first-purchase items) using horizontal bar chart
 - **Bundle Analysis**: Frequently bought together pairs based on co-occurrence in orders

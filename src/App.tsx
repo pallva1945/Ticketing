@@ -18,7 +18,6 @@ import { BoardReportModal } from './components/BoardReportModal';
 import { CRMView } from './components/CRMView';
 import { SponsorshipDashboard } from './components/SponsorshipDashboard';
 import { MerchandisingView } from './components/MerchandisingView';
-import { CommunityIntelligenceHub } from './components/CommunityIntelligenceHub';
 import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, FIXED_CORP_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, SponsorData, CRMRecord, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
@@ -2508,7 +2507,30 @@ const App: React.FC = () => {
              </button>
            ) : (
              <div className="space-y-2 mb-4">
-                 {activeModule !== 'home' ? (
+                 {activeModule === 'merchandising' ? (
+                     <>
+                        <div className="text-[10px] text-gray-500 mb-1 px-1 flex items-center gap-1">
+                            Current Source: 
+                            <strong className="flex items-center gap-1 text-orange-600">
+                                <ShoppingBag size={10} />
+                                SHOPIFY
+                            </strong>
+                        </div>
+                        <div className="text-center py-2 px-3 text-[10px] text-orange-600 bg-orange-50 border border-orange-200 rounded-lg">
+                          Live from Shopify Admin API
+                        </div>
+                        <button
+                          onClick={() => {
+                            const event = new CustomEvent('shopify-refresh');
+                            window.dispatchEvent(event);
+                          }}
+                          className="w-full mt-2 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-orange-700 bg-white border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors"
+                        >
+                          <RefreshCw size={14} />
+                          Refresh Shopify Data
+                        </button>
+                     </>
+                 ) : activeModule !== 'home' ? (
                      <>
                         <div className="text-[10px] text-gray-500 mb-1 px-1 flex items-center gap-1">
                             Current Source: 
@@ -2537,7 +2559,7 @@ const App: React.FC = () => {
              </div>
            )}
            
-           {!isLoadingData && activeModule !== 'home' && (
+           {!isLoadingData && activeModule !== 'home' && activeModule !== 'merchandising' && (
              <div className="bg-white border border-gray-200 rounded-lg p-3">
                 <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Data Source Info</p>
                 <div className="flex flex-col">
@@ -2838,10 +2860,7 @@ const App: React.FC = () => {
                 />
               </div>
           ) : activeModule === 'merchandising' ? (
-              <>
-                <MerchandisingView />
-                <CommunityIntelligenceHub />
-              </>
+              <MerchandisingView />
           ) : (
               <PlaceholderView 
                 moduleName={MODULES.find(m => m.id === activeModule)?.label || 'Module'} 
