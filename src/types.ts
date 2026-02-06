@@ -14,13 +14,13 @@ export enum TicketZone {
 }
 
 export enum SalesChannel {
-  ABB = 'Season Tickets (Abb)',
-  MP = 'Mini Plans',
-  TIX = 'Single Game (Tix)',
-  VB = 'Varese Basketball (Youth)',
-  CORP = 'Corporate',
-  PROTOCOL = 'Protocol (Fixed)',
-  GIVEAWAY = 'Giveaway (Dynamic)'
+  ABB = 'ABB',
+  MP = 'MP',
+  TIX = 'Tix',
+  VB = 'VB',
+  CORP = 'Corp',
+  PROTOCOL = 'Protocol',
+  GIVEAWAY = 'GA'
 }
 
 export type RevenueModule = 'home' | 'ticketing' | 'gameday' | 'sponsorship' | 'merchandising' | 'venue_ops' | 'bops' | 'sg' | 'crm';
