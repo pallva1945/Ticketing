@@ -723,6 +723,7 @@ interface ShopifyOrder {
   fulfillmentStatus: string;
   sourceName: string;
   tags: string;
+  totalTax: number;
 }
 
 interface ShopifyProduct {
@@ -862,6 +863,7 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
       const gateway = order.payment_gateway_names?.[0] || order.gateway || transactionGateway || '';
       
       const totalPrice = parseFloat(order.total_price) || 0;
+      const totalTax = parseFloat(order.total_tax) || 0;
       const refundAmount = (order.refunds || []).reduce((sum: number, r: any) => {
         return sum + (r.transactions || []).reduce((s: number, t: any) => {
           if (t.kind === 'refund') {
@@ -871,6 +873,7 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
         }, 0);
       }, 0);
       const netPrice = Math.max(0, totalPrice - refundAmount);
+      const netTax = totalPrice > 0 ? Math.max(0, totalTax * (netPrice / totalPrice)) : 0;
       
       orders.push({
         id: String(order.id),
@@ -893,7 +896,8 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
         financialStatus: order.financial_status || 'unknown',
         fulfillmentStatus: order.fulfillment_status || 'unfulfilled',
         sourceName: order.source_name || '',
-        tags: order.tags || ''
+        tags: order.tags || '',
+        totalTax: netTax
       });
     }
     

@@ -29,6 +29,7 @@ interface ShopifyOrder {
   fulfillmentStatus: string;
   sourceName?: string;
   tags?: string;
+  totalTax?: number;
 }
 
 interface ShopifyProduct {
@@ -239,7 +240,9 @@ export const MerchandisingView: React.FC = () => {
     if (!data) return null;
     
     const salesOrders = filteredOrders.filter(o => !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0));
-    const grossRevenue = salesOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+    const grossRevenueWithTax = salesOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+    const totalIVA = salesOrders.reduce((sum, o) => sum + (o.totalTax || 0), 0);
+    const grossRevenue = grossRevenueWithTax - totalIVA;
     const gameDayDeduction = excludeGameDayMerch ? totalGameDayMerch : 0;
     const totalRevenue = Math.max(0, grossRevenue - gameDayDeduction);
     const totalOrders = salesOrders.length;
@@ -250,13 +253,22 @@ export const MerchandisingView: React.FC = () => {
     const totalProducts = data.products.length;
     const totalInventory = data.products.reduce((sum, p) => sum + p.totalInventory, 0);
     
+    const getNetPrice = (order: ShopifyOrder, amount: number) => {
+      const tax = order.totalTax || 0;
+      const total = order.totalPrice;
+      if (total > 0 && tax > 0) {
+        return amount * (1 - tax / total);
+      }
+      return amount;
+    };
+
     const productSales: Record<string, { title: string; revenue: number; quantity: number; type: string }> = {};
     filteredOrders.forEach(order => {
       order.lineItems.forEach(item => {
         if (!productSales[item.productId]) {
           productSales[item.productId] = { title: item.title, revenue: 0, quantity: 0, type: '' };
         }
-        productSales[item.productId].revenue += item.price * item.quantity;
+        productSales[item.productId].revenue += getNetPrice(order, item.price * item.quantity);
         productSales[item.productId].quantity += item.quantity;
       });
     });
@@ -271,7 +283,7 @@ export const MerchandisingView: React.FC = () => {
       order.lineItems.forEach(item => {
         const product = data.products.find(p => p.id === item.productId);
         const category = product?.productType || 'Other';
-        categoryRevenue[category] = (categoryRevenue[category] || 0) + (item.price * item.quantity);
+        categoryRevenue[category] = (categoryRevenue[category] || 0) + getNetPrice(order, item.price * item.quantity);
       });
     });
     
@@ -286,7 +298,8 @@ export const MerchandisingView: React.FC = () => {
     allSeasonOrders.forEach(order => {
       const d = getOrderDate(order);
       const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + order.totalPrice;
+      const orderNetRevenue = order.totalPrice - (order.totalTax || 0);
+      monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + orderNetRevenue;
     });
     
     const customerSpending: Record<string, { email: string; firstName: string; lastName: string; spent: number; orders: number }> = {};
@@ -302,7 +315,7 @@ export const MerchandisingView: React.FC = () => {
           orders: 0
         };
       }
-      customerSpending[email].spent += order.totalPrice;
+      customerSpending[email].spent += order.totalPrice - (order.totalTax || 0);
       customerSpending[email].orders += 1;
     });
     
@@ -410,7 +423,7 @@ export const MerchandisingView: React.FC = () => {
           case 'processedAt': aVal = new Date(a.processedAt).getTime(); bVal = new Date(b.processedAt).getTime(); break;
           case 'customerName': aVal = a.customerName.toLowerCase(); bVal = b.customerName.toLowerCase(); break;
           case 'itemCount': aVal = a.itemCount; bVal = b.itemCount; break;
-          case 'totalPrice': aVal = a.totalPrice; bVal = b.totalPrice; break;
+          case 'totalPrice': aVal = a.totalPrice - (a.totalTax || 0); bVal = b.totalPrice - (b.totalTax || 0); break;
           case 'paymentMethod': aVal = (a.paymentMethod || '').toLowerCase(); bVal = (b.paymentMethod || '').toLowerCase(); break;
           case 'fulfillmentStatus': aVal = a.fulfillmentStatus || ''; bVal = b.fulfillmentStatus || ''; break;
           default: return 0;
@@ -1093,7 +1106,7 @@ export const MerchandisingView: React.FC = () => {
                       <p className="text-xs text-gray-500">{order.customerEmail}</p>
                     </td>
                     <td className="px-4 py-3 text-right text-gray-600">{order.itemCount}</td>
-                    <td className="px-4 py-3 text-right font-medium text-gray-800">{formatCurrency(order.totalPrice)}</td>
+                    <td className="px-4 py-3 text-right font-medium text-gray-800">{formatCurrency(order.totalPrice - (order.totalTax || 0))}</td>
                     <td className="px-4 py-3 text-center">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1 ${
                         order.financialStatus === 'paid' ? 'bg-green-100 text-green-700' :
@@ -1686,7 +1699,7 @@ export const MerchandisingView: React.FC = () => {
                     <div className="bg-green-50 rounded-lg p-3 text-center">
                       <p className="text-xs text-green-600">Total Spent</p>
                       <p className="text-lg font-bold text-green-700">
-                        {formatCurrency(selectedCustomer?.totalSpent || selectedCustomerOrders.reduce((sum, o) => sum + o.totalPrice, 0))}
+                        {formatCurrency(selectedCustomer?.totalSpent || selectedCustomerOrders.reduce((sum, o) => sum + o.totalPrice - (o.totalTax || 0), 0))}
                       </p>
                     </div>
                     <div className="bg-orange-50 rounded-lg p-3 text-center">
@@ -1718,7 +1731,7 @@ export const MerchandisingView: React.FC = () => {
                           <p className="text-xs text-gray-500">{formatDate(order.processedAt)}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-green-600">{formatCurrency(order.totalPrice)}</p>
+                          <p className="text-sm font-bold text-green-600">{formatCurrency(order.totalPrice - (order.totalTax || 0))}</p>
                           <span className={`text-xs px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
                             order.financialStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
                           }`}>
@@ -1806,7 +1819,7 @@ export const MerchandisingView: React.FC = () => {
               <div className="border-t border-gray-200 pt-4">
                 <div className="flex items-center justify-between">
                   <span className="text-lg font-semibold text-gray-800">Total</span>
-                  <span className="text-xl font-bold text-green-600">{formatCurrency(selectedOrder.totalPrice)}</span>
+                  <span className="text-xl font-bold text-green-600">{formatCurrency(selectedOrder.totalPrice - (selectedOrder.totalTax || 0))}</span>
                 </div>
               </div>
             </div>

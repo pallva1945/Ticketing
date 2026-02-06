@@ -1161,7 +1161,9 @@ const App: React.FC = () => {
                     }
                 };
                 const seasonOrders = merchResult.orders.filter((o: any) => getSeasonFromDate(o.processedAt) === '25/26' && !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0));
-                const seasonRevenue = seasonOrders.reduce((sum: number, o: any) => sum + o.totalPrice, 0);
+                const seasonRevenueWithTax = seasonOrders.reduce((sum: number, o: any) => sum + o.totalPrice, 0);
+                const seasonTax = seasonOrders.reduce((sum: number, o: any) => sum + (o.totalTax || 0), 0);
+                const seasonRevenue = seasonRevenueWithTax - seasonTax;
                 setMerchRevenue(seasonRevenue);
                 console.log(`Merch loaded: ${merchResult.orders.length} total orders, ${seasonOrders.length} in 25/26 season - ${seasonRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}`);
             }
