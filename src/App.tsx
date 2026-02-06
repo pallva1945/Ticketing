@@ -1160,7 +1160,7 @@ const App: React.FC = () => {
                         return `${String(year - 1).slice(2)}/${String(year).slice(2)}`;
                     }
                 };
-                const seasonOrders = merchResult.orders.filter((o: any) => getSeasonFromDate(o.processedAt) === '25/26');
+                const seasonOrders = merchResult.orders.filter((o: any) => getSeasonFromDate(o.processedAt) === '25/26' && !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0));
                 const seasonRevenue = seasonOrders.reduce((sum: number, o: any) => sum + o.totalPrice, 0);
                 setMerchRevenue(seasonRevenue);
                 console.log(`Merch loaded: ${merchResult.orders.length} total orders, ${seasonOrders.length} in 25/26 season - ${seasonRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}`);

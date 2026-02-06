@@ -721,6 +721,8 @@ interface ShopifyOrder {
   }[];
   financialStatus: string;
   fulfillmentStatus: string;
+  sourceName: string;
+  tags: string;
 }
 
 interface ShopifyProduct {
@@ -840,7 +842,7 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
       limit: '250',
       status: 'any',
       since_id: sinceId,
-      fields: 'id,name,order_number,created_at,processed_at,total_price,current_total_price,subtotal_price,total_discounts,total_tax,total_shipping_price_set,currency,financial_status,fulfillment_status,cancelled_at,customer,email,billing_address,line_items,payment_gateway_names,gateway,transactions,refunds'
+      fields: 'id,name,order_number,created_at,processed_at,total_price,current_total_price,subtotal_price,total_discounts,total_tax,total_shipping_price_set,currency,financial_status,fulfillment_status,cancelled_at,source_name,tags,customer,email,billing_address,line_items,payment_gateway_names,gateway,transactions,refunds'
     });
     
     const endpoint = `orders.json?${params.toString()}`;
@@ -889,7 +891,9 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
           productId: String(li.product_id)
         })),
         financialStatus: order.financial_status || 'unknown',
-        fulfillmentStatus: order.fulfillment_status || 'unfulfilled'
+        fulfillmentStatus: order.fulfillment_status || 'unfulfilled',
+        sourceName: order.source_name || '',
+        tags: order.tags || ''
       });
     }
     
