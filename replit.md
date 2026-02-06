@@ -24,6 +24,16 @@ The application uses a modern web stack with React 18 and TypeScript for the fro
 - **BigQuery**: Serves as a data source for Ticketing, CRM, Sponsorship, and GameDay modules, providing comprehensive dataset access.
 - **Shopify Admin API**: Integrated for merchandising analytics. Fetches orders, products, and customers from the Pallacanestro Varese store (pallacanestro-varese.myshopify.com). Uses API version 2024-01 with 15-minute cache for performance. Required secret: `SHOPIFY_ACCESS_TOKEN` (Admin API token starting with `shpat_`).
 
+## Community Intelligence Hub
+- **Location**: Rendered directly below MerchandisingView in the Merchandising tab
+- **Data Scope**: Analyzes all 3 years of Shopify order history (all seasons) for behavioral insights
+- **RFM Segmentation**: Champions (3+ orders, 100+ EUR), At Risk (2+ orders, no purchase in 6+ months), New Blood (first-time buyers in last 30 days)
+- **Gateway Analysis**: Identifies top entry products (most common first-purchase items) using horizontal bar chart
+- **Bundle Analysis**: Frequently bought together pairs based on co-occurrence in orders
+- **Cohort Retention Heatmap**: Groups customers by first-purchase month, tracks return rates across subsequent months (up to 12 months)
+- **Styling**: Matches MerchandisingView exactly (white rounded-xl cards, border-gray-100, shadow-sm, orange accent, same typography)
+- **Revenue**: All monetary values exclude IVA (Italian VAT)
+
 ## CRM Data Structure
 - **Sales Channel ("Sell" column)**: Exactly 5 types - ABB, Tix, CORP, MP, VB
 - **Ticket Types (separate column)**: Includes categories like "promotion", "ridotto", "staff" - these are NOT sales channels

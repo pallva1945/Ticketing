@@ -18,6 +18,7 @@ import { BoardReportModal } from './components/BoardReportModal';
 import { CRMView } from './components/CRMView';
 import { SponsorshipDashboard } from './components/SponsorshipDashboard';
 import { MerchandisingView } from './components/MerchandisingView';
+import { CommunityIntelligenceHub } from './components/CommunityIntelligenceHub';
 import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, FIXED_CORP_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, SponsorData, CRMRecord, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
@@ -2837,7 +2838,10 @@ const App: React.FC = () => {
                 />
               </div>
           ) : activeModule === 'merchandising' ? (
-              <MerchandisingView />
+              <>
+                <MerchandisingView />
+                <CommunityIntelligenceHub />
+              </>
           ) : (
               <PlaceholderView 
                 moduleName={MODULES.find(m => m.id === activeModule)?.label || 'Module'} 
