@@ -1161,7 +1161,8 @@ const App: React.FC = () => {
                     }
                 };
                 const seasonOrders = merchResult.orders.filter((o: any) => getSeasonFromDate(o.processedAt) === '25/26');
-                const seasonRevenue = seasonOrders.reduce((sum: number, o: any) => sum + o.totalPrice, 0);
+                const paidSeasonOrders = seasonOrders.filter((o: any) => o.financialStatus !== 'refunded');
+                const seasonRevenue = paidSeasonOrders.reduce((sum: number, o: any) => sum + o.totalPrice, 0);
                 setMerchRevenue(seasonRevenue);
                 console.log(`Merch loaded: ${merchResult.orders.length} total orders, ${seasonOrders.length} in 25/26 season - ${seasonRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}`);
             }
