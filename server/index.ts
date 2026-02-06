@@ -840,7 +840,7 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
       limit: '250',
       status: 'any',
       since_id: sinceId,
-      fields: 'id,name,order_number,created_at,processed_at,total_price,subtotal_price,total_discounts,total_tax,total_shipping_price_set,currency,financial_status,fulfillment_status,cancelled_at,customer,email,billing_address,line_items,payment_gateway_names,gateway,transactions,refunds'
+      fields: 'id,name,order_number,created_at,processed_at,total_price,current_total_price,subtotal_price,total_discounts,total_tax,total_shipping_price_set,currency,financial_status,fulfillment_status,cancelled_at,customer,email,billing_address,line_items,payment_gateway_names,gateway,transactions,refunds'
     });
     
     const endpoint = `orders.json?${params.toString()}`;
@@ -859,11 +859,15 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
       const transactionGateway = order.transactions?.[0]?.gateway || '';
       const gateway = order.payment_gateway_names?.[0] || order.gateway || transactionGateway || '';
       
-      const refundAmount = (order.refunds || []).reduce((sum: number, r: any) => {
-        return sum + (r.refund_line_items || []).reduce((s: number, rli: any) => s + parseFloat(rli.subtotal || '0'), 0);
-      }, 0);
-      
       const totalPrice = parseFloat(order.total_price) || 0;
+      const refundAmount = (order.refunds || []).reduce((sum: number, r: any) => {
+        return sum + (r.transactions || []).reduce((s: number, t: any) => {
+          if (t.kind === 'refund') {
+            return s + parseFloat(t.amount || '0');
+          }
+          return s;
+        }, 0);
+      }, 0);
       const netPrice = Math.max(0, totalPrice - refundAmount);
       
       orders.push({
