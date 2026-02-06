@@ -257,7 +257,7 @@ export const MerchandisingView: React.FC = () => {
     const realisticRevenue = Math.max(0, grossRevenue - totalGameDayMerch);
     const goalProgress = (realisticRevenue / SEASON_GOAL) * 100;
     const totalProducts = data.products.length;
-    const totalInventory = data.products.reduce((sum, p) => sum + p.totalInventory, 0);
+    const totalInventory = data.products.filter(p => (p.productType || '').toLowerCase() !== 'servizio').reduce((sum, p) => sum + p.totalInventory, 0);
     
     const getNetPrice = (order: ShopifyOrder, amount: number) => {
       const tax = order.totalTax || 0;
@@ -533,7 +533,7 @@ export const MerchandisingView: React.FC = () => {
   const inventoryStats = useMemo(() => {
     if (!data) return null;
     
-    const products = data.products;
+    const products = data.products.filter(p => (p.productType || '').toLowerCase() !== 'servizio');
     const totalUnits = products.reduce((sum, p) => sum + p.totalInventory, 0);
     const totalValue = products.reduce((sum, p) => {
       return sum + p.variants.reduce((vSum, v) => vSum + (v.price * v.inventoryQuantity), 0);
