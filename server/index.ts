@@ -890,6 +890,14 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
     
   } while (pageCount < maxPages);
   
+  // Log date range for debugging
+  if (orders.length > 0) {
+    const dates = orders.map(o => new Date(o.processedAt).getTime());
+    const earliest = new Date(Math.min(...dates));
+    const latest = new Date(Math.max(...dates));
+    console.log(`Shopify orders date range: ${earliest.toISOString().split('T')[0]} to ${latest.toISOString().split('T')[0]} (${orders.length} total)`);
+  }
+  
   return orders;
 }
 

@@ -1150,12 +1150,11 @@ const App: React.FC = () => {
         if (merchResponse && merchResponse.ok) {
             const merchResult = await merchResponse.json();
             if (merchResult.orders?.length > 0) {
-                // Filter orders by current season (25/26 = Aug 2025 - Jul 2026)
                 const getSeasonFromDate = (dateStr: string): string => {
                     const date = new Date(dateStr);
                     const year = date.getFullYear();
-                    const month = date.getMonth();
-                    if (month >= 7) {
+                    const month = date.getMonth(); // 0-indexed: January=0, July=6
+                    if (month >= 6) { // July (6) or later
                         return `${String(year).slice(2)}/${String(year + 1).slice(2)}`;
                     } else {
                         return `${String(year - 1).slice(2)}/${String(year).slice(2)}`;
