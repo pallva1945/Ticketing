@@ -988,6 +988,7 @@ const App: React.FC = () => {
   const [selectedOpponents, setSelectedOpponents] = useState<string[]>(['All']);
   const [selectedTiers, setSelectedTiers] = useState<string[]>(['All']);
   const [selectedDays, setSelectedDays] = useState<string[]>(['All']);
+  const [selectedChannels, setSelectedChannels] = useState<string[]>(['All']);
   
   // Strategy Filters
   const [ignoreOspiti, setIgnoreOspiti] = useState(false);
@@ -1694,6 +1695,7 @@ const App: React.FC = () => {
 
       if (ignoreOspiti) zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
       if (!selectedZones.includes('All')) zoneSales = zoneSales.filter(s => selectedZones.includes(s.zone));
+      if (!selectedChannels.includes('All')) zoneSales = zoneSales.filter(s => selectedChannels.includes(s.channel));
 
       const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
       const zoneAttendance = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
@@ -1714,7 +1716,7 @@ const App: React.FC = () => {
 
       // Use original values if salesBreakdown is empty (e.g., from BigQuery data)
       const hasSalesBreakdown = game.salesBreakdown.length > 0;
-      const noZoneFiltering = selectedZones.includes('All') && !ignoreOspiti;
+      const noZoneFiltering = selectedZones.includes('All') && !ignoreOspiti && selectedChannels.includes('All');
       
       return {
         ...game,
@@ -1725,7 +1727,7 @@ const App: React.FC = () => {
         zoneCapacities: filteredZoneCapacities
       };
     });
-  }, [filteredGames, selectedZones, ignoreOspiti]);
+  }, [filteredGames, selectedZones, ignoreOspiti, selectedChannels]);
 
   const totalStats = useMemo(() => {
       const totalRevenue = totalViewData.reduce((sum, game) => sum + game.totalRevenue, 0);
@@ -1749,6 +1751,7 @@ const App: React.FC = () => {
 
       if (ignoreOspiti) zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
       if (!selectedZones.includes('All')) zoneSales = zoneSales.filter(s => selectedZones.includes(s.zone));
+      if (!selectedChannels.includes('All')) zoneSales = zoneSales.filter(s => selectedChannels.includes(s.channel));
 
       if (viewMode === 'gameday') {
           zoneSales = zoneSales.filter(s => 
@@ -1796,7 +1799,7 @@ const App: React.FC = () => {
 
       // Use original values if salesBreakdown is empty (e.g., from BigQuery data)
       const hasSalesBreakdown = game.salesBreakdown.length > 0;
-      const noZoneFiltering = selectedZones.includes('All') && !ignoreOspiti;
+      const noZoneFiltering = selectedZones.includes('All') && !ignoreOspiti && selectedChannels.includes('All');
       
       return {
         ...game,
@@ -1807,7 +1810,7 @@ const App: React.FC = () => {
         zoneCapacities: filteredZoneCapacities
       };
     });
-  }, [filteredGames, selectedZones, ignoreOspiti, viewMode]);
+  }, [filteredGames, selectedZones, ignoreOspiti, viewMode, selectedChannels]);
 
   // GameDay Data Filtering
   const filteredGameDayData = useMemo(() => {
@@ -2102,6 +2105,11 @@ const App: React.FC = () => {
   const tiers = useMemo(() => getAvailableOptions('tier'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedDays]);
   const days = useMemo(() => getAvailableOptions('day'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers]);
   const zones = useMemo(() => getAvailableOptions('zone'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
+  const channels = useMemo(() => {
+    const channelSet = new Set<string>();
+    filteredGames.forEach(g => g.salesBreakdown.forEach(s => channelSet.add(s.channel)));
+    return Array.from(channelSet).sort();
+  }, [filteredGames]);
 
   // START INSERTION
   const allSeasons = useMemo(() => Array.from(new Set(data.map(d => d.season))).sort().reverse(), [data]);
@@ -2255,6 +2263,7 @@ const App: React.FC = () => {
     setSelectedOpponents(['All']);
     setSelectedTiers(['All']);
     setSelectedDays(['All']);
+    setSelectedChannels(['All']);
     setIgnoreOspiti(false);
   };
 
@@ -2282,14 +2291,14 @@ const App: React.FC = () => {
                     <UserX size={14} /> {ignoreOspiti ? 'Zona Ospiti Excluded' : 'Ignore Zona Ospiti'}
                 </button>
             )}
-            {(selectedSeasons.length > 1 || !selectedSeasons.includes('25-26') || !selectedLeagues.includes('LBA') || !selectedZones.includes('All') || !selectedOpponents.includes('All') || !selectedTiers.includes('All') || !selectedDays.includes('All') || ignoreOspiti) && (
+            {(selectedSeasons.length > 1 || !selectedSeasons.includes('25-26') || !selectedLeagues.includes('LBA') || !selectedZones.includes('All') || !selectedOpponents.includes('All') || !selectedTiers.includes('All') || !selectedDays.includes('All') || !selectedChannels.includes('All') || ignoreOspiti) && (
                 <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-700 transition-colors ml-2">
                     <X size={14} /> Clear All
                 </button>
             )}
         </div>
         </div>
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+        <div className={`grid grid-cols-2 ${activeModule === 'ticketing' ? 'lg:grid-cols-7' : 'lg:grid-cols-6'} gap-4`}>
         <div><MultiSelect label="Season" options={seasons} selected={selectedSeasons} onChange={setSelectedSeasons} /></div>
         <div><MultiSelect label="League" options={leagues} selected={selectedLeagues} onChange={setSelectedLeagues} /></div>
         <div><MultiSelect label="Tier" options={tiers} selected={selectedTiers} onChange={setSelectedTiers} /></div>
@@ -2297,6 +2306,9 @@ const App: React.FC = () => {
         <div><MultiSelect label="Day" options={days} selected={selectedDays} onChange={setSelectedDays} /></div>
         {activeModule === 'ticketing' && (
             <div><MultiSelect label="Zone" options={zones} selected={selectedZones} onChange={setSelectedZones} /></div>
+        )}
+        {activeModule === 'ticketing' && (
+            <div><MultiSelect label="Sell" options={channels} selected={selectedChannels} onChange={setSelectedChannels} /></div>
         )}
         </div>
     </div>
