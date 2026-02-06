@@ -840,7 +840,7 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
       limit: '250',
       status: 'any',
       since_id: sinceId,
-      fields: 'id,name,order_number,created_at,processed_at,total_price,currency,financial_status,fulfillment_status,customer,email,billing_address,line_items,payment_gateway_names,gateway,transactions'
+      fields: 'id,name,order_number,created_at,processed_at,total_price,subtotal_price,total_discounts,total_tax,total_shipping_price_set,currency,financial_status,fulfillment_status,cancelled_at,customer,email,billing_address,line_items,payment_gateway_names,gateway,transactions,refunds'
     });
     
     const endpoint = `orders.json?${params.toString()}`;
@@ -850,18 +850,28 @@ async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
     if (batchOrders.length === 0) break;
     
     for (const order of batchOrders) {
+      if (order.cancelled_at) continue;
+      
       const customerName = order.customer 
         ? `${order.customer.first_name || ''} ${order.customer.last_name || ''}`.trim()
         : order.billing_address?.name || 'Guest';
       
       const transactionGateway = order.transactions?.[0]?.gateway || '';
       const gateway = order.payment_gateway_names?.[0] || order.gateway || transactionGateway || '';
+      
+      const refundAmount = (order.refunds || []).reduce((sum: number, r: any) => {
+        return sum + (r.refund_line_items || []).reduce((s: number, rli: any) => s + parseFloat(rli.subtotal || '0'), 0);
+      }, 0);
+      
+      const totalPrice = parseFloat(order.total_price) || 0;
+      const netPrice = Math.max(0, totalPrice - refundAmount);
+      
       orders.push({
         id: String(order.id),
         orderNumber: String((order.name || order.order_number || '').replace(/^#/, '')),
         createdAt: order.created_at,
         processedAt: order.processed_at || order.created_at,
-        totalPrice: parseFloat(order.total_price) || 0,
+        totalPrice: netPrice,
         currency: order.currency,
         customerName,
         customerEmail: order.customer?.email || order.email || '',

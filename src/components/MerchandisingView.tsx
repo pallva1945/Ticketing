@@ -236,11 +236,10 @@ export const MerchandisingView: React.FC = () => {
   const stats = useMemo(() => {
     if (!data) return null;
     
-    const paidOrders = filteredOrders.filter(o => o.financialStatus !== 'refunded');
-    const grossRevenue = paidOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+    const grossRevenue = filteredOrders.reduce((sum, o) => sum + o.totalPrice, 0);
     const gameDayDeduction = excludeGameDayMerch ? totalGameDayMerch : 0;
     const totalRevenue = Math.max(0, grossRevenue - gameDayDeduction);
-    const totalOrders = paidOrders.length;
+    const totalOrders = filteredOrders.length;
     const avgOrderValue = totalOrders > 0 ? grossRevenue / totalOrders : 0;
     const totalCustomers = data.customers.length;
     const realisticRevenue = Math.max(0, grossRevenue - totalGameDayMerch);
