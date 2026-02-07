@@ -2790,37 +2790,96 @@ const App: React.FC = () => {
                                 {selectedZones.includes('All') ? (
                                     <ZoneTable data={viewData} onZoneClick={handleZoneClick} />
                                 ) : (
-                                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
-                                        <div className="p-4 border-b border-gray-100 font-semibold text-gray-700 flex justify-between items-center bg-gray-50 flex-shrink-0">
-                                            <div className="flex items-center gap-2">
-                                                <span>Detailed Games Log ({selectedZones[0]})</span>
-                                                <button onClick={() => setSelectedZones(['All'])} className="text-xs text-red-600 hover:underline ml-2 bg-white px-2 py-1 rounded border border-red-200">Reset View</button>
-                                            </div>
-                                            <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-gray-500">{viewData.length} Matches</span>
-                                        </div>
-                                        <div className="divide-y divide-gray-50 overflow-y-auto flex-1 p-2">
-                                            {[...viewData].sort((a, b) => {
-                                                const [da, ma, ya] = a.date.split('/').map(Number);
-                                                const [db, mb, yb] = b.date.split('/').map(Number);
-                                                const dateA = new Date(ya < 100 ? 2000 + ya : ya, ma - 1, da);
-                                                const dateB = new Date(yb < 100 ? 2000 + yb : yb, mb - 1, db);
-                                                return dateB.getTime() - dateA.getTime();
-                                            }).map((game) => (
-                                                <div key={game.id} className="p-3 flex items-center justify-between hover:bg-gray-50 transition-colors rounded-lg">
-                                                    <div>
-                                                        <p className="font-bold text-gray-900 text-sm">{game.opponent}</p>
-                                                        <p className="text-xs text-gray-400">{game.date} • {game.season}</p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <p className="font-bold text-gray-900 text-sm">€{(game.totalRevenue/1000).toFixed(1)}k</p>
-                                                        <p className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded inline-block mt-1">
-                                                            {game.attendance} Sold
-                                                        </p>
-                                                    </div>
+                                    (() => {
+                                        const totalSeasonRev = viewData.reduce((s, g) => s + g.totalRevenue, 0);
+                                        const sortedGames = [...viewData].sort((a, b) => {
+                                            const [da, ma, ya] = a.date.split('/').map(Number);
+                                            const [db, mb, yb] = b.date.split('/').map(Number);
+                                            return new Date(yb < 100 ? 2000 + yb : yb, mb - 1, db).getTime() - new Date(ya < 100 ? 2000 + ya : ya, ma - 1, da).getTime();
+                                        });
+                                        return (
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
+                                            <div className="p-4 border-b border-gray-100 font-semibold text-gray-700 flex justify-between items-center bg-gray-50 flex-shrink-0">
+                                                <div className="flex items-center gap-2">
+                                                    <span>Detailed Games Log ({selectedZones.join(', ')})</span>
+                                                    <button onClick={() => setSelectedZones(['All'])} className="text-xs text-red-600 hover:underline ml-2 bg-white px-2 py-1 rounded border border-red-200">Reset View</button>
                                                 </div>
-                                            ))}
+                                                <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-gray-500">{viewData.length} Matches</span>
+                                            </div>
+                                            <div className="overflow-auto flex-1">
+                                                <table className="w-full text-xs">
+                                                    <thead className="bg-gray-50 sticky top-0 z-10">
+                                                        <tr className="text-[10px] text-gray-500 uppercase tracking-wider">
+                                                            <th className="text-left py-2.5 px-3 font-semibold">Match</th>
+                                                            <th className="text-right py-2.5 px-2 font-semibold">Sold/Cap</th>
+                                                            <th className="text-right py-2.5 px-2 font-semibold">Fill %</th>
+                                                            <th className="text-right py-2.5 px-2 font-semibold">Revenue</th>
+                                                            <th className="text-right py-2.5 px-2 font-semibold">Rev %</th>
+                                                            <th className="text-right py-2.5 px-2 font-semibold">Yield</th>
+                                                            <th className="text-right py-2.5 px-3 font-semibold">RevPAS</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-50">
+                                                        {sortedGames.map((game) => {
+                                                            const fillRate = game.capacity > 0 ? (game.attendance / game.capacity) * 100 : 0;
+                                                            const yieldVal = game.attendance > 0 ? game.totalRevenue / game.attendance : 0;
+                                                            const revPas = game.capacity > 0 ? game.totalRevenue / game.capacity : 0;
+                                                            const revShare = totalSeasonRev > 0 ? (game.totalRevenue / totalSeasonRev) * 100 : 0;
+                                                            return (
+                                                                <tr key={game.id} className="hover:bg-gray-50 transition-colors">
+                                                                    <td className="py-2.5 px-3">
+                                                                        <p className="font-bold text-gray-900">{game.opponent}</p>
+                                                                        <p className="text-[10px] text-gray-400">{game.date}</p>
+                                                                    </td>
+                                                                    <td className="text-right py-2.5 px-2 font-medium text-gray-700">
+                                                                        {game.attendance.toLocaleString('it-IT')}<span className="text-gray-400">/{game.capacity.toLocaleString('it-IT')}</span>
+                                                                    </td>
+                                                                    <td className="text-right py-2.5 px-2">
+                                                                        <span className={`font-bold ${fillRate >= 85 ? 'text-green-600' : fillRate >= 65 ? 'text-amber-600' : 'text-red-600'}`}>
+                                                                            {fillRate.toFixed(1)}%
+                                                                        </span>
+                                                                    </td>
+                                                                    <td className="text-right py-2.5 px-2 font-bold text-gray-900">
+                                                                        €{(game.totalRevenue / 1000).toFixed(1)}k
+                                                                    </td>
+                                                                    <td className="text-right py-2.5 px-2 text-gray-500">
+                                                                        {revShare.toFixed(1)}%
+                                                                    </td>
+                                                                    <td className="text-right py-2.5 px-2 font-medium text-gray-700">
+                                                                        €{yieldVal.toFixed(2)}
+                                                                    </td>
+                                                                    <td className="text-right py-2.5 px-3 font-medium text-gray-700">
+                                                                        €{revPas.toFixed(2)}
+                                                                    </td>
+                                                                </tr>
+                                                            );
+                                                        })}
+                                                    </tbody>
+                                                    <tfoot className="bg-gray-50 border-t-2 border-gray-200 sticky bottom-0">
+                                                        {(() => {
+                                                            const totAtt = viewData.reduce((s, g) => s + g.attendance, 0);
+                                                            const totCap = viewData.reduce((s, g) => s + g.capacity, 0);
+                                                            const totFill = totCap > 0 ? (totAtt / totCap) * 100 : 0;
+                                                            const totYield = totAtt > 0 ? totalSeasonRev / totAtt : 0;
+                                                            const totRevPas = totCap > 0 ? totalSeasonRev / totCap : 0;
+                                                            return (
+                                                                <tr className="text-[11px] font-bold text-gray-800">
+                                                                    <td className="py-2.5 px-3 uppercase tracking-wider">Total / Avg</td>
+                                                                    <td className="text-right py-2.5 px-2">{totAtt.toLocaleString('it-IT')}<span className="text-gray-400 font-normal">/{totCap.toLocaleString('it-IT')}</span></td>
+                                                                    <td className="text-right py-2.5 px-2">{totFill.toFixed(1)}%</td>
+                                                                    <td className="text-right py-2.5 px-2">€{(totalSeasonRev / 1000).toFixed(1)}k</td>
+                                                                    <td className="text-right py-2.5 px-2">100%</td>
+                                                                    <td className="text-right py-2.5 px-2">€{totYield.toFixed(2)}</td>
+                                                                    <td className="text-right py-2.5 px-3">€{totRevPas.toFixed(2)}</td>
+                                                                </tr>
+                                                            );
+                                                        })()}
+                                                    </tfoot>
+                                                </table>
+                                            </div>
                                         </div>
-                                    </div>
+                                        );
+                                    })()
                                 )}
                             </div>
                         </div>
