@@ -247,9 +247,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
   return (
     <div className="space-y-6">
       
-      {/* ROW 1: Yield Matrix & Ticket Types */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
+      {/* ROW 1: Yield Matrix */}
           {/* Yield vs Occupancy Quadrant */}
           <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col h-[520px]">
               <div className="flex justify-between items-center mb-2">
@@ -394,8 +392,6 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                   </div>
               </div>
           </div>
-
-      </div>
 
       {/* ROW 2: Main Revenue Trend (Kept from before) */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
