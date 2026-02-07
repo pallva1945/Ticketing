@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Bell, Users, FileText, ChevronDown, Target, Shield, RefreshCw } from 'lucide-react';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
@@ -20,6 +20,7 @@ import { SponsorshipDashboard } from './components/SponsorshipDashboard';
 import { MerchandisingView } from './components/MerchandisingView';
 import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, FIXED_CORP_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, SponsorData, CRMRecord, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
+import { PieChart as RechartsPie, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
 import { GAMEDAY_CSV_CONTENT } from './data/gameDayData';
 import { SPONSOR_CSV_CONTENT } from './data/sponsorData';
@@ -1906,6 +1907,29 @@ const App: React.FC = () => {
       return efficiencyData.reduce((sum, game) => sum + game.totalRevenue, 0);
   }, [efficiencyData]);
 
+  const discountTypeData = useMemo(() => {
+    if (!crmData.length) return [];
+    const seasonSet = new Set(selectedSeasons);
+    const zoneAll = selectedZones.includes('All');
+    const zoneSet = new Set(selectedZones);
+    const filtered = crmData.filter(r => {
+      if (!seasonSet.has(r.season)) return false;
+      if (!zoneAll && !zoneSet.has(r.pvZone || r.zone)) return false;
+      return true;
+    });
+    const map = new Map<string, { count: number; revenue: number }>();
+    filtered.forEach(r => {
+      const dt = (r.discountType || '').trim() || 'No Discount';
+      const entry = map.get(dt) || { count: 0, revenue: 0 };
+      entry.count += r.quantity || 1;
+      entry.revenue += r.net || 0;
+      map.set(dt, entry);
+    });
+    return Array.from(map.entries())
+      .map(([name, v]) => ({ name, count: v.count, revenue: v.revenue }))
+      .sort((a, b) => b.count - a.count);
+  }, [crmData, selectedSeasons, selectedZones]);
+
   const stats: DashboardStats = useMemo(() => {
     const totalRevenue = viewData.reduce((sum, game) => sum + game.totalRevenue, 0);
     const totalAttendance = viewData.reduce((sum, game) => sum + game.attendance, 0);
@@ -2884,6 +2908,58 @@ const App: React.FC = () => {
                             </div>
                         </div>
                         
+                        {discountTypeData.length > 0 && (
+                        <div className="mb-8">
+                            <h2 className="text-xl font-bold text-gray-800 mb-4">Discount Type Analysis</h2>
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                {(() => {
+                                    const COLORS = ['#f97316', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#f59e0b', '#06b6d4', '#6366f1', '#14b8a6', '#d946ef', '#84cc16'];
+                                    const totalTickets = discountTypeData.reduce((s, d) => s + d.count, 0);
+                                    const totalRev = discountTypeData.reduce((s, d) => s + d.revenue, 0);
+                                    const pieData = discountTypeData.map((d, i) => ({
+                                        ...d,
+                                        pct: totalTickets > 0 ? (d.count / totalTickets * 100) : 0,
+                                        fill: COLORS[i % COLORS.length]
+                                    }));
+                                    return (
+                                        <>
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                                            <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Tickets by Discount Type</h3>
+                                            <ResponsiveContainer width="100%" height={300}>
+                                                <RechartsPie>
+                                                    <Pie data={pieData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={100} innerRadius={50} paddingAngle={2} label={({ name, pct }) => `${name} (${pct.toFixed(1)}%)`} labelLine={{ strokeWidth: 1 }} style={{ fontSize: '10px' }}>
+                                                        {pieData.map((entry, idx) => (
+                                                            <Cell key={idx} fill={entry.fill} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip formatter={(value: number, name: string, props: any) => [`${value.toLocaleString('it-IT')} tickets (${((value / totalTickets) * 100).toFixed(1)}%)`, name]} />
+                                                </RechartsPie>
+                                            </ResponsiveContainer>
+                                            <div className="mt-3 text-center text-xs text-gray-500">{totalTickets.toLocaleString('it-IT')} total tickets</div>
+                                        </div>
+                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+                                            <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Revenue by Discount Type</h3>
+                                            <ResponsiveContainer width="100%" height={300}>
+                                                <BarChart data={pieData} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
+                                                    <XAxis type="number" tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}k`} style={{ fontSize: '10px' }} />
+                                                    <YAxis type="category" dataKey="name" width={100} style={{ fontSize: '10px' }} tick={{ fontSize: 10 }} />
+                                                    <Tooltip formatter={(value: number) => [`€${value.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`, 'Revenue']} />
+                                                    <Bar dataKey="revenue" radius={[0, 4, 4, 0]}>
+                                                        {pieData.map((entry, idx) => (
+                                                            <Cell key={idx} fill={entry.fill} />
+                                                        ))}
+                                                    </Bar>
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                            <div className="mt-3 text-center text-xs text-gray-500">€{totalRev.toLocaleString('it-IT', { minimumFractionDigits: 2 })} total net revenue</div>
+                                        </div>
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        </div>
+                        )}
+
                         <div className="mb-8 relative z-0">
                             <h2 className="text-xl font-bold text-gray-800 mb-4">
                             Trend & Performance Analysis
