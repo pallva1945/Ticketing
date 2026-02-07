@@ -199,54 +199,6 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
   if (yDomainMax < maxY) yDomainMax = maxY * 1.05;
 
 
-  // 3. Ticket Type Breakdown (Stacked Bar)
-  // - Computed from salesBreakdown (already zone-filtered) so it respects zone filters
-  // - Total view: shows all ticket types including protocol giveaways
-  // - GameDay view: shows ticket types excluding protocol giveaways
-  const ticketTypeData = sortedData.map(game => {
-      const sales = game.salesBreakdown || [];
-      
-      const paidChannels = [SalesChannel.ABB, SalesChannel.CORP, SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB];
-      const gameDayPaidChannels = [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB];
-      
-      const totalPaidQty = sales
-          .filter(s => paidChannels.includes(s.channel))
-          .reduce((sum, s) => sum + s.quantity, 0);
-      const protocolQty = sales
-          .filter(s => s.channel === SalesChannel.PROTOCOL)
-          .reduce((sum, s) => sum + s.quantity, 0);
-      const freeQty = sales
-          .filter(s => s.channel === SalesChannel.GIVEAWAY)
-          .reduce((sum, s) => sum + s.quantity, 0);
-      
-      const gameDayPaidQty = sales
-          .filter(s => gameDayPaidChannels.includes(s.channel))
-          .reduce((sum, s) => sum + s.quantity, 0);
-
-      const origBreakdown = game.ticketTypeBreakdown;
-      const origTotalPaid = origBreakdown ? (origBreakdown.full + origBreakdown.discount) : 0;
-      const fullRatio = origTotalPaid > 0 ? (origBreakdown!.full / origTotalPaid) : 0.5;
-      
-      const fullTotal = Math.round(totalPaidQty * fullRatio);
-      const discountTotal = totalPaidQty - fullTotal;
-      const giveawayTotal = protocolQty + freeQty;
-      
-      const fullGameDay = Math.round(gameDayPaidQty * fullRatio);
-      const discountGameDay = gameDayPaidQty - fullGameDay;
-      const giveawayGameDay = freeQty;
-      
-      const fullValue = viewMode === 'total' ? fullTotal : fullGameDay;
-      const discountValue = viewMode === 'total' ? discountTotal : discountGameDay;
-      const giveawayValue = viewMode === 'total' ? giveawayTotal : giveawayGameDay;
-      
-      return {
-          name: isComparisonMode ? `${game.season}` : game.opponent.substring(0, 8),
-          fullLabel: game.opponent,
-          full: fullValue,
-          discount: discountValue,
-          free: giveawayValue
-      };
-  });
 
   // 4. Tier Analysis Data
   const tierStats: Record<string, { revenue: number, count: number, rankSum: number, attendSum: number }> = {};
@@ -443,52 +395,6 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
               </div>
           </div>
 
-          {/* Ticket Type Breakdown */}
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col h-[520px]">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Ticket Type Breakdown {viewMode === 'total' ? '(incl. Protocol)' : '(GameDay)'}
-              </h3>
-              <div className="flex-1 min-h-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={ticketTypeData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="name" tick={{fontSize: 10}} interval={0} angle={-45} textAnchor="end" height={60} />
-                          <YAxis tick={{fontSize: 10}} />
-                          <Tooltip content={({ active, payload }: any) => {
-                              if (active && payload && payload.length) {
-                                  const total = payload.reduce((sum: number, p: any) => sum + (Number(p.value) || 0), 0);
-                                  return (
-                                      <div className="bg-white p-2 border border-gray-200 shadow-lg rounded-lg text-xs z-50">
-                                          <p className="font-bold text-gray-900 mb-1">{payload[0].payload.fullLabel}</p>
-                                          {payload.map((p: any) => {
-                                              const val = Number(p.value) || 0;
-                                              const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
-                                              return (
-                                                  <div key={p.name} className="flex justify-between gap-4" style={{color: p.color}}>
-                                                      <span>{p.name}:</span>
-                                                      <span className="font-bold">
-                                                          {val} <span className="text-[10px] opacity-80 font-normal">({pct}%)</span>
-                                                      </span>
-                                                  </div>
-                                              );
-                                          })}
-                                          <div className="border-t border-gray-100 mt-1 pt-1 font-bold flex justify-between gap-4">
-                                              <span>Total:</span>
-                                              <span>{total}</span>
-                                          </div>
-                                      </div>
-                                  );
-                              }
-                              return null;
-                          }} />
-                          <Legend wrapperStyle={{fontSize: '11px'}} />
-                          <Bar dataKey="full" name="Full Price" stackId="a" fill="#16a34a" />
-                          <Bar dataKey="discount" name="Discounted" stackId="a" fill="#eab308" />
-                          <Bar dataKey="free" name="Giveaways" stackId="a" fill="#dc2626" />
-                      </BarChart>
-                  </ResponsiveContainer>
-              </div>
-          </div>
       </div>
 
       {/* ROW 2: Main Revenue Trend (Kept from before) */}
