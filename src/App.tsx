@@ -1954,7 +1954,7 @@ const App: React.FC = () => {
       }
       const entry = map.get(dt) || { count: 0, revenue: 0 };
       entry.count += r.quantity || 1;
-      entry.revenue += r.net || 0;
+      entry.revenue += (r.commercialValue || 0) * (r.quantity || 1);
       map.set(dt, entry);
     });
     const order = ['Full Price', 'Discounted', 'Giveaways'];
@@ -1974,7 +1974,7 @@ const App: React.FC = () => {
       const label = discRaw.charAt(0).toUpperCase() + discRaw.slice(1).toLowerCase();
       const entry = map.get(label) || { count: 0, revenue: 0 };
       entry.count += r.quantity || 1;
-      entry.revenue += r.net || 0;
+      entry.revenue += (r.commercialValue || 0) * (r.quantity || 1);
       map.set(label, entry);
     });
     return Array.from(map.entries())
