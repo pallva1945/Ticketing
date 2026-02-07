@@ -1929,7 +1929,8 @@ const App: React.FC = () => {
     });
     const map = new Map<string, { count: number; revenue: number }>();
     filtered.forEach(r => {
-      const dt = (r.discountType || '').trim() || 'No Discount';
+      const raw = (r.discountType || '').trim();
+      const dt = raw === '' ? 'Full Price' : 'Discounted';
       const entry = map.get(dt) || { count: 0, revenue: 0 };
       entry.count += r.quantity || 1;
       entry.revenue += r.net || 0;
@@ -2920,16 +2921,16 @@ const App: React.FC = () => {
                         
                         {discountTypeData.length > 0 && (
                         <div className="mb-8">
-                            <h2 className="text-xl font-bold text-gray-800 mb-4">Discount Type Analysis</h2>
+                            <h2 className="text-xl font-bold text-gray-800 mb-4">Ticket Pricing Breakdown</h2>
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                                 {(() => {
-                                    const COLORS = ['#f97316', '#ef4444', '#3b82f6', '#10b981', '#8b5cf6', '#ec4899', '#f59e0b', '#06b6d4', '#6366f1', '#14b8a6', '#d946ef', '#84cc16'];
+                                    const COLOR_MAP: Record<string, string> = { 'Full Price': '#10b981', 'Discounted': '#f97316' };
                                     const totalTickets = discountTypeData.reduce((s, d) => s + d.count, 0);
                                     const totalRev = discountTypeData.reduce((s, d) => s + d.revenue, 0);
-                                    const pieData = discountTypeData.map((d, i) => ({
+                                    const pieData = discountTypeData.map((d) => ({
                                         ...d,
                                         pct: totalTickets > 0 ? (d.count / totalTickets * 100) : 0,
-                                        fill: COLORS[i % COLORS.length]
+                                        fill: COLOR_MAP[d.name] || '#6366f1'
                                     }));
                                     return (
                                         <>
@@ -2948,8 +2949,8 @@ const App: React.FC = () => {
                                                         nameKey="name"
                                                         label={({ name, percent }: any) => `${name} (${(percent * 100).toFixed(1)}%)`}
                                                     >
-                                                        {pieData.map((_: any, idx: number) => (
-                                                            <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
+                                                        {pieData.map((entry: any, idx: number) => (
+                                                            <Cell key={`cell-${idx}`} fill={entry.fill} />
                                                         ))}
                                                     </Pie>
                                                     <Tooltip formatter={(value: number) => [`${value.toLocaleString('it-IT')} tickets`, 'Count']} />
