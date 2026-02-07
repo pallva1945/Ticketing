@@ -1910,28 +1910,39 @@ const App: React.FC = () => {
       return efficiencyData.reduce((sum, game) => sum + game.totalRevenue, 0);
   }, [efficiencyData]);
 
-  const discountTypeData = useMemo(() => {
+  const filteredCrmForCharts = useMemo(() => {
     if (!crmData.length) return [];
     const gameOpponents = new Set(filteredGames.map(g => g.opponent.toLowerCase().trim()));
     const zoneAll = selectedZones.includes('All');
     const zoneSet = new Set(selectedZones);
-    const seasonSet = new Set(selectedSeasons);
-    const filtered = crmData.filter(r => {
-      if (r.season && r.season.trim()) {
-        if (!seasonSet.has(r.season.trim())) return false;
-      } else if (r.gm) {
-        const opp = r.gm.toLowerCase().trim();
+    const channelAll = selectedChannels.includes('All');
+    const channelSet = new Set(selectedChannels.map(c => c.toLowerCase()));
+    const channelMap: Record<string, string> = { 'abb': 'abb', 'tix': 'tix', 'corp': 'corp', 'mp': 'mp', 'vb': 'vb', 'giveaway': 'giveaway', 'protocol': 'protocol' };
+    return crmData.filter(r => {
+      const opp = (r.gm || '').toLowerCase().trim();
+      if (opp) {
         const matches = gameOpponents.has(opp) || [...gameOpponents].some(go => go.includes(opp) || opp.includes(go));
         if (!matches) return false;
+      } else if (r.season && r.season.trim()) {
+        if (!selectedSeasons.includes(r.season.trim())) return false;
       }
       if (!zoneAll) {
         const rZone = (r.pvZone || r.zone || '').trim();
         if (!zoneSet.has(rZone)) return false;
       }
+      if (!channelAll) {
+        const sellRaw = (r.sell || r.sellType || '').trim().toLowerCase();
+        const mapped = channelMap[sellRaw] || sellRaw;
+        if (!channelSet.has(mapped) && !channelSet.has(sellRaw.toUpperCase())) return false;
+      }
       return true;
     });
+  }, [crmData, filteredGames, selectedSeasons, selectedZones, selectedChannels]);
+
+  const discountTypeData = useMemo(() => {
+    if (!filteredCrmForCharts.length) return [];
     const map = new Map<string, { count: number; revenue: number }>();
-    filtered.forEach(r => {
+    filteredCrmForCharts.forEach(r => {
       const sellRaw = (r.sell || r.sellType || '').trim().toLowerCase();
       const isGiveaway = ['protocol', 'giveaway', 'giveaways', 'give away'].includes(sellRaw);
       let dt: string;
@@ -1950,27 +1961,12 @@ const App: React.FC = () => {
     return order
       .filter(name => map.has(name))
       .map(name => ({ name, count: map.get(name)!.count, revenue: map.get(name)!.revenue }));
-  }, [crmData, filteredGames, selectedSeasons, selectedZones]);
+  }, [filteredCrmForCharts]);
 
   const discountDetailData = useMemo(() => {
-    if (!crmData.length) return [];
-    const gameOpponents = new Set(filteredGames.map(g => g.opponent.toLowerCase().trim()));
-    const zoneAll = selectedZones.includes('All');
-    const zoneSet = new Set(selectedZones);
-    const seasonSet = new Set(selectedSeasons);
+    if (!filteredCrmForCharts.length) return [];
     const map = new Map<string, { count: number; revenue: number }>();
-    crmData.forEach(r => {
-      if (r.season && r.season.trim()) {
-        if (!seasonSet.has(r.season.trim())) return;
-      } else if (r.gm) {
-        const opp = r.gm.toLowerCase().trim();
-        const matches = gameOpponents.has(opp) || [...gameOpponents].some(go => go.includes(opp) || opp.includes(go));
-        if (!matches) return;
-      }
-      if (!zoneAll) {
-        const rZone = (r.pvZone || r.zone || '').trim();
-        if (!zoneSet.has(rZone)) return;
-      }
+    filteredCrmForCharts.forEach(r => {
       const sellRaw = (r.sell || r.sellType || '').trim().toLowerCase();
       if (['protocol', 'giveaway', 'giveaways', 'give away'].includes(sellRaw)) return;
       const discRaw = (r.discountType || '').trim();
@@ -1984,7 +1980,7 @@ const App: React.FC = () => {
     return Array.from(map.entries())
       .map(([name, v]) => ({ name, count: v.count, revenue: v.revenue }))
       .sort((a, b) => b.count - a.count);
-  }, [crmData, filteredGames, selectedSeasons, selectedZones]);
+  }, [filteredCrmForCharts]);
 
   const stats: DashboardStats = useMemo(() => {
     const totalRevenue = viewData.reduce((sum, game) => sum + game.totalRevenue, 0);
