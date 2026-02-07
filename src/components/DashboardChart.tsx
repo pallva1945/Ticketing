@@ -334,6 +334,11 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                                   fill={SEASON_COLORS[season] || '#000'} 
                                   stroke="#fff"
                                   strokeWidth={1.5}
+                                  cursor="pointer"
+                                  onClick={(data: any) => {
+                                    const name = data?.name || data?.payload?.name;
+                                    if (name) onFilterChange('opponent', name);
+                                  }}
                               />
                           ))}
                       </ScatterChart>
