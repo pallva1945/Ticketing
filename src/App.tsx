@@ -1272,12 +1272,12 @@ const App: React.FC = () => {
     loadData();
   }, []);
 
-  // Lazy load CRM when user navigates to CRM tab
+  // Lazy load CRM when user navigates to CRM or ticketing tabs (discount chart needs CRM data)
   useEffect(() => {
-    if (activeTab === 'crm' && !crmLoadedRef.current) {
+    if ((activeTab === 'crm' || activeModule === 'ticketing') && !crmLoadedRef.current) {
       loadCRMData();
     }
-  }, [activeTab]);
+  }, [activeTab, activeModule]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -1909,12 +1909,22 @@ const App: React.FC = () => {
 
   const discountTypeData = useMemo(() => {
     if (!crmData.length) return [];
-    const seasonSet = new Set(selectedSeasons);
+    const gameOpponents = new Set(filteredGames.map(g => g.opponent.toLowerCase().trim()));
     const zoneAll = selectedZones.includes('All');
     const zoneSet = new Set(selectedZones);
+    const seasonSet = new Set(selectedSeasons);
     const filtered = crmData.filter(r => {
-      if (!seasonSet.has(r.season)) return false;
-      if (!zoneAll && !zoneSet.has(r.pvZone || r.zone)) return false;
+      if (r.season && r.season.trim()) {
+        if (!seasonSet.has(r.season.trim())) return false;
+      } else if (r.gm) {
+        const opp = r.gm.toLowerCase().trim();
+        const matches = gameOpponents.has(opp) || [...gameOpponents].some(go => go.includes(opp) || opp.includes(go));
+        if (!matches) return false;
+      }
+      if (!zoneAll) {
+        const rZone = (r.pvZone || r.zone || '').trim();
+        if (!zoneSet.has(rZone)) return false;
+      }
       return true;
     });
     const map = new Map<string, { count: number; revenue: number }>();
@@ -1928,7 +1938,7 @@ const App: React.FC = () => {
     return Array.from(map.entries())
       .map(([name, v]) => ({ name, count: v.count, revenue: v.revenue }))
       .sort((a, b) => b.count - a.count);
-  }, [crmData, selectedSeasons, selectedZones]);
+  }, [crmData, filteredGames, selectedSeasons, selectedZones]);
 
   const stats: DashboardStats = useMemo(() => {
     const totalRevenue = viewData.reduce((sum, game) => sum + game.totalRevenue, 0);
@@ -2927,12 +2937,22 @@ const App: React.FC = () => {
                                             <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Tickets by Discount Type</h3>
                                             <ResponsiveContainer width="100%" height={300}>
                                                 <RechartsPie>
-                                                    <Pie data={pieData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={100} innerRadius={50} paddingAngle={2} label={({ name, pct }) => `${name} (${pct.toFixed(1)}%)`} labelLine={{ strokeWidth: 1 }} style={{ fontSize: '10px' }}>
-                                                        {pieData.map((entry, idx) => (
-                                                            <Cell key={idx} fill={entry.fill} />
+                                                    <Pie
+                                                        data={pieData}
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        innerRadius={50}
+                                                        outerRadius={100}
+                                                        paddingAngle={2}
+                                                        dataKey="count"
+                                                        nameKey="name"
+                                                        label={({ name, percent }: any) => `${name} (${(percent * 100).toFixed(1)}%)`}
+                                                    >
+                                                        {pieData.map((_: any, idx: number) => (
+                                                            <Cell key={`cell-${idx}`} fill={COLORS[idx % COLORS.length]} />
                                                         ))}
                                                     </Pie>
-                                                    <Tooltip formatter={(value: number, name: string, props: any) => [`${value.toLocaleString('it-IT')} tickets (${((value / totalTickets) * 100).toFixed(1)}%)`, name]} />
+                                                    <Tooltip formatter={(value: number) => [`${value.toLocaleString('it-IT')} tickets`, 'Count']} />
                                                 </RechartsPie>
                                             </ResponsiveContainer>
                                             <div className="mt-3 text-center text-xs text-gray-500">{totalTickets.toLocaleString('it-IT')} total tickets</div>
