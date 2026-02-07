@@ -2963,70 +2963,69 @@ const App: React.FC = () => {
                         
                         {discountTypeData.length > 0 && (
                         <div className="mb-8">
-                            <h2 className="text-xl font-bold text-gray-800 mb-4">Ticket Pricing Breakdown</h2>
-                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                                <h2 className="text-xl font-bold text-gray-800 mb-4">Ticket Pricing Breakdown</h2>
                                 {(() => {
                                     const COLOR_MAP: Record<string, string> = { 'Full Price': '#10b981', 'Discounted': '#f97316', 'Giveaways': '#8b5cf6' };
                                     const totalTickets = discountTypeData.reduce((s, d) => s + d.count, 0);
-                                    const totalRev = discountTypeData.reduce((s, d) => s + d.revenue, 0);
                                     const pieData = discountTypeData.map((d) => ({
                                         ...d,
                                         pct: totalTickets > 0 ? (d.count / totalTickets * 100) : 0,
                                         fill: COLOR_MAP[d.name] || '#6366f1'
                                     }));
                                     return (
-                                        <>
-                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                                            <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Tickets by Discount Type</h3>
-                                            <ResponsiveContainer width="100%" height={300}>
-                                                <RechartsPie>
-                                                    <Pie
-                                                        data={pieData}
-                                                        cx="50%"
-                                                        cy="50%"
-                                                        innerRadius={50}
-                                                        outerRadius={100}
-                                                        paddingAngle={2}
-                                                        dataKey="count"
-                                                        nameKey="name"
-                                                        label={({ name, percent }: any) => `${name} (${(percent * 100).toFixed(1)}%)`}
-                                                    >
-                                                        {pieData.map((entry: any, idx: number) => (
-                                                            <Cell key={`cell-${idx}`} fill={entry.fill} />
-                                                        ))}
-                                                    </Pie>
-                                                    <Tooltip formatter={(value: number) => [`${value.toLocaleString('it-IT')} tickets`, 'Count']} />
-                                                </RechartsPie>
-                                            </ResponsiveContainer>
-                                            <div className="mt-3 text-center text-xs text-gray-500">{totalTickets.toLocaleString('it-IT')} total tickets</div>
+                                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                                            <div>
+                                                <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Tickets by Type</h3>
+                                                <ResponsiveContainer width="100%" height={300}>
+                                                    <RechartsPie>
+                                                        <Pie
+                                                            data={pieData}
+                                                            cx="50%"
+                                                            cy="50%"
+                                                            innerRadius={50}
+                                                            outerRadius={100}
+                                                            paddingAngle={2}
+                                                            dataKey="count"
+                                                            nameKey="name"
+                                                            label={({ name, percent }: any) => `${name} (${(percent * 100).toFixed(1)}%)`}
+                                                        >
+                                                            {pieData.map((entry: any, idx: number) => (
+                                                                <Cell key={`cell-${idx}`} fill={entry.fill} />
+                                                            ))}
+                                                        </Pie>
+                                                        <Tooltip formatter={(value: number) => [`${value.toLocaleString('it-IT')} tickets`, 'Count']} />
+                                                    </RechartsPie>
+                                                </ResponsiveContainer>
+                                                <div className="mt-3 text-center text-xs text-gray-500">{totalTickets.toLocaleString('it-IT')} total tickets</div>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Discount Breakdown</h3>
+                                                {discountDetailData.length > 0 ? (() => {
+                                                    const DETAIL_COLORS = ['#f97316', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b', '#14b8a6'];
+                                                    const totalDisc = discountDetailData.reduce((s, d) => s + d.count, 0);
+                                                    return (
+                                                        <>
+                                                        <ResponsiveContainer width="100%" height={300}>
+                                                            <BarChart data={discountDetailData} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
+                                                                <XAxis type="number" style={{ fontSize: '10px' }} />
+                                                                <YAxis type="category" dataKey="name" width={100} style={{ fontSize: '10px' }} tick={{ fontSize: 10 }} />
+                                                                <Tooltip formatter={(value: number) => [`${value.toLocaleString('it-IT')} tickets`, 'Count']} />
+                                                                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                                                                    {discountDetailData.map((_, idx) => (
+                                                                        <Cell key={idx} fill={DETAIL_COLORS[idx % DETAIL_COLORS.length]} />
+                                                                    ))}
+                                                                </Bar>
+                                                            </BarChart>
+                                                        </ResponsiveContainer>
+                                                        <div className="mt-3 text-center text-xs text-gray-500">{totalDisc.toLocaleString('it-IT')} discounted tickets</div>
+                                                        </>
+                                                    );
+                                                })() : (
+                                                    <div className="flex items-center justify-center h-[300px] text-gray-400 text-sm">No discounted tickets found</div>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                                            <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Discount Breakdown</h3>
-                                            {discountDetailData.length > 0 ? (() => {
-                                                const DETAIL_COLORS = ['#f97316', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b', '#14b8a6'];
-                                                const totalDisc = discountDetailData.reduce((s, d) => s + d.count, 0);
-                                                return (
-                                                    <>
-                                                    <ResponsiveContainer width="100%" height={300}>
-                                                        <BarChart data={discountDetailData} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
-                                                            <XAxis type="number" style={{ fontSize: '10px' }} />
-                                                            <YAxis type="category" dataKey="name" width={100} style={{ fontSize: '10px' }} tick={{ fontSize: 10 }} />
-                                                            <Tooltip formatter={(value: number) => [`${value.toLocaleString('it-IT')} tickets`, 'Count']} />
-                                                            <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                                                                {discountDetailData.map((_, idx) => (
-                                                                    <Cell key={idx} fill={DETAIL_COLORS[idx % DETAIL_COLORS.length]} />
-                                                                ))}
-                                                            </Bar>
-                                                        </BarChart>
-                                                    </ResponsiveContainer>
-                                                    <div className="mt-3 text-center text-xs text-gray-500">{totalDisc.toLocaleString('it-IT')} discounted tickets</div>
-                                                    </>
-                                                );
-                                            })() : (
-                                                <div className="flex items-center justify-center h-[300px] text-gray-400 text-sm">No discounted tickets found</div>
-                                            )}
-                                        </div>
-                                        </>
                                     );
                                 })()}
                             </div>
