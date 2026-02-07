@@ -1949,6 +1949,40 @@ const App: React.FC = () => {
       .map(name => ({ name, count: map.get(name)!.count, revenue: map.get(name)!.revenue }));
   }, [crmData, filteredGames, selectedSeasons, selectedZones]);
 
+  const discountDetailData = useMemo(() => {
+    if (!crmData.length) return [];
+    const gameOpponents = new Set(filteredGames.map(g => g.opponent.toLowerCase().trim()));
+    const zoneAll = selectedZones.includes('All');
+    const zoneSet = new Set(selectedZones);
+    const seasonSet = new Set(selectedSeasons);
+    const map = new Map<string, { count: number; revenue: number }>();
+    crmData.forEach(r => {
+      if (r.season && r.season.trim()) {
+        if (!seasonSet.has(r.season.trim())) return;
+      } else if (r.gm) {
+        const opp = r.gm.toLowerCase().trim();
+        const matches = gameOpponents.has(opp) || [...gameOpponents].some(go => go.includes(opp) || opp.includes(go));
+        if (!matches) return;
+      }
+      if (!zoneAll) {
+        const rZone = (r.pvZone || r.zone || '').trim();
+        if (!zoneSet.has(rZone)) return;
+      }
+      const sellRaw = (r.sell || r.sellType || '').trim().toLowerCase();
+      if (['protocol', 'giveaway', 'giveaways', 'give away'].includes(sellRaw)) return;
+      const discRaw = (r.discountType || '').trim();
+      if (discRaw === '' || discRaw.toLowerCase() === 'full price') return;
+      const label = discRaw.charAt(0).toUpperCase() + discRaw.slice(1).toLowerCase();
+      const entry = map.get(label) || { count: 0, revenue: 0 };
+      entry.count += r.quantity || 1;
+      entry.revenue += r.net || 0;
+      map.set(label, entry);
+    });
+    return Array.from(map.entries())
+      .map(([name, v]) => ({ name, count: v.count, revenue: v.revenue }))
+      .sort((a, b) => b.count - a.count);
+  }, [crmData, filteredGames, selectedSeasons, selectedZones]);
+
   const stats: DashboardStats = useMemo(() => {
     const totalRevenue = viewData.reduce((sum, game) => sum + game.totalRevenue, 0);
     const totalAttendance = viewData.reduce((sum, game) => sum + game.attendance, 0);
@@ -2967,20 +3001,30 @@ const App: React.FC = () => {
                                             <div className="mt-3 text-center text-xs text-gray-500">{totalTickets.toLocaleString('it-IT')} total tickets</div>
                                         </div>
                                         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                                            <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Revenue by Discount Type</h3>
-                                            <ResponsiveContainer width="100%" height={300}>
-                                                <BarChart data={pieData} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
-                                                    <XAxis type="number" tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}k`} style={{ fontSize: '10px' }} />
-                                                    <YAxis type="category" dataKey="name" width={100} style={{ fontSize: '10px' }} tick={{ fontSize: 10 }} />
-                                                    <Tooltip formatter={(value: number) => [`€${value.toLocaleString('it-IT', { minimumFractionDigits: 2 })}`, 'Revenue']} />
-                                                    <Bar dataKey="revenue" radius={[0, 4, 4, 0]}>
-                                                        {pieData.map((entry, idx) => (
-                                                            <Cell key={idx} fill={entry.fill} />
-                                                        ))}
-                                                    </Bar>
-                                                </BarChart>
-                                            </ResponsiveContainer>
-                                            <div className="mt-3 text-center text-xs text-gray-500">€{totalRev.toLocaleString('it-IT', { minimumFractionDigits: 2 })} total net revenue</div>
+                                            <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Discount Breakdown</h3>
+                                            {discountDetailData.length > 0 ? (() => {
+                                                const DETAIL_COLORS = ['#f97316', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b', '#14b8a6'];
+                                                const totalDisc = discountDetailData.reduce((s, d) => s + d.count, 0);
+                                                return (
+                                                    <>
+                                                    <ResponsiveContainer width="100%" height={300}>
+                                                        <BarChart data={discountDetailData} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
+                                                            <XAxis type="number" style={{ fontSize: '10px' }} />
+                                                            <YAxis type="category" dataKey="name" width={100} style={{ fontSize: '10px' }} tick={{ fontSize: 10 }} />
+                                                            <Tooltip formatter={(value: number) => [`${value.toLocaleString('it-IT')} tickets`, 'Count']} />
+                                                            <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                                                                {discountDetailData.map((_, idx) => (
+                                                                    <Cell key={idx} fill={DETAIL_COLORS[idx % DETAIL_COLORS.length]} />
+                                                                ))}
+                                                            </Bar>
+                                                        </BarChart>
+                                                    </ResponsiveContainer>
+                                                    <div className="mt-3 text-center text-xs text-gray-500">{totalDisc.toLocaleString('it-IT')} discounted tickets</div>
+                                                    </>
+                                                );
+                                            })() : (
+                                                <div className="flex items-center justify-center h-[300px] text-gray-400 text-sm">No discounted tickets found</div>
+                                            )}
                                         </div>
                                         </>
                                     );
