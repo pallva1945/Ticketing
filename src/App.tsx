@@ -3006,11 +3006,30 @@ const App: React.FC = () => {
                                                     return (
                                                         <>
                                                         <ResponsiveContainer width="100%" height={300}>
-                                                            <BarChart data={discountDetailData} layout="vertical" margin={{ left: 10, right: 30, top: 5, bottom: 5 }}>
+                                                            <BarChart data={discountDetailData} layout="vertical" margin={{ left: 10, right: 60, top: 5, bottom: 5 }}>
                                                                 <XAxis type="number" style={{ fontSize: '10px' }} />
                                                                 <YAxis type="category" dataKey="name" width={100} style={{ fontSize: '10px' }} tick={{ fontSize: 10 }} />
-                                                                <Tooltip formatter={(value: number) => [`${value.toLocaleString('it-IT')} tickets`, 'Count']} />
-                                                                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                                                                <Tooltip content={({ active, payload }: any) => {
+                                                                    if (!active || !payload?.[0]) return null;
+                                                                    const d = payload[0].payload;
+                                                                    const avg = d.count > 0 ? d.revenue / d.count : 0;
+                                                                    return (
+                                                                        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-2.5 text-xs">
+                                                                            <div className="font-semibold text-gray-800 mb-1">{d.name}</div>
+                                                                            <div className="text-gray-600">{d.count.toLocaleString('it-IT')} tickets</div>
+                                                                            <div className="text-gray-600">€{d.revenue.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} revenue</div>
+                                                                            <div className="font-semibold text-gray-800 mt-1">Avg: €{avg.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/ticket</div>
+                                                                        </div>
+                                                                    );
+                                                                }} />
+                                                                <Bar dataKey="count" radius={[0, 4, 4, 0]}
+                                                                    label={({ x, y, width, height, index }: any) => {
+                                                                        const d = discountDetailData[index];
+                                                                        if (!d || d.count === 0) return <text />;
+                                                                        const avg = d.revenue / d.count;
+                                                                        return <text x={x + width + 4} y={y + height / 2} dy={4} fontSize={9} fill="#6b7280">€{avg.toFixed(1)}</text>;
+                                                                    }}
+                                                                >
                                                                     {discountDetailData.map((_, idx) => (
                                                                         <Cell key={idx} fill={DETAIL_COLORS[idx % DETAIL_COLORS.length]} />
                                                                     ))}
