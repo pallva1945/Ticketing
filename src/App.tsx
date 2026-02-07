@@ -1856,6 +1856,10 @@ const App: React.FC = () => {
         gameDaySales = gameDaySales.filter(s => selectedZones.includes(s.zone));
         totalSales = totalSales.filter(s => selectedZones.includes(s.zone));
       }
+      if (!selectedChannels.includes('All')) {
+        gameDaySales = gameDaySales.filter(s => selectedChannels.includes(s.channel));
+        totalSales = totalSales.filter(s => selectedChannels.includes(s.channel));
+      }
 
       // GameDay = only game day sales (TIX + MP + VB + GIVEAWAY)
       const gameDayRevenue = gameDaySales.reduce((acc, curr) => acc + curr.revenue, 0);
@@ -1900,7 +1904,7 @@ const App: React.FC = () => {
         zoneCapacities: filteredZoneCapacities
       };
     });
-  }, [filteredGames, selectedZones, ignoreOspiti]);
+  }, [filteredGames, selectedZones, ignoreOspiti, selectedChannels]);
 
   const gameDayTicketingRevenue = useMemo(() => {
       return efficiencyData.reduce((sum, game) => sum + game.totalRevenue, 0);

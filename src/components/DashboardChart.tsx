@@ -183,19 +183,18 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
   const minY = Math.min(...yValues, avgYield);
   const maxY = Math.max(...yValues, avgYield);
 
-  // Determine spread needed to center the average
-  const xSpread = Math.max(avgOccupancy - minX, maxX - avgOccupancy, 10) * 1.1; 
-  const xDomainMin = Math.max(0, avgOccupancy - xSpread); 
-  const xDomainMax = Math.min(100, avgOccupancy + xSpread); 
+  // Dynamic tight-fit domains that zoom to actual data
+  const xRange = maxX - minX;
+  const xPad = Math.max(xRange * 0.08, 2);
+  const xDomainMin = Math.max(0, minX - xPad); 
+  const xDomainMax = Math.min(100, maxX + xPad); 
   
-  const yDataRange = maxY - minY;
-  const yPadding = Math.max(yDataRange * 0.15, 1);
-  const ySpreadFromAvg = Math.max(avgYield - minY, maxY - avgYield) + yPadding;
-  let yDomainMin = avgYield - ySpreadFromAvg;
-  let yDomainMax = avgYield + ySpreadFromAvg;
+  const yRange = maxY - minY;
+  const yPad = Math.max(yRange * 0.12, 0.5);
+  let yDomainMin = minY - yPad;
+  let yDomainMax = maxY + yPad;
   
   if (yDomainMin < 0) yDomainMin = 0;
-  if (yDomainMax < maxY) yDomainMax = maxY + yPadding;
 
 
 
