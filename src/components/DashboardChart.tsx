@@ -188,15 +188,14 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
   const xDomainMin = Math.max(0, avgOccupancy - xSpread); 
   const xDomainMax = Math.min(100, avgOccupancy + xSpread); 
   
-  const ySpread = Math.max(avgYield - minY, maxY - avgYield, 5) * 1.1;
-  let yDomainMin = avgYield - ySpread;
-  let yDomainMax = avgYield + ySpread;
+  const yDataRange = maxY - minY;
+  const yPadding = Math.max(yDataRange * 0.15, 1);
+  const ySpreadFromAvg = Math.max(avgYield - minY, maxY - avgYield) + yPadding;
+  let yDomainMin = avgYield - ySpreadFromAvg;
+  let yDomainMax = avgYield + ySpreadFromAvg;
   
-  if (yDomainMin < 10) {
-      yDomainMin = 10;
-      if (minY < 10) yDomainMin = Math.floor(minY); 
-  }
-  if (yDomainMax < maxY) yDomainMax = maxY * 1.05;
+  if (yDomainMin < 0) yDomainMin = 0;
+  if (yDomainMax < maxY) yDomainMax = maxY + yPadding;
 
 
 
