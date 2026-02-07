@@ -990,9 +990,6 @@ const App: React.FC = () => {
   const [selectedTiers, setSelectedTiers] = useState<string[]>(['All']);
   const [selectedDays, setSelectedDays] = useState<string[]>(['All']);
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['All']);
-  const [selectedTicketType, setSelectedTicketType] = useState<string | null>(null);
-  const [selectedDiscountDetail, setSelectedDiscountDetail] = useState<string | null>(null);
-  
   // Strategy Filters
   const [ignoreOspiti, setIgnoreOspiti] = useState(false);
 
@@ -2344,8 +2341,6 @@ const App: React.FC = () => {
     setSelectedDays(['All']);
     setSelectedChannels(['All']);
     setIgnoreOspiti(false);
-    setSelectedTicketType(null);
-    setSelectedDiscountDetail(null);
   };
 
   const handleChartFilterChange = (type: 'opponent' | 'tier' | 'day', value: string) => {
@@ -2353,21 +2348,6 @@ const App: React.FC = () => {
     if (type === 'opponent') setSelectedOpponents(selectedOpponents.includes(value) && selectedOpponents.length === 1 ? ['All'] : [value]);
     if (type === 'tier') setSelectedTiers(selectedTiers.includes(value) && selectedTiers.length === 1 ? ['All'] : [value]);
     if (type === 'day') setSelectedDays(selectedDays.includes(value) && selectedDays.length === 1 ? ['All'] : [value]);
-  };
-
-  const handleTicketTypeClick = (type: string) => {
-    setSelectedTicketType(selectedTicketType === type ? null : type);
-    setSelectedDiscountDetail(null);
-  };
-
-  const handleDiscountDetailClick = (detail: string) => {
-    if (selectedDiscountDetail === detail) {
-      setSelectedDiscountDetail(null);
-      setSelectedTicketType(null);
-    } else {
-      setSelectedDiscountDetail(detail);
-      setSelectedTicketType('Discounted');
-    }
   };
 
   const handleZoneClick = (zone: string) => {
@@ -2387,7 +2367,7 @@ const App: React.FC = () => {
                     <UserX size={14} /> {ignoreOspiti ? 'Zona Ospiti Excluded' : 'Ignore Zona Ospiti'}
                 </button>
             )}
-            {(selectedSeasons.length > 1 || !selectedSeasons.includes('25-26') || !selectedLeagues.includes('LBA') || !selectedZones.includes('All') || !selectedOpponents.includes('All') || !selectedTiers.includes('All') || !selectedDays.includes('All') || !selectedChannels.includes('All') || ignoreOspiti || selectedTicketType || selectedDiscountDetail) && (
+            {(selectedSeasons.length > 1 || !selectedSeasons.includes('25-26') || !selectedLeagues.includes('LBA') || !selectedZones.includes('All') || !selectedOpponents.includes('All') || !selectedTiers.includes('All') || !selectedDays.includes('All') || !selectedChannels.includes('All') || ignoreOspiti) && (
                 <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-700 transition-colors ml-2">
                     <X size={14} /> Clear All
                 </button>
@@ -2983,39 +2963,7 @@ const App: React.FC = () => {
                         {discountTypeData.length > 0 && (
                         <div className="mb-8">
                             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                                <div className="flex items-center gap-3 mb-4">
-                                    <h2 className="text-xl font-bold text-gray-800">Ticket Pricing Breakdown</h2>
-                                    {selectedTicketType && (
-                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-50 text-orange-700 text-xs font-semibold rounded-full border border-orange-200">
-                                            Filtered: {selectedTicketType} {selectedDiscountDetail ? `→ ${selectedDiscountDetail}` : ''}
-                                            <button onClick={() => { setSelectedTicketType(null); setSelectedDiscountDetail(null); }} className="ml-1 hover:text-orange-900"><X size={12} /></button>
-                                        </span>
-                                    )}
-                                    <span className="text-xs text-gray-400 italic">Click chart segments to filter</span>
-                                </div>
-                                {selectedTicketType && (() => {
-                                    const typeEntry = discountTypeData.find(d => d.name === selectedTicketType);
-                                    const totalTickets = discountTypeData.reduce((s, d) => s + d.count, 0);
-                                    if (!typeEntry) return null;
-                                    const pct = totalTickets > 0 ? (typeEntry.count / totalTickets * 100) : 0;
-                                    return (
-                                        <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200 flex items-center gap-6 text-sm">
-                                            <div><span className="text-gray-500">Selected:</span> <span className="font-bold text-gray-800">{selectedTicketType}{selectedDiscountDetail ? ` → ${selectedDiscountDetail}` : ''}</span></div>
-                                            <div><span className="text-gray-500">Tickets:</span> <span className="font-bold">{typeEntry.count.toLocaleString('it-IT')}</span> <span className="text-gray-400">({pct.toFixed(1)}%)</span></div>
-                                            <div><span className="text-gray-500">Revenue:</span> <span className="font-bold">€{typeEntry.revenue.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span></div>
-                                            {selectedDiscountDetail && (() => {
-                                                const detailEntry = discountDetailData.find(d => d.name === selectedDiscountDetail);
-                                                if (!detailEntry) return null;
-                                                return (
-                                                    <>
-                                                        <div className="border-l border-gray-300 pl-4"><span className="text-gray-500">Detail Tickets:</span> <span className="font-bold">{detailEntry.count.toLocaleString('it-IT')}</span></div>
-                                                        <div><span className="text-gray-500">Detail Revenue:</span> <span className="font-bold">€{detailEntry.revenue.toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span></div>
-                                                    </>
-                                                );
-                                            })()}
-                                        </div>
-                                    );
-                                })()}
+                                <h2 className="text-xl font-bold text-gray-800 mb-4">Ticket Pricing Breakdown</h2>
                                 {(() => {
                                     const COLOR_MAP: Record<string, string> = { 'Full Price': '#10b981', 'Discounted': '#f97316', 'Giveaways': '#8b5cf6' };
                                     const totalTickets = discountTypeData.reduce((s, d) => s + d.count, 0);
@@ -3039,12 +2987,10 @@ const App: React.FC = () => {
                                                             paddingAngle={2}
                                                             dataKey="count"
                                                             nameKey="name"
-                                                            cursor="pointer"
-                                                            onClick={(data: any) => { const name = data?.name || data?.payload?.name; if (name) handleTicketTypeClick(name); }}
                                                             label={({ name, percent }: any) => `${name} (${(percent * 100).toFixed(1)}%)`}
                                                         >
                                                             {pieData.map((entry: any, idx: number) => (
-                                                                <Cell key={`cell-${idx}`} fill={entry.fill} stroke={selectedTicketType === entry.name ? '#1f2937' : 'none'} strokeWidth={selectedTicketType === entry.name ? 3 : 0} opacity={selectedTicketType && selectedTicketType !== entry.name ? 0.3 : 1} />
+                                                                <Cell key={`cell-${idx}`} fill={entry.fill} />
                                                             ))}
                                                         </Pie>
                                                         <Tooltip formatter={(value: number) => [`${value.toLocaleString('it-IT')} tickets`, 'Count']} />
@@ -3064,9 +3010,9 @@ const App: React.FC = () => {
                                                                 <XAxis type="number" style={{ fontSize: '10px' }} />
                                                                 <YAxis type="category" dataKey="name" width={100} style={{ fontSize: '10px' }} tick={{ fontSize: 10 }} />
                                                                 <Tooltip formatter={(value: number) => [`${value.toLocaleString('it-IT')} tickets`, 'Count']} />
-                                                                <Bar dataKey="count" radius={[0, 4, 4, 0]} cursor="pointer" onClick={(data: any) => { const name = data?.name || data?.payload?.name; if (name) handleDiscountDetailClick(name); }}>
-                                                                    {discountDetailData.map((entry, idx) => (
-                                                                        <Cell key={idx} fill={DETAIL_COLORS[idx % DETAIL_COLORS.length]} stroke={selectedDiscountDetail === entry.name ? '#1f2937' : 'none'} strokeWidth={selectedDiscountDetail === entry.name ? 2 : 0} opacity={selectedDiscountDetail && selectedDiscountDetail !== entry.name ? 0.3 : 1} />
+                                                                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                                                                    {discountDetailData.map((_, idx) => (
+                                                                        <Cell key={idx} fill={DETAIL_COLORS[idx % DETAIL_COLORS.length]} />
                                                                     ))}
                                                                 </Bar>
                                                             </BarChart>
