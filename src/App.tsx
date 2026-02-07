@@ -1929,16 +1929,24 @@ const App: React.FC = () => {
     });
     const map = new Map<string, { count: number; revenue: number }>();
     filtered.forEach(r => {
-      const raw = (r.discountType || '').trim();
-      const dt = raw === '' ? 'Full Price' : 'Discounted';
+      const sellRaw = (r.sell || r.sellType || '').trim().toLowerCase();
+      const isGiveaway = ['protocol', 'giveaway', 'giveaways', 'give away'].includes(sellRaw);
+      let dt: string;
+      if (isGiveaway) {
+        dt = 'Giveaways';
+      } else {
+        const discRaw = (r.discountType || '').trim().toLowerCase();
+        dt = (discRaw === '' || discRaw === 'full price') ? 'Full Price' : 'Discounted';
+      }
       const entry = map.get(dt) || { count: 0, revenue: 0 };
       entry.count += r.quantity || 1;
       entry.revenue += r.net || 0;
       map.set(dt, entry);
     });
-    return Array.from(map.entries())
-      .map(([name, v]) => ({ name, count: v.count, revenue: v.revenue }))
-      .sort((a, b) => b.count - a.count);
+    const order = ['Full Price', 'Discounted', 'Giveaways'];
+    return order
+      .filter(name => map.has(name))
+      .map(name => ({ name, count: map.get(name)!.count, revenue: map.get(name)!.revenue }));
   }, [crmData, filteredGames, selectedSeasons, selectedZones]);
 
   const stats: DashboardStats = useMemo(() => {
@@ -2924,7 +2932,7 @@ const App: React.FC = () => {
                             <h2 className="text-xl font-bold text-gray-800 mb-4">Ticket Pricing Breakdown</h2>
                             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                                 {(() => {
-                                    const COLOR_MAP: Record<string, string> = { 'Full Price': '#10b981', 'Discounted': '#f97316' };
+                                    const COLOR_MAP: Record<string, string> = { 'Full Price': '#10b981', 'Discounted': '#f97316', 'Giveaways': '#8b5cf6' };
                                     const totalTickets = discountTypeData.reduce((s, d) => s + d.count, 0);
                                     const totalRev = discountTypeData.reduce((s, d) => s + d.revenue, 0);
                                     const pieData = discountTypeData.map((d) => ({
