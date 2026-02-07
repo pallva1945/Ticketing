@@ -1748,7 +1748,7 @@ const App: React.FC = () => {
       return { totalRevenue, avgAttendance, topPerformingZone: '', occupancyRate, giveawayRate };
   }, [totalViewData]);
 
-  const baseViewData = useMemo(() => {
+  const viewData = useMemo(() => {
     return filteredGames.map(game => {
       let zoneSales = game.salesBreakdown;
 
@@ -1778,6 +1778,7 @@ const App: React.FC = () => {
       }
 
       if (viewMode === 'gameday') {
+          // Calculate total CORP tickets per zone from this game's data
           const totalCorpPerZone: Record<string, number> = {};
           game.salesBreakdown.forEach(s => {
               if (s.channel === SalesChannel.CORP) {
@@ -1786,16 +1787,20 @@ const App: React.FC = () => {
           });
           
           Object.keys(filteredZoneCapacities).forEach(z => {
+              // Deduct fixed capacity (ABB season tickets)
               const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
+              // Calculate game-by-game CORP = Total CORP - Fixed CORP (summer season)
               const totalCorp = totalCorpPerZone[z] || 0;
               const fixedCorp = FIXED_CORP_25_26[z] || 0;
               const gameByGameCorp = Math.max(0, totalCorp - fixedCorp);
+              // Deduct game-by-game CORP from capacity
               filteredZoneCapacities[z] = Math.max(0, filteredZoneCapacities[z] - fixedDeduction - gameByGameCorp);
           });
       }
 
       Object.values(filteredZoneCapacities).forEach((cap) => { zoneCapacity += (cap as number); });
 
+      // Use original values if salesBreakdown is empty (e.g., from BigQuery data)
       const hasSalesBreakdown = game.salesBreakdown.length > 0;
       const noZoneFiltering = selectedZones.includes('All') && !ignoreOspiti && selectedChannels.includes('All');
       
@@ -1809,66 +1814,6 @@ const App: React.FC = () => {
       };
     });
   }, [filteredGames, selectedZones, ignoreOspiti, viewMode, selectedChannels]);
-
-  const viewData = useMemo(() => {
-    if (!selectedTicketType && !selectedDiscountDetail) return baseViewData;
-    if (!crmData.length) return baseViewData;
-
-    const crmByGame = new Map<string, { revenue: number; quantity: number }>();
-    const seasonSet = new Set(selectedSeasons);
-
-    crmData.forEach(r => {
-      const rSeason = (r.season || '').trim();
-      if (rSeason) {
-        if (!seasonSet.has(rSeason)) return;
-      }
-      const sellRaw = (r.sell || r.sellType || '').trim().toLowerCase();
-      const isGiveaway = ['protocol', 'giveaway', 'giveaways', 'give away'].includes(sellRaw);
-      const discRaw = (r.discountType || '').trim().toLowerCase();
-      const isFullPrice = !isGiveaway && (discRaw === '' || discRaw === 'full price');
-
-      let ticketCategory: string;
-      if (isGiveaway) ticketCategory = 'Giveaways';
-      else if (isFullPrice) ticketCategory = 'Full Price';
-      else ticketCategory = 'Discounted';
-
-      if (selectedTicketType && ticketCategory !== selectedTicketType) return;
-
-      if (selectedDiscountDetail && ticketCategory === 'Discounted') {
-        const label = (r.discountType || '').trim();
-        const normalized = label.charAt(0).toUpperCase() + label.slice(1).toLowerCase();
-        if (normalized !== selectedDiscountDetail) return;
-      }
-
-      const opponent = (r.gm || '').toLowerCase().trim();
-      if (!opponent) return;
-      const gameKey = `${rSeason}::${opponent}`;
-      const entry = crmByGame.get(gameKey) || { revenue: 0, quantity: 0 };
-      entry.revenue += r.net || 0;
-      entry.quantity += r.quantity || 1;
-      crmByGame.set(gameKey, entry);
-    });
-
-    return baseViewData.map(game => {
-      const gameOpp = game.opponent.toLowerCase().trim();
-      const gameSeason = (game.season || '').trim();
-      const exactKey = `${gameSeason}::${gameOpp}`;
-      let crmMatch = crmByGame.get(exactKey);
-      if (!crmMatch) {
-        for (const [k, v] of crmByGame.entries()) {
-          const [, kOpp] = k.split('::');
-          if (kOpp && (kOpp.includes(gameOpp) || gameOpp.includes(kOpp))) {
-            crmMatch = v;
-            break;
-          }
-        }
-      }
-      if (crmMatch) {
-        return { ...game, totalRevenue: crmMatch.revenue, attendance: crmMatch.quantity };
-      }
-      return { ...game, totalRevenue: 0, attendance: 0 };
-    });
-  }, [baseViewData, crmData, selectedTicketType, selectedDiscountDetail, selectedSeasons]);
 
   // GameDay Data Filtering
   const filteredGameDayData = useMemo(() => {
@@ -2460,14 +2405,6 @@ const App: React.FC = () => {
         )}
         {activeModule === 'ticketing' && (
             <div><MultiSelect label="Sell" options={channels} selected={selectedChannels} onChange={setSelectedChannels} /></div>
-        )}
-        {activeModule === 'ticketing' && (selectedTicketType || selectedDiscountDetail) && (
-            <div className="col-span-2 lg:col-span-1">
-                <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg text-xs">
-                    <span className="text-orange-700 font-semibold">{selectedTicketType || 'Discounted'}{selectedDiscountDetail ? ` → ${selectedDiscountDetail}` : ''}</span>
-                    <button onClick={() => { setSelectedTicketType(null); setSelectedDiscountDetail(null); }} className="text-orange-400 hover:text-orange-700"><X size={14} /></button>
-                </div>
-            </div>
         )}
         </div>
     </div>
