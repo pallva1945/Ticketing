@@ -3,7 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   Line, ComposedChart, ScatterChart, Scatter, ReferenceLine, ZAxis, Label, ReferenceArea
 } from 'recharts';
-import { GameData } from '../types';
+import { GameData, SalesChannel } from '../types';
 
 interface DashboardChartProps {
   data: GameData[];
@@ -200,24 +200,44 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
 
 
   // 3. Ticket Type Breakdown (Stacked Bar)
+  // - Computed from salesBreakdown (already zone-filtered) so it respects zone filters
   // - Total view: shows all ticket types including protocol giveaways
   // - GameDay view: shows ticket types excluding protocol giveaways
   const ticketTypeData = sortedData.map(game => {
-      const breakdown = game.ticketTypeBreakdown || { 
-          full: 0, discount: 0, giveaway: 0, 
-          fullGameDay: 0, discountGameDay: 0, giveawayGameDay: 0 
-      };
+      const sales = game.salesBreakdown || [];
       
-      // Use view-specific values
-      const fullValue = viewMode === 'total' 
-          ? breakdown.full 
-          : (breakdown.fullGameDay ?? breakdown.full);
-      const discountValue = viewMode === 'total' 
-          ? breakdown.discount 
-          : (breakdown.discountGameDay ?? breakdown.discount);
-      const giveawayValue = viewMode === 'total' 
-          ? breakdown.giveaway                    // Total: protocol + free
-          : (breakdown.giveawayGameDay ?? breakdown.giveaway);  // GameDay: free only
+      const paidChannels = [SalesChannel.ABB, SalesChannel.CORP, SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB];
+      const gameDayPaidChannels = [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB];
+      
+      const totalPaidQty = sales
+          .filter(s => paidChannels.includes(s.channel))
+          .reduce((sum, s) => sum + s.quantity, 0);
+      const protocolQty = sales
+          .filter(s => s.channel === SalesChannel.PROTOCOL)
+          .reduce((sum, s) => sum + s.quantity, 0);
+      const freeQty = sales
+          .filter(s => s.channel === SalesChannel.GIVEAWAY)
+          .reduce((sum, s) => sum + s.quantity, 0);
+      
+      const gameDayPaidQty = sales
+          .filter(s => gameDayPaidChannels.includes(s.channel))
+          .reduce((sum, s) => sum + s.quantity, 0);
+
+      const origBreakdown = game.ticketTypeBreakdown;
+      const origTotalPaid = origBreakdown ? (origBreakdown.full + origBreakdown.discount) : 0;
+      const fullRatio = origTotalPaid > 0 ? (origBreakdown!.full / origTotalPaid) : 0.5;
+      
+      const fullTotal = Math.round(totalPaidQty * fullRatio);
+      const discountTotal = totalPaidQty - fullTotal;
+      const giveawayTotal = protocolQty + freeQty;
+      
+      const fullGameDay = Math.round(gameDayPaidQty * fullRatio);
+      const discountGameDay = gameDayPaidQty - fullGameDay;
+      const giveawayGameDay = freeQty;
+      
+      const fullValue = viewMode === 'total' ? fullTotal : fullGameDay;
+      const discountValue = viewMode === 'total' ? discountTotal : discountGameDay;
+      const giveawayValue = viewMode === 'total' ? giveawayTotal : giveawayGameDay;
       
       return {
           name: isComparisonMode ? `${game.season}` : game.opponent.substring(0, 8),
