@@ -205,9 +205,9 @@ const RevenueHome = ({
       { 
           id: 'venue_ops', 
           name: 'Venue Ops', 
-          current: 0, 
+          current: 22000, 
           target: 258000, 
-          icon: Landmark, colorClass: 'text-slate-600', bgClass: 'bg-slate-50', barClass: 'bg-slate-500', isVariable: false, isProrated: false, hasData: false 
+          icon: Landmark, colorClass: 'text-slate-600', bgClass: 'bg-slate-50', barClass: 'bg-slate-500', isVariable: false, isProrated: false, hasData: true 
       },
       { 
           id: 'merchandising', 

@@ -133,6 +133,29 @@ export const VenueOpsDashboard: React.FC = () => {
 
       {activeSection === 'overview' && (
         <>
+          <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-6 text-white">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Total Revenue (YTD)</p>
+                <p className="text-4xl font-bold">{formatCurrency(VENUE_FINANCIALS.actual.revenue)}</p>
+                <p className="text-xs text-gray-400 mt-1">H1 Actual (Jul – Dec 2025)</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Season Budget</p>
+                <p className="text-4xl font-bold text-gray-300">{formatCurrency(258000)}</p>
+                <div className="w-full bg-gray-700 h-2 rounded-full mt-3 overflow-hidden">
+                  <div className="h-full bg-green-500 rounded-full" style={{ width: `${(VENUE_FINANCIALS.actual.revenue / 258000 * 100).toFixed(1)}%` }}></div>
+                </div>
+                <p className="text-[10px] text-gray-500 mt-1">{(VENUE_FINANCIALS.actual.revenue / 258000 * 100).toFixed(1)}% of target</p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">H2 Confirmed Pipeline</p>
+                <p className="text-4xl font-bold text-green-400">{formatCurrency(totalPipelineRevenue)}</p>
+                <p className="text-xs text-gray-400 mt-1">Projected Total: {formatCurrency(VENUE_FINANCIALS.actual.revenue + totalPipelineRevenue)}</p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
               <div className="flex items-center justify-between mb-3">
@@ -148,11 +171,11 @@ export const VenueOpsDashboard: React.FC = () => {
 
             <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">H1 Revenue</p>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">H1 Budget</p>
                 <div className="p-2 rounded-lg bg-green-50"><Euro size={18} className="text-green-600" /></div>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(VENUE_FINANCIALS.actual.revenue)}</p>
-              <p className="text-xs text-gray-400 mt-1">vs {formatCurrency(VENUE_FINANCIALS.budget.revenue)} budget</p>
+              <p className="text-3xl font-bold text-gray-900">{formatCurrency(VENUE_FINANCIALS.budget.revenue)}</p>
+              <p className="text-xs text-gray-400 mt-1">Revenue budget for H1</p>
               <div className="flex items-center gap-1 mt-2">
                 <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded">See note below</span>
               </div>
@@ -160,14 +183,14 @@ export const VenueOpsDashboard: React.FC = () => {
 
             <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">H2 Pipeline</p>
-                <div className="p-2 rounded-lg bg-purple-50"><TrendingUp size={18} className="text-purple-600" /></div>
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Costs (On Budget)</p>
+                <div className="p-2 rounded-lg bg-red-50"><DollarSign size={18} className="text-red-600" /></div>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(totalPipelineRevenue)}</p>
-              <p className="text-xs text-gray-400 mt-1">{confirmedEvents} confirmed events</p>
+              <p className="text-3xl font-bold text-gray-900">{formatCurrency(VENUE_FINANCIALS.actual.costs)}</p>
+              <p className="text-xs text-gray-400 mt-1">All costs tracking on-budget</p>
               <div className="flex items-center gap-1 mt-2">
                 <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded flex items-center gap-1">
-                  <CheckCircle2 size={10} /> All confirmed
+                  <CheckCircle2 size={10} /> On track
                 </span>
               </div>
             </div>
