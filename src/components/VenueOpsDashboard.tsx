@@ -50,6 +50,7 @@ const PIPELINE = {
     { name: 'U13 Tournament', date: 'May 30 – Jun 2', revenue: 4000, extra: '€1.000/day + Cleaning (4 days)', status: 'confirmed' as const },
     { name: 'Foresteria Rental (Trofeo Garbosi)', date: 'Apr', revenue: 1200, extra: '3 days, 12 kids + 2 coaches', status: 'confirmed' as const },
     { name: 'Foresteria Rental (U13 Tournament)', date: 'May/Jun', revenue: 1200, extra: '3 days, 12 kids + 2 coaches', status: 'confirmed' as const },
+    { name: 'Municipality Payment (H2)', date: 'Jan – Jun 2026', revenue: 48000, extra: 'Equal to H1 contribution', status: 'confirmed' as const },
   ],
   community: [
     { name: 'School Cup Finals – Middle Schools', date: 'Mar 27', status: 'confirmed' as const },
