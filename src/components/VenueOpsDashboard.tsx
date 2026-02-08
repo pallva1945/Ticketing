@@ -11,8 +11,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 
 const VENUE_FINANCIALS = {
-  budget: { revenue: 122000, costs: 122000 },
-  actual: { revenue: 22000, costs: 122000 },
+  budget: { revenue: 131182, costs: 122000 },
+  actual: { revenue: 85485.36, costs: 122000 },
   note: 'The revenue gap vs. budget is non-operational. It is driven by the VSE €100k right-to-equity conversion, shifting value from the P&L to the Balance Sheet. Operationally, the department is performing as expected, with all costs tracking on-budget for the first half of the season.'
 };
 
