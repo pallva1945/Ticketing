@@ -2585,6 +2585,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Data Source Controls - Context Aware */}
+        {activeModule !== 'venue_ops' && (
         <div className="p-4 border-t border-gray-100 bg-gray-50/50">
            <div className="flex items-center gap-2 mb-4 text-xs font-semibold uppercase text-gray-400">
               <Database size={14} />
@@ -2683,6 +2684,7 @@ const App: React.FC = () => {
              </div>
            )}
         </div>
+        )}
       </aside>
 
       {/* Overlay for mobile sidebar */}
