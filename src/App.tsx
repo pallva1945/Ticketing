@@ -18,6 +18,7 @@ import { BoardReportModal } from './components/BoardReportModal';
 import { CRMView } from './components/CRMView';
 import { SponsorshipDashboard } from './components/SponsorshipDashboard';
 import { MerchandisingView } from './components/MerchandisingView';
+import { VenueOpsDashboard } from './components/VenueOpsDashboard';
 import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, FIXED_CORP_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, SponsorData, CRMRecord, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { PieChart as RechartsPie, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -3105,6 +3106,8 @@ const App: React.FC = () => {
               </div>
           ) : activeModule === 'merchandising' ? (
               <MerchandisingView />
+          ) : activeModule === 'venue_ops' ? (
+              <VenueOpsDashboard />
           ) : (
               <PlaceholderView 
                 moduleName={MODULES.find(m => m.id === activeModule)?.label || 'Module'} 
