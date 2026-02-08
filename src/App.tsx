@@ -1918,7 +1918,7 @@ const App: React.FC = () => {
     const channelAll = selectedChannels.includes('All');
     const channelSet = new Set(selectedChannels.map(c => c.toLowerCase()));
     const channelMap: Record<string, string> = { 'abb': 'abb', 'tix': 'tix', 'corp': 'corp', 'mp': 'mp', 'vb': 'vb', 'giveaway': 'giveaway', 'protocol': 'protocol' };
-    const gameDayChannels = new Set(['tix', 'mp', 'vb', 'giveaway', 'giveaways', 'give away', 'protocol', 'ga']);
+    const gameDayChannels = new Set(['tix', 'mp', 'vb', 'giveaway', 'giveaways', 'give away', 'ga']);
     return crmData.filter(r => {
       if (viewMode === 'gameday') {
         const sellRaw = (r.sell || r.sellType || '').trim().toLowerCase();
