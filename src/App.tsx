@@ -618,24 +618,23 @@ const RevenueHome = ({
                         );
                     })()}
 
-                    {/* Signal 3: GameDay View Projection */}
+                    {/* Signal 3: GameDay Tickets */}
                     {(() => {
-                        const gameDayViewActual = gameDayTicketing + gameDayRevenue;
-                        const gameDayViewProjection = (gameDayViewActual / gamesCount) * TOTAL_GAMES_SEASON;
-                        const perGame = gameDayViewActual / gamesCount;
+                        const perGame = gameDayTicketing / gamesCount;
+                        const projection = perGame * TOTAL_GAMES_SEASON;
                         return (
                         <div className="bg-white border border-blue-200 rounded-xl p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-3">
-                                <Calendar size={16} className="text-blue-600" />
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">GameDay View Projection</span>
+                                <Ticket size={16} className="text-blue-600" />
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">GameDay Tickets</span>
                             </div>
-                            <p className="text-2xl font-bold text-gray-900">{formatCompact(gameDayViewProjection)}</p>
-                            <p className="text-xs text-gray-500 mt-1">GD Ticketing + GameDay Rev × {TOTAL_GAMES_SEASON} games</p>
+                            <p className="text-2xl font-bold text-gray-900">{formatCompact(projection)}</p>
+                            <p className="text-xs text-gray-500 mt-1">Tickets sold on game day × {TOTAL_GAMES_SEASON} games</p>
                             <div className="mt-3 flex items-center gap-2">
                                 <div className="flex-1 h-1.5 bg-blue-100 rounded-full overflow-hidden">
                                     <div 
                                         className="h-full bg-blue-500" 
-                                        style={{ width: `${Math.min((gameDayViewProjection / (1650000 + 1250000)) * 100, 100)}%` }}
+                                        style={{ width: `${Math.min((projection / 1650000) * 100, 100)}%` }}
                                     />
                                 </div>
                                 <span className="text-[10px] font-bold text-blue-600">
