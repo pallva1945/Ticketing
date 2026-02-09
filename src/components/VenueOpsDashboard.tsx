@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import {
   Building2, CalendarDays, Euro, TrendingUp, AlertTriangle, CheckCircle2,
   Clock, Users, PartyPopper, Camera, GraduationCap, Trophy,
-  Target, ArrowRight, Shield, ChevronDown, ChevronUp,
-  Landmark, MapPin, Tv, Star, Lightbulb, DollarSign,
+  ArrowRight, Shield, ChevronDown, ChevronUp,
+  Landmark, MapPin, DollarSign,
   BarChart3, PieChart as PieChartIcon
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
@@ -71,17 +71,9 @@ const COMPLIANCE_ITEMS = [
   { name: 'Visiting Fan Section Upgrade', status: 'completed', description: 'Replaced metal cage with glass barrier system. Engineering certifications obtained.' },
 ];
 
-const STRATEGY_ITEMS = [
-  { title: 'Event Agency Partnerships', description: 'Collaborate with event management agencies on commission basis to market the Arena to corporate clients and concert promoters.', priority: 'high' },
-  { title: 'Venue Landing Page', description: 'Develop a dedicated website to showcase technical specs, catering options, and availability to external planners.', priority: 'high' },
-  { title: 'Digital Brochure', description: 'Create a professional pitch deck for local businesses targeting conventions and team-building events.', priority: 'medium' },
-  { title: 'Museum Space Launch', description: 'Independent external access, ideal for B2B meetings, private dinners, and corporate parties. Target: fully operational by May 2026.', priority: 'high' },
-  { title: 'Sponsorship Integration', description: 'Integrate venue rentals into current sponsorship packages to increase corporate partnership value.', priority: 'medium' },
-];
-
 export const VenueOpsDashboard: React.FC = () => {
   const [expandedMonth, setExpandedMonth] = useState<string | null>('Dec');
-  const [activeSection, setActiveSection] = useState<'overview' | 'pipeline' | 'strategy'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'pipeline'>('overview');
 
   const totalOccupiedDays = MONTHLY_OCCUPANCY.reduce((s, m) => s + m.days, 0);
   const totalDays = MONTHLY_OCCUPANCY.reduce((s, m) => s + m.total, 0);
@@ -116,7 +108,7 @@ export const VenueOpsDashboard: React.FC = () => {
           <p className="text-sm text-gray-500 mt-1">Season 25-26 • H1 Report (Jul 1 – Dec 31, 2025)</p>
         </div>
         <div className="flex gap-2">
-          {(['overview', 'pipeline', 'strategy'] as const).map(section => (
+          {(['overview', 'pipeline'] as const).map(section => (
             <button
               key={section}
               onClick={() => setActiveSection(section)}
@@ -126,7 +118,7 @@ export const VenueOpsDashboard: React.FC = () => {
                   : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
               }`}
             >
-              {section === 'overview' ? 'Overview' : section === 'pipeline' ? 'Event Pipeline' : 'Growth Strategy'}
+              {section === 'overview' ? 'Overview' : 'Event Pipeline'}
             </button>
           ))}
         </div>
@@ -464,127 +456,6 @@ export const VenueOpsDashboard: React.FC = () => {
         </>
       )}
 
-      {activeSection === 'strategy' && (
-        <>
-          <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-6 text-white">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Lightbulb size={24} className="text-amber-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold mb-2">Strategic Shift Required</h3>
-                <p className="text-sm text-gray-300 leading-relaxed">
-                  The Venue Operations department is currently operating in <strong className="text-amber-400">"Reactive Mode"</strong> — relying on inbound requests rather than active prospecting.
-                  To transition this into a high-growth business vertical, we need to switch to a <strong className="text-green-400">proactive sales mentality</strong> and market the arena differently.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Target size={16} className="text-red-600" />
-              Growth Initiatives
-            </h3>
-            <div className="space-y-4">
-              {STRATEGY_ITEMS.map((item, idx) => {
-                const priorityColors = {
-                  high: 'border-l-red-500 bg-red-50/30',
-                  medium: 'border-l-amber-500 bg-amber-50/30',
-                  low: 'border-l-blue-500 bg-blue-50/30'
-                };
-                return (
-                  <div key={idx} className={`p-4 rounded-lg border border-gray-100 border-l-4 ${priorityColors[item.priority as keyof typeof priorityColors]} hover:shadow-sm transition-shadow`}>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="text-sm font-bold text-gray-800">{item.title}</p>
-                          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${
-                            item.priority === 'high' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-                          }`}>
-                            {item.priority}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-600 leading-relaxed">{item.description}</p>
-                      </div>
-                      <ArrowRight size={16} className="text-gray-300 flex-shrink-0 mt-1" />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Landmark size={16} className="text-purple-600" />
-                Museum Space Opportunity
-              </h3>
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
-                <p className="text-sm font-semibold text-purple-800 mb-2">New Revenue Stream</p>
-                <p className="text-xs text-purple-700 leading-relaxed">
-                  Once certification is released, the Museum space will offer independent external access — ideal for smaller, more agile events.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <CheckCircle2 size={12} className="text-green-500" />
-                  B2B meetings & corporate parties
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <CheckCircle2 size={12} className="text-green-500" />
-                  Private dinners & hospitality
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <CheckCircle2 size={12} className="text-green-500" />
-                  Game-day fan zones
-                </div>
-                <div className="flex items-center gap-2 text-xs text-gray-600">
-                  <Clock size={12} className="text-amber-500" />
-                  Target: Fully operational by May 2026
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Star size={16} className="text-amber-600" />
-                Strategic Takeaways
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Tv size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">Major Entity Interest</p>
-                    <p className="text-xs text-gray-500 leading-relaxed">
-                      Interest from entities like RAI confirms the Arena's appeal for non-sporting events. This validates the proactive strategy.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Shield size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">Deposit Policy Works</p>
-                    <p className="text-xs text-gray-500 leading-relaxed">
-                      The non-refundable deposit policy protected margins in the music video cancellation case — €2,000 retained despite schedule change.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <Building2 size={16} className="text-purple-600 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-800">Sponsorship Integration</p>
-                    <p className="text-xs text-gray-500 leading-relaxed">
-                      Integrating venue rentals into sponsorship packages can increase the value proposition for corporate partners.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 };
