@@ -305,15 +305,7 @@ const RevenueHome = ({
     // AGGREGATES (Only verticals with actual data)
     const totalRevenueYTD = verticalsWithData.reduce((acc, v) => acc + v.current, 0);
     const totalTarget = verticalsWithData.reduce((acc, v) => acc + v.target, 0);
-    const totalRevenueProjected = verticalsWithData.reduce((acc, v) => {
-        if(v.isVariable) {
-             return acc + v.projectedFinish;
-        } else if (v.isProrated && 'signedValue' in v) {
-             return acc + (v.signedValue as number);
-        } else {
-             return acc + v.current;
-        }
-    }, 0);
+    const totalRevenueProjected = verticalsWithData.reduce((acc, v) => acc + v.projectedFinish, 0);
     
     // PACING LOGIC
     const revenueProgressPct = totalTarget > 0 ? (totalRevenueYTD / totalTarget) * 100 : 0;
@@ -605,8 +597,7 @@ const RevenueHome = ({
                                     <p className={v.pacePct >= 0 ? 'text-green-400' : 'text-red-400'}>
                                         Pace: {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(1)}%
                                     </p>
-                                    {v.isVariable && <p className="text-purple-400">Proj: {formatCompact(v.projectedFinish)}</p>}
-                                    {v.isProrated && 'signedValue' in v && <p className="text-purple-400">Full Year: {formatCompact(v.signedValue as number)}</p>}
+                                    <p className="text-purple-400">Proj: {formatCompact(v.projectedFinish)}</p>
                                     <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-900"></div>
                                 </div>
                             </div>
