@@ -636,7 +636,7 @@ const RevenueHome = ({
                                 <div className="flex-1 h-1.5 bg-blue-100 rounded-full overflow-hidden">
                                     <div 
                                         className="h-full bg-blue-500" 
-                                        style={{ width: `${Math.min((projection / 1650000) * 100, 100)}%` }}
+                                        style={{ width: `${Math.min((projection / 450000) * 100, 100)}%` }}
                                     />
                                 </div>
                                 <span className="text-[10px] font-bold text-blue-600">
