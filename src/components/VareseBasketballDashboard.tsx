@@ -1,29 +1,32 @@
 import React, { useState } from 'react';
-import { Euro, Trophy, Flag, Activity, TrendingUp, Users, CheckCircle2, Calendar, Target, ChevronDown, ChevronUp } from 'lucide-react';
+import { Euro, Trophy, Flag, Activity, TrendingUp, CheckCircle2, Calendar, Target, Dumbbell } from 'lucide-react';
 
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
-const formatCurrencyDetail = (val: number) => `€${val.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const SPONSORSHIP_DEALS = [
-  { name: 'PRevcom', annual: 250000, h1: 125000, status: 'active' },
-  { name: 'Elmec', annual: 70000, h1: 35000, status: 'active' },
-  { name: 'BSN', annual: 24000, h1: 12000, status: 'active' },
-  { name: 'VNC', annual: 12000, h1: 6000, status: 'active' },
-  { name: 'C\'era Una Volta', annual: 10000, h1: 5000, status: 'active' },
-  { name: 'Nippo Motors', annual: 3000, h1: 1500, status: 'active' },
-  { name: 'Edil Domus', annual: 2000, h1: 1000, status: 'active' },
+  { name: 'PRevcom', annual: 250000, h1: 125000 },
+  { name: 'Elmec', annual: 70000, h1: 35000 },
+  { name: 'BSN', annual: 24000, h1: 12000 },
+  { name: 'VNC', annual: 12000, h1: 6000 },
+  { name: 'C\'era Una Volta', annual: 10000, h1: 5000 },
+  { name: 'Nippo Motors', annual: 3000, h1: 1500 },
+  { name: 'Edil Domus', annual: 2000, h1: 1000 },
 ];
 
 const SPONSORSHIP_H2_PIPELINE = [
-  { name: 'Sports & Health (S&H)', annual: 25000, h2: 12500, note: '3-year solar contract – recovers H1 budget gap', status: 'confirmed' },
+  { name: 'Sports & Health (S&H)', annual: 25000, h2: 12500, note: '3-year solar contract – recovers H1 budget gap' },
 ];
 
 const BOPS_BREAKDOWN = [
   { name: 'Parametri', h1: 46270, note: 'Fixed allocation' },
   { name: 'Buyouts (Elisée Assui)', h1: 40000, note: '4/10 months of €100k buyout' },
-  { name: 'YAP (Year Around Program)', h1: 32200, note: '4 players' },
-  { name: 'EDBP (Elite Dev Basketball Program)', h1: 30000, note: '3 players at €20k/year' },
   { name: 'U23–U26', h1: 18500, note: '4/10 months' },
+  { name: 'Annual Fee', h1: 12428, note: 'Fixed annual fee' },
+];
+
+const EBP_BREAKDOWN = [
+  { name: 'YAP (Year Around Program)', h1: 32200, note: '4 players · €15k/year each', players: 4 },
+  { name: 'EDBP (Elite Dev Basketball Program)', h1: 30000, note: '3 players · €20k/year each', players: 3 },
 ];
 
 const GAMEDAY_DATA = {
@@ -36,21 +39,22 @@ const GAMEDAY_DATA = {
 const FINANCIALS = {
   gameday: { actual: 1082, budget: 2164 },
   sponsorship: { actual: 184975, budget: 190002 },
-  bops: { actual: 137783, budget: 138000 },
+  bops: { actual: BOPS_BREAKDOWN.reduce((s, b) => s + b.h1, 0), budget: 138000 },
+  ebp: { actual: EBP_BREAKDOWN.reduce((s, b) => s + b.h1, 0), budget: EBP_BREAKDOWN.reduce((s, b) => s + b.h1, 0) },
 };
 
-const totalH1Actual = FINANCIALS.gameday.actual + FINANCIALS.sponsorship.actual + FINANCIALS.bops.actual;
-const totalH1Budget = FINANCIALS.gameday.budget + FINANCIALS.sponsorship.budget + FINANCIALS.bops.budget;
+const totalH1Actual = FINANCIALS.gameday.actual + FINANCIALS.sponsorship.actual + FINANCIALS.bops.actual + FINANCIALS.ebp.actual;
+const totalH1Budget = FINANCIALS.gameday.budget + FINANCIALS.sponsorship.budget + FINANCIALS.bops.budget + FINANCIALS.ebp.budget;
 const seasonBudget = totalH1Budget * 2;
 
+type Section = 'overview' | 'sponsorship' | 'bops' | 'ebp';
+
 export const VareseBasketballDashboard: React.FC = () => {
-  const [activeSection, setActiveSection] = useState<'overview' | 'sponsorship' | 'bops'>('overview');
-  const [expandedBops, setExpandedBops] = useState(false);
-  const [expandedSponsorship, setExpandedSponsorship] = useState(false);
+  const [activeSection, setActiveSection] = useState<Section>('overview');
 
   const sponsorshipGap = FINANCIALS.sponsorship.budget - FINANCIALS.sponsorship.actual;
   const h2SponsorshipRecovery = SPONSORSHIP_H2_PIPELINE.reduce((s, d) => s + d.h2, 0);
-  const bopsLineTotal = BOPS_BREAKDOWN.reduce((s, b) => s + b.h1, 0);
+  const totalEbpPlayers = EBP_BREAKDOWN.reduce((s, p) => s + (p.players || 0), 0);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -65,10 +69,10 @@ export const VareseBasketballDashboard: React.FC = () => {
       </div>
 
       <div className="flex gap-2 border-b border-gray-200 pb-1">
-        {(['overview', 'sponsorship', 'bops'] as const).map(section => (
+        {(['overview', 'sponsorship', 'bops', 'ebp'] as const).map(section => (
           <button key={section} onClick={() => setActiveSection(section)}
             className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeSection === section ? 'bg-teal-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
-            {section === 'overview' ? 'Overview' : section === 'sponsorship' ? 'Sponsorship' : 'BOps'}
+            {section === 'overview' ? 'Overview' : section === 'sponsorship' ? 'Sponsorship' : section === 'bops' ? 'BOps' : 'EBP'}
           </button>
         ))}
       </div>
@@ -108,7 +112,7 @@ export const VareseBasketballDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveSection('sponsorship')}>
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Sponsorship</p>
@@ -134,11 +138,28 @@ export const VareseBasketballDashboard: React.FC = () => {
               <p className="text-3xl font-bold text-gray-900">{formatCurrency(FINANCIALS.bops.actual)}</p>
               <p className="text-xs text-gray-400 mt-1">Budget: {formatCurrency(FINANCIALS.bops.budget)}</p>
               <div className="w-full bg-gray-100 h-2 rounded-full mt-3 overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(0)}%` }}></div>
+                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(0)}%` }}></div>
               </div>
               <div className="flex items-center gap-1 mt-2">
                 <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded flex items-center gap-1">
                   <CheckCircle2 size={10} /> {(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(1)}% of budget
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveSection('ebp')}>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">EBP</p>
+                <div className="p-2 rounded-lg bg-purple-50"><Dumbbell size={18} className="text-purple-600" /></div>
+              </div>
+              <p className="text-3xl font-bold text-gray-900">{formatCurrency(FINANCIALS.ebp.actual)}</p>
+              <p className="text-xs text-gray-400 mt-1">{totalEbpPlayers} players enrolled</p>
+              <div className="w-full bg-gray-100 h-2 rounded-full mt-3 overflow-hidden">
+                <div className="h-full bg-purple-500 rounded-full" style={{ width: '100%' }}></div>
+              </div>
+              <div className="flex items-center gap-1 mt-2">
+                <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded flex items-center gap-1">
+                  <CheckCircle2 size={10} /> 2 programs active
                 </span>
               </div>
             </div>
@@ -165,7 +186,8 @@ export const VareseBasketballDashboard: React.FC = () => {
                 <p className="text-sm font-semibold text-teal-800">H2 Outlook</p>
                 <p className="text-xs text-teal-700 mt-1">
                   The €{sponsorshipGap.toLocaleString('it-IT')} sponsorship gap will be recovered with the new Sports & Health (S&H) 3-year solar contract, 
-                  bringing €{h2SponsorshipRecovery.toLocaleString('it-IT')} in H2. BOps is tracking at {(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(1)}% of budget.
+                  bringing €{h2SponsorshipRecovery.toLocaleString('it-IT')} in H2. BOps is tracking at {(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(1)}% of budget. 
+                  EBP programs (EDBP + YAP) are generating €{formatCurrency(FINANCIALS.ebp.actual)} from {totalEbpPlayers} players.
                 </p>
               </div>
             </div>
@@ -241,7 +263,7 @@ export const VareseBasketballDashboard: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <p className="text-sm font-bold text-gray-900">Basketball Operations – H1 Breakdown</p>
-                <p className="text-xs text-gray-400">Revenue from player development programs & allocations</p>
+                <p className="text-xs text-gray-400">Player acquisitions, allocations & fees</p>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-gray-900">{formatCurrency(FINANCIALS.bops.actual)}</p>
@@ -271,48 +293,79 @@ export const VareseBasketballDashboard: React.FC = () => {
               })}
             </div>
             <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200">
-              <p className="text-xs font-semibold text-gray-500">Line Items Total</p>
-              <p className="text-sm font-bold text-gray-900">{formatCurrency(bopsLineTotal)}</p>
+              <p className="text-xs font-semibold text-gray-500">BOps H1 Total</p>
+              <p className="text-sm font-bold text-gray-900">{formatCurrency(FINANCIALS.bops.actual)}</p>
             </div>
-            {bopsLineTotal !== FINANCIALS.bops.actual && (
-              <div className="flex items-center justify-between mt-1">
-                <p className="text-xs text-gray-400">Other / Adjustments</p>
-                <p className="text-xs font-medium text-gray-500">{formatCurrency(FINANCIALS.bops.actual - bopsLineTotal)}</p>
-              </div>
-            )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">Player Development Programs</p>
-              <div className="space-y-3">
-                <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
-                  <p className="text-sm font-medium text-gray-900">EBP – Elite Basketball Program</p>
-                  <p className="text-xs text-gray-500 mt-1">Top-tier development track</p>
-                </div>
-                <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
-                  <p className="text-sm font-medium text-gray-900">EDBP – Elite Development Program</p>
-                  <p className="text-xs text-gray-500 mt-1">3 players · €20k/year each</p>
-                </div>
-                <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
-                  <p className="text-sm font-medium text-gray-900">YAP – Year Around Program</p>
-                  <p className="text-xs text-gray-500 mt-1">4 players · €15k/year each</p>
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">Budget Status</p>
+            <div className="flex items-center justify-center h-28">
+              <div className="text-center">
+                <p className="text-5xl font-bold text-emerald-600">{(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(1)}%</p>
+                <p className="text-xs text-gray-400 mt-2">of H1 budget achieved</p>
+                <div className="flex items-center gap-1 mt-3 justify-center">
+                  <CheckCircle2 size={14} className="text-green-600" />
+                  <span className="text-xs font-medium text-green-600">On target</span>
                 </div>
               </div>
             </div>
+          </div>
+        </>
+      )}
 
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">Budget Status</p>
-              <div className="flex items-center justify-center h-32">
-                <div className="text-center">
-                  <p className="text-5xl font-bold text-emerald-600">{(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(1)}%</p>
-                  <p className="text-xs text-gray-400 mt-2">of H1 budget achieved</p>
-                  <div className="flex items-center gap-1 mt-3 justify-center">
-                    <CheckCircle2 size={14} className="text-green-600" />
-                    <span className="text-xs font-medium text-green-600">On target</span>
-                  </div>
-                </div>
+      {activeSection === 'ebp' && (
+        <>
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm font-bold text-gray-900">Elite Basketball Program – H1</p>
+                <p className="text-xs text-gray-400">Player development revenue across {totalEbpPlayers} enrolled players</p>
               </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-gray-900">{formatCurrency(FINANCIALS.ebp.actual)}</p>
+                <p className="text-xs text-gray-400">H1 total</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {EBP_BREAKDOWN.map((program, idx) => {
+                const pct = program.h1 / FINANCIALS.ebp.actual * 100;
+                return (
+                  <div key={idx} className="p-4 bg-purple-50/50 border border-purple-100 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{program.name}</p>
+                        <p className="text-xs text-gray-500">{program.note}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-gray-900">{formatCurrency(program.h1)}</p>
+                        <p className="text-[10px] text-gray-400">{pct.toFixed(1)}% of EBP revenue</p>
+                      </div>
+                    </div>
+                    <div className="w-full bg-purple-100 h-2 rounded-full overflow-hidden">
+                      <div className="h-full bg-purple-500 rounded-full" style={{ width: `${pct}%` }}></div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Total Players</p>
+              <p className="text-4xl font-bold text-purple-600">{totalEbpPlayers}</p>
+              <p className="text-xs text-gray-400 mt-1">Enrolled in programs</p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Avg Revenue / Player</p>
+              <p className="text-4xl font-bold text-purple-600">{formatCurrency(Math.round(FINANCIALS.ebp.actual / totalEbpPlayers))}</p>
+              <p className="text-xs text-gray-400 mt-1">H1 average</p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
+              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Programs</p>
+              <p className="text-4xl font-bold text-purple-600">{EBP_BREAKDOWN.length}</p>
+              <p className="text-xs text-gray-400 mt-1">EDBP + YAP</p>
             </div>
           </div>
         </>
