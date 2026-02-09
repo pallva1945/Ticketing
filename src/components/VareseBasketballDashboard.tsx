@@ -45,7 +45,7 @@ const FINANCIALS = {
 
 const totalH1Actual = 366315;
 const totalH1Budget = 395668;
-const seasonBudget = totalH1Budget * 2;
+const seasonBudget = 930465;
 
 type Section = 'overview' | 'sponsorship' | 'bops' | 'ebp';
 
