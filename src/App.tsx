@@ -590,45 +590,61 @@ const RevenueHome = ({
                         </div>
                     </div>
 
-                    {/* Signal 2: Variable Run Rate */}
-                    <div className="bg-white border border-purple-200 rounded-xl p-5 shadow-sm">
-                        <div className="flex items-center gap-2 mb-3">
-                            <TrendingUp size={16} className="text-purple-600" />
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Variable Run Rate</span>
-                        </div>
-                        <div className="flex items-baseline gap-1">
-                            <p className="text-2xl font-bold text-gray-900">{formatCompact(currentVariableRunRate)}</p>
-                            <span className="text-xs text-gray-400">/ game</span>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">GameDay Ticketing + GameDay Rev</p>
-                        <div className="mt-3 h-1.5 bg-purple-100 rounded-full overflow-hidden">
-                            <div 
-                                className="h-full bg-purple-500" 
-                                style={{ width: `${Math.min((currentVariableRunRate/200000)*100, 100)}%` }}
-                            />
-                        </div>
-                    </div>
-
-                    {/* Signal 3: Fixed Revenue Secured */}
-                    <div className="bg-white border border-blue-200 rounded-xl p-5 shadow-sm">
-                        <div className="flex items-center gap-2 mb-3">
-                            <Shield size={16} className="text-blue-600" />
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Fixed Revenue Secured</span>
-                        </div>
-                        <p className="text-2xl font-bold text-gray-900">{formatCompact(fixedYTD)}</p>
-                        <p className="text-xs text-gray-500 mt-1">Sponsorship + Fixed Ticketing</p>
-                        <div className="mt-3 flex items-center gap-2">
-                            <div className="flex-1 h-1.5 bg-blue-100 rounded-full overflow-hidden">
-                                <div 
-                                    className="h-full bg-blue-500" 
-                                    style={{ width: `${Math.min((fixedYTD / (totalTarget - variableYTD + fixedYTD)) * 100, 100)}%` }}
-                                />
+                    {/* Signal 2: GameDay Projection */}
+                    {(() => {
+                        const gameDayProjection = ((ticketingRevenue + gameDayRevenue) / gamesCount) * TOTAL_GAMES_SEASON;
+                        const gameDayTarget = 1650000 + 1250000;
+                        const gameDayPct = (gameDayProjection / gameDayTarget) * 100;
+                        return (
+                        <div className="bg-white border border-purple-200 rounded-xl p-5 shadow-sm">
+                            <div className="flex items-center gap-2 mb-3">
+                                <TrendingUp size={16} className="text-purple-600" />
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">GameDay Projection</span>
                             </div>
-                            <span className="text-[10px] font-bold text-blue-600">
-                                {((fixedYTD / totalRevenueYTD) * 100).toFixed(0)}%
-                            </span>
+                            <p className="text-2xl font-bold text-gray-900">{formatCompact(gameDayProjection)}</p>
+                            <p className="text-xs text-gray-500 mt-1">Ticketing + GameDay × {TOTAL_GAMES_SEASON} games</p>
+                            <div className="mt-3 flex items-center gap-2">
+                                <div className="flex-1 h-1.5 bg-purple-100 rounded-full overflow-hidden">
+                                    <div 
+                                        className="h-full bg-purple-500" 
+                                        style={{ width: `${Math.min(gameDayPct, 100)}%` }}
+                                    />
+                                </div>
+                                <span className="text-[10px] font-bold text-purple-600">
+                                    {gameDayPct.toFixed(0)}%
+                                </span>
+                            </div>
                         </div>
-                    </div>
+                        );
+                    })()}
+
+                    {/* Signal 3: Ticketing + GameDay View */}
+                    {(() => {
+                        const combinedActual = ticketingRevenue + gameDayRevenue;
+                        const combinedTarget = 1650000 + 1250000;
+                        const perGame = combinedActual / gamesCount;
+                        return (
+                        <div className="bg-white border border-blue-200 rounded-xl p-5 shadow-sm">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Calendar size={16} className="text-blue-600" />
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Ticketing + GameDay</span>
+                            </div>
+                            <p className="text-2xl font-bold text-gray-900">{formatCompact(combinedActual)}</p>
+                            <p className="text-xs text-gray-500 mt-1">{formatCompact(perGame)} avg / game ({gamesPlayed} played)</p>
+                            <div className="mt-3 flex items-center gap-2">
+                                <div className="flex-1 h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                                    <div 
+                                        className="h-full bg-blue-500" 
+                                        style={{ width: `${Math.min((combinedActual / combinedTarget) * 100, 100)}%` }}
+                                    />
+                                </div>
+                                <span className="text-[10px] font-bold text-blue-600">
+                                    {((combinedActual / combinedTarget) * 100).toFixed(0)}%
+                                </span>
+                            </div>
+                        </div>
+                        );
+                    })()}
 
                     {/* Signal 4: Attention Required */}
                     <div className={`rounded-xl p-5 shadow-sm border ${worstPacingVertical.pacePct < -10 ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
