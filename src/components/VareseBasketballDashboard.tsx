@@ -4,7 +4,7 @@ import { Euro, Trophy, Flag, Activity, TrendingUp, CheckCircle2, Calendar, Targe
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 
 const SPONSORSHIP_DEALS = [
-  { name: 'PRevcom', annual: 250000, h1: 125000 },
+  { name: 'Prevcom', annual: 250000, h1: 125000 },
   { name: 'Elmec', annual: 70000, h1: 35000 },
   { name: 'BSN', annual: 24000, h1: 12000 },
   { name: 'VNC', annual: 12000, h1: 6000 },
