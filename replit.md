@@ -35,6 +35,17 @@ The application uses a modern web stack with React 18 and TypeScript for the fro
 - **Styling**: Matches MerchandisingView exactly (white rounded-xl cards, border-gray-100, shadow-sm, orange accent, same typography)
 - **Revenue**: All monetary values exclude IVA (Italian VAT)
 
+## BOps (Serie A) Module
+- **Location**: `src/components/BOpsDashboard.tsx`
+- **Accounting**: 4/10 month basis to match gameday revenue recognition
+- **H1 Budget**: €180,000 (4/10 months) · **Season Budget**: €525,000
+- **H1 Actual**: €173,508 split across:
+  - Buy Out (Elisée Assui): €80,000
+  - U23–U26: €18,500
+  - LBA Shared Revenue: €75,008
+- **Key Note**: Under 26 is in budget but club doesn't qualify due to 5+5 → 6+6 roster status change (Aucap fund decision)
+- **Data Management**: Hidden (no CSV uploads needed)
+
 ## CRM Data Structure
 - **Sales Channel ("Sell" column)**: Exactly 5 types - ABB, Tix, CORP, MP, VB
 - **Ticket Types (separate column)**: Includes categories like "promotion", "ridotto", "staff" - these are NOT sales channels

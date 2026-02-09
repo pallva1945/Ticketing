@@ -20,6 +20,7 @@ import { SponsorshipDashboard } from './components/SponsorshipDashboard';
 import { MerchandisingView } from './components/MerchandisingView';
 import { VenueOpsDashboard } from './components/VenueOpsDashboard';
 import { VareseBasketballDashboard } from './components/VareseBasketballDashboard';
+import { BOpsDashboard } from './components/BOpsDashboard';
 import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, FIXED_CORP_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, SponsorData, CRMRecord, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { PieChart as RechartsPie, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -199,9 +200,9 @@ const RevenueHome = ({
       { 
           id: 'bops', 
           name: 'BOps', 
-          current: 0, 
+          current: 173508, 
           target: 525000, 
-          icon: Activity, colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', barClass: 'bg-emerald-500', isVariable: false, isProrated: false, hasData: false 
+          icon: Activity, colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', barClass: 'bg-emerald-500', isVariable: false, isProrated: false, hasData: true 
       },
       { 
           id: 'venue_ops', 
@@ -2405,7 +2406,7 @@ const App: React.FC = () => {
     { label: "MERCH", value: "€90k", icon: ShoppingBag, color: "text-orange-400" },
     { label: "VARESE BSK", value: "€550k", icon: GraduationCap, color: "text-teal-400" },
     { label: "VENUE", value: "€100k", icon: Landmark, color: "text-slate-400" },
-    { label: "BOPS", value: "€100k", icon: Activity, color: "text-emerald-400" },
+    { label: "BOPS", value: "€174k", icon: Activity, color: "text-emerald-400" },
   ], [stats, gameDayRevenueNet]);
 
   return (
@@ -2587,7 +2588,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Data Source Controls - Context Aware */}
-        {activeModule !== 'venue_ops' && activeModule !== 'sg' && (
+        {activeModule !== 'venue_ops' && activeModule !== 'sg' && activeModule !== 'bops' && (
         <div className="p-4 border-t border-gray-100 bg-gray-50/50">
            <div className="flex items-center gap-2 mb-4 text-xs font-semibold uppercase text-gray-400">
               <Database size={14} />
@@ -3109,6 +3110,8 @@ const App: React.FC = () => {
               <MerchandisingView />
           ) : activeModule === 'venue_ops' ? (
               <VenueOpsDashboard />
+          ) : activeModule === 'bops' ? (
+              <BOpsDashboard />
           ) : activeModule === 'sg' ? (
               <VareseBasketballDashboard />
           ) : (
