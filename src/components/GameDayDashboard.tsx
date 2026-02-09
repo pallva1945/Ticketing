@@ -87,11 +87,11 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
 
   // Top Row Card Component
   const KPICard = ({ label, value, subLabel, icon: Icon, color, borderTop = false }: any) => (
-      <div className={`bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-start justify-between ${color} ${borderTop ? 'border-t-4' : ''}`}>
+      <div className={`bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-start justify-between ${color} ${borderTop ? 'border-t-4' : ''}`}>
           <div>
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">{label}</p>
-              <p className="text-xl font-bold text-gray-900">{typeof value === 'number' ? `€${value.toLocaleString(undefined, {maximumFractionDigits: 0})}` : value}</p>
-              {subLabel && <p className="text-[10px] text-gray-400 mt-1 font-medium">{subLabel}</p>}
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">{label}</p>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">{typeof value === 'number' ? `€${value.toLocaleString(undefined, {maximumFractionDigits: 0})}` : value}</p>
+              {subLabel && <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1 font-medium">{subLabel}</p>}
           </div>
           <div className={`p-2 rounded-lg bg-opacity-10 ${color.replace('border', 'bg').replace('text', 'bg').split(' ')[0]}`}>
               <Icon size={20} className="opacity-90" />
@@ -107,7 +107,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
       const colorBase = colorClass.split('-')[1]; // extract 'orange', 'purple' etc
 
       return (
-        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between h-full hover:shadow-md transition-shadow">
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between h-full hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-3">
                 <div className={`p-2 rounded-lg bg-${colorBase}-50 text-${colorBase}-600`}>
                     <Icon size={18} />
@@ -118,18 +118,18 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
             </div>
             
             <div>
-                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">{label}</h4>
-                <p className="text-2xl font-bold text-gray-900 mb-2">€{value.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
+                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{label}</h4>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white mb-2">€{value.toLocaleString(undefined, {maximumFractionDigits: 0})}</p>
                 
-                <div className="w-full bg-gray-100 h-1.5 rounded-full mb-2 overflow-hidden">
+                <div className="w-full bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full mb-2 overflow-hidden">
                     <div className={`h-full bg-${colorBase}-500`} style={{width: `${share}%`}}></div>
                 </div>
                 
                 <div className="flex justify-between items-center text-[10px]">
-                    <span className="font-medium text-gray-400 flex items-center gap-1">
+                    <span className="font-medium text-gray-400 dark:text-gray-500 flex items-center gap-1">
                         <Users size={10} /> SPH
                     </span>
-                    <span className="font-bold text-gray-800 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
+                    <span className="font-bold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 rounded border border-gray-100 dark:border-gray-800">
                         €{sph.toFixed(2)}
                     </span>
                 </div>
@@ -140,9 +140,9 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
 
   if (data.length === 0) {
       return (
-          <div className="flex flex-col items-center justify-center h-64 bg-white rounded-xl border border-gray-200">
+          <div className="flex flex-col items-center justify-center h-64 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
               <AlertCircle size={32} className="text-gray-300 mb-2" />
-              <p className="text-gray-500 text-sm">No GameDay data matches the current filters.</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">No GameDay data matches the current filters.</p>
           </div>
       );
   }
@@ -152,7 +152,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
         
         {/* TOP ROW: High Level KPIs */}
         <div>
-            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <DollarSign size={16} /> Financial Overview (Per Game Avg)
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -213,15 +213,15 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                         value={stats.tix}
                         subLabel="Excluded from this View"
                         icon={Ticket}
-                        color="text-gray-400 border-gray-200"
+                        color="text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700"
                     />
                 )}
             </div>
         </div>
 
         {/* MIDDLE: Breakdown Chart */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-[400px] flex flex-col">
-            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4">
+        <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm h-[400px] flex flex-col">
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider mb-4">
                 {includeTicketing ? 'Total Revenue Mix by Match (Incl. Tix)' : 'Revenue Mix by Match (Excl. Tix)'}
             </h3>
             <div className="flex-1 min-h-0">
@@ -256,7 +256,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
 
         {/* BOTTOM ROW: Variable Stream Breakdown */}
         <div>
-            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Sparkles size={16} /> Operational Variable Mix (Avg Per Game)
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">

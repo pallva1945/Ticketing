@@ -36,12 +36,12 @@ const MONTHLY_OCCUPANCY = [
 ];
 
 const EVENT_TYPE_COLORS: Record<string, { bg: string; text: string; icon: any }> = {
-  game: { bg: 'bg-red-50', text: 'text-red-700', icon: Trophy },
-  private: { bg: 'bg-purple-50', text: 'text-purple-700', icon: PartyPopper },
-  production: { bg: 'bg-blue-50', text: 'text-blue-700', icon: Camera },
-  corporate: { bg: 'bg-amber-50', text: 'text-amber-700', icon: Building2 },
-  community: { bg: 'bg-green-50', text: 'text-green-700', icon: GraduationCap },
-  setup: { bg: 'bg-gray-50', text: 'text-gray-500', icon: Clock }
+  game: { bg: 'bg-red-50 dark:bg-red-900/30', text: 'text-red-700', icon: Trophy },
+  private: { bg: 'bg-purple-50 dark:bg-purple-900/30', text: 'text-purple-700', icon: PartyPopper },
+  production: { bg: 'bg-blue-50 dark:bg-blue-900/30', text: 'text-blue-700', icon: Camera },
+  corporate: { bg: 'bg-amber-50 dark:bg-amber-900/30', text: 'text-amber-700', icon: Building2 },
+  community: { bg: 'bg-green-50 dark:bg-green-900/30', text: 'text-green-700', icon: GraduationCap },
+  setup: { bg: 'bg-gray-50 dark:bg-gray-800', text: 'text-gray-500 dark:text-gray-400', icon: Clock }
 };
 
 const PIPELINE = {
@@ -104,8 +104,8 @@ export const VenueOpsDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Venue Operations</h1>
-          <p className="text-sm text-gray-500 mt-1">Season 25-26 • H1 Report (Jul 1 – Dec 31, 2025)</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Venue Operations</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Season 25-26 • H1 Report (Jul 1 – Dec 31, 2025)</p>
         </div>
         <div className="flex gap-2">
           {(['overview', 'pipeline'] as const).map(section => (
@@ -115,7 +115,7 @@ export const VenueOpsDashboard: React.FC = () => {
               className={`px-4 py-2 text-xs font-semibold rounded-lg transition-all ${
                 activeSection === section
                   ? 'bg-slate-800 text-white shadow-md'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
               }`}
             >
               {section === 'overview' ? 'Overview' : 'Event Pipeline'}
@@ -129,67 +129,67 @@ export const VenueOpsDashboard: React.FC = () => {
           <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-6 text-white">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Total Revenue (YTD)</p>
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Total Revenue (YTD)</p>
                 <p className="text-4xl font-bold">{formatCurrency(VENUE_FINANCIALS.actual.revenue)}</p>
-                <p className="text-xs text-gray-400 mt-1">H1 Actual (Jul – Dec 2025)</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">H1 Actual (Jul – Dec 2025)</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Season Budget</p>
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Season Budget</p>
                 <p className="text-4xl font-bold text-gray-300">{formatCurrency(262364)}</p>
                 <div className="w-full bg-gray-700 h-2 rounded-full mt-3 overflow-hidden">
                   <div className="h-full bg-green-500 rounded-full" style={{ width: `${(VENUE_FINANCIALS.actual.revenue / 262364 * 100).toFixed(1)}%` }}></div>
                 </div>
-                <p className="text-[10px] text-gray-500 mt-1">{(VENUE_FINANCIALS.actual.revenue / 262364 * 100).toFixed(1)}% of target</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">{(VENUE_FINANCIALS.actual.revenue / 262364 * 100).toFixed(1)}% of target</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">H2 Confirmed Pipeline</p>
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">H2 Confirmed Pipeline</p>
                 <p className="text-4xl font-bold text-green-400">{formatCurrency(totalPipelineRevenue)}</p>
-                <p className="text-xs text-gray-400 mt-1">Projected Total: {formatCurrency(VENUE_FINANCIALS.actual.revenue + totalPipelineRevenue)}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Projected Total: {formatCurrency(VENUE_FINANCIALS.actual.revenue + totalPipelineRevenue)}</p>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Arena Occupancy</p>
-                <div className="p-2 rounded-lg bg-blue-50"><CalendarDays size={18} className="text-blue-600" /></div>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Arena Occupancy</p>
+                <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30"><CalendarDays size={18} className="text-blue-600" /></div>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{occupancyRate}%</p>
-              <p className="text-xs text-gray-400 mt-1">{totalOccupiedDays} / {totalDays} days used</p>
-              <div className="w-full bg-gray-100 h-2 rounded-full mt-3 overflow-hidden">
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{occupancyRate}%</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{totalOccupiedDays} / {totalDays} days used</p>
+              <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full mt-3 overflow-hidden">
                 <div className="h-full bg-blue-500 rounded-full" style={{ width: `${occupancyRate}%` }}></div>
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">H1 Budget</p>
-                <div className="p-2 rounded-lg bg-green-50"><Euro size={18} className="text-green-600" /></div>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">H1 Budget</p>
+                <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/30"><Euro size={18} className="text-green-600" /></div>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(VENUE_FINANCIALS.budget.revenue)}</p>
-              <p className="text-xs text-gray-400 mt-1">Revenue budget for H1</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(VENUE_FINANCIALS.budget.revenue)}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Revenue budget for H1</p>
               <div className="flex items-center gap-1 mt-2">
-                <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded">See note below</span>
+                <span className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded">See note below</span>
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Campus Status</p>
-                <div className="p-2 rounded-lg bg-emerald-50"><MapPin size={18} className="text-emerald-600" /></div>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Campus Status</p>
+                <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30"><MapPin size={18} className="text-emerald-600" /></div>
               </div>
               <p className="text-3xl font-bold text-green-600">Daily</p>
-              <p className="text-xs text-gray-400 mt-1">Fully operational</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Fully operational</p>
               <div className="flex items-center gap-1 mt-2">
-                <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded flex items-center gap-1">
+                <span className="text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded flex items-center gap-1">
                   <CheckCircle2 size={10} /> Active
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <AlertTriangle size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
               <div>
@@ -200,8 +200,8 @@ export const VenueOpsDashboard: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <BarChart3 size={16} className="text-blue-600" />
                 Monthly Arena Usage
               </h3>
@@ -225,8 +225,8 @@ export const VenueOpsDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <PieChartIcon size={16} className="text-purple-600" />
                 Event Type Breakdown
               </h3>
@@ -263,8 +263,8 @@ export const VenueOpsDashboard: React.FC = () => {
                       <div key={idx} className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: PIE_COLORS[idx % PIE_COLORS.length] }}></div>
                         <Icon size={12} className={config.text} />
-                        <span className="text-xs text-gray-700">{entry.name}</span>
-                        <span className="text-xs font-bold text-gray-900 ml-auto">{entry.value}</span>
+                        <span className="text-xs text-gray-700 dark:text-gray-200">{entry.name}</span>
+                        <span className="text-xs font-bold text-gray-900 dark:text-white ml-auto">{entry.value}</span>
                       </div>
                     );
                   })}
@@ -273,33 +273,33 @@ export const VenueOpsDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider mb-4 flex items-center gap-2">
               <CalendarDays size={16} className="text-blue-600" />
               Monthly Event Detail
             </h3>
             <div className="space-y-2">
               {MONTHLY_OCCUPANCY.map(m => (
-                <div key={m.month} className="border border-gray-100 rounded-lg overflow-hidden">
+                <div key={m.month} className="border border-gray-100 dark:border-gray-800 rounded-lg overflow-hidden">
                   <button
                     onClick={() => setExpandedMonth(expandedMonth === m.month ? null : m.month)}
-                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold text-gray-800 w-8">{m.month}</span>
+                      <span className="text-sm font-bold text-gray-800 dark:text-gray-100 w-8">{m.month}</span>
                       <div className="flex items-center gap-2">
-                        <div className="w-24 bg-gray-100 h-2 rounded-full overflow-hidden">
+                        <div className="w-24 bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full ${m.days > 0 ? 'bg-blue-500' : 'bg-gray-200'}`}
+                            className={`h-full rounded-full ${m.days > 0 ? 'bg-blue-500' : 'bg-gray-200 dark:bg-gray-700'}`}
                             style={{ width: `${(m.days / m.total) * 100}%` }}
                           ></div>
                         </div>
-                        <span className="text-xs text-gray-500">{m.days}/{m.total} days</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{m.days}/{m.total} days</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-gray-400">{m.events.length} event{m.events.length !== 1 ? 's' : ''}</span>
-                      {expandedMonth === m.month ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+                      <span className="text-xs font-medium text-gray-400 dark:text-gray-500">{m.events.length} event{m.events.length !== 1 ? 's' : ''}</span>
+                      {expandedMonth === m.month ? <ChevronUp size={14} className="text-gray-400 dark:text-gray-500" /> : <ChevronDown size={14} className="text-gray-400 dark:text-gray-500" />}
                     </div>
                   </button>
                   {expandedMonth === m.month && m.events.length > 0 && (
@@ -318,7 +318,7 @@ export const VenueOpsDashboard: React.FC = () => {
                   )}
                   {expandedMonth === m.month && m.events.length === 0 && (
                     <div className="px-4 pb-3 border-t border-gray-50">
-                      <p className="text-xs text-gray-400 italic py-2">No events scheduled</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 italic py-2">No events scheduled</p>
                     </div>
                   )}
                 </div>
@@ -326,22 +326,22 @@ export const VenueOpsDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider mb-4 flex items-center gap-2">
               <Shield size={16} className="text-green-600" />
               Compliance & Safety
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {COMPLIANCE_ITEMS.map((item, idx) => (
-                <div key={idx} className={`p-4 rounded-lg border ${item.status === 'completed' ? 'border-green-200 bg-green-50' : 'border-blue-200 bg-blue-50'}`}>
+                <div key={idx} className={`p-4 rounded-lg border ${item.status === 'completed' ? 'border-green-200 bg-green-50 dark:bg-green-900/30' : 'border-blue-200 bg-blue-50 dark:bg-blue-900/30'}`}>
                   <div className="flex items-center gap-2 mb-2">
                     <CheckCircle2 size={14} className={item.status === 'completed' ? 'text-green-600' : 'text-blue-600'} />
                     <span className={`text-xs font-bold uppercase ${item.status === 'completed' ? 'text-green-700' : 'text-blue-700'}`}>
                       {item.status === 'completed' ? 'Completed' : 'Active'}
                     </span>
                   </div>
-                  <p className="text-sm font-semibold text-gray-800 mb-1">{item.name}</p>
-                  <p className="text-xs text-gray-500 leading-relaxed">{item.description}</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">{item.name}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{item.description}</p>
                 </div>
               ))}
             </div>
@@ -352,92 +352,92 @@ export const VenueOpsDashboard: React.FC = () => {
       {activeSection === 'pipeline' && (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm border-t-4 border-t-green-500">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Confirmed Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalPipelineRevenue)}</p>
-              <p className="text-xs text-gray-400 mt-1">{PIPELINE.revenue.length} revenue events</p>
+            <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm border-t-4 border-t-green-500">
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Confirmed Revenue</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalPipelineRevenue)}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{PIPELINE.revenue.length} revenue events</p>
             </div>
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm border-t-4 border-t-blue-500">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Community Events</p>
-              <p className="text-2xl font-bold text-gray-900">{PIPELINE.community.length}</p>
-              <p className="text-xs text-gray-400 mt-1">Zero cost to club (organizers cover expenses)</p>
+            <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm border-t-4 border-t-blue-500">
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Community Events</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{PIPELINE.community.length}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Zero cost to club (organizers cover expenses)</p>
             </div>
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm border-t-4 border-t-amber-500">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Unrealized / Lost</p>
-              <p className="text-2xl font-bold text-gray-900">{PIPELINE.unrealized.length}</p>
-              <p className="text-xs text-gray-400 mt-1">{formatCurrency(2000)} deposit retained</p>
+            <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm border-t-4 border-t-amber-500">
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Unrealized / Lost</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{PIPELINE.unrealized.length}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(2000)} deposit retained</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider mb-4 flex items-center gap-2">
               <DollarSign size={16} className="text-green-600" />
               Revenue-Generating Events
             </h3>
             <div className="space-y-3">
               {PIPELINE.revenue.map((event, idx) => (
-                <div key={idx} className="flex items-center justify-between p-4 bg-green-50/50 border border-green-100 rounded-lg hover:bg-green-50 transition-colors">
+                <div key={idx} className="flex items-center justify-between p-4 bg-green-50/50 dark:bg-green-900/30 border border-green-100 rounded-lg hover:bg-green-50 dark:bg-green-900/30 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
                       <Euro size={18} className="text-green-700" />
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-gray-800">{event.name}</p>
-                      <p className="text-xs text-gray-500">{event.extra}</p>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{event.name}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{event.extra}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-lg font-bold text-green-700">{formatCurrency(event.revenue)}</p>
-                    <p className="text-xs text-gray-400">{event.date}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{event.date}</p>
                   </div>
                 </div>
               ))}
-              <div className="flex items-center justify-between p-3 bg-green-100 rounded-lg border border-green-200">
+              <div className="flex items-center justify-between p-3 bg-green-100 dark:bg-green-900/20 rounded-lg border border-green-200">
                 <span className="text-sm font-bold text-green-800">Total Confirmed Revenue</span>
                 <span className="text-lg font-bold text-green-800">{formatCurrency(totalPipelineRevenue)}</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider mb-4 flex items-center gap-2">
               <Users size={16} className="text-blue-600" />
               Community Events (Zero Net Cost)
             </h3>
-            <p className="text-xs text-gray-500 mb-4">Organizers cover all operational expenses (cleaning, utilities, staff), ensuring zero loss for the club.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Organizers cover all operational expenses (cleaning, utilities, staff), ensuring zero loss for the club.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {PIPELINE.community.map((event, idx) => (
-                <div key={idx} className="flex items-center gap-3 p-3 bg-blue-50/50 border border-blue-100 rounded-lg">
-                  <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div key={idx} className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-900/30 border border-blue-100 rounded-lg">
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
                     <Trophy size={14} className="text-blue-700" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-800">{event.name}</p>
-                    <p className="text-xs text-gray-400">{event.date}</p>
+                    <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{event.name}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{event.date}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+            <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider mb-4 flex items-center gap-2">
               <AlertTriangle size={16} className="text-amber-600" />
               Unrealized & Pending Opportunities
             </h3>
             <div className="space-y-3">
               {PIPELINE.unrealized.map((opp, idx) => {
                 const statusColors = {
-                  pending: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-800' },
-                  cancelled: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', badge: 'bg-red-100 text-red-800' },
-                  lost: { bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-600', badge: 'bg-gray-200 text-gray-700' }
+                  pending: { bg: 'bg-amber-50 dark:bg-amber-900/30', border: 'border-amber-200', text: 'text-amber-700', badge: 'bg-amber-100 dark:bg-amber-900/20 text-amber-800' },
+                  cancelled: { bg: 'bg-red-50 dark:bg-red-900/30', border: 'border-red-200', text: 'text-red-700', badge: 'bg-red-100 dark:bg-red-900/20 text-red-800' },
+                  lost: { bg: 'bg-gray-50 dark:bg-gray-800', border: 'border-gray-200 dark:border-gray-700', text: 'text-gray-600 dark:text-gray-400', badge: 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200' }
                 };
                 const colors = statusColors[opp.status];
                 return (
                   <div key={idx} className={`p-4 ${colors.bg} border ${colors.border} rounded-lg`}>
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-gray-800">{opp.name}</p>
+                        <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{opp.name}</p>
                         <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${colors.badge}`}>
                           {opp.status}
                         </span>
@@ -446,8 +446,8 @@ export const VenueOpsDashboard: React.FC = () => {
                         <span className={`text-sm font-bold ${colors.text}`}>{formatCurrency(opp.revenue)}</span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-600 leading-relaxed">{opp.note}</p>
-                    <p className="text-[10px] text-gray-400 mt-1">{opp.date}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{opp.note}</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{opp.date}</p>
                   </div>
                 );
               })}

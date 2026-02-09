@@ -247,9 +247,9 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
       
       {/* ROW 1: Yield Matrix */}
           {/* Yield vs Occupancy Quadrant */}
-          <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col h-[520px]">
+          <div className="bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-[520px]">
               <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-lg font-semibold text-gray-800">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
                       {viewMode === 'total' ? 'Total Efficiency Matrix' : 'GameDay Efficiency Matrix'}
                   </h3>
               </div>
@@ -285,28 +285,28 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                               if (active && payload && payload.length) {
                                   const d = payload[0].payload;
                                   return (
-                                      <div className="bg-white p-3 border border-gray-200 shadow-xl rounded-lg text-xs z-50 min-w-[150px]">
-                                          <div className="mb-2 border-b border-gray-100 pb-1">
-                                              <p className="font-bold text-gray-900 text-sm">{d.name}</p>
-                                              <p className="text-[10px] text-gray-500">
+                                      <div className="bg-white dark:bg-gray-900 p-3 border border-gray-200 dark:border-gray-700 shadow-xl rounded-lg text-xs z-50 min-w-[150px]">
+                                          <div className="mb-2 border-b border-gray-100 dark:border-gray-800 pb-1">
+                                              <p className="font-bold text-gray-900 dark:text-white text-sm">{d.name}</p>
+                                              <p className="text-[10px] text-gray-500 dark:text-gray-400">
                                                   {d.date} <span className="font-bold text-gray-400">({getDayOfWeek(d.date)})</span> • {d.season}
                                               </p>
                                           </div>
                                           <div className="space-y-1">
                                               <div className="flex justify-between">
-                                                  <span className="text-gray-500">Tier:</span>
-                                                  <span className="font-bold text-gray-800">{d.tier}</span>
+                                                  <span className="text-gray-500 dark:text-gray-400">Tier:</span>
+                                                  <span className="font-bold text-gray-800 dark:text-gray-200">{d.tier}</span>
                                               </div>
                                               <div className="flex justify-between">
-                                                  <span className="text-gray-500">Occupancy:</span>
-                                                  <span className="font-bold text-gray-800">{d.x.toFixed(1)}%</span>
+                                                  <span className="text-gray-500 dark:text-gray-400">Occupancy:</span>
+                                                  <span className="font-bold text-gray-800 dark:text-gray-200">{d.x.toFixed(1)}%</span>
                                               </div>
                                               <div className="flex justify-between">
-                                                  <span className="text-gray-500">Yield (ATP):</span>
+                                                  <span className="text-gray-500 dark:text-gray-400">Yield (ATP):</span>
                                                   <span className="font-bold text-blue-600">€{d.y.toFixed(2)}</span>
                                               </div>
-                                              <div className="flex justify-between border-t border-gray-50 pt-1 mt-1">
-                                                  <span className="text-gray-500">Revenue:</span>
+                                              <div className="flex justify-between border-t border-gray-50 dark:border-gray-800 pt-1 mt-1">
+                                                  <span className="text-gray-500 dark:text-gray-400">Revenue:</span>
                                                   <span className="font-bold text-green-600">€{(d.revenue / 1000).toFixed(1)}k</span>
                                               </div>
                                           </div>
@@ -339,11 +339,11 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
               </div>
 
               {/* Bottom Legends Panel */}
-              <div className="mt-4 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-4">
+              <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-4">
                   
                   {/* Group 1: View Mode (Read-only indicator from global toggle) */}
                   <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">View Mode</span>
+                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">View Mode</span>
                       <span className={`text-[10px] px-2 py-0.5 rounded border font-semibold w-fit ${
                           viewMode === 'gameday' 
                               ? 'bg-blue-50 text-blue-700 border-blue-200' 
@@ -355,12 +355,12 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
 
                   {/* Group 2: Season */}
                   <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Season</span>
+                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Season</span>
                       <div className="flex items-center gap-3">
                           {seasonsInView.map(s => (
                               <div key={s} className="flex items-center gap-1.5">
                                   <div className="w-2.5 h-2.5 rounded-full shadow-sm flex-shrink-0 border border-white" style={{ backgroundColor: SEASON_COLORS[s] || '#94a3b8' }}></div>
-                                  <span className="text-[10px] text-gray-600 font-medium">{s}</span>
+                                  <span className="text-[10px] text-gray-600 dark:text-gray-400 font-medium">{s}</span>
                               </div>
                           ))}
                       </div>
@@ -368,23 +368,23 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
 
                   {/* Group 3: Tier */}
                   <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Tier Size</span>
+                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tier Size</span>
                       <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1.5">
                               <div className="w-3.5 h-3.5 rounded-full bg-gray-300 border border-white"></div>
-                              <span className="text-[10px] text-gray-600">T1</span>
+                              <span className="text-[10px] text-gray-600 dark:text-gray-400">T1</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                               <div className="w-2.5 h-2.5 rounded-full bg-gray-300 border border-white"></div>
-                              <span className="text-[10px] text-gray-600">T2</span>
+                              <span className="text-[10px] text-gray-600 dark:text-gray-400">T2</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                               <div className="w-2 h-2 rounded-full bg-gray-300 border border-white"></div>
-                              <span className="text-[10px] text-gray-600">T3</span>
+                              <span className="text-[10px] text-gray-600 dark:text-gray-400">T3</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                               <div className="w-1.5 h-1.5 rounded-full bg-gray-300 border border-white"></div>
-                              <span className="text-[10px] text-gray-600">T4</span>
+                              <span className="text-[10px] text-gray-600 dark:text-gray-400">T4</span>
                           </div>
                       </div>
                   </div>
@@ -392,10 +392,10 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
           </div>
 
       {/* ROW 2: Main Revenue Trend (Kept from before) */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center justify-between">
              <span>{uniqueOpponents.size === 1 ? `YoY History: ${Array.from(uniqueOpponents)[0]}` : 'Revenue vs Attendance Pacing'}</span>
-             <span className="text-xs font-normal text-gray-500 flex items-center gap-1">
+             <span className="text-xs font-normal text-gray-500 dark:text-gray-400 flex items-center gap-1">
                 <span className="w-3 h-0.5 bg-yellow-500 dashed"></span> Forecast Line
              </span>
           </h3>
@@ -419,27 +419,27 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                     if (active && payload && payload.length) {
                       const d = payload[0].payload;
                       return (
-                        <div className="bg-white p-3 border border-gray-200 shadow-xl rounded-lg text-xs z-50 min-w-[180px]">
-                          <div className="mb-2 border-b border-gray-100 pb-2">
-                            <p className="font-bold text-sm text-gray-900 truncate">{d.opponent}</p>
-                            <p className="text-gray-500">{d.date}</p>
+                        <div className="bg-white dark:bg-gray-900 p-3 border border-gray-200 dark:border-gray-700 shadow-xl rounded-lg text-xs z-50 min-w-[180px]">
+                          <div className="mb-2 border-b border-gray-100 dark:border-gray-800 pb-2">
+                            <p className="font-bold text-sm text-gray-900 dark:text-white truncate">{d.opponent}</p>
+                            <p className="text-gray-500 dark:text-gray-400">{d.date}</p>
                           </div>
                           <div className="space-y-1.5">
                              <div className="flex justify-between items-center gap-4">
-                               <span className="text-gray-500">Season:</span>
-                               <span className="font-medium text-gray-900">{d.season}</span>
+                               <span className="text-gray-500 dark:text-gray-400">Season:</span>
+                               <span className="font-medium text-gray-900 dark:text-white">{d.season}</span>
                              </div>
-                             <div className="flex justify-between items-center gap-4 border-t border-gray-50 pt-1 mt-1">
-                               <span className="text-gray-500">Revenue:</span>
+                             <div className="flex justify-between items-center gap-4 border-t border-gray-50 dark:border-gray-800 pt-1 mt-1">
+                               <span className="text-gray-500 dark:text-gray-400">Revenue:</span>
                                <span className="font-bold text-red-600">{formatCurrency(d.revenue)}</span>
                              </div>
                              <div className="flex justify-between items-center gap-4">
-                               <span className="text-gray-500">Attendance:</span>
-                               <span className="font-bold text-gray-900">{d.attendance}</span>
+                               <span className="text-gray-500 dark:text-gray-400">Attendance:</span>
+                               <span className="font-bold text-gray-900 dark:text-white">{d.attendance}</span>
                              </div>
                              {d.trend !== undefined && (
-                                <div className="flex justify-between items-center gap-4 border-t border-gray-50 pt-1 mt-1">
-                                    <span className="text-gray-500">Forecast:</span>
+                                <div className="flex justify-between items-center gap-4 border-t border-gray-50 dark:border-gray-800 pt-1 mt-1">
+                                    <span className="text-gray-500 dark:text-gray-400">Forecast:</span>
                                     <span className="font-bold text-yellow-600">{formatCurrency(d.trend)}</span>
                                 </div>
                              )}

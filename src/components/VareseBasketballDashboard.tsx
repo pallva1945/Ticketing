@@ -59,19 +59,19 @@ export const VareseBasketballDashboard: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3 mb-2">
-        <div className="p-2.5 rounded-xl bg-teal-50">
+        <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-900/30">
           <Trophy size={22} className="text-teal-600" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Varese Basketball</h2>
-          <p className="text-xs text-gray-500">Serie B Operations – Season 2025/26</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Varese Basketball</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Serie B Operations – Season 2025/26</p>
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-gray-200 pb-1">
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-1">
         {(['overview', 'sponsorship', 'bops', 'ebp'] as const).map(section => (
           <button key={section} onClick={() => setActiveSection(section)}
-            className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeSection === section ? 'bg-teal-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>
+            className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeSection === section ? 'bg-teal-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
             {section === 'overview' ? 'Overview' : section === 'sponsorship' ? 'Sponsorship' : section === 'bops' ? 'BOps' : 'EBP'}
           </button>
         ))}
@@ -113,73 +113,73 @@ export const VareseBasketballDashboard: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveSection('sponsorship')}>
+            <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveSection('sponsorship')}>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Sponsorship</p>
-                <div className="p-2 rounded-lg bg-blue-50"><Flag size={18} className="text-blue-600" /></div>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Sponsorship</p>
+                <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30"><Flag size={18} className="text-blue-600" /></div>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(FINANCIALS.sponsorship.actual)}</p>
-              <p className="text-xs text-gray-400 mt-1">Budget: {formatCurrency(FINANCIALS.sponsorship.budget)}</p>
-              <div className="w-full bg-gray-100 h-2 rounded-full mt-3 overflow-hidden">
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(FINANCIALS.sponsorship.actual)}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Budget: {formatCurrency(FINANCIALS.sponsorship.budget)}</p>
+              <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full mt-3 overflow-hidden">
                 <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(FINANCIALS.sponsorship.actual / FINANCIALS.sponsorship.budget * 100).toFixed(0)}%` }}></div>
               </div>
               <div className="flex items-center gap-1 mt-2">
-                <span className="text-xs font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded">
+                <span className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded">
                   Gap: {formatCurrency(sponsorshipGap)} – H2 recovery confirmed
                 </span>
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveSection('bops')}>
+            <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveSection('bops')}>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">BOps</p>
-                <div className="p-2 rounded-lg bg-emerald-50"><Activity size={18} className="text-emerald-600" /></div>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">BOps</p>
+                <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30"><Activity size={18} className="text-emerald-600" /></div>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(FINANCIALS.bops.actual)}</p>
-              <p className="text-xs text-gray-400 mt-1">Budget: {formatCurrency(FINANCIALS.bops.budget)}</p>
-              <div className="w-full bg-gray-100 h-2 rounded-full mt-3 overflow-hidden">
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(FINANCIALS.bops.actual)}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Budget: {formatCurrency(FINANCIALS.bops.budget)}</p>
+              <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full mt-3 overflow-hidden">
                 <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(0)}%` }}></div>
               </div>
               <div className="flex items-center gap-1 mt-2">
-                <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded flex items-center gap-1">
+                <span className="text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded flex items-center gap-1">
                   <CheckCircle2 size={10} /> {(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(1)}% of budget
                 </span>
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveSection('ebp')}>
+            <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveSection('ebp')}>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">EBP</p>
-                <div className="p-2 rounded-lg bg-purple-50"><Dumbbell size={18} className="text-purple-600" /></div>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">EBP</p>
+                <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/30"><Dumbbell size={18} className="text-purple-600" /></div>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(FINANCIALS.ebp.actual)}</p>
-              <p className="text-xs text-gray-400 mt-1">{totalEbpPlayers} players enrolled</p>
-              <div className="w-full bg-gray-100 h-2 rounded-full mt-3 overflow-hidden">
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(FINANCIALS.ebp.actual)}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{totalEbpPlayers} players enrolled</p>
+              <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full mt-3 overflow-hidden">
                 <div className="h-full bg-purple-500 rounded-full" style={{ width: '100%' }}></div>
               </div>
               <div className="flex items-center gap-1 mt-2">
-                <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded flex items-center gap-1">
+                <span className="text-xs font-medium text-purple-600 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded flex items-center gap-1">
                   <CheckCircle2 size={10} /> 2 programs active
                 </span>
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">GameDay (Serie B)</p>
-                <div className="p-2 rounded-lg bg-indigo-50"><Calendar size={18} className="text-indigo-600" /></div>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">GameDay (Serie B)</p>
+                <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/30"><Calendar size={18} className="text-indigo-600" /></div>
               </div>
-              <p className="text-3xl font-bold text-gray-900">{formatCurrency(GAMEDAY_DATA.h1Revenue)}</p>
-              <p className="text-xs text-gray-400 mt-1">{GAMEDAY_DATA.homeGames} home games · ~€{GAMEDAY_DATA.avgPerGame}/game</p>
+              <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(GAMEDAY_DATA.h1Revenue)}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{GAMEDAY_DATA.homeGames} home games · ~€{GAMEDAY_DATA.avgPerGame}/game</p>
               <div className="flex items-center gap-1 mt-3">
-                <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
                   Ticketing only
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="bg-teal-50 border border-teal-200 rounded-xl p-4">
+          <div className="bg-teal-50 dark:bg-teal-900/30 border border-teal-200 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <TrendingUp size={18} className="text-teal-600 mt-0.5 flex-shrink-0" />
               <div>
@@ -196,58 +196,58 @@ export const VareseBasketballDashboard: React.FC = () => {
 
       {activeSection === 'sponsorship' && (
         <>
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm font-bold text-gray-900">Sponsorship Portfolio – H1</p>
-                <p className="text-xs text-gray-400">{SPONSORSHIP_DEALS.length} active sponsors</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">Sponsorship Portfolio – H1</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{SPONSORSHIP_DEALS.length} active sponsors</p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(FINANCIALS.sponsorship.actual)}</p>
-                <p className="text-xs text-gray-400">of {formatCurrency(FINANCIALS.sponsorship.budget)} budget</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(FINANCIALS.sponsorship.actual)}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">of {formatCurrency(FINANCIALS.sponsorship.budget)} budget</p>
               </div>
             </div>
             <div className="space-y-2">
               {SPONSORSHIP_DEALS.map((deal, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-blue-50/50 transition-colors">
+                <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-blue-50/50 dark:bg-blue-900/30 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{deal.name}</p>
-                      <p className="text-xs text-gray-400">Annual: {formatCurrency(deal.annual)}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{deal.name}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">Annual: {formatCurrency(deal.annual)}</p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-gray-900">{formatCurrency(deal.h1)}</p>
-                    <p className="text-[10px] text-gray-400">H1 recognized</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(deal.h1)}</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500">H1 recognized</p>
                   </div>
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200">
-              <p className="text-xs font-semibold text-gray-500">H1 Total from listed sponsors</p>
-              <p className="text-sm font-bold text-gray-900">{formatCurrency(SPONSORSHIP_DEALS.reduce((s, d) => s + d.h1, 0))}</p>
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">H1 Total from listed sponsors</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(SPONSORSHIP_DEALS.reduce((s, d) => s + d.h1, 0))}</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <p className="text-sm font-bold text-gray-900 mb-3">H2 Pipeline – New Business</p>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+            <p className="text-sm font-bold text-gray-900 dark:text-white mb-3">H2 Pipeline – New Business</p>
             {SPONSORSHIP_H2_PIPELINE.map((deal, idx) => (
-              <div key={idx} className="flex items-center justify-between p-4 bg-green-50/50 border border-green-100 rounded-lg">
+              <div key={idx} className="flex items-center justify-between p-4 bg-green-50/50 dark:bg-green-900/30 border border-green-100 rounded-lg">
                 <div className="flex items-center gap-3">
                   <CheckCircle2 size={16} className="text-green-600" />
                   <div>
-                    <p className="text-sm font-medium text-gray-900">{deal.name}</p>
-                    <p className="text-xs text-gray-500">{deal.note}</p>
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{deal.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{deal.note}</p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-green-700">{formatCurrency(deal.h2)}</p>
-                  <p className="text-[10px] text-gray-400">Annual: {formatCurrency(deal.annual)}</p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500">Annual: {formatCurrency(deal.annual)}</p>
                 </div>
               </div>
             ))}
-            <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mt-3">
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-100 rounded-lg p-3 mt-3">
               <p className="text-xs text-blue-800">
                 <span className="font-semibold">Budget recovery:</span> The H1 gap of {formatCurrency(sponsorshipGap)} vs budget will be fully covered by the S&H deal ({formatCurrency(h2SponsorshipRecovery)} in H2), resulting in a net surplus of {formatCurrency(h2SponsorshipRecovery - sponsorshipGap)} for the season.
               </p>
@@ -258,51 +258,51 @@ export const VareseBasketballDashboard: React.FC = () => {
 
       {activeSection === 'bops' && (
         <>
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm font-bold text-gray-900">Basketball Operations – H1 Breakdown</p>
-                <p className="text-xs text-gray-400">Player acquisitions, allocations & fees</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">Basketball Operations – H1 Breakdown</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Player acquisitions, allocations & fees</p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(FINANCIALS.bops.actual)}</p>
-                <p className="text-xs text-gray-400">of {formatCurrency(FINANCIALS.bops.budget)} budget</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(FINANCIALS.bops.actual)}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">of {formatCurrency(FINANCIALS.bops.budget)} budget</p>
               </div>
             </div>
             <div className="space-y-2">
               {BOPS_BREAKDOWN.map((item, idx) => {
                 const pct = item.h1 / FINANCIALS.bops.actual * 100;
                 return (
-                  <div key={idx} className="p-3 bg-gray-50 rounded-lg hover:bg-emerald-50/50 transition-colors">
+                  <div key={idx} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-emerald-50/50 dark:bg-emerald-900/30 transition-colors">
                     <div className="flex items-center justify-between mb-1">
                       <div>
-                        <p className="text-sm font-medium text-gray-900">{item.name}</p>
-                        <p className="text-xs text-gray-400">{item.note}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{item.note}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-gray-900">{formatCurrency(item.h1)}</p>
-                        <p className="text-[10px] text-gray-400">{pct.toFixed(1)}% of total</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(item.h1)}</p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500">{pct.toFixed(1)}% of total</p>
                       </div>
                     </div>
-                    <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden mt-1">
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden mt-1">
                       <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${pct}%` }}></div>
                     </div>
                   </div>
                 );
               })}
             </div>
-            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200">
-              <p className="text-xs font-semibold text-gray-500">BOps H1 Total</p>
-              <p className="text-sm font-bold text-gray-900">{formatCurrency(FINANCIALS.bops.actual)}</p>
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">BOps H1 Total</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(FINANCIALS.bops.actual)}</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-3">Budget Status</p>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+            <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Budget Status</p>
             <div className="flex items-center justify-center h-28">
               <div className="text-center">
                 <p className="text-5xl font-bold text-emerald-600">{(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(1)}%</p>
-                <p className="text-xs text-gray-400 mt-2">of H1 budget achieved</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">of H1 budget achieved</p>
                 <div className="flex items-center gap-1 mt-3 justify-center">
                   <CheckCircle2 size={14} className="text-green-600" />
                   <span className="text-xs font-medium text-green-600">On target</span>
@@ -315,33 +315,33 @@ export const VareseBasketballDashboard: React.FC = () => {
 
       {activeSection === 'ebp' && (
         <>
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm font-bold text-gray-900">Elite Basketball Program – H1</p>
-                <p className="text-xs text-gray-400">Player development revenue across {totalEbpPlayers} enrolled players</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">Elite Basketball Program – H1</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Player development revenue across {totalEbpPlayers} enrolled players</p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-bold text-gray-900">{formatCurrency(FINANCIALS.ebp.actual)}</p>
-                <p className="text-xs text-gray-400">H1 total</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(FINANCIALS.ebp.actual)}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">H1 total</p>
               </div>
             </div>
             <div className="space-y-3">
               {EBP_BREAKDOWN.map((program, idx) => {
                 const pct = program.h1 / FINANCIALS.ebp.actual * 100;
                 return (
-                  <div key={idx} className="p-4 bg-purple-50/50 border border-purple-100 rounded-lg">
+                  <div key={idx} className="p-4 bg-purple-50/50 dark:bg-purple-900/30 border border-purple-100 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">{program.name}</p>
-                        <p className="text-xs text-gray-500">{program.note}</p>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{program.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{program.note}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-lg font-bold text-gray-900">{formatCurrency(program.h1)}</p>
-                        <p className="text-[10px] text-gray-400">{pct.toFixed(1)}% of EBP revenue</p>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(program.h1)}</p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500">{pct.toFixed(1)}% of EBP revenue</p>
                       </div>
                     </div>
-                    <div className="w-full bg-purple-100 h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-purple-100 dark:bg-purple-900/20 h-2 rounded-full overflow-hidden">
                       <div className="h-full bg-purple-500 rounded-full" style={{ width: `${pct}%` }}></div>
                     </div>
                   </div>
@@ -351,20 +351,20 @@ export const VareseBasketballDashboard: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Total Players</p>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5 text-center">
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Total Players</p>
               <p className="text-4xl font-bold text-purple-600">{totalEbpPlayers}</p>
-              <p className="text-xs text-gray-400 mt-1">Enrolled in programs</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Enrolled in programs</p>
             </div>
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Avg Revenue / Player</p>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5 text-center">
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Avg Revenue / Player</p>
               <p className="text-4xl font-bold text-purple-600">{formatCurrency(Math.round(FINANCIALS.ebp.actual / totalEbpPlayers))}</p>
-              <p className="text-xs text-gray-400 mt-1">H1 average</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">H1 average</p>
             </div>
-            <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 text-center">
-              <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Programs</p>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5 text-center">
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Programs</p>
               <p className="text-4xl font-bold text-purple-600">{EBP_BREAKDOWN.length}</p>
-              <p className="text-xs text-gray-400 mt-1">EDBP + YAP</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">EDBP + YAP</p>
             </div>
           </div>
         </>

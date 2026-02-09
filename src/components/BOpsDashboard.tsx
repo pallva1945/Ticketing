@@ -40,61 +40,61 @@ export const BOpsDashboard: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center gap-3 mb-2">
-        <div className="p-2.5 bg-emerald-100 rounded-xl">
+        <div className="p-2.5 bg-emerald-100 dark:bg-emerald-900/20 rounded-xl">
           <Activity className="text-emerald-600" size={22} />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900">BOps — Serie A</h2>
-          <p className="text-xs text-gray-500">Basketball Operations · {BOPS_DATA.periodLabel} Accounting</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">BOps — Serie A</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Basketball Operations · {BOPS_DATA.periodLabel} Accounting</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
             <Euro size={13} />
             <span>H1 Revenue ({BOPS_DATA.periodLabel})</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">{formatCurrency(BOPS_DATA.h1Actual)}</div>
-          <div className="mt-2 w-full bg-gray-100 rounded-full h-2">
+          <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(BOPS_DATA.h1Actual)}</div>
+          <div className="mt-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
             <div
               className="bg-emerald-500 h-2 rounded-full transition-all"
               style={{ width: `${Math.min(pctOfBudget, 100)}%` }}
             />
           </div>
-          <div className="flex justify-between mt-1 text-[10px] text-gray-400">
+          <div className="flex justify-between mt-1 text-[10px] text-gray-400 dark:text-gray-500">
             <span>{pctOfBudget.toFixed(1)}% of H1 budget</span>
             <span>{formatCurrency(BOPS_DATA.h1Budget)}</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
             <Target size={13} />
             <span>Season Budget</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">{formatCurrency(BOPS_DATA.seasonBudget)}</div>
-          <div className="mt-2 w-full bg-gray-100 rounded-full h-2">
+          <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(BOPS_DATA.seasonBudget)}</div>
+          <div className="mt-2 w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2">
             <div
               className="bg-emerald-500 h-2 rounded-full transition-all"
               style={{ width: `${Math.min((BOPS_DATA.h1Actual / BOPS_DATA.seasonBudget) * 100, 100)}%` }}
             />
           </div>
-          <div className="flex justify-between mt-1 text-[10px] text-gray-400">
+          <div className="flex justify-between mt-1 text-[10px] text-gray-400 dark:text-gray-500">
             <span>{((BOPS_DATA.h1Actual / BOPS_DATA.seasonBudget) * 100).toFixed(1)}% achieved</span>
             <span>{formatCurrency(BOPS_DATA.seasonBudget)}</span>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
             <TrendingUp size={13} />
             <span>H1 Gap to Budget</span>
           </div>
           <div className={`text-2xl font-bold ${gap > 0 ? 'text-amber-600' : 'text-emerald-600'}`}>
             {gap > 0 ? `-${formatCurrency(gap)}` : formatCurrency(Math.abs(gap))}
           </div>
-          <div className="mt-2 text-[11px] text-gray-500">
+          <div className="mt-2 text-[11px] text-gray-500 dark:text-gray-400">
             {gap > 0
               ? `${formatCurrency(gap)} below H1 target`
               : 'On or above target'}
@@ -103,8 +103,8 @@ export const BOpsDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">Revenue Breakdown</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">Revenue Breakdown</h3>
           <div className="space-y-3">
             {REVENUE_BREAKDOWN.map((item) => {
               const pct = (item.amount / BOPS_DATA.h1Actual) * 100;
@@ -113,19 +113,19 @@ export const BOpsDashboard: React.FC = () => {
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                      <span className="text-sm text-gray-700">{item.name}</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-200">{item.name}</span>
                     </div>
-                    <span className="text-sm font-semibold text-gray-900">{formatCurrency(item.amount)}</span>
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatCurrency(item.amount)}</span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5 ml-5">
+                  <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 ml-5">
                     <div
                       className="h-1.5 rounded-full transition-all"
                       style={{ width: `${pct}%`, backgroundColor: item.color }}
                     />
                   </div>
                   <div className="flex justify-between ml-5 mt-0.5">
-                    <span className="text-[10px] text-gray-400">{item.note}</span>
-                    <span className="text-[10px] text-gray-400">{pct.toFixed(1)}%</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{item.note}</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{pct.toFixed(1)}%</span>
                   </div>
                 </div>
               );
@@ -133,8 +133,8 @@ export const BOpsDashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">Revenue Distribution</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">Revenue Distribution</h3>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -160,7 +160,7 @@ export const BOpsDashboard: React.FC = () => {
           </div>
           <div className="flex flex-wrap justify-center gap-3 mt-2">
             {REVENUE_BREAKDOWN.map((item) => (
-              <div key={item.name} className="flex items-center gap-1.5 text-[11px] text-gray-600">
+              <div key={item.name} className="flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-400">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
                 {item.name.split('(')[0].trim()}
               </div>
@@ -169,32 +169,32 @@ export const BOpsDashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-        <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
           <Calendar size={14} />
           Accounting Method
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-emerald-50/50 rounded-lg p-4 border border-emerald-100">
+          <div className="bg-emerald-50/50 dark:bg-emerald-900/30 rounded-lg p-4 border border-emerald-100">
             <div className="text-xs font-medium text-emerald-700 mb-2">4/10 Month Basis</div>
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-600 dark:text-gray-400">
               BOps revenue is recognized on a <strong>4 out of 10 month</strong> basis to align with the gameday revenue cycle. This ensures consistent period-over-period comparisons and matches the competitive season calendar.
             </div>
           </div>
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-            <div className="text-xs font-medium text-gray-700 mb-2">Season Projection</div>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <div className="text-xs font-medium text-gray-700 dark:text-gray-200 mb-2">Season Projection</div>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">H1 (4/10)</span>
-                <span className="font-medium text-gray-900">{formatCurrency(BOPS_DATA.h1Actual)}</span>
+                <span className="text-gray-500 dark:text-gray-400">H1 (4/10)</span>
+                <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(BOPS_DATA.h1Actual)}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">H2 Remaining (6/10)</span>
-                <span className="font-medium text-gray-900">{formatCurrency(BOPS_DATA.seasonBudget - BOPS_DATA.h1Actual)}</span>
+                <span className="text-gray-500 dark:text-gray-400">H2 Remaining (6/10)</span>
+                <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(BOPS_DATA.seasonBudget - BOPS_DATA.h1Actual)}</span>
               </div>
-              <div className="border-t border-gray-200 pt-1 flex justify-between text-sm">
-                <span className="text-gray-500 font-medium">Season Target</span>
-                <span className="font-bold text-gray-900">{formatCurrency(BOPS_DATA.seasonBudget)}</span>
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-1 flex justify-between text-sm">
+                <span className="text-gray-500 dark:text-gray-400 font-medium">Season Target</span>
+                <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(BOPS_DATA.seasonBudget)}</span>
               </div>
             </div>
           </div>
@@ -207,8 +207,8 @@ export const BOpsDashboard: React.FC = () => {
             key={i}
             className={`rounded-xl border p-4 flex gap-3 ${
               note.type === 'warning'
-                ? 'bg-amber-50/50 border-amber-200'
-                : 'bg-blue-50/50 border-blue-200'
+                ? 'bg-amber-50/50 dark:bg-amber-900/30 border-amber-200'
+                : 'bg-blue-50/50 dark:bg-blue-900/30 border-blue-200'
             }`}
           >
             {note.type === 'warning' ? (
@@ -222,7 +222,7 @@ export const BOpsDashboard: React.FC = () => {
               }`}>
                 {note.title}
               </div>
-              <div className="text-xs text-gray-600 leading-relaxed">{note.text}</div>
+              <div className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{note.text}</div>
             </div>
           </div>
         ))}

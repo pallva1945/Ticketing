@@ -24,13 +24,13 @@ const getSponsorTier = (value: number) => {
 };
 
 const getDealQuality = (delta: number, commercialValue: number) => {
-  if (commercialValue === 0) return { label: 'N/A', score: 0, color: 'text-gray-400', bgColor: 'bg-gray-100', icon: Minus };
+  if (commercialValue === 0) return { label: 'N/A', score: 0, color: 'text-gray-400 dark:text-gray-500', bgColor: 'bg-gray-100 dark:bg-gray-800', icon: Minus };
   const ratio = delta / commercialValue;
-  if (ratio >= 0.2) return { label: 'Excellent', score: 5, color: 'text-emerald-700', bgColor: 'bg-emerald-100', icon: TrendingUp };
-  if (ratio >= 0.05) return { label: 'Good', score: 4, color: 'text-green-600', bgColor: 'bg-green-100', icon: TrendingUp };
-  if (ratio >= -0.05) return { label: 'Fair', score: 3, color: 'text-slate-600', bgColor: 'bg-slate-100', icon: Minus };
-  if (ratio >= -0.2) return { label: 'Below', score: 2, color: 'text-amber-600', bgColor: 'bg-amber-100', icon: TrendingDown };
-  return { label: 'Poor', score: 1, color: 'text-red-600', bgColor: 'bg-red-100', icon: TrendingDown };
+  if (ratio >= 0.2) return { label: 'Excellent', score: 5, color: 'text-emerald-700', bgColor: 'bg-emerald-100 dark:bg-emerald-900/20', icon: TrendingUp };
+  if (ratio >= 0.05) return { label: 'Good', score: 4, color: 'text-green-600', bgColor: 'bg-green-100 dark:bg-green-900/20', icon: TrendingUp };
+  if (ratio >= -0.05) return { label: 'Fair', score: 3, color: 'text-slate-600', bgColor: 'bg-slate-100 dark:bg-slate-900/20', icon: Minus };
+  if (ratio >= -0.2) return { label: 'Below', score: 2, color: 'text-amber-600', bgColor: 'bg-amber-100 dark:bg-amber-900/20', icon: TrendingDown };
+  return { label: 'Poor', score: 1, color: 'text-red-600', bgColor: 'bg-red-100 dark:bg-red-900/20', icon: TrendingDown };
 };
 
 interface SponsorshipDashboardProps {
@@ -467,9 +467,9 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border border-gray-200 shadow-xl rounded-lg text-xs">
-          <p className="font-bold text-gray-900 mb-1">{payload[0].name}</p>
-          <p className="text-gray-600">{formatCurrency(payload[0].value)}</p>
+        <div className="bg-white dark:bg-gray-900 p-3 border border-gray-200 dark:border-gray-700 shadow-xl rounded-lg text-xs">
+          <p className="font-bold text-gray-900 dark:text-white mb-1">{payload[0].name}</p>
+          <p className="text-gray-600 dark:text-gray-400">{formatCurrency(payload[0].value)}</p>
         </div>
       );
     }
@@ -488,11 +488,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Flag className="text-red-600" size={24} />
             Sponsorship Analytics
           </h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Revenue breakdown and sponsor portfolio analysis
           </p>
         </div>
@@ -500,18 +500,18 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         <div className="flex flex-wrap items-center gap-3">
           {/* Search Box */}
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
               placeholder="Search sponsors..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 w-48 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="pl-9 pr-4 py-2 w-48 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400"
               >
                 <X size={14} />
               </button>
@@ -522,7 +522,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
           <select
             value={filterRecType || ''}
             onChange={(e) => setFilterRecType(e.target.value as any || null)}
-            className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500"
           >
             <option value="">All Types</option>
             <option value="sponsorship">Sponsorship</option>
@@ -535,19 +535,19 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
           <div className="relative">
             <button 
               onClick={() => setShowSeasonDropdown(!showSeasonDropdown)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
-              <span className="text-sm font-medium text-gray-700">Season: {selectedSeason}</span>
-              <ChevronDown size={16} className="text-gray-500" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Season: {selectedSeason}</span>
+              <ChevronDown size={16} className="text-gray-500 dark:text-gray-400" />
             </button>
             {showSeasonDropdown && (
-              <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+              <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-20">
                 {seasons.map(s => (
                   <button
                     key={s}
                     onClick={() => { setSelectedSeason(s); setShowSeasonDropdown(false); }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
-                      selectedSeason === s ? 'bg-red-50 text-red-700 font-medium' : 'text-gray-700'
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 first:rounded-t-lg last:rounded-b-lg ${
+                      selectedSeason === s ? 'bg-red-50 dark:bg-red-900/30 text-red-700 font-medium' : 'text-gray-700 dark:text-gray-200'
                     }`}
                   >
                     {s}
@@ -560,14 +560,14 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       </div>
 
       {hasActiveFilter && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-sm">
+        <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-2">
               <Filter size={16} className="text-amber-600" />
               <span className="text-sm font-medium text-amber-800">Active Filters:</span>
               <div className="flex items-center gap-2 flex-wrap">
                 {filterCompany && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-900 border border-amber-300 rounded-full text-xs font-medium text-amber-800">
                     Company: {filterCompany}
                     <button onClick={() => setFilterCompany(null)} className="hover:text-amber-600">
                       <X size={12} />
@@ -575,7 +575,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                   </span>
                 )}
                 {filterSector && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-900 border border-amber-300 rounded-full text-xs font-medium text-amber-800">
                     Sector: {filterSector}
                     <button onClick={() => setFilterSector(null)} className="hover:text-amber-600">
                       <X size={12} />
@@ -583,7 +583,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                   </span>
                 )}
                 {filterContractType && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-900 border border-amber-300 rounded-full text-xs font-medium text-amber-800">
                     Type: {filterContractType === 'CASH' ? 'Cash' : 'Cambio Merce'}
                     <button onClick={() => setFilterContractType(null)} className="hover:text-amber-600">
                       <X size={12} />
@@ -591,7 +591,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                   </span>
                 )}
                 {filterTier && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-900 border border-amber-300 rounded-full text-xs font-medium text-amber-800">
                     Tier: {filterTier}
                     <button onClick={() => setFilterTier(null)} className="hover:text-amber-600">
                       <X size={12} />
@@ -599,7 +599,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                   </span>
                 )}
                 {searchQuery && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-900 border border-amber-300 rounded-full text-xs font-medium text-amber-800">
                     Search: "{searchQuery}"
                     <button onClick={() => setSearchQuery('')} className="hover:text-amber-600">
                       <X size={12} />
@@ -607,7 +607,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                   </span>
                 )}
                 {filterRecType && (
-                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white border border-amber-300 rounded-full text-xs font-medium text-amber-800">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-900 border border-amber-300 rounded-full text-xs font-medium text-amber-800">
                     Type: {filterRecType === 'vb' ? 'VB (Youth)' : filterRecType === 'csr' ? 'CSR' : filterRecType === 'corptix' ? 'Corp Tickets' : filterRecType === 'gameday' ? 'GameDay' : 'Sponsorship'}
                     <button onClick={() => setFilterRecType(null)} className="hover:text-amber-600">
                       <X size={12} />
@@ -682,8 +682,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       {/* Sponsor Tiers & Deal Quality Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Sponsor Tiers */}
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
             <Award size={20} className="text-amber-500" />
             Sponsor Tiers
           </h3>
@@ -694,8 +694,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                   filterTier === tier.name 
                     ? 'ring-2 ring-amber-400 border-amber-400' 
-                    : tier.count > 0 ? tier.borderColor : 'border-gray-200'
-                } ${tier.count > 0 ? 'bg-gray-50 hover:bg-gray-100' : 'bg-gray-50 opacity-50'}`}
+                    : tier.count > 0 ? tier.borderColor : 'border-gray-200 dark:border-gray-700'
+                } ${tier.count > 0 ? 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800' : 'bg-gray-50 dark:bg-gray-800 opacity-50'}`}
                 onClick={() => tier.count > 0 && setFilterTier(filterTier === tier.name ? null : tier.name)}
               >
                 <div className={`w-10 h-10 rounded-lg ${tier.bgColor} ${tier.textColor} flex items-center justify-center font-bold text-sm`}>
@@ -703,13 +703,13 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-gray-800">{tier.name}</span>
-                    <span className="font-bold text-gray-900">{formatCompactCurrency(tier.totalValue)}</span>
+                    <span className="font-semibold text-gray-800 dark:text-gray-100">{tier.name}</span>
+                    <span className="font-bold text-gray-900 dark:text-white">{formatCompactCurrency(tier.totalValue)}</span>
                   </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500 mt-0.5">
+                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                     <span>{tier.min >= 200000 ? '€200k+' : tier.min >= 100000 ? '€100k-200k' : tier.min >= 50000 ? '€50k-100k' : tier.min >= 10000 ? '€10k-50k' : '€0-10k'}</span>
                     {tier.count > 0 && (
-                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${tier.avgDealQuality >= 4 ? 'bg-emerald-100 text-emerald-700' : tier.avgDealQuality >= 3 ? 'bg-slate-100 text-slate-700' : 'bg-amber-100 text-amber-700'}`}>
+                      <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${tier.avgDealQuality >= 4 ? 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700' : tier.avgDealQuality >= 3 ? 'bg-slate-100 dark:bg-slate-900/20 text-slate-700' : 'bg-amber-100 dark:bg-amber-900/20 text-amber-700'}`}>
                         Avg Quality: {tier.avgDealQuality.toFixed(1)}/5
                       </span>
                     )}
@@ -721,62 +721,62 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         </div>
 
         {/* Deal Quality Overview */}
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm flex flex-col justify-center">
-          <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm flex flex-col justify-center">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3 flex items-center gap-2">
             <TrendingUp size={20} className="text-emerald-500" />
             Deal Quality Overview
           </h3>
           <div className="mb-3">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-gray-500">Portfolio Net Delta</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">Portfolio Net Delta</span>
               <span className={`text-xl font-bold ${dealQualityStats.totalDelta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                 {dealQualityStats.totalDelta >= 0 ? '+' : ''}{formatCompactCurrency(dealQualityStats.totalDelta)}
               </span>
             </div>
-            <p className="text-xs text-gray-400">Revenue received minus value given (LED, jersey, tickets, etc.)</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">Revenue received minus value given (LED, jersey, tickets, etc.)</p>
           </div>
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm text-gray-500">Avg Score:</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">Avg Score:</span>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className={`w-4 h-4 rounded ${i <= Math.round(dealQualityStats.avgQualityScore) ? 'bg-emerald-500' : 'bg-gray-200'}`} />
+                <div key={i} className={`w-4 h-4 rounded ${i <= Math.round(dealQualityStats.avgQualityScore) ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
               ))}
             </div>
-            <span className="text-sm font-bold text-gray-700">{dealQualityStats.avgQualityScore.toFixed(1)}/5</span>
+            <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{dealQualityStats.avgQualityScore.toFixed(1)}/5</span>
           </div>
           <div className="grid grid-cols-5 gap-2 text-center mb-3">
-            <div className="bg-emerald-50 rounded-lg p-2">
+            <div className="bg-emerald-50 dark:bg-emerald-900/30 rounded-lg p-2">
               <p className="text-lg font-bold text-emerald-700">{dealQualityStats.excellent}</p>
               <p className="text-[10px] text-emerald-600 font-medium">Excellent</p>
             </div>
-            <div className="bg-green-50 rounded-lg p-2">
+            <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-2">
               <p className="text-lg font-bold text-green-600">{dealQualityStats.good}</p>
               <p className="text-[10px] text-green-600 font-medium">Good</p>
             </div>
-            <div className="bg-slate-50 rounded-lg p-2">
+            <div className="bg-slate-50 dark:bg-slate-900/30 rounded-lg p-2">
               <p className="text-lg font-bold text-slate-600">{dealQualityStats.fair}</p>
               <p className="text-[10px] text-slate-600 font-medium">Fair</p>
             </div>
-            <div className="bg-amber-50 rounded-lg p-2">
+            <div className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-2">
               <p className="text-lg font-bold text-amber-600">{dealQualityStats.below}</p>
               <p className="text-[10px] text-amber-600 font-medium">Below</p>
             </div>
-            <div className="bg-red-50 rounded-lg p-2">
+            <div className="bg-red-50 dark:bg-red-900/30 rounded-lg p-2">
               <p className="text-lg font-bold text-red-600">{dealQualityStats.poor}</p>
               <p className="text-[10px] text-red-600 font-medium">Poor</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100 items-start">
+          <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100 dark:border-gray-800 items-start">
             <div>
               <p className="text-[10px] font-bold text-emerald-600 uppercase mb-2">Best Deals</p>
               <div className="space-y-1">
                 {topAndWorstDeals.top5.map((s, i) => {
                   const score = (5 - i * 0.8).toFixed(1);
                   return (
-                    <div key={s.id} className="flex items-center gap-2 bg-emerald-50 rounded px-2 py-1">
+                    <div key={s.id} className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/30 rounded px-2 py-1">
                       <span className="w-4 h-4 bg-emerald-600 text-white rounded-full flex items-center justify-center text-[9px] font-bold shrink-0">{i + 1}</span>
                       <span 
-                        className="flex-1 text-[11px] font-semibold text-gray-800 truncate cursor-pointer hover:text-emerald-700 hover:underline"
+                        className="flex-1 text-[11px] font-semibold text-gray-800 dark:text-gray-100 truncate cursor-pointer hover:text-emerald-700 hover:underline"
                         onClick={() => setFilterCompany(filterCompany === s.company ? null : s.company)}
                       >{s.company}</span>
                       <span className="text-[11px] font-bold text-emerald-700 shrink-0">{score}/5</span>
@@ -791,10 +791,10 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 {topAndWorstDeals.worst5.map((s, i) => {
                   const score = (i * 0.2).toFixed(1);
                   return (
-                    <div key={s.id} className="flex items-center gap-2 bg-red-50 rounded px-2 py-1">
+                    <div key={s.id} className="flex items-center gap-2 bg-red-50 dark:bg-red-900/30 rounded px-2 py-1">
                       <span className="w-4 h-4 bg-red-600 text-white rounded-full flex items-center justify-center text-[9px] font-bold shrink-0">{i + 1}</span>
                       <span 
-                        className="flex-1 text-[11px] font-semibold text-gray-800 truncate cursor-pointer hover:text-red-700 hover:underline"
+                        className="flex-1 text-[11px] font-semibold text-gray-800 dark:text-gray-100 truncate cursor-pointer hover:text-red-700 hover:underline"
                         onClick={() => setFilterCompany(filterCompany === s.company ? null : s.company)}
                       >{s.company}</span>
                       <span className="text-[11px] font-bold text-red-700 shrink-0">{score}/5</span>
@@ -807,9 +807,9 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
             <FileSpreadsheet size={14} />
             <span>{stats.totalSponsors} contracts | {stats.uniqueCompanies} companies</span>
           </div>
@@ -817,7 +817,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             <button
               onClick={() => setExcludeCorpTix(!excludeCorpTix)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                excludeCorpTix ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-white text-gray-600 border-gray-200'
+                excludeCorpTix ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 border-blue-200' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700'
               }`}
             >
               {excludeCorpTix ? '✓' : '○'} Exclude Corp Tickets
@@ -825,7 +825,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             <button
               onClick={() => setExcludeGameDay(!excludeGameDay)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                excludeGameDay ? 'bg-green-50 text-green-700 border-green-200' : 'bg-white text-gray-600 border-gray-200'
+                excludeGameDay ? 'bg-green-50 dark:bg-green-900/30 text-green-700 border-green-200' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700'
               }`}
             >
               {excludeGameDay ? '✓' : '○'} Exclude GameDay
@@ -833,7 +833,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             <button
               onClick={() => setExcludeVB(!excludeVB)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                excludeVB ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-white text-gray-600 border-gray-200'
+                excludeVB ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 border-amber-200' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700'
               }`}
             >
               {excludeVB ? '✓' : '○'} Exclude VB
@@ -843,74 +843,74 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-red-50 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
               <DollarSign size={20} className="text-red-600" />
             </div>
-            <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+            <span className="text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full flex items-center gap-1">
               <ArrowUpRight size={12} /> Active
             </span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCompactCurrency(stats.adjustedCommercial)}</p>
-          <p className="text-xs text-gray-500 mt-1">Commercial Value</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompactCurrency(stats.adjustedCommercial)}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Commercial Value</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-green-50 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
               <Banknote size={20} className="text-green-600" />
             </div>
-            <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
               {stats.cashRatio.toFixed(0)}% Cash
             </span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCompactCurrency(stats.adjustedCash)}</p>
-          <p className="text-xs text-gray-500 mt-1">Cash</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompactCurrency(stats.adjustedCash)}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Cash</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-purple-50 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-purple-50 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
               <RefreshCw size={20} className="text-purple-600" />
             </div>
-            <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+            <span className="text-xs font-medium text-purple-600 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded-full">
               Barter
             </span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCompactCurrency(stats.adjustedCM)}</p>
-          <p className="text-xs text-gray-500 mt-1">Cambio Merce</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompactCurrency(stats.adjustedCM)}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Cambio Merce</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-orange-50 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
               <Ticket size={20} className="text-orange-600" />
             </div>
-            <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
+            <span className="text-xs font-medium text-orange-600 bg-orange-50 dark:bg-orange-900/30 px-2 py-0.5 rounded-full">
               Corp
             </span>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCompactCurrency(stats.totalCorpTix)}</p>
-          <p className="text-xs text-gray-500 mt-1">Corp Tickets</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompactCurrency(stats.totalCorpTix)}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Corp Tickets</p>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <div className="flex items-center justify-between mb-3">
-            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
               <Building2 size={20} className="text-blue-600" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCompactCurrency(stats.avgDealSize)}</p>
-          <p className="text-xs text-gray-500 mt-1">Avg. Deal Size</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompactCurrency(stats.avgDealSize)}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Avg. Deal Size</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-between">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center justify-between">
             Top 10 Sponsors
-            <span className="text-xs font-normal text-gray-400">Click bar to filter</span>
+            <span className="text-xs font-normal text-gray-400 dark:text-gray-500">Click bar to filter</span>
           </h3>
           <div className="h-80 -ml-8">
             <ResponsiveContainer width="100%" height="100%">
@@ -954,10 +954,10 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-between">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center justify-between">
             Revenue by Sector
-            <span className="text-xs font-normal text-gray-400">Click slice to filter</span>
+            <span className="text-xs font-normal text-gray-400 dark:text-gray-500">Click slice to filter</span>
           </h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -998,10 +998,10 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-between">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center justify-between">
             Contract Type Split
-            <span className="text-xs font-normal text-gray-400">Click slice to filter</span>
+            <span className="text-xs font-normal text-gray-400 dark:text-gray-500">Click slice to filter</span>
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -1043,8 +1043,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Revenue Reconciliation</h3>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Revenue Reconciliation</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={reconciliationData} layout="vertical" margin={{ left: 10, right: 30 }}>
@@ -1066,8 +1066,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Monthly Cash Flow Projection</h3>
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Monthly Cash Flow Projection</h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
@@ -1084,13 +1084,13 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center justify-between">
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center justify-between">
           <span>Sponsor Portfolio {hasActiveFilter && <span className="text-sm font-normal text-amber-600">({tableFilteredData.length} filtered)</span>}</span>
           {hasActiveFilter && (
             <button 
               onClick={clearAllFilters}
-              className="text-xs font-medium text-gray-500 hover:text-gray-700 flex items-center gap-1"
+              className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200 flex items-center gap-1"
             >
               <X size={14} /> Clear filters
             </button>
@@ -1098,14 +1098,14 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         </h3>
         <div className="overflow-x-auto max-h-96">
           <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-white">
-              <tr className="border-b border-gray-100">
-                <th className="text-left py-3 px-4 font-semibold text-gray-600">Company</th>
-                <th className="text-center py-3 px-2 font-semibold text-gray-600">Tier</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-600">Sector</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-600">Type</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-600">Value</th>
-                <th className="text-center py-3 px-4 font-semibold text-gray-600">Deal Quality</th>
+            <thead className="sticky top-0 bg-white dark:bg-gray-900">
+              <tr className="border-b border-gray-100 dark:border-gray-800">
+                <th className="text-left py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Company</th>
+                <th className="text-center py-3 px-2 font-semibold text-gray-600 dark:text-gray-400">Tier</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Sector</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Type</th>
+                <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Value</th>
+                <th className="text-center py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Deal Quality</th>
               </tr>
             </thead>
             <tbody>
@@ -1116,16 +1116,16 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 return (
                 <tr 
                   key={sponsor.id} 
-                  className="border-b border-gray-50 hover:bg-red-50 transition-colors cursor-pointer group"
+                  className="border-b border-gray-50 hover:bg-red-50 dark:bg-red-900/30 transition-colors cursor-pointer group"
                   onClick={() => setSelectedSponsor(sponsor)}
                 >
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-xs font-bold text-gray-600 group-hover:bg-red-100 group-hover:text-red-700 transition-colors">
+                      <span className="w-6 h-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center text-xs font-bold text-gray-600 dark:text-gray-400 group-hover:bg-red-100 dark:bg-red-900/20 group-hover:text-red-700 transition-colors">
                         {idx + 1}
                       </span>
-                      <span className="font-medium text-gray-900 group-hover:text-red-700 transition-colors">{sponsor.company}</span>
-                      <ArrowRight size={14} className="text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <span className="font-medium text-gray-900 dark:text-white group-hover:text-red-700 transition-colors">{sponsor.company}</span>
+                      <ArrowRight size={14} className="text-gray-400 dark:text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                   </td>
                   <td className="py-3 px-2 text-center">
@@ -1150,14 +1150,14 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                       onClick={() => setFilterContractType(filterContractType === sponsor.contractType ? null : sponsor.contractType)}
                       className={`px-2 py-0.5 rounded-full text-xs font-medium hover:ring-2 hover:ring-offset-1 transition-all ${
                         sponsor.contractType === 'CASH' 
-                          ? 'bg-green-50 text-green-700' 
-                          : 'bg-purple-50 text-purple-700'
+                          ? 'bg-green-50 dark:bg-green-900/30 text-green-700' 
+                          : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700'
                       }`}
                     >
                       {sponsor.contractType}
                     </button>
                   </td>
-                  <td className="py-3 px-4 text-right font-medium text-gray-900">
+                  <td className="py-3 px-4 text-right font-medium text-gray-900 dark:text-white">
                     {formatCompactCurrency(sponsor.commercialValue)}
                   </td>
                   <td className="py-3 px-4">
@@ -1183,23 +1183,23 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       {selectedSponsor && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedSponsor(null)}>
           <div 
-            className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${getSponsorTier(selectedSponsor.commercialValue).bgColor}`}>
                   <Building2 size={24} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">{selectedSponsor.company}</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedSponsor.company}</h2>
                   <div className="flex items-center gap-2 mt-1">
                     <span className={`px-2 py-0.5 rounded text-xs font-bold ${getSponsorTier(selectedSponsor.commercialValue).bgColor} ${getSponsorTier(selectedSponsor.commercialValue).textColor}`}>
                       {getSponsorTier(selectedSponsor.commercialValue).name}
                     </span>
-                    <span className="text-sm text-gray-500">{selectedSponsor.sector || 'N/A'}</span>
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${selectedSponsor.contractType === 'CASH' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">{selectedSponsor.sector || 'N/A'}</span>
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${selectedSponsor.contractType === 'CASH' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' : 'bg-purple-100 dark:bg-purple-900/20 text-purple-700'}`}>
                       {selectedSponsor.contractType}
                     </span>
                   </div>
@@ -1207,51 +1207,51 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               </div>
               <button 
                 onClick={() => setSelectedSponsor(null)}
-                className="w-10 h-10 rounded-lg hover:bg-gray-100 flex items-center justify-center transition-colors"
+                className="w-10 h-10 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center transition-colors"
               >
-                <X size={20} className="text-gray-500" />
+                <X size={20} className="text-gray-500 dark:text-gray-400" />
               </button>
             </div>
 
             <div className="p-6 space-y-6">
               {/* Contact & Contract Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-2">
                     <User size={16} /> Contact Information
                   </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 w-16">Contact:</span>
-                      <span className="font-medium text-gray-900">{selectedSponsor.contact || 'N/A'}</span>
+                      <span className="text-gray-500 dark:text-gray-400 w-16">Contact:</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{selectedSponsor.contact || 'N/A'}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 w-16">Email:</span>
-                      <span className="font-medium text-gray-900">{selectedSponsor.email || 'N/A'}</span>
+                      <span className="text-gray-500 dark:text-gray-400 w-16">Email:</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{selectedSponsor.email || 'N/A'}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 w-16">Size:</span>
-                      <span className="font-medium text-gray-900">{selectedSponsor.dimension || 'N/A'}</span>
+                      <span className="text-gray-500 dark:text-gray-400 w-16">Size:</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{selectedSponsor.dimension || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-2">
                     <Calendar size={16} /> Contract Details
                   </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 w-16">Season:</span>
-                      <span className="font-medium text-gray-900">{selectedSponsor.season}</span>
+                      <span className="text-gray-500 dark:text-gray-400 w-16">Season:</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{selectedSponsor.season}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 w-16">Duration:</span>
-                      <span className="font-medium text-gray-900">{selectedSponsor.contractDuration || 'N/A'}</span>
+                      <span className="text-gray-500 dark:text-gray-400 w-16">Duration:</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{selectedSponsor.contractDuration || 'N/A'}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 w-16">Level:</span>
-                      <span className="font-medium text-gray-900">{selectedSponsor.level || 'N/A'}</span>
+                      <span className="text-gray-500 dark:text-gray-400 w-16">Level:</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{selectedSponsor.level || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
@@ -1259,21 +1259,21 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
               {/* Financial Summary */}
               <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4">Financial Summary</h3>
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Financial Summary</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(selectedSponsor.commercialValue)}</p>
-                    <p className="text-xs text-gray-500 mt-1">Commercial Value</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(selectedSponsor.commercialValue)}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Commercial Value</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-green-600">{formatCurrency(selectedSponsor.sponsorReconciliation)}</p>
-                    <p className="text-xs text-gray-500 mt-1">Sponsorship</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Sponsorship</p>
                   </div>
                   <div className="text-center">
                     <p className={`text-2xl font-bold ${selectedSponsor.delta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {selectedSponsor.delta >= 0 ? '+' : ''}{formatCurrency(selectedSponsor.delta)}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">Delta (Profit/Loss)</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Delta (Profit/Loss)</p>
                   </div>
                   <div className="text-center">
                     {(() => {
@@ -1286,24 +1286,24 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                         </div>
                       );
                     })()}
-                    <p className="text-xs text-gray-500 mt-1">Deal Quality</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Deal Quality</p>
                   </div>
                 </div>
               </div>
 
               {/* What We Give In Exchange */}
-              <div className="bg-white border border-gray-100 rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center justify-between">
+              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center justify-between">
                   <span className="flex items-center gap-2"><Gift size={16} /> What We Give In Exchange</span>
-                  <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">Season {selectedSponsor.season}</span>
+                  <span className="text-xs font-normal text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">Season {selectedSponsor.season}</span>
                 </h3>
                 <div className="space-y-3">
                   {[
-                    { label: 'Sponsorship', desc: 'Brand visibility, jersey/arena signage, media exposure', value: selectedSponsor.sponsorReconciliation, color: 'bg-red-100 text-red-700', icon: '🎯' },
-                    { label: 'VB (Youth)', desc: 'Youth team sponsorship, academy branding', value: selectedSponsor.vbReconciliation, color: 'bg-amber-100 text-amber-700', icon: '⭐' },
-                    { label: 'CSR', desc: 'Corporate social responsibility activities', value: selectedSponsor.csrReconciliation, color: 'bg-slate-100 text-slate-700', icon: '🤝' },
-                    { label: 'Corporate Tickets', desc: 'Tickets, parking, VIP access, hospitality (x15 games)', value: selectedSponsor.corpTixReconciliation + ((selectedSponsor.hospitalityReconciliation + selectedSponsor.parkingReconciliation) * 15), color: 'bg-blue-100 text-blue-700', icon: '🎟️' },
-                    { label: 'GameDay Visibility', desc: 'LED displays, naming rights, jersey, banners (x15 games)', value: selectedSponsor.gamedayReconciliation * 15, color: 'bg-emerald-100 text-emerald-700', icon: '📺' }
+                    { label: 'Sponsorship', desc: 'Brand visibility, jersey/arena signage, media exposure', value: selectedSponsor.sponsorReconciliation, color: 'bg-red-100 dark:bg-red-900/20 text-red-700', icon: '🎯' },
+                    { label: 'VB (Youth)', desc: 'Youth team sponsorship, academy branding', value: selectedSponsor.vbReconciliation, color: 'bg-amber-100 dark:bg-amber-900/20 text-amber-700', icon: '⭐' },
+                    { label: 'CSR', desc: 'Corporate social responsibility activities', value: selectedSponsor.csrReconciliation, color: 'bg-slate-100 dark:bg-slate-900/20 text-slate-700', icon: '🤝' },
+                    { label: 'Corporate Tickets', desc: 'Tickets, parking, VIP access, hospitality (x15 games)', value: selectedSponsor.corpTixReconciliation + ((selectedSponsor.hospitalityReconciliation + selectedSponsor.parkingReconciliation) * 15), color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700', icon: '🎟️' },
+                    { label: 'GameDay Visibility', desc: 'LED displays, naming rights, jersey, banners (x15 games)', value: selectedSponsor.gamedayReconciliation * 15, color: 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700', icon: '📺' }
                   ].filter(item => item.value > 0).map(item => (
                     <div key={item.label} className={`rounded-lg p-4 ${item.color} flex items-center justify-between`}>
                       <div className="flex items-center gap-3">
@@ -1317,12 +1317,12 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                     </div>
                   ))}
                   {[selectedSponsor.sponsorReconciliation, selectedSponsor.vbReconciliation, selectedSponsor.csrReconciliation, selectedSponsor.corpTixReconciliation, selectedSponsor.gamedayReconciliation, selectedSponsor.hospitalityReconciliation, selectedSponsor.parkingReconciliation].every(v => v === 0) && (
-                    <p className="text-gray-500 text-sm italic">No benefits breakdown available for this contract</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm italic">No benefits breakdown available for this contract</p>
                   )}
                 </div>
-                <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-600">Total Value Given</span>
-                  <span className="text-xl font-bold text-gray-900">
+                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Value Given</span>
+                  <span className="text-xl font-bold text-gray-900 dark:text-white">
                     {formatCurrency(
                       selectedSponsor.sponsorReconciliation + 
                       selectedSponsor.vbReconciliation + 
@@ -1336,8 +1336,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               </div>
 
               {/* Monthly Payment Schedule */}
-              <div className="bg-white border border-gray-100 rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+              <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
                   <Clock size={16} /> Monthly Payment Schedule
                 </h3>
                 <div className="grid grid-cols-6 md:grid-cols-12 gap-2">
@@ -1346,14 +1346,14 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                       key={month.month}
                       className={`text-center p-2 rounded-lg border ${
                         month.isCurrent 
-                          ? 'border-red-500 bg-red-50 ring-2 ring-red-200' 
+                          ? 'border-red-500 bg-red-50 dark:bg-red-900/30 ring-2 ring-red-200' 
                           : month.isPast 
-                            ? 'border-gray-200 bg-gray-50' 
-                            : 'border-blue-200 bg-blue-50'
+                            ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800' 
+                            : 'border-blue-200 bg-blue-50 dark:bg-blue-900/30'
                       }`}
                     >
-                      <p className="text-[10px] font-medium text-gray-500">{month.name}</p>
-                      <p className={`text-xs font-bold mt-1 ${month.value > 0 ? 'text-gray-900' : 'text-gray-300'}`}>
+                      <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400">{month.name}</p>
+                      <p className={`text-xs font-bold mt-1 ${month.value > 0 ? 'text-gray-900 dark:text-white' : 'text-gray-300'}`}>
                         {month.value > 0 ? formatCompactCurrency(month.value) : '-'}
                       </p>
                       <div className="mt-1">
@@ -1368,7 +1368,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                     </div>
                   ))}
                 </div>
-                <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
+                <div className="flex items-center gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
                   <span className="flex items-center gap-1"><CheckCircle size={12} className="text-green-500" /> Paid</span>
                   <span className="flex items-center gap-1"><Clock size={12} className="text-red-500" /> Current</span>
                   <span className="flex items-center gap-1"><Circle size={12} className="text-blue-300" /> Upcoming</span>
@@ -1396,7 +1396,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                         {sponsorHistory.future.map((hist) => {
                           const histQuality = getDealQuality(hist.delta, hist.commercialValue);
                           return (
-                            <tr key={hist.id} className="border-b border-blue-100 hover:bg-blue-100/50">
+                            <tr key={hist.id} className="border-b border-blue-100 hover:bg-blue-100/50 dark:bg-blue-900/20">
                               <td className="py-2 px-3">
                                 <span className="font-medium text-blue-800 flex items-center gap-1">
                                   <Circle size={8} className="text-blue-400" />
@@ -1405,11 +1405,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                               </td>
                               <td className="py-2 px-3">
                                 <div className="flex items-center gap-1">
-                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
+                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' : 'bg-purple-100 dark:bg-purple-900/20 text-purple-700'}`}>
                                     {hist.contractType}
                                   </span>
                                   {(hist as any).hasCMComponent && (
-                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">+CM</span>
+                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-900/20 text-purple-700">+CM</span>
                                   )}
                                 </div>
                               </td>
@@ -1423,7 +1423,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                         })}
                       </tbody>
                       <tfoot>
-                        <tr className="bg-blue-100/50 font-semibold">
+                        <tr className="bg-blue-100/50 dark:bg-blue-900/20 font-semibold">
                           <td className="py-2 px-3 text-blue-700">Future Total</td>
                           <td className="py-2 px-3"></td>
                           <td className="py-2 px-3 text-right text-blue-900">{formatCurrency(sponsorHistory.future.reduce((sum, h) => sum + h.commercialValue, 0))}</td>
@@ -1461,7 +1461,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                           const histQuality = getDealQuality(hist.delta, hist.commercialValue);
                           const HistIcon = histQuality.icon;
                           return (
-                            <tr key={hist.id} className="border-b border-red-100 bg-red-50/50">
+                            <tr key={hist.id} className="border-b border-red-100 bg-red-50/50 dark:bg-red-900/30">
                               <td className="py-2 px-3">
                                 <span className="font-medium text-red-800 flex items-center gap-1">
                                   <Clock size={12} className="text-red-500" />
@@ -1470,11 +1470,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                               </td>
                               <td className="py-2 px-3">
                                 <div className="flex items-center gap-1">
-                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
+                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' : 'bg-purple-100 dark:bg-purple-900/20 text-purple-700'}`}>
                                     {hist.contractType}
                                   </span>
                                   {(hist as any).hasCMComponent && (
-                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">+CM</span>
+                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-900/20 text-purple-700">+CM</span>
                                   )}
                                 </div>
                               </td>
@@ -1499,20 +1499,20 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
               {/* Historical Data (Past Contracts) */}
               {sponsorHistory.past.length > 0 && (
-                <div className="bg-white border border-gray-100 rounded-xl p-5">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
                     <History size={16} /> Past Contracts ({sponsorHistory.past.length} {sponsorHistory.past.length === 1 ? 'season' : 'seasons'})
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-gray-100">
-                          <th className="text-left py-2 px-3 font-medium text-gray-600">Season</th>
-                          <th className="text-left py-2 px-3 font-medium text-gray-600">Type</th>
-                          <th className="text-right py-2 px-3 font-medium text-gray-600">Commercial Value</th>
-                          <th className="text-right py-2 px-3 font-medium text-gray-600">Sponsorship</th>
-                          <th className="text-right py-2 px-3 font-medium text-gray-600">Delta</th>
-                          <th className="text-center py-2 px-3 font-medium text-gray-600">Quality</th>
+                        <tr className="border-b border-gray-100 dark:border-gray-800">
+                          <th className="text-left py-2 px-3 font-medium text-gray-600 dark:text-gray-400">Season</th>
+                          <th className="text-left py-2 px-3 font-medium text-gray-600 dark:text-gray-400">Type</th>
+                          <th className="text-right py-2 px-3 font-medium text-gray-600 dark:text-gray-400">Commercial Value</th>
+                          <th className="text-right py-2 px-3 font-medium text-gray-600 dark:text-gray-400">Sponsorship</th>
+                          <th className="text-right py-2 px-3 font-medium text-gray-600 dark:text-gray-400">Delta</th>
+                          <th className="text-center py-2 px-3 font-medium text-gray-600 dark:text-gray-400">Quality</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1520,20 +1520,20 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                           const histQuality = getDealQuality(hist.delta, hist.commercialValue);
                           const HistIcon = histQuality.icon;
                           return (
-                            <tr key={hist.id} className="border-b border-gray-50 hover:bg-gray-50">
+                            <tr key={hist.id} className="border-b border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                               <td className="py-2 px-3">
-                                <span className="font-medium text-gray-600 flex items-center gap-1">
+                                <span className="font-medium text-gray-600 dark:text-gray-400 flex items-center gap-1">
                                   <CheckCircle size={12} className="text-green-500" />
                                   {hist.season}
                                 </span>
                               </td>
                               <td className="py-2 px-3">
                                 <div className="flex items-center gap-1">
-                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'}`}>
+                                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${hist.contractType === 'CASH' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' : 'bg-purple-100 dark:bg-purple-900/20 text-purple-700'}`}>
                                     {hist.contractType}
                                   </span>
                                   {(hist as any).hasCMComponent && (
-                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">+CM</span>
+                                    <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-900/20 text-purple-700">+CM</span>
                                   )}
                                 </div>
                               </td>
@@ -1552,8 +1552,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                         })}
                       </tbody>
                       <tfoot>
-                        <tr className="bg-gray-50 font-semibold">
-                          <td className="py-2 px-3 text-gray-700">Past Total</td>
+                        <tr className="bg-gray-50 dark:bg-gray-800 font-semibold">
+                          <td className="py-2 px-3 text-gray-700 dark:text-gray-200">Past Total</td>
                           <td className="py-2 px-3"></td>
                           <td className="py-2 px-3 text-right">{formatCurrency(sponsorHistory.past.reduce((sum, h) => sum + h.commercialValue, 0))}</td>
                           <td className="py-2 px-3 text-right">{formatCurrency(sponsorHistory.past.reduce((sum, h) => sum + h.sponsorReconciliation, 0))}</td>
@@ -1570,7 +1570,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
               {/* All-Time Summary */}
               {sponsorHistory.all.length > 1 && (
-                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 rounded-xl p-4">
                   <h3 className="text-sm font-semibold text-slate-700 mb-3">Lifetime Partnership Summary</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div>
@@ -1595,7 +1595,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
               {/* Bonus Info */}
               {selectedSponsor.bonusPlayoff > 0 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 rounded-xl p-4">
                   <h3 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
                     <Award size={16} /> Playoff Bonus
                   </h3>

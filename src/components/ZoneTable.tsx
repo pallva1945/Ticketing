@@ -105,19 +105,19 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
     return sortConfig.direction === 'asc' ? <ArrowUp size={12} className="ml-1 inline" /> : <ArrowDown size={12} className="ml-1 inline" />;
   };
 
-  const thClass = "px-2 py-3 cursor-pointer hover:bg-gray-100 transition-colors select-none text-xs font-bold text-gray-600 align-bottom";
+  const thClass = "px-2 py-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors select-none text-xs font-bold text-gray-600 dark:text-gray-400 align-bottom";
 
   if (data.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
-      <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 flex-shrink-0">
-        <h3 className="text-lg font-semibold text-gray-800">Zone Efficiency Matrix</h3>
-        <span className="text-xs text-gray-500 bg-white border border-gray-200 px-2 py-1 rounded">Avg per game</span>
+    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden h-full flex flex-col">
+      <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Zone Efficiency Matrix</h3>
+        <span className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-2 py-1 rounded">Avg per game</span>
       </div>
       <div className="overflow-auto flex-1">
-        <table className="w-full text-sm text-left text-gray-600">
-          <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm border-b border-gray-200">
+        <table className="w-full text-sm text-left text-gray-600 dark:text-gray-400">
+          <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10 shadow-sm border-b border-gray-200 dark:border-gray-700">
             <tr>
               <th className={`${thClass} text-left pl-4`} onClick={() => handleSort('zone')}>
                 Zone <SortIcon col="zone" />
@@ -142,7 +142,7 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-50">
+          <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
             {zoneStats.map((row, idx) => {
               // Color coding for fill rate
               let fillColor = 'bg-red-600';
@@ -154,11 +154,11 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
               return (
                 <tr 
                   key={row.zone} 
-                  className="bg-white hover:bg-gray-50 transition-colors cursor-pointer group"
+                  className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
                   onClick={() => onZoneClick && onZoneClick(row.zone)}
                   title="Click to filter by this zone"
                 >
-                  <td className="px-3 py-3 font-medium text-gray-900 flex items-center gap-2 pl-4">
+                  <td className="px-3 py-3 font-medium text-gray-900 dark:text-white flex items-center gap-2 pl-4">
                     <div className={`w-1.5 h-6 rounded-sm flex-shrink-0 ${
                         idx < 3 && sortConfig.key === 'avgRevenue' && sortConfig.direction === 'desc' 
                         ? 'bg-red-600' 
@@ -167,20 +167,20 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
                     <span className="truncate max-w-[120px]" title={row.zone}>{row.zone}</span>
                   </td>
                   <td className="px-2 py-3 text-right font-mono text-xs whitespace-nowrap">
-                    <span className="font-bold text-gray-800">{Math.round(row.avgSold)}</span>
+                    <span className="font-bold text-gray-800 dark:text-gray-200">{Math.round(row.avgSold)}</span>
                     <span className="text-gray-400 mx-0.5">/</span>
-                    <span className="text-gray-500">{row.capacity || '-'}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{row.capacity || '-'}</span>
                   </td>
-                  <td className="px-2 py-3 text-right font-medium text-gray-900 whitespace-nowrap">€{row.avgPrice.toFixed(1)}</td>
+                  <td className="px-2 py-3 text-right font-medium text-gray-900 dark:text-white whitespace-nowrap">€{row.avgPrice.toFixed(1)}</td>
                   <td className="px-2 py-3 text-right font-medium text-blue-600 whitespace-nowrap">€{row.revPas.toFixed(1)}</td>
                   <td className="px-2 py-3 text-right whitespace-nowrap">€{row.avgRevenue.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
                   <td className="px-2 py-3 text-right whitespace-nowrap">{row.revShare.toFixed(1)}%</td>
                   <td className="px-3 py-3 w-24">
                     <div className="flex flex-col gap-1">
-                        <div className="flex justify-between text-[10px] font-bold text-gray-500">
+                        <div className="flex justify-between text-[10px] font-bold text-gray-500 dark:text-gray-400">
                             <span>{row.fillRate.toFixed(0)}%</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
                             <div 
                             className={`h-1.5 rounded-full ${fillColor} transition-all duration-500`} 
                             style={{ width: `${Math.min(row.fillRate, 100)}%` }}
@@ -193,13 +193,13 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
             })}
           </tbody>
           {totals && (
-            <tfoot className="bg-gray-100 text-gray-900 font-bold sticky bottom-0 z-10 border-t-2 border-gray-200 shadow-inner text-xs">
+            <tfoot className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-bold sticky bottom-0 z-10 border-t-2 border-gray-200 dark:border-gray-700 shadow-inner text-xs">
               <tr>
                 <td className="px-3 py-3 uppercase text-[10px] tracking-wider pl-4">TOTAL / AVG</td>
                 <td className="px-2 py-3 text-right font-mono whitespace-nowrap">
                   <span>{Math.round(totals.avgSold)}</span>
                   <span className="text-gray-400 mx-0.5">/</span>
-                  <span className="text-gray-600">{totals.capacity}</span>
+                  <span className="text-gray-600 dark:text-gray-400">{totals.capacity}</span>
                 </td>
                 <td className="px-2 py-3 text-right whitespace-nowrap">€{totals.avgPrice.toFixed(1)}</td>
                 <td className="px-2 py-3 text-right text-blue-800 whitespace-nowrap">€{totals.revPas.toFixed(1)}</td>
@@ -207,10 +207,10 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
                 <td className="px-2 py-3 text-right whitespace-nowrap">100%</td>
                 <td className="px-3 py-3 w-24">
                   <div className="flex flex-col gap-1">
-                      <div className="flex justify-between text-[10px] font-bold text-gray-600">
+                      <div className="flex justify-between text-[10px] font-bold text-gray-600 dark:text-gray-400">
                           <span>{totals.fillRate.toFixed(0)}%</span>
                       </div>
-                      <div className="w-full bg-gray-300 rounded-full h-1.5">
+                      <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-1.5">
                           <div 
                           className="h-1.5 rounded-full bg-gray-800 transition-all duration-500" 
                           style={{ width: `${Math.min(totals.fillRate, 100)}%` }}

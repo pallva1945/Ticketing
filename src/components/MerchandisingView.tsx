@@ -137,7 +137,7 @@ export const MerchandisingView: React.FC = () => {
 
   const SortableHeader = ({ label, sortKey, currentSort, onSort, align = 'left' }: { label: string; sortKey: string; currentSort: { key: string; direction: SortDirection }; onSort: () => void; align?: 'left' | 'right' | 'center' }) => (
     <th 
-      className={`text-${align} px-4 py-3 font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 select-none`}
+      className={`text-${align} px-4 py-3 font-semibold text-gray-700 dark:text-gray-200 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 select-none`}
       onClick={onSort}
     >
       <div className={`flex items-center gap-1 ${align === 'right' ? 'justify-end' : align === 'center' ? 'justify-center' : ''}`}>
@@ -722,8 +722,8 @@ export const MerchandisingView: React.FC = () => {
   }, [allOrdersForCommunity]);
 
   const getHeatmapColor = (rate: number) => {
-    if (rate === 0) return 'bg-gray-100 text-gray-400';
-    if (rate <= 5) return 'bg-orange-100 text-orange-700';
+    if (rate === 0) return 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500';
+    if (rate <= 5) return 'bg-orange-100 dark:bg-orange-900/20 text-orange-700';
     if (rate <= 15) return 'bg-orange-200 text-orange-800';
     if (rate <= 30) return 'bg-orange-300 text-orange-900';
     if (rate <= 50) return 'bg-orange-400 text-white';
@@ -748,7 +748,7 @@ export const MerchandisingView: React.FC = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <RefreshCw size={32} className="animate-spin text-orange-600 mx-auto mb-3" />
-          <p className="text-gray-600">Loading Shopify data...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading Shopify data...</p>
         </div>
       </div>
     );
@@ -756,7 +756,7 @@ export const MerchandisingView: React.FC = () => {
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+      <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-xl p-6 text-center">
         <AlertCircle size={32} className="text-red-500 mx-auto mb-3" />
         <h3 className="text-lg font-semibold text-red-800 mb-2">Failed to Load Merchandising Data</h3>
         <p className="text-red-600 mb-4">{error}</p>
@@ -769,10 +769,10 @@ export const MerchandisingView: React.FC = () => {
 
   if (!data || !stats) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center">
-        <Package size={32} className="text-gray-400 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-gray-700">No Merchandising Data Available</h3>
-        <p className="text-gray-500">Connect your Shopify store to see merchandising analytics.</p>
+      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center">
+        <Package size={32} className="text-gray-400 dark:text-gray-500 mx-auto mb-3" />
+        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">No Merchandising Data Available</h3>
+        <p className="text-gray-500 dark:text-gray-400">Connect your Shopify store to see merchandising analytics.</p>
       </div>
     );
   }
@@ -786,11 +786,11 @@ export const MerchandisingView: React.FC = () => {
     <div className="space-y-6 pt-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
             <ShoppingBag size={28} className="text-orange-600" />
             Merchandising Analytics
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {stats.totalOrders.toLocaleString()} orders | {formatCurrency(stats.totalRevenue)} revenue
             {selectedMonth && <span className="ml-2 text-orange-600">• Filtered: {selectedMonth}</span>}
             {data.lastUpdated && <span className="ml-2">• Updated {formatDate(data.lastUpdated)}</span>}
@@ -801,8 +801,8 @@ export const MerchandisingView: React.FC = () => {
             onClick={() => setExcludeGameDayMerch(!excludeGameDayMerch)}
             className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
               excludeGameDayMerch 
-                ? 'bg-red-100 text-red-700 border border-red-200' 
-                : 'bg-gray-100 text-gray-600 border border-gray-200'
+                ? 'bg-red-100 dark:bg-red-900/20 text-red-700 border border-red-200' 
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
             }`}
             title={excludeGameDayMerch ? 'GameDay merch is excluded (no double counting)' : 'GameDay merch is included (may double count)'}
           >
@@ -815,7 +815,7 @@ export const MerchandisingView: React.FC = () => {
           {selectedMonth && (
             <button
               onClick={clearMonthFilter}
-              className="px-3 py-2 bg-orange-100 text-orange-700 rounded-lg text-sm font-medium hover:bg-orange-200 transition-colors flex items-center gap-2"
+              className="px-3 py-2 bg-orange-100 dark:bg-orange-900/20 text-orange-700 rounded-lg text-sm font-medium hover:bg-orange-200 transition-colors flex items-center gap-2"
             >
               <X size={14} /> Clear Month Filter
             </button>
@@ -823,7 +823,7 @@ export const MerchandisingView: React.FC = () => {
           <select
             value={selectedSeason}
             onChange={(e) => { setSelectedSeason(e.target.value); setSelectedMonth(null); }}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
             {availableSeasons.map(season => (
               <option key={season} value={season}>Season {season}</option>
@@ -840,7 +840,7 @@ export const MerchandisingView: React.FC = () => {
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               activeTab === tab 
                 ? 'bg-orange-600 text-white' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
             }`}
           >
             {tab === 'overview' && <BarChart3 size={14} className="inline mr-2" />}
@@ -857,66 +857,66 @@ export const MerchandisingView: React.FC = () => {
       {activeTab === 'overview' && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-green-50 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
                   <DollarSign size={16} className="text-green-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mb-1">Total Revenue</p>
-              <p className="text-lg font-bold text-gray-800">{formatCurrency(stats.totalRevenue)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Revenue</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{formatCurrency(stats.totalRevenue)}</p>
             </div>
-            <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-orange-50 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
                   <ShoppingBag size={16} className="text-orange-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mb-1">Total Orders</p>
-              <p className="text-lg font-bold text-gray-800">{stats.totalOrders.toLocaleString()}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Orders</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{stats.totalOrders.toLocaleString()}</p>
             </div>
-            <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
                   <Users size={16} className="text-blue-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mb-1">Customers</p>
-              <p className="text-lg font-bold text-gray-800">{stats.totalCustomers.toLocaleString()}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Customers</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{stats.totalCustomers.toLocaleString()}</p>
             </div>
-            <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-purple-50 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-purple-50 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
                   <TrendingUp size={16} className="text-purple-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mb-1">Avg Order Value</p>
-              <p className="text-lg font-bold text-gray-800">{formatCurrency(stats.avgOrderValue)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Avg Order Value</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{formatCurrency(stats.avgOrderValue)}</p>
             </div>
-            <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg flex items-center justify-center">
                   <Package size={16} className="text-indigo-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mb-1">Products</p>
-              <p className="text-lg font-bold text-gray-800">{stats.totalProducts.toLocaleString()}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Products</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{stats.totalProducts.toLocaleString()}</p>
             </div>
-            <div className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-teal-50 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-teal-50 dark:bg-teal-900/30 rounded-lg flex items-center justify-center">
                   <Layers size={16} className="text-teal-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mb-1">Inventory Units</p>
-              <p className="text-lg font-bold text-gray-800">{stats.totalInventory.toLocaleString()}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Inventory Units</p>
+              <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{stats.totalInventory.toLocaleString()}</p>
             </div>
           </div>
 
           <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-xl p-5 shadow-lg text-white">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-white dark:bg-gray-900/20 rounded-lg flex items-center justify-center">
                   <Target size={20} className="text-white" />
                 </div>
                 <div>
@@ -929,9 +929,9 @@ export const MerchandisingView: React.FC = () => {
                 <p className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
               </div>
             </div>
-            <div className="relative h-4 bg-white/20 rounded-full overflow-hidden">
+            <div className="relative h-4 bg-white dark:bg-gray-900/20 rounded-full overflow-hidden">
               <div 
-                className="absolute inset-y-0 left-0 bg-white rounded-full transition-all duration-500"
+                className="absolute inset-y-0 left-0 bg-white dark:bg-gray-900 rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(stats.goalProgress, 100)}%` }}
               />
             </div>
@@ -942,8 +942,8 @@ export const MerchandisingView: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">Revenue by Category</h3>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Revenue by Category</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -966,18 +966,18 @@ export const MerchandisingView: React.FC = () => {
               </ResponsiveContainer>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700">Monthly Revenue Trend</h3>
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Monthly Revenue Trend</h3>
                   {excludeGameDayMerch && totalGameDayMerch > 0 && (
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                       <span className="inline-block w-2 h-2 bg-red-400 rounded mr-1"></span>
                       GameDay merch shown in red (excluded from totals)
                     </p>
                   )}
                 </div>
-                <p className="text-xs text-gray-500">Click a bar to filter by month</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Click a bar to filter by month</p>
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={stats.monthlyData} onClick={(data) => data?.activePayload && handleMonthClick(data.activePayload[0]?.payload)}>
@@ -1046,50 +1046,50 @@ export const MerchandisingView: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">Top Selling Products</h3>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Top Selling Products</h3>
               <div className="space-y-3">
                 {stats.topProducts.slice(0, 5).map((product, i) => (
                   <div 
                     key={product.id} 
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                     onClick={() => setSelectedProductId(product.id)}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 bg-orange-100 text-orange-700 rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
+                      <span className="w-6 h-6 bg-orange-100 dark:bg-orange-900/20 text-orange-700 rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
                       <div>
-                        <p className="text-sm font-medium text-gray-800 truncate max-w-[200px]">{product.title}</p>
-                        <p className="text-xs text-gray-500">{product.quantity} units sold</p>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate max-w-[200px]">{product.title}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{product.quantity} units sold</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold text-green-600">{formatCurrency(product.revenue)}</p>
-                      <Eye size={14} className="text-gray-400" />
+                      <Eye size={14} className="text-gray-400 dark:text-gray-500" />
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-100 p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">Top Customers</h3>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Top Customers</h3>
               <div className="space-y-3">
                 {stats.topCustomers.slice(0, 5).map((customer, i) => (
                   <div 
                     key={customer.email} 
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                     onClick={() => setSelectedCustomerId(customer.email)}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="w-6 h-6 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
+                      <span className="w-6 h-6 bg-blue-100 dark:bg-blue-900/20 text-blue-700 rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
                       <div>
-                        <p className="text-sm font-medium text-gray-800">{customer.firstName} {customer.lastName}</p>
-                        <p className="text-xs text-gray-500">{customer.orders} orders</p>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{customer.firstName} {customer.lastName}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{customer.orders} orders</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-semibold text-green-600">{formatCurrency(customer.spent)}</p>
-                      <Eye size={14} className="text-gray-400" />
+                      <Eye size={14} className="text-gray-400 dark:text-gray-500" />
                     </div>
                   </div>
                 ))}
@@ -1100,36 +1100,36 @@ export const MerchandisingView: React.FC = () => {
       )}
 
       {activeTab === 'products' && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
                 placeholder="Search products by name, type, or SKU..."
                 value={productSearch}
                 onChange={(e) => { setProductSearch(e.target.value); setProductsLimit(50); }}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   <SortableHeader label="Product" sortKey="title" currentSort={productSort} onSort={() => handleSort(productSort, 'title', setProductSort)} />
                   <SortableHeader label="Type" sortKey="productType" currentSort={productSort} onSort={() => handleSort(productSort, 'productType', setProductSort)} />
                   <SortableHeader label="Price" sortKey="price" currentSort={productSort} onSort={() => handleSort(productSort, 'price', setProductSort)} align="right" />
                   <SortableHeader label="Inventory" sortKey="inventory" currentSort={productSort} onSort={() => handleSort(productSort, 'inventory', setProductSort)} align="right" />
                   <SortableHeader label="Status" sortKey="status" currentSort={productSort} onSort={() => handleSort(productSort, 'status', setProductSort)} align="center" />
-                  <th className="text-center px-4 py-3 font-semibold text-gray-700">Actions</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredProducts.slice(0, productsLimit).map((product) => (
                   <React.Fragment key={product.id}>
                     <tr 
-                      className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                      className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                       onClick={() => setSelectedProductId(product.id)}
                     >
                       <td className="px-4 py-3">
@@ -1137,28 +1137,28 @@ export const MerchandisingView: React.FC = () => {
                           {product.images[0] ? (
                             <img src={product.images[0].src} alt={product.title} className="w-10 h-10 object-cover rounded-lg" />
                           ) : (
-                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                              <Package size={16} className="text-gray-400" />
+                            <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                              <Package size={16} className="text-gray-400 dark:text-gray-500" />
                             </div>
                           )}
-                          <span className="font-medium text-gray-800">{product.title}</span>
+                          <span className="font-medium text-gray-800 dark:text-gray-100">{product.title}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{product.productType || '-'}</td>
-                      <td className="px-4 py-3 text-right text-gray-800">
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{product.productType || '-'}</td>
+                      <td className="px-4 py-3 text-right text-gray-800 dark:text-gray-100">
                         {product.variants.length === 1 
                           ? formatCurrency(product.variants[0].price)
                           : `${formatCurrency(Math.min(...product.variants.map(v => v.price)))} - ${formatCurrency(Math.max(...product.variants.map(v => v.price)))}`
                         }
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className={product.totalInventory <= 0 ? 'text-red-600 font-semibold' : product.totalInventory < 10 ? 'text-amber-600' : 'text-gray-800'}>
+                        <span className={product.totalInventory <= 0 ? 'text-red-600 font-semibold' : product.totalInventory < 10 ? 'text-amber-600' : 'text-gray-800 dark:text-gray-100'}>
                           {product.totalInventory}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          product.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                          product.status === 'active' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                         }`}>
                           {product.status}
                         </span>
@@ -1166,7 +1166,7 @@ export const MerchandisingView: React.FC = () => {
                       <td className="px-4 py-3 text-center">
                         <button 
                           onClick={(e) => { e.stopPropagation(); setSelectedProductId(product.id); }}
-                          className="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors"
+                          className="px-3 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors"
                         >
                           <Eye size={12} className="inline mr-1" /> View
                         </button>
@@ -1178,8 +1178,8 @@ export const MerchandisingView: React.FC = () => {
             </table>
           </div>
           {filteredProducts.length > productsLimit ? (
-            <div className="px-4 py-3 bg-gray-50 text-center">
-              <span className="text-sm text-gray-500 mr-3">Showing {productsLimit} of {filteredProducts.length} products</span>
+            <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center">
+              <span className="text-sm text-gray-500 dark:text-gray-400 mr-3">Showing {productsLimit} of {filteredProducts.length} products</span>
               <button 
                 onClick={() => setProductsLimit(l => l + 50)}
                 className="px-4 py-1.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
@@ -1188,7 +1188,7 @@ export const MerchandisingView: React.FC = () => {
               </button>
             </div>
           ) : filteredProducts.length > 0 && (
-            <div className="px-4 py-3 bg-gray-50 text-center text-sm text-gray-500">
+            <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center text-sm text-gray-500 dark:text-gray-400">
               Showing all {filteredProducts.length} products
             </div>
           )}
@@ -1196,22 +1196,22 @@ export const MerchandisingView: React.FC = () => {
       )}
 
       {activeTab === 'orders' && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
                 placeholder="Search orders by number, date, customer, total, payment..."
                 value={orderSearch}
                 onChange={(e) => { setOrderSearch(e.target.value); setOrdersLimit(50); }}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   <SortableHeader label="Order" sortKey="orderNumber" currentSort={orderSort} onSort={() => handleSort(orderSort, 'orderNumber', setOrderSort)} />
                   <SortableHeader label="Date" sortKey="processedAt" currentSort={orderSort} onSort={() => handleSort(orderSort, 'processedAt', setOrderSort)} />
@@ -1220,29 +1220,29 @@ export const MerchandisingView: React.FC = () => {
                   <SortableHeader label="Total" sortKey="totalPrice" currentSort={orderSort} onSort={() => handleSort(orderSort, 'totalPrice', setOrderSort)} align="right" />
                   <SortableHeader label="Payment" sortKey="paymentMethod" currentSort={orderSort} onSort={() => handleSort(orderSort, 'paymentMethod', setOrderSort)} align="center" />
                   <SortableHeader label="Fulfillment" sortKey="fulfillmentStatus" currentSort={orderSort} onSort={() => handleSort(orderSort, 'fulfillmentStatus', setOrderSort)} align="center" />
-                  <th className="text-center px-4 py-3 font-semibold text-gray-700">Actions</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {searchedOrders.slice(0, ordersLimit).map((order) => (
                   <tr 
                     key={order.id} 
-                    className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                    className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                     onClick={() => setSelectedOrderId(order.id)}
                   >
-                    <td className="px-4 py-3 font-medium text-gray-800">#{order.orderNumber}</td>
-                    <td className="px-4 py-3 text-gray-600">{formatDate(order.processedAt)}</td>
+                    <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">#{order.orderNumber}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatDate(order.processedAt)}</td>
                     <td className="px-4 py-3">
-                      <p className="text-gray-800">{order.customerName}</p>
-                      <p className="text-xs text-gray-500">{order.customerEmail}</p>
+                      <p className="text-gray-800 dark:text-gray-100">{order.customerName}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{order.customerEmail}</p>
                     </td>
-                    <td className="px-4 py-3 text-right text-gray-600">{order.itemCount}</td>
-                    <td className="px-4 py-3 text-right font-medium text-gray-800">{formatCurrency(order.totalPrice - (order.totalTax || 0))}</td>
+                    <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{order.itemCount}</td>
+                    <td className="px-4 py-3 text-right font-medium text-gray-800 dark:text-gray-100">{formatCurrency(order.totalPrice - (order.totalTax || 0))}</td>
                     <td className="px-4 py-3 text-center">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1 ${
-                        order.financialStatus === 'paid' ? 'bg-green-100 text-green-700' :
-                        order.financialStatus === 'pending' ? 'bg-amber-100 text-amber-700' :
-                        'bg-gray-100 text-gray-600'
+                        order.financialStatus === 'paid' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' :
+                        order.financialStatus === 'pending' ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700' :
+                        'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                       }`}>
                         <CreditCard size={10} />
                         {getPaymentMethod(order)}
@@ -1250,9 +1250,9 @@ export const MerchandisingView: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        order.fulfillmentStatus === 'fulfilled' ? 'bg-green-100 text-green-700' :
-                        order.fulfillmentStatus === 'partial' ? 'bg-amber-100 text-amber-700' :
-                        'bg-gray-100 text-gray-600'
+                        order.fulfillmentStatus === 'fulfilled' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' :
+                        order.fulfillmentStatus === 'partial' ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700' :
+                        'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                       }`}>
                         {order.fulfillmentStatus || 'unfulfilled'}
                       </span>
@@ -1260,7 +1260,7 @@ export const MerchandisingView: React.FC = () => {
                     <td className="px-4 py-3 text-center">
                       <button 
                         onClick={(e) => { e.stopPropagation(); setSelectedOrderId(order.id); }}
-                        className="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors"
+                        className="px-3 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors"
                       >
                         <Eye size={12} className="inline mr-1" /> View
                       </button>
@@ -1271,8 +1271,8 @@ export const MerchandisingView: React.FC = () => {
             </table>
           </div>
           {searchedOrders.length > ordersLimit ? (
-            <div className="px-4 py-3 bg-gray-50 text-center">
-              <span className="text-sm text-gray-500 mr-3">Showing {ordersLimit} of {searchedOrders.length} orders</span>
+            <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center">
+              <span className="text-sm text-gray-500 dark:text-gray-400 mr-3">Showing {ordersLimit} of {searchedOrders.length} orders</span>
               <button 
                 onClick={() => setOrdersLimit(l => l + 50)}
                 className="px-4 py-1.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
@@ -1281,7 +1281,7 @@ export const MerchandisingView: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className="px-4 py-3 bg-gray-50 text-center text-sm text-gray-500">
+            <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center text-sm text-gray-500 dark:text-gray-400">
               Showing all {searchedOrders.length} orders for season {selectedSeason}
               {selectedMonth && ` in ${selectedMonth}`}
             </div>
@@ -1290,58 +1290,58 @@ export const MerchandisingView: React.FC = () => {
       )}
 
       {activeTab === 'customers' && (
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
             <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
                 placeholder="Search all customers by name, email, or tag..."
                 value={customerSearch}
                 onChange={(e) => { setCustomerSearch(e.target.value); setCustomersLimit(50); }}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
                   <SortableHeader label="Customer" sortKey="name" currentSort={customerSort} onSort={() => handleSort(customerSort, 'name', setCustomerSort)} />
                   <SortableHeader label="Email" sortKey="email" currentSort={customerSort} onSort={() => handleSort(customerSort, 'email', setCustomerSort)} />
                   <SortableHeader label="Orders" sortKey="ordersCount" currentSort={customerSort} onSort={() => handleSort(customerSort, 'ordersCount', setCustomerSort)} align="right" />
                   <SortableHeader label="Total Spent" sortKey="totalSpent" currentSort={customerSort} onSort={() => handleSort(customerSort, 'totalSpent', setCustomerSort)} align="right" />
                   <SortableHeader label="Member Since" sortKey="createdAt" currentSort={customerSort} onSort={() => handleSort(customerSort, 'createdAt', setCustomerSort)} />
-                  <th className="text-left px-4 py-3 font-semibold text-gray-700">Tags</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-700">Actions</th>
+                  <th className="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">Tags</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredCustomers.slice(0, customerSearch.trim() ? Math.max(customersLimit, 100) : customersLimit).map((customer) => (
                   <tr 
                     key={customer.id} 
-                    className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer"
+                    className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
                     onClick={() => setSelectedCustomerId(customer.email)}
                   >
-                    <td className="px-4 py-3 font-medium text-gray-800">{customer.firstName} {customer.lastName}</td>
-                    <td className="px-4 py-3 text-gray-600">{customer.email}</td>
-                    <td className="px-4 py-3 text-right text-gray-600">{customer.ordersCount}</td>
+                    <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">{customer.firstName} {customer.lastName}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{customer.email}</td>
+                    <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{customer.ordersCount}</td>
                     <td className="px-4 py-3 text-right font-medium text-green-600">{formatCurrency(customer.totalSpent)}</td>
-                    <td className="px-4 py-3 text-gray-600">{formatDate(customer.createdAt)}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{formatDate(customer.createdAt)}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {customer.tags.slice(0, 3).map((tag, i) => (
-                          <span key={i} className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">{tag}</span>
+                          <span key={i} className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded text-xs">{tag}</span>
                         ))}
                         {customer.tags.length > 3 && (
-                          <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded text-xs">+{customer.tags.length - 3}</span>
+                          <span className="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded text-xs">+{customer.tags.length - 3}</span>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button 
                         onClick={(e) => { e.stopPropagation(); setSelectedCustomerId(customer.email); }}
-                        className="px-3 py-1 bg-orange-100 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors"
+                        className="px-3 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors"
                       >
                         <Eye size={12} className="inline mr-1" /> View
                       </button>
@@ -1356,8 +1356,8 @@ export const MerchandisingView: React.FC = () => {
             const isSearching = customerSearch.trim().length > 0;
             if (filteredCustomers.length > displayLimit) {
               return (
-                <div className="px-4 py-3 bg-gray-50 text-center">
-                  <span className="text-sm text-gray-500 mr-3">
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center">
+                  <span className="text-sm text-gray-500 dark:text-gray-400 mr-3">
                     {isSearching ? `Found ${filteredCustomers.length} customers matching "${customerSearch}" - showing ${displayLimit}` : `Showing ${displayLimit} of ${filteredCustomers.length} customers`}
                   </span>
                   <button 
@@ -1370,7 +1370,7 @@ export const MerchandisingView: React.FC = () => {
               );
             } else if (filteredCustomers.length > 0) {
               return (
-                <div className="px-4 py-3 bg-gray-50 text-center text-sm text-gray-500">
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center text-sm text-gray-500 dark:text-gray-400">
                   {isSearching ? `Found ${filteredCustomers.length} customers matching "${customerSearch}"` : `Showing all ${filteredCustomers.length} customers`}
                 </div>
               );
@@ -1383,74 +1383,74 @@ export const MerchandisingView: React.FC = () => {
       {activeTab === 'inventory' && inventoryStats && (
         <div className="space-y-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
                   <Layers size={16} className="text-blue-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mb-1">Total Units</p>
-              <p className="text-xl font-bold text-gray-800">{inventoryStats.totalUnits.toLocaleString()}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Units</p>
+              <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{inventoryStats.totalUnits.toLocaleString()}</p>
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
                   <DollarSign size={16} className="text-green-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mb-1">Inventory Value</p>
-              <p className="text-xl font-bold text-gray-800">{formatCurrency(inventoryStats.totalValue)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Inventory Value</p>
+              <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(inventoryStats.totalValue)}</p>
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
                   <AlertCircle size={16} className="text-orange-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mb-1">Low Stock</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Low Stock</p>
               <p className="text-xl font-bold text-orange-600">{inventoryStats.lowStock.length}</p>
-              <p className="text-[10px] text-gray-400">≤5 units</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500">≤5 units</p>
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
                   <X size={16} className="text-red-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mb-1">Out of Stock</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Out of Stock</p>
               <p className="text-xl font-bold text-red-600">{inventoryStats.outOfStock.length}</p>
-              <p className="text-[10px] text-gray-400">{inventoryStats.totalProducts} total products</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500">{inventoryStats.totalProducts} total products</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                <BarChart3 size={16} className="text-gray-400" />
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+                <BarChart3 size={16} className="text-gray-400 dark:text-gray-500" />
                 Inventory by Category
-                <span className="text-xs text-gray-400 ml-auto">Click to view products</span>
+                <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">Click to view products</span>
               </h3>
               <div className="space-y-2">
                 {inventoryStats.byCategory.slice(0, 8).map((cat, i) => (
                   <div 
                     key={cat.name} 
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
                     onClick={() => setSelectedCategory(cat.name)}
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                      <span className="text-sm text-gray-700 hover:text-blue-600">{cat.name}</span>
-                      <span className="text-xs text-gray-400">({cat.products} products)</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-200 hover:text-blue-600">{cat.name}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">({cat.products} products)</span>
                     </div>
                     <div className="flex items-center gap-4 text-sm">
-                      <span className="text-gray-500">{cat.units.toLocaleString()} units</span>
-                      <span className="font-medium text-gray-800 w-24 text-right">{formatCurrency(cat.value)}</span>
+                      <span className="text-gray-500 dark:text-gray-400">{cat.units.toLocaleString()} units</span>
+                      <span className="font-medium text-gray-800 dark:text-gray-100 w-24 text-right">{formatCurrency(cat.value)}</span>
                     </div>
                   </div>
                 ))}
               </div>
               {inventoryStats.byCategory.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                   <ResponsiveContainer width="100%" height={180}>
                     <PieChart>
                       <Pie
@@ -1474,21 +1474,21 @@ export const MerchandisingView: React.FC = () => {
               )}
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                <Package size={16} className="text-gray-400" />
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
+                <Package size={16} className="text-gray-400 dark:text-gray-500" />
                 Top Stocked Products
               </h3>
               <div className="space-y-2">
                 {inventoryStats.topStocked.map((product, i) => (
-                  <div key={product.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50">
+                  <div key={product.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <span className="text-xs text-gray-400 w-5">{i + 1}.</span>
-                      <span className="text-sm text-gray-700 truncate">{product.title}</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500 w-5">{i + 1}.</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-200 truncate">{product.title}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-400">{product.productType || 'N/A'}</span>
-                      <span className="text-sm font-bold text-gray-800 bg-blue-50 px-2 py-0.5 rounded">
+                      <span className="text-xs text-gray-400 dark:text-gray-500">{product.productType || 'N/A'}</span>
+                      <span className="text-sm font-bold text-gray-800 dark:text-gray-100 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">
                         {product.totalInventory.toLocaleString()}
                       </span>
                     </div>
@@ -1499,7 +1499,7 @@ export const MerchandisingView: React.FC = () => {
           </div>
 
           {inventoryStats.lowStockVariants.length > 0 && (
-            <div className="bg-white rounded-xl border border-orange-200 p-5">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-orange-200 p-5">
               <h3 className="text-sm font-semibold text-orange-700 mb-4 flex items-center gap-2">
                 <AlertCircle size={16} />
                 Low Stock Alert ({inventoryStats.lowStockVariants.length} variants)
@@ -1508,22 +1508,22 @@ export const MerchandisingView: React.FC = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-orange-100">
-                      <th className="text-left py-2 px-3 text-gray-600 font-medium">Product</th>
-                      <th className="text-left py-2 px-3 text-gray-600 font-medium">Variant</th>
-                      <th className="text-left py-2 px-3 text-gray-600 font-medium">SKU</th>
-                      <th className="text-right py-2 px-3 text-gray-600 font-medium">Price</th>
-                      <th className="text-right py-2 px-3 text-gray-600 font-medium">Qty</th>
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Product</th>
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Variant</th>
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">SKU</th>
+                      <th className="text-right py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Price</th>
+                      <th className="text-right py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Qty</th>
                     </tr>
                   </thead>
                   <tbody>
                     {inventoryStats.lowStockVariants.slice(0, 15).map((v, i) => (
-                      <tr key={i} className="border-b border-orange-50 hover:bg-orange-50/50">
-                        <td className="py-2 px-3 text-gray-700">{v.productTitle}</td>
-                        <td className="py-2 px-3 text-gray-500">{v.variantTitle}</td>
-                        <td className="py-2 px-3 text-gray-400 font-mono text-xs">{v.sku || '-'}</td>
-                        <td className="py-2 px-3 text-right text-gray-600">{formatCurrency(v.price)}</td>
+                      <tr key={i} className="border-b border-orange-50 hover:bg-orange-50/50 dark:bg-orange-900/30">
+                        <td className="py-2 px-3 text-gray-700 dark:text-gray-200">{v.productTitle}</td>
+                        <td className="py-2 px-3 text-gray-500 dark:text-gray-400">{v.variantTitle}</td>
+                        <td className="py-2 px-3 text-gray-400 dark:text-gray-500 font-mono text-xs">{v.sku || '-'}</td>
+                        <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{formatCurrency(v.price)}</td>
                         <td className="py-2 px-3 text-right">
-                          <span className="font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded">{v.quantity}</span>
+                          <span className="font-bold text-orange-600 bg-orange-100 dark:bg-orange-900/20 px-2 py-0.5 rounded">{v.quantity}</span>
                         </td>
                       </tr>
                     ))}
@@ -1531,7 +1531,7 @@ export const MerchandisingView: React.FC = () => {
                 </table>
               </div>
               {inventoryStats.lowStockVariants.length > 15 && (
-                <p className="text-xs text-gray-400 mt-3 text-center">
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-3 text-center">
                   Showing 15 of {inventoryStats.lowStockVariants.length} low stock items
                 </p>
               )}
@@ -1539,7 +1539,7 @@ export const MerchandisingView: React.FC = () => {
           )}
 
           {inventoryStats.outOfStockVariants.length > 0 && (
-            <div className="bg-white rounded-xl border border-red-200 p-5">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-red-200 p-5">
               <h3 className="text-sm font-semibold text-red-700 mb-4 flex items-center gap-2">
                 <X size={16} />
                 Out of Stock ({inventoryStats.outOfStockVariants.length} variants)
@@ -1548,49 +1548,49 @@ export const MerchandisingView: React.FC = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-red-100">
-                      <th className="text-left py-2 px-3 text-gray-600 font-medium">Product</th>
-                      <th className="text-left py-2 px-3 text-gray-600 font-medium">Variant</th>
-                      <th className="text-left py-2 px-3 text-gray-600 font-medium">SKU</th>
-                      <th className="text-right py-2 px-3 text-gray-600 font-medium">Price</th>
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Product</th>
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Variant</th>
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">SKU</th>
+                      <th className="text-right py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Price</th>
                     </tr>
                   </thead>
                   <tbody>
                     {inventoryStats.outOfStockVariants.slice(0, 20).map((v, i) => (
-                      <tr key={i} className="border-b border-red-50 hover:bg-red-50/50">
-                        <td className="py-2 px-3 text-gray-700">{v.productTitle}</td>
-                        <td className="py-2 px-3 text-gray-500">{v.variantTitle}</td>
-                        <td className="py-2 px-3 text-gray-400 font-mono text-xs">{v.sku || '-'}</td>
-                        <td className="py-2 px-3 text-right text-gray-600">{formatCurrency(v.price)}</td>
+                      <tr key={i} className="border-b border-red-50 hover:bg-red-50/50 dark:bg-red-900/30">
+                        <td className="py-2 px-3 text-gray-700 dark:text-gray-200">{v.productTitle}</td>
+                        <td className="py-2 px-3 text-gray-500 dark:text-gray-400">{v.variantTitle}</td>
+                        <td className="py-2 px-3 text-gray-400 dark:text-gray-500 font-mono text-xs">{v.sku || '-'}</td>
+                        <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{formatCurrency(v.price)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
               {inventoryStats.outOfStockVariants.length > 20 && (
-                <p className="text-xs text-gray-400 mt-3 text-center">
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-3 text-center">
                   Showing 20 of {inventoryStats.outOfStockVariants.length} out of stock items
                 </p>
               )}
             </div>
           )}
 
-          <div className="bg-gray-50 rounded-xl p-5">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">Inventory Summary</h3>
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Inventory Summary</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
-                <p className="text-gray-500">Products</p>
-                <p className="font-bold text-gray-800">{inventoryStats.totalProducts}</p>
+                <p className="text-gray-500 dark:text-gray-400">Products</p>
+                <p className="font-bold text-gray-800 dark:text-gray-100">{inventoryStats.totalProducts}</p>
               </div>
               <div>
-                <p className="text-gray-500">Variants</p>
-                <p className="font-bold text-gray-800">{inventoryStats.totalVariants}</p>
+                <p className="text-gray-500 dark:text-gray-400">Variants</p>
+                <p className="font-bold text-gray-800 dark:text-gray-100">{inventoryStats.totalVariants}</p>
               </div>
               <div>
-                <p className="text-gray-500">Avg. Price</p>
-                <p className="font-bold text-gray-800">{formatCurrency(inventoryStats.avgPrice)}</p>
+                <p className="text-gray-500 dark:text-gray-400">Avg. Price</p>
+                <p className="font-bold text-gray-800 dark:text-gray-100">{formatCurrency(inventoryStats.avgPrice)}</p>
               </div>
               <div>
-                <p className="text-gray-500">Stock Health</p>
+                <p className="text-gray-500 dark:text-gray-400">Stock Health</p>
                 <p className="font-bold text-green-600">
                   {((inventoryStats.healthyStock.length / inventoryStats.totalProducts) * 100).toFixed(0)}% healthy
                 </p>
@@ -1604,108 +1604,108 @@ export const MerchandisingView: React.FC = () => {
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <div>
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                 <Heart size={20} className="text-orange-600" />
                 Customer Loyalty & RFM Breakdown
               </h2>
-              <p className="text-xs text-gray-500 mt-1">All seasons | {allOrdersForCommunity.length.toLocaleString()} orders | {rfmData.totalCustomers.toLocaleString()} unique customers</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">All seasons | {allOrdersForCommunity.length.toLocaleString()} orders | {rfmData.totalCustomers.toLocaleString()} unique customers</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-green-50 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
                   <Sparkles size={20} className="text-green-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-800">Champions</h3>
-                  <p className="text-xs text-gray-500">High frequency, high spend</p>
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Champions</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">High frequency, high spend</p>
                 </div>
               </div>
-              <p className="text-3xl font-bold text-gray-800">{rfmData.champions.count}</p>
+              <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">{rfmData.champions.count}</p>
               <div className="mt-2 space-y-1">
-                <p className="text-xs text-gray-500">Avg Spend: <span className="font-medium text-gray-700">{formatCurrency(rfmData.champions.avgSpend)}</span></p>
-                <p className="text-xs text-gray-500">Total Revenue: <span className="font-medium text-green-600">{formatCurrency(rfmData.champions.totalRevenue)}</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Avg Spend: <span className="font-medium text-gray-700 dark:text-gray-200">{formatCurrency(rfmData.champions.avgSpend)}</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Total Revenue: <span className="font-medium text-green-600">{formatCurrency(rfmData.champions.totalRevenue)}</span></p>
               </div>
-              <div className="mt-3 h-1 bg-gray-100 rounded-full overflow-hidden">
+              <div className="mt-3 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                 <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.min((rfmData.champions.count / rfmData.totalCustomers) * 100, 100)}%` }} />
               </div>
-              <p className="text-xs text-gray-400 mt-1">{((rfmData.champions.count / rfmData.totalCustomers) * 100).toFixed(1)}% of customers</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{((rfmData.champions.count / rfmData.totalCustomers) * 100).toFixed(1)}% of customers</p>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-red-50 dark:bg-red-900/30 rounded-lg flex items-center justify-center">
                   <AlertTriangle size={20} className="text-red-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-800">At Risk</h3>
-                  <p className="text-xs text-gray-500">No purchase in 6+ months</p>
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">At Risk</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">No purchase in 6+ months</p>
                 </div>
               </div>
-              <p className="text-3xl font-bold text-gray-800">{rfmData.atRisk.count}</p>
+              <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">{rfmData.atRisk.count}</p>
               <div className="mt-2 space-y-1">
-                <p className="text-xs text-gray-500">Avg Spend: <span className="font-medium text-gray-700">{formatCurrency(rfmData.atRisk.avgSpend)}</span></p>
-                <p className="text-xs text-gray-500">Revenue at Risk: <span className="font-medium text-red-600">{formatCurrency(rfmData.atRisk.totalRevenue)}</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Avg Spend: <span className="font-medium text-gray-700 dark:text-gray-200">{formatCurrency(rfmData.atRisk.avgSpend)}</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Revenue at Risk: <span className="font-medium text-red-600">{formatCurrency(rfmData.atRisk.totalRevenue)}</span></p>
               </div>
-              <div className="mt-3 h-1 bg-gray-100 rounded-full overflow-hidden">
+              <div className="mt-3 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                 <div className="h-full bg-red-500 rounded-full" style={{ width: `${Math.min((rfmData.atRisk.count / rfmData.totalCustomers) * 100, 100)}%` }} />
               </div>
-              <p className="text-xs text-gray-400 mt-1">{((rfmData.atRisk.count / rfmData.totalCustomers) * 100).toFixed(1)}% of customers</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{((rfmData.atRisk.count / rfmData.totalCustomers) * 100).toFixed(1)}% of customers</p>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
                   <TrendingUp size={20} className="text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-800">New Blood</h3>
-                  <p className="text-xs text-gray-500">First-time buyers (last 30 days)</p>
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">New Blood</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">First-time buyers (last 30 days)</p>
                 </div>
               </div>
-              <p className="text-3xl font-bold text-gray-800">{rfmData.newBlood.count}</p>
+              <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">{rfmData.newBlood.count}</p>
               <div className="mt-2 space-y-1">
-                <p className="text-xs text-gray-500">Avg First Purchase: <span className="font-medium text-gray-700">{formatCurrency(rfmData.newBlood.avgSpend)}</span></p>
-                <p className="text-xs text-gray-500">Conversion Window: <span className="font-medium text-blue-600">Active</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Avg First Purchase: <span className="font-medium text-gray-700 dark:text-gray-200">{formatCurrency(rfmData.newBlood.avgSpend)}</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Conversion Window: <span className="font-medium text-blue-600">Active</span></p>
               </div>
-              <div className="mt-3 h-1 bg-gray-100 rounded-full overflow-hidden">
+              <div className="mt-3 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min((rfmData.newBlood.count / rfmData.totalCustomers) * 100, 100)}%` }} />
               </div>
-              <p className="text-xs text-gray-400 mt-1">{((rfmData.newBlood.count / rfmData.totalCustomers) * 100).toFixed(1)}% of customers</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{((rfmData.newBlood.count / rfmData.totalCustomers) * 100).toFixed(1)}% of customers</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Target size={18} className="text-orange-600" />
-                <h3 className="text-sm font-semibold text-gray-800">Repeat Purchase Rate</h3>
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Repeat Purchase Rate</h3>
               </div>
               <span className="text-2xl font-bold text-orange-600">{rfmData.repeatRate.toFixed(1)}%</span>
             </div>
-            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+            <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
               <div className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-1000" style={{ width: `${Math.min(rfmData.repeatRate, 100)}%` }} />
             </div>
             <div className="flex justify-between mt-2">
-              <p className="text-xs text-gray-500">{rfmData.repeatCustomers.toLocaleString()} repeat customers</p>
-              <p className="text-xs text-gray-500">{rfmData.totalCustomers.toLocaleString()} total</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{rfmData.repeatCustomers.toLocaleString()} repeat customers</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{rfmData.totalCustomers.toLocaleString()} total</p>
             </div>
           </div>
 
           {gatewayData.entryProducts.length > 0 && (
             <>
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                 <Package size={20} className="text-orange-600" />
                 Gateway & Bundle Analysis
               </h2>
 
-              <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                   <BarChart3 size={16} className="text-orange-600" />
                   Top Entry Products
-                  <span className="text-xs font-normal text-gray-500 ml-1">Most common first purchase</span>
+                  <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">Most common first purchase</span>
                 </h3>
                 <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1725,29 +1725,29 @@ export const MerchandisingView: React.FC = () => {
               </div>
 
               {gatewayData.bundles.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-                  <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                     <Layers size={16} className="text-orange-600" />
                     Frequently Bought Together
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-gray-200">
-                          <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase">#</th>
-                          <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase">Product 1</th>
-                          <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 uppercase">Product 2</th>
-                          <th className="text-right py-2 px-3 text-xs font-medium text-gray-500 uppercase">Co-Purchases</th>
+                        <tr className="border-b border-gray-200 dark:border-gray-700">
+                          <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">#</th>
+                          <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Product 1</th>
+                          <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Product 2</th>
+                          <th className="text-right py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Co-Purchases</th>
                         </tr>
                       </thead>
                       <tbody>
                         {gatewayData.bundles.map((bundle, idx) => (
-                          <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                            <td className="py-2.5 px-3 text-gray-400 font-medium">{idx + 1}</td>
-                            <td className="py-2.5 px-3 text-gray-800 font-medium"><span className="line-clamp-1">{bundle.product1}</span></td>
-                            <td className="py-2.5 px-3 text-gray-800 font-medium"><span className="line-clamp-1">{bundle.product2}</span></td>
+                          <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                            <td className="py-2.5 px-3 text-gray-400 dark:text-gray-500 font-medium">{idx + 1}</td>
+                            <td className="py-2.5 px-3 text-gray-800 dark:text-gray-100 font-medium"><span className="line-clamp-1">{bundle.product1}</span></td>
+                            <td className="py-2.5 px-3 text-gray-800 dark:text-gray-100 font-medium"><span className="line-clamp-1">{bundle.product2}</span></td>
                             <td className="py-2.5 px-3 text-right">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-orange-50 text-orange-700 text-xs font-medium">{bundle.count}</span>
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-orange-50 dark:bg-orange-900/30 text-orange-700 text-xs font-medium">{bundle.count}</span>
                             </td>
                           </tr>
                         ))}
@@ -1761,32 +1761,32 @@ export const MerchandisingView: React.FC = () => {
 
           {cohortData.cohorts.length > 0 && (
             <>
-              <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                 <BarChart3 size={20} className="text-orange-600" />
                 Cohort Retention Heatmap
               </h2>
 
-              <div className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm">
-                <p className="text-xs text-gray-500 mb-4">Percentage of customers who returned in subsequent months after their first purchase</p>
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Percentage of customers who returned in subsequent months after their first purchase</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr>
-                        <th className="text-left py-2 px-2 text-gray-500 font-medium sticky left-0 bg-white min-w-[80px]">Cohort</th>
-                        <th className="text-center py-2 px-1 text-gray-500 font-medium min-w-[44px]">Size</th>
+                        <th className="text-left py-2 px-2 text-gray-500 dark:text-gray-400 font-medium sticky left-0 bg-white dark:bg-gray-900 min-w-[80px]">Cohort</th>
+                        <th className="text-center py-2 px-1 text-gray-500 dark:text-gray-400 font-medium min-w-[44px]">Size</th>
                         {cohortData.months.map((m: string) => (
-                          <th key={m} className="text-center py-2 px-1 text-gray-500 font-medium min-w-[44px]">{m}</th>
+                          <th key={m} className="text-center py-2 px-1 text-gray-500 dark:text-gray-400 font-medium min-w-[44px]">{m}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {cohortData.cohorts.map((cohort: any) => (
                         <tr key={cohort.cohortMonth} className="border-t border-gray-50">
-                          <td className="py-1.5 px-2 font-medium text-gray-700 sticky left-0 bg-white whitespace-nowrap">{cohort.label}</td>
-                          <td className="py-1.5 px-1 text-center text-gray-600 font-medium">{cohort.total}</td>
+                          <td className="py-1.5 px-2 font-medium text-gray-700 dark:text-gray-200 sticky left-0 bg-white dark:bg-gray-900 whitespace-nowrap">{cohort.label}</td>
+                          <td className="py-1.5 px-1 text-center text-gray-600 dark:text-gray-400 font-medium">{cohort.total}</td>
                           {cohortData.months.map((_: string, idx: number) => {
                             const ret = cohort.retention[idx];
-                            if (!ret) return <td key={idx} className="py-1.5 px-1"><div className="w-10 h-8 rounded bg-gray-50 mx-auto" /></td>;
+                            if (!ret) return <td key={idx} className="py-1.5 px-1"><div className="w-10 h-8 rounded bg-gray-50 dark:bg-gray-800 mx-auto" /></td>;
                             return (
                               <td key={idx} className="py-1.5 px-1">
                                 <div
@@ -1803,11 +1803,11 @@ export const MerchandisingView: React.FC = () => {
                     </tbody>
                   </table>
                 </div>
-                <div className="flex items-center gap-2 mt-4 text-xs text-gray-500">
+                <div className="flex items-center gap-2 mt-4 text-xs text-gray-500 dark:text-gray-400">
                   <span>Low</span>
                   <div className="flex gap-0.5">
-                    <div className="w-6 h-4 rounded bg-gray-100" />
-                    <div className="w-6 h-4 rounded bg-orange-100" />
+                    <div className="w-6 h-4 rounded bg-gray-100 dark:bg-gray-800" />
+                    <div className="w-6 h-4 rounded bg-orange-100 dark:bg-orange-900/20" />
                     <div className="w-6 h-4 rounded bg-orange-200" />
                     <div className="w-6 h-4 rounded bg-orange-300" />
                     <div className="w-6 h-4 rounded bg-orange-400" />
@@ -1824,28 +1824,28 @@ export const MerchandisingView: React.FC = () => {
 
       {selectedCategory && data && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedCategory(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-gray-800">{selectedCategory}</h2>
-                <p className="text-sm text-gray-500">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{selectedCategory}</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
                   {data.products.filter(p => (p.productType || 'Uncategorized') === selectedCategory).length} products in this category
                 </p>
               </div>
-              <button onClick={() => setSelectedCategory(null)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <X size={20} className="text-gray-500" />
+              <button onClick={() => setSelectedCategory(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <X size={20} className="text-gray-500 dark:text-gray-400" />
               </button>
             </div>
             <div className="p-6">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-100">
-                      <th className="text-left py-3 px-4 font-semibold text-gray-600">Product</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600">Price</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600">Inventory</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600">Value</th>
-                      <th className="text-center py-3 px-4 font-semibold text-gray-600">Status</th>
+                    <tr className="border-b border-gray-100 dark:border-gray-800">
+                      <th className="text-left py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Product</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Price</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Inventory</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Value</th>
+                      <th className="text-center py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1858,36 +1858,36 @@ export const MerchandisingView: React.FC = () => {
                           ? product.variants.reduce((sum, v) => sum + v.price, 0) / product.variants.length 
                           : 0;
                         return (
-                          <tr key={product.id} className="border-b border-gray-50 hover:bg-gray-50">
+                          <tr key={product.id} className="border-b border-gray-50 hover:bg-gray-50 dark:hover:bg-gray-800">
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-3">
                                 {product.images[0] ? (
                                   <img src={product.images[0].src} alt="" className="w-10 h-10 rounded-lg object-cover" />
                                 ) : (
-                                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                                    <Package size={16} className="text-gray-400" />
+                                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                                    <Package size={16} className="text-gray-400 dark:text-gray-500" />
                                   </div>
                                 )}
                                 <div>
-                                  <p className="font-medium text-gray-800">{product.title}</p>
-                                  <p className="text-xs text-gray-400">{product.variants.length} variant{product.variants.length !== 1 ? 's' : ''}</p>
+                                  <p className="font-medium text-gray-800 dark:text-gray-100">{product.title}</p>
+                                  <p className="text-xs text-gray-400 dark:text-gray-500">{product.variants.length} variant{product.variants.length !== 1 ? 's' : ''}</p>
                                 </div>
                               </div>
                             </td>
-                            <td className="py-3 px-4 text-right text-gray-700">{formatCurrency(avgPrice)}</td>
+                            <td className="py-3 px-4 text-right text-gray-700 dark:text-gray-200">{formatCurrency(avgPrice)}</td>
                             <td className="py-3 px-4 text-right">
-                              <span className={product.totalInventory <= 0 ? 'text-red-600 font-semibold' : product.totalInventory < 10 ? 'text-amber-600' : 'text-gray-800'}>
+                              <span className={product.totalInventory <= 0 ? 'text-red-600 font-semibold' : product.totalInventory < 10 ? 'text-amber-600' : 'text-gray-800 dark:text-gray-100'}>
                                 {product.totalInventory.toLocaleString()}
                               </span>
                             </td>
-                            <td className="py-3 px-4 text-right font-medium text-gray-800">{formatCurrency(inventoryValue)}</td>
+                            <td className="py-3 px-4 text-right font-medium text-gray-800 dark:text-gray-100">{formatCurrency(inventoryValue)}</td>
                             <td className="py-3 px-4 text-center">
                               {product.totalInventory <= 0 ? (
-                                <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">Out of Stock</span>
+                                <span className="px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/20 text-red-700 rounded-full">Out of Stock</span>
                               ) : product.totalInventory < 10 ? (
-                                <span className="px-2 py-1 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">Low Stock</span>
+                                <span className="px-2 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-900/20 text-amber-700 rounded-full">Low Stock</span>
                               ) : (
-                                <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">In Stock</span>
+                                <span className="px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-700 rounded-full">In Stock</span>
                               )}
                             </td>
                           </tr>
@@ -1896,7 +1896,7 @@ export const MerchandisingView: React.FC = () => {
                   </tbody>
                 </table>
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center text-sm text-gray-500">
+              <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
                 <span>
                   Total: {data.products.filter(p => (p.productType || 'Uncategorized') === selectedCategory).reduce((sum, p) => sum + p.totalInventory, 0).toLocaleString()} units
                 </span>
@@ -1911,11 +1911,11 @@ export const MerchandisingView: React.FC = () => {
 
       {selectedProductStats && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedProductId(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800">Product Details</h2>
-              <button onClick={() => setSelectedProductId(null)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <X size={20} className="text-gray-500" />
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Product Details</h2>
+              <button onClick={() => setSelectedProductId(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <X size={20} className="text-gray-500 dark:text-gray-400" />
               </button>
             </div>
             <div className="p-6 space-y-6">
@@ -1927,27 +1927,27 @@ export const MerchandisingView: React.FC = () => {
                     className="w-32 h-32 object-cover rounded-xl"
                   />
                 ) : (
-                  <div className="w-32 h-32 bg-gray-100 rounded-xl flex items-center justify-center">
-                    <Package size={40} className="text-gray-400" />
+                  <div className="w-32 h-32 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center">
+                    <Package size={40} className="text-gray-400 dark:text-gray-500" />
                   </div>
                 )}
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-800">{selectedProductStats.product.title}</h3>
-                  <p className="text-sm text-gray-500 mt-1">{selectedProductStats.product.productType || 'No category'}</p>
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{selectedProductStats.product.title}</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{selectedProductStats.product.productType || 'No category'}</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-                    <div className="bg-green-50 rounded-lg p-3 text-center">
+                    <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 text-center">
                       <p className="text-xs text-green-600">Revenue</p>
                       <p className="text-lg font-bold text-green-700">{formatCurrency(selectedProductStats.totalRevenue)}</p>
                     </div>
-                    <div className="bg-orange-50 rounded-lg p-3 text-center">
+                    <div className="bg-orange-50 dark:bg-orange-900/30 rounded-lg p-3 text-center">
                       <p className="text-xs text-orange-600">Units Sold</p>
                       <p className="text-lg font-bold text-orange-700">{selectedProductStats.totalSold}</p>
                     </div>
-                    <div className="bg-blue-50 rounded-lg p-3 text-center">
+                    <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 text-center">
                       <p className="text-xs text-blue-600">In Stock</p>
                       <p className="text-lg font-bold text-blue-700">{selectedProductStats.product.totalInventory}</p>
                     </div>
-                    <div className="bg-purple-50 rounded-lg p-3 text-center">
+                    <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3 text-center">
                       <p className="text-xs text-purple-600">Price</p>
                       <p className="text-lg font-bold text-purple-700">
                         {selectedProductStats.product.variants.length === 1
@@ -1962,14 +1962,14 @@ export const MerchandisingView: React.FC = () => {
 
               {selectedProductStats.product.variants.length > 1 && (
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Variants</h4>
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Variants</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {selectedProductStats.product.variants.map(variant => (
-                      <div key={variant.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <span className="text-sm text-gray-700">{variant.title}</span>
+                      <div key={variant.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <span className="text-sm text-gray-700 dark:text-gray-200">{variant.title}</span>
                         <div className="flex items-center gap-4 text-sm">
                           <span className="font-medium">{formatCurrency(variant.price)}</span>
-                          <span className={variant.inventoryQuantity <= 0 ? 'text-red-600' : 'text-gray-500'}>
+                          <span className={variant.inventoryQuantity <= 0 ? 'text-red-600' : 'text-gray-500 dark:text-gray-400'}>
                             {variant.inventoryQuantity} in stock
                           </span>
                         </div>
@@ -1981,7 +1981,7 @@ export const MerchandisingView: React.FC = () => {
 
               {selectedProductStats.monthlySales.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Sales History</h4>
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Sales History</h4>
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={selectedProductStats.monthlySales}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -1995,20 +1995,20 @@ export const MerchandisingView: React.FC = () => {
               )}
 
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Recent Purchases ({selectedProductStats.orders.length})</h4>
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Recent Purchases ({selectedProductStats.orders.length})</h4>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {selectedProductStats.orders.slice(0, 20).map(order => (
-                    <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div>
-                        <p className="text-sm font-medium text-gray-800">{order.customerName}</p>
-                        <p className="text-xs text-gray-500">{formatDate(order.processedAt)}</p>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{order.customerName}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(order.processedAt)}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium text-gray-800">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
                           {order.purchasedItems.reduce((sum, item) => sum + item.quantity, 0)} units
                         </p>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          order.financialStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                          order.financialStatus === 'paid' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                         }`}>
                           {getPaymentMethod(order)}
                         </span>
@@ -2024,46 +2024,46 @@ export const MerchandisingView: React.FC = () => {
 
       {selectedCustomerId && selectedCustomerOrders.length > 0 && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedCustomerId(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800">Customer Details</h2>
-              <button onClick={() => setSelectedCustomerId(null)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <X size={20} className="text-gray-500" />
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Customer Details</h2>
+              <button onClick={() => setSelectedCustomerId(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <X size={20} className="text-gray-500 dark:text-gray-400" />
               </button>
             </div>
             <div className="p-6 space-y-6">
               <div className="flex items-start gap-6">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
                   <Users size={28} className="text-blue-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-800">
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">
                     {selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : selectedCustomerOrders[0]?.customerName || 'Guest'}
                   </h3>
-                  <p className="text-sm text-gray-500">{selectedCustomer?.email || selectedCustomerId}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{selectedCustomer?.email || selectedCustomerId}</p>
                   {selectedCustomer?.tags && selectedCustomer.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {selectedCustomer.tags.map((tag, i) => (
-                        <span key={i} className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs">{tag}</span>
+                        <span key={i} className="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded text-xs">{tag}</span>
                       ))}
                     </div>
                   )}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-                    <div className="bg-green-50 rounded-lg p-3 text-center">
+                    <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 text-center">
                       <p className="text-xs text-green-600">Total Spent</p>
                       <p className="text-lg font-bold text-green-700">
                         {formatCurrency(selectedCustomer?.totalSpent || selectedCustomerOrders.reduce((sum, o) => sum + o.totalPrice - (o.totalTax || 0), 0))}
                       </p>
                     </div>
-                    <div className="bg-orange-50 rounded-lg p-3 text-center">
+                    <div className="bg-orange-50 dark:bg-orange-900/30 rounded-lg p-3 text-center">
                       <p className="text-xs text-orange-600">Orders</p>
                       <p className="text-lg font-bold text-orange-700">{selectedCustomer?.ordersCount || selectedCustomerOrders.length}</p>
                     </div>
-                    <div className="bg-blue-50 rounded-lg p-3 text-center">
+                    <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 text-center">
                       <p className="text-xs text-blue-600">This Season</p>
                       <p className="text-lg font-bold text-blue-700">{selectedCustomerOrders.length}</p>
                     </div>
-                    <div className="bg-purple-50 rounded-lg p-3 text-center">
+                    <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3 text-center">
                       <p className="text-xs text-purple-600">Member Since</p>
                       <p className="text-sm font-bold text-purple-700">
                         {selectedCustomer ? formatDate(selectedCustomer.createdAt) : formatDate(selectedCustomerOrders[selectedCustomerOrders.length - 1]?.processedAt || '')}
@@ -2074,19 +2074,19 @@ export const MerchandisingView: React.FC = () => {
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Purchase History ({selectedCustomerOrders.length})</h4>
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Purchase History ({selectedCustomerOrders.length})</h4>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {selectedCustomerOrders.map(order => (
-                    <div key={order.id} className="bg-gray-50 rounded-lg p-4">
+                    <div key={order.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <p className="text-sm font-medium text-gray-800">Order #{order.orderNumber}</p>
-                          <p className="text-xs text-gray-500">{formatDate(order.processedAt)}</p>
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-100">Order #{order.orderNumber}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(order.processedAt)}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-sm font-bold text-green-600">{formatCurrency(order.totalPrice - (order.totalTax || 0))}</p>
                           <span className={`text-xs px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
-                            order.financialStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                            order.financialStatus === 'paid' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                           }`}>
                             <CreditCard size={10} />
                             {getPaymentMethod(order)}
@@ -2096,8 +2096,8 @@ export const MerchandisingView: React.FC = () => {
                       <div className="space-y-1">
                         {order.lineItems.map((item, i) => (
                           <div key={i} className="flex items-center justify-between text-sm">
-                            <span className="text-gray-600">{item.title}</span>
-                            <span className="text-gray-800">{item.quantity} x {formatCurrency(item.price)}</span>
+                            <span className="text-gray-600 dark:text-gray-400">{item.title}</span>
+                            <span className="text-gray-800 dark:text-gray-100">{item.quantity} x {formatCurrency(item.price)}</span>
                           </div>
                         ))}
                       </div>
@@ -2112,39 +2112,39 @@ export const MerchandisingView: React.FC = () => {
 
       {selectedOrder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedOrderId(null)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800">Order #{selectedOrder.orderNumber}</h2>
-              <button onClick={() => setSelectedOrderId(null)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-                <X size={20} className="text-gray-500" />
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Order #{selectedOrder.orderNumber}</h2>
+              <button onClick={() => setSelectedOrderId(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
+                <X size={20} className="text-gray-500 dark:text-gray-400" />
               </button>
             </div>
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500">Customer</p>
-                  <p className="text-sm font-medium text-gray-800">{selectedOrder.customerName}</p>
-                  <p className="text-xs text-gray-500">{selectedOrder.customerEmail}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Customer</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{selectedOrder.customerName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{selectedOrder.customerEmail}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Date</p>
-                  <p className="text-sm font-medium text-gray-800">{formatDate(selectedOrder.processedAt)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Date</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{formatDate(selectedOrder.processedAt)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Payment Method</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Payment Method</p>
                   <span className={`text-sm px-2 py-1 rounded-full inline-flex items-center gap-1 ${
-                    selectedOrder.financialStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                    selectedOrder.financialStatus === 'paid' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' : 'bg-amber-100 dark:bg-amber-900/20 text-amber-700'
                   }`}>
                     <CreditCard size={12} />
                     {getPaymentMethod(selectedOrder)}
                   </span>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Fulfillment</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Fulfillment</p>
                   <span className={`text-sm px-2 py-1 rounded-full ${
-                    selectedOrder.fulfillmentStatus === 'fulfilled' ? 'bg-green-100 text-green-700' :
-                    selectedOrder.fulfillmentStatus === 'partial' ? 'bg-amber-100 text-amber-700' :
-                    'bg-gray-100 text-gray-600'
+                    selectedOrder.fulfillmentStatus === 'fulfilled' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' :
+                    selectedOrder.fulfillmentStatus === 'partial' ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700' :
+                    'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                   }`}>
                     {selectedOrder.fulfillmentStatus || 'Unfulfilled'}
                   </span>
@@ -2152,16 +2152,16 @@ export const MerchandisingView: React.FC = () => {
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 mb-3">Items ({selectedOrder.itemCount})</h4>
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Items ({selectedOrder.itemCount})</h4>
                 <div className="space-y-2">
                   {selectedOrder.lineItems.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div key={i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div>
-                        <p className="text-sm font-medium text-gray-800">{item.title}</p>
-                        {item.sku && <p className="text-xs text-gray-500">SKU: {item.sku}</p>}
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{item.title}</p>
+                        {item.sku && <p className="text-xs text-gray-500 dark:text-gray-400">SKU: {item.sku}</p>}
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-medium text-gray-800">{item.quantity} x {formatCurrency(item.price)}</p>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{item.quantity} x {formatCurrency(item.price)}</p>
                         <p className="text-sm font-bold text-green-600">{formatCurrency(item.price * item.quantity)}</p>
                       </div>
                     </div>
@@ -2169,9 +2169,9 @@ export const MerchandisingView: React.FC = () => {
                 </div>
               </div>
 
-              <div className="border-t border-gray-200 pt-4">
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-semibold text-gray-800">Total</span>
+                  <span className="text-lg font-semibold text-gray-800 dark:text-gray-100">Total</span>
                   <span className="text-xl font-bold text-green-600">{formatCurrency(selectedOrder.totalPrice - (selectedOrder.totalTax || 0))}</span>
                 </div>
               </div>

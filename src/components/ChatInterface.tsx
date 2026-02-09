@@ -16,7 +16,7 @@ const renderMarkdown = (text: string): React.ReactNode => {
         if (boldMatch.index > 0) {
           parts.push(remaining.substring(0, boldMatch.index));
         }
-        parts.push(<strong key={`b-${lineIdx}-${keyIdx++}`} className="font-semibold text-gray-900">{boldMatch[1]}</strong>);
+        parts.push(<strong key={`b-${lineIdx}-${keyIdx++}`} className="font-semibold text-gray-900 dark:text-white">{boldMatch[1]}</strong>);
         remaining = remaining.substring(boldMatch.index + boldMatch[0].length);
       } else {
         parts.push(remaining);
@@ -195,7 +195,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
   };
 
   return (
-    <div className="flex flex-col h-[600px] bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+    <div className="flex flex-col h-[600px] bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
       {/* Header */}
       <div className="bg-gradient-to-r from-red-800 to-red-600 p-4 text-white flex items-center gap-4 shadow-md relative overflow-hidden">
         {/* Background decorative elements */}
@@ -215,7 +215,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50/50 dark:bg-gray-800/50">
         {messages.map((msg, idx) => (
           <div 
             key={idx} 
@@ -223,22 +223,22 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
           >
             <div className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
               msg.role === 'user' 
-                ? 'bg-white border border-red-100 text-gray-800 rounded-br-none' 
-                : 'bg-white border border-gray-200 text-gray-800 rounded-bl-none'
+                ? 'bg-white dark:bg-gray-900 border border-red-100 dark:border-red-900/30 text-gray-800 dark:text-gray-200 rounded-br-none' 
+                : 'bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-none'
             }`}>
               {msg.role === 'model' && (
-                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-50">
+                <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-50 dark:border-gray-800">
                    <Brain size={14} className="text-red-600" />
-                   <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Consultant</span>
+                   <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Consultant</span>
                 </div>
               )}
               {msg.role === 'user' && (
-                <div className="flex items-center justify-end gap-2 mb-2 pb-2 border-b border-gray-50">
+                <div className="flex items-center justify-end gap-2 mb-2 pb-2 border-b border-gray-50 dark:border-gray-800">
                    <span className="text-xs font-bold text-red-400 uppercase tracking-wider">Director</span>
                 </div>
               )}
               
-              <div className="text-sm leading-relaxed text-gray-700">{renderMarkdown(msg.text)}</div>
+              <div className="text-sm leading-relaxed text-gray-700 dark:text-gray-200">{renderMarkdown(msg.text)}</div>
               <div className="text-[10px] mt-2 text-right text-gray-300 font-medium">
                 {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
@@ -247,12 +247,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
         ))}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="bg-white p-4 rounded-2xl rounded-bl-none shadow-sm border border-gray-100 flex items-center gap-3">
+            <div className="bg-white dark:bg-gray-900 p-4 rounded-2xl rounded-bl-none shadow-sm border border-gray-100 dark:border-gray-800 flex items-center gap-3">
               <div className="relative">
                  <div className="absolute inset-0 bg-red-100 rounded-full animate-ping"></div>
                  <Loader2 className="animate-spin text-red-600 relative z-10" size={18} />
               </div>
-              <span className="text-sm text-gray-500 font-medium animate-pulse">Consultant is analyzing scenarios...</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 font-medium animate-pulse">Consultant is analyzing scenarios...</span>
             </div>
           </div>
         )}
@@ -260,14 +260,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
       </div>
 
       {/* Input */}
-      <div className="p-4 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      <div className="p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
         <div className="flex gap-2 relative">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask for strategic advice, revenue projections, or ticket pricing adjustment..."
-            className="w-full resize-none rounded-xl border border-gray-200 pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm min-h-[50px] max-h-[120px] bg-gray-50 focus:bg-white transition-all"
+            className="w-full resize-none rounded-xl border border-gray-200 dark:border-gray-700 pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm min-h-[50px] max-h-[120px] bg-gray-50 dark:bg-gray-800 dark:text-white focus:bg-white dark:focus:bg-gray-900 transition-all"
             rows={1}
           />
           <button 

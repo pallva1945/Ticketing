@@ -61,30 +61,30 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
 
   return (
     <div className="relative" ref={containerRef}>
-      <label className="text-xs font-semibold text-gray-500 uppercase block mb-1">{label}</label>
+      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase block mb-1">{label}</label>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-white border border-gray-300 hover:border-red-500 text-gray-900 text-sm rounded-lg p-2.5 flex items-center justify-between min-w-[140px] transition-colors"
+        className="w-full bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 hover:border-red-500 text-gray-900 dark:text-white text-sm rounded-lg p-2.5 flex items-center justify-between min-w-[140px] transition-colors"
       >
         <span className="truncate pr-2 block max-w-[120px] text-left">
           {displayText}
         </span>
-        <ChevronDown size={16} className={`text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown size={16} className={`text-gray-500 dark:text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full min-w-[200px] mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto">
+        <div className="absolute z-50 w-full min-w-[200px] mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl max-h-60 overflow-y-auto">
           {/* Select All / None Controls */}
-          <div className="sticky top-0 bg-white p-2 border-b border-gray-100 flex gap-2 z-10">
+          <div className="sticky top-0 bg-white dark:bg-gray-900 p-2 border-b border-gray-100 dark:border-gray-700 flex gap-2 z-10">
             <button
               onClick={() => onChange(['All'])}
-              className="flex-1 text-xs font-bold text-center py-1 bg-red-50 text-red-700 rounded hover:bg-red-100 transition-colors"
+              className="flex-1 text-xs font-bold text-center py-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
             >
               Select All
             </button>
             <button
               onClick={() => onChange([])}
-              className="flex-1 text-xs font-bold text-center py-1 bg-gray-50 text-gray-600 rounded hover:bg-gray-100 transition-colors"
+              className="flex-1 text-xs font-bold text-center py-1 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
             >
               None
             </button>
@@ -98,18 +98,18 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                   key={option}
                   onClick={() => toggleOption(option)}
                   className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md cursor-pointer transition-colors group ${
-                    isSelected ? 'bg-red-50 text-red-700 font-medium' : 'text-gray-700 hover:bg-gray-50'
+                    isSelected ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 font-medium' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                   }`}
                 >
                   <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${
-                    isSelected ? 'bg-red-600 border-red-600' : 'border-gray-300'
+                    isSelected ? 'bg-red-600 border-red-600' : 'border-gray-300 dark:border-gray-600'
                   }`}>
                     {isSelected && <Check size={12} className="text-white" />}
                   </div>
                   <span className="truncate flex-1">{option}</span>
                   <button
                     onClick={(e) => selectOnly(option, e)}
-                    className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 hover:bg-red-100 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity font-medium"
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity font-medium"
                   >
                     only
                   </button>

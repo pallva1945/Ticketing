@@ -191,22 +191,22 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
         {/* Header & Mode Switch */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
-                <div className="p-3 bg-indigo-100 rounded-xl text-indigo-700 shadow-sm">
+                <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl text-indigo-700 shadow-sm">
                     <Calculator size={28} />
                 </div>
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Strategy Simulator</h2>
-                    <p className="text-gray-500 text-sm">Build a comprehensive pricing strategy.</p>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Strategy Simulator</h2>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">Build a comprehensive pricing strategy.</p>
                 </div>
             </div>
             
-            <div className="bg-gray-100 p-1 rounded-xl flex gap-1 border border-gray-200">
+            <div className="bg-gray-100 dark:bg-gray-800 p-1 rounded-xl flex gap-1 border border-gray-200 dark:border-gray-700">
                 <button 
                     onClick={() => { setMode('SUMMER'); setDecisions([]); }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                         mode === 'SUMMER' 
-                        ? 'bg-white text-orange-600 shadow-sm border border-gray-100' 
-                        : 'text-gray-500 hover:text-gray-900'
+                        ? 'bg-white dark:bg-gray-900 text-orange-600 shadow-sm border border-gray-100 dark:border-gray-800' 
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                     }`}
                 >
                     <Sun size={16} />
@@ -216,8 +216,8 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                     onClick={() => { setMode('IN_SEASON'); setDecisions([]); }}
                     className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                         mode === 'IN_SEASON' 
-                        ? 'bg-white text-blue-600 shadow-sm border border-gray-100' 
-                        : 'text-gray-500 hover:text-gray-900'
+                        ? 'bg-white dark:bg-gray-900 text-blue-600 shadow-sm border border-gray-100 dark:border-gray-800' 
+                        : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                     }`}
                 >
                     <Snowflake size={16} />
@@ -230,20 +230,20 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
             
             {/* LEFT COLUMN: Input Form */}
             <div className="lg:col-span-4 space-y-6">
-                <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm relative overflow-hidden">
+                <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
-                    <h3 className="font-bold text-gray-800 mb-6 flex items-center gap-2">
+                    <h3 className="font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
                         <Plus size={18} className="text-indigo-500" />
                         New Decision
                     </h3>
 
                     <div className="space-y-5">
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Zone</label>
+                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Zone</label>
                             <select 
                                 value={selectedZone}
                                 onChange={(e) => setSelectedZone(e.target.value)}
-                                className="w-full border border-gray-300 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 font-medium"
+                                className="w-full border border-gray-300 dark:border-gray-700 rounded-xl p-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-gray-50 dark:bg-gray-800 dark:text-white font-medium"
                             >
                                 {zones.map(z => <option key={z} value={z}>{z}</option>)}
                             </select>
@@ -251,8 +251,8 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
 
                         <div>
                             <div className="flex justify-between mb-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Price Adj. (€)</label>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${priceAdjustment > 0 ? 'bg-green-100 text-green-700' : (priceAdjustment < 0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500')}`}>
+                                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price Adj. (€)</label>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${priceAdjustment > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700' : (priceAdjustment < 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400')}`}>
                                     {priceAdjustment > 0 ? '+' : ''}{priceAdjustment}€
                                 </span>
                             </div>
@@ -260,14 +260,14 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                                 type="range" min="-20" max="20" step="1" 
                                 value={priceAdjustment}
                                 onChange={(e) => setPriceAdjustment(parseFloat(e.target.value))}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                             />
                         </div>
 
                         <div>
                             <div className="flex justify-between mb-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Demand Impact (%)</label>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${demandElasticity > 0 ? 'bg-green-100 text-green-700' : (demandElasticity < 0 ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-500')}`}>
+                                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Demand Impact (%)</label>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${demandElasticity > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700' : (demandElasticity < 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400')}`}>
                                     {demandElasticity > 0 ? '+' : ''}{demandElasticity}%
                                 </span>
                             </div>
@@ -275,17 +275,17 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                                 type="range" min="-50" max="200" step="5" 
                                 value={demandElasticity}
                                 onChange={(e) => setDemandElasticity(parseFloat(e.target.value))}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                                className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
                             />
                         </div>
 
-                        <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-300 relative overflow-hidden">
+                        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 relative overflow-hidden">
                             <div className="flex justify-between items-center text-sm mb-1 relative z-10">
-                                <span className="text-gray-500">Current Yield:</span>
-                                <span className="font-mono text-gray-700">€{currentZoneBaseline.avgPrice.toFixed(1)}</span>
+                                <span className="text-gray-500 dark:text-gray-400">Current Yield:</span>
+                                <span className="font-mono text-gray-700 dark:text-gray-200">€{currentZoneBaseline.avgPrice.toFixed(1)}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm font-bold relative z-10">
-                                <span className="text-gray-800">Proj. Impact:</span>
+                                <span className="text-gray-800 dark:text-gray-200">Proj. Impact:</span>
                                 <span className={`${previewImpact >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                     {previewImpact > 0 ? '+' : ''}€{Math.round(previewImpact).toLocaleString()}
                                 </span>
@@ -342,15 +342,15 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                 
                 {/* Scoreboard */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Baseline Rev (Avg)</p>
-                        <p className="text-2xl font-bold text-gray-900">€{Math.round(simulationResults.baselineRev).toLocaleString()}</p>
+                    <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Baseline Rev (Avg)</p>
+                        <p className="text-2xl font-bold text-gray-900 dark:text-white">€{Math.round(simulationResults.baselineRev).toLocaleString()}</p>
                     </div>
-                    <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm relative overflow-hidden">
+                    <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative overflow-hidden">
                         <div className={`absolute top-0 right-0 p-4 opacity-10 ${simulationResults.netImpact >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                             {simulationResults.netImpact >= 0 ? <TrendingUp size={48} /> : <TrendingDown size={48} />}
                         </div>
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Projected Rev (Avg)</p>
+                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Projected Rev (Avg)</p>
                         <p className={`text-2xl font-bold ${simulationResults.netImpact >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                             €{Math.round(simulationResults.newRev).toLocaleString()}
                         </p>
@@ -369,19 +369,19 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                 </div>
 
                 {/* Decision List */}
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm min-h-[300px] flex flex-col">
-                    <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50 rounded-t-2xl">
-                        <h3 className="font-bold text-gray-800">Active Decisions</h3>
+                <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm min-h-[300px] flex flex-col">
+                    <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-t-2xl">
+                        <h3 className="font-bold text-gray-800 dark:text-white">Active Decisions</h3>
                         <div className="flex items-center gap-2">
                             {decisions.length > 0 && (
                                 <button 
                                     onClick={() => setDecisions([])} 
-                                    className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-all"
+                                    className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-lg hover:bg-red-100 transition-all"
                                 >
                                     <RefreshCcw size={12} /> Reset
                                 </button>
                             )}
-                            <span className="text-xs font-medium px-2 py-1 bg-white border border-gray-200 rounded text-gray-500">
+                            <span className="text-xs font-medium px-2 py-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-gray-500 dark:text-gray-400">
                                 {decisions.length} Applied
                             </span>
                         </div>
@@ -399,18 +399,18 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                                     const zoneBase = baselineStats[d.zone];
                                     const seatChange = zoneBase ? Math.round(zoneBase.avgVol * (d.demandAdj / 100)) : 0;
                                     return (
-                                    <div key={d.id} className="group flex items-center justify-between p-4 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all hover:border-indigo-100">
+                                    <div key={d.id} className="group flex items-center justify-between p-4 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl hover:shadow-md transition-all hover:border-indigo-100">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-xs">
+                                            <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 font-bold text-xs">
                                                 {d.zone.substring(0, 2).toUpperCase()}
                                             </div>
                                             <div>
-                                                <p className="font-bold text-gray-900 text-sm">{d.zone}</p>
+                                                <p className="font-bold text-gray-900 dark:text-white text-sm">{d.zone}</p>
                                                 <div className="flex items-center gap-3 text-xs mt-0.5">
-                                                    <span className={`${d.priceAdj > 0 ? 'text-green-600' : 'text-red-600'} font-medium bg-gray-50 px-1.5 rounded`}>
+                                                    <span className={`${d.priceAdj > 0 ? 'text-green-600' : 'text-red-600'} font-medium bg-gray-50 dark:bg-gray-800 px-1.5 rounded`}>
                                                         Price: {d.priceAdj > 0 ? '+' : ''}{d.priceAdj}€
                                                     </span>
-                                                    <span className={`${d.demandAdj > 0 ? 'text-green-600' : 'text-red-600'} font-medium bg-gray-50 px-1.5 rounded`}>
+                                                    <span className={`${d.demandAdj > 0 ? 'text-green-600' : 'text-red-600'} font-medium bg-gray-50 dark:bg-gray-800 px-1.5 rounded`}>
                                                         Vol: {d.demandAdj > 0 ? '+' : ''}{d.demandAdj}% ({seatChange > 0 ? '+' : ''}{seatChange} seats)
                                                     </span>
                                                 </div>

@@ -93,11 +93,11 @@ const MetricCard = ({
   }
 
   return (
-    <div className={`bg-white p-5 rounded-xl shadow-sm border-l-4 ${colorClass}`}>
+    <div className={`bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border-l-4 ${colorClass}`}>
       <div className="flex justify-between items-start mb-2">
         <div>
-          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">{label}</p>
-          <p className="text-xl font-bold text-gray-900 mt-1">
+          <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">{label}</p>
+          <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
             {isPercentage ? `${value.toFixed(1)}%` : (value >= 1000 ? `€${(value / 1000).toFixed(1)}k` : `€${value.toFixed(2)}`)}
           </p>
         </div>
@@ -113,9 +113,9 @@ const MetricCard = ({
             {Math.abs(variance).toFixed(1)}%
           </div>
         ) : (
-          <span className="text-xs text-gray-300">-</span>
+          <span className="text-xs text-gray-300 dark:text-gray-600">-</span>
         )}
-        <p className="text-[10px] text-gray-400 truncate">
+        <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
           {hasTarget ? comparisonLabel : subValue}
         </p>
       </div>
@@ -309,15 +309,15 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
         inverse={true}
         comparisonLabel="vs Max Target"
       />
-      <div className="bg-white p-5 rounded-xl shadow-sm border-l-4 border-blue-600">
+      <div className="bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border-l-4 border-blue-600">
         <div className="flex justify-between items-start mb-2">
           <div>
-            <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Avg Attendance</p>
-            <p className="text-xl font-bold text-gray-900 mt-1">
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">Avg Attendance</p>
+            <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
               {totalViewAttendance.avgAttendance.toLocaleString('it-IT', { maximumFractionDigits: 0 })}
             </p>
           </div>
-          <div className="p-2 rounded-full bg-blue-50 text-blue-600">
+          <div className="p-2 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600">
             <Users size={18} />
           </div>
         </div>
@@ -330,10 +330,10 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
                 {totalViewAttendance.avgAttendance >= targetKPIs.avgAttendance ? <TrendingUp size={12} className="mr-1" /> : <TrendingDown size={12} className="mr-1" />}
                 {Math.abs(((totalViewAttendance.avgAttendance - targetKPIs.avgAttendance) / targetKPIs.avgAttendance) * 100).toFixed(1)}%
               </div>
-              <span className="text-[10px] text-gray-400">vs prev season</span>
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">vs prev season</span>
             </>
           ) : (
-            <span className="text-xs text-gray-400">per game</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">per game</span>
           )}
         </div>
       </div>

@@ -52,28 +52,28 @@ export const CompKillerWidget: React.FC<CompKillerWidgetProps> = ({ data }) => {
   }, [data]);
 
   return (
-    <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 h-full shadow-sm relative overflow-hidden flex flex-col justify-between">
+    <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 rounded-xl p-4 h-full shadow-sm relative overflow-hidden flex flex-col justify-between">
         <div className="flex items-center justify-between z-10">
             <div className="flex items-center gap-2">
                 <AlertOctagon size={16} className="text-orange-600" />
-                <h3 className="text-xs font-bold text-orange-800 uppercase tracking-widest">Revenue Leakage (Giveaways)</h3>
+                <h3 className="text-xs font-bold text-orange-800 dark:text-orange-300 uppercase tracking-widest">Revenue Leakage (Giveaways)</h3>
             </div>
-            <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 rounded border border-orange-200">
+            <span className="text-[10px] font-bold bg-orange-100 dark:bg-orange-900/50 text-orange-700 dark:text-orange-300 px-2 py-0.5 rounded border border-orange-200 dark:border-orange-700">
                 {analysis.compRate.toFixed(1)}% of Vol
             </span>
         </div>
 
         <div className="flex-1 flex flex-col justify-center z-10 mt-2">
             <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-extrabold text-orange-700">
+                <span className="text-2xl font-extrabold text-orange-700 dark:text-orange-400">
                     €{(analysis.totalLostRevenue / 1000).toFixed(1)}k
                 </span>
-                <span className="text-xs font-medium text-orange-600">Opportunity Cost</span>
+                <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Opportunity Cost</span>
             </div>
-            <div className="w-full bg-orange-200 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div className="w-full bg-orange-200 dark:bg-orange-800 h-1.5 rounded-full mt-2 overflow-hidden">
                 <div className="h-full bg-orange-500 animate-pulse" style={{ width: `${Math.min(analysis.compRate * 5, 100)}%` }}></div>
             </div>
-            <p className="text-[9px] text-orange-500 mt-2 font-medium">
+            <p className="text-[9px] text-orange-500 dark:text-orange-400 mt-2 font-medium">
                 {analysis.totalGiveawayCount.toLocaleString()} Free Tickets Distributed
             </p>
         </div>

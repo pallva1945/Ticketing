@@ -1,6 +1,8 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Bell, Users, FileText, ChevronDown, Target, Shield, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Bell, Users, FileText, ChevronDown, Target, Shield, RefreshCw, Sun, Moon } from 'lucide-react';
+import { useTheme } from './contexts/ThemeContext';
+import { useLanguage } from './contexts/LanguageContext';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -80,16 +82,16 @@ const getDayName = (dateStr: string) => {
 // --- PLACEHOLDER MODULE VIEW ---
 const PlaceholderView = ({ moduleName, icon: Icon }: { moduleName: string, icon: any }) => (
   <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8 animate-fade-in pt-6">
-    <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6 shadow-inner relative overflow-hidden">
+    <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6 shadow-inner relative overflow-hidden">
         <Icon size={40} className="text-gray-400 relative z-10" />
         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/50 to-transparent opacity-50"></div>
     </div>
-    <h2 className="text-3xl font-bold text-gray-800 mb-2">{moduleName}</h2>
-    <p className="text-gray-500 max-w-md mb-8">
+    <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">{moduleName}</h2>
+    <p className="text-gray-500 dark:text-gray-400 max-w-md mb-8">
       This revenue vertical is currently being integrated into the PV Revenue Center. 
       Data pipelines are under construction.
     </p>
-    <div className="flex items-center gap-2 px-4 py-2 bg-yellow-50 border border-yellow-200 rounded-full text-yellow-700 text-xs font-bold uppercase tracking-wider">
+    <div className="flex items-center gap-2 px-4 py-2 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-full text-yellow-700 dark:text-yellow-400 text-xs font-bold uppercase tracking-wider">
       <Construction size={14} />
       Module In Development
     </div>
@@ -338,8 +340,8 @@ const RevenueHome = ({
             {/* Top Bar: Title & Season Selector */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Executive Overview</h1>
-                    <p className="text-gray-500 text-sm">Season {seasonFilter} • {gamesPlayed} of {TOTAL_GAMES_SEASON} games played</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Executive Overview</h1>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">Season {seasonFilter} • {gamesPlayed} of {TOTAL_GAMES_SEASON} games played</p>
                 </div>
                 
                 <div className="flex items-center gap-3">
@@ -347,13 +349,13 @@ const RevenueHome = ({
                         <select 
                             value={seasonFilter}
                             onChange={(e) => onSeasonChange(e.target.value)}
-                            className="appearance-none bg-white border border-gray-300 text-gray-700 py-2 pl-4 pr-10 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm cursor-pointer hover:bg-gray-50"
+                            className="appearance-none bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 py-2 pl-4 pr-10 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
                         >
                             <option value="25-26">Season 25-26</option>
                             <option value="24-25">Season 24-25</option>
                             <option value="23-24">Season 23-24</option>
                         </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500 dark:text-gray-400">
                             <ChevronDown size={16} />
                         </div>
                     </div>
@@ -362,20 +364,20 @@ const RevenueHome = ({
 
             {/* Active Filters Indicator */}
             {(activeFilters.leagues[0] !== 'LBA' || !activeFilters.opponents.includes('All') || !activeFilters.zones.includes('All')) && (
-                <div className="flex flex-wrap items-center gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <span className="text-xs font-bold text-amber-700">Active Filters:</span>
+                <div className="flex flex-wrap items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg">
+                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400">Active Filters:</span>
                     {activeFilters.leagues[0] !== 'LBA' && (
-                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">League: {activeFilters.leagues.join(', ')}</span>
+                        <span className="text-xs bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-300 px-2 py-1 rounded-full">League: {activeFilters.leagues.join(', ')}</span>
                     )}
                     {!activeFilters.opponents.includes('All') && (
-                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Opponents: {activeFilters.opponents.length}</span>
+                        <span className="text-xs bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-300 px-2 py-1 rounded-full">Opponents: {activeFilters.opponents.length}</span>
                     )}
                     {!activeFilters.zones.includes('All') && (
-                        <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">Zones: {activeFilters.zones.join(', ')}</span>
+                        <span className="text-xs bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-300 px-2 py-1 rounded-full">Zones: {activeFilters.zones.join(', ')}</span>
                     )}
                     <button 
                         onClick={onClearFilters}
-                        className="ml-auto text-xs font-bold text-red-600 hover:text-red-800 flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                        className="ml-auto text-xs font-bold text-red-600 hover:text-red-800 dark:hover:text-red-400 flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
                     >
                         <X size={12} /> Clear All
                     </button>
@@ -417,16 +419,16 @@ const RevenueHome = ({
             </div>
 
             {/* MAIN PACE WIDGET (Stacked Bar) */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm relative overflow-hidden">
+            <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm relative overflow-hidden">
                 <div className="flex justify-between items-end mb-4">
                     <div>
-                        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Season Pacing</h2>
+                        <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Season Pacing</h2>
                         <div className="flex items-baseline gap-3">
-                            <span className="text-4xl font-extrabold text-gray-900">{formatCompact(totalRevenueYTD)}</span>
-                            <span className="text-lg text-gray-400 font-medium">/ {formatCompact(totalTarget)}</span>
+                            <span className="text-4xl font-extrabold text-gray-900 dark:text-white">{formatCompact(totalRevenueYTD)}</span>
+                            <span className="text-lg text-gray-400 dark:text-gray-500 font-medium">/ {formatCompact(totalTarget)}</span>
                         </div>
                     </div>
-                    <div className={`text-right px-4 py-2 rounded-lg ${isAhead ? 'bg-green-50' : 'bg-red-50'}`}>
+                    <div className={`text-right px-4 py-2 rounded-lg ${isAhead ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}>
                         <p className={`text-xs font-bold uppercase ${isAhead ? 'text-green-600' : 'text-red-600'}`}>
                             {isAhead ? 'Ahead of Pace' : 'Behind Pace'}
                         </p>
@@ -440,7 +442,7 @@ const RevenueHome = ({
                 </div>
 
                 {/* Stacked Progress Bar */}
-                <div className="relative h-8 bg-gray-100 rounded-full overflow-hidden mb-3 flex border border-gray-200">
+                <div className="relative h-8 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-3 flex border border-gray-200 dark:border-gray-700">
                     {/* Weighted Accounted Marker */}
                     <div 
                         className="absolute top-0 bottom-0 border-r-2 border-dashed border-gray-800 z-20 opacity-60"
@@ -513,7 +515,7 @@ const RevenueHome = ({
                     {sortedVerticals.map((v) => (
                         <div key={v.id} className="flex items-center gap-1.5">
                             <div className={`w-2.5 h-2.5 rounded-full ${v.barClass}`}></div>
-                            <span className="text-[10px] font-medium text-gray-600">{v.name}</span>
+                            <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400">{v.name}</span>
                         </div>
                     ))}
                 </div>
@@ -521,7 +523,7 @@ const RevenueHome = ({
 
             {/* 7 VERTICAL SCORE CARDS */}
             <div>
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Revenue Verticals</h3>
+                <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Revenue Verticals</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     {verticalsWithPacing.map((v) => {
                         const progressPct = v.hasData ? Math.min((v.current / v.target) * 100, 100) : 0;
@@ -530,18 +532,18 @@ const RevenueHome = ({
                         // Card for verticals WITHOUT data - Coming Soon
                         if (!v.hasData) {
                             return (
-                                <div key={v.id} className="bg-gray-50 rounded-xl border border-dashed border-gray-300 p-4 shadow-sm relative">
+                                <div key={v.id} className="bg-gray-50 dark:bg-gray-950 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-4 shadow-sm relative">
                                     <div className="flex items-center gap-2 mb-3">
-                                        <div className={`w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center`}>
-                                            <v.icon size={16} className="text-gray-400" />
+                                        <div className={`w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center`}>
+                                            <v.icon size={16} className="text-gray-400 dark:text-gray-500" />
                                         </div>
                                     </div>
-                                    <p className="text-sm font-medium text-gray-400 leading-tight">Coming Soon</p>
-                                    <p className="text-[10px] text-gray-300 mb-2">Target: {formatCompact(v.target)}</p>
-                                    <div className="h-1.5 bg-gray-200 rounded-full mb-1" />
+                                    <p className="text-sm font-medium text-gray-400 dark:text-gray-500 leading-tight">Coming Soon</p>
+                                    <p className="text-[10px] text-gray-300 dark:text-gray-600 mb-2">Target: {formatCompact(v.target)}</p>
+                                    <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mb-1" />
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] text-gray-400">{v.name}</span>
-                                        <span className="text-[10px] font-medium text-gray-400">—</span>
+                                        <span className="text-[10px] text-gray-400 dark:text-gray-500">{v.name}</span>
+                                        <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">—</span>
                                     </div>
                                 </div>
                             );
@@ -551,7 +553,7 @@ const RevenueHome = ({
                         return (
                             <div 
                                 key={v.id} 
-                                className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm relative group hover:shadow-md hover:border-gray-300 transition-all cursor-pointer"
+                                className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4 shadow-sm relative group hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all cursor-pointer"
                                 onClick={() => onNavigate(v.id as RevenueModule)}
                             >
                                 {/* Icon & Name */}
@@ -559,17 +561,17 @@ const RevenueHome = ({
                                     <div className={`w-8 h-8 ${v.bgClass} rounded-lg flex items-center justify-center`}>
                                         <v.icon size={16} className={v.colorClass} />
                                     </div>
-                                    <span className={`text-[10px] font-bold uppercase ${v.isVariable ? 'text-purple-600' : v.isProrated ? 'text-cyan-600' : 'text-gray-500'}`}>
+                                    <span className={`text-[10px] font-bold uppercase ${v.isVariable ? 'text-purple-600' : v.isProrated ? 'text-cyan-600' : 'text-gray-500 dark:text-gray-400'}`}>
                                         {v.isVariable ? '●' : v.isProrated ? '◐' : '○'}
                                     </span>
                                 </div>
                                 
                                 {/* Values */}
-                                <p className="text-lg font-bold text-gray-900 leading-tight">{formatCompact(v.current)}</p>
-                                <p className="text-[10px] text-gray-400 mb-2">/ {formatCompact(v.target)}</p>
+                                <p className="text-lg font-bold text-gray-900 dark:text-white leading-tight">{formatCompact(v.current)}</p>
+                                <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-2">/ {formatCompact(v.target)}</p>
                                 
                                 {/* Progress Bar with Tooltip */}
-                                <div className="relative h-1.5 bg-gray-100 rounded-full overflow-hidden mb-1">
+                                <div className="relative h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden mb-1">
                                     <div 
                                         className={`h-full ${v.barClass} transition-all duration-500`}
                                         style={{ width: `${progressPct}%` }}
@@ -583,7 +585,7 @@ const RevenueHome = ({
                                 
                                 {/* Pace Indicator */}
                                 <div className="flex items-center justify-between">
-                                    <span className="text-[10px] text-gray-500">{v.name}</span>
+                                    <span className="text-[10px] text-gray-500 dark:text-gray-400">{v.name}</span>
                                     <span className={`text-[10px] font-bold ${isOnTrack ? 'text-green-600' : 'text-red-600'}`}>
                                         {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(0)}%
                                     </span>
@@ -615,7 +617,7 @@ const RevenueHome = ({
 
             {/* STRATEGIC SIGNALS */}
             <div>
-                <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide mb-3">Strategic Signals</h3>
+                <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Strategic Signals</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     
                     {/* Signal 1: Projected Finish */}
@@ -639,15 +641,15 @@ const RevenueHome = ({
                         const gameDayTarget = 1650000 + 1250000;
                         const gameDayPct = (gameDayProjection / gameDayTarget) * 100;
                         return (
-                        <div className="bg-white border border-purple-200 rounded-xl p-5 shadow-sm">
+                        <div className="bg-white dark:bg-gray-900 border border-purple-200 dark:border-purple-800 rounded-xl p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-3">
                                 <TrendingUp size={16} className="text-purple-600" />
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">GameDay Projection</span>
+                                <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">GameDay Projection</span>
                             </div>
-                            <p className="text-2xl font-bold text-gray-900">{formatCompact(gameDayProjection)}</p>
-                            <p className="text-xs text-gray-500 mt-1">Ticketing + GameDay × {TOTAL_GAMES_SEASON} games</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompact(gameDayProjection)}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Ticketing + GameDay × {TOTAL_GAMES_SEASON} games</p>
                             <div className="mt-3 flex items-center gap-2">
-                                <div className="flex-1 h-1.5 bg-purple-100 rounded-full overflow-hidden">
+                                <div className="flex-1 h-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-full overflow-hidden">
                                     <div 
                                         className="h-full bg-purple-500" 
                                         style={{ width: `${Math.min(gameDayPct, 100)}%` }}
@@ -666,15 +668,15 @@ const RevenueHome = ({
                         const perGame = gameDayViewTicketing / gamesCount;
                         const projection = perGame * TOTAL_GAMES_SEASON;
                         return (
-                        <div className="bg-white border border-blue-200 rounded-xl p-5 shadow-sm">
+                        <div className="bg-white dark:bg-gray-900 border border-blue-200 dark:border-blue-800 rounded-xl p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-3">
                                 <Ticket size={16} className="text-blue-600" />
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">GameDay Tickets Projection</span>
+                                <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">GameDay Tickets Projection</span>
                             </div>
-                            <p className="text-2xl font-bold text-gray-900">{formatCompact(projection)}</p>
-                            <p className="text-xs text-gray-500 mt-1">GameDay view tickets × {TOTAL_GAMES_SEASON} games</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompact(projection)}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">GameDay view tickets × {TOTAL_GAMES_SEASON} games</p>
                             <div className="mt-3 flex items-center gap-2">
-                                <div className="flex-1 h-1.5 bg-blue-100 rounded-full overflow-hidden">
+                                <div className="flex-1 h-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-full overflow-hidden">
                                     <div 
                                         className="h-full bg-blue-500" 
                                         style={{ width: `${Math.min((projection / 450000) * 100, 100)}%` }}
@@ -689,16 +691,16 @@ const RevenueHome = ({
                     })()}
 
                     {/* Signal 4: Attention Required */}
-                    <div className={`rounded-xl p-5 shadow-sm border ${worstPacingVertical.pacePct < -10 ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'}`}>
+                    <div className={`rounded-xl p-5 shadow-sm border ${worstPacingVertical.pacePct < -10 ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800'}`}>
                         <div className="flex items-center gap-2 mb-3">
                             <Bell size={16} className={worstPacingVertical.pacePct < -10 ? 'text-red-600' : 'text-amber-600'} />
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Attention Required</span>
+                            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Attention Required</span>
                         </div>
-                        <p className="text-lg font-bold text-gray-900">{worstPacingVertical.name}</p>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">{worstPacingVertical.name}</p>
                         <p className={`text-2xl font-bold ${worstPacingVertical.pacePct < -10 ? 'text-red-600' : 'text-amber-600'}`}>
                             {worstPacingVertical.pacePct.toFixed(0)}% pace
                         </p>
-                        <p className="text-[10px] text-gray-500 mt-2">
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2">
                             Gap: {formatCompact(worstPacingVertical.expectedAtThisPoint - worstPacingVertical.current)} behind expected
                         </p>
                     </div>
@@ -709,32 +711,32 @@ const RevenueHome = ({
             {/* YoY COMPARISON - 3 Season Chart */}
             <div className="mt-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                    <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wide">3-Season Revenue Trend</h3>
-                    <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-xs">
+                    <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">3-Season Revenue Trend</h3>
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-xs text-gray-600 dark:text-gray-400">
                         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-slate-300"></div> 23-24</div>
                         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-slate-500"></div> 24-25</div>
                         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-600"></div> 25-26 (Proj)</div>
                         <div className="flex items-center gap-1.5"><div className="w-6 h-0.5 bg-amber-500"></div> Trend</div>
                     </div>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-100 p-4 sm:p-6 shadow-sm">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 pb-4 border-b border-gray-100">
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 sm:p-6 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 pb-4 border-b border-gray-100 dark:border-gray-800">
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">View:</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">View:</span>
                             <button
                                 onClick={() => setCorpTixInSponsorship(false)}
-                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${!corpTixInSponsorship ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${!corpTixInSponsorship ? 'bg-slate-800 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
                             >
                                 Accounting
                             </button>
                             <button
                                 onClick={() => setCorpTixInSponsorship(true)}
-                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${corpTixInSponsorship ? 'bg-slate-800 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${corpTixInSponsorship ? 'bg-slate-800 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
                             >
                                 Realistic
                             </button>
                         </div>
-                        <p className="text-[10px] text-gray-400 max-w-xs">
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500 max-w-xs">
                             {corpTixInSponsorship 
                                 ? 'Corp Tickets moved from Ticketing → Sponsorship (realistic view)' 
                                 : 'Corp Tickets in Ticketing (standard accounting view)'}
@@ -781,19 +783,19 @@ const RevenueHome = ({
                                         {vertical.vertical === 'Ticketing' && <Ticket size={14} className="text-red-600" />}
                                         {vertical.vertical === 'GameDay' && <Calendar size={14} className="text-indigo-600" />}
                                         {vertical.vertical === 'Sponsorship' && <Flag size={14} className="text-blue-600" />}
-                                        <span className="font-semibold text-gray-800 text-sm">{vertical.vertical}</span>
-                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${yoy >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">{vertical.vertical}</span>
+                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${yoy >= 0 ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400'}`}>
                                             {yoy >= 0 ? '+' : ''}{yoy.toFixed(0)}%
                                         </span>
                                     </div>
-                                    <div className="relative bg-gray-50 rounded-lg overflow-hidden mx-auto" style={{ height: `${MAX_BAR_HEIGHT + 55}px`, maxWidth: `${CHART_WIDTH + 60}px`, padding: '20px 12px 12px 12px' }}>
-                                        <div className="absolute left-2 top-5 flex flex-col justify-between text-[9px] text-gray-400 w-7" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
+                                    <div className="relative bg-gray-50 dark:bg-gray-950 rounded-lg overflow-hidden mx-auto" style={{ height: `${MAX_BAR_HEIGHT + 55}px`, maxWidth: `${CHART_WIDTH + 60}px`, padding: '20px 12px 12px 12px' }}>
+                                        <div className="absolute left-2 top-5 flex flex-col justify-between text-[9px] text-gray-400 dark:text-gray-500 w-7" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
                                             <span>{formatCompact(maxVal)}</span>
                                             <span>{formatCompact(maxVal * 0.5)}</span>
                                             <span>€0</span>
                                         </div>
-                                        <div className="absolute left-10 right-3 top-5 border-b border-gray-300" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
-                                            <div className="absolute w-full border-t border-dashed border-gray-200" style={{ top: '50%' }}></div>
+                                        <div className="absolute left-10 right-3 top-5 border-b border-gray-300 dark:border-gray-600" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
+                                            <div className="absolute w-full border-t border-dashed border-gray-200 dark:border-gray-700" style={{ top: '50%' }}></div>
                                         </div>
                                         <div className="flex justify-center" style={{ paddingLeft: '28px' }}>
                                             <div className="relative" style={{ width: `${CHART_WIDTH}px`, height: `${MAX_BAR_HEIGHT}px` }}>
@@ -825,9 +827,9 @@ const RevenueHome = ({
                                         </div>
                                         <div className="flex justify-center mt-2" style={{ paddingLeft: '28px' }}>
                                             <div className="flex" style={{ width: `${CHART_WIDTH}px`, gap: `${BAR_GAP}px` }}>
-                                                <span className="text-[10px] text-gray-500 font-medium text-center" style={{ width: `${BAR_WIDTH}px` }}>23-24</span>
-                                                <span className="text-[10px] text-gray-500 font-medium text-center" style={{ width: `${BAR_WIDTH}px` }}>24-25</span>
-                                                <span className="text-[10px] text-gray-600 font-semibold text-center" style={{ width: `${BAR_WIDTH}px` }}>25-26</span>
+                                                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium text-center" style={{ width: `${BAR_WIDTH}px` }}>23-24</span>
+                                                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium text-center" style={{ width: `${BAR_WIDTH}px` }}>24-25</span>
+                                                <span className="text-[10px] text-gray-600 dark:text-gray-300 font-semibold text-center" style={{ width: `${BAR_WIDTH}px` }}>25-26</span>
                                             </div>
                                         </div>
                                     </div>
@@ -975,6 +977,10 @@ service cloud.firestore {
 );
 
 const App: React.FC = () => {
+  const { theme, toggleTheme } = useTheme();
+  const { language, toggleLanguage, t } = useLanguage();
+  const isDark = theme === 'dark';
+  
   // Navigation State - Defaults to HOME
   const [activeModule, setActiveModule] = useState<RevenueModule>(() => {
     const saved = localStorage.getItem('activeModule');
@@ -2425,20 +2431,20 @@ const App: React.FC = () => {
   };
 
   const FilterBar = () => (
-    <div className="mb-6 bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+    <div className="mb-6 bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
         <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 text-gray-500">
+        <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
             <Filter size={18} />
             <span className="text-sm font-medium">Data Filters</span>
         </div>
         <div className="flex items-center gap-3">
             {activeModule === 'ticketing' && (
-                <button onClick={() => setIgnoreOspiti(!ignoreOspiti)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${ignoreOspiti ? 'bg-red-50 text-red-700 border-red-200' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'}`}>
+                <button onClick={() => setIgnoreOspiti(!ignoreOspiti)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${ignoreOspiti ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
                     <UserX size={14} /> {ignoreOspiti ? 'Zona Ospiti Excluded' : 'Ignore Zona Ospiti'}
                 </button>
             )}
             {(selectedSeasons.length > 1 || !selectedSeasons.includes('25-26') || !selectedLeagues.includes('LBA') || !selectedZones.includes('All') || !selectedOpponents.includes('All') || !selectedTiers.includes('All') || !selectedDays.includes('All') || !selectedChannels.includes('All') || ignoreOspiti) && (
-                <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-700 transition-colors ml-2">
+                <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-400 transition-colors ml-2">
                     <X size={14} /> Clear All
                 </button>
             )}
@@ -2472,7 +2478,7 @@ const App: React.FC = () => {
   ], [stats, gameDayRevenueNet]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row relative">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col md:flex-row relative">
       {showSetupModal && <SetupModal onClose={() => setShowSetupModal(false)} />}
       {showRulesError && <RulesErrorModal onClose={() => { setShowRulesError(false); window.location.reload(); }} />}
       {showReportModal && (
@@ -2485,9 +2491,9 @@ const App: React.FC = () => {
       )}
       
       {/* Top Navigation */}
-      <div className="fixed top-0 left-0 w-full bg-white border-b border-gray-200 h-16 z-50 px-6 flex items-center justify-between shadow-sm">
+      <div className="fixed top-0 left-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 h-16 z-50 px-6 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-4 w-full md:w-auto">
-             <button className="md:hidden text-gray-600 hover:bg-gray-100 p-2 rounded-lg" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+             <button className="md:hidden text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-lg" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
                 <Menu size={24} />
              </button>
              <div className="w-8 h-8 flex-shrink-0">
@@ -2498,7 +2504,7 @@ const App: React.FC = () => {
                 <MobileTicker items={tickerItems} />
              )}
 
-             <div className="h-6 w-px bg-gray-200 hidden md:block"></div>
+             <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden md:block"></div>
              <div className="hidden md:flex items-center gap-1 overflow-x-auto">
                 {MODULES.map((module) => (
                     <button 
@@ -2506,11 +2512,11 @@ const App: React.FC = () => {
                         onClick={() => { setActiveModule(module.id); setActiveTab('dashboard'); }}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                             activeModule === module.id 
-                            ? 'bg-slate-900 text-white shadow-md' 
-                            : 'text-gray-600 hover:bg-gray-100'
+                            ? 'bg-slate-900 dark:bg-white text-white dark:text-gray-900 shadow-md' 
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                         }`}
                     >
-                        <module.icon size={16} className={activeModule === module.id ? 'text-white' : 'text-gray-400'} />
+                        <module.icon size={16} className={activeModule === module.id ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
                         {module.label}
                     </button>
                 ))}
@@ -2522,37 +2528,53 @@ const App: React.FC = () => {
                 className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-sm font-bold hover:from-indigo-500 hover:to-purple-500 transition-all shadow-lg hover:shadow-xl"
              >
                 <MessageSquare size={16} />
-                AI Advisor
+                {t('AI Advisor')}
              </button>
-             <div className="h-6 w-px bg-gray-200"></div>
+             <div className="h-6 w-px bg-gray-200 dark:bg-gray-700"></div>
+             <button
+                onClick={toggleLanguage}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-bold transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
+                title={language === 'en' ? 'Switch to Italian' : 'Passa a Inglese'}
+             >
+                <span className="text-base">{language === 'en' ? '🇬🇧' : '🇮🇹'}</span>
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">{language === 'en' ? 'EN' : 'IT'}</span>
+             </button>
+             <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
+                title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+             >
+                {isDark ? <Sun size={16} className="text-yellow-400" /> : <Moon size={16} className="text-gray-500" />}
+             </button>
+             <div className="h-6 w-px bg-gray-200 dark:bg-gray-700"></div>
              <div className="text-right">
-                 <p className="text-xs font-bold text-gray-900">{TEAM_NAME}</p>
-                 <p className="text-[10px] text-gray-500 uppercase">Revenue Intelligence</p>
+                 <p className="text-xs font-bold text-gray-900 dark:text-white">{TEAM_NAME}</p>
+                 <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">{t('Revenue Intelligence')}</p>
              </div>
-             <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center border border-gray-200">
-                 <span className="text-xs font-bold text-gray-600">PV</span>
+             <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                 <span className="text-xs font-bold text-gray-600 dark:text-gray-300">PV</span>
              </div>
           </div>
       </div>
 
       {/* Sidebar - Contextual */}
-      <aside className={`bg-white border-r border-gray-200 w-64 md:w-24 lg:w-64 flex-shrink-0 flex flex-col fixed left-0 top-16 bottom-0 z-40 overflow-y-auto transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+      <aside className={`bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 w-64 md:w-24 lg:w-64 flex-shrink-0 flex flex-col fixed left-0 top-16 bottom-0 z-40 overflow-y-auto transform transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         
         {/* Module Specific Tools */}
         <div className="p-4 flex-1">
-            <div className="md:hidden mb-6 space-y-2 border-b border-gray-100 pb-4">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-2 mb-2">Modules</p>
+            <div className="md:hidden mb-6 space-y-2 border-b border-gray-100 dark:border-gray-700 pb-4">
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-2">Modules</p>
                 {MODULES.map((module) => (
                     <button 
                         key={module.id}
                         onClick={() => { setActiveModule(module.id); setActiveTab('dashboard'); setIsMobileMenuOpen(false); }}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                             activeModule === module.id 
-                            ? 'bg-slate-900 text-white shadow-md' 
-                            : 'text-gray-600 hover:bg-gray-50'
+                            ? 'bg-slate-900 text-white shadow-md dark:bg-white dark:text-gray-900' 
+                            : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'
                         }`}
                     >
-                        <module.icon size={18} className={activeModule === module.id ? 'text-white' : 'text-gray-400'} />
+                        <module.icon size={18} className={activeModule === module.id ? 'text-white dark:text-gray-900' : 'text-gray-400 dark:text-gray-500'} />
                         {module.label}
                     </button>
                 ))}
@@ -2560,30 +2582,30 @@ const App: React.FC = () => {
 
                     {activeModule === 'ticketing' && (
                         <div className="animate-in slide-in-from-left-2 duration-300 space-y-1">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Ticketing Tools</p>
-                            <button onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'dashboard' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
+                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 px-2">Ticketing Tools</p>
+                            <button onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'dashboard' ? 'bg-red-50 text-red-700 font-bold border border-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'}`}>
                                 <LayoutDashboard size={18} /> <span className="inline md:hidden lg:inline text-sm">Overview</span>
                             </button>
-                            <button onClick={() => { setActiveTab('crm'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'crm' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
+                            <button onClick={() => { setActiveTab('crm'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'crm' ? 'bg-red-50 text-red-700 font-bold border border-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'}`}>
                                 <Users size={18} /> <span className="inline md:hidden lg:inline text-sm">CRM</span>
                             </button>
-                            <button onClick={() => { setActiveTab('comparison'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'comparison' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
+                            <button onClick={() => { setActiveTab('comparison'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'comparison' ? 'bg-red-50 text-red-700 font-bold border border-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'}`}>
                                 <ArrowLeftRight size={18} /> <span className="inline md:hidden lg:inline text-sm">Comparison</span>
                             </button>
-                    <button onClick={() => { setActiveTab('simulator'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'simulator' ? 'bg-red-50 text-red-700 font-bold border border-red-100' : 'text-gray-600 hover:bg-gray-50'}`}>
+                    <button onClick={() => { setActiveTab('simulator'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'simulator' ? 'bg-red-50 text-red-700 font-bold border border-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'}`}>
                         <Calculator size={18} /> <span className="inline md:hidden lg:inline text-sm">Simulator</span>
                     </button>
 
                     {(activeTab === 'dashboard' || activeTab === 'comparison') && (
-                        <div className="mt-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Data View</p>
+                        <div className="mt-4 bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Data View</p>
                             <div className="flex flex-col gap-2">
                                 <button 
                                     onClick={() => setViewMode('total')}
                                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
                                         viewMode === 'total' 
-                                        ? 'bg-white text-gray-900 shadow-sm border border-gray-200' 
-                                        : 'text-gray-500 hover:text-gray-700'
+                                        ? 'bg-white text-gray-900 shadow-sm border border-gray-200 dark:bg-gray-700 dark:text-white dark:border-gray-600' 
+                                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                                     }`}
                                 >
                                     <Briefcase size={14} />
@@ -2593,8 +2615,8 @@ const App: React.FC = () => {
                                     onClick={() => setViewMode('gameday')}
                                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
                                         viewMode === 'gameday' 
-                                        ? 'bg-white text-red-600 shadow-sm border border-gray-200' 
-                                        : 'text-gray-500 hover:text-gray-700'
+                                        ? 'bg-white text-red-600 shadow-sm border border-gray-200 dark:bg-gray-700 dark:text-red-400 dark:border-gray-600' 
+                                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                                     }`}
                                 >
                                     <Calendar size={14} />
@@ -2608,16 +2630,16 @@ const App: React.FC = () => {
 
             {activeModule === 'gameday' && (
                 <div className="animate-in slide-in-from-left-2 duration-300 space-y-1">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">GameDay Tools</p>
-                    <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 text-indigo-700 font-bold border border-indigo-100 mb-4">
+                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 px-2">GameDay Tools</p>
+                    <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 text-indigo-700 font-bold border border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800 mb-4">
                         <LayoutDashboard size={18} /> <span className="inline md:hidden lg:inline text-sm">Dashboard</span>
                     </button>
                     
-                    <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">View Configuration</p>
+                    <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">View Configuration</p>
                         <button 
                             onClick={() => setGameDayIncludeTicketing(!gameDayIncludeTicketing)}
-                            className={`w-full flex items-center justify-between p-2 rounded-lg text-xs font-bold transition-all ${gameDayIncludeTicketing ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-500 border border-gray-200'}`}
+                            className={`w-full flex items-center justify-between p-2 rounded-lg text-xs font-bold transition-all ${gameDayIncludeTicketing ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-500 border border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'}`}
                         >
                             <span>Include Ticketing</span>
                             {gameDayIncludeTicketing ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
@@ -2628,18 +2650,18 @@ const App: React.FC = () => {
 
             {activeModule === 'home' && (
                 <div className="space-y-4 animate-in slide-in-from-left-2 duration-300">
-                    <div className="p-4 bg-gray-50 rounded-lg text-center border border-gray-100">
-                        <PieChart size={32} className="mx-auto text-gray-300 mb-2" />
-                        <p className="text-xs text-gray-500">Global Overview Mode</p>
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-center border border-gray-100 dark:border-gray-700">
+                        <PieChart size={32} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Global Overview Mode</p>
                     </div>
                     
                     <a 
                         href="https://shareholders.pallacanestrovarese.club/" 
                         target="_blank" 
                         rel="noreferrer"
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-600 font-medium shadow-sm hover:border-red-200 hover:text-red-700 transition-all group"
+                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-600 font-medium shadow-sm hover:border-red-200 hover:text-red-700 transition-all group dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 dark:hover:border-red-800 dark:hover:text-red-400"
                     >
-                        <div className="p-1.5 bg-gray-100 rounded-md group-hover:bg-red-50 transition-colors">
+                        <div className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-md group-hover:bg-red-50 dark:group-hover:bg-red-900/30 transition-colors">
                             <FileText size={16} />
                         </div>
                         <span className="inline md:hidden lg:inline text-sm">Monthly Reports</span>
@@ -2651,8 +2673,8 @@ const App: React.FC = () => {
 
         {/* Data Source Controls - Context Aware */}
         {activeModule !== 'venue_ops' && activeModule !== 'sg' && activeModule !== 'bops' && (
-        <div className="p-4 border-t border-gray-100 bg-gray-50/50">
-           <div className="flex items-center gap-2 mb-4 text-xs font-semibold uppercase text-gray-400">
+        <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
+           <div className="flex items-center gap-2 mb-4 text-xs font-semibold uppercase text-gray-400 dark:text-gray-500">
               <Database size={14} />
               <span>Data Management</span>
            </div>
@@ -2668,14 +2690,14 @@ const App: React.FC = () => {
              <div className="space-y-2 mb-4">
                  {activeModule === 'merchandising' ? (
                      <>
-                        <div className="text-[10px] text-gray-500 mb-1 px-1 flex items-center gap-1">
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 px-1 flex items-center gap-1">
                             Current Source: 
-                            <strong className="flex items-center gap-1 text-orange-600">
+                            <strong className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
                                 <ShoppingBag size={10} />
                                 SHOPIFY
                             </strong>
                         </div>
-                        <div className="text-center py-2 px-3 text-[10px] text-orange-600 bg-orange-50 border border-orange-200 rounded-lg">
+                        <div className="text-center py-2 px-3 text-[10px] text-orange-600 bg-orange-50 border border-orange-200 rounded-lg dark:text-orange-400 dark:bg-orange-900/30 dark:border-orange-800">
                           Live from Shopify Admin API
                         </div>
                         <button
@@ -2683,7 +2705,7 @@ const App: React.FC = () => {
                             const event = new CustomEvent('shopify-refresh');
                             window.dispatchEvent(event);
                           }}
-                          className="w-full mt-2 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-orange-700 bg-white border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors"
+                          className="w-full mt-2 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-orange-700 bg-white border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors dark:text-orange-400 dark:bg-gray-800 dark:border-orange-700 dark:hover:bg-gray-700"
                         >
                           <RefreshCw size={14} />
                           Refresh Shopify Data
@@ -2691,59 +2713,59 @@ const App: React.FC = () => {
                      </>
                  ) : activeModule !== 'home' ? (
                      <>
-                        <div className="text-[10px] text-gray-500 mb-1 px-1 flex items-center gap-1">
+                        <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 px-1 flex items-center gap-1">
                             Current Source: 
-                            <strong className={`flex items-center gap-1 text-blue-600`}>
+                            <strong className={`flex items-center gap-1 text-blue-600 dark:text-blue-400`}>
                                 <Database size={10} />
                                 BIGQUERY
                             </strong>
                         </div>
-                        <div className="text-center py-2 px-3 text-[10px] text-blue-600 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="text-center py-2 px-3 text-[10px] text-blue-600 bg-blue-50 border border-blue-200 rounded-lg dark:text-blue-400 dark:bg-blue-900/30 dark:border-blue-800">
                           Auto-synced from BigQuery
                         </div>
                         <button
                           onClick={syncAllFromBigQuery}
                           disabled={isSyncingAll}
-                          className="w-full mt-2 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full mt-2 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:text-blue-400 dark:bg-gray-800 dark:border-blue-700 dark:hover:bg-gray-700"
                         >
                           <RefreshCw size={14} className={isSyncingAll ? 'animate-spin' : ''} />
                           {isSyncingAll ? 'Syncing...' : 'Sync All Data'}
                         </button>
                      </>
                  ) : (
-                     <div className="text-center p-2 bg-white rounded border border-gray-200">
-                         <p className="text-[10px] text-gray-400">Select a specific vertical to manage its data.</p>
+                     <div className="text-center p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+                         <p className="text-[10px] text-gray-400 dark:text-gray-500">Select a specific vertical to manage its data.</p>
                      </div>
                  )}
              </div>
            )}
            
            {!isLoadingData && activeModule !== 'home' && activeModule !== 'merchandising' && (
-             <div className="bg-white border border-gray-200 rounded-lg p-3">
-                <p className="text-[10px] text-gray-400 font-semibold uppercase mb-1">Data Source Info</p>
+             <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold uppercase mb-1">Data Source Info</p>
                 <div className="flex flex-col">
                     {lastGame ? (
                         <>
-                            <div className="flex items-center gap-1 text-blue-600 mb-0.5">
+                            <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 mb-0.5">
                                 <Calendar size={10} />
                                 <span className="text-[10px] font-bold uppercase">Latest Game</span>
                             </div>
-                            <span className="text-xs font-bold text-gray-800 truncate">{lastGame.opponent}</span>
-                            <span className="text-[10px] text-gray-500">{lastGame.season} • {lastGame.date}</span>
+                            <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{lastGame.opponent}</span>
+                            <span className="text-[10px] text-gray-500 dark:text-gray-400">{lastGame.season} • {lastGame.date}</span>
                             {lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing'] && (
-                                <div className="mt-2 pt-2 border-t border-gray-100">
-                                    <div className="flex items-center gap-1 text-green-600 mb-0.5">
+                                <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+                                    <div className="flex items-center gap-1 text-green-600 dark:text-green-400 mb-0.5">
                                         <Clock size={10} />
                                         <span className="text-[10px] font-bold uppercase">Last Synced</span>
                                     </div>
-                                    <span className="text-[10px] text-gray-500">
+                                    <span className="text-[10px] text-gray-500 dark:text-gray-400">
                                         {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleDateString()} at {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                     </span>
                                 </div>
                             )}
                         </>
                     ) : (
-                        <span className="text-[10px] text-gray-400">No data loaded</span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500">No data loaded</span>
                     )}
                 </div>
              </div>
@@ -2886,7 +2908,7 @@ const App: React.FC = () => {
                     {isLoadingData && data.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-96">
                             <Loader2 size={40} className="text-red-600 animate-spin mb-4" />
-                            <p className="text-gray-500 font-medium">Loading sales data...</p>
+                            <p className="text-gray-500 dark:text-gray-400 font-medium">Loading sales data...</p>
                         </div>
                     ) : (
                         <div className="animate-fade-in space-y-6">
@@ -2902,7 +2924,7 @@ const App: React.FC = () => {
 
                         <div className="mb-8">
                             <div className="flex justify-between items-end mb-4">
-                                <h2 className="text-xl font-bold text-gray-800">Venue Intelligence</h2>
+                                <h2 className="text-xl font-bold text-gray-800 dark:text-white">Venue Intelligence</h2>
                             </div>
                             
                             {/* Map and Vertical Widgets Row */}
@@ -3035,8 +3057,8 @@ const App: React.FC = () => {
                         
                         {discountTypeData.length > 0 && (
                         <div className="mb-8">
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                                <h2 className="text-xl font-bold text-gray-800 mb-4">Ticket Pricing Breakdown</h2>
+                            <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
+                                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Ticket Pricing Breakdown</h2>
                                 {(() => {
                                     const COLOR_MAP: Record<string, string> = { 'Full Price': '#10b981', 'Discounted': '#f97316', 'Giveaways': '#8b5cf6' };
                                     const totalTickets = discountTypeData.reduce((s, d) => s + d.count, 0);
@@ -3124,7 +3146,7 @@ const App: React.FC = () => {
                         )}
 
                         <div className="mb-8 relative z-0">
-                            <h2 className="text-xl font-bold text-gray-800 mb-4">
+                            <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
                             Trend & Performance Analysis
                             </h2>
                             <DashboardChart 
@@ -3189,7 +3211,7 @@ const App: React.FC = () => {
       {showAIAdvisor && (
         <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowAIAdvisor(false)}>
           <div 
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden"
+            className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-4 flex items-center justify-between">

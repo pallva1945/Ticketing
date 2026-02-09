@@ -175,16 +175,16 @@ const ComparisonMetric = ({ label, valA, valB, isCurrency = false, isPercent = f
     };
 
     return (
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm flex items-center justify-between">
+        <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center justify-between">
             <div className="flex-1">
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">{label}</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mb-1">{label}</p>
                 <div className="flex items-baseline gap-3">
                    <div className="text-right">
-                       <p className="text-sm font-semibold text-gray-500">A: {format(valA)}</p>
+                       <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">A: {format(valA)}</p>
                    </div>
-                   <div className="h-4 w-px bg-gray-200"></div>
+                   <div className="h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
                    <div className="text-left">
-                       <p className="text-lg font-bold text-gray-900">B: {format(valB)}</p>
+                       <p className="text-lg font-bold text-gray-900 dark:text-white">B: {format(valB)}</p>
                    </div>
                 </div>
             </div>
@@ -232,11 +232,11 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
       const availTimes = useMemo(() => getAvailableOptions(fullData, filters, 'times'), [filters]);
 
       return (
-      <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col h-[calc(100vh-200px)] sticky top-6">
-          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 flex-shrink-0">
+      <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-[calc(100vh-200px)] sticky top-6">
+          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
              <span className={`w-3 h-3 rounded-full ${label === 'A' ? 'bg-gray-400' : 'bg-red-600'}`}></span>
-             <h3 className="font-bold text-gray-800">Scenario {label}</h3>
-             <span className="text-xs text-gray-400 ml-auto">
+             <h3 className="font-bold text-gray-800 dark:text-white">Scenario {label}</h3>
+             <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">
                  {label === 'A' ? 'Baseline' : 'Comparison'}
              </span>
           </div>
@@ -246,8 +246,8 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
                 onClick={() => setFilter('ignoreOspiti', !filters.ignoreOspiti)}
                 className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors border ${
                     filters.ignoreOspiti 
-                    ? 'bg-red-50 text-red-700 border-red-200' 
-                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    ? 'bg-red-50 dark:bg-red-900/30 text-red-700 border-red-200' 
+                    : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
                 }`}
             >
                 <UserX size={14} />
@@ -259,17 +259,17 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
             <MultiSelect label="Opponent" options={availOpponents} selected={filters.opponents} onChange={(v) => setFilter('opponents', v)} />
             <MultiSelect label="Tier" options={availTiers} selected={filters.tiers} onChange={(v) => setFilter('tiers', v)} />
             
-            <div className="border-t border-gray-100 my-2"></div>
+            <div className="border-t border-gray-100 dark:border-gray-800 my-2"></div>
             
             <MultiSelect label="Date" options={availDates} selected={filters.dates} onChange={(v) => setFilter('dates', v)} />
             <MultiSelect label="Time" options={availTimes} selected={filters.times} onChange={(v) => setFilter('times', v)} />
             
-            <div className="border-t border-gray-100 my-2"></div>
+            <div className="border-t border-gray-100 dark:border-gray-800 my-2"></div>
 
             <MultiSelect label="Zone" options={availZones} selected={filters.zones} onChange={(v) => setFilter('zones', v)} />
           </div>
 
-          <div className="pt-4 text-xs text-center text-gray-400 border-t border-gray-100 mt-2 flex-shrink-0">
+          <div className="pt-4 text-xs text-center text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-800 mt-2 flex-shrink-0">
              {label === 'A' ? dataA.length : dataB.length} Games matched
           </div>
       </div>
@@ -279,12 +279,12 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
   return (
     <div className="animate-fade-in max-w-7xl mx-auto space-y-6">
        <div className="flex items-center gap-3 mb-6">
-           <div className="p-3 bg-red-50 rounded-lg text-red-700">
+           <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-lg text-red-700">
                <ArrowLeftRight size={24} />
            </div>
            <div>
-               <h1 className="text-2xl font-bold text-gray-900">Comparative Analysis</h1>
-               <p className="text-gray-500 text-sm">
+               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Comparative Analysis</h1>
+               <p className="text-gray-500 dark:text-gray-400 text-sm">
                    {viewMode === 'gameday' 
                     ? 'Analyzing GameDay revenue only (Variable)' 
                     : 'Analyze performance variance between two distinct datasets.'}
@@ -299,9 +299,9 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
 
            <div className="lg:col-span-2 space-y-6">
                {(!statsA || !statsB) ? (
-                   <div className="flex flex-col items-center justify-center h-full bg-white rounded-xl border border-gray-200 p-10 text-center">
-                       <AlertCircle className="text-gray-300 mb-4" size={48} />
-                       <p className="text-gray-500">Select filters to begin comparison.</p>
+                   <div className="flex flex-col items-center justify-center h-full bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center">
+                       <AlertCircle className="text-gray-300 dark:text-gray-600 mb-4" size={48} />
+                       <p className="text-gray-500 dark:text-gray-400">Select filters to begin comparison.</p>
                    </div>
                ) : (
                    <>
@@ -314,8 +314,8 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
                          <ComparisonMetric label="Load Factor" valA={statsA.occupancy} valB={statsB.occupancy} isPercent />
                      </div>
                      
-                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-                         <h4 className="font-bold text-gray-800 mb-4">Revenue Comparison (Total)</h4>
+                     <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                         <h4 className="font-bold text-gray-800 dark:text-white mb-4">Revenue Comparison (Total)</h4>
                          <div className="h-40">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={chartData} layout="vertical" margin={{top: 0, left: 0, right: 30, bottom: 0}}>
