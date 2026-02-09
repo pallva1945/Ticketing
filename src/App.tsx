@@ -19,6 +19,7 @@ import { CRMView } from './components/CRMView';
 import { SponsorshipDashboard } from './components/SponsorshipDashboard';
 import { MerchandisingView } from './components/MerchandisingView';
 import { VenueOpsDashboard } from './components/VenueOpsDashboard';
+import { VareseBasketballDashboard } from './components/VareseBasketballDashboard';
 import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, FIXED_CORP_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, SponsorData, CRMRecord, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { PieChart as RechartsPie, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -191,9 +192,9 @@ const RevenueHome = ({
       { 
           id: 'sg', 
           name: 'Varese Basketball', 
-          current: 0, 
-          target: 930000, 
-          icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false, isProrated: false, hasData: false 
+          current: 323840, 
+          target: 660332, 
+          icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false, isProrated: false, hasData: true 
       },
       { 
           id: 'bops', 
@@ -3108,6 +3109,8 @@ const App: React.FC = () => {
               <MerchandisingView />
           ) : activeModule === 'venue_ops' ? (
               <VenueOpsDashboard />
+          ) : activeModule === 'sg' ? (
+              <VareseBasketballDashboard />
           ) : (
               <PlaceholderView 
                 moduleName={MODULES.find(m => m.id === activeModule)?.label || 'Module'} 
