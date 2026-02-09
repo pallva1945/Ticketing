@@ -100,6 +100,7 @@ const PlaceholderView = ({ moduleName, icon: Icon }: { moduleName: string, icon:
 const RevenueHome = ({ 
     ticketingRevenue,
     gameDayTicketing,
+    gameDayViewTicketing,
     gameDayRevenue, 
     sponsorshipRevenue,
     merchRevenue,
@@ -116,6 +117,7 @@ const RevenueHome = ({
     modules: any[], 
     ticketingRevenue: number,
     gameDayTicketing: number,
+    gameDayViewTicketing: number,
     gameDayRevenue: number, 
     sponsorshipRevenue: number,
     merchRevenue: number,
@@ -618,18 +620,18 @@ const RevenueHome = ({
                         );
                     })()}
 
-                    {/* Signal 3: GameDay Tickets */}
+                    {/* Signal 3: GameDay Tickets Projection */}
                     {(() => {
-                        const perGame = gameDayTicketing / gamesCount;
+                        const perGame = gameDayViewTicketing / gamesCount;
                         const projection = perGame * TOTAL_GAMES_SEASON;
                         return (
                         <div className="bg-white border border-blue-200 rounded-xl p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-3">
                                 <Ticket size={16} className="text-blue-600" />
-                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">GameDay Tickets</span>
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">GameDay Tickets Projection</span>
                             </div>
                             <p className="text-2xl font-bold text-gray-900">{formatCompact(projection)}</p>
-                            <p className="text-xs text-gray-500 mt-1">Tickets sold on game day × {TOTAL_GAMES_SEASON} games</p>
+                            <p className="text-xs text-gray-500 mt-1">GameDay view tickets × {TOTAL_GAMES_SEASON} games</p>
                             <div className="mt-3 flex items-center gap-2">
                                 <div className="flex-1 h-1.5 bg-blue-100 rounded-full overflow-hidden">
                                     <div 
@@ -1928,6 +1930,10 @@ const App: React.FC = () => {
       return efficiencyData.reduce((sum, game) => sum + game.totalRevenue, 0);
   }, [efficiencyData]);
 
+  const gameDayViewTicketingRevenue = useMemo(() => {
+      return efficiencyData.reduce((sum, game) => sum + game.revenueGameDay, 0);
+  }, [efficiencyData]);
+
   const filteredCrmForCharts = useMemo(() => {
     if (!crmData.length) return [];
     const gameOpponents = new Set(filteredGames.map(g => g.opponent.toLowerCase().trim()));
@@ -2724,6 +2730,7 @@ const App: React.FC = () => {
                 modules={MODULES} 
                 ticketingRevenue={totalStats.totalRevenue}
                 gameDayTicketing={gameDayTicketingRevenue}
+                gameDayViewTicketing={gameDayViewTicketingRevenue}
                 gameDayRevenue={gameDayRevenueNet} 
                 sponsorshipRevenue={sponsorshipStats.pureSponsorship}
                 merchRevenue={merchRevenue}
