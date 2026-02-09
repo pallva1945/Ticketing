@@ -20,13 +20,13 @@ const SPONSORSHIP_H2_PIPELINE = [
 const BOPS_BREAKDOWN = [
   { name: 'Parametri', h1: 46270, note: 'Fixed allocation' },
   { name: 'Buyouts (Elisée Assui)', h1: 40000, note: '4/10 months of €100k buyout' },
-  { name: 'U23–U26', h1: 18500, note: '4/10 months' },
+  { name: 'U23–U26', h1: 18539, note: '4/10 months' },
   { name: 'Annual Fee', h1: 12428, note: 'Fixed annual fee' },
 ];
 
 const EBP_BREAKDOWN = [
   { name: 'YAP (Year Around Program)', h1: 32200, note: '4 players · €15k/year each', players: 4 },
-  { name: 'EDBP (Elite Dev Basketball Program)', h1: 30000, note: '3 players · €20k/year each', players: 3 },
+  { name: 'EDBP (Elite Dev Basketball Program)', h1: 30001, note: '3 players · €20k/year each', players: 3 },
 ];
 
 const GAMEDAY_DATA = {
@@ -37,14 +37,14 @@ const GAMEDAY_DATA = {
 };
 
 const FINANCIALS = {
-  gameday: { actual: 1082, budget: 2164 },
+  gameday: { actual: 1082, budget: 1299 },
   sponsorship: { actual: 184975, budget: 190002 },
-  bops: { actual: BOPS_BREAKDOWN.reduce((s, b) => s + b.h1, 0), budget: 138000 },
-  ebp: { actual: EBP_BREAKDOWN.reduce((s, b) => s + b.h1, 0), budget: EBP_BREAKDOWN.reduce((s, b) => s + b.h1, 0) },
+  bops: { actual: 117237, budget: 138000 },
+  ebp: { actual: 62201, budget: 63865 },
 };
 
-const totalH1Actual = FINANCIALS.gameday.actual + FINANCIALS.sponsorship.actual + FINANCIALS.bops.actual + FINANCIALS.ebp.actual;
-const totalH1Budget = FINANCIALS.gameday.budget + FINANCIALS.sponsorship.budget + FINANCIALS.bops.budget + FINANCIALS.ebp.budget;
+const totalH1Actual = 366315;
+const totalH1Budget = 395668;
 const seasonBudget = totalH1Budget * 2;
 
 type Section = 'overview' | 'sponsorship' | 'bops' | 'ebp';
@@ -186,8 +186,7 @@ export const VareseBasketballDashboard: React.FC = () => {
                 <p className="text-sm font-semibold text-teal-800">H2 Outlook</p>
                 <p className="text-xs text-teal-700 mt-1">
                   The €{sponsorshipGap.toLocaleString('it-IT')} sponsorship gap will be recovered with the new Sports & Health (S&H) 3-year solar contract, 
-                  bringing €{h2SponsorshipRecovery.toLocaleString('it-IT')} in H2. BOps is tracking at {(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(1)}% of budget. 
-                  EBP programs (EDBP + YAP) are generating €{formatCurrency(FINANCIALS.ebp.actual)} from {totalEbpPlayers} players.
+                  bringing €{h2SponsorshipRecovery.toLocaleString('it-IT')} in H2. Additionally, the Finale Nazionali is backloaded into H2 — last season it generated €51.500, with potential to improve this year. BOps is tracking at {(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(1)}% of budget.
                 </p>
               </div>
             </div>

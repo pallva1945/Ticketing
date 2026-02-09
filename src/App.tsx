@@ -192,8 +192,8 @@ const RevenueHome = ({
       { 
           id: 'sg', 
           name: 'Varese Basketball', 
-          current: 365455, 
-          target: 660332, 
+          current: 366315, 
+          target: 791336, 
           icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false, isProrated: false, hasData: true 
       },
       { 
