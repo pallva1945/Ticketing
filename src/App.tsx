@@ -169,13 +169,15 @@ const RevenueHome = ({
     // 7 Revenue Verticals with actual data for Ticketing, GameDay, Sponsorship
     // isProrated: Sponsorship contracts are signed for the full year but recognized over time
     // hasData: indicates if this vertical has real data connected
+    // pacingType: 'monthly' (time-based), 'games' (by games played), 'h1' (50% half-year), 'fourTen' (4/10 = 40%), 'daily' (day of season)
     const verticalPerformance = [
       { 
           id: 'sponsorship', 
           name: 'Sponsorship', 
-          signedValue: sponsorshipRevenue, // Full year contracts signed
-          current: sponsorshipRevenue * seasonProgressFraction, // Recognized YTD (prorated)
+          signedValue: sponsorshipRevenue,
+          current: sponsorshipRevenue * seasonProgressFraction,
           target: 2100000,
+          pacingType: 'monthly' as const,
           icon: Flag, colorClass: 'text-blue-600', bgClass: 'bg-blue-50', barClass: 'bg-blue-500', isVariable: false, isProrated: true, hasData: true 
       },
       { 
@@ -183,6 +185,7 @@ const RevenueHome = ({
           name: 'Ticketing', 
           current: ticketingRevenue, 
           target: 1650000, 
+          pacingType: 'games' as const,
           icon: Ticket, colorClass: 'text-red-600', bgClass: 'bg-red-50', barClass: 'bg-red-500', isVariable: true, isProrated: false, hasData: true 
       },
       { 
@@ -190,6 +193,7 @@ const RevenueHome = ({
           name: 'GameDay', 
           current: gameDayRevenue, 
           target: 1250000, 
+          pacingType: 'games' as const,
           icon: Calendar, colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50', barClass: 'bg-indigo-500', isVariable: true, isProrated: false, hasData: true 
       },
       { 
@@ -197,6 +201,7 @@ const RevenueHome = ({
           name: 'Varese Basketball', 
           current: 366315, 
           target: 930465, 
+          pacingType: 'h1' as const,
           icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false, isProrated: false, hasData: true 
       },
       { 
@@ -204,6 +209,7 @@ const RevenueHome = ({
           name: 'BOps', 
           current: 173508, 
           target: 525000, 
+          pacingType: 'fourTen' as const,
           icon: Activity, colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', barClass: 'bg-emerald-500', isVariable: false, isProrated: false, hasData: true 
       },
       { 
@@ -211,6 +217,7 @@ const RevenueHome = ({
           name: 'Venue Ops', 
           current: 85485.36, 
           target: 262364, 
+          pacingType: 'h1' as const,
           icon: Landmark, colorClass: 'text-slate-600', bgClass: 'bg-slate-50', barClass: 'bg-slate-500', isVariable: false, isProrated: false, hasData: true 
       },
       { 
@@ -218,37 +225,73 @@ const RevenueHome = ({
           name: 'Merchandising', 
           current: Math.max(0, merchRevenue - merchGameDayRevenue), 
           target: 131000, 
+          pacingType: 'daily' as const,
           icon: ShoppingBag, colorClass: 'text-orange-600', bgClass: 'bg-orange-50', barClass: 'bg-orange-500', isVariable: false, isProrated: false, hasData: merchRevenue > 0 
       },
     ];
 
-    // Calculate pacing for each vertical
+    // Calculate days into season for daily pacing (season = Jul 1 - Jun 30)
+    const today = new Date();
+    const seasonStart = new Date(today.getFullYear(), 6, 1); // Jul 1
+    if (today < seasonStart) seasonStart.setFullYear(seasonStart.getFullYear() - 1);
+    const seasonEnd = new Date(seasonStart.getFullYear() + 1, 5, 30); // Jun 30
+    const totalSeasonDays = Math.round((seasonEnd.getTime() - seasonStart.getTime()) / (1000 * 60 * 60 * 24));
+    const daysIntoSeason = Math.round((today.getTime() - seasonStart.getTime()) / (1000 * 60 * 60 * 24));
+    const dailyProgressFraction = Math.min(daysIntoSeason / totalSeasonDays, 1);
+
+    // Calculate pacing for each vertical with differential logic
     const verticalsWithPacing = verticalPerformance.map(v => {
         let pacePct: number;
         let expectedAtThisPoint: number;
+        let paceMarkerPct: number; // Where the pace marker sits on the progress bar (0-100)
         
-        if (v.isVariable) {
-            // Variable: Pace based on games played
-            expectedAtThisPoint = (v.target / TOTAL_GAMES_SEASON) * gamesPlayed;
-            pacePct = expectedAtThisPoint > 0 ? ((v.current / expectedAtThisPoint) - 1) * 100 : 0;
-        } else {
-            // Absolute/Prorated: Pace based on % of target achieved vs time
-            expectedAtThisPoint = v.target * seasonProgressFraction;
-            pacePct = expectedAtThisPoint > 0 ? ((v.current / expectedAtThisPoint) - 1) * 100 : 0;
+        switch (v.pacingType) {
+            case 'games':
+                // Games-based: pace by games played out of 15
+                expectedAtThisPoint = (v.target / TOTAL_GAMES_SEASON) * gamesPlayed;
+                paceMarkerPct = (gamesPlayed / TOTAL_GAMES_SEASON) * 100;
+                break;
+            case 'monthly':
+                // Monthly/time-based: even distribution across the season
+                expectedAtThisPoint = v.target * seasonProgressFraction;
+                paceMarkerPct = seasonProgressPct;
+                break;
+            case 'h1':
+                // H1 report: data covers first half only, pace marker at 50%
+                expectedAtThisPoint = v.target * 0.5;
+                paceMarkerPct = 50;
+                break;
+            case 'fourTen':
+                // 4/10 month accounting: pace marker at 40%
+                expectedAtThisPoint = v.target * 0.4;
+                paceMarkerPct = 40;
+                break;
+            case 'daily':
+                // Daily: pace by actual day of the season
+                expectedAtThisPoint = v.target * dailyProgressFraction;
+                paceMarkerPct = dailyProgressFraction * 100;
+                break;
         }
+        
+        pacePct = expectedAtThisPoint > 0 ? ((v.current / expectedAtThisPoint) - 1) * 100 : 0;
         
         // Projected finish calculation
         let projectedFinish: number;
-        if (v.isVariable) {
+        if (v.pacingType === 'games') {
             projectedFinish = (v.current / gamesCount) * TOTAL_GAMES_SEASON;
         } else if (v.isProrated && 'signedValue' in v) {
-            // For prorated: full signed value is the projected finish
             projectedFinish = v.signedValue as number;
+        } else if (v.pacingType === 'h1') {
+            projectedFinish = v.current * 2; // Extrapolate H1 to full year
+        } else if (v.pacingType === 'fourTen') {
+            projectedFinish = v.current / 0.4 ; // Extrapolate 4/10 to full year
+        } else if (v.pacingType === 'daily') {
+            projectedFinish = dailyProgressFraction > 0 ? v.current / dailyProgressFraction : v.current;
         } else {
-            projectedFinish = v.current; // For absolute, current is what we have
+            projectedFinish = v.current;
         }
         
-        return { ...v, pacePct, expectedAtThisPoint, projectedFinish };
+        return { ...v, pacePct, expectedAtThisPoint, projectedFinish, paceMarkerPct };
     });
 
     // Filter verticals with actual data for aggregates
@@ -535,10 +578,10 @@ const RevenueHome = ({
                                         className={`h-full ${v.barClass} transition-all duration-500`}
                                         style={{ width: `${progressPct}%` }}
                                     />
-                                    {/* Time marker */}
+                                    {/* Pace marker (per-vertical) */}
                                     <div 
                                         className="absolute top-0 bottom-0 w-0.5 bg-gray-800 opacity-40"
-                                        style={{ left: `${seasonProgressPct}%` }}
+                                        style={{ left: `${v.paceMarkerPct}%` }}
                                     />
                                 </div>
                                 
@@ -658,7 +701,7 @@ const RevenueHome = ({
                             {worstPacingVertical.pacePct.toFixed(0)}% pace
                         </p>
                         <p className="text-[10px] text-gray-500 mt-2">
-                            Gap: {formatCompact(worstPacingVertical.target * (seasonProgressPct/100) - worstPacingVertical.current)} behind expected
+                            Gap: {formatCompact(worstPacingVertical.expectedAtThisPoint - worstPacingVertical.current)} behind expected
                         </p>
                     </div>
 
