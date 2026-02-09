@@ -594,6 +594,9 @@ const RevenueHome = ({
                                     <p>{v.isProrated ? 'Recognized:' : 'Collected:'} {formatCompact(v.current)}</p>
                                     <p>Target: {formatCompact(v.target)}</p>
                                     <p>Progress: {((v.current / v.target) * 100).toFixed(1)}%</p>
+                                    <p className="text-cyan-400">
+                                        Accounted: {v.paceMarkerPct.toFixed(0)}%
+                                    </p>
                                     <p className={v.pacePct >= 0 ? 'text-green-400' : 'text-red-400'}>
                                         Pace: {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(1)}%
                                     </p>
