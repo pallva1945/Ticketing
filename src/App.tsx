@@ -307,9 +307,13 @@ const RevenueHome = ({
     const totalTarget = verticalsWithData.reduce((acc, v) => acc + v.target, 0);
     const totalRevenueProjected = verticalsWithData.reduce((acc, v) => acc + v.projectedFinish, 0);
     
-    // PACING LOGIC
+    // PACING LOGIC - weighted average accounted % across verticals
+    const totalExpected = verticalsWithData.reduce((acc, v) => acc + v.expectedAtThisPoint, 0);
+    const weightedAccountedPct = totalTarget > 0
+        ? verticalsWithData.reduce((acc, v) => acc + (v.paceMarkerPct * (v.target / totalTarget)), 0)
+        : seasonProgressPct;
     const revenueProgressPct = totalTarget > 0 ? (totalRevenueYTD / totalTarget) * 100 : 0;
-    const pacingDelta = revenueProgressPct - seasonProgressPct;
+    const pacingDelta = revenueProgressPct - weightedAccountedPct;
     const isAhead = pacingDelta >= 0;
     const projectionDiff = totalRevenueProjected - totalTarget;
 
@@ -430,20 +434,20 @@ const RevenueHome = ({
                             {isAhead ? '+' : ''}{pacingDelta.toFixed(1)}%
                         </p>
                         <p className={`text-xs font-medium ${isAhead ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCompact(Math.abs(totalRevenueYTD - (totalTarget * seasonProgressFraction)))} {isAhead ? 'surplus' : 'gap'}
+                            {formatCompact(Math.abs(totalRevenueYTD - totalExpected))} {isAhead ? 'surplus' : 'gap'}
                         </p>
                     </div>
                 </div>
 
                 {/* Stacked Progress Bar */}
                 <div className="relative h-8 bg-gray-100 rounded-full overflow-hidden mb-3 flex border border-gray-200">
-                    {/* Time Marker */}
+                    {/* Weighted Accounted Marker */}
                     <div 
                         className="absolute top-0 bottom-0 border-r-2 border-dashed border-gray-800 z-20 opacity-60"
-                        style={{ width: `${seasonProgressPct}%` }}
+                        style={{ width: `${weightedAccountedPct}%` }}
                     >
                         <div className="bg-gray-800 text-white text-[9px] font-bold px-1.5 py-0.5 rounded absolute -bottom-5 right-0 transform translate-x-1/2 whitespace-nowrap">
-                            {seasonProgressPct.toFixed(0)}% Time
+                            {weightedAccountedPct.toFixed(0)}% Accounted
                         </div>
                     </div>
 
