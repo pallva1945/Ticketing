@@ -115,6 +115,7 @@ export const MerchandisingView: React.FC = () => {
   const [excludeGameDayMerch, setExcludeGameDayMerch] = useState(true);
   const [excludeVB, setExcludeVB] = useState(false);
   
+  const [topProductCategoryFilter, setTopProductCategoryFilter] = useState<string>('all');
   const [productSearch, setProductSearch] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
@@ -295,7 +296,8 @@ export const MerchandisingView: React.FC = () => {
     filteredOrders.forEach(order => {
       order.lineItems.forEach(item => {
         if (!productSales[item.productId]) {
-          productSales[item.productId] = { title: item.title, revenue: 0, quantity: 0, type: '' };
+          const product = data.products.find(p => p.id === item.productId);
+          productSales[item.productId] = { title: item.title, revenue: 0, quantity: 0, type: product?.productType || 'Other' };
         }
         productSales[item.productId].revenue += getNetPrice(order, item.price * item.quantity);
         productSales[item.productId].quantity += item.quantity;
@@ -1089,9 +1091,24 @@ export const MerchandisingView: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">{t('Top Selling Products')}</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('Top Selling Products')}</h3>
+                <select
+                  value={topProductCategoryFilter}
+                  onChange={(e) => setTopProductCategoryFilter(e.target.value)}
+                  className="text-xs border border-gray-200 dark:border-gray-700 rounded-lg px-2 py-1.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                >
+                  <option value="all">{t('All Categories')}</option>
+                  {stats.categoryData.map(cat => (
+                    <option key={cat.name} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
               <div className="space-y-3">
-                {stats.topProducts.slice(0, 5).map((product, i) => (
+                {stats.topProducts
+                  .filter(p => topProductCategoryFilter === 'all' || p.type === topProductCategoryFilter)
+                  .slice(0, 5)
+                  .map((product, i) => (
                   <div 
                     key={product.id} 
                     className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
