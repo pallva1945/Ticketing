@@ -249,6 +249,22 @@ export const MerchandisingView: React.FC = () => {
     return Object.values(gameDayMerchByMonth).reduce((sum, val) => sum + val, 0);
   }, [gameDayMerchByMonth]);
 
+  const vbSeasonRevenue = useMemo(() => {
+    if (!data) return 0;
+    const seasonOrders = data.orders.filter(order => getSeasonFromDate(order.processedAt) === selectedSeason);
+    const vbOrders = seasonOrders.filter(o => o.customerName.toLowerCase().includes('varese basketball'));
+    const vbGross = vbOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+    const vbTax = vbOrders.reduce((sum, o) => sum + (o.totalTax || 0), 0);
+    return vbGross - vbTax;
+  }, [data, selectedSeason]);
+
+  const adjustedSeasonGoal = useMemo(() => {
+    let goal = SEASON_GOAL;
+    if (!excludeGameDayMerch) goal += totalGameDayMerch;
+    if (excludeVB) goal -= vbSeasonRevenue;
+    return Math.max(0, goal);
+  }, [excludeGameDayMerch, excludeVB, totalGameDayMerch, vbSeasonRevenue]);
+
   const stats = useMemo(() => {
     if (!data) return null;
     
@@ -262,7 +278,7 @@ export const MerchandisingView: React.FC = () => {
     const avgOrderValue = totalOrders > 0 ? grossRevenue / totalOrders : 0;
     const totalCustomers = data.customers.length;
     const realisticRevenue = Math.max(0, grossRevenue - totalGameDayMerch);
-    const goalProgress = (realisticRevenue / SEASON_GOAL) * 100;
+    const goalProgress = adjustedSeasonGoal > 0 ? (totalRevenue / adjustedSeasonGoal) * 100 : 0;
     const totalProducts = data.products.length;
     const totalInventory = data.products.filter(p => (p.productType || '').toLowerCase() !== 'servizio').reduce((sum, p) => sum + p.totalInventory, 0);
     
@@ -387,7 +403,7 @@ export const MerchandisingView: React.FC = () => {
       topCustomers,
       goalProgress
     };
-  }, [data, filteredOrders, selectedSeason, excludeGameDayMerch, totalGameDayMerch, gameDayMerchByMonth]);
+  }, [data, filteredOrders, selectedSeason, excludeGameDayMerch, totalGameDayMerch, gameDayMerchByMonth, adjustedSeasonGoal]);
 
   const filteredProducts = useMemo(() => {
     if (!data) return [];
@@ -947,7 +963,7 @@ export const MerchandisingView: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-sm text-white/80">{t('Season')} {selectedSeason} {t('Goal')}</p>
-                  <p className="text-2xl font-bold">{formatCurrency(SEASON_GOAL)}</p>
+                  <p className="text-2xl font-bold">{formatCurrency(adjustedSeasonGoal)}</p>
                 </div>
               </div>
               <div className="text-right">
@@ -963,7 +979,7 @@ export const MerchandisingView: React.FC = () => {
             </div>
             <div className="flex justify-between mt-2 text-sm">
               <span className="text-white/80">{stats.goalProgress.toFixed(1)}% {t('achieved')}</span>
-              <span className="text-white/80">{formatCurrency(Math.max(0, SEASON_GOAL - stats.realisticRevenue))} {t('remaining')}</span>
+              <span className="text-white/80">{formatCurrency(Math.max(0, adjustedSeasonGoal - stats.totalRevenue))} {t('remaining')}</span>
             </div>
           </div>
 
