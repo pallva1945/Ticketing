@@ -113,7 +113,7 @@ export const MerchandisingView: React.FC = () => {
   const [selectedSeason, setSelectedSeason] = useState<string>('25/26');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [excludeGameDayMerch, setExcludeGameDayMerch] = useState(true);
-  const [excludeVB, setExcludeVB] = useState(true);
+  const [excludeVB, setExcludeVB] = useState(false);
   
   const [productSearch, setProductSearch] = useState('');
   const [customerSearch, setCustomerSearch] = useState('');
