@@ -297,6 +297,7 @@ export const MerchandisingView: React.FC = () => {
       order.lineItems.forEach(item => {
         const product = data.products.find(p => p.id === item.productId);
         const category = product?.productType || 'Other';
+        if (category.toLowerCase() === 'servizio') return;
         categoryRevenue[category] = (categoryRevenue[category] || 0) + getNetPrice(order, item.price * item.quantity);
       });
     });
