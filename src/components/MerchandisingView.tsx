@@ -292,19 +292,25 @@ export const MerchandisingView: React.FC = () => {
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10);
     
+    const validCategories = new Set(
+      data.products
+        .filter(p => (p.productType || '').toLowerCase() !== 'servizio' && p.productType)
+        .map(p => p.productType)
+    );
     const categoryRevenue: Record<string, number> = {};
     filteredOrders.forEach(order => {
       order.lineItems.forEach(item => {
         const product = data.products.find(p => p.id === item.productId);
-        const category = product?.productType || 'Other';
-        if (category.toLowerCase() === 'servizio') return;
+        const category = product?.productType || '';
+        if (!category || !validCategories.has(category)) return;
         categoryRevenue[category] = (categoryRevenue[category] || 0) + getNetPrice(order, item.price * item.quantity);
       });
     });
     
     const categoryData = Object.entries(categoryRevenue)
       .map(([name, value]) => ({ name: name || 'Uncategorized', value }))
-      .sort((a, b) => b.value - a.value);
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 8);
     
     const getOrderDate = (order: ShopifyOrder) => new Date(order.processedAt);
     
