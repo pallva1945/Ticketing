@@ -2539,8 +2539,8 @@ const App: React.FC = () => {
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-bold transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
                 title={language === 'en' ? t('Switch to Italian') : t('Passa a Inglese')}
              >
-                <span className="text-base">{language === 'en' ? '🇬🇧' : '🇮🇹'}</span>
-                <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">{language === 'en' ? 'EN' : 'IT'}</span>
+                <span className="text-base">{language === 'en' ? '🇮🇹' : '🇬🇧'}</span>
+                <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">{language === 'en' ? 'IT' : 'EN'}</span>
              </button>
              <button
                 onClick={toggleTheme}
