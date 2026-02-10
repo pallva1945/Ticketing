@@ -320,6 +320,8 @@ const translations: Record<string, Record<Language, string>> = {
   'Value': { en: 'Value', it: 'Valore' },
   'Load More': { en: 'Load More', it: 'Carica Altro' },
   'Exclude GameDay Merch': { en: 'Exclude GameDay Merch', it: 'Escludi Merch GameDay' },
+  'Exclude Robur': { en: 'Exclude Robur', it: 'Escludi Robur' },
+  'Exclude VB': { en: 'Exclude VB', it: 'Escludi VB' },
   'Include GameDay Merch': { en: 'Include GameDay Merch', it: 'Includi Merch GameDay' },
 
   'Community Intelligence Hub': { en: 'Community Intelligence Hub', it: 'Hub Intelligence Comunità' },
