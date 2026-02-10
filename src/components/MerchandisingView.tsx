@@ -288,6 +288,7 @@ export const MerchandisingView: React.FC = () => {
     
     const topProducts = Object.entries(productSales)
       .map(([id, stats]) => ({ id, ...stats }))
+      .filter(p => !p.title.toLowerCase().startsWith('robur'))
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10);
     
