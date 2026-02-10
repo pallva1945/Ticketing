@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { GameDayData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ShoppingBag, Coffee, Car, Crown, DollarSign, Users, Ticket, Tv, Flag, Sparkles, AlertCircle, Coins } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface GameDayDashboardProps {
   data: GameDayData[];
@@ -10,6 +11,7 @@ interface GameDayDashboardProps {
 }
 
 export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includeTicketing = false }) => {
+  const { t } = useLanguage();
   
   const sortedData = useMemo(() => {
       return [...data].sort((a, b) => {
@@ -113,7 +115,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                     <Icon size={18} />
                 </div>
                 <span className={`text-xs font-bold px-2 py-1 rounded bg-${colorBase}-50 text-${colorBase}-700`}>
-                    {share.toFixed(1)}% Mix
+                    {share.toFixed(1)}% {t('Mix')}
                 </span>
             </div>
             
@@ -127,7 +129,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                 
                 <div className="flex justify-between items-center text-[10px]">
                     <span className="font-medium text-gray-400 dark:text-gray-500 flex items-center gap-1">
-                        <Users size={10} /> SPH
+                        <Users size={10} /> {t('SPH')}
                     </span>
                     <span className="font-bold text-gray-800 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 px-1.5 py-0.5 rounded border border-gray-100 dark:border-gray-800">
                         €{sph.toFixed(2)}
@@ -142,7 +144,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
       return (
           <div className="flex flex-col items-center justify-center h-64 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
               <AlertCircle size={32} className="text-gray-300 mb-2" />
-              <p className="text-gray-500 dark:text-gray-400 text-sm">No GameDay data matches the current filters.</p>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">{t('No GameDay data matches the current filters.')}</p>
           </div>
       );
   }
@@ -153,15 +155,15 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
         {/* TOP ROW: High Level KPIs */}
         <div>
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <DollarSign size={16} /> Financial Overview (Per Game Avg)
+                <DollarSign size={16} /> {t('Financial Overview (Per Game Avg)')}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 
                 {/* 1. Primary Tracking Metric */}
                 <KPICard 
-                    label={includeTicketing ? "Total GameDay Rev" : "GameDay Rev (Net)"}
+                    label={includeTicketing ? t("Total GameDay Rev") : t("GameDay Rev (Net)")}
                     value={stats.avgBudgetRev}
-                    subLabel={includeTicketing ? "Total Net (Target 2.9M)" : "Net excl. Tix (Target 1.25M)"}
+                    subLabel={includeTicketing ? t("Total Net (Target 2.9M)") : t("Net excl. Tix (Target 1.25M)")}
                     icon={Coins}
                     color="text-emerald-600 border-emerald-100"
                     borderTop
@@ -169,9 +171,9 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
 
                 {/* 2. Operational/Variable Component */}
                 <KPICard 
-                    label="Variable Ops (Total)"
+                    label={t("Variable Ops (Total)")}
                     value={stats.avgVariableOps}
-                    subLabel="Merch, F&B, Hosp, Park, Exp"
+                    subLabel={t("Merch, F&B, Hosp, Park, Exp")}
                     icon={Sparkles}
                     color="text-indigo-600 border-indigo-100"
                     borderTop
@@ -179,9 +181,9 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
 
                 {/* 3. SPH */}
                 <KPICard 
-                    label="Rev Per Head"
+                    label={t("Rev Per Head")}
                     value={`€${stats.commercialSph.toFixed(2)}`}
-                    subLabel={`Based on Total Tracked`}
+                    subLabel={t("Based on Total Tracked")}
                     icon={Users}
                     color="text-teal-600 border-teal-100"
                     borderTop
@@ -189,9 +191,9 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
 
                 {/* 4. Sponsorship Allocation */}
                 <KPICard 
-                    label="Avg Sponsorship"
+                    label={t("Avg Sponsorship")}
                     value={stats.sponsorship}
-                    subLabel="Allocated / Game"
+                    subLabel={t("Allocated / Game")}
                     icon={Flag}
                     color="text-blue-600 border-blue-100"
                     borderTop
@@ -200,18 +202,18 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                 {/* 5. Fixed Context (Ticketing or TV based on toggle) */}
                 {includeTicketing ? (
                     <KPICard 
-                        label="Avg TV Rights"
+                        label={t("Avg TV Rights")}
                         value={stats.tv}
-                        subLabel="Allocated / Game"
+                        subLabel={t("Allocated / Game")}
                         icon={Tv}
                         color="text-purple-600 border-purple-100"
                         borderTop
                     />
                 ) : (
                     <KPICard 
-                        label="Avg Ticketing"
+                        label={t("Avg Ticketing")}
                         value={stats.tix}
-                        subLabel="Excluded from this View"
+                        subLabel={t("Excluded from this View")}
                         icon={Ticket}
                         color="text-gray-400 dark:text-gray-500 border-gray-200 dark:border-gray-700"
                     />
@@ -222,7 +224,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
         {/* MIDDLE: Breakdown Chart */}
         <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm h-[400px] flex flex-col">
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider mb-4">
-                {includeTicketing ? 'Total Revenue Mix by Match (Incl. Tix)' : 'Revenue Mix by Match (Excl. Tix)'}
+                {includeTicketing ? t('Total Revenue Mix by Match (Incl. Tix)') : t('Revenue Mix by Match (Excl. Tix)')}
             </h3>
             <div className="flex-1 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
@@ -257,11 +259,11 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
         {/* BOTTOM ROW: Variable Stream Breakdown */}
         <div>
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider mb-4 flex items-center gap-2">
-                <Sparkles size={16} /> Operational Variable Mix (Avg Per Game)
+                <Sparkles size={16} /> {t('Operational Variable Mix (Avg Per Game)')}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <BreakdownCard 
-                    label="Hospitality"
+                    label={t("Hospitality")}
                     value={stats.hospitality}
                     totalForMix={stats.avgBudgetRev}
                     attendance={stats.attendance}
@@ -269,7 +271,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                     colorClass="text-emerald-600"
                 />
                 <BreakdownCard 
-                    label="Parking"
+                    label={t("Parking")}
                     value={stats.parking}
                     totalForMix={stats.avgBudgetRev}
                     attendance={stats.attendance}
@@ -277,7 +279,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                     colorClass="text-slate-600"
                 />
                 <BreakdownCard 
-                    label="Experiences"
+                    label={t("Experiences")}
                     value={stats.exp}
                     totalForMix={stats.avgBudgetRev}
                     attendance={stats.attendance}
@@ -285,7 +287,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                     colorClass="text-pink-600"
                 />
                 <BreakdownCard 
-                    label="Merchandising"
+                    label={t("Merchandising")}
                     value={stats.merch}
                     totalForMix={stats.avgBudgetRev}
                     attendance={stats.attendance}
@@ -293,7 +295,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                     colorClass="text-orange-600"
                 />
                 <BreakdownCard 
-                    label="Food & Beverage"
+                    label={t("Food & Beverage")}
                     value={stats.fb}
                     totalForMix={stats.avgBudgetRev}
                     attendance={stats.attendance}

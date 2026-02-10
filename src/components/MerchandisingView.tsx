@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { ShoppingBag, Package, Users, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, Layers, Search, Target, X, CreditCard, Eye, ToggleLeft, ToggleRight, ArrowUp, ArrowDown, Heart, Sparkles, AlertTriangle } from 'lucide-react';
 
 type SortDirection = 'asc' | 'desc' | null;
@@ -101,6 +102,7 @@ const getPaymentMethod = (order: ShopifyOrder): string => {
 };
 
 export const MerchandisingView: React.FC = () => {
+  const { t } = useLanguage();
   const [data, setData] = useState<MerchandisingData | null>(null);
   const [gameDayData, setGameDayData] = useState<GameDayData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -748,7 +750,7 @@ export const MerchandisingView: React.FC = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <RefreshCw size={32} className="animate-spin text-orange-600 mx-auto mb-3" />
-          <p className="text-gray-600 dark:text-gray-400">Loading Shopify data...</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('Loading Shopify data...')}</p>
         </div>
       </div>
     );
@@ -758,10 +760,10 @@ export const MerchandisingView: React.FC = () => {
     return (
       <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-xl p-6 text-center">
         <AlertCircle size={32} className="text-red-500 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-red-800 mb-2">Failed to Load Merchandising Data</h3>
+        <h3 className="text-lg font-semibold text-red-800 mb-2">{t('Failed to Load Merchandising Data')}</h3>
         <p className="text-red-600 mb-4">{error}</p>
         <button onClick={loadData} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-          <RefreshCw size={16} className="inline mr-2" /> Retry
+          <RefreshCw size={16} className="inline mr-2" /> {t('Retry')}
         </button>
       </div>
     );
@@ -771,8 +773,8 @@ export const MerchandisingView: React.FC = () => {
     return (
       <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center">
         <Package size={32} className="text-gray-400 dark:text-gray-500 mx-auto mb-3" />
-        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">No Merchandising Data Available</h3>
-        <p className="text-gray-500 dark:text-gray-400">Connect your Shopify store to see merchandising analytics.</p>
+        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">{t('No Merchandising Data Available')}</h3>
+        <p className="text-gray-500 dark:text-gray-400">{t('Connect your Shopify store to see merchandising analytics.')}</p>
       </div>
     );
   }
@@ -788,12 +790,12 @@ export const MerchandisingView: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
             <ShoppingBag size={28} className="text-orange-600" />
-            Merchandising Analytics
+            {t('Merchandising Analytics')}
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {stats.totalOrders.toLocaleString()} orders | {formatCurrency(stats.totalRevenue)} revenue
-            {selectedMonth && <span className="ml-2 text-orange-600">• Filtered: {selectedMonth}</span>}
-            {data.lastUpdated && <span className="ml-2">• Updated {formatDate(data.lastUpdated)}</span>}
+            {stats.totalOrders.toLocaleString()} {t('orders')} | {formatCurrency(stats.totalRevenue)} {t('revenue')}
+            {selectedMonth && <span className="ml-2 text-orange-600">• {t('Filtered')}: {selectedMonth}</span>}
+            {data.lastUpdated && <span className="ml-2">• {t('Updated')} {formatDate(data.lastUpdated)}</span>}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -807,7 +809,7 @@ export const MerchandisingView: React.FC = () => {
             title={excludeGameDayMerch ? 'GameDay merch is excluded (no double counting)' : 'GameDay merch is included (may double count)'}
           >
             {excludeGameDayMerch ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
-            Exclude GameDay
+            {t('Exclude GameDay')}
             {totalGameDayMerch > 0 && (
               <span className="text-xs opacity-75">({formatCurrency(totalGameDayMerch)})</span>
             )}
@@ -817,7 +819,7 @@ export const MerchandisingView: React.FC = () => {
               onClick={clearMonthFilter}
               className="px-3 py-2 bg-orange-100 dark:bg-orange-900/20 text-orange-700 rounded-lg text-sm font-medium hover:bg-orange-200 transition-colors flex items-center gap-2"
             >
-              <X size={14} /> Clear Month Filter
+              <X size={14} /> {t('Clear Month Filter')}
             </button>
           )}
           <select
@@ -826,7 +828,7 @@ export const MerchandisingView: React.FC = () => {
             className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
             {availableSeasons.map(season => (
-              <option key={season} value={season}>Season {season}</option>
+              <option key={season} value={season}>{t('Season')} {season}</option>
             ))}
           </select>
         </div>
@@ -849,7 +851,7 @@ export const MerchandisingView: React.FC = () => {
             {tab === 'customers' && <Users size={14} className="inline mr-2" />}
             {tab === 'inventory' && <Layers size={14} className="inline mr-2" />}
             {tab === 'community' && <Target size={14} className="inline mr-2" />}
-            {tab === 'community' ? 'Community' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === 'community' ? t('Community') : tab === 'overview' ? t('Overview') : tab === 'products' ? t('Products') : tab === 'orders' ? t('Orders') : tab === 'customers' ? t('Customers') : t('Inventory')}
           </button>
         ))}
       </div>
@@ -863,7 +865,7 @@ export const MerchandisingView: React.FC = () => {
                   <DollarSign size={16} className="text-green-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Revenue</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('Total Revenue')}</p>
               <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{formatCurrency(stats.totalRevenue)}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
@@ -872,7 +874,7 @@ export const MerchandisingView: React.FC = () => {
                   <ShoppingBag size={16} className="text-orange-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Orders</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('Total Orders')}</p>
               <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{stats.totalOrders.toLocaleString()}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
@@ -881,7 +883,7 @@ export const MerchandisingView: React.FC = () => {
                   <Users size={16} className="text-blue-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Customers</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('Customers')}</p>
               <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{stats.totalCustomers.toLocaleString()}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
@@ -890,7 +892,7 @@ export const MerchandisingView: React.FC = () => {
                   <TrendingUp size={16} className="text-purple-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Avg Order Value</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('Avg Order Value')}</p>
               <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{formatCurrency(stats.avgOrderValue)}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
@@ -899,7 +901,7 @@ export const MerchandisingView: React.FC = () => {
                   <Package size={16} className="text-indigo-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Products</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('Products')}</p>
               <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{stats.totalProducts.toLocaleString()}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
@@ -908,7 +910,7 @@ export const MerchandisingView: React.FC = () => {
                   <Layers size={16} className="text-teal-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Inventory Units</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('Inventory Units')}</p>
               <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{stats.totalInventory.toLocaleString()}</p>
             </div>
           </div>
@@ -920,12 +922,12 @@ export const MerchandisingView: React.FC = () => {
                   <Target size={20} className="text-white" />
                 </div>
                 <div>
-                  <p className="text-sm text-white/80">Season {selectedSeason} Goal</p>
+                  <p className="text-sm text-white/80">{t('Season')} {selectedSeason} {t('Goal')}</p>
                   <p className="text-2xl font-bold">{formatCurrency(SEASON_GOAL)}</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-white/80">Current Revenue</p>
+                <p className="text-sm text-white/80">{t('Current Revenue')}</p>
                 <p className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
               </div>
             </div>
@@ -936,14 +938,14 @@ export const MerchandisingView: React.FC = () => {
               />
             </div>
             <div className="flex justify-between mt-2 text-sm">
-              <span className="text-white/80">{stats.goalProgress.toFixed(1)}% achieved</span>
-              <span className="text-white/80">{formatCurrency(Math.max(0, SEASON_GOAL - stats.realisticRevenue))} remaining</span>
+              <span className="text-white/80">{stats.goalProgress.toFixed(1)}% {t('achieved')}</span>
+              <span className="text-white/80">{formatCurrency(Math.max(0, SEASON_GOAL - stats.realisticRevenue))} {t('remaining')}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Revenue by Category</h3>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">{t('Revenue by Category')}</h3>
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -969,15 +971,15 @@ export const MerchandisingView: React.FC = () => {
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Monthly Revenue Trend</h3>
+                  <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('Monthly Revenue Trend')}</h3>
                   {excludeGameDayMerch && totalGameDayMerch > 0 && (
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                       <span className="inline-block w-2 h-2 bg-red-400 rounded mr-1"></span>
-                      GameDay merch shown in red (excluded from totals)
+                      {t('GameDay merch shown in red (excluded from totals)')}
                     </p>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Click a bar to filter by month</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Click a bar to filter by month')}</p>
               </div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={stats.monthlyData} onClick={(data) => data?.activePayload && handleMonthClick(data.activePayload[0]?.payload)}>
@@ -996,7 +998,7 @@ export const MerchandisingView: React.FC = () => {
                         dataKey="onlineRevenue" 
                         stackId="a"
                         fill="#ea580c" 
-                        name="Online Sales"
+                        name={t('Online Sales')}
                         cursor="pointer"
                       >
                         {stats.monthlyData.map((entry, index) => (
@@ -1010,7 +1012,7 @@ export const MerchandisingView: React.FC = () => {
                         dataKey="gameDayMerch" 
                         stackId="a"
                         fill="#ef4444" 
-                        name="GameDay Sales"
+                        name={t('GameDay Sales')}
                         radius={[4, 4, 0, 0]}
                         cursor="pointer"
                       >
@@ -1047,7 +1049,7 @@ export const MerchandisingView: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Top Selling Products</h3>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">{t('Top Selling Products')}</h3>
               <div className="space-y-3">
                 {stats.topProducts.slice(0, 5).map((product, i) => (
                   <div 
@@ -1059,7 +1061,7 @@ export const MerchandisingView: React.FC = () => {
                       <span className="w-6 h-6 bg-orange-100 dark:bg-orange-900/20 text-orange-700 rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
                       <div>
                         <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate max-w-[200px]">{product.title}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{product.quantity} units sold</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{product.quantity} {t('units sold')}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1072,7 +1074,7 @@ export const MerchandisingView: React.FC = () => {
             </div>
 
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Top Customers</h3>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">{t('Top Customers')}</h3>
               <div className="space-y-3">
                 {stats.topCustomers.slice(0, 5).map((customer, i) => (
                   <div 
@@ -1084,7 +1086,7 @@ export const MerchandisingView: React.FC = () => {
                       <span className="w-6 h-6 bg-blue-100 dark:bg-blue-900/20 text-blue-700 rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
                       <div>
                         <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{customer.firstName} {customer.lastName}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{customer.orders} orders</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{customer.orders} {t('orders')}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1106,7 +1108,7 @@ export const MerchandisingView: React.FC = () => {
               <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
-                placeholder="Search products by name, type, or SKU..."
+                placeholder={t("Search products by name, type, or SKU...")}
                 value={productSearch}
                 onChange={(e) => { setProductSearch(e.target.value); setProductsLimit(50); }}
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
@@ -1117,12 +1119,12 @@ export const MerchandisingView: React.FC = () => {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <SortableHeader label="Product" sortKey="title" currentSort={productSort} onSort={() => handleSort(productSort, 'title', setProductSort)} />
-                  <SortableHeader label="Type" sortKey="productType" currentSort={productSort} onSort={() => handleSort(productSort, 'productType', setProductSort)} />
-                  <SortableHeader label="Price" sortKey="price" currentSort={productSort} onSort={() => handleSort(productSort, 'price', setProductSort)} align="right" />
-                  <SortableHeader label="Inventory" sortKey="inventory" currentSort={productSort} onSort={() => handleSort(productSort, 'inventory', setProductSort)} align="right" />
-                  <SortableHeader label="Status" sortKey="status" currentSort={productSort} onSort={() => handleSort(productSort, 'status', setProductSort)} align="center" />
-                  <th className="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">Actions</th>
+                  <SortableHeader label={t("Product")} sortKey="title" currentSort={productSort} onSort={() => handleSort(productSort, 'title', setProductSort)} />
+                  <SortableHeader label={t("Type")} sortKey="productType" currentSort={productSort} onSort={() => handleSort(productSort, 'productType', setProductSort)} />
+                  <SortableHeader label={t("Price")} sortKey="price" currentSort={productSort} onSort={() => handleSort(productSort, 'price', setProductSort)} align="right" />
+                  <SortableHeader label={t("Inventory")} sortKey="inventory" currentSort={productSort} onSort={() => handleSort(productSort, 'inventory', setProductSort)} align="right" />
+                  <SortableHeader label={t("Status")} sortKey="status" currentSort={productSort} onSort={() => handleSort(productSort, 'status', setProductSort)} align="center" />
+                  <th className="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">{t('Actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1168,7 +1170,7 @@ export const MerchandisingView: React.FC = () => {
                           onClick={(e) => { e.stopPropagation(); setSelectedProductId(product.id); }}
                           className="px-3 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors"
                         >
-                          <Eye size={12} className="inline mr-1" /> View
+                          <Eye size={12} className="inline mr-1" /> {t('View')}
                         </button>
                       </td>
                     </tr>
@@ -1179,17 +1181,17 @@ export const MerchandisingView: React.FC = () => {
           </div>
           {filteredProducts.length > productsLimit ? (
             <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center">
-              <span className="text-sm text-gray-500 dark:text-gray-400 mr-3">Showing {productsLimit} of {filteredProducts.length} products</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 mr-3">{t('Showing')} {productsLimit} {t('of')} {filteredProducts.length} {t('products')}</span>
               <button 
                 onClick={() => setProductsLimit(l => l + 50)}
                 className="px-4 py-1.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
               >
-                Load More
+                {t('Load More')}
               </button>
             </div>
           ) : filteredProducts.length > 0 && (
             <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center text-sm text-gray-500 dark:text-gray-400">
-              Showing all {filteredProducts.length} products
+              {t('Showing all')} {filteredProducts.length} {t('products')}
             </div>
           )}
         </div>
@@ -1202,7 +1204,7 @@ export const MerchandisingView: React.FC = () => {
               <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
-                placeholder="Search orders by number, date, customer, total, payment..."
+                placeholder={t("Search orders by number, date, customer, total, payment...")}
                 value={orderSearch}
                 onChange={(e) => { setOrderSearch(e.target.value); setOrdersLimit(50); }}
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
@@ -1213,14 +1215,14 @@ export const MerchandisingView: React.FC = () => {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <SortableHeader label="Order" sortKey="orderNumber" currentSort={orderSort} onSort={() => handleSort(orderSort, 'orderNumber', setOrderSort)} />
-                  <SortableHeader label="Date" sortKey="processedAt" currentSort={orderSort} onSort={() => handleSort(orderSort, 'processedAt', setOrderSort)} />
-                  <SortableHeader label="Customer" sortKey="customerName" currentSort={orderSort} onSort={() => handleSort(orderSort, 'customerName', setOrderSort)} />
-                  <SortableHeader label="Items" sortKey="itemCount" currentSort={orderSort} onSort={() => handleSort(orderSort, 'itemCount', setOrderSort)} align="right" />
-                  <SortableHeader label="Total" sortKey="totalPrice" currentSort={orderSort} onSort={() => handleSort(orderSort, 'totalPrice', setOrderSort)} align="right" />
-                  <SortableHeader label="Payment" sortKey="paymentMethod" currentSort={orderSort} onSort={() => handleSort(orderSort, 'paymentMethod', setOrderSort)} align="center" />
-                  <SortableHeader label="Fulfillment" sortKey="fulfillmentStatus" currentSort={orderSort} onSort={() => handleSort(orderSort, 'fulfillmentStatus', setOrderSort)} align="center" />
-                  <th className="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">Actions</th>
+                  <SortableHeader label={t("Order")} sortKey="orderNumber" currentSort={orderSort} onSort={() => handleSort(orderSort, 'orderNumber', setOrderSort)} />
+                  <SortableHeader label={t("Date")} sortKey="processedAt" currentSort={orderSort} onSort={() => handleSort(orderSort, 'processedAt', setOrderSort)} />
+                  <SortableHeader label={t("Customer")} sortKey="customerName" currentSort={orderSort} onSort={() => handleSort(orderSort, 'customerName', setOrderSort)} />
+                  <SortableHeader label={t("Items")} sortKey="itemCount" currentSort={orderSort} onSort={() => handleSort(orderSort, 'itemCount', setOrderSort)} align="right" />
+                  <SortableHeader label={t("Total")} sortKey="totalPrice" currentSort={orderSort} onSort={() => handleSort(orderSort, 'totalPrice', setOrderSort)} align="right" />
+                  <SortableHeader label={t("Payment")} sortKey="paymentMethod" currentSort={orderSort} onSort={() => handleSort(orderSort, 'paymentMethod', setOrderSort)} align="center" />
+                  <SortableHeader label={t("Fulfillment")} sortKey="fulfillmentStatus" currentSort={orderSort} onSort={() => handleSort(orderSort, 'fulfillmentStatus', setOrderSort)} align="center" />
+                  <th className="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">{t('Actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1262,7 +1264,7 @@ export const MerchandisingView: React.FC = () => {
                         onClick={(e) => { e.stopPropagation(); setSelectedOrderId(order.id); }}
                         className="px-3 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors"
                       >
-                        <Eye size={12} className="inline mr-1" /> View
+                        <Eye size={12} className="inline mr-1" /> {t('View')}
                       </button>
                     </td>
                   </tr>
@@ -1272,17 +1274,17 @@ export const MerchandisingView: React.FC = () => {
           </div>
           {searchedOrders.length > ordersLimit ? (
             <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center">
-              <span className="text-sm text-gray-500 dark:text-gray-400 mr-3">Showing {ordersLimit} of {searchedOrders.length} orders</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 mr-3">{t('Showing')} {ordersLimit} {t('of')} {searchedOrders.length} {t('orders')}</span>
               <button 
                 onClick={() => setOrdersLimit(l => l + 50)}
                 className="px-4 py-1.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
               >
-                Load More
+                {t('Load More')}
               </button>
             </div>
           ) : (
             <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center text-sm text-gray-500 dark:text-gray-400">
-              Showing all {searchedOrders.length} orders for season {selectedSeason}
+              {t('Showing all')} {searchedOrders.length} {t('orders')} {t('for season')} {selectedSeason}
               {selectedMonth && ` in ${selectedMonth}`}
             </div>
           )}
@@ -1296,7 +1298,7 @@ export const MerchandisingView: React.FC = () => {
               <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
-                placeholder="Search all customers by name, email, or tag..."
+                placeholder={t("Search all customers by name, email, or tag...")}
                 value={customerSearch}
                 onChange={(e) => { setCustomerSearch(e.target.value); setCustomersLimit(50); }}
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
@@ -1307,13 +1309,13 @@ export const MerchandisingView: React.FC = () => {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-gray-800">
                 <tr>
-                  <SortableHeader label="Customer" sortKey="name" currentSort={customerSort} onSort={() => handleSort(customerSort, 'name', setCustomerSort)} />
-                  <SortableHeader label="Email" sortKey="email" currentSort={customerSort} onSort={() => handleSort(customerSort, 'email', setCustomerSort)} />
-                  <SortableHeader label="Orders" sortKey="ordersCount" currentSort={customerSort} onSort={() => handleSort(customerSort, 'ordersCount', setCustomerSort)} align="right" />
-                  <SortableHeader label="Total Spent" sortKey="totalSpent" currentSort={customerSort} onSort={() => handleSort(customerSort, 'totalSpent', setCustomerSort)} align="right" />
-                  <SortableHeader label="Member Since" sortKey="createdAt" currentSort={customerSort} onSort={() => handleSort(customerSort, 'createdAt', setCustomerSort)} />
-                  <th className="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">Tags</th>
-                  <th className="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">Actions</th>
+                  <SortableHeader label={t("Customer")} sortKey="name" currentSort={customerSort} onSort={() => handleSort(customerSort, 'name', setCustomerSort)} />
+                  <SortableHeader label={t("Email")} sortKey="email" currentSort={customerSort} onSort={() => handleSort(customerSort, 'email', setCustomerSort)} />
+                  <SortableHeader label={t("Orders")} sortKey="ordersCount" currentSort={customerSort} onSort={() => handleSort(customerSort, 'ordersCount', setCustomerSort)} align="right" />
+                  <SortableHeader label={t("Total Spent")} sortKey="totalSpent" currentSort={customerSort} onSort={() => handleSort(customerSort, 'totalSpent', setCustomerSort)} align="right" />
+                  <SortableHeader label={t("Member Since")} sortKey="createdAt" currentSort={customerSort} onSort={() => handleSort(customerSort, 'createdAt', setCustomerSort)} />
+                  <th className="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">{t('Tags')}</th>
+                  <th className="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">{t('Actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1343,7 +1345,7 @@ export const MerchandisingView: React.FC = () => {
                         onClick={(e) => { e.stopPropagation(); setSelectedCustomerId(customer.email); }}
                         className="px-3 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors"
                       >
-                        <Eye size={12} className="inline mr-1" /> View
+                        <Eye size={12} className="inline mr-1" /> {t('View')}
                       </button>
                     </td>
                   </tr>
@@ -1358,20 +1360,20 @@ export const MerchandisingView: React.FC = () => {
               return (
                 <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center">
                   <span className="text-sm text-gray-500 dark:text-gray-400 mr-3">
-                    {isSearching ? `Found ${filteredCustomers.length} customers matching "${customerSearch}" - showing ${displayLimit}` : `Showing ${displayLimit} of ${filteredCustomers.length} customers`}
+                    {isSearching ? `${t('Found')} ${filteredCustomers.length} ${t('customers matching')} "${customerSearch}" - ${t('showing')} ${displayLimit}` : `${t('Showing')} ${displayLimit} ${t('of')} ${filteredCustomers.length} ${t('customers')}`}
                   </span>
                   <button 
                     onClick={() => setCustomersLimit(l => l + 100)}
                     className="px-4 py-1.5 bg-orange-600 text-white text-sm rounded-lg hover:bg-orange-700 transition-colors"
                   >
-                    Load More
+                    {t('Load More')}
                   </button>
                 </div>
               );
             } else if (filteredCustomers.length > 0) {
               return (
                 <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center text-sm text-gray-500 dark:text-gray-400">
-                  {isSearching ? `Found ${filteredCustomers.length} customers matching "${customerSearch}"` : `Showing all ${filteredCustomers.length} customers`}
+                  {isSearching ? `${t('Found')} ${filteredCustomers.length} ${t('customers matching')} "${customerSearch}"` : `${t('Showing all')} ${filteredCustomers.length} ${t('customers')}`}
                 </div>
               );
             }
@@ -1389,7 +1391,7 @@ export const MerchandisingView: React.FC = () => {
                   <Layers size={16} className="text-blue-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Units</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('Total Units')}</p>
               <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{inventoryStats.totalUnits.toLocaleString()}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
@@ -1398,7 +1400,7 @@ export const MerchandisingView: React.FC = () => {
                   <DollarSign size={16} className="text-green-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Inventory Value</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('Inventory Value')}</p>
               <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(inventoryStats.totalValue)}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
@@ -1407,7 +1409,7 @@ export const MerchandisingView: React.FC = () => {
                   <AlertCircle size={16} className="text-orange-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Low Stock</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('Low Stock')}</p>
               <p className="text-xl font-bold text-orange-600">{inventoryStats.lowStock.length}</p>
               <p className="text-[10px] text-gray-400 dark:text-gray-500">≤5 units</p>
             </div>
@@ -1417,9 +1419,9 @@ export const MerchandisingView: React.FC = () => {
                   <X size={16} className="text-red-600" />
                 </div>
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Out of Stock</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('Out of Stock')}</p>
               <p className="text-xl font-bold text-red-600">{inventoryStats.outOfStock.length}</p>
-              <p className="text-[10px] text-gray-400 dark:text-gray-500">{inventoryStats.totalProducts} total products</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500">{inventoryStats.totalProducts} {t('total products')}</p>
             </div>
           </div>
 
@@ -1427,8 +1429,8 @@ export const MerchandisingView: React.FC = () => {
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
                 <BarChart3 size={16} className="text-gray-400 dark:text-gray-500" />
-                Inventory by Category
-                <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">Click to view products</span>
+                {t('Inventory by Category')}
+                <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">{t('Click to view products')}</span>
               </h3>
               <div className="space-y-2">
                 {inventoryStats.byCategory.slice(0, 8).map((cat, i) => (
@@ -1440,10 +1442,10 @@ export const MerchandisingView: React.FC = () => {
                     <div className="flex items-center gap-3">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                       <span className="text-sm text-gray-700 dark:text-gray-200 hover:text-blue-600">{cat.name}</span>
-                      <span className="text-xs text-gray-400 dark:text-gray-500">({cat.products} products)</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">({cat.products} {t('products')})</span>
                     </div>
                     <div className="flex items-center gap-4 text-sm">
-                      <span className="text-gray-500 dark:text-gray-400">{cat.units.toLocaleString()} units</span>
+                      <span className="text-gray-500 dark:text-gray-400">{cat.units.toLocaleString()} {t('units')}</span>
                       <span className="font-medium text-gray-800 dark:text-gray-100 w-24 text-right">{formatCurrency(cat.value)}</span>
                     </div>
                   </div>
@@ -1477,7 +1479,7 @@ export const MerchandisingView: React.FC = () => {
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5">
               <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
                 <Package size={16} className="text-gray-400 dark:text-gray-500" />
-                Top Stocked Products
+                {t('Top Stocked Products')}
               </h3>
               <div className="space-y-2">
                 {inventoryStats.topStocked.map((product, i) => (
@@ -1502,17 +1504,17 @@ export const MerchandisingView: React.FC = () => {
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-orange-200 p-5">
               <h3 className="text-sm font-semibold text-orange-700 mb-4 flex items-center gap-2">
                 <AlertCircle size={16} />
-                Low Stock Alert ({inventoryStats.lowStockVariants.length} variants)
+                {t('Low Stock Alert')} ({inventoryStats.lowStockVariants.length} {t('variants')})
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-orange-100">
-                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Product</th>
-                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Variant</th>
-                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">SKU</th>
-                      <th className="text-right py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Price</th>
-                      <th className="text-right py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Qty</th>
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">{t('Product')}</th>
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">{t('Variant')}</th>
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">{t('SKU')}</th>
+                      <th className="text-right py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">{t('Price')}</th>
+                      <th className="text-right py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">{t('Qty')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1532,7 +1534,7 @@ export const MerchandisingView: React.FC = () => {
               </div>
               {inventoryStats.lowStockVariants.length > 15 && (
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-3 text-center">
-                  Showing 15 of {inventoryStats.lowStockVariants.length} low stock items
+                  {t('Showing')} 15 {t('of')} {inventoryStats.lowStockVariants.length} {t('low stock items')}
                 </p>
               )}
             </div>
@@ -1542,16 +1544,16 @@ export const MerchandisingView: React.FC = () => {
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-red-200 p-5">
               <h3 className="text-sm font-semibold text-red-700 mb-4 flex items-center gap-2">
                 <X size={16} />
-                Out of Stock ({inventoryStats.outOfStockVariants.length} variants)
+                {t('Out of Stock')} ({inventoryStats.outOfStockVariants.length} {t('variants')})
               </h3>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-red-100">
-                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Product</th>
-                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Variant</th>
-                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">SKU</th>
-                      <th className="text-right py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">Price</th>
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">{t('Product')}</th>
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">{t('Variant')}</th>
+                      <th className="text-left py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">{t('SKU')}</th>
+                      <th className="text-right py-2 px-3 text-gray-600 dark:text-gray-400 font-medium">{t('Price')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1568,31 +1570,31 @@ export const MerchandisingView: React.FC = () => {
               </div>
               {inventoryStats.outOfStockVariants.length > 20 && (
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-3 text-center">
-                  Showing 20 of {inventoryStats.outOfStockVariants.length} out of stock items
+                  {t('Showing')} 20 {t('of')} {inventoryStats.outOfStockVariants.length} {t('out of stock items')}
                 </p>
               )}
             </div>
           )}
 
           <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-5">
-            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Inventory Summary</h3>
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">{t('Inventory Summary')}</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div>
-                <p className="text-gray-500 dark:text-gray-400">Products</p>
+                <p className="text-gray-500 dark:text-gray-400">{t('Products')}</p>
                 <p className="font-bold text-gray-800 dark:text-gray-100">{inventoryStats.totalProducts}</p>
               </div>
               <div>
-                <p className="text-gray-500 dark:text-gray-400">Variants</p>
+                <p className="text-gray-500 dark:text-gray-400">{t('Variants')}</p>
                 <p className="font-bold text-gray-800 dark:text-gray-100">{inventoryStats.totalVariants}</p>
               </div>
               <div>
-                <p className="text-gray-500 dark:text-gray-400">Avg. Price</p>
+                <p className="text-gray-500 dark:text-gray-400">{t('Avg. Price')}</p>
                 <p className="font-bold text-gray-800 dark:text-gray-100">{formatCurrency(inventoryStats.avgPrice)}</p>
               </div>
               <div>
-                <p className="text-gray-500 dark:text-gray-400">Stock Health</p>
+                <p className="text-gray-500 dark:text-gray-400">{t('Stock Health')}</p>
                 <p className="font-bold text-green-600">
-                  {((inventoryStats.healthyStock.length / inventoryStats.totalProducts) * 100).toFixed(0)}% healthy
+                  {((inventoryStats.healthyStock.length / inventoryStats.totalProducts) * 100).toFixed(0)}% {t('healthy')}
                 </p>
               </div>
             </div>
@@ -1606,9 +1608,9 @@ export const MerchandisingView: React.FC = () => {
             <div>
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                 <Heart size={20} className="text-orange-600" />
-                Customer Loyalty & RFM Breakdown
+                {t('Customer Loyalty & RFM Breakdown')}
               </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">All seasons | {allOrdersForCommunity.length.toLocaleString()} orders | {rfmData.totalCustomers.toLocaleString()} unique customers</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('All seasons')} | {allOrdersForCommunity.length.toLocaleString()} {t('orders')} | {rfmData.totalCustomers.toLocaleString()} {t('unique customers')}</p>
             </div>
           </div>
 
@@ -1619,19 +1621,19 @@ export const MerchandisingView: React.FC = () => {
                   <Sparkles size={20} className="text-green-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Champions</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">High frequency, high spend</p>
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{t('Champions')}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('High frequency, high spend')}</p>
                 </div>
               </div>
               <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">{rfmData.champions.count}</p>
               <div className="mt-2 space-y-1">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Avg Spend: <span className="font-medium text-gray-700 dark:text-gray-200">{formatCurrency(rfmData.champions.avgSpend)}</span></p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Total Revenue: <span className="font-medium text-green-600">{formatCurrency(rfmData.champions.totalRevenue)}</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Avg Spend')}: <span className="font-medium text-gray-700 dark:text-gray-200">{formatCurrency(rfmData.champions.avgSpend)}</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Total Revenue')}: <span className="font-medium text-green-600">{formatCurrency(rfmData.champions.totalRevenue)}</span></p>
               </div>
               <div className="mt-3 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                 <div className="h-full bg-green-500 rounded-full" style={{ width: `${Math.min((rfmData.champions.count / rfmData.totalCustomers) * 100, 100)}%` }} />
               </div>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{((rfmData.champions.count / rfmData.totalCustomers) * 100).toFixed(1)}% of customers</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{((rfmData.champions.count / rfmData.totalCustomers) * 100).toFixed(1)}% {t('of customers')}</p>
             </div>
 
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
@@ -1640,19 +1642,19 @@ export const MerchandisingView: React.FC = () => {
                   <AlertTriangle size={20} className="text-red-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">At Risk</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">No purchase in 6+ months</p>
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{t('At Risk')}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('No purchase in 6+ months')}</p>
                 </div>
               </div>
               <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">{rfmData.atRisk.count}</p>
               <div className="mt-2 space-y-1">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Avg Spend: <span className="font-medium text-gray-700 dark:text-gray-200">{formatCurrency(rfmData.atRisk.avgSpend)}</span></p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Revenue at Risk: <span className="font-medium text-red-600">{formatCurrency(rfmData.atRisk.totalRevenue)}</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Avg Spend')}: <span className="font-medium text-gray-700 dark:text-gray-200">{formatCurrency(rfmData.atRisk.avgSpend)}</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Revenue at Risk')}: <span className="font-medium text-red-600">{formatCurrency(rfmData.atRisk.totalRevenue)}</span></p>
               </div>
               <div className="mt-3 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                 <div className="h-full bg-red-500 rounded-full" style={{ width: `${Math.min((rfmData.atRisk.count / rfmData.totalCustomers) * 100, 100)}%` }} />
               </div>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{((rfmData.atRisk.count / rfmData.totalCustomers) * 100).toFixed(1)}% of customers</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{((rfmData.atRisk.count / rfmData.totalCustomers) * 100).toFixed(1)}% {t('of customers')}</p>
             </div>
 
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
@@ -1661,19 +1663,19 @@ export const MerchandisingView: React.FC = () => {
                   <TrendingUp size={20} className="text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">New Blood</h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">First-time buyers (last 30 days)</p>
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{t('New Blood')}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('First-time buyers (last 30 days)')}</p>
                 </div>
               </div>
               <p className="text-3xl font-bold text-gray-800 dark:text-gray-100">{rfmData.newBlood.count}</p>
               <div className="mt-2 space-y-1">
-                <p className="text-xs text-gray-500 dark:text-gray-400">Avg First Purchase: <span className="font-medium text-gray-700 dark:text-gray-200">{formatCurrency(rfmData.newBlood.avgSpend)}</span></p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Conversion Window: <span className="font-medium text-blue-600">Active</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Avg First Purchase')}: <span className="font-medium text-gray-700 dark:text-gray-200">{formatCurrency(rfmData.newBlood.avgSpend)}</span></p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Conversion Window')}: <span className="font-medium text-blue-600">{t('Active')}</span></p>
               </div>
               <div className="mt-3 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                 <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min((rfmData.newBlood.count / rfmData.totalCustomers) * 100, 100)}%` }} />
               </div>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{((rfmData.newBlood.count / rfmData.totalCustomers) * 100).toFixed(1)}% of customers</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{((rfmData.newBlood.count / rfmData.totalCustomers) * 100).toFixed(1)}% {t('of customers')}</p>
             </div>
           </div>
 
@@ -1681,7 +1683,7 @@ export const MerchandisingView: React.FC = () => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Target size={18} className="text-orange-600" />
-                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">Repeat Purchase Rate</h3>
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{t('Repeat Purchase Rate')}</h3>
               </div>
               <span className="text-2xl font-bold text-orange-600">{rfmData.repeatRate.toFixed(1)}%</span>
             </div>
@@ -1689,8 +1691,8 @@ export const MerchandisingView: React.FC = () => {
               <div className="h-full bg-gradient-to-r from-orange-400 to-orange-600 rounded-full transition-all duration-1000" style={{ width: `${Math.min(rfmData.repeatRate, 100)}%` }} />
             </div>
             <div className="flex justify-between mt-2">
-              <p className="text-xs text-gray-500 dark:text-gray-400">{rfmData.repeatCustomers.toLocaleString()} repeat customers</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{rfmData.totalCustomers.toLocaleString()} total</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{rfmData.repeatCustomers.toLocaleString()} {t('repeat customers')}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{rfmData.totalCustomers.toLocaleString()} {t('total')}</p>
             </div>
           </div>
 
@@ -1698,14 +1700,14 @@ export const MerchandisingView: React.FC = () => {
             <>
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                 <Package size={20} className="text-orange-600" />
-                Gateway & Bundle Analysis
+                {t('Gateway & Bundle Analysis')}
               </h2>
 
               <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
                 <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                   <BarChart3 size={16} className="text-orange-600" />
-                  Top Entry Products
-                  <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">Most common first purchase</span>
+                  {t('Top Entry Products')}
+                  <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">{t('Most common first purchase')}</span>
                 </h3>
                 <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1728,16 +1730,16 @@ export const MerchandisingView: React.FC = () => {
                 <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
                   <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                     <Layers size={16} className="text-orange-600" />
-                    Frequently Bought Together
+                    {t('Frequently Bought Together')}
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700">
                           <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">#</th>
-                          <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Product 1</th>
-                          <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Product 2</th>
-                          <th className="text-right py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Co-Purchases</th>
+                          <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('Product 1')}</th>
+                          <th className="text-left py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('Product 2')}</th>
+                          <th className="text-right py-2 px-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">{t('Co-Purchases')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1763,17 +1765,17 @@ export const MerchandisingView: React.FC = () => {
             <>
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                 <BarChart3 size={20} className="text-orange-600" />
-                Cohort Retention Heatmap
+                {t('Cohort Retention Heatmap')}
               </h2>
 
               <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
-                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Percentage of customers who returned in subsequent months after their first purchase</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{t('Percentage of customers who returned in subsequent months after their first purchase')}</p>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr>
-                        <th className="text-left py-2 px-2 text-gray-500 dark:text-gray-400 font-medium sticky left-0 bg-white dark:bg-gray-900 min-w-[80px]">Cohort</th>
-                        <th className="text-center py-2 px-1 text-gray-500 dark:text-gray-400 font-medium min-w-[44px]">Size</th>
+                        <th className="text-left py-2 px-2 text-gray-500 dark:text-gray-400 font-medium sticky left-0 bg-white dark:bg-gray-900 min-w-[80px]">{t('Cohort')}</th>
+                        <th className="text-center py-2 px-1 text-gray-500 dark:text-gray-400 font-medium min-w-[44px]">{t('Size')}</th>
                         {cohortData.months.map((m: string) => (
                           <th key={m} className="text-center py-2 px-1 text-gray-500 dark:text-gray-400 font-medium min-w-[44px]">{m}</th>
                         ))}
@@ -1804,7 +1806,7 @@ export const MerchandisingView: React.FC = () => {
                   </table>
                 </div>
                 <div className="flex items-center gap-2 mt-4 text-xs text-gray-500 dark:text-gray-400">
-                  <span>Low</span>
+                  <span>{t('Low')}</span>
                   <div className="flex gap-0.5">
                     <div className="w-6 h-4 rounded bg-gray-100 dark:bg-gray-800" />
                     <div className="w-6 h-4 rounded bg-orange-100 dark:bg-orange-900/20" />
@@ -1814,7 +1816,7 @@ export const MerchandisingView: React.FC = () => {
                     <div className="w-6 h-4 rounded bg-orange-500" />
                     <div className="w-6 h-4 rounded bg-orange-600" />
                   </div>
-                  <span>High</span>
+                  <span>{t('High')}</span>
                 </div>
               </div>
             </>
@@ -1829,7 +1831,7 @@ export const MerchandisingView: React.FC = () => {
               <div>
                 <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{selectedCategory}</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {data.products.filter(p => (p.productType || 'Uncategorized') === selectedCategory).length} products in this category
+                  {data.products.filter(p => (p.productType || 'Uncategorized') === selectedCategory).length} {t('products in this category')}
                 </p>
               </div>
               <button onClick={() => setSelectedCategory(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
@@ -1841,11 +1843,11 @@ export const MerchandisingView: React.FC = () => {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100 dark:border-gray-800">
-                      <th className="text-left py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Product</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Price</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Inventory</th>
-                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Value</th>
-                      <th className="text-center py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Status</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">{t('Product')}</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">{t('Price')}</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">{t('Inventory')}</th>
+                      <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">{t('Value')}</th>
+                      <th className="text-center py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">{t('Status')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1870,7 +1872,7 @@ export const MerchandisingView: React.FC = () => {
                                 )}
                                 <div>
                                   <p className="font-medium text-gray-800 dark:text-gray-100">{product.title}</p>
-                                  <p className="text-xs text-gray-400 dark:text-gray-500">{product.variants.length} variant{product.variants.length !== 1 ? 's' : ''}</p>
+                                  <p className="text-xs text-gray-400 dark:text-gray-500">{product.variants.length} {product.variants.length !== 1 ? t('variants_plural') : t('variant')}</p>
                                 </div>
                               </div>
                             </td>
@@ -1883,11 +1885,11 @@ export const MerchandisingView: React.FC = () => {
                             <td className="py-3 px-4 text-right font-medium text-gray-800 dark:text-gray-100">{formatCurrency(inventoryValue)}</td>
                             <td className="py-3 px-4 text-center">
                               {product.totalInventory <= 0 ? (
-                                <span className="px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/20 text-red-700 rounded-full">Out of Stock</span>
+                                <span className="px-2 py-1 text-xs font-medium bg-red-100 dark:bg-red-900/20 text-red-700 rounded-full">{t('Out of Stock')}</span>
                               ) : product.totalInventory < 10 ? (
-                                <span className="px-2 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-900/20 text-amber-700 rounded-full">Low Stock</span>
+                                <span className="px-2 py-1 text-xs font-medium bg-amber-100 dark:bg-amber-900/20 text-amber-700 rounded-full">{t('Low Stock')}</span>
                               ) : (
-                                <span className="px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-700 rounded-full">In Stock</span>
+                                <span className="px-2 py-1 text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-700 rounded-full">{t('In Stock')}</span>
                               )}
                             </td>
                           </tr>
@@ -1898,10 +1900,10 @@ export const MerchandisingView: React.FC = () => {
               </div>
               <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
                 <span>
-                  Total: {data.products.filter(p => (p.productType || 'Uncategorized') === selectedCategory).reduce((sum, p) => sum + p.totalInventory, 0).toLocaleString()} units
+                  {t('Total')}: {data.products.filter(p => (p.productType || 'Uncategorized') === selectedCategory).reduce((sum, p) => sum + p.totalInventory, 0).toLocaleString()} {t('units')}
                 </span>
                 <span>
-                  Value: {formatCurrency(data.products.filter(p => (p.productType || 'Uncategorized') === selectedCategory).reduce((sum, p) => sum + p.variants.reduce((vs, v) => vs + v.price * v.inventoryQuantity, 0), 0))}
+                  {t('Value')}: {formatCurrency(data.products.filter(p => (p.productType || 'Uncategorized') === selectedCategory).reduce((sum, p) => sum + p.variants.reduce((vs, v) => vs + v.price * v.inventoryQuantity, 0), 0))}
                 </span>
               </div>
             </div>
@@ -1913,7 +1915,7 @@ export const MerchandisingView: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedProductId(null)}>
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Product Details</h2>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('Product Details')}</h2>
               <button onClick={() => setSelectedProductId(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
                 <X size={20} className="text-gray-500 dark:text-gray-400" />
               </button>
@@ -1933,22 +1935,22 @@ export const MerchandisingView: React.FC = () => {
                 )}
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{selectedProductStats.product.title}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{selectedProductStats.product.productType || 'No category'}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{selectedProductStats.product.productType || t('No category')}</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
                     <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 text-center">
-                      <p className="text-xs text-green-600">Revenue</p>
+                      <p className="text-xs text-green-600">{t('Revenue')}</p>
                       <p className="text-lg font-bold text-green-700">{formatCurrency(selectedProductStats.totalRevenue)}</p>
                     </div>
                     <div className="bg-orange-50 dark:bg-orange-900/30 rounded-lg p-3 text-center">
-                      <p className="text-xs text-orange-600">Units Sold</p>
+                      <p className="text-xs text-orange-600">{t('Units Sold')}</p>
                       <p className="text-lg font-bold text-orange-700">{selectedProductStats.totalSold}</p>
                     </div>
                     <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 text-center">
-                      <p className="text-xs text-blue-600">In Stock</p>
+                      <p className="text-xs text-blue-600">{t('In Stock')}</p>
                       <p className="text-lg font-bold text-blue-700">{selectedProductStats.product.totalInventory}</p>
                     </div>
                     <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3 text-center">
-                      <p className="text-xs text-purple-600">Price</p>
+                      <p className="text-xs text-purple-600">{t('Price')}</p>
                       <p className="text-lg font-bold text-purple-700">
                         {selectedProductStats.product.variants.length === 1
                           ? formatCurrency(selectedProductStats.product.variants[0].price)
@@ -1962,7 +1964,7 @@ export const MerchandisingView: React.FC = () => {
 
               {selectedProductStats.product.variants.length > 1 && (
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Variants</h4>
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{t('Variants')}</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {selectedProductStats.product.variants.map(variant => (
                       <div key={variant.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -1970,7 +1972,7 @@ export const MerchandisingView: React.FC = () => {
                         <div className="flex items-center gap-4 text-sm">
                           <span className="font-medium">{formatCurrency(variant.price)}</span>
                           <span className={variant.inventoryQuantity <= 0 ? 'text-red-600' : 'text-gray-500 dark:text-gray-400'}>
-                            {variant.inventoryQuantity} in stock
+                            {variant.inventoryQuantity} {t('in stock')}
                           </span>
                         </div>
                       </div>
@@ -1981,21 +1983,21 @@ export const MerchandisingView: React.FC = () => {
 
               {selectedProductStats.monthlySales.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Sales History</h4>
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{t('Sales History')}</h4>
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={selectedProductStats.monthlySales}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                       <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                       <YAxis tickFormatter={(v) => `€${(v/1).toLocaleString('it-IT', { maximumFractionDigits: 0 })}`} tick={{ fontSize: 10 }} />
-                      <Tooltip formatter={(value: number) => [formatCurrency(value), 'Revenue']} />
-                      <Bar dataKey="revenue" fill="#ea580c" radius={[4, 4, 0, 0]} name="Revenue" />
+                      <Tooltip formatter={(value: number) => [formatCurrency(value), t('Revenue_tooltip')]} />
+                      <Bar dataKey="revenue" fill="#ea580c" radius={[4, 4, 0, 0]} name={t('Revenue_tooltip')} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               )}
 
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Recent Purchases ({selectedProductStats.orders.length})</h4>
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{t('Recent Purchases')} ({selectedProductStats.orders.length})</h4>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {selectedProductStats.orders.slice(0, 20).map(order => (
                     <div key={order.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -2005,7 +2007,7 @@ export const MerchandisingView: React.FC = () => {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-medium text-gray-800 dark:text-gray-100">
-                          {order.purchasedItems.reduce((sum, item) => sum + item.quantity, 0)} units
+                          {order.purchasedItems.reduce((sum, item) => sum + item.quantity, 0)} {t('units')}
                         </p>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
                           order.financialStatus === 'paid' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
@@ -2026,7 +2028,7 @@ export const MerchandisingView: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedCustomerId(null)}>
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Customer Details</h2>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('Customer Details')}</h2>
               <button onClick={() => setSelectedCustomerId(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
                 <X size={20} className="text-gray-500 dark:text-gray-400" />
               </button>
@@ -2038,7 +2040,7 @@ export const MerchandisingView: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">
-                    {selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : selectedCustomerOrders[0]?.customerName || 'Guest'}
+                    {selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : selectedCustomerOrders[0]?.customerName || t('Guest')}
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400">{selectedCustomer?.email || selectedCustomerId}</p>
                   {selectedCustomer?.tags && selectedCustomer.tags.length > 0 && (
@@ -2050,21 +2052,21 @@ export const MerchandisingView: React.FC = () => {
                   )}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
                     <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 text-center">
-                      <p className="text-xs text-green-600">Total Spent</p>
+                      <p className="text-xs text-green-600">{t('Total Spent')}</p>
                       <p className="text-lg font-bold text-green-700">
                         {formatCurrency(selectedCustomer?.totalSpent || selectedCustomerOrders.reduce((sum, o) => sum + o.totalPrice - (o.totalTax || 0), 0))}
                       </p>
                     </div>
                     <div className="bg-orange-50 dark:bg-orange-900/30 rounded-lg p-3 text-center">
-                      <p className="text-xs text-orange-600">Orders</p>
+                      <p className="text-xs text-orange-600">{t('Orders')}</p>
                       <p className="text-lg font-bold text-orange-700">{selectedCustomer?.ordersCount || selectedCustomerOrders.length}</p>
                     </div>
                     <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 text-center">
-                      <p className="text-xs text-blue-600">This Season</p>
+                      <p className="text-xs text-blue-600">{t('This Season')}</p>
                       <p className="text-lg font-bold text-blue-700">{selectedCustomerOrders.length}</p>
                     </div>
                     <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3 text-center">
-                      <p className="text-xs text-purple-600">Member Since</p>
+                      <p className="text-xs text-purple-600">{t('Member Since')}</p>
                       <p className="text-sm font-bold text-purple-700">
                         {selectedCustomer ? formatDate(selectedCustomer.createdAt) : formatDate(selectedCustomerOrders[selectedCustomerOrders.length - 1]?.processedAt || '')}
                       </p>
@@ -2074,13 +2076,13 @@ export const MerchandisingView: React.FC = () => {
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Purchase History ({selectedCustomerOrders.length})</h4>
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{t('Purchase History')} ({selectedCustomerOrders.length})</h4>
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {selectedCustomerOrders.map(order => (
                     <div key={order.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-100">Order #{order.orderNumber}</p>
+                          <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{t('Order')} #{order.orderNumber}</p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(order.processedAt)}</p>
                         </div>
                         <div className="text-right">
@@ -2114,7 +2116,7 @@ export const MerchandisingView: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setSelectedOrderId(null)}>
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Order #{selectedOrder.orderNumber}</h2>
+              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">{t('Order')} #{selectedOrder.orderNumber}</h2>
               <button onClick={() => setSelectedOrderId(null)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
                 <X size={20} className="text-gray-500 dark:text-gray-400" />
               </button>
@@ -2122,16 +2124,16 @@ export const MerchandisingView: React.FC = () => {
             <div className="p-6 space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Customer</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('Customer')}</p>
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{selectedOrder.customerName}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">{selectedOrder.customerEmail}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Date</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('Date')}</p>
                   <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{formatDate(selectedOrder.processedAt)}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Payment Method</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('Payment Method')}</p>
                   <span className={`text-sm px-2 py-1 rounded-full inline-flex items-center gap-1 ${
                     selectedOrder.financialStatus === 'paid' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' : 'bg-amber-100 dark:bg-amber-900/20 text-amber-700'
                   }`}>
@@ -2140,25 +2142,25 @@ export const MerchandisingView: React.FC = () => {
                   </span>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Fulfillment</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('Fulfillment')}</p>
                   <span className={`text-sm px-2 py-1 rounded-full ${
                     selectedOrder.fulfillmentStatus === 'fulfilled' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' :
                     selectedOrder.fulfillmentStatus === 'partial' ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700' :
                     'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
                   }`}>
-                    {selectedOrder.fulfillmentStatus || 'Unfulfilled'}
+                    {selectedOrder.fulfillmentStatus || t('Unfulfilled')}
                   </span>
                 </div>
               </div>
 
               <div>
-                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">Items ({selectedOrder.itemCount})</h4>
+                <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">{t('Items')} ({selectedOrder.itemCount})</h4>
                 <div className="space-y-2">
                   {selectedOrder.lineItems.map((item, i) => (
                     <div key={i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div>
                         <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{item.title}</p>
-                        {item.sku && <p className="text-xs text-gray-500 dark:text-gray-400">SKU: {item.sku}</p>}
+                        {item.sku && <p className="text-xs text-gray-500 dark:text-gray-400">{t('SKU')}: {item.sku}</p>}
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{item.quantity} x {formatCurrency(item.price)}</p>
@@ -2171,7 +2173,7 @@ export const MerchandisingView: React.FC = () => {
 
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-lg font-semibold text-gray-800 dark:text-gray-100">Total</span>
+                  <span className="text-lg font-semibold text-gray-800 dark:text-gray-100">{t('Total')}</span>
                   <span className="text-xl font-bold text-green-600">{formatCurrency(selectedOrder.totalPrice - (selectedOrder.totalTax || 0))}</span>
                 </div>
               </div>

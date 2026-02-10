@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, Loader2, Brain, Ticket } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { sendMessageToGemini } from '../services/geminiService';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const renderMarkdown = (text: string): React.ReactNode => {
   const lines = text.split('\n');
@@ -107,10 +108,11 @@ export const AIAvatar: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' 
 };
 
 export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initialPrompt, onPromptConsumed }) => {
+  const { t } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: 'model',
-      text: "Greetings. I am your AI Consultant. I have analyzed the current ticket sales and zone efficiency. How can we optimize yield for the next match?",
+      text: t('Greetings. I am your AI Consultant. I have analyzed the current ticket sales and zone efficiency. How can we optimize yield for the next match?'),
       timestamp: new Date()
     }
   ]);
@@ -205,12 +207,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
         
         <div className="relative z-10">
           <h3 className="font-bold text-base tracking-wide flex items-center gap-2">
-            AI Consultant
+            {t('AI Consultant')}
             <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-white/20 border border-white/20 text-white uppercase tracking-wider">
-              Live
+              {t('Live')}
             </span>
           </h3>
-          <p className="text-xs text-red-100 font-medium">Strategic Board Advisor • PV Engine</p>
+          <p className="text-xs text-red-100 font-medium">{t('Strategic Board Advisor • PV Engine')}</p>
         </div>
       </div>
 
@@ -229,12 +231,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
               {msg.role === 'model' && (
                 <div className="flex items-center gap-2 mb-2 pb-2 border-b border-gray-50 dark:border-gray-800">
                    <Brain size={14} className="text-red-600" />
-                   <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Consultant</span>
+                   <span className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('Consultant')}</span>
                 </div>
               )}
               {msg.role === 'user' && (
                 <div className="flex items-center justify-end gap-2 mb-2 pb-2 border-b border-gray-50 dark:border-gray-800">
-                   <span className="text-xs font-bold text-red-400 uppercase tracking-wider">Director</span>
+                   <span className="text-xs font-bold text-red-400 uppercase tracking-wider">{t('Director')}</span>
                 </div>
               )}
               
@@ -252,7 +254,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
                  <div className="absolute inset-0 bg-red-100 rounded-full animate-ping"></div>
                  <Loader2 className="animate-spin text-red-600 relative z-10" size={18} />
               </div>
-              <span className="text-sm text-gray-500 dark:text-gray-400 font-medium animate-pulse">Consultant is analyzing scenarios...</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400 font-medium animate-pulse">{t('Consultant is analyzing scenarios...')}</span>
             </div>
           </div>
         )}
@@ -266,7 +268,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask for strategic advice, revenue projections, or ticket pricing adjustment..."
+            placeholder={t('Ask for strategic advice, revenue projections, or ticket pricing adjustment...')}
             className="w-full resize-none rounded-xl border border-gray-200 dark:border-gray-700 pl-4 pr-12 py-3 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 text-sm min-h-[50px] max-h-[120px] bg-gray-50 dark:bg-gray-800 dark:text-white focus:bg-white dark:focus:bg-gray-900 transition-all"
             rows={1}
           />
@@ -280,7 +282,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
         </div>
         <div className="flex justify-center mt-2">
             <p className="text-[10px] text-gray-300 font-medium flex items-center gap-1">
-                <Sparkles size={8} /> AI insights are based on available historical data.
+                <Sparkles size={8} /> {t('AI insights are based on available historical data.')}
             </p>
         </div>
       </div>

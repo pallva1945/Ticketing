@@ -80,7 +80,9 @@ const getDayName = (dateStr: string) => {
 };
 
 // --- PLACEHOLDER MODULE VIEW ---
-const PlaceholderView = ({ moduleName, icon: Icon }: { moduleName: string, icon: any }) => (
+const PlaceholderView = ({ moduleName, icon: Icon }: { moduleName: string, icon: any }) => {
+  const { t } = useLanguage();
+  return (
   <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8 animate-fade-in pt-6">
     <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6 shadow-inner relative overflow-hidden">
         <Icon size={40} className="text-gray-400 relative z-10" />
@@ -88,15 +90,15 @@ const PlaceholderView = ({ moduleName, icon: Icon }: { moduleName: string, icon:
     </div>
     <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">{moduleName}</h2>
     <p className="text-gray-500 dark:text-gray-400 max-w-md mb-8">
-      This revenue vertical is currently being integrated into the PV Revenue Center. 
-      Data pipelines are under construction.
+      {t('This revenue vertical is currently being integrated into the PV Revenue Center.')} {t('Data pipelines are under construction.')}
     </p>
     <div className="flex items-center gap-2 px-4 py-2 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-full text-yellow-700 dark:text-yellow-400 text-xs font-bold uppercase tracking-wider">
       <Construction size={14} />
-      Module In Development
+      {t('Module In Development')}
     </div>
   </div>
-);
+  );
+};
 
 // --- REVENUE CENTER HOME ---
 const RevenueHome = ({ 
@@ -159,6 +161,7 @@ const RevenueHome = ({
         }
     }
 }) => {
+    const { t } = useLanguage();
     const [corpTixInSponsorship, setCorpTixInSponsorship] = useState(true);
     // Constants
     const TOTAL_GAMES_SEASON = 15;
@@ -340,8 +343,8 @@ const RevenueHome = ({
             {/* Top Bar: Title & Season Selector */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Executive Overview</h1>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">Season {seasonFilter} • {gamesPlayed} of {TOTAL_GAMES_SEASON} games played</p>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Executive Overview')}</h1>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">{t('Season')} {seasonFilter} • {gamesPlayed} {t('of')} {TOTAL_GAMES_SEASON} {t('games played')}</p>
                 </div>
                 
                 <div className="flex items-center gap-3">
@@ -351,9 +354,9 @@ const RevenueHome = ({
                             onChange={(e) => onSeasonChange(e.target.value)}
                             className="appearance-none bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 py-2 pl-4 pr-10 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
                         >
-                            <option value="25-26">Season 25-26</option>
-                            <option value="24-25">Season 24-25</option>
-                            <option value="23-24">Season 23-24</option>
+                            <option value="25-26">{t('Season')} 25-26</option>
+                            <option value="24-25">{t('Season')} 24-25</option>
+                            <option value="23-24">{t('Season')} 23-24</option>
                         </select>
                         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500 dark:text-gray-400">
                             <ChevronDown size={16} />
@@ -365,21 +368,21 @@ const RevenueHome = ({
             {/* Active Filters Indicator */}
             {(activeFilters.leagues[0] !== 'LBA' || !activeFilters.opponents.includes('All') || !activeFilters.zones.includes('All')) && (
                 <div className="flex flex-wrap items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg">
-                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400">Active Filters:</span>
+                    <span className="text-xs font-bold text-amber-700 dark:text-amber-400">{t('Active Filters')}:</span>
                     {activeFilters.leagues[0] !== 'LBA' && (
-                        <span className="text-xs bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-300 px-2 py-1 rounded-full">League: {activeFilters.leagues.join(', ')}</span>
+                        <span className="text-xs bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-300 px-2 py-1 rounded-full">{t('League')}: {activeFilters.leagues.join(', ')}</span>
                     )}
                     {!activeFilters.opponents.includes('All') && (
-                        <span className="text-xs bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-300 px-2 py-1 rounded-full">Opponents: {activeFilters.opponents.length}</span>
+                        <span className="text-xs bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-300 px-2 py-1 rounded-full">{t('Opponents')}: {activeFilters.opponents.length}</span>
                     )}
                     {!activeFilters.zones.includes('All') && (
-                        <span className="text-xs bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-300 px-2 py-1 rounded-full">Zones: {activeFilters.zones.join(', ')}</span>
+                        <span className="text-xs bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-300 px-2 py-1 rounded-full">{t('Zones')}: {activeFilters.zones.join(', ')}</span>
                     )}
                     <button 
                         onClick={onClearFilters}
                         className="ml-auto text-xs font-bold text-red-600 hover:text-red-800 dark:hover:text-red-400 flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
                     >
-                        <X size={12} /> Clear All
+                        <X size={12} /> {t('Clear All')}
                     </button>
                 </div>
             )}
@@ -392,7 +395,7 @@ const RevenueHome = ({
                 <div className="relative z-10">
                     <div className="mb-4">
                         <h3 className="font-bold text-sm mb-2 flex items-center gap-2 text-slate-300 uppercase tracking-wide">
-                            <MessageSquare size={16} /> Strategic Assessment
+                            <MessageSquare size={16} /> {t('Strategic Assessment')}
                         </h3>
                         <p className="text-white/90 text-lg font-medium leading-relaxed">
                             {isAhead 
@@ -403,16 +406,16 @@ const RevenueHome = ({
                     </div>
                     <div className="flex flex-wrap gap-2">
                         <button onClick={() => onAiClick("Give me a full executive summary of our revenue performance. Where are we strong and where do we need to focus?")} className="bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors border border-white/20">
-                            Executive Summary
+                            {t('Executive Summary')}
                         </button>
                         <button onClick={() => onAiClick("Which revenue vertical is most at risk of missing target? What specific actions should we take this week?")} className="bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors border border-white/20">
-                            Risk Assessment
+                            {t('Risk Assessment')}
                         </button>
                         <button onClick={() => onAiClick("What are the top 3 revenue opportunities we should prioritize right now to close the gap to target?")} className="bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors border border-white/20">
-                            Top Opportunities
+                            {t('Top Opportunities')}
                         </button>
                         <button onClick={() => onAiClick("Compare our year-over-year performance. Are we ahead or behind last season and why?")} className="bg-white/10 backdrop-blur-md text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-white/20 transition-colors border border-white/20">
-                            YoY Comparison
+                            {t('YoY Comparison')}
                         </button>
                     </div>
                 </div>
@@ -422,7 +425,7 @@ const RevenueHome = ({
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm relative overflow-hidden">
                 <div className="flex justify-between items-end mb-4">
                     <div>
-                        <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">Season Pacing</h2>
+                        <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">{t('Season Pacing')}</h2>
                         <div className="flex items-baseline gap-3">
                             <span className="text-4xl font-extrabold text-gray-900 dark:text-white">{formatCompact(totalRevenueYTD)}</span>
                             <span className="text-lg text-gray-400 dark:text-gray-500 font-medium">/ {formatCompact(totalTarget)}</span>
@@ -430,13 +433,13 @@ const RevenueHome = ({
                     </div>
                     <div className={`text-right px-4 py-2 rounded-lg ${isAhead ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}>
                         <p className={`text-xs font-bold uppercase ${isAhead ? 'text-green-600' : 'text-red-600'}`}>
-                            {isAhead ? 'Ahead of Pace' : 'Behind Pace'}
+                            {isAhead ? t('Ahead of Pace') : t('Behind Pace')}
                         </p>
                         <p className={`text-2xl font-bold ${isAhead ? 'text-green-700' : 'text-red-700'}`}>
                             {isAhead ? '+' : ''}{pacingDelta.toFixed(1)}%
                         </p>
                         <p className={`text-xs font-medium ${isAhead ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCompact(Math.abs(totalRevenueYTD - totalExpected))} {isAhead ? 'surplus' : 'gap'}
+                            {formatCompact(Math.abs(totalRevenueYTD - totalExpected))} {isAhead ? t('surplus') : t('gap')}
                         </p>
                     </div>
                 </div>
@@ -449,7 +452,7 @@ const RevenueHome = ({
                         style={{ width: `${weightedAccountedPct}%` }}
                     >
                         <div className="bg-gray-800 text-white text-[9px] font-bold px-1.5 py-0.5 rounded absolute -bottom-5 right-0 transform translate-x-1/2 whitespace-nowrap">
-                            {weightedAccountedPct.toFixed(0)}% Accounted
+                            {weightedAccountedPct.toFixed(0)}% {t('Accounted')}
                         </div>
                     </div>
 
@@ -466,39 +469,39 @@ const RevenueHome = ({
                                 {/* Enhanced Tooltip */}
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 bg-slate-900 text-white text-xs rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 min-w-[180px] pointer-events-none">
                                     <div className="p-3 border-b border-slate-700 font-bold bg-slate-950 rounded-t-lg flex justify-between items-center">
-                                        <span>{v.name}</span>
+                                        <span>{t(v.name)}</span>
                                         <span className={`text-xs px-1.5 py-0.5 rounded ${v.isVariable ? 'bg-purple-600' : v.isProrated ? 'bg-cyan-600' : 'bg-blue-600'}`}>
-                                            {v.isVariable ? 'Variable' : v.isProrated ? 'Prorated' : 'Fixed'}
+                                            {v.isVariable ? t('Variable') : v.isProrated ? t('Prorated') : t('Fixed')}
                                         </span>
                                     </div>
                                     <div className="p-3 space-y-2">
                                         {v.isProrated && 'signedValue' in v && (
                                             <div className="flex justify-between">
-                                                <span className="text-slate-400">Signed (Full Year):</span>
+                                                <span className="text-slate-400">{t('Signed (Full Year)')}:</span>
                                                 <span className="font-mono text-cyan-400">{formatCompact(v.signedValue as number)}</span>
                                             </div>
                                         )}
                                         <div className="flex justify-between">
-                                            <span className="text-slate-400">{v.isProrated ? 'Recognized YTD:' : 'YTD Collected:'}</span>
+                                            <span className="text-slate-400">{v.isProrated ? t('Recognized YTD') : t('YTD Collected')}:</span>
                                             <span className="font-mono font-bold">{formatCompact(v.current)}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-400">Season Target:</span>
+                                            <span className="text-slate-400">{t('Season Target')}:</span>
                                             <span className="font-mono text-slate-300">{formatCompact(v.target)}</span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-slate-400">Achievement:</span>
+                                            <span className="text-slate-400">{t('Achievement')}:</span>
                                             <span className="font-mono text-blue-400">{((v.current / v.target) * 100).toFixed(1)}%</span>
                                         </div>
                                         <div className="flex justify-between border-t border-slate-700 pt-2 mt-1">
-                                            <span className="text-slate-400">Pace vs Time:</span>
+                                            <span className="text-slate-400">{t('Pace vs Time')}:</span>
                                             <span className={`font-mono font-bold ${v.pacePct >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                                                 {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(1)}%
                                             </span>
                                         </div>
                                         {(v.isVariable || v.isProrated) && (
                                             <div className="flex justify-between">
-                                                <span className="text-slate-400">{v.isProrated ? 'Full Year:' : 'Projected:'}</span>
+                                                <span className="text-slate-400">{v.isProrated ? t('Full Year') : t('Projected')}:</span>
                                                 <span className="font-mono text-purple-400">{formatCompact(v.projectedFinish)}</span>
                                             </div>
                                         )}
@@ -515,7 +518,7 @@ const RevenueHome = ({
                     {sortedVerticals.map((v) => (
                         <div key={v.id} className="flex items-center gap-1.5">
                             <div className={`w-2.5 h-2.5 rounded-full ${v.barClass}`}></div>
-                            <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400">{v.name}</span>
+                            <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400">{t(v.name)}</span>
                         </div>
                     ))}
                 </div>
@@ -523,7 +526,7 @@ const RevenueHome = ({
 
             {/* 7 VERTICAL SCORE CARDS */}
             <div>
-                <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Revenue Verticals</h3>
+                <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">{t('Revenue Verticals')}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     {verticalsWithPacing.map((v) => {
                         const progressPct = v.hasData ? Math.min((v.current / v.target) * 100, 100) : 0;
@@ -538,11 +541,11 @@ const RevenueHome = ({
                                             <v.icon size={16} className="text-gray-400 dark:text-gray-500" />
                                         </div>
                                     </div>
-                                    <p className="text-sm font-medium text-gray-400 dark:text-gray-500 leading-tight">Coming Soon</p>
-                                    <p className="text-[10px] text-gray-300 dark:text-gray-600 mb-2">Target: {formatCompact(v.target)}</p>
+                                    <p className="text-sm font-medium text-gray-400 dark:text-gray-500 leading-tight">{t('Coming Soon')}</p>
+                                    <p className="text-[10px] text-gray-300 dark:text-gray-600 mb-2">{t('Target')}: {formatCompact(v.target)}</p>
                                     <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mb-1" />
                                     <div className="flex items-center justify-between">
-                                        <span className="text-[10px] text-gray-400 dark:text-gray-500">{v.name}</span>
+                                        <span className="text-[10px] text-gray-400 dark:text-gray-500">{t(v.name)}</span>
                                         <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">—</span>
                                     </div>
                                 </div>
@@ -585,7 +588,7 @@ const RevenueHome = ({
                                 
                                 {/* Pace Indicator */}
                                 <div className="flex items-center justify-between">
-                                    <span className="text-[10px] text-gray-500 dark:text-gray-400">{v.name}</span>
+                                    <span className="text-[10px] text-gray-500 dark:text-gray-400">{t(v.name)}</span>
                                     <span className={`text-[10px] font-bold ${isOnTrack ? 'text-green-600' : 'text-red-600'}`}>
                                         {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(0)}%
                                     </span>
@@ -593,20 +596,20 @@ const RevenueHome = ({
 
                                 {/* Hover Tooltip */}
                                 <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-900 text-white text-[10px] rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 min-w-[140px] pointer-events-none p-2">
-                                    <p className="font-bold mb-1">{v.name}</p>
+                                    <p className="font-bold mb-1">{t(v.name)}</p>
                                     {v.isProrated && 'signedValue' in v && (
-                                        <p className="text-cyan-400">Signed: {formatCompact(v.signedValue as number)}</p>
+                                        <p className="text-cyan-400">{t('Signed')}: {formatCompact(v.signedValue as number)}</p>
                                     )}
-                                    <p>{v.isProrated ? 'Recognized:' : 'Collected:'} {formatCompact(v.current)}</p>
-                                    <p>Target: {formatCompact(v.target)}</p>
-                                    <p>Progress: {((v.current / v.target) * 100).toFixed(1)}%</p>
+                                    <p>{v.isProrated ? t('Recognized') : t('Collected')}: {formatCompact(v.current)}</p>
+                                    <p>{t('Target')}: {formatCompact(v.target)}</p>
+                                    <p>{t('Progress')}: {((v.current / v.target) * 100).toFixed(1)}%</p>
                                     <p className="text-cyan-400">
-                                        Accounted: {v.paceMarkerPct.toFixed(0)}%
+                                        {t('Accounted')}: {v.paceMarkerPct.toFixed(0)}%
                                     </p>
                                     <p className={v.pacePct >= 0 ? 'text-green-400' : 'text-red-400'}>
-                                        Pace: {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(1)}%
+                                        {t('Pace')}: {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(1)}%
                                     </p>
-                                    <p className="text-purple-400">Proj: {formatCompact(v.projectedFinish)}</p>
+                                    <p className="text-purple-400">{t('Proj')}: {formatCompact(v.projectedFinish)}</p>
                                     <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-900"></div>
                                 </div>
                             </div>
@@ -617,21 +620,21 @@ const RevenueHome = ({
 
             {/* STRATEGIC SIGNALS */}
             <div>
-                <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Strategic Signals</h3>
+                <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">{t('Strategic Signals')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     
                     {/* Signal 1: Projected Finish */}
                     <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl p-5 text-white shadow-lg border border-slate-700">
                         <div className="flex items-center gap-2 mb-3">
                             <Target size={16} className="text-slate-400" />
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Projected Finish</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{t('Projected Finish')}</span>
                         </div>
                         <p className="text-2xl font-bold">{formatCompact(totalRevenueProjected)}</p>
                         <p className={`text-sm font-medium mt-1 ${projectionDiff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {projectionDiff >= 0 ? '+' : ''}{formatCompact(projectionDiff)} vs Target
+                            {projectionDiff >= 0 ? '+' : ''}{formatCompact(projectionDiff)} {t('vs target')}
                         </p>
                         <div className="mt-3 pt-3 border-t border-slate-700 text-[10px] text-slate-500">
-                            Based on current run-rate extrapolation
+                            {t('Based on current run-rate extrapolation')}
                         </div>
                     </div>
 
@@ -644,10 +647,10 @@ const RevenueHome = ({
                         <div className="bg-white dark:bg-gray-900 border border-purple-200 dark:border-purple-800 rounded-xl p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-3">
                                 <TrendingUp size={16} className="text-purple-600" />
-                                <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">GameDay Projection</span>
+                                <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('GameDay Projection')}</span>
                             </div>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompact(gameDayProjection)}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Ticketing + GameDay × {TOTAL_GAMES_SEASON} games</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Ticketing')} + {t('GameDay')} × {TOTAL_GAMES_SEASON} {t('games')}</p>
                             <div className="mt-3 flex items-center gap-2">
                                 <div className="flex-1 h-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-full overflow-hidden">
                                     <div 
@@ -671,10 +674,10 @@ const RevenueHome = ({
                         <div className="bg-white dark:bg-gray-900 border border-blue-200 dark:border-blue-800 rounded-xl p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-3">
                                 <Ticket size={16} className="text-blue-600" />
-                                <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">GameDay Tickets Projection</span>
+                                <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('GameDay Tickets Projection')}</span>
                             </div>
                             <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompact(projection)}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">GameDay view tickets × {TOTAL_GAMES_SEASON} games</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('GameDay view tickets')} × {TOTAL_GAMES_SEASON} {t('games')}</p>
                             <div className="mt-3 flex items-center gap-2">
                                 <div className="flex-1 h-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-full overflow-hidden">
                                     <div 
@@ -694,14 +697,14 @@ const RevenueHome = ({
                     <div className={`rounded-xl p-5 shadow-sm border ${worstPacingVertical.pacePct < -10 ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800'}`}>
                         <div className="flex items-center gap-2 mb-3">
                             <Bell size={16} className={worstPacingVertical.pacePct < -10 ? 'text-red-600' : 'text-amber-600'} />
-                            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Attention Required</span>
+                            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('Attention Required')}</span>
                         </div>
-                        <p className="text-lg font-bold text-gray-900 dark:text-white">{worstPacingVertical.name}</p>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">{t(worstPacingVertical.name)}</p>
                         <p className={`text-2xl font-bold ${worstPacingVertical.pacePct < -10 ? 'text-red-600' : 'text-amber-600'}`}>
-                            {worstPacingVertical.pacePct.toFixed(0)}% pace
+                            {worstPacingVertical.pacePct.toFixed(0)}% {t('pace')}
                         </p>
                         <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2">
-                            Gap: {formatCompact(worstPacingVertical.expectedAtThisPoint - worstPacingVertical.current)} behind expected
+                            {t('Gap')}: {formatCompact(worstPacingVertical.expectedAtThisPoint - worstPacingVertical.current)} {t('behind expected')}
                         </p>
                     </div>
 
@@ -711,35 +714,35 @@ const RevenueHome = ({
             {/* YoY COMPARISON - 3 Season Chart */}
             <div className="mt-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                    <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">3-Season Revenue Trend</h3>
+                    <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('3-Season Revenue Trend')}</h3>
                     <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-xs text-gray-600 dark:text-gray-400">
                         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-slate-300"></div> 23-24</div>
                         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-slate-500"></div> 24-25</div>
-                        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-600"></div> 25-26 (Proj)</div>
-                        <div className="flex items-center gap-1.5"><div className="w-6 h-0.5 bg-amber-500"></div> Trend</div>
+                        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-600"></div> 25-26 ({t('Proj')})</div>
+                        <div className="flex items-center gap-1.5"><div className="w-6 h-0.5 bg-amber-500"></div> {t('Trend')}</div>
                     </div>
                 </div>
                 <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 sm:p-6 shadow-sm">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5 pb-4 border-b border-gray-100 dark:border-gray-800">
                         <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">View:</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">{t('View')}:</span>
                             <button
                                 onClick={() => setCorpTixInSponsorship(false)}
                                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${!corpTixInSponsorship ? 'bg-slate-800 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
                             >
-                                Accounting
+                                {t('Accounting')}
                             </button>
                             <button
                                 onClick={() => setCorpTixInSponsorship(true)}
                                 className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${corpTixInSponsorship ? 'bg-slate-800 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
                             >
-                                Realistic
+                                {t('Realistic')}
                             </button>
                         </div>
                         <p className="text-[10px] text-gray-400 dark:text-gray-500 max-w-xs">
                             {corpTixInSponsorship 
-                                ? 'Corp Tickets moved from Ticketing → Sponsorship (realistic view)' 
-                                : 'Corp Tickets in Ticketing (standard accounting view)'}
+                                ? t('Corp Tickets moved from Ticketing → Sponsorship (realistic view)') 
+                                : t('Corp Tickets in Ticketing (standard accounting view)')}
                         </p>
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
@@ -1062,14 +1065,14 @@ const App: React.FC = () => {
 
   // --- VERTICALS CONFIGURATION ---
   const MODULES: { id: RevenueModule; label: string; icon: any }[] = [
-    { id: 'home', label: 'Executive Overview', icon: PieChart },
-    { id: 'ticketing', label: 'Ticketing', icon: Ticket },
-    { id: 'gameday', label: 'GameDay', icon: Calendar },
-    { id: 'sponsorship', label: 'Sponsorship', icon: Flag },
-    { id: 'merchandising', label: 'Merchandising', icon: ShoppingBag },
-    { id: 'venue_ops', label: 'Venue Ops', icon: Landmark },
-    { id: 'bops', label: 'BOps', icon: Activity },
-    { id: 'sg', label: 'Varese Basketball', icon: GraduationCap },
+    { id: 'home', label: t('Executive Overview'), icon: PieChart },
+    { id: 'ticketing', label: t('Ticketing'), icon: Ticket },
+    { id: 'gameday', label: t('GameDay'), icon: Calendar },
+    { id: 'sponsorship', label: t('Sponsorship'), icon: Flag },
+    { id: 'merchandising', label: t('Merchandising'), icon: ShoppingBag },
+    { id: 'venue_ops', label: t('Venue Ops'), icon: Landmark },
+    { id: 'bops', label: t('BOps'), icon: Activity },
+    { id: 'sg', label: t('Varese Basketball'), icon: GraduationCap },
   ];
 
   const loadData = async () => {
@@ -2435,32 +2438,32 @@ const App: React.FC = () => {
         <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
             <Filter size={18} />
-            <span className="text-sm font-medium">Data Filters</span>
+            <span className="text-sm font-medium">{t('Data Filters')}</span>
         </div>
         <div className="flex items-center gap-3">
             {activeModule === 'ticketing' && (
                 <button onClick={() => setIgnoreOspiti(!ignoreOspiti)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors border ${ignoreOspiti ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'}`}>
-                    <UserX size={14} /> {ignoreOspiti ? 'Zona Ospiti Excluded' : 'Ignore Zona Ospiti'}
+                    <UserX size={14} /> {ignoreOspiti ? t('Zona Ospiti Excluded') : t('Ignore Zona Ospiti')}
                 </button>
             )}
             {(selectedSeasons.length > 1 || !selectedSeasons.includes('25-26') || !selectedLeagues.includes('LBA') || !selectedZones.includes('All') || !selectedOpponents.includes('All') || !selectedTiers.includes('All') || !selectedDays.includes('All') || !selectedChannels.includes('All') || ignoreOspiti) && (
                 <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-400 transition-colors ml-2">
-                    <X size={14} /> Clear All
+                    <X size={14} /> {t('Clear All')}
                 </button>
             )}
         </div>
         </div>
         <div className={`grid grid-cols-2 ${activeModule === 'ticketing' ? 'lg:grid-cols-7' : 'lg:grid-cols-6'} gap-4`}>
-        <div><MultiSelect label="Season" options={seasons} selected={selectedSeasons} onChange={setSelectedSeasons} /></div>
-        <div><MultiSelect label="League" options={leagues} selected={selectedLeagues} onChange={setSelectedLeagues} /></div>
-        <div><MultiSelect label="Tier" options={tiers} selected={selectedTiers} onChange={setSelectedTiers} /></div>
-        <div><MultiSelect label="Opponent" options={opponents} selected={selectedOpponents} onChange={setSelectedOpponents} /></div>
-        <div><MultiSelect label="Day" options={days} selected={selectedDays} onChange={setSelectedDays} /></div>
+        <div><MultiSelect label={t('Season')} options={seasons} selected={selectedSeasons} onChange={setSelectedSeasons} /></div>
+        <div><MultiSelect label={t('League')} options={leagues} selected={selectedLeagues} onChange={setSelectedLeagues} /></div>
+        <div><MultiSelect label={t('Tier')} options={tiers} selected={selectedTiers} onChange={setSelectedTiers} /></div>
+        <div><MultiSelect label={t('Opponent')} options={opponents} selected={selectedOpponents} onChange={setSelectedOpponents} /></div>
+        <div><MultiSelect label={t('Day')} options={days} selected={selectedDays} onChange={setSelectedDays} /></div>
         {activeModule === 'ticketing' && (
-            <div><MultiSelect label="Zone" options={zones} selected={selectedZones} onChange={setSelectedZones} /></div>
+            <div><MultiSelect label={t('Zone')} options={zones} selected={selectedZones} onChange={setSelectedZones} /></div>
         )}
         {activeModule === 'ticketing' && (
-            <div><MultiSelect label="Sell" options={channels} selected={selectedChannels} onChange={setSelectedChannels} /></div>
+            <div><MultiSelect label={t('Sell')} options={channels} selected={selectedChannels} onChange={setSelectedChannels} /></div>
         )}
         </div>
     </div>
@@ -2534,7 +2537,7 @@ const App: React.FC = () => {
              <button
                 onClick={toggleLanguage}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-bold transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
-                title={language === 'en' ? 'Switch to Italian' : 'Passa a Inglese'}
+                title={language === 'en' ? t('Switch to Italian') : t('Passa a Inglese')}
              >
                 <span className="text-base">{language === 'en' ? '🇬🇧' : '🇮🇹'}</span>
                 <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">{language === 'en' ? 'EN' : 'IT'}</span>
@@ -2542,7 +2545,7 @@ const App: React.FC = () => {
              <button
                 onClick={toggleTheme}
                 className="p-2 rounded-lg transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
-                title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                title={isDark ? t('Switch to Light Mode') : t('Switch to Dark Mode')}
              >
                 {isDark ? <Sun size={16} className="text-yellow-400" /> : <Moon size={16} className="text-gray-500" />}
              </button>
@@ -2563,7 +2566,7 @@ const App: React.FC = () => {
         {/* Module Specific Tools */}
         <div className="p-4 flex-1">
             <div className="md:hidden mb-6 space-y-2 border-b border-gray-100 dark:border-gray-700 pb-4">
-                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-2">Modules</p>
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider px-2 mb-2">{t('Modules')}</p>
                 {MODULES.map((module) => (
                     <button 
                         key={module.id}
@@ -2582,23 +2585,23 @@ const App: React.FC = () => {
 
                     {activeModule === 'ticketing' && (
                         <div className="animate-in slide-in-from-left-2 duration-300 space-y-1">
-                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 px-2">Ticketing Tools</p>
+                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 px-2">{t('Ticketing Tools')}</p>
                             <button onClick={() => { setActiveTab('dashboard'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'dashboard' ? 'bg-red-50 text-red-700 font-bold border border-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'}`}>
-                                <LayoutDashboard size={18} /> <span className="inline md:hidden lg:inline text-sm">Overview</span>
+                                <LayoutDashboard size={18} /> <span className="inline md:hidden lg:inline text-sm">{t('Overview')}</span>
                             </button>
                             <button onClick={() => { setActiveTab('crm'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'crm' ? 'bg-red-50 text-red-700 font-bold border border-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'}`}>
-                                <Users size={18} /> <span className="inline md:hidden lg:inline text-sm">CRM</span>
+                                <Users size={18} /> <span className="inline md:hidden lg:inline text-sm">{t('CRM')}</span>
                             </button>
                             <button onClick={() => { setActiveTab('comparison'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'comparison' ? 'bg-red-50 text-red-700 font-bold border border-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'}`}>
-                                <ArrowLeftRight size={18} /> <span className="inline md:hidden lg:inline text-sm">Comparison</span>
+                                <ArrowLeftRight size={18} /> <span className="inline md:hidden lg:inline text-sm">{t('Comparison')}</span>
                             </button>
                     <button onClick={() => { setActiveTab('simulator'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${activeTab === 'simulator' ? 'bg-red-50 text-red-700 font-bold border border-red-100 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'}`}>
-                        <Calculator size={18} /> <span className="inline md:hidden lg:inline text-sm">Simulator</span>
+                        <Calculator size={18} /> <span className="inline md:hidden lg:inline text-sm">{t('Simulator')}</span>
                     </button>
 
                     {(activeTab === 'dashboard' || activeTab === 'comparison') && (
                         <div className="mt-4 bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
-                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Data View</p>
+                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{t('Data View')}</p>
                             <div className="flex flex-col gap-2">
                                 <button 
                                     onClick={() => setViewMode('total')}
@@ -2609,7 +2612,7 @@ const App: React.FC = () => {
                                     }`}
                                 >
                                     <Briefcase size={14} />
-                                    Total View
+                                    {t('Total View')}
                                 </button>
                                 <button 
                                     onClick={() => setViewMode('gameday')}
@@ -2620,7 +2623,7 @@ const App: React.FC = () => {
                                     }`}
                                 >
                                     <Calendar size={14} />
-                                    GameDay Only
+                                    {t('GameDay Only')}
                                 </button>
                             </div>
                         </div>
@@ -2630,18 +2633,18 @@ const App: React.FC = () => {
 
             {activeModule === 'gameday' && (
                 <div className="animate-in slide-in-from-left-2 duration-300 space-y-1">
-                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 px-2">GameDay Tools</p>
+                    <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 px-2">{t('GameDay Tools')}</p>
                     <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 text-indigo-700 font-bold border border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800 mb-4">
-                        <LayoutDashboard size={18} /> <span className="inline md:hidden lg:inline text-sm">Dashboard</span>
+                        <LayoutDashboard size={18} /> <span className="inline md:hidden lg:inline text-sm">{t('Dashboard')}</span>
                     </button>
                     
                     <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
-                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">View Configuration</p>
+                        <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{t('View Configuration')}</p>
                         <button 
                             onClick={() => setGameDayIncludeTicketing(!gameDayIncludeTicketing)}
                             className={`w-full flex items-center justify-between p-2 rounded-lg text-xs font-bold transition-all ${gameDayIncludeTicketing ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-500 border border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'}`}
                         >
-                            <span>Include Ticketing</span>
+                            <span>{t('Include Ticketing')}</span>
                             {gameDayIncludeTicketing ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
                         </button>
                     </div>
@@ -2652,7 +2655,7 @@ const App: React.FC = () => {
                 <div className="space-y-4 animate-in slide-in-from-left-2 duration-300">
                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-center border border-gray-100 dark:border-gray-700">
                         <PieChart size={32} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Global Overview Mode</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{t('Global Overview Mode')}</p>
                     </div>
                     
                     <a 
@@ -2664,7 +2667,7 @@ const App: React.FC = () => {
                         <div className="p-1.5 bg-gray-100 dark:bg-gray-700 rounded-md group-hover:bg-red-50 dark:group-hover:bg-red-900/30 transition-colors">
                             <FileText size={16} />
                         </div>
-                        <span className="inline md:hidden lg:inline text-sm">Monthly Reports</span>
+                        <span className="inline md:hidden lg:inline text-sm">{t('Monthly Reports')}</span>
                         <ExternalLink size={12} className="ml-auto opacity-50 group-hover:opacity-100" />
                     </a>
                 </div>
@@ -2676,7 +2679,7 @@ const App: React.FC = () => {
         <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/50">
            <div className="flex items-center gap-2 mb-4 text-xs font-semibold uppercase text-gray-400 dark:text-gray-500">
               <Database size={14} />
-              <span>Data Management</span>
+              <span>{t('Data Management')}</span>
            </div>
            
            <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden" />
@@ -2684,21 +2687,21 @@ const App: React.FC = () => {
            
            {!isFirebaseConfigured ? (
              <button onClick={() => setShowSetupModal(true)} className="w-full mb-3 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-white bg-red-600 hover:bg-red-700 border border-transparent rounded-lg transition-colors shadow-sm animate-pulse">
-                Connect Database
+                {t('Connect Database')}
              </button>
            ) : (
              <div className="space-y-2 mb-4">
                  {activeModule === 'merchandising' ? (
                      <>
                         <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 px-1 flex items-center gap-1">
-                            Current Source: 
+                            {t('Current Source')}: 
                             <strong className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
                                 <ShoppingBag size={10} />
                                 SHOPIFY
                             </strong>
                         </div>
                         <div className="text-center py-2 px-3 text-[10px] text-orange-600 bg-orange-50 border border-orange-200 rounded-lg dark:text-orange-400 dark:bg-orange-900/30 dark:border-orange-800">
-                          Live from Shopify Admin API
+                          {t('Live from Shopify Admin API')}
                         </div>
                         <button
                           onClick={() => {
@@ -2708,20 +2711,20 @@ const App: React.FC = () => {
                           className="w-full mt-2 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-orange-700 bg-white border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors dark:text-orange-400 dark:bg-gray-800 dark:border-orange-700 dark:hover:bg-gray-700"
                         >
                           <RefreshCw size={14} />
-                          Refresh Shopify Data
+                          {t('Refresh Shopify Data')}
                         </button>
                      </>
                  ) : activeModule !== 'home' ? (
                      <>
                         <div className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 px-1 flex items-center gap-1">
-                            Current Source: 
+                            {t('Current Source')}: 
                             <strong className={`flex items-center gap-1 text-blue-600 dark:text-blue-400`}>
                                 <Database size={10} />
                                 BIGQUERY
                             </strong>
                         </div>
                         <div className="text-center py-2 px-3 text-[10px] text-blue-600 bg-blue-50 border border-blue-200 rounded-lg dark:text-blue-400 dark:bg-blue-900/30 dark:border-blue-800">
-                          Auto-synced from BigQuery
+                          {t('Auto-synced from BigQuery')}
                         </div>
                         <button
                           onClick={syncAllFromBigQuery}
@@ -2729,12 +2732,12 @@ const App: React.FC = () => {
                           className="w-full mt-2 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed dark:text-blue-400 dark:bg-gray-800 dark:border-blue-700 dark:hover:bg-gray-700"
                         >
                           <RefreshCw size={14} className={isSyncingAll ? 'animate-spin' : ''} />
-                          {isSyncingAll ? 'Syncing...' : 'Sync All Data'}
+                          {isSyncingAll ? t('Syncing...') : t('Sync All Data')}
                         </button>
                      </>
                  ) : (
                      <div className="text-center p-2 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-                         <p className="text-[10px] text-gray-400 dark:text-gray-500">Select a specific vertical to manage its data.</p>
+                         <p className="text-[10px] text-gray-400 dark:text-gray-500">{t('Select a specific vertical to manage its data.')}</p>
                      </div>
                  )}
              </div>
@@ -2742,13 +2745,13 @@ const App: React.FC = () => {
            
            {!isLoadingData && activeModule !== 'home' && activeModule !== 'merchandising' && (
              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold uppercase mb-1">Data Source Info</p>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-semibold uppercase mb-1">{t('Data Source Info')}</p>
                 <div className="flex flex-col">
                     {lastGame ? (
                         <>
                             <div className="flex items-center gap-1 text-blue-600 dark:text-blue-400 mb-0.5">
                                 <Calendar size={10} />
-                                <span className="text-[10px] font-bold uppercase">Latest Game</span>
+                                <span className="text-[10px] font-bold uppercase">{t('Latest Game')}</span>
                             </div>
                             <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{lastGame.opponent}</span>
                             <span className="text-[10px] text-gray-500 dark:text-gray-400">{lastGame.season} • {lastGame.date}</span>
@@ -2756,7 +2759,7 @@ const App: React.FC = () => {
                                 <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
                                     <div className="flex items-center gap-1 text-green-600 dark:text-green-400 mb-0.5">
                                         <Clock size={10} />
-                                        <span className="text-[10px] font-bold uppercase">Last Synced</span>
+                                        <span className="text-[10px] font-bold uppercase">{t('Last Synced')}</span>
                                     </div>
                                     <span className="text-[10px] text-gray-500 dark:text-gray-400">
                                         {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleDateString()} at {new Date(lastUploadTimes[activeModule === 'gameday' ? 'gameday' : 'ticketing']!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -2765,7 +2768,7 @@ const App: React.FC = () => {
                             )}
                         </>
                     ) : (
-                        <span className="text-[10px] text-gray-400 dark:text-gray-500">No data loaded</span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500">{t('No data loaded')}</span>
                     )}
                 </div>
              </div>
@@ -2823,20 +2826,20 @@ const App: React.FC = () => {
                         <div className="hidden md:block lg:col-span-2 relative bg-gradient-to-br from-indigo-800 to-slate-900 rounded-xl p-6 text-white shadow-lg overflow-hidden border border-indigo-700">
                             <div className="relative z-10">
                                 <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-indigo-200 uppercase tracking-wide">
-                                  <MessageSquare size={16} /> Ask AI Advisor
+                                  <MessageSquare size={16} /> {t('Ask AI Advisor')}
                                 </h3>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                   <button onClick={() => openAIWithPrompt("Which GameDay revenue streams are underperforming? Identify the biggest opportunities to increase spend per head.")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
-                                    Spend per head optimization opportunities
+                                    {t('Spend per head optimization opportunities')}
                                   </button>
                                   <button onClick={() => openAIWithPrompt("Analyze merchandising revenue by opponent. Which matchups drive the highest merch sales and why?")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
-                                    Merch sales by opponent analysis
+                                    {t('Merch sales by opponent analysis')}
                                   </button>
                                   <button onClick={() => openAIWithPrompt("Compare F&B revenue across all games. Which games had low F&B performance and what factors might explain it?")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
-                                    F&B performance breakdown
+                                    {t('F&B performance breakdown')}
                                   </button>
                                   <button onClick={() => openAIWithPrompt("Are we on pace to hit the GameDay budget targets? What's the revenue gap and how can we close it?")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
-                                    GameDay pacing and gap analysis
+                                    {t('GameDay pacing and gap analysis')}
                                   </button>
                                 </div>
                             </div>
@@ -2870,20 +2873,20 @@ const App: React.FC = () => {
                             <div className="hidden md:block lg:col-span-2 relative bg-gradient-to-br from-red-700 to-slate-900 rounded-xl p-6 text-white shadow-lg overflow-hidden border border-red-900">
                                 <div className="relative z-10">
                                     <h3 className="font-bold text-sm mb-3 flex items-center gap-2 text-red-200 uppercase tracking-wide">
-                                      <MessageSquare size={16} /> Ask AI Advisor
+                                      <MessageSquare size={16} /> {t('Ask AI Advisor')}
                                     </h3>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                       <button onClick={() => openAIWithPrompt("Which zones have occupancy below 70%? What pricing or promo strategy should we use to fill them?")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
-                                        Low occupancy zones strategy
+                                        {t('Low occupancy zones strategy')}
                                       </button>
                                       <button onClick={() => openAIWithPrompt("Analyze our giveaway and protocol tickets. What's the opportunity cost and are we over-comping any zones?")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
-                                        Giveaway opportunity cost analysis
+                                        {t('Giveaway opportunity cost analysis')}
                                       </button>
                                       <button onClick={() => openAIWithPrompt("Which premium zones (Parterre, Courtside) have yield upside? Should we raise prices for high-demand games?")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
-                                        Premium zone yield opportunities
+                                        {t('Premium zone yield opportunities')}
                                       </button>
                                       <button onClick={() => openAIWithPrompt("Are we on pace to hit the €1.65M ticketing target? Break down the gap by zone and sell type.")} className="text-left bg-white/10 hover:bg-white/20 backdrop-blur px-4 py-3 rounded-lg text-sm transition-all border border-white/10 hover:border-white/30">
-                                        Ticketing pacing by zone
+                                        {t('Ticketing pacing by zone')}
                                       </button>
                                     </div>
                                 </div>
@@ -2908,7 +2911,7 @@ const App: React.FC = () => {
                     {isLoadingData && data.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-96">
                             <Loader2 size={40} className="text-red-600 animate-spin mb-4" />
-                            <p className="text-gray-500 dark:text-gray-400 font-medium">Loading sales data...</p>
+                            <p className="text-gray-500 dark:text-gray-400 font-medium">{t('Loading sales data...')}</p>
                         </div>
                     ) : (
                         <div className="animate-fade-in space-y-6">
@@ -2924,7 +2927,7 @@ const App: React.FC = () => {
 
                         <div className="mb-8">
                             <div className="flex justify-between items-end mb-4">
-                                <h2 className="text-xl font-bold text-gray-800 dark:text-white">Venue Intelligence</h2>
+                                <h2 className="text-xl font-bold text-gray-800 dark:text-white">{t('Venue Intelligence')}</h2>
                             </div>
                             
                             {/* Map and Vertical Widgets Row */}
@@ -2972,22 +2975,22 @@ const App: React.FC = () => {
                                         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden h-full flex flex-col">
                                             <div className="p-4 border-b border-gray-100 font-semibold text-gray-700 flex justify-between items-center bg-gray-50 flex-shrink-0">
                                                 <div className="flex items-center gap-2">
-                                                    <span>Detailed Games Log ({selectedZones.join(', ')})</span>
-                                                    <button onClick={() => setSelectedZones(['All'])} className="text-xs text-red-600 hover:underline ml-2 bg-white px-2 py-1 rounded border border-red-200">Reset View</button>
+                                                    <span>{t('Detailed Games Log')} ({selectedZones.join(', ')})</span>
+                                                    <button onClick={() => setSelectedZones(['All'])} className="text-xs text-red-600 hover:underline ml-2 bg-white px-2 py-1 rounded border border-red-200">{t('Reset View')}</button>
                                                 </div>
-                                                <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-gray-500">{viewData.length} Matches</span>
+                                                <span className="text-xs bg-white border border-gray-200 px-2 py-1 rounded text-gray-500">{viewData.length} {t('Matches')}</span>
                                             </div>
                                             <div className="overflow-auto flex-1">
                                                 <table className="w-full text-xs">
                                                     <thead className="bg-gray-50 sticky top-0 z-10">
                                                         <tr className="text-[10px] text-gray-500 uppercase tracking-wider">
-                                                            <th className="text-left py-2.5 px-3 font-semibold">Match</th>
-                                                            <th className="text-right py-2.5 px-2 font-semibold">Sold/Cap</th>
-                                                            <th className="text-right py-2.5 px-2 font-semibold">Fill %</th>
-                                                            <th className="text-right py-2.5 px-2 font-semibold">Revenue</th>
-                                                            <th className="text-right py-2.5 px-2 font-semibold">Rev %</th>
-                                                            <th className="text-right py-2.5 px-2 font-semibold">Yield</th>
-                                                            <th className="text-right py-2.5 px-3 font-semibold">RevPAS</th>
+                                                            <th className="text-left py-2.5 px-3 font-semibold">{t('Match')}</th>
+                                                            <th className="text-right py-2.5 px-2 font-semibold">{t('Sold/Cap')}</th>
+                                                            <th className="text-right py-2.5 px-2 font-semibold">{t('Fill %')}</th>
+                                                            <th className="text-right py-2.5 px-2 font-semibold">{t('Revenue')}</th>
+                                                            <th className="text-right py-2.5 px-2 font-semibold">{t('Rev %')}</th>
+                                                            <th className="text-right py-2.5 px-2 font-semibold">{t('Yield')}</th>
+                                                            <th className="text-right py-2.5 px-3 font-semibold">{t('RevPAS')}</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="divide-y divide-gray-50">
@@ -3035,7 +3038,7 @@ const App: React.FC = () => {
                                                             const totRevPas = totCap > 0 ? totalSeasonRev / totCap : 0;
                                                             return (
                                                                 <tr className="text-[11px] font-bold text-gray-800">
-                                                                    <td className="py-2.5 px-3 uppercase tracking-wider">Total / Avg</td>
+                                                                    <td className="py-2.5 px-3 uppercase tracking-wider">{t('Total / Avg')}</td>
                                                                     <td className="text-right py-2.5 px-2">{totAtt.toLocaleString('it-IT')}<span className="text-gray-400 font-normal">/{totCap.toLocaleString('it-IT')}</span></td>
                                                                     <td className="text-right py-2.5 px-2">{totFill.toFixed(1)}%</td>
                                                                     <td className="text-right py-2.5 px-2">€{(totalSeasonRev / 1000).toFixed(1)}k</td>
@@ -3058,7 +3061,7 @@ const App: React.FC = () => {
                         {discountTypeData.length > 0 && (
                         <div className="mb-8">
                             <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 p-6">
-                                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Ticket Pricing Breakdown</h2>
+                                <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">{t('Ticket Pricing Breakdown')}</h2>
                                 {(() => {
                                     const COLOR_MAP: Record<string, string> = { 'Full Price': '#10b981', 'Discounted': '#f97316', 'Giveaways': '#8b5cf6' };
                                     const totalTickets = discountTypeData.reduce((s, d) => s + d.count, 0);
@@ -3070,7 +3073,7 @@ const App: React.FC = () => {
                                     return (
                                         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
                                             <div>
-                                                <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Tickets by Type</h3>
+                                                <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">{t('Tickets by Type')}</h3>
                                                 <ResponsiveContainer width="100%" height={300}>
                                                     <RechartsPie>
                                                         <Pie
@@ -3088,13 +3091,13 @@ const App: React.FC = () => {
                                                                 <Cell key={`cell-${idx}`} fill={entry.fill} />
                                                             ))}
                                                         </Pie>
-                                                        <Tooltip formatter={(value: number) => [`${value.toLocaleString('it-IT')} tickets`, 'Count']} />
+                                                        <Tooltip formatter={(value: number) => [`${value.toLocaleString('it-IT')} ${t('tickets')}`, t('Count')]} />
                                                     </RechartsPie>
                                                 </ResponsiveContainer>
-                                                <div className="mt-3 text-center text-xs text-gray-500">{totalTickets.toLocaleString('it-IT')} total tickets</div>
+                                                <div className="mt-3 text-center text-xs text-gray-500">{totalTickets.toLocaleString('it-IT')} {t('total tickets')}</div>
                                             </div>
                                             <div>
-                                                <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">Discount Breakdown</h3>
+                                                <h3 className="text-sm font-semibold text-gray-600 mb-3 uppercase tracking-wider">{t('Discount Breakdown')}</h3>
                                                 {discountDetailData.length > 0 ? (() => {
                                                     const DETAIL_COLORS = ['#f97316', '#ef4444', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#f59e0b', '#14b8a6'];
                                                     const totalDisc = discountDetailData.reduce((s, d) => s + d.count, 0);
@@ -3131,11 +3134,11 @@ const App: React.FC = () => {
                                                                 </Bar>
                                                             </BarChart>
                                                         </ResponsiveContainer>
-                                                        <div className="mt-3 text-center text-xs text-gray-500">{totalDisc.toLocaleString('it-IT')} discounted tickets</div>
+                                                        <div className="mt-3 text-center text-xs text-gray-500">{totalDisc.toLocaleString('it-IT')} {t('discounted tickets')}</div>
                                                         </>
                                                     );
                                                 })() : (
-                                                    <div className="flex items-center justify-center h-[300px] text-gray-400 text-sm">No discounted tickets found</div>
+                                                    <div className="flex items-center justify-center h-[300px] text-gray-400 text-sm">{t('No discounted tickets found')}</div>
                                                 )}
                                             </div>
                                         </div>
@@ -3147,7 +3150,7 @@ const App: React.FC = () => {
 
                         <div className="mb-8 relative z-0">
                             <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">
-                            Trend & Performance Analysis
+                            {t('Trend & Performance Analysis')}
                             </h2>
                             <DashboardChart 
                                 data={viewData} 
@@ -3220,8 +3223,8 @@ const App: React.FC = () => {
                   <MessageSquare size={20} className="text-white" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-white">AI Strategy Advisor</h2>
-                  <p className="text-xs text-white/70">Powered by comprehensive business intelligence</p>
+                  <h2 className="text-lg font-bold text-white">{t('AI Strategy Advisor')}</h2>
+                  <p className="text-xs text-white/70">{t('Powered by comprehensive business intelligence')}</p>
                 </div>
               </div>
               <button 

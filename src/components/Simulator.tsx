@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { GameData, SalesChannel, TicketZone } from '../types';
 import { FIXED_CAPACITY_25_26 } from '../constants';
 import { Calculator, TrendingUp, TrendingDown, RefreshCcw, Plus, Trash2, Sun, Snowflake, ArrowRight } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Total capacities for 25-26 season (used as baseline)
 const TOTAL_CAPACITIES: Record<string, number> = {
@@ -40,6 +41,7 @@ interface Decision {
 }
 
 export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<StrategyMode>('IN_SEASON');
   const [decisions, setDecisions] = useState<Decision[]>([]);
   
@@ -195,8 +197,8 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                     <Calculator size={28} />
                 </div>
                 <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Strategy Simulator</h2>
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">Build a comprehensive pricing strategy.</p>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Strategy Simulator')}</h2>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">{t('Build a comprehensive pricing strategy.')}</p>
                 </div>
             </div>
             
@@ -210,7 +212,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                     }`}
                 >
                     <Sun size={16} />
-                    Summer (Season Tix)
+                    {t('Summer (Season Tix)')}
                 </button>
                 <button 
                     onClick={() => { setMode('IN_SEASON'); setDecisions([]); }}
@@ -221,7 +223,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                     }`}
                 >
                     <Snowflake size={16} />
-                    In-Season (Game Day)
+                    {t('In-Season (Game Day)')}
                 </button>
             </div>
         </div>
@@ -234,12 +236,12 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                     <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
                     <h3 className="font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
                         <Plus size={18} className="text-indigo-500" />
-                        New Decision
+                        {t('New Decision')}
                     </h3>
 
                     <div className="space-y-5">
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Zone</label>
+                            <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('Zone')}</label>
                             <select 
                                 value={selectedZone}
                                 onChange={(e) => setSelectedZone(e.target.value)}
@@ -251,7 +253,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
 
                         <div>
                             <div className="flex justify-between mb-2">
-                                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Price Adj. (€)</label>
+                                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Price Adj. (€)')}</label>
                                 <span className={`text-xs font-bold px-2 py-0.5 rounded ${priceAdjustment > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700' : (priceAdjustment < 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400')}`}>
                                     {priceAdjustment > 0 ? '+' : ''}{priceAdjustment}€
                                 </span>
@@ -266,7 +268,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
 
                         <div>
                             <div className="flex justify-between mb-2">
-                                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Demand Impact (%)</label>
+                                <label className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Demand Impact (%)')}</label>
                                 <span className={`text-xs font-bold px-2 py-0.5 rounded ${demandElasticity > 0 ? 'bg-green-100 dark:bg-green-900/30 text-green-700' : (demandElasticity < 0 ? 'bg-red-100 dark:bg-red-900/30 text-red-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400')}`}>
                                     {demandElasticity > 0 ? '+' : ''}{demandElasticity}%
                                 </span>
@@ -281,11 +283,11 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
 
                         <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 relative overflow-hidden">
                             <div className="flex justify-between items-center text-sm mb-1 relative z-10">
-                                <span className="text-gray-500 dark:text-gray-400">Current Yield:</span>
+                                <span className="text-gray-500 dark:text-gray-400">{t('Current Yield')}:</span>
                                 <span className="font-mono text-gray-700 dark:text-gray-200">€{currentZoneBaseline.avgPrice.toFixed(1)}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm font-bold relative z-10">
-                                <span className="text-gray-800 dark:text-gray-200">Proj. Impact:</span>
+                                <span className="text-gray-800 dark:text-gray-200">{t('Proj. Impact')}:</span>
                                 <span className={`${previewImpact >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                     {previewImpact > 0 ? '+' : ''}€{Math.round(previewImpact).toLocaleString()}
                                 </span>
@@ -293,13 +295,13 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                             
                             {isCapped && (
                                 <div className="mt-2 text-[10px] text-white bg-amber-500 px-2 py-1 rounded font-bold text-center border border-amber-600 relative z-10">
-                                    CAPPED AT CAPACITY: +{seatsCapped} OVERFLOW
+                                    {t('CAPPED AT CAPACITY')}: +{seatsCapped} {t('OVERFLOW')}
                                 </div>
                             )}
                             
                             {seatsLost > 0 && !isCapped && (
                                 <div className="mt-2 text-[10px] text-white bg-red-500 px-2 py-1 rounded font-bold text-center border border-red-600 relative z-10 animate-pulse">
-                                    DEMAND DROP: {seatsLost} SEATS LOST
+                                    {t('DEMAND DROP')}: {seatsLost} {t('SEATS LOST')}
                                 </div>
                             )}
 
@@ -331,7 +333,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                             onClick={addDecision}
                             className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-all shadow-md active:scale-95 flex items-center justify-center gap-2"
                         >
-                            Add to Strategy <ArrowRight size={16} />
+                            {t('Add to Strategy')} <ArrowRight size={16} />
                         </button>
                     </div>
                 </div>
@@ -343,27 +345,27 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                 {/* Scoreboard */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Baseline Rev (Avg)</p>
+                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{t('Baseline Rev (Avg)')}</p>
                         <p className="text-2xl font-bold text-gray-900 dark:text-white">€{Math.round(simulationResults.baselineRev).toLocaleString()}</p>
                     </div>
                     <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm relative overflow-hidden">
                         <div className={`absolute top-0 right-0 p-4 opacity-10 ${simulationResults.netImpact >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                             {simulationResults.netImpact >= 0 ? <TrendingUp size={48} /> : <TrendingDown size={48} />}
                         </div>
-                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Projected Rev (Avg)</p>
+                        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{t('Projected Rev (Avg)')}</p>
                         <p className={`text-2xl font-bold ${simulationResults.netImpact >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                             €{Math.round(simulationResults.newRev).toLocaleString()}
                         </p>
                     </div>
                     <div className={`p-5 rounded-xl border shadow-sm flex flex-col justify-center ${simulationResults.netImpact >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                        <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${simulationResults.netImpact >= 0 ? 'text-green-700' : 'text-red-700'}`}>Net Impact / Game</p>
+                        <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${simulationResults.netImpact >= 0 ? 'text-green-700' : 'text-red-700'}`}>{t('Net Impact / Game')}</p>
                         <div className="flex items-baseline gap-1">
                             <span className={`text-2xl font-extrabold ${simulationResults.netImpact >= 0 ? 'text-green-800' : 'text-red-800'}`}>
                                 {simulationResults.netImpact > 0 ? '+' : ''}€{Math.round(simulationResults.netImpact).toLocaleString()}
                             </span>
                         </div>
                         <p className={`text-[10px] font-medium mt-1 ${simulationResults.netImpact >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            Season Est: {simulationResults.netImpact > 0 ? '+' : ''}€{Math.round(simulationResults.netImpact * 15).toLocaleString()}
+                            {t('Season Est')}: {simulationResults.netImpact > 0 ? '+' : ''}€{Math.round(simulationResults.netImpact * 15).toLocaleString()}
                         </p>
                     </div>
                 </div>
@@ -371,18 +373,18 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                 {/* Decision List */}
                 <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm min-h-[300px] flex flex-col">
                     <div className="p-5 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800 rounded-t-2xl">
-                        <h3 className="font-bold text-gray-800 dark:text-white">Active Decisions</h3>
+                        <h3 className="font-bold text-gray-800 dark:text-white">{t('Active Decisions')}</h3>
                         <div className="flex items-center gap-2">
                             {decisions.length > 0 && (
                                 <button 
                                     onClick={() => setDecisions([])} 
                                     className="flex items-center gap-1 px-2 py-1 text-xs font-bold text-red-600 bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-lg hover:bg-red-100 transition-all"
                                 >
-                                    <RefreshCcw size={12} /> Reset
+                                    <RefreshCcw size={12} /> {t('Reset')}
                                 </button>
                             )}
                             <span className="text-xs font-medium px-2 py-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded text-gray-500 dark:text-gray-400">
-                                {decisions.length} Applied
+                                {decisions.length} {t('Applied')}
                             </span>
                         </div>
                     </div>
@@ -391,7 +393,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                         {decisions.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-3 opacity-60 min-h-[200px]">
                                 <Calculator size={40} />
-                                <p className="text-sm">No decisions added yet.</p>
+                                <p className="text-sm">{t('No decisions added yet.')}</p>
                             </div>
                         ) : (
                             <div className="space-y-2">
@@ -408,10 +410,10 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
                                                 <p className="font-bold text-gray-900 dark:text-white text-sm">{d.zone}</p>
                                                 <div className="flex items-center gap-3 text-xs mt-0.5">
                                                     <span className={`${d.priceAdj > 0 ? 'text-green-600' : 'text-red-600'} font-medium bg-gray-50 dark:bg-gray-800 px-1.5 rounded`}>
-                                                        Price: {d.priceAdj > 0 ? '+' : ''}{d.priceAdj}€
+                                                        {t('Price')}: {d.priceAdj > 0 ? '+' : ''}{d.priceAdj}€
                                                     </span>
                                                     <span className={`${d.demandAdj > 0 ? 'text-green-600' : 'text-red-600'} font-medium bg-gray-50 dark:bg-gray-800 px-1.5 rounded`}>
-                                                        Vol: {d.demandAdj > 0 ? '+' : ''}{d.demandAdj}% ({seatChange > 0 ? '+' : ''}{seatChange} seats)
+                                                        {t('Vol')}: {d.demandAdj > 0 ? '+' : ''}{d.demandAdj}% ({seatChange > 0 ? '+' : ''}{seatChange} {t('seats')})
                                                     </span>
                                                 </div>
                                             </div>

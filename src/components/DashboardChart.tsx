@@ -4,6 +4,7 @@ import {
   Line, ComposedChart, ScatterChart, Scatter, ReferenceLine, ZAxis, Label, ReferenceArea
 } from 'recharts';
 import { GameData, SalesChannel } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface DashboardChartProps {
   data: GameData[];
@@ -77,6 +78,7 @@ const calculateTrendLine = (dataPoints: any[]) => {
 };
 
 export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiencyData, onFilterChange, viewMode }) => {
+  const { t } = useLanguage();
   
   // 1. Revenue & Attendance Trend (Composed)
   const uniqueOpponents = new Set(data.map(d => d.opponent));
@@ -250,7 +252,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
           <div className="bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col h-[520px]">
               <div className="flex justify-between items-center mb-2">
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                      {viewMode === 'total' ? 'Total Efficiency Matrix' : 'GameDay Efficiency Matrix'}
+                      {viewMode === 'total' ? t('Total Efficiency Matrix') : t('GameDay Efficiency Matrix')}
                   </h3>
               </div>
               
@@ -266,7 +268,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                             tick={{fontSize: 10}}
                             tickFormatter={(val) => `${val.toFixed(0)}%`}
                           >
-                             <Label value="Occupancy %" offset={-10} position="insideBottom" style={{ fontSize: '10px', fill: '#64748b' }} />
+                             <Label value={t("Occupancy %")} offset={-10} position="insideBottom" style={{ fontSize: '10px', fill: '#64748b' }} />
                           </XAxis>
                           <YAxis 
                             type="number" 
@@ -277,7 +279,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                             domain={[yDomainMin, yDomainMax]}
                             tickFormatter={(val) => `€${val.toFixed(2)}`}
                           >
-                             <Label value="Yield (€)" angle={-90} position="insideLeft" style={{ fontSize: '10px', fill: '#64748b' }} />
+                             <Label value={t("Yield (€)")} angle={-90} position="insideLeft" style={{ fontSize: '10px', fill: '#64748b' }} />
                           </YAxis>
                           <ZAxis type="number" dataKey="z" range={[60, 450]} name="Tier Weight" />
                           
@@ -294,19 +296,19 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                                           </div>
                                           <div className="space-y-1">
                                               <div className="flex justify-between">
-                                                  <span className="text-gray-500 dark:text-gray-400">Tier:</span>
+                                                  <span className="text-gray-500 dark:text-gray-400">{t('Tier:')}</span>
                                                   <span className="font-bold text-gray-800 dark:text-gray-200">{d.tier}</span>
                                               </div>
                                               <div className="flex justify-between">
-                                                  <span className="text-gray-500 dark:text-gray-400">Occupancy:</span>
+                                                  <span className="text-gray-500 dark:text-gray-400">{t('Occupancy:')}</span>
                                                   <span className="font-bold text-gray-800 dark:text-gray-200">{d.x.toFixed(1)}%</span>
                                               </div>
                                               <div className="flex justify-between">
-                                                  <span className="text-gray-500 dark:text-gray-400">Yield (ATP):</span>
+                                                  <span className="text-gray-500 dark:text-gray-400">{t('Yield (ATP):')}</span>
                                                   <span className="font-bold text-blue-600">€{d.y.toFixed(2)}</span>
                                               </div>
                                               <div className="flex justify-between border-t border-gray-50 dark:border-gray-800 pt-1 mt-1">
-                                                  <span className="text-gray-500 dark:text-gray-400">Revenue:</span>
+                                                  <span className="text-gray-500 dark:text-gray-400">{t('Revenue:')}</span>
                                                   <span className="font-bold text-green-600">€{(d.revenue / 1000).toFixed(1)}k</span>
                                               </div>
                                           </div>
@@ -316,10 +318,10 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                               return null;
                           }} />
                           
-                          <ReferenceArea x1={xDomainMin} x2={avgOccupancy} y1={avgYield} y2={yDomainMax} fill="transparent" label={{ value: 'Premium', position: 'center', fill: '#94a3b8', fontSize: 10, fontWeight: 'bold', opacity: 0.3 }} />
-                          <ReferenceArea x1={avgOccupancy} x2={xDomainMax} y1={avgYield} y2={yDomainMax} fill="transparent" label={{ value: 'Cash Cows', position: 'center', fill: '#16a34a', fontSize: 10, fontWeight: 'bold', opacity: 0.3 }} />
-                          <ReferenceArea x1={xDomainMin} x2={avgOccupancy} y1={yDomainMin} y2={avgYield} fill="transparent" label={{ value: 'Kill Zone', position: 'center', fill: '#DC2626', fontSize: 10, fontWeight: 'bold', opacity: 0.3 }} />
-                          <ReferenceArea x1={avgOccupancy} x2={xDomainMax} y1={yDomainMin} y2={avgYield} fill="transparent" label={{ value: 'Discount Trap', position: 'center', fill: '#ea580c', fontSize: 10, fontWeight: 'bold', opacity: 0.3 }} />
+                          <ReferenceArea x1={xDomainMin} x2={avgOccupancy} y1={avgYield} y2={yDomainMax} fill="transparent" label={{ value: t('Premium'), position: 'center', fill: '#94a3b8', fontSize: 10, fontWeight: 'bold', opacity: 0.3 }} />
+                          <ReferenceArea x1={avgOccupancy} x2={xDomainMax} y1={avgYield} y2={yDomainMax} fill="transparent" label={{ value: t('Cash Cows'), position: 'center', fill: '#16a34a', fontSize: 10, fontWeight: 'bold', opacity: 0.3 }} />
+                          <ReferenceArea x1={xDomainMin} x2={avgOccupancy} y1={yDomainMin} y2={avgYield} fill="transparent" label={{ value: t('Kill Zone'), position: 'center', fill: '#DC2626', fontSize: 10, fontWeight: 'bold', opacity: 0.3 }} />
+                          <ReferenceArea x1={avgOccupancy} x2={xDomainMax} y1={yDomainMin} y2={avgYield} fill="transparent" label={{ value: t('Discount Trap'), position: 'center', fill: '#ea580c', fontSize: 10, fontWeight: 'bold', opacity: 0.3 }} />
 
                           <ReferenceLine x={avgOccupancy} stroke="#94a3b8" strokeDasharray="3 3" strokeWidth={1} />
                           <ReferenceLine y={avgYield} stroke="#94a3b8" strokeDasharray="3 3" strokeWidth={1} />
@@ -343,19 +345,19 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                   
                   {/* Group 1: View Mode (Read-only indicator from global toggle) */}
                   <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">View Mode</span>
+                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('View Mode')}</span>
                       <span className={`text-[10px] px-2 py-0.5 rounded border font-semibold w-fit ${
                           viewMode === 'gameday' 
                               ? 'bg-blue-50 text-blue-700 border-blue-200' 
                               : 'bg-green-50 text-green-700 border-green-200'
                       }`}>
-                          {viewMode === 'gameday' ? 'GameDay' : 'Total'}
+                          {viewMode === 'gameday' ? t('GameDay') : t('Total')}
                       </span>
                   </div>
 
                   {/* Group 2: Season */}
                   <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Season</span>
+                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('Season')}</span>
                       <div className="flex items-center gap-3">
                           {seasonsInView.map(s => (
                               <div key={s} className="flex items-center gap-1.5">
@@ -368,7 +370,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
 
                   {/* Group 3: Tier */}
                   <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tier Size</span>
+                      <span className="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('Tier Size')}</span>
                       <div className="flex items-center gap-3">
                           <div className="flex items-center gap-1.5">
                               <div className="w-3.5 h-3.5 rounded-full bg-gray-300 border border-white"></div>
@@ -394,9 +396,9 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
       {/* ROW 2: Main Revenue Trend (Kept from before) */}
       <div className="bg-white dark:bg-gray-900 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center justify-between">
-             <span>{uniqueOpponents.size === 1 ? `YoY History: ${Array.from(uniqueOpponents)[0]}` : 'Revenue vs Attendance Pacing'}</span>
+             <span>{uniqueOpponents.size === 1 ? `${t('YoY History')}: ${Array.from(uniqueOpponents)[0]}` : t('Revenue vs Attendance Pacing')}</span>
              <span className="text-xs font-normal text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                <span className="w-3 h-0.5 bg-yellow-500 dashed"></span> Forecast Line
+                <span className="w-3 h-0.5 bg-yellow-500 dashed"></span> {t('Forecast Line')}
              </span>
           </h3>
           <div className="h-72">
@@ -426,20 +428,20 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                           </div>
                           <div className="space-y-1.5">
                              <div className="flex justify-between items-center gap-4">
-                               <span className="text-gray-500 dark:text-gray-400">Season:</span>
+                               <span className="text-gray-500 dark:text-gray-400">{t('Season:')}</span>
                                <span className="font-medium text-gray-900 dark:text-white">{d.season}</span>
                              </div>
                              <div className="flex justify-between items-center gap-4 border-t border-gray-50 dark:border-gray-800 pt-1 mt-1">
-                               <span className="text-gray-500 dark:text-gray-400">Revenue:</span>
+                               <span className="text-gray-500 dark:text-gray-400">{t('Revenue:')}</span>
                                <span className="font-bold text-red-600">{formatCurrency(d.revenue)}</span>
                              </div>
                              <div className="flex justify-between items-center gap-4">
-                               <span className="text-gray-500 dark:text-gray-400">Attendance:</span>
+                               <span className="text-gray-500 dark:text-gray-400">{t('Attendance:')}</span>
                                <span className="font-bold text-gray-900 dark:text-white">{d.attendance}</span>
                              </div>
                              {d.trend !== undefined && (
                                 <div className="flex justify-between items-center gap-4 border-t border-gray-50 dark:border-gray-800 pt-1 mt-1">
-                                    <span className="text-gray-500 dark:text-gray-400">Forecast:</span>
+                                    <span className="text-gray-500 dark:text-gray-400">{t('Forecast:')}</span>
                                     <span className="font-bold text-yellow-600">{formatCurrency(d.trend)}</span>
                                 </div>
                              )}
@@ -454,7 +456,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                 <Bar 
                   yAxisId="left" 
                   dataKey="revenue" 
-                  name="Revenue (€)" 
+                  name={t("Revenue (€)")} 
                   fill="#DC2626" 
                   radius={[4, 4, 0, 0]} 
                   barSize={20} 
@@ -469,7 +471,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                   yAxisId="right" 
                   type="monotone" 
                   dataKey="attendance" 
-                  name="Attendance" 
+                  name={t("Attendance")} 
                   stroke="#1F2937" 
                   strokeWidth={2} 
                   dot={{r: 3}} 
@@ -479,7 +481,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                     yAxisId="left"
                     type="monotone"
                     dataKey="trend"
-                    name="Trend (Forecast)"
+                    name={t("Trend (Forecast)")}
                     stroke="#eab308"
                     strokeWidth={2}
                     strokeDasharray="5 5"
@@ -495,14 +497,14 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Tier Analysis with Rank Line */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Tier Performance Analysis</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">{t('Tier Performance Analysis')}</h3>
               <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={tierData} margin={{ top: 20, right: 50, left: 0, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} />
                           <XAxis dataKey="tier" tick={{fontSize: 11}} />
-                          <YAxis yAxisId="left" tickFormatter={formatAxisCurrency} tick={{fontSize: 10}} label={{ value: 'Avg Revenue', angle: -90, position: 'insideLeft', style:{fontSize:10} }} />
-                          <YAxis yAxisId="right" orientation="right" reversed domain={[0, 17]} label={{ value: 'Avg PV Rank', angle: 90, position: 'right', offset: 10, style:{fontSize:10} }} />
+                          <YAxis yAxisId="left" tickFormatter={formatAxisCurrency} tick={{fontSize: 10}} label={{ value: t('Avg Revenue'), angle: -90, position: 'insideLeft', style:{fontSize:10} }} />
+                          <YAxis yAxisId="right" orientation="right" reversed domain={[0, 17]} label={{ value: t('Avg PV Rank'), angle: 90, position: 'right', offset: 10, style:{fontSize:10} }} />
                           <Tooltip 
                             formatter={(value: any, name: string) => {
                                 if (name.includes('Rank')) return value.toFixed(1);
@@ -511,10 +513,10 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                             }}
                           />
                           <Legend wrapperStyle={{fontSize: '11px'}} />
-                          <Bar yAxisId="left" dataKey="avgRevenue" name="Avg Revenue" fill="#475569" barSize={30} radius={[4, 4, 0, 0]} 
+                          <Bar yAxisId="left" dataKey="avgRevenue" name={t("Avg Revenue")} fill="#475569" barSize={30} radius={[4, 4, 0, 0]} 
                                onClick={(d) => onFilterChange('tier', d.rawTier)} cursor="pointer"
                           />
-                          <Line yAxisId="right" type="monotone" dataKey="avgRank" name="Avg PV Rank" stroke="#DC2626" strokeWidth={2} dot={{r: 4}} />
+                          <Line yAxisId="right" type="monotone" dataKey="avgRank" name={t("Avg PV Rank")} stroke="#DC2626" strokeWidth={2} dot={{r: 4}} />
                       </ComposedChart>
                   </ResponsiveContainer>
               </div>
@@ -522,7 +524,7 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
 
           {/* Day of Week Analysis */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Day of Week Performance</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">{t('Day of Week Performance')}</h3>
               <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={dayData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
@@ -538,8 +540,8 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                                     return (
                                         <div className="bg-white p-2 border border-gray-200 shadow-xl rounded text-xs z-50 relative" style={{zIndex: 100}}>
                                             <p className="font-bold mb-1 text-gray-900">{d.day}</p>
-                                            <p className="text-gray-600">Avg Rev: <strong className="text-green-600">{formatCurrency(d.avgRevenue)}</strong></p>
-                                            <p className="text-gray-600">Avg Att: <strong className="text-blue-600">{Math.round(d.avgAttend)}</strong></p>
+                                            <p className="text-gray-600">{t('Avg Rev')}: <strong className="text-green-600">{formatCurrency(d.avgRevenue)}</strong></p>
+                                            <p className="text-gray-600">{t('Avg Att')}: <strong className="text-blue-600">{Math.round(d.avgAttend)}</strong></p>
                                         </div>
                                     )
                                 }
@@ -547,10 +549,10 @@ export const DashboardChart: React.FC<DashboardChartProps> = ({ data, efficiency
                              }}
                           />
                           <Legend wrapperStyle={{fontSize: '11px'}} />
-                          <Bar yAxisId="left" dataKey="avgRevenue" name="Avg Revenue" fill="#16a34a" barSize={20} radius={[4, 4, 0, 0]} 
+                          <Bar yAxisId="left" dataKey="avgRevenue" name={t("Avg Revenue")} fill="#16a34a" barSize={20} radius={[4, 4, 0, 0]} 
                                onClick={(d) => onFilterChange('day', d.day)} cursor="pointer"
                           />
-                          <Bar yAxisId="right" dataKey="avgAttend" name="Avg Attendance" fill="#93c5fd" barSize={20} radius={[4, 4, 0, 0]} cursor="pointer" />
+                          <Bar yAxisId="right" dataKey="avgAttend" name={t("Avg Attendance")} fill="#93c5fd" barSize={20} radius={[4, 4, 0, 0]} cursor="pointer" />
                       </BarChart>
                   </ResponsiveContainer>
               </div>

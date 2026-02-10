@@ -5,6 +5,7 @@ import { calculateKPIs } from './StatsCards';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ArrowLeftRight, TrendingUp, TrendingDown, Minus, AlertCircle, UserX } from 'lucide-react';
 import { FIXED_CAPACITY_25_26 } from '../constants';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ComparisonViewProps {
   fullData: GameData[];
@@ -197,6 +198,7 @@ const ComparisonMetric = ({ label, valA, valB, isCurrency = false, isPercent = f
 };
 
 export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, options, viewMode }) => {
+  const { t } = useLanguage();
   const [filtersA, setFiltersA] = useState<FilterState>({
      ...INITIAL_FILTERS,
      seasons: [options.seasons.length > 1 ? options.seasons[1] : options.seasons[0]], 
@@ -214,7 +216,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
   const statsB = calculateKPIs(dataB);
   
   const chartData = [
-      { name: 'Total Revenue', A: statsA?.totalRevenue || 0, B: statsB?.totalRevenue || 0 },
+      { name: t('Total Revenue'), A: statsA?.totalRevenue || 0, B: statsB?.totalRevenue || 0 },
   ];
 
   const updateFilter = (set: 'A'|'B', field: keyof FilterState, value: any) => {
@@ -235,9 +237,9 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
       <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-[calc(100vh-200px)] sticky top-6">
           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
              <span className={`w-3 h-3 rounded-full ${label === 'A' ? 'bg-gray-400' : 'bg-red-600'}`}></span>
-             <h3 className="font-bold text-gray-800 dark:text-white">Scenario {label}</h3>
+             <h3 className="font-bold text-gray-800 dark:text-white">{t('Scenario')} {label}</h3>
              <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">
-                 {label === 'A' ? 'Baseline' : 'Comparison'}
+                 {label === 'A' ? t('Baseline') : t('Comparison')}
              </span>
           </div>
           
@@ -251,26 +253,26 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
                 }`}
             >
                 <UserX size={14} />
-                {filters.ignoreOspiti ? 'Zona Ospiti Excluded' : 'Ignore Zona Ospiti'}
+                {filters.ignoreOspiti ? t('Zona Ospiti Excluded') : t('Ignore Zona Ospiti')}
             </button>
 
-            <MultiSelect label="Season" options={availSeasons} selected={filters.seasons} onChange={(v) => setFilter('seasons', v)} />
-            <MultiSelect label="League" options={availLeagues} selected={filters.leagues} onChange={(v) => setFilter('leagues', v)} />
-            <MultiSelect label="Opponent" options={availOpponents} selected={filters.opponents} onChange={(v) => setFilter('opponents', v)} />
-            <MultiSelect label="Tier" options={availTiers} selected={filters.tiers} onChange={(v) => setFilter('tiers', v)} />
+            <MultiSelect label={t("Season")} options={availSeasons} selected={filters.seasons} onChange={(v) => setFilter('seasons', v)} />
+            <MultiSelect label={t("League")} options={availLeagues} selected={filters.leagues} onChange={(v) => setFilter('leagues', v)} />
+            <MultiSelect label={t("Opponent")} options={availOpponents} selected={filters.opponents} onChange={(v) => setFilter('opponents', v)} />
+            <MultiSelect label={t("Tier")} options={availTiers} selected={filters.tiers} onChange={(v) => setFilter('tiers', v)} />
             
             <div className="border-t border-gray-100 dark:border-gray-800 my-2"></div>
             
-            <MultiSelect label="Date" options={availDates} selected={filters.dates} onChange={(v) => setFilter('dates', v)} />
-            <MultiSelect label="Time" options={availTimes} selected={filters.times} onChange={(v) => setFilter('times', v)} />
+            <MultiSelect label={t("Date")} options={availDates} selected={filters.dates} onChange={(v) => setFilter('dates', v)} />
+            <MultiSelect label={t("Time")} options={availTimes} selected={filters.times} onChange={(v) => setFilter('times', v)} />
             
             <div className="border-t border-gray-100 dark:border-gray-800 my-2"></div>
 
-            <MultiSelect label="Zone" options={availZones} selected={filters.zones} onChange={(v) => setFilter('zones', v)} />
+            <MultiSelect label={t("Zone")} options={availZones} selected={filters.zones} onChange={(v) => setFilter('zones', v)} />
           </div>
 
           <div className="pt-4 text-xs text-center text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-800 mt-2 flex-shrink-0">
-             {label === 'A' ? dataA.length : dataB.length} Games matched
+             {label === 'A' ? dataA.length : dataB.length} {t('Games matched')}
           </div>
       </div>
       );
@@ -283,11 +285,11 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
                <ArrowLeftRight size={24} />
            </div>
            <div>
-               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Comparative Analysis</h1>
+               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Comparative Analysis')}</h1>
                <p className="text-gray-500 dark:text-gray-400 text-sm">
                    {viewMode === 'gameday' 
-                    ? 'Analyzing GameDay revenue only (Variable)' 
-                    : 'Analyze performance variance between two distinct datasets.'}
+                    ? t('Analyzing GameDay revenue only (Variable)') 
+                    : t('Analyze performance variance between two distinct datasets.')}
                </p>
            </div>
        </div>
@@ -301,21 +303,21 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
                {(!statsA || !statsB) ? (
                    <div className="flex flex-col items-center justify-center h-full bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center">
                        <AlertCircle className="text-gray-300 dark:text-gray-600 mb-4" size={48} />
-                       <p className="text-gray-500 dark:text-gray-400">Select filters to begin comparison.</p>
+                       <p className="text-gray-500 dark:text-gray-400">{t('Select filters to begin comparison.')}</p>
                    </div>
                ) : (
                    <>
                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                         <ComparisonMetric label="Total Revenue" valA={statsA.totalRevenue} valB={statsB.totalRevenue} isCurrency />
-                         <ComparisonMetric label="Avg Revenue / Game" valA={statsA.arpg} valB={statsB.arpg} isCurrency />
-                         <ComparisonMetric label="Avg Attendance" valA={statsA.totalAttendance / (statsA.gameCount||1)} valB={statsB.totalAttendance / (statsB.gameCount||1)} />
-                         <ComparisonMetric label="Yield (ATP)" valA={statsA.yield_atp} valB={statsB.yield_atp} isCurrency />
-                         <ComparisonMetric label="RevPAS" valA={statsA.revPas} valB={statsB.revPas} isCurrency />
-                         <ComparisonMetric label="Load Factor" valA={statsA.occupancy} valB={statsB.occupancy} isPercent />
+                         <ComparisonMetric label={t("Total Revenue")} valA={statsA.totalRevenue} valB={statsB.totalRevenue} isCurrency />
+                         <ComparisonMetric label={t("Avg Revenue / Game")} valA={statsA.arpg} valB={statsB.arpg} isCurrency />
+                         <ComparisonMetric label={t("Avg Attendance")} valA={statsA.totalAttendance / (statsA.gameCount||1)} valB={statsB.totalAttendance / (statsB.gameCount||1)} />
+                         <ComparisonMetric label={t("Yield (ATP)")} valA={statsA.yield_atp} valB={statsB.yield_atp} isCurrency />
+                         <ComparisonMetric label={t("RevPAS")} valA={statsA.revPas} valB={statsB.revPas} isCurrency />
+                         <ComparisonMetric label={t("Load Factor")} valA={statsA.occupancy} valB={statsB.occupancy} isPercent />
                      </div>
                      
                      <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                         <h4 className="font-bold text-gray-800 dark:text-white mb-4">Revenue Comparison (Total)</h4>
+                         <h4 className="font-bold text-gray-800 dark:text-white mb-4">{t('Revenue Comparison (Total)')}</h4>
                          <div className="h-40">
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={chartData} layout="vertical" margin={{top: 0, left: 0, right: 30, bottom: 0}}>
@@ -324,8 +326,8 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
                                     <YAxis type="category" dataKey="name" hide width={10} />
                                     <Tooltip formatter={(v:number) => `€${v.toLocaleString()}`} />
                                     <Legend />
-                                    <Bar dataKey="A" name="Scenario A" fill="#9CA3AF" radius={[0, 4, 4, 0]} barSize={20} />
-                                    <Bar dataKey="B" name="Scenario B" fill="#DC2626" radius={[0, 4, 4, 0]} barSize={20} />
+                                    <Bar dataKey="A" name={t("Scenario A")} fill="#9CA3AF" radius={[0, 4, 4, 0]} barSize={20} />
+                                    <Bar dataKey="B" name={t("Scenario B")} fill="#DC2626" radius={[0, 4, 4, 0]} barSize={20} />
                                 </BarChart>
                             </ResponsiveContainer>
                          </div>

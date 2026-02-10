@@ -4,6 +4,7 @@ import { CRMRecord, SponsorData } from '../types';
 import { ZONE_OPPORTUNITY_COST } from '../constants';
 import { MultiSelect } from './MultiSelect';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const COLORS = ['#dc2626', '#2563eb', '#16a34a', '#ca8a04', '#9333ea', '#0891b2', '#be185d', '#65a30d'];
 
@@ -142,6 +143,7 @@ const cleanSeat = (seat: string): string => {
 };
 
 export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoading = false, isLoadingSearch = false, serverStats = null, games = [], viewMode = 'total' }) => {
+  const { t } = useLanguage();
   const [selectedZones, setSelectedZones] = useState<string[]>(['All']);
   const [selectedGames, setSelectedGames] = useState<string[]>(['All']);
   const [selectedSellTypes, setSelectedSellTypes] = useState<string[]>(['All']);
@@ -873,7 +875,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8 animate-fade-in pt-6">
         <div className="w-16 h-16 border-4 border-gray-200 dark:border-gray-700 border-t-red-600 rounded-full animate-spin mb-6"></div>
-        <p className="text-gray-500 dark:text-gray-400">Loading CRM data...</p>
+        <p className="text-gray-500 dark:text-gray-400">{t('Loading CRM data...')}</p>
       </div>
     );
   }
@@ -884,13 +886,13 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6 shadow-inner relative overflow-hidden">
           <Users size={40} className="text-gray-400 dark:text-gray-500 relative z-10" />
         </div>
-        <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">CRM System</h2>
+        <h2 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">{t('CRM System')}</h2>
         <p className="text-gray-500 dark:text-gray-400 max-w-md mb-8">
-          Loading CRM data from BigQuery...
+          {t('Loading CRM data from BigQuery...')}
         </p>
         <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
           <Loader2 size={20} className="animate-spin" />
-          <span>Please wait</span>
+          <span>{t('Please wait')}</span>
         </div>
       </div>
     );
@@ -902,15 +904,15 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
             <Users size={28} className="text-red-600" />
-            CRM Analytics
+            {t('CRM Analytics')}
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{stats.totalTickets.toLocaleString()} tickets from {stats.uniqueCustomers.toLocaleString()} customers</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{stats.totalTickets.toLocaleString()} {t('tickets from')} {stats.uniqueCustomers.toLocaleString()} {t('customers')}</p>
         </div>
         <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 p-1">
           {[
-            { key: 'all', label: 'All' },
-            { key: 'fixed', label: 'Fix Sell (Summer)' },
-            { key: 'flexible', label: 'Flexible Sell (inSeason)' }
+            { key: 'all', label: t('All') },
+            { key: 'fixed', label: t('Fix Sell (Summer)') },
+            { key: 'flexible', label: t('Flexible Sell (inSeason)') }
           ].map(({ key, label }) => (
             <button
               key={key}
@@ -929,12 +931,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
       {/* Filter Row */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-        <div><MultiSelect label="Game" options={filterOptions.games} selected={selectedGames} onChange={setSelectedGames} /></div>
-        <div><MultiSelect label="Zone" options={filterOptions.zones} selected={selectedZones} onChange={setSelectedZones} /></div>
+        <div><MultiSelect label={t('Game')} options={filterOptions.games} selected={selectedGames} onChange={setSelectedGames} /></div>
+        <div><MultiSelect label={t('Zone')} options={filterOptions.zones} selected={selectedZones} onChange={setSelectedZones} /></div>
         {hasActiveFilter && (
           <div className="flex items-end">
             <button onClick={clearAllFilters} className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-800 underline">
-              Clear All Filters
+              {t('Clear All Filters')}
             </button>
           </div>
         )}
@@ -957,7 +959,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             {view === 'corporate' && <Building2 size={14} className="inline mr-2" />}
             {view === 'giveaways' && <Award size={14} className="inline mr-2" />}
             {view === 'search' && <Search size={14} className="inline mr-2" />}
-            {view === 'search' ? 'Find Customer' : view.charAt(0).toUpperCase() + view.slice(1)}
+            {view === 'search' ? t('Find Customer') : t(view.charAt(0).toUpperCase() + view.slice(1))}
           </button>
         ))}
       </div>
@@ -965,7 +967,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       {hasActiveFilter && (
         <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 rounded-xl p-3 shadow-sm">
           <p className="text-xs text-amber-600">
-            Showing {filteredData.length.toLocaleString()} of {data.length.toLocaleString()} records
+            {t('Showing')} {filteredData.length.toLocaleString()} {t('of')} {data.length.toLocaleString()} {t('records')}
           </p>
         </div>
       )}
@@ -980,7 +982,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 </div>
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.totalTickets.toLocaleString()}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Total Tickets</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('Total Tickets')}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
@@ -989,7 +991,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 </div>
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.uniqueCustomers.toLocaleString()}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Unique Customers</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('Unique Customers')}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
@@ -998,7 +1000,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 </div>
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompact(stats.totalCommercialValue)}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Commercial Value</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('Commercial Value')}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
@@ -1007,7 +1009,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 </div>
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.uniqueCorps}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Corporate Accounts</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('Corporate Accounts')}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
@@ -1016,7 +1018,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 </div>
               </div>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.uniqueEmails.toLocaleString()}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Valid Emails</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('Valid Emails')}</p>
             </div>
           </div>
 
@@ -1024,7 +1026,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <PieChart size={20} className="text-blue-500" />
-                Ticket Type Distribution
+                {t('Ticket Type Distribution')}
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1058,7 +1060,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <BarChart3 size={20} className="text-green-500" />
-                Sales Channel Breakdown
+                {t('Sales Channel Breakdown')}
                 {!selectedSellTypes.includes('All') && (
                   <span className="text-xs font-normal text-green-600 ml-2">
                     (Filtered: {selectedSellTypes.join(', ')})
@@ -1066,7 +1068,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   </span>
                 )}
               </h3>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">Click a bar to filter by that channel</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">{t('Click a bar to filter by that channel')}</p>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={salesChannelChartData} style={{ cursor: 'pointer' }}>
@@ -1101,9 +1103,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
               <Award size={20} className="text-amber-500" />
-              Top Customers
+              {t('Top Customers')}
               <span className="text-xs font-normal text-gray-400 dark:text-gray-500 ml-2">
-                (sorted by {sortColumn === 'value' ? 'Total Paid' : sortColumn === 'tickets' ? 'Tickets' : sortColumn === 'avgPerGame' ? 'Avg/Gm' : sortColumn === 'avgPerTxn' ? 'Avg/Txn' : sortColumn === 'avgAdvance' ? 'Avg Advance' : sortColumn === 'age' ? 'Age' : sortColumn.replace(/([A-Z])/g, ' $1').trim()})
+                ({t('sorted by')} {sortColumn === 'value' ? t('Total Paid') : sortColumn === 'tickets' ? t('Tickets') : sortColumn === 'avgPerGame' ? t('Avg/Gm') : sortColumn === 'avgPerTxn' ? t('Avg/Txn') : sortColumn === 'avgAdvance' ? t('Avg Advance') : sortColumn === 'age' ? t('Age') : sortColumn.replace(/([A-Z])/g, ' $1').trim()})
               </span>
             </h3>
             <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
@@ -1115,73 +1117,73 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
                       onClick={() => { setSortColumn('name'); setSortDirection(sortColumn === 'name' && sortDirection === 'asc' ? 'desc' : 'asc'); }}
                     >
-                      <span className="flex items-center gap-1">Customer {sortColumn === 'name' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                      <span className="flex items-center gap-1">{t('Customer')} {sortColumn === 'name' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
                     </th>
                     <th 
                       className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
                       onClick={() => { setSortColumn('company'); setSortDirection(sortColumn === 'company' && sortDirection === 'asc' ? 'desc' : 'asc'); }}
                     >
-                      <span className="flex items-center gap-1">Company {sortColumn === 'company' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                      <span className="flex items-center gap-1">{t('Company')} {sortColumn === 'company' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
                     </th>
                     <th 
                       className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
                       onClick={() => { setSortColumn('topSellType'); setSortDirection(sortColumn === 'topSellType' && sortDirection === 'asc' ? 'desc' : 'asc'); }}
                     >
-                      <span className="flex items-center gap-1">Sell Type {sortColumn === 'topSellType' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                      <span className="flex items-center gap-1">{t('Sell Type')} {sortColumn === 'topSellType' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
                     </th>
                     <th 
                       className="text-center py-2 px-2 font-semibold text-gray-600 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
                       onClick={() => { setSortColumn('tickets'); setSortDirection(sortColumn === 'tickets' && sortDirection === 'desc' ? 'asc' : 'desc'); }}
                     >
-                      <span className="flex items-center justify-center gap-1">Tickets {sortColumn === 'tickets' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                      <span className="flex items-center justify-center gap-1">{t('Tickets')} {sortColumn === 'tickets' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
                     </th>
                     <th 
                       className="text-right py-2 px-2 font-semibold text-gray-600 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
                       onClick={() => { setSortColumn('value'); setSortDirection(sortColumn === 'value' && sortDirection === 'desc' ? 'asc' : 'desc'); }}
                     >
-                      <span className="flex items-center justify-end gap-1">Total Paid {sortColumn === 'value' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                      <span className="flex items-center justify-end gap-1">{t('Total Paid')} {sortColumn === 'value' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
                     </th>
                     <th 
                       className="text-right py-2 px-2 font-semibold text-gray-600 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
                       onClick={() => { setSortColumn('avgPerGame'); setSortDirection(sortColumn === 'avgPerGame' && sortDirection === 'desc' ? 'asc' : 'desc'); }}
                     >
-                      <span className="flex items-center justify-end gap-1">Avg/Gm {sortColumn === 'avgPerGame' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                      <span className="flex items-center justify-end gap-1">{t('Avg/Gm')} {sortColumn === 'avgPerGame' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
                     </th>
                     <th 
                       className="text-right py-2 px-2 font-semibold text-gray-600 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
                       onClick={() => { setSortColumn('avgPerTxn'); setSortDirection(sortColumn === 'avgPerTxn' && sortDirection === 'desc' ? 'asc' : 'desc'); }}
                     >
-                      <span className="flex items-center justify-end gap-1">Avg/Txn {sortColumn === 'avgPerTxn' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                      <span className="flex items-center justify-end gap-1">{t('Avg/Txn')} {sortColumn === 'avgPerTxn' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
                     </th>
                     <th 
                       className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
                       onClick={() => { setSortColumn('principalZone'); setSortDirection(sortColumn === 'principalZone' && sortDirection === 'asc' ? 'desc' : 'asc'); }}
                     >
-                      <span className="flex items-center gap-1">Principal Zone {sortColumn === 'principalZone' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                      <span className="flex items-center gap-1">{t('Principal Zone')} {sortColumn === 'principalZone' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
                     </th>
                     <th 
                       className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
                       onClick={() => { setSortColumn('secondaryZone'); setSortDirection(sortColumn === 'secondaryZone' && sortDirection === 'asc' ? 'desc' : 'asc'); }}
                     >
-                      <span className="flex items-center gap-1">Secondary Zone {sortColumn === 'secondaryZone' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                      <span className="flex items-center gap-1">{t('Secondary Zone')} {sortColumn === 'secondaryZone' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
                     </th>
                     <th 
                       className="text-center py-2 px-2 font-semibold text-gray-600 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
                       onClick={() => { setSortColumn('avgAdvance'); setSortDirection(sortColumn === 'avgAdvance' && sortDirection === 'desc' ? 'asc' : 'desc'); }}
                     >
-                      <span className="flex items-center justify-center gap-1">Avg Advance {sortColumn === 'avgAdvance' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                      <span className="flex items-center justify-center gap-1">{t('Avg Advance')} {sortColumn === 'avgAdvance' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
                     </th>
                     <th 
                       className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
                       onClick={() => { setSortColumn('age'); setSortDirection(sortColumn === 'age' && sortDirection === 'desc' ? 'asc' : 'desc'); }}
                     >
-                      <span className="flex items-center gap-1">Age {sortColumn === 'age' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                      <span className="flex items-center gap-1">{t('Age')} {sortColumn === 'age' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
                     </th>
                     <th 
                       className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 select-none"
                       onClick={() => { setSortColumn('location'); setSortDirection(sortColumn === 'location' && sortDirection === 'asc' ? 'desc' : 'asc'); }}
                     >
-                      <span className="flex items-center gap-1">Location {sortColumn === 'location' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
+                      <span className="flex items-center gap-1">{t('Location')} {sortColumn === 'location' && (sortDirection === 'asc' ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}</span>
                     </th>
                   </tr>
                 </thead>
@@ -1273,7 +1275,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <Users size={20} className="text-blue-500" />
-                Age Distribution
+                {t('Age Distribution')}
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1294,7 +1296,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <MapPin size={20} className="text-green-500" />
-                Top Locations (Province)
+                {t('Top Locations (Province)')}
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1316,20 +1318,20 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
               <Users size={20} className="text-purple-500" />
-              Buyer Persona by Zone
+              {t('Buyer Persona by Zone')}
             </h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
                   <tr>
-                    <th className="text-left py-3 px-4 font-medium">Zone</th>
-                    <th className="text-center py-3 px-4 font-medium">Under 25</th>
+                    <th className="text-left py-3 px-4 font-medium">{t('Zone')}</th>
+                    <th className="text-center py-3 px-4 font-medium">{t('Under 25')}</th>
                     <th className="text-center py-3 px-4 font-medium">25-44</th>
                     <th className="text-center py-3 px-4 font-medium">45-64</th>
                     <th className="text-center py-3 px-4 font-medium">65+</th>
-                    <th className="text-right py-3 px-4 font-medium">Avg Price</th>
-                    <th className="text-right py-3 px-4 font-medium">Avg Advance</th>
-                    <th className="text-right py-3 px-4 font-medium">Top Location</th>
+                    <th className="text-right py-3 px-4 font-medium">{t('Avg Price')}</th>
+                    <th className="text-right py-3 px-4 font-medium">{t('Avg Advance')}</th>
+                    <th className="text-right py-3 px-4 font-medium">{t('Top Location')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -1392,7 +1394,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <TrendingUp size={20} className="text-blue-500" />
-                Purchase Time (Hour of Day)
+                {t('Purchase Time (Hour of Day)')}
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1413,7 +1415,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <BarChart3 size={20} className="text-purple-500" />
-                Purchase Day of Week
+                {t('Purchase Day of Week')}
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1436,7 +1438,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <Award size={20} className="text-amber-500" />
-                Advance Booking (Days Before Game)
+                {t('Advance Booking (Days Before Game)')}
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1457,7 +1459,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <Euro size={20} className="text-green-500" />
-                Payment Methods
+                {t('Payment Methods')}
               </h3>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1539,7 +1541,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       onClick={() => { setSelectedCorporate(null); setSelectedGame(null); }}
                       className="text-amber-600 hover:text-amber-800 hover:underline"
                     >
-                      Corporate List
+                      {t('Corporate List')}
                     </button>
                     <ChevronRight size={16} className="text-gray-400 dark:text-gray-500" />
                     <button 
@@ -1566,21 +1568,21 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       </div>
                       <div className="text-right">
                         <p className="text-3xl font-bold">{gameTickets.length}</p>
-                        <p className="text-blue-100 text-sm">Tickets</p>
+                        <p className="text-blue-100 text-sm">{t('Tickets')}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/20">
                       <div>
                         <p className="text-2xl font-bold">{formatCurrency(gameTickets.reduce((sum, t) => sum + (t.commercialValue * (t.quantity || 1)), 0))}</p>
-                        <p className="text-blue-100 text-sm">Total Value</p>
+                        <p className="text-blue-100 text-sm">{t('Total Value')}</p>
                       </div>
                       <div>
                         <p className="text-2xl font-bold">{new Set(gameTickets.map(t => t.pvZone || t.zone)).size}</p>
-                        <p className="text-blue-100 text-sm">Zones</p>
+                        <p className="text-blue-100 text-sm">{t('Zones')}</p>
                       </div>
                       <div>
                         <p className="text-2xl font-bold">{formatCurrency(gameTickets.reduce((sum, t) => sum + (t.commercialValue * (t.quantity || 1)), 0) / (gameTickets.length || 1))}</p>
-                        <p className="text-blue-100 text-sm">Avg Value/Ticket</p>
+                        <p className="text-blue-100 text-sm">{t('Avg Value/Ticket')}</p>
                       </div>
                     </div>
                   </div>
@@ -1590,7 +1592,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     <div className="p-4 border-b border-gray-100 dark:border-gray-800">
                       <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                         <Ticket size={18} className="text-blue-500" />
-                        Individual Tickets ({gameTickets.length})
+                        {t('Individual Tickets')} ({gameTickets.length})
                       </h3>
                     </div>
                     <div className="overflow-x-auto">
@@ -1598,13 +1600,13 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                         <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
                           <tr>
                             <th className="text-left py-3 px-4 font-medium">#</th>
-                            <th className="text-left py-3 px-4 font-medium">Name</th>
-                            <th className="text-left py-3 px-4 font-medium">Zone</th>
-                            <th className="text-left py-3 px-4 font-medium">Area</th>
-                            <th className="text-left py-3 px-4 font-medium">Seat</th>
-                            <th className="text-center py-3 px-4 font-medium">Age</th>
-                            <th className="text-left py-3 px-4 font-medium">Province</th>
-                            <th className="text-right py-3 px-4 font-medium">Commercial Value</th>
+                            <th className="text-left py-3 px-4 font-medium">{t('Name')}</th>
+                            <th className="text-left py-3 px-4 font-medium">{t('Zone')}</th>
+                            <th className="text-left py-3 px-4 font-medium">{t('Area')}</th>
+                            <th className="text-left py-3 px-4 font-medium">{t('Seat')}</th>
+                            <th className="text-center py-3 px-4 font-medium">{t('Age')}</th>
+                            <th className="text-left py-3 px-4 font-medium">{t('Province')}</th>
+                            <th className="text-right py-3 px-4 font-medium">{t('Commercial Value')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -1642,7 +1644,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     className="flex items-center gap-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                   >
                     <ChevronLeft size={20} />
-                    <span>Back to List</span>
+                    <span>{t('Back to List')}</span>
                   </button>
                 </div>
                 
@@ -1656,30 +1658,30 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       </div>
                       <div className="flex flex-wrap gap-4 text-amber-100 text-sm mt-3">
                         {corpInfo?.principalZone && corpInfo.principalZone !== '—' && (
-                          <span className="px-2 py-1 bg-white dark:bg-gray-900/20 rounded">Principal: {corpInfo.principalZone}</span>
+                          <span className="px-2 py-1 bg-white dark:bg-gray-900/20 rounded">{t('Principal')}: {corpInfo.principalZone}</span>
                         )}
                         {corpInfo?.secondaryZone && corpInfo.secondaryZone !== '—' && (
-                          <span className="px-2 py-1 bg-white dark:bg-gray-900/20 rounded">Secondary: {corpInfo.secondaryZone}</span>
+                          <span className="px-2 py-1 bg-white dark:bg-gray-900/20 rounded">{t('Secondary')}: {corpInfo.secondaryZone}</span>
                         )}
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-3xl font-bold">{corpRecords.length}</p>
-                      <p className="text-amber-100 text-sm">Total Tickets</p>
+                      <p className="text-amber-100 text-sm">{t('Total Tickets')}</p>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-white/20">
                     <div>
                       <p className="text-2xl font-bold">{formatCurrency(corpInfo?.value || 0)}</p>
-                      <p className="text-amber-100 text-sm">Commercial Value</p>
+                      <p className="text-amber-100 text-sm">{t('Commercial Value')}</p>
                     </div>
                     <div>
                       <p className="text-2xl font-bold">{gameList.length}</p>
-                      <p className="text-amber-100 text-sm">Games Attended</p>
+                      <p className="text-amber-100 text-sm">{t('Games Attended')}</p>
                     </div>
                     <div>
                       <p className="text-2xl font-bold">{formatCurrency((corpInfo?.value || 0) / (corpRecords.length || 1))}</p>
-                      <p className="text-amber-100 text-sm">Avg Value/Ticket</p>
+                      <p className="text-amber-100 text-sm">{t('Avg Value/Ticket')}</p>
                     </div>
                   </div>
                 </div>
@@ -1689,19 +1691,19 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   <div className="p-4 border-b border-gray-100 dark:border-gray-800">
                     <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                       <Calendar size={18} className="text-amber-500" />
-                      Games ({gameList.length})
+                      {t('Games')} ({gameList.length})
                     </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Click on a game to view individual tickets</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Click on a game to view individual tickets')}</p>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
                         <tr>
-                          <th className="text-left py-3 px-4 font-medium">Game</th>
-                          <th className="text-left py-3 px-4 font-medium">Zones</th>
-                          <th className="text-right py-3 px-4 font-medium">Tickets</th>
-                          <th className="text-right py-3 px-4 font-medium">Value</th>
-                          <th className="text-left py-3 px-4 font-medium">Seats</th>
+                          <th className="text-left py-3 px-4 font-medium">{t('Game')}</th>
+                          <th className="text-left py-3 px-4 font-medium">{t('Zones')}</th>
+                          <th className="text-right py-3 px-4 font-medium">{t('Tickets')}</th>
+                          <th className="text-right py-3 px-4 font-medium">{t('Value')}</th>
+                          <th className="text-left py-3 px-4 font-medium">{t('Seats')}</th>
                           <th className="w-8"></th>
                         </tr>
                       </thead>
@@ -1752,17 +1754,17 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 <div className="bg-gradient-to-br from-amber-600 to-amber-800 rounded-xl p-5 text-white shadow-lg">
                   <Building2 size={24} className="mb-3 opacity-80" />
                   <p className="text-3xl font-bold">{stats.uniqueCorps}</p>
-                  <p className="text-amber-100 text-sm">Corporate Accounts</p>
+                  <p className="text-amber-100 text-sm">{t('Corporate Accounts')}</p>
                 </div>
                 <div className="bg-gradient-to-br from-slate-700 to-slate-900 rounded-xl p-5 text-white shadow-lg">
                   <Ticket size={24} className="mb-3 opacity-80" />
                   <p className="text-3xl font-bold">{stats.corporateTickets.toLocaleString()}</p>
-                  <p className="text-slate-300 text-sm">Corp Tickets Sold</p>
+                  <p className="text-slate-300 text-sm">{t('Corp Tickets Sold')}</p>
                 </div>
                 <div className="bg-gradient-to-br from-green-600 to-green-800 rounded-xl p-5 text-white shadow-lg">
                   <Euro size={24} className="mb-3 opacity-80" />
                   <p className="text-3xl font-bold">{formatCompact(stats.topCorps.reduce((sum, c) => sum + c.value, 0))}</p>
-                  <p className="text-green-100 text-sm">Corp Commercial Value</p>
+                  <p className="text-green-100 text-sm">{t('Corp Commercial Value')}</p>
                 </div>
               </div>
 
@@ -1770,20 +1772,20 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 <div className="p-4 border-b border-gray-100 dark:border-gray-800">
                   <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                     <Building2 size={18} className="text-amber-500" />
-                    Top Corporate Accounts
+                    {t('Top Corporate Accounts')}
                   </h3>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Click on a company to view ticket and game details</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Click on a company to view ticket and game details')}</p>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
                       <tr>
                         <th className="text-left py-3 px-4 font-medium">#</th>
-                        <th className="text-left py-3 px-4 font-medium">Company</th>
-                        <th className="text-left py-3 px-4 font-medium">Principal Zone</th>
-                        <th className="text-left py-3 px-4 font-medium">Secondary Zone</th>
-                        <th className="text-right py-3 px-4 font-medium">Total Tickets</th>
-                        <th className="text-right py-3 px-4 font-medium">Commercial Value</th>
+                        <th className="text-left py-3 px-4 font-medium">{t('Company')}</th>
+                        <th className="text-left py-3 px-4 font-medium">{t('Principal Zone')}</th>
+                        <th className="text-left py-3 px-4 font-medium">{t('Secondary Zone')}</th>
+                        <th className="text-right py-3 px-4 font-medium">{t('Total Tickets')}</th>
+                        <th className="text-right py-3 px-4 font-medium">{t('Commercial Value')}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -1935,22 +1937,22 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               <div className="bg-gradient-to-br from-purple-600 to-purple-800 rounded-xl p-5 text-white shadow-lg">
                 <Award size={24} className="mb-3 opacity-80" />
                 <p className="text-3xl font-bold">{totalGiveawayTickets.toLocaleString()}</p>
-                <p className="text-purple-100 text-sm">Total Giveaway Tickets</p>
+                <p className="text-purple-100 text-sm">{t('Total Giveaway Tickets')}</p>
               </div>
               <div className="bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-xl p-5 text-white shadow-lg">
                 <Euro size={24} className="mb-3 opacity-80" />
                 <p className="text-3xl font-bold">{formatCompact(totalGiveawayValue)}</p>
-                <p className="text-indigo-100 text-sm">Opportunity Cost</p>
+                <p className="text-indigo-100 text-sm">{t('Opportunity Cost')}</p>
               </div>
               <div className="bg-gradient-to-br from-slate-600 to-slate-800 rounded-xl p-5 text-white shadow-lg">
                 <Users size={24} className="mb-3 opacity-80" />
                 <p className="text-3xl font-bold">{recipientList.length.toLocaleString()}</p>
-                <p className="text-slate-200 text-sm">Recipients</p>
+                <p className="text-slate-200 text-sm">{t('Recipients')}</p>
               </div>
               <div className="bg-gradient-to-br from-pink-600 to-pink-800 rounded-xl p-5 text-white shadow-lg">
                 <Ticket size={24} className="mb-3 opacity-80" />
                 <p className="text-3xl font-bold">{typeList.length}</p>
-                <p className="text-pink-100 text-sm">Giveaway Types</p>
+                <p className="text-pink-100 text-sm">{t('Giveaway Types')}</p>
               </div>
             </div>
 
@@ -1970,7 +1972,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       onClick={() => setSelectedGiveawayRecipient(null)}
                       className="text-purple-600 hover:text-purple-800 hover:underline"
                     >
-                      Giveaway Recipients
+                      {t('Giveaway Recipients')}
                     </button>
                     <ChevronRight size={16} className="text-gray-400 dark:text-gray-500" />
                     <span className="text-gray-600 dark:text-gray-400 font-medium">{selectedGiveawayRecipient}</span>
@@ -1997,25 +1999,25 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       </div>
                       <div className="text-right">
                         <p className="text-3xl font-bold">{recipientTickets.length}</p>
-                        <p className="text-purple-100 text-sm">Total Tickets</p>
+                        <p className="text-purple-100 text-sm">{t('Total Tickets')}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-white/20">
                       <div>
                         <p className="text-2xl font-bold">{formatCurrency(recipientData?.value || 0)}</p>
-                        <p className="text-purple-100 text-sm">Opportunity Cost</p>
+                        <p className="text-purple-100 text-sm">{t('Opportunity Cost')}</p>
                       </div>
                       <div>
                         <p className="text-2xl font-bold">{recipientData?.games.length || 0}</p>
-                        <p className="text-purple-100 text-sm">Games</p>
+                        <p className="text-purple-100 text-sm">{t('Games')}</p>
                       </div>
                       <div>
                         <p className="text-2xl font-bold">{recipientData?.zones.length || 0}</p>
-                        <p className="text-purple-100 text-sm">Zones</p>
+                        <p className="text-purple-100 text-sm">{t('Zones')}</p>
                       </div>
                       <div>
                         <p className="text-2xl font-bold">{recipientData?.age || '—'}</p>
-                        <p className="text-purple-100 text-sm">Age</p>
+                        <p className="text-purple-100 text-sm">{t('Age')}</p>
                       </div>
                     </div>
                   </div>
@@ -2025,7 +2027,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     <div className="p-4 border-b border-gray-100 dark:border-gray-800">
                       <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                         <Ticket size={18} className="text-purple-500" />
-                        Individual Tickets ({recipientTickets.length})
+                        {t('Individual Tickets')} ({recipientTickets.length})
                       </h3>
                     </div>
                     <div className="overflow-x-auto">
@@ -2033,12 +2035,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                         <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
                           <tr>
                             <th className="text-left py-3 px-4 font-medium">#</th>
-                            <th className="text-left py-3 px-4 font-medium">Game</th>
-                            <th className="text-left py-3 px-4 font-medium">Giveaway Type</th>
-                            <th className="text-left py-3 px-4 font-medium">Zone</th>
-                            <th className="text-left py-3 px-4 font-medium">Area</th>
-                            <th className="text-left py-3 px-4 font-medium">Seat</th>
-                            <th className="text-right py-3 px-4 font-medium">Opportunity Cost</th>
+                            <th className="text-left py-3 px-4 font-medium">{t('Game')}</th>
+                            <th className="text-left py-3 px-4 font-medium">{t('Giveaway Type')}</th>
+                            <th className="text-left py-3 px-4 font-medium">{t('Zone')}</th>
+                            <th className="text-left py-3 px-4 font-medium">{t('Area')}</th>
+                            <th className="text-left py-3 px-4 font-medium">{t('Seat')}</th>
+                            <th className="text-right py-3 px-4 font-medium">{t('Opportunity Cost')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -2096,7 +2098,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       onClick={() => setSelectedGiveawayType(null)}
                       className="text-purple-600 hover:text-purple-800 hover:underline"
                     >
-                      Giveaway Types
+                      {t('Giveaway Types')}
                     </button>
                     <ChevronRight size={16} className="text-gray-400 dark:text-gray-500" />
                     <span className="text-gray-600 dark:text-gray-400 font-medium">{selectedGiveawayType}</span>
@@ -2107,21 +2109,21 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     <div className="flex items-start justify-between">
                       <div>
                         <h2 className="text-2xl font-bold">{selectedGiveawayType}</h2>
-                        <p className="text-purple-200 text-sm mt-1">Giveaway Type</p>
+                        <p className="text-purple-200 text-sm mt-1">{t('Giveaway Type')}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-3xl font-bold">{typeData?.tickets.toLocaleString() || 0}</p>
-                        <p className="text-purple-100 text-sm">Total Tickets</p>
+                        <p className="text-purple-100 text-sm">{t('Total Tickets')}</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-white/20">
                       <div>
                         <p className="text-2xl font-bold">{formatCurrency(typeData?.value || 0)}</p>
-                        <p className="text-purple-100 text-sm">Opportunity Cost</p>
+                        <p className="text-purple-100 text-sm">{t('Opportunity Cost')}</p>
                       </div>
                       <div>
                         <p className="text-2xl font-bold">{filteredByType.length}</p>
-                        <p className="text-purple-100 text-sm">Recipients</p>
+                        <p className="text-purple-100 text-sm">{t('Recipients')}</p>
                       </div>
                     </div>
                   </div>
@@ -2131,22 +2133,22 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     <div className="p-4 border-b border-gray-100 dark:border-gray-800">
                       <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                         <Users size={18} className="text-purple-500" />
-                        Recipients ({filteredByType.length})
+                        {t('Recipients')} ({filteredByType.length})
                       </h3>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Click on a name to view ticket details</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Click on a name to view ticket details')}</p>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm">
                         <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
                           <tr>
                             <th className="text-left py-3 px-4 font-medium">#</th>
-                            <th className="text-left py-3 px-4 font-medium">Name</th>
-                            <th className="text-right py-3 px-4 font-medium">Tickets</th>
-                            <th className="text-right py-3 px-4 font-medium">Games</th>
-                            <th className="text-left py-3 px-4 font-medium">Zones</th>
-                            <th className="text-center py-3 px-4 font-medium">Age</th>
-                            <th className="text-left py-3 px-4 font-medium">Location</th>
-                            <th className="text-right py-3 px-4 font-medium">Opportunity Cost</th>
+                            <th className="text-left py-3 px-4 font-medium">{t('Name')}</th>
+                            <th className="text-right py-3 px-4 font-medium">{t('Tickets')}</th>
+                            <th className="text-right py-3 px-4 font-medium">{t('Games')}</th>
+                            <th className="text-left py-3 px-4 font-medium">{t('Zones')}</th>
+                            <th className="text-center py-3 px-4 font-medium">{t('Age')}</th>
+                            <th className="text-left py-3 px-4 font-medium">{t('Location')}</th>
+                            <th className="text-right py-3 px-4 font-medium">{t('Opportunity Cost')}</th>
                             <th className="w-8"></th>
                           </tr>
                         </thead>
@@ -2182,7 +2184,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                           {filteredByType.length === 0 && (
                             <tr>
                               <td colSpan={9} className="py-8 text-center text-gray-400 dark:text-gray-500">
-                                No recipients found for this type
+                                {t('No recipients found for this type')}
                               </td>
                             </tr>
                           )}
@@ -2190,7 +2192,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       </table>
                       {filteredByType.length > 100 && (
                         <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800">
-                          Showing first 100 of {filteredByType.length} recipients
+                          {t('Showing first 100 of')} {filteredByType.length} {t('recipients')}
                         </div>
                       )}
                     </div>
@@ -2204,9 +2206,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   <div className="p-4 border-b border-gray-100 dark:border-gray-800">
                     <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                       <PieChart size={18} className="text-purple-500" />
-                      Giveaway Types Breakdown
+                      {t('Giveaway Types Breakdown')}
                     </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Click on a type to see recipients</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Click on a type to see recipients')}</p>
                   </div>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-6">
                     {/* Pie Chart */}
@@ -2236,7 +2238,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                         </ResponsiveContainer>
                       ) : (
                         <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500">
-                          No giveaway data
+                          {t('No giveaway data')}
                         </div>
                       )}
                     </div>
@@ -2245,9 +2247,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       <table className="w-full text-sm">
                         <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
                           <tr>
-                            <th className="text-left py-2 px-3 font-medium">Type</th>
-                            <th className="text-right py-2 px-3 font-medium">Tickets</th>
-                            <th className="text-right py-2 px-3 font-medium">Cost</th>
+                            <th className="text-left py-2 px-3 font-medium">{t('Type')}</th>
+                            <th className="text-right py-2 px-3 font-medium">{t('Tickets')}</th>
+                            <th className="text-right py-2 px-3 font-medium">{t('Cost')}</th>
                             <th className="w-8"></th>
                           </tr>
                         </thead>
@@ -2282,24 +2284,24 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   <div className="p-4 border-b border-gray-100 dark:border-gray-800">
                     <h3 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                       <Users size={18} className="text-purple-500" />
-                      All Giveaway Recipients ({recipientList.length})
+                      {t('All Giveaway Recipients')} ({recipientList.length})
                     </h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Click on a name to view ticket details</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Click on a name to view ticket details')}</p>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
                         <tr>
                           <th className="text-left py-3 px-4 font-medium">#</th>
-                          <th className="text-left py-3 px-4 font-medium">Name</th>
-                          <th className="text-left py-3 px-4 font-medium">Company</th>
-                          <th className="text-left py-3 px-4 font-medium">Types</th>
-                          <th className="text-right py-3 px-4 font-medium">Tickets</th>
-                          <th className="text-right py-3 px-4 font-medium">Games</th>
-                          <th className="text-left py-3 px-4 font-medium">Zones</th>
-                          <th className="text-center py-3 px-4 font-medium">Age</th>
-                          <th className="text-left py-3 px-4 font-medium">Location</th>
-                          <th className="text-right py-3 px-4 font-medium">Opportunity Cost</th>
+                          <th className="text-left py-3 px-4 font-medium">{t('Name')}</th>
+                          <th className="text-left py-3 px-4 font-medium">{t('Company')}</th>
+                          <th className="text-left py-3 px-4 font-medium">{t('Types')}</th>
+                          <th className="text-right py-3 px-4 font-medium">{t('Tickets')}</th>
+                          <th className="text-right py-3 px-4 font-medium">{t('Games')}</th>
+                          <th className="text-left py-3 px-4 font-medium">{t('Zones')}</th>
+                          <th className="text-center py-3 px-4 font-medium">{t('Age')}</th>
+                          <th className="text-left py-3 px-4 font-medium">{t('Location')}</th>
+                          <th className="text-right py-3 px-4 font-medium">{t('Opportunity Cost')}</th>
                           <th className="w-8"></th>
                         </tr>
                       </thead>
@@ -2346,7 +2348,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                         {recipientList.length === 0 && (
                           <tr>
                             <td colSpan={11} className="py-8 text-center text-gray-400 dark:text-gray-500">
-                              No giveaway recipients found
+                              {t('No giveaway recipients found')}
                             </td>
                           </tr>
                         )}
@@ -2354,7 +2356,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     </table>
                     {recipientList.length > 100 && (
                       <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-800">
-                        Showing first 100 of {recipientList.length} recipients
+                        {t('Showing first 100 of')} {recipientList.length} {t('recipients')}
                       </div>
                     )}
                   </div>
@@ -2372,8 +2374,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-8">
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600 mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400 font-medium">Loading client search data...</p>
-                <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">This may take a few seconds</p>
+                <p className="text-gray-600 dark:text-gray-400 font-medium">{t('Loading client search data...')}</p>
+                <p className="text-gray-400 dark:text-gray-500 text-sm mt-2">{t('This may take a few seconds')}</p>
               </div>
             </div>
           );
@@ -2550,7 +2552,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <Search size={20} className="text-red-500" />
-                Find Customer
+                {t('Find Customer')}
               </h3>
               
               <div className="flex gap-2 mb-4">
@@ -2563,7 +2565,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   }`}
                 >
                   <User size={16} />
-                  Client Search
+                  {t('Client Search')}
                 </button>
                 <button
                   onClick={() => { setSearchMode('seat'); setClientSearchQuery(''); setSearchSelectedClient(null); }}
@@ -2574,7 +2576,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   }`}
                 >
                   <MapPin size={16} />
-                  Seat Search
+                  {t('Seat Search')}
                 </button>
               </div>
               
@@ -2584,8 +2586,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   <input
                     type="text"
                     placeholder={searchMode === 'client' 
-                      ? "Search by name, email, phone..." 
-                      : "Search by zone, area, seat (e.g., par o, D, 121)"
+                      ? t("Search by name, email, phone...") 
+                      : t("Search by zone, area, seat (e.g., par o, D, 121)")
                     }
                     value={clientSearchQuery}
                     onChange={(e) => {
@@ -2606,8 +2608,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   {searchMode === 'client' 
-                    ? "Enter at least 2 characters to find a client by name, email, or phone" 
-                    : "Search examples: par o, par ex D 121, curva n"
+                    ? t("Enter at least 2 characters to find a client by name, email, or phone") 
+                    : t("Search examples: par o, par ex D 121, curva n")
                   }
                 </p>
               </div>
@@ -2616,11 +2618,11 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 matchingClients.length === 0 ? (
                   <div className="text-center py-12 text-gray-500 dark:text-gray-400">
                     <Users size={48} className="mx-auto mb-4 opacity-30" />
-                    <p>No clients found matching "{clientSearchQuery}"</p>
+                    <p>{t('No clients found matching')} "{clientSearchQuery}"</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{matchingClients.length} client{matchingClients.length !== 1 ? 's' : ''} found - click to view details</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{matchingClients.length} {t('clients found - click to view details')}</p>
                     {matchingClients.map(c => (
                       <div
                         key={c.key}
@@ -2649,9 +2651,9 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                           <MapPin size={24} />
                         </div>
                         <div>
-                          <p className="text-xs text-blue-600 uppercase font-semibold">Seat Location</p>
+                          <p className="text-xs text-blue-600 uppercase font-semibold">{t('Seat Location')}</p>
                           <p className="text-lg font-bold text-gray-800 dark:text-gray-100">
-                            {seatHistoryData.seatLocation.zone} {seatHistoryData.seatLocation.area && `- Section ${seatHistoryData.seatLocation.area}`} {seatHistoryData.seatLocation.seat !== 'All seats' && `- Seat ${seatHistoryData.seatLocation.seat}`}
+                            {seatHistoryData.seatLocation.zone} {seatHistoryData.seatLocation.area && `- ${t('Section')} ${seatHistoryData.seatLocation.area}`} {seatHistoryData.seatLocation.seat !== 'All seats' && `- ${t('Seat')} ${seatHistoryData.seatLocation.seat}`}
                           </p>
                         </div>
                       </div>
@@ -2662,19 +2664,19 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
                       <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                         <Ticket size={18} className="text-blue-500" />
-                        Seat History ({seatHistoryData.seatHistory.filter(g => g.occupied).length}/{seatHistoryData.seatHistory.length} games occupied)
+                        {t('Seat History')} ({seatHistoryData.seatHistory.filter(g => g.occupied).length}/{seatHistoryData.seatHistory.length} {t('games occupied')})
                       </h4>
                     </div>
                     <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
                       <table className="w-full text-sm">
                         <thead className="sticky top-0 z-10">
                           <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">Date</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">Opponent</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">Status</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">Occupant</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">Type</th>
-                            <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">Value</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Date')}</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Opponent')}</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Status')}</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Occupant')}</th>
+                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Type')}</th>
+                            <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Value')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -2682,7 +2684,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                             <tr>
                               <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
                                 <MapPin size={32} className="mx-auto mb-2 opacity-30" />
-                                <p>No games found. Make sure game data is loaded.</p>
+                                <p>{t('No games found. Make sure game data is loaded.')}</p>
                               </td>
                             </tr>
                           ) : seatHistoryData.seatHistory.map((row, i) => (
@@ -2692,11 +2694,11 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                               <td className="py-2 px-3">
                                 {row.occupied ? (
                                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800">
-                                    Occupied
+                                    {t('Occupied')}
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-                                    Empty
+                                    {t('Empty')}
                                   </span>
                                 )}
                               </td>
@@ -2714,7 +2716,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
                   {seatHistoryData.matchingRecords.length > 0 && (
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Found {seatHistoryData.matchingRecords.length} ticket records for this location
+                      {t('Found')} {seatHistoryData.matchingRecords.length} {t('ticket records for this location')}
                     </p>
                   )}
                 </div>
@@ -2726,57 +2728,57 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     onClick={() => setSearchSelectedClient(null)}
                     className="text-sm text-red-600 hover:text-red-700 flex items-center gap-1"
                   >
-                    <ChevronLeft size={16} /> Back to search results
+                    <ChevronLeft size={16} /> {t('Back to search results')}
                   </button>
 
                   <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
                     <h4 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
                       <User size={20} className="text-red-500" />
-                      Client Profile
+                      {t('Client Profile')}
                     </h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Full Name</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Full Name')}</p>
                         <p className="font-medium">{selectedClient.name || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Email</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Email')}</p>
                         <p className="font-medium">{selectedClient.email || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Date of Birth</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Date of Birth')}</p>
                         <p className="font-medium">{selectedClient.dob || '—'}{selectedClient.age && ` (${selectedClient.age} yrs)`}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Place of Birth</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Place of Birth')}</p>
                         <p className="font-medium">{selectedClient.pob || selectedClient.province || '—'}</p>
                       </div>
                       <div className="md:col-span-2">
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Address</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Address')}</p>
                         <p className="font-medium">{selectedClient.address || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Nationality</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Nationality')}</p>
                         <p className="font-medium">{selectedClient.nationality || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Phone</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Phone')}</p>
                         <p className="font-medium">{selectedClient.phone || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Cell</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Cell')}</p>
                         <p className="font-medium">{selectedClient.cell || '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Preferred Payment</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Preferred Payment')}</p>
                         <p className="font-medium capitalize">{selectedClient.preferredPayment}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Avg Days Before Game</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Avg Days Before Game')}</p>
                         <p className="font-medium">{selectedClient.avgLeadDays !== null ? `${selectedClient.avgLeadDays} days` : '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">Total Tickets</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Total Tickets')}</p>
                         <p className="font-medium">{selectedClient.records.length}</p>
                       </div>
                     </div>
@@ -2786,16 +2788,16 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-lg font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
                         <Ticket size={20} className="text-blue-500" />
-                        Ticket History
+                        {t('Ticket History')}
                       </h4>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">Filter by game:</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">{t('Filter by game')}:</span>
                         <select
                           value={searchGameFilter}
                           onChange={(e) => setSearchGameFilter(e.target.value)}
                           className="text-sm border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-1.5"
                         >
-                          <option value="all">All Games</option>
+                          <option value="all">{t('All Games')}</option>
                           {clientGames.map(g => (
                             <option key={g} value={g}>{g}</option>
                           ))}
@@ -2806,13 +2808,13 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                            <th className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400">Game</th>
-                            <th className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400">Zone</th>
-                            <th className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400">Seat(s)</th>
-                            <th className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400">Sell Type</th>
-                            <th className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400">Discount</th>
-                            <th className="text-right py-2 px-2 font-semibold text-gray-600 dark:text-gray-400">Value</th>
-                            <th className="text-center py-2 px-2 font-semibold text-gray-600 dark:text-gray-400">Days Before</th>
+                            <th className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400">{t('Game')}</th>
+                            <th className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400">{t('Zone')}</th>
+                            <th className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400">{t('Seat(s)')}</th>
+                            <th className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400">{t('Sell Type')}</th>
+                            <th className="text-left py-2 px-2 font-semibold text-gray-600 dark:text-gray-400">{t('Discount')}</th>
+                            <th className="text-right py-2 px-2 font-semibold text-gray-600 dark:text-gray-400">{t('Value')}</th>
+                            <th className="text-center py-2 px-2 font-semibold text-gray-600 dark:text-gray-400">{t('Days Before')}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
@@ -2835,7 +2837,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                           ))}
                           {getTicketRows().length === 0 && (
                             <tr>
-                              <td colSpan={7} className="py-8 text-center text-gray-400 dark:text-gray-500">No tickets found for this filter</td>
+                              <td colSpan={7} className="py-8 text-center text-gray-400 dark:text-gray-500">{t('No tickets found for this filter')}</td>
                             </tr>
                           )}
                         </tbody>
@@ -2848,15 +2850,15 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               {query.length === 0 && (
                 <div className="text-center py-12 text-gray-400 dark:text-gray-500">
                   <Search size={48} className="mx-auto mb-4 opacity-30" />
-                  <p>Start typing to find a client</p>
-                  <p className="text-xs mt-2">Search by name, email, phone, DOB, address, or nationality</p>
+                  <p>{t('Start typing to find a client')}</p>
+                  <p className="text-xs mt-2">{t('Search by name, email, phone, DOB, address, or nationality')}</p>
                 </div>
               )}
 
               {query.length > 0 && query.length < 2 && (
                 <div className="text-center py-12 text-gray-400 dark:text-gray-500">
                   <Search size={48} className="mx-auto mb-4 opacity-30" />
-                  <p>Type at least 2 characters to search</p>
+                  <p>{t('Type at least 2 characters to search')}</p>
                 </div>
               )}
             </div>
@@ -2880,35 +2882,35 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4 text-center">
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{customerDetail.ticketCount}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Total Tickets</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('Total Tickets')}</p>
                 </div>
                 <div className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-4 text-center">
                   <p className="text-2xl font-bold text-blue-600">{formatCompact(customerDetail.totalSpend)}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Cash Paid</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('Cash Paid')}</p>
                 </div>
                 <div className="bg-green-50 dark:bg-green-900/30 rounded-xl p-4 text-center">
                   <p className="text-2xl font-bold text-green-600">{formatCompact(customerDetail.totalValue)}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Commercial Value</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('Commercial Value')}</p>
                 </div>
               </div>
               
               {customerDetail.phone && (
                 <div className="mb-4">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Phone</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Phone')}</p>
                   <p className="font-medium">{customerDetail.phone}</p>
                 </div>
               )}
               
               {customerDetail.address && (
                 <div className="mb-4">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">Address</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-1">{t('Address')}</p>
                   <p className="font-medium">{customerDetail.address}</p>
                 </div>
               )}
               
               {customerDetail.zones.length > 0 && (
                 <div className="mb-4">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-2">Preferred Zones</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-2">{t('Preferred Zones')}</p>
                   <div className="flex flex-wrap gap-2">
                     {customerDetail.zones.map(z => (
                       <span key={z} className="px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 rounded-full text-xs font-medium">{z}</span>
@@ -2918,7 +2920,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               )}
               
               <div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-2">Purchase History ({customerDetail.records.length} transactions)</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase mb-2">{t('Purchase History')} ({customerDetail.records.length} {t('transactions')})</p>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
                   {(() => {
                     const grouped: Record<string, { label: string; sellType: string; tickets: number; value: number; zone: string }> = {};

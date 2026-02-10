@@ -6,6 +6,7 @@ import {
 import { SponsorData } from '../types';
 import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet, X, Filter, Target, Ticket, Award, TrendingUp, TrendingDown, Minus, Search, Calendar, Mail, User, Clock, History, ArrowRight, CheckCircle, Circle, Gift } from 'lucide-react';
 import { SEASON_TARGET_SPONSORSHIP } from '../constants';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const SPONSOR_TIERS = {
   PLATINUM: { name: 'Platinum', min: 200000, color: '#475569', bgColor: 'bg-slate-600', textColor: 'text-white', borderColor: 'border-slate-600' },
@@ -93,6 +94,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   data, 
   onUploadCsv
 }) => {
+  const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedSeason, setSelectedSeason] = useState<string>('25/26');
   const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
@@ -490,10 +492,10 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
             <Flag className="text-red-600" size={24} />
-            Sponsorship Analytics
+            {t('Sponsorship Analytics')}
           </h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Revenue breakdown and sponsor portfolio analysis
+            {t('Revenue breakdown and sponsor portfolio analysis')}
           </p>
         </div>
         
@@ -503,7 +505,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
-              placeholder="Search sponsors..."
+              placeholder={t("Search sponsors...")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 pr-4 py-2 w-48 text-sm border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
@@ -524,12 +526,12 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             onChange={(e) => setFilterRecType(e.target.value as any || null)}
             className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500"
           >
-            <option value="">All Types</option>
-            <option value="sponsorship">Sponsorship</option>
-            <option value="vb">VB (Youth)</option>
-            <option value="csr">CSR</option>
-            <option value="corptix">Corp Tickets</option>
-            <option value="gameday">GameDay</option>
+            <option value="">{t('All Types')}</option>
+            <option value="sponsorship">{t('Sponsorship')}</option>
+            <option value="vb">{t('VB (Youth)')}</option>
+            <option value="csr">{t('CSR')}</option>
+            <option value="corptix">{t('Corp Tickets')}</option>
+            <option value="gameday">{t('GameDay')}</option>
           </select>
 
           <div className="relative">
@@ -537,7 +539,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               onClick={() => setShowSeasonDropdown(!showSeasonDropdown)}
               className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
             >
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Season: {selectedSeason}</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('Season')}: {selectedSeason}</span>
               <ChevronDown size={16} className="text-gray-500 dark:text-gray-400" />
             </button>
             {showSeasonDropdown && (
@@ -564,11 +566,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-2">
               <Filter size={16} className="text-amber-600" />
-              <span className="text-sm font-medium text-amber-800">Active Filters:</span>
+              <span className="text-sm font-medium text-amber-800">{t('Active Filters:')}</span>
               <div className="flex items-center gap-2 flex-wrap">
                 {filterCompany && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-900 border border-amber-300 rounded-full text-xs font-medium text-amber-800">
-                    Company: {filterCompany}
+                    {t('Company')}: {filterCompany}
                     <button onClick={() => setFilterCompany(null)} className="hover:text-amber-600">
                       <X size={12} />
                     </button>
@@ -576,7 +578,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 )}
                 {filterSector && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-900 border border-amber-300 rounded-full text-xs font-medium text-amber-800">
-                    Sector: {filterSector}
+                    {t('Sector')}: {filterSector}
                     <button onClick={() => setFilterSector(null)} className="hover:text-amber-600">
                       <X size={12} />
                     </button>
@@ -584,7 +586,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 )}
                 {filterContractType && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-900 border border-amber-300 rounded-full text-xs font-medium text-amber-800">
-                    Type: {filterContractType === 'CASH' ? 'Cash' : 'Cambio Merce'}
+                    {t('Type')}: {filterContractType === 'CASH' ? t('Cash') : t('Cambio Merce')}
                     <button onClick={() => setFilterContractType(null)} className="hover:text-amber-600">
                       <X size={12} />
                     </button>
@@ -592,7 +594,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 )}
                 {filterTier && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-900 border border-amber-300 rounded-full text-xs font-medium text-amber-800">
-                    Tier: {filterTier}
+                    {t('Tier')}: {filterTier}
                     <button onClick={() => setFilterTier(null)} className="hover:text-amber-600">
                       <X size={12} />
                     </button>
@@ -600,7 +602,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 )}
                 {searchQuery && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-900 border border-amber-300 rounded-full text-xs font-medium text-amber-800">
-                    Search: "{searchQuery}"
+                    {t('Search')}: "{searchQuery}"
                     <button onClick={() => setSearchQuery('')} className="hover:text-amber-600">
                       <X size={12} />
                     </button>
@@ -608,7 +610,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 )}
                 {filterRecType && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 bg-white dark:bg-gray-900 border border-amber-300 rounded-full text-xs font-medium text-amber-800">
-                    Type: {filterRecType === 'vb' ? 'VB (Youth)' : filterRecType === 'csr' ? 'CSR' : filterRecType === 'corptix' ? 'Corp Tickets' : filterRecType === 'gameday' ? 'GameDay' : 'Sponsorship'}
+                    {t('Type')}: {filterRecType === 'vb' ? t('VB (Youth)') : filterRecType === 'csr' ? t('CSR') : filterRecType === 'corptix' ? t('Corp Tickets') : filterRecType === 'gameday' ? t('GameDay') : t('Sponsorship')}
                     <button onClick={() => setFilterRecType(null)} className="hover:text-amber-600">
                       <X size={12} />
                     </button>
@@ -620,11 +622,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               onClick={clearAllFilters}
               className="text-xs font-medium text-amber-700 hover:text-amber-900 underline"
             >
-              Clear All
+              {t('Clear All')}
             </button>
           </div>
           <p className="text-xs text-amber-600 mt-2">
-            Showing {tableFilteredData.length} of {filteredData.length} sponsors • Click any chart element to filter
+            {t('Showing')} {tableFilteredData.length} {t('of')} {filteredData.length} {t('sponsors')} • {t('Click any chart element to filter')}
           </p>
         </div>
       )}
@@ -646,15 +648,15 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                   <Target size={20} className="text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">Season Target (Sponsorship + CSR)</h3>
-                  <p className="text-xs text-slate-500">Excludes Corp Tickets, GameDay, VB</p>
+                  <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wide">{t('Season Target (Sponsorship + CSR)')}</h3>
+                  <p className="text-xs text-slate-500">{t('Excludes Corp Tickets, GameDay, VB')}</p>
                 </div>
               </div>
               <div className={`text-right px-3 py-1.5 rounded-lg ${variance >= 0 ? 'bg-green-900/40' : 'bg-amber-900/40'}`}>
                 <span className={`text-lg font-bold ${variance >= 0 ? 'text-green-400' : 'text-amber-400'}`}>
                   {variancePercent >= 0 ? '+' : ''}{variancePercent.toFixed(1)}%
                 </span>
-                <p className="text-xs text-slate-400">{variance >= 0 ? 'Above Target' : 'Below Target'}</p>
+                <p className="text-xs text-slate-400">{variance >= 0 ? t('Above Target') : t('Below Target')}</p>
               </div>
             </div>
             
@@ -671,9 +673,9 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             </div>
             
             <div className="flex justify-between text-xs text-slate-500">
-              <span>Sponsorship: {formatCompactCurrency(stats.totalSponsorRec)}</span>
-              <span>CSR: {formatCompactCurrency(stats.totalCSR)}</span>
-              <span>{progress.toFixed(1)}% of target</span>
+              <span>{t('Sponsorship')}: {formatCompactCurrency(stats.totalSponsorRec)}</span>
+              <span>{t('CSR')}: {formatCompactCurrency(stats.totalCSR)}</span>
+              <span>{progress.toFixed(1)}% {t('of target')}</span>
             </div>
           </div>
         );
@@ -685,7 +687,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
             <Award size={20} className="text-amber-500" />
-            Sponsor Tiers
+            {t('Sponsor Tiers')}
           </h3>
           <div className="space-y-3">
             {tierStats.map((tier) => (
@@ -710,7 +712,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                     <span>{tier.min >= 200000 ? '€200k+' : tier.min >= 100000 ? '€100k-200k' : tier.min >= 50000 ? '€50k-100k' : tier.min >= 10000 ? '€10k-50k' : '€0-10k'}</span>
                     {tier.count > 0 && (
                       <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${tier.avgDealQuality >= 4 ? 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700' : tier.avgDealQuality >= 3 ? 'bg-slate-100 dark:bg-slate-900/20 text-slate-700' : 'bg-amber-100 dark:bg-amber-900/20 text-amber-700'}`}>
-                        Avg Quality: {tier.avgDealQuality.toFixed(1)}/5
+                        {t('Avg Quality')}: {tier.avgDealQuality.toFixed(1)}/5
                       </span>
                     )}
                   </div>
@@ -724,19 +726,19 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm flex flex-col justify-center">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3 flex items-center gap-2">
             <TrendingUp size={20} className="text-emerald-500" />
-            Deal Quality Overview
+            {t('Deal Quality Overview')}
           </h3>
           <div className="mb-3">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm text-gray-500 dark:text-gray-400">Portfolio Net Delta</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{t('Portfolio Net Delta')}</span>
               <span className={`text-xl font-bold ${dealQualityStats.totalDelta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                 {dealQualityStats.totalDelta >= 0 ? '+' : ''}{formatCompactCurrency(dealQualityStats.totalDelta)}
               </span>
             </div>
-            <p className="text-xs text-gray-400 dark:text-gray-500">Revenue received minus value given (LED, jersey, tickets, etc.)</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">{t('Revenue received minus value given (LED, jersey, tickets, etc.)')}</p>
           </div>
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-sm text-gray-500 dark:text-gray-400">Avg Score:</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">{t('Avg Score')}:</span>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map(i => (
                 <div key={i} className={`w-4 h-4 rounded ${i <= Math.round(dealQualityStats.avgQualityScore) ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-gray-700'}`} />
@@ -747,28 +749,28 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
           <div className="grid grid-cols-5 gap-2 text-center mb-3">
             <div className="bg-emerald-50 dark:bg-emerald-900/30 rounded-lg p-2">
               <p className="text-lg font-bold text-emerald-700">{dealQualityStats.excellent}</p>
-              <p className="text-[10px] text-emerald-600 font-medium">Excellent</p>
+              <p className="text-[10px] text-emerald-600 font-medium">{t('Excellent')}</p>
             </div>
             <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-2">
               <p className="text-lg font-bold text-green-600">{dealQualityStats.good}</p>
-              <p className="text-[10px] text-green-600 font-medium">Good</p>
+              <p className="text-[10px] text-green-600 font-medium">{t('Good')}</p>
             </div>
             <div className="bg-slate-50 dark:bg-slate-900/30 rounded-lg p-2">
               <p className="text-lg font-bold text-slate-600">{dealQualityStats.fair}</p>
-              <p className="text-[10px] text-slate-600 font-medium">Fair</p>
+              <p className="text-[10px] text-slate-600 font-medium">{t('Fair')}</p>
             </div>
             <div className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-2">
               <p className="text-lg font-bold text-amber-600">{dealQualityStats.below}</p>
-              <p className="text-[10px] text-amber-600 font-medium">Below</p>
+              <p className="text-[10px] text-amber-600 font-medium">{t('Below')}</p>
             </div>
             <div className="bg-red-50 dark:bg-red-900/30 rounded-lg p-2">
               <p className="text-lg font-bold text-red-600">{dealQualityStats.poor}</p>
-              <p className="text-[10px] text-red-600 font-medium">Poor</p>
+              <p className="text-[10px] text-red-600 font-medium">{t('Poor')}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100 dark:border-gray-800 items-start">
             <div>
-              <p className="text-[10px] font-bold text-emerald-600 uppercase mb-2">Best Deals</p>
+              <p className="text-[10px] font-bold text-emerald-600 uppercase mb-2">{t('Best Deals')}</p>
               <div className="space-y-1">
                 {topAndWorstDeals.top5.map((s, i) => {
                   const score = (5 - i * 0.8).toFixed(1);
@@ -786,7 +788,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               </div>
             </div>
             <div>
-              <p className="text-[10px] font-bold text-red-600 uppercase mb-2">Worst Deals</p>
+              <p className="text-[10px] font-bold text-red-600 uppercase mb-2">{t('Worst Deals')}</p>
               <div className="space-y-1">
                 {topAndWorstDeals.worst5.map((s, i) => {
                   const score = (i * 0.2).toFixed(1);
@@ -811,7 +813,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
             <FileSpreadsheet size={14} />
-            <span>{stats.totalSponsors} contracts | {stats.uniqueCompanies} companies</span>
+            <span>{stats.totalSponsors} {t('contracts')} | {stats.uniqueCompanies} {t('companies')}</span>
           </div>
           <div className="flex items-center gap-4">
             <button
@@ -820,7 +822,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 excludeCorpTix ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 border-blue-200' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700'
               }`}
             >
-              {excludeCorpTix ? '✓' : '○'} Exclude Corp Tickets
+              {excludeCorpTix ? '✓' : '○'} {t('Exclude Corp Tickets')}
             </button>
             <button
               onClick={() => setExcludeGameDay(!excludeGameDay)}
@@ -828,7 +830,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 excludeGameDay ? 'bg-green-50 dark:bg-green-900/30 text-green-700 border-green-200' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700'
               }`}
             >
-              {excludeGameDay ? '✓' : '○'} Exclude GameDay
+              {excludeGameDay ? '✓' : '○'} {t('Exclude GameDay')}
             </button>
             <button
               onClick={() => setExcludeVB(!excludeVB)}
@@ -836,7 +838,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                 excludeVB ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 border-amber-200' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700'
               }`}
             >
-              {excludeVB ? '✓' : '○'} Exclude VB
+              {excludeVB ? '✓' : '○'} {t('Exclude VB')}
             </button>
           </div>
         </div>
@@ -849,11 +851,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               <DollarSign size={20} className="text-red-600" />
             </div>
             <span className="text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full flex items-center gap-1">
-              <ArrowUpRight size={12} /> Active
+              <ArrowUpRight size={12} /> {t('Active')}
             </span>
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompactCurrency(stats.adjustedCommercial)}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Commercial Value</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Commercial Value')}</p>
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
@@ -862,11 +864,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               <Banknote size={20} className="text-green-600" />
             </div>
             <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-              {stats.cashRatio.toFixed(0)}% Cash
+              {stats.cashRatio.toFixed(0)}% {t('Cash')}
             </span>
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompactCurrency(stats.adjustedCash)}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Cash</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Cash')}</p>
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
@@ -875,11 +877,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               <RefreshCw size={20} className="text-purple-600" />
             </div>
             <span className="text-xs font-medium text-purple-600 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded-full">
-              Barter
+              {t('Barter')}
             </span>
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompactCurrency(stats.adjustedCM)}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Cambio Merce</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Cambio Merce')}</p>
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
@@ -888,11 +890,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               <Ticket size={20} className="text-orange-600" />
             </div>
             <span className="text-xs font-medium text-orange-600 bg-orange-50 dark:bg-orange-900/30 px-2 py-0.5 rounded-full">
-              Corp
+              {t('Corp')}
             </span>
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompactCurrency(stats.totalCorpTix)}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Corp Tickets</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Corp Tickets')}</p>
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
@@ -902,15 +904,15 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             </div>
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompactCurrency(stats.avgDealSize)}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Avg. Deal Size</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Avg. Deal Size')}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center justify-between">
-            Top 10 Sponsors
-            <span className="text-xs font-normal text-gray-400 dark:text-gray-500">Click bar to filter</span>
+            {t('Top 10 Sponsors')}
+            <span className="text-xs font-normal text-gray-400 dark:text-gray-500">{t('Click bar to filter')}</span>
           </h3>
           <div className="h-80 -ml-8">
             <ResponsiveContainer width="100%" height="100%">
@@ -956,8 +958,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center justify-between">
-            Revenue by Sector
-            <span className="text-xs font-normal text-gray-400 dark:text-gray-500">Click slice to filter</span>
+            {t('Revenue by Sector')}
+            <span className="text-xs font-normal text-gray-400 dark:text-gray-500">{t('Click slice to filter')}</span>
           </h3>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -1000,8 +1002,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center justify-between">
-            Contract Type Split
-            <span className="text-xs font-normal text-gray-400 dark:text-gray-500">Click slice to filter</span>
+            {t('Contract Type Split')}
+            <span className="text-xs font-normal text-gray-400 dark:text-gray-500">{t('Click slice to filter')}</span>
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -1044,7 +1046,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Revenue Reconciliation</h3>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('Revenue Reconciliation')}</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={reconciliationData} layout="vertical" margin={{ left: 10, right: 30 }}>
@@ -1067,7 +1069,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       </div>
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Monthly Cash Flow Projection</h3>
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('Monthly Cash Flow Projection')}</h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
@@ -1086,13 +1088,13 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center justify-between">
-          <span>Sponsor Portfolio {hasActiveFilter && <span className="text-sm font-normal text-amber-600">({tableFilteredData.length} filtered)</span>}</span>
+          <span>{t('Sponsor Portfolio')} {hasActiveFilter && <span className="text-sm font-normal text-amber-600">({tableFilteredData.length} {t('filtered')})</span>}</span>
           {hasActiveFilter && (
             <button 
               onClick={clearAllFilters}
               className="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:text-gray-200 flex items-center gap-1"
             >
-              <X size={14} /> Clear filters
+              <X size={14} /> {t('Clear filters')}
             </button>
           )}
         </h3>
@@ -1100,12 +1102,12 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-white dark:bg-gray-900">
               <tr className="border-b border-gray-100 dark:border-gray-800">
-                <th className="text-left py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Company</th>
-                <th className="text-center py-3 px-2 font-semibold text-gray-600 dark:text-gray-400">Tier</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Sector</th>
-                <th className="text-left py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Type</th>
-                <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Value</th>
-                <th className="text-center py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">Deal Quality</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">{t('Company')}</th>
+                <th className="text-center py-3 px-2 font-semibold text-gray-600 dark:text-gray-400">{t('Tier')}</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">{t('Sector')}</th>
+                <th className="text-left py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">{t('Type')}</th>
+                <th className="text-right py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">{t('Value')}</th>
+                <th className="text-center py-3 px-4 font-semibold text-gray-600 dark:text-gray-400">{t('Deal Quality')}</th>
               </tr>
             </thead>
             <tbody>
@@ -1164,11 +1166,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                     <div className="flex items-center justify-center gap-1.5 group relative">
                       <span className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${quality.bgColor} ${quality.color}`}>
                         <QualityIcon size={12} />
-                        {quality.label}
+                        {t(quality.label)}
                       </span>
                       <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs rounded-lg px-3 py-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                        <p>Delta: {sponsor.delta >= 0 ? '+' : ''}{formatCompactCurrency(sponsor.delta)}</p>
-                        <p className="text-slate-400">({((sponsor.delta / sponsor.commercialValue) * 100).toFixed(1)}% margin)</p>
+                        <p>{t('Delta')}: {sponsor.delta >= 0 ? '+' : ''}{formatCompactCurrency(sponsor.delta)}</p>
+                        <p className="text-slate-400">({((sponsor.delta / sponsor.commercialValue) * 100).toFixed(1)}% {t('margin')})</p>
                       </div>
                     </div>
                   </td>
@@ -1218,19 +1220,19 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
                   <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-2">
-                    <User size={16} /> Contact Information
+                    <User size={16} /> {t('Contact Information')}
                   </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 dark:text-gray-400 w-16">Contact:</span>
+                      <span className="text-gray-500 dark:text-gray-400 w-16">{t('Contact')}:</span>
                       <span className="font-medium text-gray-900 dark:text-white">{selectedSponsor.contact || 'N/A'}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 dark:text-gray-400 w-16">Email:</span>
+                      <span className="text-gray-500 dark:text-gray-400 w-16">{t('Email')}:</span>
                       <span className="font-medium text-gray-900 dark:text-white">{selectedSponsor.email || 'N/A'}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 dark:text-gray-400 w-16">Size:</span>
+                      <span className="text-gray-500 dark:text-gray-400 w-16">{t('Size')}:</span>
                       <span className="font-medium text-gray-900 dark:text-white">{selectedSponsor.dimension || 'N/A'}</span>
                     </div>
                   </div>
@@ -1238,19 +1240,19 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
                 <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-4">
                   <h3 className="text-sm font-semibold text-gray-600 dark:text-gray-400 mb-3 flex items-center gap-2">
-                    <Calendar size={16} /> Contract Details
+                    <Calendar size={16} /> {t('Contract Details')}
                   </h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 dark:text-gray-400 w-16">Season:</span>
+                      <span className="text-gray-500 dark:text-gray-400 w-16">{t('Season')}:</span>
                       <span className="font-medium text-gray-900 dark:text-white">{selectedSponsor.season}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 dark:text-gray-400 w-16">Duration:</span>
+                      <span className="text-gray-500 dark:text-gray-400 w-16">{t('Duration')}:</span>
                       <span className="font-medium text-gray-900 dark:text-white">{selectedSponsor.contractDuration || 'N/A'}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-500 dark:text-gray-400 w-16">Level:</span>
+                      <span className="text-gray-500 dark:text-gray-400 w-16">{t('Level')}:</span>
                       <span className="font-medium text-gray-900 dark:text-white">{selectedSponsor.level || 'N/A'}</span>
                     </div>
                   </div>
@@ -1259,21 +1261,21 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
               {/* Financial Summary */}
               <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-5">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Financial Summary</h3>
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">{t('Financial Summary')}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="text-center">
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(selectedSponsor.commercialValue)}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Commercial Value</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Commercial Value')}</p>
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-green-600">{formatCurrency(selectedSponsor.sponsorReconciliation)}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Sponsorship</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Sponsorship')}</p>
                   </div>
                   <div className="text-center">
                     <p className={`text-2xl font-bold ${selectedSponsor.delta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                       {selectedSponsor.delta >= 0 ? '+' : ''}{formatCurrency(selectedSponsor.delta)}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Delta (Profit/Loss)</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Delta (Profit/Loss)')}</p>
                   </div>
                   <div className="text-center">
                     {(() => {
@@ -1282,11 +1284,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                       return (
                         <div className={`inline-flex items-center gap-1 px-3 py-1 rounded-lg ${quality.bgColor} ${quality.color}`}>
                           <Icon size={16} />
-                          <span className="font-bold">{quality.label}</span>
+                          <span className="font-bold">{t(quality.label)}</span>
                         </div>
                       );
                     })()}
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Deal Quality</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Deal Quality')}</p>
                   </div>
                 </div>
               </div>
@@ -1294,16 +1296,16 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               {/* What We Give In Exchange */}
               <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center justify-between">
-                  <span className="flex items-center gap-2"><Gift size={16} /> What We Give In Exchange</span>
-                  <span className="text-xs font-normal text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">Season {selectedSponsor.season}</span>
+                  <span className="flex items-center gap-2"><Gift size={16} /> {t('What We Give In Exchange')}</span>
+                  <span className="text-xs font-normal text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">{t('Season')} {selectedSponsor.season}</span>
                 </h3>
                 <div className="space-y-3">
                   {[
-                    { label: 'Sponsorship', desc: 'Brand visibility, jersey/arena signage, media exposure', value: selectedSponsor.sponsorReconciliation, color: 'bg-red-100 dark:bg-red-900/20 text-red-700', icon: '🎯' },
-                    { label: 'VB (Youth)', desc: 'Youth team sponsorship, academy branding', value: selectedSponsor.vbReconciliation, color: 'bg-amber-100 dark:bg-amber-900/20 text-amber-700', icon: '⭐' },
-                    { label: 'CSR', desc: 'Corporate social responsibility activities', value: selectedSponsor.csrReconciliation, color: 'bg-slate-100 dark:bg-slate-900/20 text-slate-700', icon: '🤝' },
-                    { label: 'Corporate Tickets', desc: 'Tickets, parking, VIP access, hospitality (x15 games)', value: selectedSponsor.corpTixReconciliation + ((selectedSponsor.hospitalityReconciliation + selectedSponsor.parkingReconciliation) * 15), color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700', icon: '🎟️' },
-                    { label: 'GameDay Visibility', desc: 'LED displays, naming rights, jersey, banners (x15 games)', value: selectedSponsor.gamedayReconciliation * 15, color: 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700', icon: '📺' }
+                    { label: t('Sponsorship'), desc: t('Brand visibility, jersey/arena signage, media exposure'), value: selectedSponsor.sponsorReconciliation, color: 'bg-red-100 dark:bg-red-900/20 text-red-700', icon: '🎯' },
+                    { label: t('VB (Youth)'), desc: t('Youth team sponsorship, academy branding'), value: selectedSponsor.vbReconciliation, color: 'bg-amber-100 dark:bg-amber-900/20 text-amber-700', icon: '⭐' },
+                    { label: t('CSR'), desc: t('Corporate social responsibility activities'), value: selectedSponsor.csrReconciliation, color: 'bg-slate-100 dark:bg-slate-900/20 text-slate-700', icon: '🤝' },
+                    { label: t('Corporate Tickets'), desc: t('Tickets, parking, VIP access, hospitality (x15 games)'), value: selectedSponsor.corpTixReconciliation + ((selectedSponsor.hospitalityReconciliation + selectedSponsor.parkingReconciliation) * 15), color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700', icon: '🎟️' },
+                    { label: t('GameDay Visibility'), desc: t('LED displays, naming rights, jersey, banners (x15 games)'), value: selectedSponsor.gamedayReconciliation * 15, color: 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700', icon: '📺' }
                   ].filter(item => item.value > 0).map(item => (
                     <div key={item.label} className={`rounded-lg p-4 ${item.color} flex items-center justify-between`}>
                       <div className="flex items-center gap-3">
@@ -1317,11 +1319,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                     </div>
                   ))}
                   {[selectedSponsor.sponsorReconciliation, selectedSponsor.vbReconciliation, selectedSponsor.csrReconciliation, selectedSponsor.corpTixReconciliation, selectedSponsor.gamedayReconciliation, selectedSponsor.hospitalityReconciliation, selectedSponsor.parkingReconciliation].every(v => v === 0) && (
-                    <p className="text-gray-500 dark:text-gray-400 text-sm italic">No benefits breakdown available for this contract</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm italic">{t('No benefits breakdown available for this contract')}</p>
                   )}
                 </div>
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Value Given</span>
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">{t('Total Value Given')}</span>
                   <span className="text-xl font-bold text-gray-900 dark:text-white">
                     {formatCurrency(
                       selectedSponsor.sponsorReconciliation + 
@@ -1338,7 +1340,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               {/* Monthly Payment Schedule */}
               <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
                 <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
-                  <Clock size={16} /> Monthly Payment Schedule
+                  <Clock size={16} /> {t('Monthly Payment Schedule')}
                 </h3>
                 <div className="grid grid-cols-6 md:grid-cols-12 gap-2">
                   {selectedSponsorMonthly.map((month) => (
@@ -1369,9 +1371,9 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                   ))}
                 </div>
                 <div className="flex items-center gap-4 mt-3 text-xs text-gray-500 dark:text-gray-400">
-                  <span className="flex items-center gap-1"><CheckCircle size={12} className="text-green-500" /> Paid</span>
-                  <span className="flex items-center gap-1"><Clock size={12} className="text-red-500" /> Current</span>
-                  <span className="flex items-center gap-1"><Circle size={12} className="text-blue-300" /> Upcoming</span>
+                  <span className="flex items-center gap-1"><CheckCircle size={12} className="text-green-500" /> {t('Paid')}</span>
+                  <span className="flex items-center gap-1"><Clock size={12} className="text-red-500" /> {t('Current')}</span>
+                  <span className="flex items-center gap-1"><Circle size={12} className="text-blue-300" /> {t('Upcoming')}</span>
                 </div>
               </div>
 
@@ -1379,17 +1381,17 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               {sponsorHistory.future.length > 0 && (
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-blue-700 mb-4 flex items-center gap-2">
-                    <Calendar size={16} /> Future Contracts ({sponsorHistory.future.length} {sponsorHistory.future.length === 1 ? 'season' : 'seasons'})
+                    <Calendar size={16} /> {t('Future Contracts')} ({sponsorHistory.future.length} {sponsorHistory.future.length === 1 ? t('season') : t('seasons')})
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-blue-200">
-                          <th className="text-left py-2 px-3 font-medium text-blue-600">Season</th>
-                          <th className="text-left py-2 px-3 font-medium text-blue-600">Type</th>
-                          <th className="text-right py-2 px-3 font-medium text-blue-600">Commercial Value</th>
-                          <th className="text-right py-2 px-3 font-medium text-blue-600">Sponsorship</th>
-                          <th className="text-right py-2 px-3 font-medium text-blue-600">Delta</th>
+                          <th className="text-left py-2 px-3 font-medium text-blue-600">{t('Season')}</th>
+                          <th className="text-left py-2 px-3 font-medium text-blue-600">{t('Type')}</th>
+                          <th className="text-right py-2 px-3 font-medium text-blue-600">{t('Commercial Value')}</th>
+                          <th className="text-right py-2 px-3 font-medium text-blue-600">{t('Sponsorship')}</th>
+                          <th className="text-right py-2 px-3 font-medium text-blue-600">{t('Delta')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1424,7 +1426,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                       </tbody>
                       <tfoot>
                         <tr className="bg-blue-100/50 dark:bg-blue-900/20 font-semibold">
-                          <td className="py-2 px-3 text-blue-700">Future Total</td>
+                          <td className="py-2 px-3 text-blue-700">{t('Future Total')}</td>
                           <td className="py-2 px-3"></td>
                           <td className="py-2 px-3 text-right text-blue-900">{formatCurrency(sponsorHistory.future.reduce((sum, h) => sum + h.commercialValue, 0))}</td>
                           <td className="py-2 px-3 text-right text-blue-800">{formatCurrency(sponsorHistory.future.reduce((sum, h) => sum + h.sponsorReconciliation, 0))}</td>
@@ -1442,18 +1444,18 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               {sponsorHistory.current.length > 0 && (
                 <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-red-700 mb-4 flex items-center gap-2">
-                    <Clock size={16} /> Current Contract (25/26 Season)
+                    <Clock size={16} /> {t('Current Contract (25/26 Season)')}
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-red-200">
-                          <th className="text-left py-2 px-3 font-medium text-red-600">Season</th>
-                          <th className="text-left py-2 px-3 font-medium text-red-600">Type</th>
-                          <th className="text-right py-2 px-3 font-medium text-red-600">Commercial Value</th>
-                          <th className="text-right py-2 px-3 font-medium text-red-600">Sponsorship</th>
-                          <th className="text-right py-2 px-3 font-medium text-red-600">Delta</th>
-                          <th className="text-center py-2 px-3 font-medium text-red-600">Quality</th>
+                          <th className="text-left py-2 px-3 font-medium text-red-600">{t('Season')}</th>
+                          <th className="text-left py-2 px-3 font-medium text-red-600">{t('Type')}</th>
+                          <th className="text-right py-2 px-3 font-medium text-red-600">{t('Commercial Value')}</th>
+                          <th className="text-right py-2 px-3 font-medium text-red-600">{t('Sponsorship')}</th>
+                          <th className="text-right py-2 px-3 font-medium text-red-600">{t('Delta')}</th>
+                          <th className="text-center py-2 px-3 font-medium text-red-600">{t('Quality')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1485,7 +1487,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                               </td>
                               <td className="py-2 px-3 text-center">
                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${histQuality.bgColor} ${histQuality.color}`}>
-                                  <HistIcon size={10} /> {histQuality.label}
+                                  <HistIcon size={10} /> {t(histQuality.label)}
                                 </span>
                               </td>
                             </tr>
@@ -1501,18 +1503,18 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               {sponsorHistory.past.length > 0 && (
                 <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 flex items-center gap-2">
-                    <History size={16} /> Past Contracts ({sponsorHistory.past.length} {sponsorHistory.past.length === 1 ? 'season' : 'seasons'})
+                    <History size={16} /> {t('Past Contracts')} ({sponsorHistory.past.length} {sponsorHistory.past.length === 1 ? t('season') : t('seasons')})
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-gray-100 dark:border-gray-800">
-                          <th className="text-left py-2 px-3 font-medium text-gray-600 dark:text-gray-400">Season</th>
-                          <th className="text-left py-2 px-3 font-medium text-gray-600 dark:text-gray-400">Type</th>
-                          <th className="text-right py-2 px-3 font-medium text-gray-600 dark:text-gray-400">Commercial Value</th>
-                          <th className="text-right py-2 px-3 font-medium text-gray-600 dark:text-gray-400">Sponsorship</th>
-                          <th className="text-right py-2 px-3 font-medium text-gray-600 dark:text-gray-400">Delta</th>
-                          <th className="text-center py-2 px-3 font-medium text-gray-600 dark:text-gray-400">Quality</th>
+                          <th className="text-left py-2 px-3 font-medium text-gray-600 dark:text-gray-400">{t('Season')}</th>
+                          <th className="text-left py-2 px-3 font-medium text-gray-600 dark:text-gray-400">{t('Type')}</th>
+                          <th className="text-right py-2 px-3 font-medium text-gray-600 dark:text-gray-400">{t('Commercial Value')}</th>
+                          <th className="text-right py-2 px-3 font-medium text-gray-600 dark:text-gray-400">{t('Sponsorship')}</th>
+                          <th className="text-right py-2 px-3 font-medium text-gray-600 dark:text-gray-400">{t('Delta')}</th>
+                          <th className="text-center py-2 px-3 font-medium text-gray-600 dark:text-gray-400">{t('Quality')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1544,7 +1546,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                               </td>
                               <td className="py-2 px-3 text-center">
                                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${histQuality.bgColor} ${histQuality.color}`}>
-                                  <HistIcon size={10} /> {histQuality.label}
+                                  <HistIcon size={10} /> {t(histQuality.label)}
                                 </span>
                               </td>
                             </tr>
@@ -1553,7 +1555,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                       </tbody>
                       <tfoot>
                         <tr className="bg-gray-50 dark:bg-gray-800 font-semibold">
-                          <td className="py-2 px-3 text-gray-700 dark:text-gray-200">Past Total</td>
+                          <td className="py-2 px-3 text-gray-700 dark:text-gray-200">{t('Past Total')}</td>
                           <td className="py-2 px-3"></td>
                           <td className="py-2 px-3 text-right">{formatCurrency(sponsorHistory.past.reduce((sum, h) => sum + h.commercialValue, 0))}</td>
                           <td className="py-2 px-3 text-right">{formatCurrency(sponsorHistory.past.reduce((sum, h) => sum + h.sponsorReconciliation, 0))}</td>
@@ -1571,23 +1573,23 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               {/* All-Time Summary */}
               {sponsorHistory.all.length > 1 && (
                 <div className="bg-slate-50 dark:bg-slate-900/30 border border-slate-200 rounded-xl p-4">
-                  <h3 className="text-sm font-semibold text-slate-700 mb-3">Lifetime Partnership Summary</h3>
+                  <h3 className="text-sm font-semibold text-slate-700 mb-3">{t('Lifetime Partnership Summary')}</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div>
                       <p className="text-2xl font-bold text-slate-900">{sponsorHistory.all.length}</p>
-                      <p className="text-xs text-slate-500">Total Seasons</p>
+                      <p className="text-xs text-slate-500">{t('Total Seasons')}</p>
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-slate-900">{formatCurrency(sponsorHistory.all.reduce((sum, h) => sum + h.commercialValue, 0))}</p>
-                      <p className="text-xs text-slate-500">Total Value</p>
+                      <p className="text-xs text-slate-500">{t('Total Value')}</p>
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-green-600">{formatCurrency(sponsorHistory.all.reduce((sum, h) => sum + h.sponsorReconciliation, 0))}</p>
-                      <p className="text-xs text-slate-500">Total Sponsorship</p>
+                      <p className="text-xs text-slate-500">{t('Total Sponsorship')}</p>
                     </div>
                     <div>
                       <p className="text-2xl font-bold text-emerald-600">+{formatCurrency(sponsorHistory.all.reduce((sum, h) => sum + h.delta, 0))}</p>
-                      <p className="text-xs text-slate-500">Lifetime Delta</p>
+                      <p className="text-xs text-slate-500">{t('Lifetime Delta')}</p>
                     </div>
                   </div>
                 </div>
@@ -1597,10 +1599,10 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               {selectedSponsor.bonusPlayoff > 0 && (
                 <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 rounded-xl p-4">
                   <h3 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
-                    <Award size={16} /> Playoff Bonus
+                    <Award size={16} /> {t('Playoff Bonus')}
                   </h3>
                   <p className="text-lg font-bold text-amber-700">{formatCurrency(selectedSponsor.bonusPlayoff)}</p>
-                  <p className="text-xs text-amber-600 mt-1">Additional bonus if team qualifies for playoffs</p>
+                  <p className="text-xs text-amber-600 mt-1">{t('Additional bonus if team qualifies for playoffs')}</p>
                 </div>
               )}
             </div>

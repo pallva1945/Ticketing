@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { GameData } from '../types';
 import { ArrowUp, ArrowDown } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ZoneTableProps {
   data: GameData[];
@@ -15,6 +16,7 @@ interface SortConfig {
 }
 
 export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
+  const { t } = useLanguage();
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'avgRevenue', direction: 'desc' });
 
   const handleSort = (key: SortKey) => {
@@ -112,33 +114,33 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden h-full flex flex-col">
       <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800 flex-shrink-0">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Zone Efficiency Matrix</h3>
-        <span className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-2 py-1 rounded">Avg per game</span>
+        <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('Zone Efficiency Matrix')}</h3>
+        <span className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 px-2 py-1 rounded">{t('Avg per game')}</span>
       </div>
       <div className="overflow-auto flex-1">
         <table className="w-full text-sm text-left text-gray-600 dark:text-gray-400">
           <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0 z-10 shadow-sm border-b border-gray-200 dark:border-gray-700">
             <tr>
               <th className={`${thClass} text-left pl-4`} onClick={() => handleSort('zone')}>
-                Zone <SortIcon col="zone" />
+                {t('Zone')} <SortIcon col="zone" />
               </th>
               <th className={`${thClass} text-right`} onClick={() => handleSort('avgSold')}>
-                Avg Sold<br/>/ Cap <SortIcon col="avgSold" />
+                {t('Avg Sold')}<br/>/ {t('Cap')} <SortIcon col="avgSold" />
               </th>
               <th className={`${thClass} text-right`} onClick={() => handleSort('avgPrice')}>
-                Avg Price<br/>(Yield) <SortIcon col="avgPrice" />
+                {t('Avg Price')}<br/>({t('Yield')}) <SortIcon col="avgPrice" />
               </th>
               <th className={`${thClass} text-right`} onClick={() => handleSort('revPas')}>
-                RevPAS <SortIcon col="revPas" />
+                {t('RevPAS')} <SortIcon col="revPas" />
               </th>
               <th className={`${thClass} text-right`} onClick={() => handleSort('avgRevenue')}>
-                Avg<br/>Revenue <SortIcon col="avgRevenue" />
+                {t('Avg Revenue')}<br/> <SortIcon col="avgRevenue" />
               </th>
               <th className={`${thClass} text-right`} onClick={() => handleSort('revShare')}>
-                Rev<br/>Share <SortIcon col="revShare" />
+                {t('Rev Share')}<br/> <SortIcon col="revShare" />
               </th>
               <th className={`${thClass} w-24 pl-3`} onClick={() => handleSort('fillRate')}>
-                Fill Rate % <SortIcon col="fillRate" />
+                {t('Fill Rate %')} <SortIcon col="fillRate" />
               </th>
             </tr>
           </thead>
@@ -156,7 +158,7 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
                   key={row.zone} 
                   className="bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer group"
                   onClick={() => onZoneClick && onZoneClick(row.zone)}
-                  title="Click to filter by this zone"
+                  title={t("Click to filter by this zone")}
                 >
                   <td className="px-3 py-3 font-medium text-gray-900 dark:text-white flex items-center gap-2 pl-4">
                     <div className={`w-1.5 h-6 rounded-sm flex-shrink-0 ${
@@ -195,7 +197,7 @@ export const ZoneTable: React.FC<ZoneTableProps> = ({ data, onZoneClick }) => {
           {totals && (
             <tfoot className="bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-bold sticky bottom-0 z-10 border-t-2 border-gray-200 dark:border-gray-700 shadow-inner text-xs">
               <tr>
-                <td className="px-3 py-3 uppercase text-[10px] tracking-wider pl-4">TOTAL / AVG</td>
+                <td className="px-3 py-3 uppercase text-[10px] tracking-wider pl-4">{t('TOTAL / AVG')}</td>
                 <td className="px-2 py-3 text-right font-mono whitespace-nowrap">
                   <span>{Math.round(totals.avgSold)}</span>
                   <span className="text-gray-400 mx-0.5">/</span>

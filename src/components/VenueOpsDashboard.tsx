@@ -7,6 +7,7 @@ import {
   BarChart3, PieChart as PieChartIcon
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 
@@ -72,6 +73,7 @@ const COMPLIANCE_ITEMS = [
 ];
 
 export const VenueOpsDashboard: React.FC = () => {
+  const { t } = useLanguage();
   const [expandedMonth, setExpandedMonth] = useState<string | null>('Dec');
   const [activeSection, setActiveSection] = useState<'overview' | 'pipeline'>('overview');
 
@@ -104,7 +106,7 @@ export const VenueOpsDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Venue Operations</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Venue Operations')}</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Season 25-26 • H1 Report (Jul 1 – Dec 31, 2025)</p>
         </div>
         <div className="flex gap-2">
@@ -118,7 +120,7 @@ export const VenueOpsDashboard: React.FC = () => {
                   : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
               }`}
             >
-              {section === 'overview' ? 'Overview' : 'Event Pipeline'}
+              {section === 'overview' ? t('Overview') : t('Event Pipeline')}
             </button>
           ))}
         </div>
@@ -129,22 +131,22 @@ export const VenueOpsDashboard: React.FC = () => {
           <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-6 text-white">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div>
-                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Total Revenue (YTD)</p>
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{t('Total Revenue (YTD)')}</p>
                 <p className="text-4xl font-bold">{formatCurrency(VENUE_FINANCIALS.actual.revenue)}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">H1 Actual (Jul – Dec 2025)</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('H1 Actual (Jul – Dec 2025)')}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Season Budget</p>
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{t('Season Budget')}</p>
                 <p className="text-4xl font-bold text-gray-300">{formatCurrency(262364)}</p>
                 <div className="w-full bg-gray-700 h-2 rounded-full mt-3 overflow-hidden">
                   <div className="h-full bg-green-500 rounded-full" style={{ width: `${(VENUE_FINANCIALS.actual.revenue / 262364 * 100).toFixed(1)}%` }}></div>
                 </div>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">{(VENUE_FINANCIALS.actual.revenue / 262364 * 100).toFixed(1)}% of target</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-1">{(VENUE_FINANCIALS.actual.revenue / 262364 * 100).toFixed(1)}% {t('of target')}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">H2 Confirmed Pipeline</p>
+                <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">{t('H2 Confirmed Pipeline')}</p>
                 <p className="text-4xl font-bold text-green-400">{formatCurrency(totalPipelineRevenue)}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Projected Total: {formatCurrency(VENUE_FINANCIALS.actual.revenue + totalPipelineRevenue)}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('Projected Total')}: {formatCurrency(VENUE_FINANCIALS.actual.revenue + totalPipelineRevenue)}</p>
               </div>
             </div>
           </div>
@@ -152,11 +154,11 @@ export const VenueOpsDashboard: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Arena Occupancy</p>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Arena Occupancy')}</p>
                 <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30"><CalendarDays size={18} className="text-blue-600" /></div>
               </div>
               <p className="text-3xl font-bold text-gray-900 dark:text-white">{occupancyRate}%</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{totalOccupiedDays} / {totalDays} days used</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{totalOccupiedDays} / {totalDays} {t('days used')}</p>
               <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full mt-3 overflow-hidden">
                 <div className="h-full bg-blue-500 rounded-full" style={{ width: `${occupancyRate}%` }}></div>
               </div>
@@ -164,26 +166,26 @@ export const VenueOpsDashboard: React.FC = () => {
 
             <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">H1 Budget</p>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('H1 Budget')}</p>
                 <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/30"><Euro size={18} className="text-green-600" /></div>
               </div>
               <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(VENUE_FINANCIALS.budget.revenue)}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Revenue budget for H1</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('Revenue budget for H1')}</p>
               <div className="flex items-center gap-1 mt-2">
-                <span className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded">See note below</span>
+                <span className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded">{t('See note below')}</span>
               </div>
             </div>
 
             <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Campus Status</p>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Campus Status')}</p>
                 <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30"><MapPin size={18} className="text-emerald-600" /></div>
               </div>
-              <p className="text-3xl font-bold text-green-600">Daily</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Fully operational</p>
+              <p className="text-3xl font-bold text-green-600">{t('Daily')}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('Fully operational')}</p>
               <div className="flex items-center gap-1 mt-2">
                 <span className="text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded flex items-center gap-1">
-                  <CheckCircle2 size={10} /> Active
+                  <CheckCircle2 size={10} /> {t('Active')}
                 </span>
               </div>
             </div>
@@ -193,8 +195,8 @@ export const VenueOpsDashboard: React.FC = () => {
             <div className="flex items-start gap-3">
               <AlertTriangle size={18} className="text-amber-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-amber-800 mb-1">Financial Note</p>
-                <p className="text-xs text-amber-700 leading-relaxed">{VENUE_FINANCIALS.note}</p>
+                <p className="text-sm font-semibold text-amber-800 mb-1">{t('Financial Note')}</p>
+                <p className="text-xs text-amber-700 leading-relaxed">{t(VENUE_FINANCIALS.note)}</p>
               </div>
             </div>
           </div>
@@ -203,7 +205,7 @@ export const VenueOpsDashboard: React.FC = () => {
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <BarChart3 size={16} className="text-blue-600" />
-                Monthly Arena Usage
+                {t('Monthly Arena Usage')}
               </h3>
               <div className="h-[250px]">
                 <ResponsiveContainer width="100%" height="100%">
@@ -213,13 +215,13 @@ export const VenueOpsDashboard: React.FC = () => {
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip
                       formatter={(value: number, name: string) => [
-                        `${value} days`,
-                        name === 'occupied' ? 'Used' : 'Available'
+                        `${value} ${t('days')}`,
+                        name === 'occupied' ? t('Used') : t('Available')
                       ]}
                       contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '12px' }}
                     />
-                    <Bar dataKey="occupied" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} name="Used" />
-                    <Bar dataKey="available" stackId="a" fill="#e5e7eb" radius={[4, 4, 0, 0]} name="Available" />
+                    <Bar dataKey="occupied" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} name={t('Used')} />
+                    <Bar dataKey="available" stackId="a" fill="#e5e7eb" radius={[4, 4, 0, 0]} name={t('Available')} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -228,7 +230,7 @@ export const VenueOpsDashboard: React.FC = () => {
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
               <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <PieChartIcon size={16} className="text-purple-600" />
-                Event Type Breakdown
+                {t('Event Type Breakdown')}
               </h3>
               <div className="h-[250px] flex items-center">
                 <div className="w-1/2 h-full">
@@ -248,7 +250,7 @@ export const VenueOpsDashboard: React.FC = () => {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value: number, name: string) => [`${value} events`, name]}
+                        formatter={(value: number, name: string) => [`${value} ${t('events')}`, name]}
                         contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '12px' }}
                       />
                     </PieChart>
@@ -276,7 +278,7 @@ export const VenueOpsDashboard: React.FC = () => {
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
             <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider mb-4 flex items-center gap-2">
               <CalendarDays size={16} className="text-blue-600" />
-              Monthly Event Detail
+              {t('Monthly Event Detail')}
             </h3>
             <div className="space-y-2">
               {MONTHLY_OCCUPANCY.map(m => (
@@ -294,11 +296,11 @@ export const VenueOpsDashboard: React.FC = () => {
                             style={{ width: `${(m.days / m.total) * 100}%` }}
                           ></div>
                         </div>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">{m.days}/{m.total} days</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">{m.days}/{m.total} {t('days')}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-gray-400 dark:text-gray-500">{m.events.length} event{m.events.length !== 1 ? 's' : ''}</span>
+                      <span className="text-xs font-medium text-gray-400 dark:text-gray-500">{m.events.length} {m.events.length !== 1 ? t('events') : t('event')}</span>
                       {expandedMonth === m.month ? <ChevronUp size={14} className="text-gray-400 dark:text-gray-500" /> : <ChevronDown size={14} className="text-gray-400 dark:text-gray-500" />}
                     </div>
                   </button>
@@ -318,7 +320,7 @@ export const VenueOpsDashboard: React.FC = () => {
                   )}
                   {expandedMonth === m.month && m.events.length === 0 && (
                     <div className="px-4 pb-3 border-t border-gray-50">
-                      <p className="text-xs text-gray-400 dark:text-gray-500 italic py-2">No events scheduled</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 italic py-2">{t('No events scheduled')}</p>
                     </div>
                   )}
                 </div>
@@ -329,7 +331,7 @@ export const VenueOpsDashboard: React.FC = () => {
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
             <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider mb-4 flex items-center gap-2">
               <Shield size={16} className="text-green-600" />
-              Compliance & Safety
+              {t('Compliance & Safety')}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {COMPLIANCE_ITEMS.map((item, idx) => (
@@ -337,11 +339,11 @@ export const VenueOpsDashboard: React.FC = () => {
                   <div className="flex items-center gap-2 mb-2">
                     <CheckCircle2 size={14} className={item.status === 'completed' ? 'text-green-600' : 'text-blue-600'} />
                     <span className={`text-xs font-bold uppercase ${item.status === 'completed' ? 'text-green-700' : 'text-blue-700'}`}>
-                      {item.status === 'completed' ? 'Completed' : 'Active'}
+                      {item.status === 'completed' ? t('Completed') : t('Active')}
                     </span>
                   </div>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">{item.name}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{item.description}</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">{t(item.name)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">{t(item.description)}</p>
                 </div>
               ))}
             </div>
@@ -353,26 +355,26 @@ export const VenueOpsDashboard: React.FC = () => {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm border-t-4 border-t-green-500">
-              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Confirmed Revenue</p>
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('Confirmed Revenue')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalPipelineRevenue)}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{PIPELINE.revenue.length} revenue events</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{PIPELINE.revenue.length} {t('revenue events')}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm border-t-4 border-t-blue-500">
-              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Community Events</p>
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('Community Events')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{PIPELINE.community.length}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Zero cost to club (organizers cover expenses)</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('Zero cost to club (organizers cover expenses)')}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm border-t-4 border-t-amber-500">
-              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Unrealized / Lost</p>
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('Unrealized / Lost')}</p>
               <p className="text-2xl font-bold text-gray-900 dark:text-white">{PIPELINE.unrealized.length}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(2000)} deposit retained</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{formatCurrency(2000)} {t('deposit retained')}</p>
             </div>
           </div>
 
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
             <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider mb-4 flex items-center gap-2">
               <DollarSign size={16} className="text-green-600" />
-              Revenue-Generating Events
+              {t('Revenue-Generating Events')}
             </h3>
             <div className="space-y-3">
               {PIPELINE.revenue.map((event, idx) => (
@@ -393,7 +395,7 @@ export const VenueOpsDashboard: React.FC = () => {
                 </div>
               ))}
               <div className="flex items-center justify-between p-3 bg-green-100 dark:bg-green-900/20 rounded-lg border border-green-200">
-                <span className="text-sm font-bold text-green-800">Total Confirmed Revenue</span>
+                <span className="text-sm font-bold text-green-800">{t('Total Confirmed Revenue')}</span>
                 <span className="text-lg font-bold text-green-800">{formatCurrency(totalPipelineRevenue)}</span>
               </div>
             </div>
@@ -402,9 +404,9 @@ export const VenueOpsDashboard: React.FC = () => {
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
             <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider mb-4 flex items-center gap-2">
               <Users size={16} className="text-blue-600" />
-              Community Events (Zero Net Cost)
+              {t('Community Events (Zero Net Cost)')}
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Organizers cover all operational expenses (cleaning, utilities, staff), ensuring zero loss for the club.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{t('Organizers cover all operational expenses (cleaning, utilities, staff), ensuring zero loss for the club.')}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {PIPELINE.community.map((event, idx) => (
                 <div key={idx} className="flex items-center gap-3 p-3 bg-blue-50/50 dark:bg-blue-900/30 border border-blue-100 rounded-lg">
@@ -423,7 +425,7 @@ export const VenueOpsDashboard: React.FC = () => {
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
             <h3 className="text-sm font-bold text-gray-800 dark:text-gray-100 uppercase tracking-wider mb-4 flex items-center gap-2">
               <AlertTriangle size={16} className="text-amber-600" />
-              Unrealized & Pending Opportunities
+              {t('Unrealized & Pending Opportunities')}
             </h3>
             <div className="space-y-3">
               {PIPELINE.unrealized.map((opp, idx) => {
@@ -446,7 +448,7 @@ export const VenueOpsDashboard: React.FC = () => {
                         <span className={`text-sm font-bold ${colors.text}`}>{formatCurrency(opp.revenue)}</span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{opp.note}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{t(opp.note)}</p>
                     <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1">{opp.date}</p>
                   </div>
                 );

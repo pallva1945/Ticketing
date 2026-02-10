@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Euro, Trophy, Flag, Activity, TrendingUp, CheckCircle2, Calendar, Target, Dumbbell } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 
@@ -50,6 +51,7 @@ const seasonBudget = 930465;
 type Section = 'overview' | 'sponsorship' | 'bops' | 'ebp';
 
 export const VareseBasketballDashboard: React.FC = () => {
+  const { t } = useLanguage();
   const [activeSection, setActiveSection] = useState<Section>('overview');
 
   const sponsorshipGap = FINANCIALS.sponsorship.budget - FINANCIALS.sponsorship.actual;
@@ -63,8 +65,8 @@ export const VareseBasketballDashboard: React.FC = () => {
           <Trophy size={22} className="text-teal-600" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Varese Basketball</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Serie B Operations – Season 2025/26</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('Varese Basketball')}</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('Serie B Operations – Season 2025/26')}</p>
         </div>
       </div>
 
@@ -72,7 +74,7 @@ export const VareseBasketballDashboard: React.FC = () => {
         {(['overview', 'sponsorship', 'bops', 'ebp'] as const).map(section => (
           <button key={section} onClick={() => setActiveSection(section)}
             className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeSection === section ? 'bg-teal-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
-            {section === 'overview' ? 'Overview' : section === 'sponsorship' ? 'Sponsorship' : section === 'bops' ? 'BOps' : 'EBP'}
+            {section === 'overview' ? t('Overview') : section === 'sponsorship' ? t('Sponsorship') : section === 'bops' ? t('BOps') : t('EBP')}
           </button>
         ))}
       </div>
@@ -82,32 +84,32 @@ export const VareseBasketballDashboard: React.FC = () => {
           <div className="bg-gradient-to-r from-teal-800 to-teal-900 rounded-xl p-6 text-white">
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
               <div>
-                <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">Total Revenue (H1)</p>
+                <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">{t('Total Revenue (H1)')}</p>
                 <p className="text-4xl font-bold">{formatCurrency(totalH1Actual)}</p>
-                <p className="text-xs text-teal-300/70 mt-1">Jul – Dec 2025</p>
+                <p className="text-xs text-teal-300/70 mt-1">{t('Jul – Dec 2025')}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">H1 Budget</p>
+                <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">{t('H1 Budget')}</p>
                 <p className="text-4xl font-bold text-teal-200">{formatCurrency(totalH1Budget)}</p>
                 <div className="w-full bg-teal-700 h-2 rounded-full mt-3 overflow-hidden">
                   <div className="h-full bg-green-400 rounded-full" style={{ width: `${Math.min(100, totalH1Actual / totalH1Budget * 100).toFixed(1)}%` }}></div>
                 </div>
-                <p className="text-[10px] text-teal-400 mt-1">{(totalH1Actual / totalH1Budget * 100).toFixed(1)}% achieved</p>
+                <p className="text-[10px] text-teal-400 mt-1">{(totalH1Actual / totalH1Budget * 100).toFixed(1)}% {t('achieved')}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">Season Budget</p>
+                <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">{t('Season Budget')}</p>
                 <p className="text-4xl font-bold text-teal-200">{formatCurrency(seasonBudget)}</p>
                 <div className="w-full bg-teal-700 h-2 rounded-full mt-3 overflow-hidden">
                   <div className="h-full bg-green-400 rounded-full" style={{ width: `${(totalH1Actual / seasonBudget * 100).toFixed(1)}%` }}></div>
                 </div>
-                <p className="text-[10px] text-teal-400 mt-1">{(totalH1Actual / seasonBudget * 100).toFixed(1)}% of annual target</p>
+                <p className="text-[10px] text-teal-400 mt-1">{(totalH1Actual / seasonBudget * 100).toFixed(1)}% {t('of annual target')}</p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">H1 Variance</p>
+                <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">{t('H1 Variance')}</p>
                 <p className={`text-4xl font-bold ${totalH1Actual >= totalH1Budget ? 'text-green-400' : 'text-amber-400'}`}>
                   {totalH1Actual >= totalH1Budget ? '+' : ''}{formatCurrency(totalH1Actual - totalH1Budget)}
                 </p>
-                <p className="text-xs text-teal-300/70 mt-1">{totalH1Actual >= totalH1Budget ? 'Over budget' : 'Under budget – recoverable in H2'}</p>
+                <p className="text-xs text-teal-300/70 mt-1">{totalH1Actual >= totalH1Budget ? t('Over budget') : t('Under budget – recoverable in H2')}</p>
               </div>
             </div>
           </div>
@@ -115,65 +117,65 @@ export const VareseBasketballDashboard: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveSection('sponsorship')}>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Sponsorship</p>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Sponsorship')}</p>
                 <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30"><Flag size={18} className="text-blue-600" /></div>
               </div>
               <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(FINANCIALS.sponsorship.actual)}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Budget: {formatCurrency(FINANCIALS.sponsorship.budget)}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('Budget')}: {formatCurrency(FINANCIALS.sponsorship.budget)}</p>
               <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full mt-3 overflow-hidden">
                 <div className="h-full bg-blue-500 rounded-full" style={{ width: `${(FINANCIALS.sponsorship.actual / FINANCIALS.sponsorship.budget * 100).toFixed(0)}%` }}></div>
               </div>
               <div className="flex items-center gap-1 mt-2">
                 <span className="text-xs font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded">
-                  Gap: {formatCurrency(sponsorshipGap)} – H2 recovery confirmed
+                  {t('Gap')}: {formatCurrency(sponsorshipGap)} – {t('H2 recovery confirmed')}
                 </span>
               </div>
             </div>
 
             <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveSection('bops')}>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">BOps</p>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('BOps')}</p>
                 <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/30"><Activity size={18} className="text-emerald-600" /></div>
               </div>
               <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(FINANCIALS.bops.actual)}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Budget: {formatCurrency(FINANCIALS.bops.budget)}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('Budget')}: {formatCurrency(FINANCIALS.bops.budget)}</p>
               <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full mt-3 overflow-hidden">
                 <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(0)}%` }}></div>
               </div>
               <div className="flex items-center gap-1 mt-2">
                 <span className="text-xs font-medium text-green-600 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded flex items-center gap-1">
-                  <CheckCircle2 size={10} /> {(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(1)}% of budget
+                  <CheckCircle2 size={10} /> {(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(1)}% {t('of budget')}
                 </span>
               </div>
             </div>
 
             <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveSection('ebp')}>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">EBP</p>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('EBP')}</p>
                 <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/30"><Dumbbell size={18} className="text-purple-600" /></div>
               </div>
               <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(FINANCIALS.ebp.actual)}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{totalEbpPlayers} players enrolled</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{totalEbpPlayers} {t('players enrolled')}</p>
               <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full mt-3 overflow-hidden">
                 <div className="h-full bg-purple-500 rounded-full" style={{ width: '100%' }}></div>
               </div>
               <div className="flex items-center gap-1 mt-2">
                 <span className="text-xs font-medium text-purple-600 bg-purple-50 dark:bg-purple-900/30 px-2 py-0.5 rounded flex items-center gap-1">
-                  <CheckCircle2 size={10} /> 2 programs active
+                  <CheckCircle2 size={10} /> {t('2 programs active')}
                 </span>
               </div>
             </div>
 
             <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm">
               <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">GameDay (Serie B)</p>
+                <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('GameDay (Serie B)')}</p>
                 <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/30"><Calendar size={18} className="text-indigo-600" /></div>
               </div>
               <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(GAMEDAY_DATA.h1Revenue)}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{GAMEDAY_DATA.homeGames} home games · ~€{GAMEDAY_DATA.avgPerGame}/game</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{GAMEDAY_DATA.homeGames} {t('home games')} · ~€{GAMEDAY_DATA.avgPerGame}/{t('game')}</p>
               <div className="flex items-center gap-1 mt-3">
                 <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">
-                  Ticketing only
+                  {t('Ticketing only')}
                 </span>
               </div>
             </div>
@@ -183,10 +185,9 @@ export const VareseBasketballDashboard: React.FC = () => {
             <div className="flex items-start gap-3">
               <TrendingUp size={18} className="text-teal-600 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-teal-800">H2 Outlook</p>
+                <p className="text-sm font-semibold text-teal-800">{t('H2 Outlook')}</p>
                 <p className="text-xs text-teal-700 mt-1">
-                  The €{sponsorshipGap.toLocaleString('it-IT')} sponsorship gap will be recovered with the new Sports & Health (S&H) 3-year solar contract, 
-                  bringing €{h2SponsorshipRecovery.toLocaleString('it-IT')} in H2. Additionally, the Finale Nazionali is backloaded into H2 — last season it generated €51.500, with potential to improve this year. BOps is tracking at {(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(1)}% of budget.
+                  {t('The')} €{sponsorshipGap.toLocaleString('it-IT')} {t('sponsorship gap will be recovered with the new Sports & Health (S&H) 3-year solar contract, bringing')} €{h2SponsorshipRecovery.toLocaleString('it-IT')} {t('in H2. Additionally, the Finale Nazionali is backloaded into H2 — last season it generated')} €51.500, {t('with potential to improve this year. BOps is tracking at')} {(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(1)}% {t('of budget')}.
                 </p>
               </div>
             </div>
@@ -199,12 +200,12 @@ export const VareseBasketballDashboard: React.FC = () => {
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">Sponsorship Portfolio – H1</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">{SPONSORSHIP_DEALS.length} active sponsors</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">{t('Sponsorship Portfolio – H1')}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{SPONSORSHIP_DEALS.length} {t('active sponsors')}</p>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(FINANCIALS.sponsorship.actual)}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">of {formatCurrency(FINANCIALS.sponsorship.budget)} budget</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{t('of')} {formatCurrency(FINANCIALS.sponsorship.budget)} {t('budget')}</p>
               </div>
             </div>
             <div className="space-y-2">
@@ -214,42 +215,42 @@ export const VareseBasketballDashboard: React.FC = () => {
                     <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                     <div>
                       <p className="text-sm font-medium text-gray-900 dark:text-white">{deal.name}</p>
-                      <p className="text-xs text-gray-400 dark:text-gray-500">Annual: {formatCurrency(deal.annual)}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{t('Annual')}: {formatCurrency(deal.annual)}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(deal.h1)}</p>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500">H1 recognized</p>
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500">{t('H1 recognized')}</p>
                   </div>
                 </div>
               ))}
             </div>
             <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">H1 Total from listed sponsors</p>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('H1 Total from listed sponsors')}</p>
               <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(SPONSORSHIP_DEALS.reduce((s, d) => s + d.h1, 0))}</p>
             </div>
           </div>
 
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
-            <p className="text-sm font-bold text-gray-900 dark:text-white mb-3">H2 Pipeline – New Business</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white mb-3">{t('H2 Pipeline – New Business')}</p>
             {SPONSORSHIP_H2_PIPELINE.map((deal, idx) => (
               <div key={idx} className="flex items-center justify-between p-4 bg-green-50/50 dark:bg-green-900/30 border border-green-100 rounded-lg">
                 <div className="flex items-center gap-3">
                   <CheckCircle2 size={16} className="text-green-600" />
                   <div>
                     <p className="text-sm font-medium text-gray-900 dark:text-white">{deal.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{deal.note}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t(deal.note)}</p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-bold text-green-700">{formatCurrency(deal.h2)}</p>
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500">Annual: {formatCurrency(deal.annual)}</p>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500">{t('Annual')}: {formatCurrency(deal.annual)}</p>
                 </div>
               </div>
             ))}
             <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-100 rounded-lg p-3 mt-3">
               <p className="text-xs text-blue-800">
-                <span className="font-semibold">Budget recovery:</span> The H1 gap of {formatCurrency(sponsorshipGap)} vs budget will be fully covered by the S&H deal ({formatCurrency(h2SponsorshipRecovery)} in H2), resulting in a net surplus of {formatCurrency(h2SponsorshipRecovery - sponsorshipGap)} for the season.
+                <span className="font-semibold">{t('Budget recovery')}:</span> {t('The H1 gap of')} {formatCurrency(sponsorshipGap)} {t('vs budget will be fully covered by the S&H deal')} ({formatCurrency(h2SponsorshipRecovery)} {t('in H2')}), {t('resulting in a net surplus of')} {formatCurrency(h2SponsorshipRecovery - sponsorshipGap)} {t('for the season')}.
               </p>
             </div>
           </div>
@@ -261,12 +262,12 @@ export const VareseBasketballDashboard: React.FC = () => {
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">Basketball Operations – H1 Breakdown</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">Player acquisitions, allocations & fees</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">{t('Basketball Operations – H1 Breakdown')}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{t('Player acquisitions, allocations & fees')}</p>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(FINANCIALS.bops.actual)}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">of {formatCurrency(FINANCIALS.bops.budget)} budget</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{t('of')} {formatCurrency(FINANCIALS.bops.budget)} {t('budget')}</p>
               </div>
             </div>
             <div className="space-y-2">
@@ -276,12 +277,12 @@ export const VareseBasketballDashboard: React.FC = () => {
                   <div key={idx} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-emerald-50/50 dark:bg-emerald-900/30 transition-colors">
                     <div className="flex items-center justify-between mb-1">
                       <div>
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">{item.note}</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{t(item.name)}</p>
+                        <p className="text-xs text-gray-400 dark:text-gray-500">{t(item.note)}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(item.h1)}</p>
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500">{pct.toFixed(1)}% of total</p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500">{pct.toFixed(1)}% {t('of total')}</p>
                       </div>
                     </div>
                     <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden mt-1">
@@ -292,20 +293,20 @@ export const VareseBasketballDashboard: React.FC = () => {
               })}
             </div>
             <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">BOps H1 Total</p>
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400">{t('BOps H1 Total')}</p>
               <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(FINANCIALS.bops.actual)}</p>
             </div>
           </div>
 
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
-            <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Budget Status</p>
+            <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">{t('Budget Status')}</p>
             <div className="flex items-center justify-center h-28">
               <div className="text-center">
                 <p className="text-5xl font-bold text-emerald-600">{(FINANCIALS.bops.actual / FINANCIALS.bops.budget * 100).toFixed(1)}%</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">of H1 budget achieved</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">{t('of H1 budget achieved')}</p>
                 <div className="flex items-center gap-1 mt-3 justify-center">
                   <CheckCircle2 size={14} className="text-green-600" />
-                  <span className="text-xs font-medium text-green-600">On target</span>
+                  <span className="text-xs font-medium text-green-600">{t('On target')}</span>
                 </div>
               </div>
             </div>
@@ -318,12 +319,12 @@ export const VareseBasketballDashboard: React.FC = () => {
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">Elite Basketball Program – H1</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">Player development revenue across {totalEbpPlayers} enrolled players</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">{t('Elite Basketball Program – H1')}</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{t('Player development revenue across')} {totalEbpPlayers} {t('enrolled players')}</p>
               </div>
               <div className="text-right">
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(FINANCIALS.ebp.actual)}</p>
-                <p className="text-xs text-gray-400 dark:text-gray-500">H1 total</p>
+                <p className="text-xs text-gray-400 dark:text-gray-500">{t('H1 total')}</p>
               </div>
             </div>
             <div className="space-y-3">
@@ -334,11 +335,11 @@ export const VareseBasketballDashboard: React.FC = () => {
                     <div className="flex items-center justify-between mb-2">
                       <div>
                         <p className="text-sm font-semibold text-gray-900 dark:text-white">{program.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{program.note}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{t(program.note)}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(program.h1)}</p>
-                        <p className="text-[10px] text-gray-400 dark:text-gray-500">{pct.toFixed(1)}% of EBP revenue</p>
+                        <p className="text-[10px] text-gray-400 dark:text-gray-500">{pct.toFixed(1)}% {t('of EBP revenue')}</p>
                       </div>
                     </div>
                     <div className="w-full bg-purple-100 dark:bg-purple-900/20 h-2 rounded-full overflow-hidden">
@@ -352,17 +353,17 @@ export const VareseBasketballDashboard: React.FC = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5 text-center">
-              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Total Players</p>
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('Total Players')}</p>
               <p className="text-4xl font-bold text-purple-600">{totalEbpPlayers}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Enrolled in programs</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('Enrolled in programs')}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5 text-center">
-              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Avg Revenue / Player</p>
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('Avg Revenue / Player')}</p>
               <p className="text-4xl font-bold text-purple-600">{formatCurrency(Math.round(FINANCIALS.ebp.actual / totalEbpPlayers))}</p>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">H1 average</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('H1 average')}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5 text-center">
-              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Programs</p>
+              <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">{t('Programs')}</p>
               <p className="text-4xl font-bold text-purple-600">{EBP_BREAKDOWN.length}</p>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">EDBP + YAP</p>
             </div>

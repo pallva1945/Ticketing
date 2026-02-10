@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { DollarSign, Users, Ticket, TrendingUp, TrendingDown, Minus, Gift } from 'lucide-react';
 import { GameData, SalesChannel, StatsCardsProps } from '../types';
 import { FIXED_CAPACITY_25_26 } from '../constants';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Helper to calculate raw KPIs for any set of games
 export const calculateKPIs = (games: GameData[]) => {
@@ -61,7 +62,7 @@ const MetricCard = ({
   targetValue, // Renamed from prevValue
   isPercentage = false,
   inverse = false, // If true, lower is better (e.g., Giveaway Rate)
-  comparisonLabel = "vs KPIs"
+  comparisonLabel
 }: any) => {
   
   // Calculate Variance vs Target
@@ -124,6 +125,7 @@ const MetricCard = ({
 };
 
 export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filters, kpiConfig, viewMode }) => {
+  const { t } = useLanguage();
   
   // 1. Calculate Current KPIs (based on the filtered `data` passed in)
   const currentKPIs = useMemo(() => calculateKPIs(data), [data]);
@@ -266,53 +268,57 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
       <MetricCard 
-        label="Avg Rev/Game" 
+        label={t("Avg Rev/Game")} 
         value={currentKPIs.arpg} 
         targetValue={targetKPIs?.arpg}
-        subValue="Total Average"
+        subValue={t("Total Average")}
         icon={DollarSign} 
-        colorClass="border-red-600" 
+        colorClass="border-red-600"
+        comparisonLabel={t("vs KPIs")}
       />
       <MetricCard 
-        label="Yield (ATP)" 
+        label={t("Yield (ATP)")} 
         value={currentKPIs.yield_atp} 
         targetValue={targetKPIs?.yield_atp}
-        subValue="Per sold seat"
+        subValue={t("Per sold seat")}
         icon={Ticket} 
-        colorClass="border-gray-800" 
+        colorClass="border-gray-800"
+        comparisonLabel={t("vs KPIs")}
       />
       <MetricCard 
-        label="RevPAS" 
+        label={t("RevPAS")} 
         value={currentKPIs.revPas} 
         targetValue={targetKPIs?.revPas}
-        subValue="Rev/Avail Seat"
+        subValue={t("Rev/Avail Seat")}
         icon={TrendingUp} 
-        colorClass="border-purple-600" 
+        colorClass="border-purple-600"
+        comparisonLabel={t("vs KPIs")}
       />
       <MetricCard 
-        label="Load Factor" 
+        label={t("Load Factor")} 
         value={currentKPIs.occupancy} 
         targetValue={targetKPIs?.occupancy}
-        subValue="Occupancy"
+        subValue={t("Occupancy")}
         icon={Users} 
         colorClass="border-gray-600" 
         isPercentage={true}
+        comparisonLabel={t("vs KPIs")}
       />
       <MetricCard 
-        label="Giveaway %" 
+        label={t("Giveaway %")} 
         value={currentKPIs.giveawayRate} 
         targetValue={targetKPIs?.giveawayRate}
-        subValue="Tickets %"
+        subValue={t("Tickets %")}
         icon={Gift} 
         colorClass="border-orange-500" 
         isPercentage={true}
         inverse={true}
-        comparisonLabel="vs Max Target"
+        comparisonLabel={t("vs Max Target")}
       />
       <div className="bg-white dark:bg-gray-900 p-5 rounded-xl shadow-sm border-l-4 border-blue-600">
         <div className="flex justify-between items-start mb-2">
           <div>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">Avg Attendance</p>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-bold uppercase tracking-wider">{t("Avg Attendance")}</p>
             <p className="text-xl font-bold text-gray-900 dark:text-white mt-1">
               {totalViewAttendance.avgAttendance.toLocaleString('it-IT', { maximumFractionDigits: 0 })}
             </p>
@@ -330,10 +336,10 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
                 {totalViewAttendance.avgAttendance >= targetKPIs.avgAttendance ? <TrendingUp size={12} className="mr-1" /> : <TrendingDown size={12} className="mr-1" />}
                 {Math.abs(((totalViewAttendance.avgAttendance - targetKPIs.avgAttendance) / targetKPIs.avgAttendance) * 100).toFixed(1)}%
               </div>
-              <span className="text-[10px] text-gray-400 dark:text-gray-500">vs prev season</span>
+              <span className="text-[10px] text-gray-400 dark:text-gray-500">{t("vs prev season")}</span>
             </>
           ) : (
-            <span className="text-xs text-gray-400 dark:text-gray-500">per game</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{t("per game")}</span>
           )}
         </div>
       </div>
