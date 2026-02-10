@@ -113,7 +113,6 @@ export const MerchandisingView: React.FC = () => {
   const [selectedSeason, setSelectedSeason] = useState<string>('25/26');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [excludeGameDayMerch, setExcludeGameDayMerch] = useState(true);
-  const [excludeRobur, setExcludeRobur] = useState(true);
   const [excludeVB, setExcludeVB] = useState(true);
   
   const [productSearch, setProductSearch] = useState('');
@@ -218,16 +217,12 @@ export const MerchandisingView: React.FC = () => {
       });
     }
 
-    if (excludeRobur) {
-      orders = orders.filter(order => !order.customerName.toLowerCase().includes('robur'));
-    }
-
     if (excludeVB) {
       orders = orders.filter(order => !order.customerName.toLowerCase().includes('varese basketball'));
     }
     
     return orders;
-  }, [data, selectedSeason, selectedMonth, excludeRobur, excludeVB]);
+  }, [data, selectedSeason, selectedMonth, excludeVB]);
 
   const gameDayMerchByMonth = useMemo(() => {
     const merchByMonth: Record<string, number> = {};
@@ -823,17 +818,6 @@ export const MerchandisingView: React.FC = () => {
             {totalGameDayMerch > 0 && (
               <span className="text-xs opacity-75">({formatCurrency(totalGameDayMerch)})</span>
             )}
-          </button>
-          <button
-            onClick={() => setExcludeRobur(!excludeRobur)}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-              excludeRobur 
-                ? 'bg-red-100 dark:bg-red-900/20 text-red-700 border border-red-200' 
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
-            }`}
-          >
-            {excludeRobur ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
-            {t('Exclude Robur')}
           </button>
           <button
             onClick={() => setExcludeVB(!excludeVB)}
