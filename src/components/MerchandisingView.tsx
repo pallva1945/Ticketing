@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { ShoppingBag, Package, Users, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, Layers, Search, Target, X, CreditCard, Eye, ToggleLeft, ToggleRight, ArrowUp, ArrowDown, Heart, Sparkles, AlertTriangle } from 'lucide-react';
+import { ShoppingBag, Package, Users, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, Layers, Search, Target, X, CreditCard, Eye, ToggleLeft, ToggleRight, ArrowUp, ArrowDown, Heart, Sparkles, AlertTriangle, Gift } from 'lucide-react';
 
 type SortDirection = 'asc' | 'desc' | null;
 type SortConfig<T extends string> = { key: T; direction: SortDirection };
@@ -107,7 +107,7 @@ export const MerchandisingView: React.FC = () => {
   const [gameDayData, setGameDayData] = useState<GameDayData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'customers' | 'inventory' | 'community'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'customers' | 'inventory' | 'giveaways' | 'community'>('overview');
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   
   const [selectedSeason, setSelectedSeason] = useState<string>('25/26');
@@ -271,18 +271,27 @@ export const MerchandisingView: React.FC = () => {
     
     const salesOrders = filteredOrders.filter(o => !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0));
     const giveawayOrders = filteredOrders.filter(o => o.totalPrice === 0);
-    const giveawayItems: { title: string; quantity: number; recipient: string; date: string }[] = [];
+    const giveawayByClient: Record<string, { recipient: string; items: { title: string; quantity: number; cost: number; date: string }[]; totalCost: number; totalItems: number }> = {};
     giveawayOrders.forEach(order => {
-      const recipient = order.customerName.startsWith('PV') ? order.customerName.slice(2).trim() : order.customerName;
+      const recipient = order.customerName.startsWith('PV') ? order.customerName.slice(2).trim() : (order.customerName || 'N/A');
+      if (!giveawayByClient[recipient]) {
+        giveawayByClient[recipient] = { recipient, items: [], totalCost: 0, totalItems: 0 };
+      }
       order.lineItems.forEach(item => {
-        giveawayItems.push({
+        const product = data.products.find(p => p.id === item.productId);
+        const unitCost = product?.variants?.[0]?.price || item.price || 0;
+        const cost = unitCost * item.quantity;
+        giveawayByClient[recipient].items.push({
           title: item.title,
           quantity: item.quantity,
-          recipient: recipient || 'N/A',
+          cost,
           date: order.processedAt
         });
+        giveawayByClient[recipient].totalCost += cost;
+        giveawayByClient[recipient].totalItems += item.quantity;
       });
     });
+    const giveawayClients = Object.values(giveawayByClient).sort((a, b) => b.totalCost - a.totalCost);
     const grossRevenueWithTax = salesOrders.reduce((sum, o) => sum + o.totalPrice, 0);
     const totalIVA = salesOrders.reduce((sum, o) => sum + (o.totalTax || 0), 0);
     const grossRevenue = grossRevenueWithTax - totalIVA;
@@ -416,7 +425,7 @@ export const MerchandisingView: React.FC = () => {
       monthlyData: allMonths,
       topCustomers,
       goalProgress,
-      giveawayItems
+      giveawayClients
     };
   }, [data, filteredOrders, selectedSeason, excludeGameDayMerch, totalGameDayMerch, gameDayMerchByMonth, adjustedSeasonGoal]);
 
@@ -890,7 +899,7 @@ export const MerchandisingView: React.FC = () => {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        {(['overview', 'products', 'orders', 'customers', 'inventory', 'community'] as const).map(tab => (
+        {(['overview', 'products', 'orders', 'customers', 'inventory', 'giveaways', 'community'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -905,8 +914,9 @@ export const MerchandisingView: React.FC = () => {
             {tab === 'orders' && <ShoppingBag size={14} className="inline mr-2" />}
             {tab === 'customers' && <Users size={14} className="inline mr-2" />}
             {tab === 'inventory' && <Layers size={14} className="inline mr-2" />}
+            {tab === 'giveaways' && <Gift size={14} className="inline mr-2" />}
             {tab === 'community' && <Target size={14} className="inline mr-2" />}
-            {tab === 'community' ? t('Community') : tab === 'overview' ? t('Overview') : tab === 'products' ? t('Products') : tab === 'orders' ? t('Orders') : tab === 'customers' ? t('Customers') : t('Inventory')}
+            {tab === 'community' ? t('Community') : tab === 'giveaways' ? t('Giveaways') : tab === 'overview' ? t('Overview') : tab === 'products' ? t('Products') : tab === 'orders' ? t('Orders') : tab === 'customers' ? t('Customers') : t('Inventory')}
           </button>
         ))}
       </div>
@@ -1169,36 +1179,6 @@ export const MerchandisingView: React.FC = () => {
             </div>
           </div>
 
-          {stats.giveawayItems.length > 0 && (
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('Giveaways')}</h3>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{stats.giveawayItems.reduce((sum, g) => sum + g.quantity, 0)} {t('units')}</span>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100 dark:border-gray-800">
-                      <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Product')}</th>
-                      <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Recipient')}</th>
-                      <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Qty')}</th>
-                      <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Date')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.giveawayItems.map((item, i) => (
-                      <tr key={i} className="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                        <td className="px-3 py-2 text-gray-800 dark:text-gray-100 truncate max-w-[200px]">{item.title}</td>
-                        <td className="px-3 py-2 text-gray-600 dark:text-gray-400">{item.recipient}</td>
-                        <td className="px-3 py-2 text-right text-gray-800 dark:text-gray-100">{item.quantity}</td>
-                        <td className="px-3 py-2 text-right text-gray-500 dark:text-gray-400 text-xs">{new Date(item.date).toLocaleDateString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
         </>
       )}
 
@@ -1698,6 +1678,87 @@ export const MerchandisingView: React.FC = () => {
                   {((inventoryStats.healthyStock.length / inventoryStats.totalProducts) * 100).toFixed(0)}% {t('healthy')}
                 </p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'giveaways' && stats && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('Total Giveaways')}</p>
+              <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{stats.giveawayClients.length}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500">{t('recipients')}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('Items Given')}</p>
+              <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{stats.giveawayClients.reduce((sum, c) => sum + c.totalItems, 0)}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500">{t('units')}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('Opportunity Cost')}</p>
+              <p className="text-xl font-bold text-orange-600">{formatCurrency(stats.giveawayClients.reduce((sum, c) => sum + c.totalCost, 0))}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500">{t('retail value')}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-4 shadow-sm">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('Avg per Recipient')}</p>
+              <p className="text-xl font-bold text-gray-800 dark:text-gray-100">{stats.giveawayClients.length > 0 ? formatCurrency(stats.giveawayClients.reduce((sum, c) => sum + c.totalCost, 0) / stats.giveawayClients.length) : '€0'}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500">{t('opportunity cost')}</p>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('Giveaways by Recipient')}</h3>
+            </div>
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {stats.giveawayClients.map((client) => (
+                <details key={client.recipient} className="group">
+                  <summary className="flex items-center justify-between px-5 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-orange-100 dark:bg-orange-900/20 rounded-full flex items-center justify-center">
+                        <Gift size={14} className="text-orange-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{client.recipient}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{client.totalItems} {t('items')}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="text-sm font-semibold text-orange-600">{formatCurrency(client.totalCost)}</p>
+                      <ChevronDown size={14} className="text-gray-400 group-open:rotate-180 transition-transform" />
+                    </div>
+                  </summary>
+                  <div className="px-5 pb-3">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-gray-100 dark:border-gray-800">
+                          <th className="text-left px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Product')}</th>
+                          <th className="text-right px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Qty')}</th>
+                          <th className="text-right px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Opportunity Cost')}</th>
+                          <th className="text-right px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Date')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {client.items.map((item, i) => (
+                          <tr key={i} className="border-b border-gray-50 dark:border-gray-800/50">
+                            <td className="px-2 py-2 text-gray-800 dark:text-gray-100">{item.title}</td>
+                            <td className="px-2 py-2 text-right text-gray-800 dark:text-gray-100">{item.quantity}</td>
+                            <td className="px-2 py-2 text-right text-orange-600">{formatCurrency(item.cost)}</td>
+                            <td className="px-2 py-2 text-right text-gray-500 dark:text-gray-400 text-xs">{new Date(item.date).toLocaleDateString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </details>
+              ))}
+              {stats.giveawayClients.length === 0 && (
+                <div className="px-5 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
+                  {t('No giveaways found for this season')}
+                </div>
+              )}
             </div>
           </div>
         </div>
