@@ -1,7 +1,7 @@
-# PV Ticketing Dashboard
+# PV Revenue Center
 
 ## Overview
-The PV Ticketing Dashboard is a React-based application designed for Pallacanestro Varese. Its primary purpose is to provide an executive overview, detailed ticketing analytics, game day data, and various business operations metrics. The project aims to offer a comprehensive, real-time data visualization tool for strategic decision-making, improving operational efficiency, and enhancing fan engagement. It consolidates diverse data sources into a single, intuitive platform to support business growth and market potential within the sports industry.
+The PV Revenue Center is a React-based application designed for Pallacanestro Varese. Its primary purpose is to provide an executive overview, detailed ticketing analytics, game day data, and various business operations metrics. The project aims to offer a comprehensive, real-time data visualization tool for strategic decision-making, improving operational efficiency, and enhancing fan engagement. It consolidates diverse data sources into a single, intuitive platform to support business growth and market potential within the sports industry.
 
 ## User Preferences
 Not specified.
