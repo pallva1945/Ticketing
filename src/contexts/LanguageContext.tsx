@@ -322,6 +322,9 @@ const translations: Record<string, Record<Language, string>> = {
   'Exclude GameDay Merch': { en: 'Exclude GameDay Merch', it: 'Escludi Merch GameDay' },
   'Exclude Robur': { en: 'Exclude Robur', it: 'Escludi Robur' },
   'All Categories': { en: 'All Categories', it: 'Tutte le Categorie' },
+  'Giveaways': { en: 'Giveaways', it: 'Omaggi' },
+  'Recipient': { en: 'Recipient', it: 'Destinatario' },
+  'Qty': { en: 'Qty', it: 'Qtà' },
   'Exclude VB': { en: 'Exclude VB', it: 'Escludi VB' },
   'Include GameDay Merch': { en: 'Include GameDay Merch', it: 'Includi Merch GameDay' },
 

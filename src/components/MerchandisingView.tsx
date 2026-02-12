@@ -270,6 +270,19 @@ export const MerchandisingView: React.FC = () => {
     if (!data) return null;
     
     const salesOrders = filteredOrders.filter(o => !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0));
+    const giveawayOrders = filteredOrders.filter(o => o.totalPrice === 0);
+    const giveawayItems: { title: string; quantity: number; recipient: string; date: string }[] = [];
+    giveawayOrders.forEach(order => {
+      const recipient = order.customerName.startsWith('PV') ? order.customerName.slice(2).trim() : order.customerName;
+      order.lineItems.forEach(item => {
+        giveawayItems.push({
+          title: item.title,
+          quantity: item.quantity,
+          recipient: recipient || 'N/A',
+          date: order.processedAt
+        });
+      });
+    });
     const grossRevenueWithTax = salesOrders.reduce((sum, o) => sum + o.totalPrice, 0);
     const totalIVA = salesOrders.reduce((sum, o) => sum + (o.totalTax || 0), 0);
     const grossRevenue = grossRevenueWithTax - totalIVA;
@@ -402,7 +415,8 @@ export const MerchandisingView: React.FC = () => {
       categoryData,
       monthlyData: allMonths,
       topCustomers,
-      goalProgress
+      goalProgress,
+      giveawayItems
     };
   }, [data, filteredOrders, selectedSeason, excludeGameDayMerch, totalGameDayMerch, gameDayMerchByMonth, adjustedSeasonGoal]);
 
@@ -1154,6 +1168,37 @@ export const MerchandisingView: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {stats.giveawayItems.length > 0 && (
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('Giveaways')}</h3>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{stats.giveawayItems.reduce((sum, g) => sum + g.quantity, 0)} {t('units')}</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100 dark:border-gray-800">
+                      <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Product')}</th>
+                      <th className="text-left px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Recipient')}</th>
+                      <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Qty')}</th>
+                      <th className="text-right px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Date')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.giveawayItems.map((item, i) => (
+                      <tr key={i} className="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className="px-3 py-2 text-gray-800 dark:text-gray-100 truncate max-w-[200px]">{item.title}</td>
+                        <td className="px-3 py-2 text-gray-600 dark:text-gray-400">{item.recipient}</td>
+                        <td className="px-3 py-2 text-right text-gray-800 dark:text-gray-100">{item.quantity}</td>
+                        <td className="px-3 py-2 text-right text-gray-500 dark:text-gray-400 text-xs">{new Date(item.date).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </>
       )}
 
