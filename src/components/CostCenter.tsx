@@ -68,10 +68,10 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
             </button>
 
             <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden md:block"></div>
-            <div className="hidden md:flex items-center gap-1 overflow-x-auto">
+            <div className="hidden md:flex items-center gap-2">
                 <button
                   onClick={() => setActiveModule('overview')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap self-stretch ${
                     activeModule === 'overview'
                       ? 'bg-slate-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
                       : isDark
@@ -82,42 +82,47 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   <PieChart size={16} className={activeModule === 'overview' ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
                   {t('Overview')}
                 </button>
-                <div className={`h-6 w-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-red-500 px-0.5">COS</span>
-                {COS_MODULES.map((module) => (
-                  <button
-                    key={module.id}
-                    onClick={() => setActiveModule(module.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                      activeModule === module.id
-                        ? 'bg-red-600 text-white shadow-md'
-                        : isDark
-                          ? 'text-gray-400 hover:text-white hover:bg-gray-800'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
-                  >
-                    <module.icon size={16} className={activeModule === module.id ? 'text-white' : 'text-gray-400'} />
-                    {module.label}
-                  </button>
-                ))}
-                <div className={`h-6 w-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-orange-500 px-0.5">SG&A</span>
-                {SGA_MODULES.map((module) => (
-                  <button
-                    key={module.id}
-                    onClick={() => setActiveModule(module.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                      activeModule === module.id
-                        ? 'bg-orange-600 text-white shadow-md'
-                        : isDark
-                          ? 'text-gray-400 hover:text-white hover:bg-gray-800'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
-                  >
-                    <module.icon size={16} className={activeModule === module.id ? 'text-white' : 'text-gray-400'} />
-                    {module.label}
-                  </button>
-                ))}
+                <div className={`self-stretch w-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                <div className="flex flex-col gap-1 overflow-x-auto">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-red-500 px-0.5 w-8 flex-shrink-0">COS</span>
+                    {COS_MODULES.map((module) => (
+                      <button
+                        key={module.id}
+                        onClick={() => setActiveModule(module.id)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                          activeModule === module.id
+                            ? 'bg-red-600 text-white shadow-md'
+                            : isDark
+                              ? 'text-gray-400 hover:text-white hover:bg-gray-800'
+                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        }`}
+                      >
+                        <module.icon size={16} className={activeModule === module.id ? 'text-white' : 'text-gray-400'} />
+                        {module.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-orange-500 px-0.5 w-8 flex-shrink-0">SG&A</span>
+                    {SGA_MODULES.map((module) => (
+                      <button
+                        key={module.id}
+                        onClick={() => setActiveModule(module.id)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                          activeModule === module.id
+                            ? 'bg-orange-600 text-white shadow-md'
+                            : isDark
+                              ? 'text-gray-400 hover:text-white hover:bg-gray-800'
+                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        }`}
+                      >
+                        <module.icon size={16} className={activeModule === module.id ? 'text-white' : 'text-gray-400'} />
+                        {module.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
             </div>
           </div>
 
