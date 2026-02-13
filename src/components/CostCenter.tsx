@@ -7,6 +7,7 @@ import { BOpsCostDashboard } from './BOpsCostDashboard';
 import { GameDayCostDashboard } from './GameDayCostDashboard';
 import { SponsorshipCostDashboard } from './SponsorshipCostDashboard';
 import { VenueOpsCostDashboard } from './VenueOpsCostDashboard';
+import { MerchandisingCostDashboard } from './MerchandisingCostDashboard';
 
 type CostModule = 'overview' | 'gameday' | 'sponsorship' | 'bops' | 'venue_ops' | 'merchandising' | 'ebp' | 'varese_basketball';
 
@@ -176,6 +177,16 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                           {t('Monthly Actuals')}
                         </div>
                       </div>
+                    ) : module.id === 'merchandising' ? (
+                      <div className="mt-2 space-y-2">
+                        <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(81849)}</div>
+                        <div className="text-[10px] text-gray-400 dark:text-gray-500">
+                          {t('Stock')}: 82.6% · {t('Aug spike')}: {formatCurrency(59937)}
+                        </div>
+                        <div className="mt-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[9px] text-emerald-600 dark:text-emerald-400 inline-block">
+                          {t('Monthly Actuals')}
+                        </div>
+                      </div>
                     ) : (
                       <div className="flex items-center gap-2 mt-4">
                         <Construction size={14} className="text-gray-400" />
@@ -195,6 +206,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
           <SponsorshipCostDashboard />
         ) : activeModule === 'venue_ops' ? (
           <VenueOpsCostDashboard />
+        ) : activeModule === 'merchandising' ? (
+          <MerchandisingCostDashboard />
         ) : (
           <div className="space-y-6">
             <div>
