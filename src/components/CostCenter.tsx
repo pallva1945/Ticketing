@@ -127,96 +127,59 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                 </div>
                 <div className="ml-auto text-right">
                   <div className="text-lg font-bold text-red-600">{formatCurrency(Math.round(3989726 * 6 / 15) + 177396 + 30854 + 49876 + 81849 + 0)}</div>
-                  <div className="text-[10px] text-gray-400">{t('YTD')} · 6/15 {t('games')} · {t('BOps prorated')}</div>
+                  <div className="text-[10px] text-gray-400">Jul–Dec 2025 · {t('BOps prorated')}</div>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {MODULES.filter(m => m.id !== 'overview').map((module) => {
-                  const Icon = module.icon;
-                  const isBops = module.id === 'bops';
-                  return (
-                    <button
-                      key={module.id}
-                      onClick={() => setActiveModule(module.id)}
-                      className={`text-left p-6 rounded-xl border transition-all hover:shadow-lg cursor-pointer ${
-                        isDark ? 'bg-gray-900 border-gray-800 hover:border-gray-700' : 'bg-white border-gray-200 hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
-                          <Icon size={20} className="text-red-600" />
+                {(() => {
+                  const COST_CARDS: { id: CostModule; amount: number; detail: string; badge: string; badgeStyle: string }[] = [
+                    { id: 'bops', amount: Math.round(3989726 * 6 / 15), detail: `${t('Players')}: 78% · ${t('Coaches')}: 10.3%`, badge: t('YTD Prorated'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+                    { id: 'gameday', amount: 177396, detail: `12 ${t('categories')}`, badge: t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+                    { id: 'merchandising', amount: 81849, detail: `${t('Stock')}: 82.6%`, badge: t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+                    { id: 'venue_ops', amount: 49876, detail: `${t('Campus - Rental')}: 79.7%`, badge: t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+                    { id: 'sponsorship', amount: 30854, detail: `${t('Events')}: 66.3% · ${t('Materials & Ads')}: 33.7%`, badge: t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+                    { id: 'ebp', amount: 0, detail: t('No costs recorded YTD'), badge: t('Zero Activity'), badgeStyle: 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400' },
+                    { id: 'varese_basketball', amount: -1, detail: '', badge: t('Coming Soon'), badgeStyle: '' },
+                  ];
+                  const sorted = [...COST_CARDS].sort((a, b) => b.amount - a.amount);
+                  return sorted.map(card => {
+                    const module = MODULES.find(m => m.id === card.id)!;
+                    const Icon = module.icon;
+                    return (
+                      <button
+                        key={card.id}
+                        onClick={() => setActiveModule(card.id)}
+                        className={`text-left p-6 rounded-xl border transition-all hover:shadow-lg cursor-pointer ${
+                          isDark ? 'bg-gray-900 border-gray-800 hover:border-gray-700' : 'bg-white border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 bg-red-100 dark:bg-red-900/20 rounded-lg flex items-center justify-center">
+                            <Icon size={20} className="text-red-600" />
+                          </div>
+                          <h3 className="font-semibold text-gray-800 dark:text-white">{module.label}</h3>
                         </div>
-                        <h3 className="font-semibold text-gray-800 dark:text-white">{module.label}</h3>
-                      </div>
-                      {isBops ? (
-                        <div className="mt-2 space-y-2">
-                          <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(Math.round(3989726 * 6 / 15))}</div>
-                          <div className="text-[10px] text-gray-400 dark:text-gray-500">
-                            6/15 {t('games')} · {t('Players')}: 78% · {t('Coaches')}: 10.3%
+                        {card.amount >= 0 ? (
+                          <div className="mt-2 space-y-2">
+                            <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(card.amount)}</div>
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500">
+                              {card.detail}
+                            </div>
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500">Jul–Dec 2025</div>
+                            <div className={`mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block ${card.badgeStyle}`}>
+                              {card.badge}
+                            </div>
                           </div>
-                          <div className="mt-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[9px] text-emerald-600 dark:text-emerald-400 inline-block">
-                            {t('YTD Prorated')}
+                        ) : (
+                          <div className="flex items-center gap-2 mt-4">
+                            <Construction size={14} className="text-gray-400" />
+                            <span className="text-xs text-gray-400">{card.badge}</span>
                           </div>
-                        </div>
-                      ) : module.id === 'gameday' ? (
-                        <div className="mt-2 space-y-2">
-                          <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(177396)}</div>
-                          <div className="text-[10px] text-gray-400 dark:text-gray-500">
-                            Jul–Dec 2025 · 12 {t('categories')}
-                          </div>
-                          <div className="mt-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[9px] text-emerald-600 dark:text-emerald-400 inline-block">
-                            {t('Monthly Actuals')}
-                          </div>
-                        </div>
-                      ) : module.id === 'sponsorship' ? (
-                        <div className="mt-2 space-y-2">
-                          <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(30854)}</div>
-                          <div className="text-[10px] text-gray-400 dark:text-gray-500">
-                            {t('Events')}: 66.3% · {t('Materials & Ads')}: 33.7%
-                          </div>
-                          <div className="mt-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[9px] text-emerald-600 dark:text-emerald-400 inline-block">
-                            {t('Monthly Actuals')}
-                          </div>
-                        </div>
-                      ) : module.id === 'venue_ops' ? (
-                        <div className="mt-2 space-y-2">
-                          <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(49876)}</div>
-                          <div className="text-[10px] text-gray-400 dark:text-gray-500">
-                            {t('Campus - Rental')}: 79.7%
-                          </div>
-                          <div className="mt-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[9px] text-emerald-600 dark:text-emerald-400 inline-block">
-                            {t('Monthly Actuals')}
-                          </div>
-                        </div>
-                      ) : module.id === 'merchandising' ? (
-                        <div className="mt-2 space-y-2">
-                          <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(81849)}</div>
-                          <div className="text-[10px] text-gray-400 dark:text-gray-500">
-                            {t('Stock')}: 82.6% · {t('Aug spike')}: {formatCurrency(59937)}
-                          </div>
-                          <div className="mt-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[9px] text-emerald-600 dark:text-emerald-400 inline-block">
-                            {t('Monthly Actuals')}
-                          </div>
-                        </div>
-                      ) : module.id === 'ebp' ? (
-                        <div className="mt-2 space-y-2">
-                          <div className="text-xl font-bold text-gray-900 dark:text-white">€0</div>
-                          <div className="text-[10px] text-gray-400 dark:text-gray-500">
-                            {t('No costs recorded YTD')}
-                          </div>
-                          <div className="mt-1 px-1.5 py-0.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-[9px] text-gray-500 dark:text-gray-400 inline-block">
-                            {t('Zero Activity')}
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2 mt-4">
-                          <Construction size={14} className="text-gray-400" />
-                          <span className="text-xs text-gray-400">{t('Coming Soon')}</span>
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
+                        )}
+                      </button>
+                    );
+                  });
+                })()}
               </div>
             </div>
 
