@@ -142,9 +142,11 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                     { id: 'varese_basketball', amount: -1, detail: '', badge: t('Coming Soon'), badgeStyle: '' },
                   ];
                   const sorted = [...COST_CARDS].sort((a, b) => b.amount - a.amount);
+                  const totalCOS = COST_CARDS.filter(c => c.amount >= 0).reduce((s, c) => s + c.amount, 0);
                   return sorted.map(card => {
                     const module = MODULES.find(m => m.id === card.id)!;
                     const Icon = module.icon;
+                    const pctOfCOS = totalCOS > 0 && card.amount > 0 ? ((card.amount / totalCOS) * 100).toFixed(1) : null;
                     return (
                       <button
                         key={card.id}
@@ -161,7 +163,10 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                         </div>
                         {card.amount >= 0 ? (
                           <div className="mt-2 space-y-2">
-                            <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(card.amount)}</div>
+                            <div className="flex items-baseline gap-2">
+                              <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(card.amount)}</div>
+                              {pctOfCOS && <span className="text-xs font-semibold text-red-500">{pctOfCOS}%</span>}
+                            </div>
                             <div className="text-[10px] text-gray-400 dark:text-gray-500">
                               {card.detail}
                             </div>
