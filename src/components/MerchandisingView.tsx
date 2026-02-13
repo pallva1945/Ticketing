@@ -271,7 +271,7 @@ export const MerchandisingView: React.FC = () => {
     
     const salesOrders = filteredOrders.filter(o => !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0));
     const giveawayOrders = filteredOrders.filter(o => o.totalPrice === 0);
-    const giveawayByClient: Record<string, { recipient: string; items: { title: string; quantity: number; cost: number; date: string }[]; totalCost: number; totalItems: number }> = {};
+    const giveawayByClient: Record<string, { recipient: string; items: { title: string; quantity: number; cost: number; date: string; orderId: string; orderNumber: string }[]; totalCost: number; totalItems: number }> = {};
     giveawayOrders.forEach(order => {
       const recipient = order.customerName.startsWith('PV') ? order.customerName.slice(2).trim() : (order.customerName || 'N/A');
       if (!giveawayByClient[recipient]) {
@@ -285,7 +285,9 @@ export const MerchandisingView: React.FC = () => {
           title: item.title,
           quantity: item.quantity,
           cost,
-          date: order.processedAt
+          date: order.processedAt,
+          orderId: order.id,
+          orderNumber: order.orderNumber
         });
         giveawayByClient[recipient].totalCost += cost;
         giveawayByClient[recipient].totalItems += item.quantity;
@@ -1742,8 +1744,13 @@ export const MerchandisingView: React.FC = () => {
                       </thead>
                       <tbody>
                         {client.items.map((item, i) => (
-                          <tr key={i} className="border-b border-gray-50 dark:border-gray-800/50">
-                            <td className="px-2 py-2 text-gray-800 dark:text-gray-100">{item.title}</td>
+                          <tr key={i} className="border-b border-gray-50 dark:border-gray-800/50 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors" onClick={() => setSelectedOrderId(item.orderId)}>
+                            <td className="px-2 py-2 text-gray-800 dark:text-gray-100">
+                              <div className="flex items-center gap-2">
+                                <span>{item.title}</span>
+                                <Eye size={12} className="text-gray-400 flex-shrink-0" />
+                              </div>
+                            </td>
                             <td className="px-2 py-2 text-right text-gray-800 dark:text-gray-100">{item.quantity}</td>
                             <td className="px-2 py-2 text-right text-orange-600">{formatCurrency(item.cost)}</td>
                             <td className="px-2 py-2 text-right text-gray-500 dark:text-gray-400 text-xs">{new Date(item.date).toLocaleDateString()}</td>
