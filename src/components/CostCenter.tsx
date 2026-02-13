@@ -68,58 +68,58 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
             </button>
 
             <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden md:block"></div>
-            <div className="hidden md:flex flex-col gap-1.5 overflow-x-auto py-0.5">
-              <div className="flex items-center gap-1">
+            <div className="hidden md:flex flex-col gap-1 overflow-x-auto py-0.5 flex-1 min-w-0">
+              <div className="flex items-center gap-0.5">
                 <button
                   onClick={() => setActiveModule('overview')}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                  className={`flex items-center justify-center gap-1.5 flex-1 min-w-0 px-1 py-1.5 rounded-md text-[11px] font-semibold transition-all whitespace-nowrap ${
                     activeModule === 'overview'
-                      ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                      ? 'bg-gray-800 text-white shadow-md dark:bg-white dark:text-gray-900'
                       : isDark
                         ? 'text-gray-400 hover:text-white hover:bg-gray-800'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
-                  <PieChart size={14} />
-                  {t('Overview')}
+                  <PieChart size={12} />
+                  <span className="truncate">{t('Overview')}</span>
                 </button>
-                <div className={`h-4 w-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-red-500 px-1">COS</span>
+                <div className={`h-5 w-px flex-shrink-0 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                <span className="text-[8px] font-bold uppercase tracking-widest text-red-500 flex-shrink-0 px-0.5">COS</span>
                 {COS_MODULES.map((module) => (
                   <button
                     key={module.id}
                     onClick={() => setActiveModule(module.id)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                    className={`flex items-center justify-center gap-1 flex-1 min-w-0 px-1 py-1.5 rounded-md text-[11px] font-medium transition-all whitespace-nowrap ${
                       activeModule === module.id
-                        ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                        ? 'bg-red-600 text-white shadow-md'
                         : isDark
                           ? 'text-gray-400 hover:text-white hover:bg-gray-800'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                   >
-                    <module.icon size={13} />
-                    {module.label}
+                    <module.icon size={12} className="flex-shrink-0" />
+                    <span className="truncate">{module.label}</span>
                   </button>
                 ))}
               </div>
-              <div className="flex items-center gap-1">
-                <div className="w-[72px]"></div>
-                <div className={`h-4 w-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-orange-500 px-1">SG&A</span>
+              <div className="flex items-center gap-0.5">
+                <div className="flex-1 min-w-0"></div>
+                <div className={`h-5 w-px flex-shrink-0 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                <span className="text-[8px] font-bold uppercase tracking-widest text-orange-500 flex-shrink-0 px-0.5">SG&A</span>
                 {SGA_MODULES.map((module) => (
                   <button
                     key={module.id}
                     onClick={() => setActiveModule(module.id)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                    className={`flex items-center justify-center gap-1 flex-1 min-w-0 px-1 py-1.5 rounded-md text-[11px] font-medium transition-all whitespace-nowrap ${
                       activeModule === module.id
-                        ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
+                        ? 'bg-orange-600 text-white shadow-md'
                         : isDark
                           ? 'text-gray-400 hover:text-white hover:bg-gray-800'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                     }`}
                   >
-                    <module.icon size={13} />
-                    {module.label}
+                    <module.icon size={12} className="flex-shrink-0" />
+                    <span className="truncate">{module.label}</span>
                   </button>
                 ))}
               </div>
