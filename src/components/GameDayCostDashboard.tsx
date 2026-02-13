@@ -1,12 +1,21 @@
-import React from 'react';
-import { Calendar, Euro, TrendingUp } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import React, { useState } from 'react';
+import { Calendar, Euro, TrendingUp, Target } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Line, ComposedChart, Legend } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const formatCurrencyShort = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 
 const MONTHS = ['July', 'August', 'September', 'October', 'November', 'December'];
+const GAMES_PER_MONTH = [0, 0, 2, 2, 3, 1];
+const TOTAL_GAMES = GAMES_PER_MONTH.reduce((s, g) => s + g, 0);
+
+const GAME_DATES: Record<string, string[]> = {
+  September: ['3 Sep', '28 Sep'],
+  October: ['11 Oct', '25 Oct'],
+  November: ['4 Nov', '16 Nov', '23 Nov'],
+  December: ['21 Dec'],
+};
 
 interface CostLine {
   name: string;
@@ -32,16 +41,61 @@ const COST_LINES: CostLine[] = [
 
 const MONTHLY_TOTALS = MONTHS.map((_, i) => COST_LINES.reduce((sum, line) => sum + line.values[i], 0));
 const GRAND_TOTAL = COST_LINES.reduce((sum, line) => sum + line.total, 0);
+const COST_PER_GAME = GRAND_TOTAL / TOTAL_GAMES;
 
 const TOP_COSTS = [...COST_LINES].sort((a, b) => b.total - a.total);
 
+const CustomBarLabel = ({ x, y, width, value }: any) => {
+  if (!value) return null;
+  return (
+    <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={9} fill="#6b7280">
+      {value}g
+    </text>
+  );
+};
+
 export const GameDayCostDashboard: React.FC = () => {
   const { t } = useLanguage();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const monthlyBarData = MONTHS.map((month, i) => ({
-    month: t(month).substring(0, 3),
-    total: MONTHLY_TOTALS[i],
-  }));
+  const monthlyBarData = MONTHS.map((month, i) => {
+    const games = GAMES_PER_MONTH[i];
+    const total = MONTHLY_TOTALS[i];
+    const costPerGame = games > 0 ? total / games : 0;
+    return {
+      month: t(month).substring(0, 3),
+      fullMonth: t(month),
+      total,
+      games,
+      costPerGame,
+    };
+  });
+
+  const costPerGameData = MONTHS
+    .map((month, i) => {
+      const games = GAMES_PER_MONTH[i];
+      if (games === 0) return null;
+      const total = MONTHLY_TOTALS[i];
+      return {
+        month: t(month).substring(0, 3),
+        costPerGame: total / games,
+        games,
+      };
+    })
+    .filter(Boolean);
+
+  const perGameByCategoryData = COST_LINES.map(line => ({
+    name: t(line.name),
+    rawName: line.name,
+    totalPerGame: line.total / TOTAL_GAMES,
+    total: line.total,
+    color: line.color,
+  })).sort((a, b) => b.totalPerGame - a.totalPerGame);
+
+  const lowestCPG = Math.min(...costPerGameData.map((d: any) => d.costPerGame));
+  const highestCPG = Math.max(...costPerGameData.map((d: any) => d.costPerGame));
+  const lowestCPGMonth = costPerGameData.find((d: any) => d.costPerGame === lowestCPG);
+  const highestCPGMonth = costPerGameData.find((d: any) => d.costPerGame === highestCPG);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -55,69 +109,185 @@ export const GameDayCostDashboard: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
           <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
             <Euro size={13} />
             <span>{t('Total GameDay Cost')}</span>
           </div>
           <div className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrencyShort(GRAND_TOTAL)}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">Jul–Dec 2025 · {t('Monthly Actuals')}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">{TOTAL_GAMES} {t('home games')} · Jul–Dec</div>
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
           <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
-            <TrendingUp size={13} />
-            <span>{t('Peak Month')}</span>
+            <Target size={13} />
+            <span>{t('Avg Cost / Game')}</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-white">{t('November')}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">{formatCurrencyShort(MONTHLY_TOTALS[4])}</div>
+          <div className="text-2xl font-bold text-red-600">{formatCurrencyShort(COST_PER_GAME)}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">{t('across')} 12 {t('categories')}</div>
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
           <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
-            <Calendar size={13} />
-            <span>{t('Top Cost Category')}</span>
+            <TrendingUp size={13} className="text-green-500" />
+            <span>{t('Most Efficient Month')}</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900 dark:text-white">{t(TOP_COSTS[0].name)}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">{formatCurrencyShort(TOP_COSTS[0].total)} ({((TOP_COSTS[0].total / GRAND_TOTAL) * 100).toFixed(1)}%)</div>
+          <div className="text-2xl font-bold text-green-600">{(lowestCPGMonth as any)?.month}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">{formatCurrencyShort(lowestCPG)} / {t('game')}</div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+          <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-1">
+            <TrendingUp size={13} className="text-red-500 rotate-180" />
+            <span>{t('Highest Cost Month')}</span>
+          </div>
+          <div className="text-2xl font-bold text-red-600">{(highestCPGMonth as any)?.month}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">{formatCurrencyShort(highestCPG)} / {t('game')}</div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">{t('Monthly Cost vs Games')}</h3>
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-4">{t('Bars = total cost · Labels = number of games')}</p>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={monthlyBarData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis yAxisId="cost" tick={{ fontSize: 10 }} tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}K`} />
+                <YAxis yAxisId="games" orientation="right" tick={{ fontSize: 10 }} domain={[0, 6]} tickFormatter={(v: number) => `${v}g`} />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload || !payload.length) return null;
+                    const d = payload[0].payload;
+                    const monthKey = MONTHS.find(m => t(m).substring(0, 3) === d.month) || '';
+                    const dates = GAME_DATES[monthKey] || [];
+                    return (
+                      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-lg text-xs">
+                        <div className="font-semibold text-gray-800 dark:text-white mb-1">{d.fullMonth}</div>
+                        <div className="text-gray-600 dark:text-gray-300">{t('Total')}: {formatCurrency(d.total)}</div>
+                        <div className="text-gray-600 dark:text-gray-300">{t('Games')}: {d.games}</div>
+                        {d.games > 0 && (
+                          <>
+                            <div className="text-red-600 font-semibold mt-1">{t('Cost/Game')}: {formatCurrency(d.costPerGame)}</div>
+                            {dates.length > 0 && (
+                              <div className="text-gray-400 mt-1 text-[10px]">{dates.join(' · ')}</div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  }}
+                />
+                <Bar yAxisId="cost" dataKey="total" radius={[6, 6, 0, 0]} name={t('Total Cost')} label={<CustomBarLabel />}>
+                  {monthlyBarData.map((entry, i) => (
+                    <Cell key={i} fill={entry.games > 0 ? '#ef4444' : '#fca5a5'} />
+                  ))}
+                </Bar>
+                <Line yAxisId="games" type="monotone" dataKey="games" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 4 }} name={t('Games')} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">{t('Cost per Game by Month')}</h3>
+          <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-4">{t('Normalized view — higher is less efficient')}</p>
+          <div className="h-56">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={costPerGameData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}K`} />
+                <Tooltip
+                  content={({ active, payload }) => {
+                    if (!active || !payload || !payload.length) return null;
+                    const d = payload[0].payload;
+                    return (
+                      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-lg text-xs">
+                        <div className="font-semibold text-gray-800 dark:text-white mb-1">{d.month} — {d.games} {t('games')}</div>
+                        <div className="text-red-600 font-semibold">{t('Cost/Game')}: {formatCurrency(d.costPerGame)}</div>
+                      </div>
+                    );
+                  }}
+                />
+                <Bar dataKey="costPerGame" radius={[6, 6, 0, 0]} name={t('Cost/Game')}>
+                  {(costPerGameData as any[]).map((entry, i) => (
+                    <Cell key={i} fill={entry.costPerGame === lowestCPG ? '#22c55e' : entry.costPerGame === highestCPG ? '#ef4444' : '#f97316'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('Monthly Cost Trend')}</h3>
-        <div className="h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlyBarData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `€${(v / 1000).toFixed(0)}K`} />
-              <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '8px', fontSize: '12px', border: '1px solid #e5e7eb' }} />
-              <Bar dataKey="total" radius={[6, 6, 0, 0]} name={t('Total')}>
-                {monthlyBarData.map((entry, i) => (
-                  <Cell key={i} fill={entry.total === Math.max(...MONTHLY_TOTALS) ? '#ef4444' : '#fca5a5'} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">{t('Cost per Game by Category')}</h3>
+        <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-4">{t('Average cost per game across')} {TOTAL_GAMES} {t('home games')} · {t('Click to filter table below')}</p>
+        <div className="space-y-2.5">
+          {perGameByCategoryData.map((item) => {
+            const isSelected = selectedCategory === item.rawName;
+            return (
+              <button
+                key={item.rawName}
+                onClick={() => setSelectedCategory(isSelected ? null : item.rawName)}
+                className={`w-full text-left transition-all rounded-lg p-1 ${isSelected ? 'bg-red-50 dark:bg-red-900/10 ring-1 ring-red-200 dark:ring-red-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+              >
+                <div className="flex items-center justify-between mb-0.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="text-xs text-gray-700 dark:text-gray-200">{item.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-gray-400">{formatCurrencyShort(item.total)} {t('total')}</span>
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">{formatCurrencyShort(item.totalPerGame)} / {t('game')}</span>
+                  </div>
+                </div>
+                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1 ml-4">
+                  <div className="h-1 rounded-full transition-all" style={{ width: `${(item.totalPerGame / perGameByCategoryData[0].totalPerGame) * 100}%`, backgroundColor: item.color }} />
+                </div>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('Full Cost Breakdown')}</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+            {t('Full Cost Breakdown')}
+            {selectedCategory && <span className="ml-2 text-xs font-normal text-red-500">— {t(selectedCategory)}</span>}
+          </h3>
+          {selectedCategory && (
+            <button onClick={() => setSelectedCategory(null)} className="text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              {t('Show All')}
+            </button>
+          )}
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-700">
                 <th className="text-left py-2 pr-4 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">{t('Category')}</th>
-                {MONTHS.map(m => (
-                  <th key={m} className="text-right py-2 px-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">{t(m).substring(0, 3)}</th>
+                {MONTHS.map((m, i) => (
+                  <th key={m} className="text-right py-2 px-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
+                    <div>{t(m).substring(0, 3)}</div>
+                    {GAMES_PER_MONTH[i] > 0 && (
+                      <div className="text-[9px] text-amber-500 font-normal">{GAMES_PER_MONTH[i]}g</div>
+                    )}
+                  </th>
                 ))}
                 <th className="text-right py-2 pl-3 text-red-600 font-semibold whitespace-nowrap">{t('Total')}</th>
+                <th className="text-right py-2 pl-3 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">/ {t('Game')}</th>
               </tr>
             </thead>
             <tbody>
-              {COST_LINES.map((line) => (
+              {COST_LINES
+                .filter(line => !selectedCategory || line.name === selectedCategory)
+                .map((line) => (
                 <tr key={line.name} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                   <td className="py-2 pr-4 text-gray-700 dark:text-gray-300 whitespace-nowrap flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: line.color }} />
@@ -129,41 +299,21 @@ export const GameDayCostDashboard: React.FC = () => {
                     </td>
                   ))}
                   <td className="text-right py-2 pl-3 font-semibold text-gray-900 dark:text-white whitespace-nowrap">{formatCurrency(line.total)}</td>
+                  <td className="text-right py-2 pl-3 text-red-500 font-medium whitespace-nowrap">{formatCurrency(line.total / TOTAL_GAMES)}</td>
                 </tr>
               ))}
-              <tr className="border-t-2 border-gray-300 dark:border-gray-600">
-                <td className="py-2 pr-4 font-bold text-gray-900 dark:text-white">{t('Total GameDay')}</td>
-                {MONTHLY_TOTALS.map((val, i) => (
-                  <td key={i} className="text-right py-2 px-2 font-bold text-gray-900 dark:text-white whitespace-nowrap">{formatCurrency(val)}</td>
-                ))}
-                <td className="text-right py-2 pl-3 font-bold text-red-600 whitespace-nowrap">{formatCurrency(GRAND_TOTAL)}</td>
-              </tr>
+              {!selectedCategory && (
+                <tr className="border-t-2 border-gray-300 dark:border-gray-600">
+                  <td className="py-2 pr-4 font-bold text-gray-900 dark:text-white">{t('Total GameDay')}</td>
+                  {MONTHLY_TOTALS.map((val, i) => (
+                    <td key={i} className="text-right py-2 px-2 font-bold text-gray-900 dark:text-white whitespace-nowrap">{formatCurrency(val)}</td>
+                  ))}
+                  <td className="text-right py-2 pl-3 font-bold text-red-600 whitespace-nowrap">{formatCurrency(GRAND_TOTAL)}</td>
+                  <td className="text-right py-2 pl-3 font-bold text-red-600 whitespace-nowrap">{formatCurrency(COST_PER_GAME)}</td>
+                </tr>
+              )}
             </tbody>
           </table>
-        </div>
-      </div>
-
-      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
-        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('Top Cost Categories')}</h3>
-        <div className="space-y-3">
-          {TOP_COSTS.slice(0, 5).map((line) => {
-            const pct = (line.total / GRAND_TOTAL) * 100;
-            return (
-              <div key={line.name}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: line.color }} />
-                    <span className="text-sm text-gray-700 dark:text-gray-200">{t(line.name)}</span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatCurrencyShort(line.total)}</span>
-                </div>
-                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-1.5 ml-4">
-                  <div className="h-1.5 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: line.color }} />
-                </div>
-                <div className="text-right text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{pct.toFixed(1)}%</div>
-              </div>
-            );
-          })}
         </div>
       </div>
     </div>
