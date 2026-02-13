@@ -9,6 +9,7 @@ import { SponsorshipCostDashboard } from './SponsorshipCostDashboard';
 import { VenueOpsCostDashboard } from './VenueOpsCostDashboard';
 import { MerchandisingCostDashboard } from './MerchandisingCostDashboard';
 import { TeamOpsCostDashboard } from './TeamOpsCostDashboard';
+import { LaborCostDashboard } from './LaborCostDashboard';
 
 type CostModule = 'overview' | 'gameday' | 'sponsorship' | 'bops' | 'venue_ops' | 'merchandising' | 'ebp' | 'varese_basketball' | 'sga_team_ops' | 'sga_labor' | 'sga_marketing' | 'sga_office' | 'sga_utilities' | 'sga_maintenance' | 'sga_financial' | 'sga_professional' | 'sga_contingencies';
 
@@ -216,15 +217,15 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   <p className="text-[11px] text-gray-400 dark:text-gray-500">{t('Selling, General & Administrative')}</p>
                 </div>
                 <div className="ml-auto text-right">
-                  <div className="text-lg font-bold text-orange-600">{formatCurrency(189691)}</div>
+                  <div className="text-lg font-bold text-orange-600">{formatCurrency(189691 + 511145)}</div>
                   <div className="text-[10px] text-gray-400">Jul–Dec 2025</div>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {(() => {
-                  const SGA_CARDS: { id: CostModule; amount: number; detail: string }[] = [
+                  const SGA_CARDS: { id: CostModule; amount: number; detail: string; badge?: string; badgeStyle?: string }[] = [
                     { id: 'sga_team_ops', amount: 189691, detail: `${t('Travel')}: 46.1% · ${t('Team Registration')}: 25.6%` },
-                    { id: 'sga_labor', amount: -1, detail: '' },
+                    { id: 'sga_labor', amount: 511145, detail: `14 ${t('employees')} · ${t('Executive')}: 44.5%`, badge: t('Season Projection'), badgeStyle: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400' },
                     { id: 'sga_marketing', amount: -1, detail: '' },
                     { id: 'sga_office', amount: -1, detail: '' },
                     { id: 'sga_utilities', amount: -1, detail: '' },
@@ -261,8 +262,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                             </div>
                             <div className="text-[10px] text-gray-400 dark:text-gray-500">{card.detail}</div>
                             <div className="text-[10px] text-gray-400 dark:text-gray-500">Jul–Dec 2025</div>
-                            <div className="mt-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[9px] text-emerald-600 dark:text-emerald-400 inline-block">
-                              {t('Monthly Actuals')}
+                            <div className={`mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block ${card.badgeStyle || 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'}`}>
+                              {card.badge || t('Monthly Actuals')}
                             </div>
                           </div>
                         ) : (
@@ -290,6 +291,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
           <MerchandisingCostDashboard />
         ) : activeModule === 'sga_team_ops' ? (
           <TeamOpsCostDashboard />
+        ) : activeModule === 'sga_labor' ? (
+          <LaborCostDashboard />
         ) : activeModule === 'ebp' ? (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-3">
