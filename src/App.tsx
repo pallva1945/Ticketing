@@ -979,7 +979,7 @@ service cloud.firestore {
   </div>
 );
 
-const App: React.FC = () => {
+const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
   const isDark = theme === 'dark';
@@ -2499,9 +2499,15 @@ const App: React.FC = () => {
              <button className="md:hidden text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded-lg" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
                 <Menu size={24} />
              </button>
-             <div className="w-8 h-8 flex-shrink-0">
-               <img src={PV_LOGO_URL} alt="PV" className="w-full h-full object-contain" />
-             </div>
+             {onBackToLanding ? (
+               <button onClick={onBackToLanding} className="w-8 h-8 flex-shrink-0 hover:opacity-70 transition-opacity" title="Back to Financial Center">
+                 <img src={PV_LOGO_URL} alt="PV" className="w-full h-full object-contain" />
+               </button>
+             ) : (
+               <div className="w-8 h-8 flex-shrink-0">
+                 <img src={PV_LOGO_URL} alt="PV" className="w-full h-full object-contain" />
+               </div>
+             )}
              
              {!isLoadingData && (
                 <MobileTicker items={tickerItems} />

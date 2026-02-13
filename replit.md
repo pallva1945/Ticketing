@@ -1,7 +1,15 @@
-# PV Revenue Center
+# PV Financial Center
 
 ## Overview
-The PV Revenue Center is a React-based application designed for Pallacanestro Varese. Its primary purpose is to provide an executive overview, detailed ticketing analytics, game day data, and various business operations metrics. The project aims to offer a comprehensive, real-time data visualization tool for strategic decision-making, improving operational efficiency, and enhancing fan engagement. It consolidates diverse data sources into a single, intuitive platform to support business growth and market potential within the sports industry.
+The PV Financial Center is a React-based application designed for Pallacanestro Varese. It serves as the top-level hub with three sections: Revenue Center (active), Cost Center (placeholder), and Verticals P&Ls (placeholder). The Revenue Center provides an executive overview, detailed ticketing analytics, game day data, and various business operations metrics. The project aims to offer a comprehensive, real-time data visualization tool for strategic decision-making, improving operational efficiency, and enhancing fan engagement. It consolidates diverse data sources into a single, intuitive platform to support business growth and market potential within the sports industry.
+
+## Navigation Architecture
+- **Landing Page** (`FinancialCenter.tsx`): Entry point with 3 cards — Revenue Center, Cost Center, Verticals P&Ls
+- **Revenue Center** (`App.tsx`): The full revenue dashboard with all modules
+- **Cost Center**: Placeholder (Coming Soon)
+- **Verticals P&Ls**: Placeholder (Coming Soon)
+- Hash-based routing: `#revenue` navigates to Revenue Center, empty hash shows landing
+- PV logo in Revenue Center header navigates back to landing page
 
 ## User Preferences
 Not specified.
