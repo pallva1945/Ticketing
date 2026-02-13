@@ -126,8 +126,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   <p className="text-[11px] text-gray-400 dark:text-gray-500">{t('Direct costs tied to revenue verticals')}</p>
                 </div>
                 <div className="ml-auto text-right">
-                  <div className="text-lg font-bold text-red-600">{formatCurrency(4329701)}</div>
-                  <div className="text-[10px] text-gray-400">{t('Total across verticals')}</div>
+                  <div className="text-lg font-bold text-red-600">{formatCurrency(Math.round(3989726 * 6 / 15) + 177396 + 30854 + 49876 + 81849 + 0)}</div>
+                  <div className="text-[10px] text-gray-400">{t('YTD')} · 6/15 {t('games')} · {t('BOps prorated')}</div>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
