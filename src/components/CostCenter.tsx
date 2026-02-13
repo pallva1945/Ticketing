@@ -3,6 +3,7 @@ import { Calendar, Flag, Activity, Landmark, ShoppingBag, Users, GraduationCap, 
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
+import { BOpsCostDashboard } from './BOpsCostDashboard';
 
 type CostModule = 'overview' | 'gameday' | 'sponsorship' | 'bops' | 'venue_ops' | 'merchandising' | 'ebp' | 'varese_basketball';
 
@@ -18,9 +19,9 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
 
   const MODULES: { id: CostModule; label: string; icon: any }[] = [
     { id: 'overview', label: t('Executive Overview'), icon: PieChart },
+    { id: 'bops', label: t('BOps'), icon: Activity },
     { id: 'gameday', label: t('GameDay'), icon: Calendar },
     { id: 'sponsorship', label: t('Sponsorship'), icon: Flag },
-    { id: 'bops', label: t('BOps'), icon: Activity },
     { id: 'venue_ops', label: t('Venue Ops'), icon: Landmark },
     { id: 'merchandising', label: t('Merchandising'), icon: ShoppingBag },
     { id: 'ebp', label: t('EBP'), icon: Users },
@@ -134,6 +135,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
               })}
             </div>
           </div>
+        ) : activeModule === 'bops' ? (
+          <BOpsCostDashboard />
         ) : (
           <div className="space-y-6">
             <div>
