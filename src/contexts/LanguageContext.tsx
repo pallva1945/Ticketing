@@ -434,6 +434,7 @@ const translations: Record<string, Record<Language, string>> = {
   'YTD': { en: 'YTD', it: 'YTD' },
   'games': { en: 'games', it: 'partite' },
   'BOps prorated': { en: 'BOps prorated', it: 'BOps prorata' },
+  'YTD Prorated': { en: 'YTD Prorated', it: 'YTD Prorata' },
   'SG&A': { en: 'SG&A', it: 'SG&A' },
   'Selling, General & Administrative': { en: 'Selling, General & Administrative', it: 'Vendite, Generali e Amministrative' },
   'SG&A cost tracking will be added here — overhead, admin, and general business expenses.': { en: 'SG&A cost tracking will be added here — overhead, admin, and general business expenses.', it: 'Il monitoraggio dei costi SG&A verrà aggiunto qui — spese generali, amministrative e aziendali.' },

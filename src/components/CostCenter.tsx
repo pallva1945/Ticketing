@@ -150,16 +150,12 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                       </div>
                       {isBops ? (
                         <div className="mt-2 space-y-2">
-                          <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(3989726)}</div>
-                          <div className="flex items-center gap-1 text-xs text-red-500">
-                            <TrendingUp size={12} />
-                            <span>+6.9% {t('vs prior season')}</span>
-                          </div>
+                          <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(Math.round(3989726 * 6 / 15))}</div>
                           <div className="text-[10px] text-gray-400 dark:text-gray-500">
-                            {t('Players')}: 78% · {t('Coaches')}: 10.3%
+                            6/15 {t('games')} · {t('Players')}: 78% · {t('Coaches')}: 10.3%
                           </div>
-                          <div className="mt-1 px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-[9px] text-amber-600 dark:text-amber-400 inline-block">
-                            {t('Season Projection')}
+                          <div className="mt-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[9px] text-emerald-600 dark:text-emerald-400 inline-block">
+                            {t('YTD Prorated')}
                           </div>
                         </div>
                       ) : module.id === 'gameday' ? (

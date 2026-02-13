@@ -186,6 +186,11 @@ export const BOpsCostDashboard: React.FC = () => {
               <span>{yoyChange > 0 ? '+' : ''}{formatPct(yoyChange)} {t('vs prior season')}</span>
             </div>
           )}
+          {selectedSeason === '25/26' && (
+            <div className="mt-2 px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-[9px] text-amber-600 dark:text-amber-400 inline-block">
+              {t('Season Projection')}
+            </div>
+          )}
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
