@@ -68,8 +68,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
             </button>
 
             <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden md:block"></div>
-            <div className="hidden md:flex flex-col gap-1.5 overflow-x-auto py-0.5">
-              <div className="flex items-center gap-1">
+            <div className="hidden md:flex items-center gap-1 overflow-x-auto">
                 <button
                   onClick={() => setActiveModule('overview')}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
@@ -83,9 +82,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   <PieChart size={16} className={activeModule === 'overview' ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
                   {t('Overview')}
                 </button>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-red-500 px-1.5 py-1">COS</span>
+                <div className={`h-6 w-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-red-500 px-0.5">COS</span>
                 {COS_MODULES.map((module) => (
                   <button
                     key={module.id}
@@ -102,9 +100,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                     {module.label}
                   </button>
                 ))}
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-orange-500 px-1.5 py-1">SG&A</span>
+                <div className={`h-6 w-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-orange-500 px-0.5">SG&A</span>
                 {SGA_MODULES.map((module) => (
                   <button
                     key={module.id}
@@ -121,7 +118,6 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                     {module.label}
                   </button>
                 ))}
-              </div>
             </div>
           </div>
 
