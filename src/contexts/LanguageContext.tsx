@@ -374,6 +374,11 @@ const translations: Record<string, Record<Language, string>> = {
   'Ratio': { en: 'Ratio', it: 'Rapporto' },
   'Season-over-Season Comparison': { en: 'Season-over-Season Comparison', it: 'Confronto Stagione su Stagione' },
   'Staff': { en: 'Staff', it: 'Staff' },
+  '4-Season Growth': { en: '4-Season Growth', it: 'Crescita 4 Stagioni' },
+  'BOps Cost Trend': { en: 'BOps Cost Trend', it: 'Trend Costi BOps' },
+  'View Full BOps Dashboard': { en: 'View Full BOps Dashboard', it: 'Visualizza Dashboard BOps Completa' },
+  'Detailed category breakdowns, sub-cost analysis, and ratio trends': { en: 'Detailed category breakdowns, sub-cost analysis, and ratio trends', it: 'Scomposizioni dettagliate per categoria, analisi sub-costi e trend dei rapporti' },
+  'Other Cost Verticals': { en: 'Other Cost Verticals', it: 'Altri Verticali di Costo' },
   'Exclude VB': { en: 'Exclude VB', it: 'Escludi VB' },
   'Include GameDay Merch': { en: 'Include GameDay Merch', it: 'Includi Merch GameDay' },
 
