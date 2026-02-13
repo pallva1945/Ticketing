@@ -12,6 +12,7 @@ import { TeamOpsCostDashboard } from './TeamOpsCostDashboard';
 import { LaborCostDashboard } from './LaborCostDashboard';
 import { MarketingCostDashboard } from './MarketingCostDashboard';
 import { OfficeCostDashboard } from './OfficeCostDashboard';
+import { UtilitiesCostDashboard } from './UtilitiesCostDashboard';
 
 type CostModule = 'overview' | 'gameday' | 'sponsorship' | 'bops' | 'venue_ops' | 'merchandising' | 'ebp' | 'varese_basketball' | 'sga_team_ops' | 'sga_labor' | 'sga_marketing' | 'sga_office' | 'sga_utilities' | 'sga_maintenance' | 'sga_financial' | 'sga_professional' | 'sga_contingencies';
 
@@ -42,8 +43,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
     { id: 'sga_labor', label: t('Labor'), icon: HardHat },
     { id: 'sga_marketing', label: t('Marketing'), icon: Megaphone },
     { id: 'sga_office', label: t('Office'), icon: Building },
-    { id: 'sga_utilities', label: t('Utilities'), icon: Zap },
-    { id: 'sga_maintenance', label: t('Maintenance'), icon: Wrench },
+    { id: 'sga_utilities', label: t('Utilities & Maint.'), icon: Zap },
     { id: 'sga_financial', label: t('Financial'), icon: DollarSign },
     { id: 'sga_professional', label: t('Professional Services'), icon: Scale },
     { id: 'sga_contingencies', label: t('Contingencies'), icon: AlertTriangle },
@@ -284,7 +284,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   <p className="text-[11px] text-gray-400 dark:text-gray-500">{t('Selling, General & Administrative')}</p>
                 </div>
                 <div className="ml-auto text-right">
-                  <div className="text-lg font-bold text-orange-600">{formatCurrency(189691 + Math.round(511145 * 6 / 12) + 53185 + 40726 + 36646)}</div>
+                  <div className="text-lg font-bold text-orange-600">{formatCurrency(189691 + Math.round(511145 * 6 / 12) + 53185 + 40726 + 36646 + 89117)}</div>
                   <div className="text-[10px] text-gray-400">Jul–Dec 2025</div>
                 </div>
               </div>
@@ -295,8 +295,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                     { id: 'sga_labor', amount: Math.round(511145 * 6 / 12) + 53185, detail: `20 ${t('headcount')} · ${t('Internal')} + ${t('External')}` },
                     { id: 'sga_marketing', amount: 40726, detail: `${t('Advertising')}: 46.8% · 7 ${t('categories')}` },
                     { id: 'sga_office', amount: 36646, detail: `${t('Software & Subs')}: 55.6% · 7 ${t('categories')}` },
-                    { id: 'sga_utilities', amount: -1, detail: '' },
-                    { id: 'sga_maintenance', amount: -1, detail: '' },
+                    { id: 'sga_utilities', amount: 89117, detail: `${t('Utilities')}: 37.3% · ${t('Maintenance')}: 36.3%` },
                     { id: 'sga_financial', amount: -1, detail: '' },
                     { id: 'sga_professional', amount: -1, detail: '' },
                     { id: 'sga_contingencies', amount: -1, detail: '' },
@@ -364,6 +363,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
           <MarketingCostDashboard />
         ) : activeModule === 'sga_office' ? (
           <OfficeCostDashboard />
+        ) : activeModule === 'sga_utilities' ? (
+          <UtilitiesCostDashboard />
         ) : activeModule === 'ebp' ? (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-3">
