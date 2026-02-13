@@ -26,7 +26,7 @@ const DEPARTMENTS_ANNUAL: DeptLine[] = [
   { name: 'Marketing', employees: 1, netSalary: 1760, taxes: 0, relatedCost: 0, total: 1760, color: '#f59e0b' },
 ];
 
-const DEPARTMENTS: DeptLine[] = DEPARTMENTS_ANNUAL.map(d => ({
+const INTERNAL_DEPARTMENTS: DeptLine[] = DEPARTMENTS_ANNUAL.map(d => ({
   ...d,
   netSalary: Math.round(d.netSalary * PRORATE),
   taxes: Math.round(d.taxes * PRORATE),
@@ -34,7 +34,20 @@ const DEPARTMENTS: DeptLine[] = DEPARTMENTS_ANNUAL.map(d => ({
   total: Math.round(d.total * PRORATE),
 }));
 
+const EXTERNAL_DEPT: DeptLine = {
+  name: 'External',
+  employees: 6,
+  netSalary: 53185,
+  taxes: 0,
+  relatedCost: 0,
+  total: 53185,
+  color: '#e11d48',
+};
+
+const DEPARTMENTS: DeptLine[] = [...INTERNAL_DEPARTMENTS, EXTERNAL_DEPT];
+
 const GRAND_TOTAL = DEPARTMENTS.reduce((s, d) => s + d.total, 0);
+const INTERNAL_TOTAL = INTERNAL_DEPARTMENTS.reduce((s, d) => s + d.total, 0);
 const ANNUAL_TOTAL = DEPARTMENTS_ANNUAL.reduce((s, d) => s + d.total, 0);
 const TOTAL_EMPLOYEES = DEPARTMENTS.reduce((s, d) => s + d.employees, 0);
 const TOTAL_NET = DEPARTMENTS.reduce((s, d) => s + d.netSalary, 0);
@@ -48,6 +61,26 @@ const COST_STRUCTURE = [
   { name: 'Taxes', value: TOTAL_TAXES, color: '#f97316' },
   { name: 'Employee Related Cost', value: TOTAL_RELATED, color: '#3b82f6' },
 ];
+
+const MONTHS = ['July', 'August', 'September', 'October', 'November', 'December'];
+
+interface ExtLine {
+  name: string;
+  values: number[];
+  total: number;
+  color: string;
+}
+
+const EXT_LINES: ExtLine[] = [
+  { name: 'Accounting', values: [4115.15, 4115.15, 4175.16, 4681.82, 4681.82, 4681.82], total: 26450.92, color: '#ef4444' },
+  { name: 'Legal', values: [1571.67, 1572.25, 1572.25, 1572.25, 1572.25, 6389.01], total: 14249.68, color: '#f97316' },
+  { name: 'Misc.', values: [0, 0, 2600, 832, 832, 1574.86], total: 5838.86, color: '#3b82f6' },
+  { name: 'Audit', values: [693.33, 693.33, 693.33, 693.33, 693.33, 693.33], total: 4159.98, color: '#8b5cf6' },
+  { name: 'Security Consulting', values: [346.67, 346.67, 346.67, 346.66, 346.66, 346.66], total: 2079.99, color: '#10b981' },
+  { name: 'Administrative Taxes', values: [80, 18.34, 158.34, 24.34, 26.34, 98.34], total: 405.70, color: '#f59e0b' },
+];
+
+const EXT_MONTHLY = MONTHS.map((_, i) => EXT_LINES.reduce((sum, l) => sum + l.values[i], 0));
 
 export const LaborCostDashboard: React.FC = () => {
   const { t } = useLanguage();
@@ -67,10 +100,15 @@ export const LaborCostDashboard: React.FC = () => {
         </div>
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('Labor')} — {t('Cost Structure')}</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Jul–Dec 2025 · SG&A · {t('Prorated from annual')}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Jul–Dec 2025 · SG&A · {t('Internal prorated + External actuals')}</p>
         </div>
-        <div className="ml-auto px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[10px] text-emerald-600 dark:text-emerald-400">
-          {t('YTD Prorated')}
+        <div className="ml-auto flex gap-1.5">
+          <div className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[10px] text-emerald-600 dark:text-emerald-400">
+            {t('YTD Prorated')}
+          </div>
+          <div className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[10px] text-emerald-600 dark:text-emerald-400">
+            {t('Monthly Actuals')}
+          </div>
         </div>
       </div>
 
@@ -81,7 +119,7 @@ export const LaborCostDashboard: React.FC = () => {
             <span>{t('Total Labor Cost')}</span>
           </div>
           <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(GRAND_TOTAL)}</div>
-          <div className="text-[10px] text-gray-400 mt-1">{t('Annual')}: {formatCurrency(ANNUAL_TOTAL)}</div>
+          <div className="text-[10px] text-gray-400 mt-1">{t('Internal')}: {formatCurrency(INTERNAL_TOTAL)} + {t('External')}: {formatCurrency(EXTERNAL_DEPT.total)}</div>
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
@@ -90,7 +128,7 @@ export const LaborCostDashboard: React.FC = () => {
             <span>{t('Headcount')}</span>
           </div>
           <div className="text-xl font-bold text-gray-900 dark:text-white">{TOTAL_EMPLOYEES}</div>
-          <div className="text-[10px] text-gray-400 mt-1">6 {t('departments')}</div>
+          <div className="text-[10px] text-gray-400 mt-1">7 {t('departments')}</div>
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
@@ -268,6 +306,50 @@ export const LaborCostDashboard: React.FC = () => {
                 <td className="text-right py-2.5 px-3 font-bold text-gray-900 dark:text-white tabular-nums whitespace-nowrap">{formatCurrency(TOTAL_TAXES)}</td>
                 <td className="text-right py-2.5 px-3 font-bold text-gray-900 dark:text-white tabular-nums whitespace-nowrap">{formatCurrency(TOTAL_RELATED)}</td>
                 <td className="text-right py-2.5 pl-3 font-bold text-orange-600 tabular-nums whitespace-nowrap">{formatCurrency(GRAND_TOTAL)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">{t('External')} — {t('Professional Services')}</h3>
+        <p className="text-[10px] text-gray-400 mb-4">{t('Monthly Actuals')} · Jul–Dec 2025</p>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-gray-700">
+                <th className="text-left py-2 pr-4 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">{t('Category')}</th>
+                {MONTHS.map(m => (
+                  <th key={m} className="text-right py-2 px-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">{t(m).substring(0, 3)}</th>
+                ))}
+                <th className="text-right py-2 pl-3 text-orange-600 font-semibold whitespace-nowrap">{t('Total')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {EXT_LINES.map((line) => (
+                <tr key={line.name} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                  <td className="py-2 pr-4 text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: line.color }} />
+                      {t(line.name)}
+                    </div>
+                  </td>
+                  {line.values.map((val, i) => (
+                    <td key={i} className={`text-right py-2 px-2 whitespace-nowrap tabular-nums ${val === 0 ? 'text-gray-300 dark:text-gray-600' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {val === 0 ? '—' : formatCurrency(val)}
+                    </td>
+                  ))}
+                  <td className="text-right py-2 pl-3 font-semibold whitespace-nowrap tabular-nums text-gray-900 dark:text-white">
+                    {formatCurrency(line.total)}
+                  </td>
+                </tr>
+              ))}
+              <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/30">
+                <td className="py-2.5 pr-4 font-bold text-gray-900 dark:text-white">{t('Total External')}</td>
+                {EXT_MONTHLY.map((val, i) => (
+                  <td key={i} className="text-right py-2.5 px-2 font-bold text-gray-900 dark:text-white whitespace-nowrap tabular-nums">{formatCurrency(val)}</td>
+                ))}
+                <td className="text-right py-2.5 pl-3 font-bold text-orange-600 whitespace-nowrap tabular-nums">{formatCurrency(EXTERNAL_DEPT.total)}</td>
               </tr>
             </tbody>
           </table>
