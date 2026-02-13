@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
 import { BOpsCostDashboard } from './BOpsCostDashboard';
+import { GameDayCostDashboard } from './GameDayCostDashboard';
 
 type CostModule = 'overview' | 'gameday' | 'sponsorship' | 'bops' | 'venue_ops' | 'merchandising' | 'ebp' | 'varese_basketball';
 
@@ -139,6 +140,19 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                         <div className="text-[10px] text-gray-400 dark:text-gray-500">
                           {t('Players')}: 78% · {t('Coaches')}: 10.3%
                         </div>
+                        <div className="mt-1 px-1.5 py-0.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-[9px] text-amber-600 dark:text-amber-400 inline-block">
+                          {t('Season Projection')}
+                        </div>
+                      </div>
+                    ) : module.id === 'gameday' ? (
+                      <div className="mt-2 space-y-2">
+                        <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(177396)}</div>
+                        <div className="text-[10px] text-gray-400 dark:text-gray-500">
+                          Jul–Dec 2025 · 12 {t('categories')}
+                        </div>
+                        <div className="mt-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[9px] text-emerald-600 dark:text-emerald-400 inline-block">
+                          {t('Monthly Actuals')}
+                        </div>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 mt-4">
@@ -153,6 +167,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
           </div>
         ) : activeModule === 'bops' ? (
           <BOpsCostDashboard />
+        ) : activeModule === 'gameday' ? (
+          <GameDayCostDashboard />
         ) : (
           <div className="space-y-6">
             <div>
