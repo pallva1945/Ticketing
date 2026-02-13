@@ -66,23 +66,61 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
             </button>
 
             <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden md:block"></div>
-            <div className="hidden md:flex items-center gap-1 overflow-x-auto">
-              {MODULES.map((module) => (
+            <div className="hidden md:flex flex-col gap-1.5 overflow-x-auto py-0.5">
+              <div className="flex items-center gap-1">
                 <button
-                  key={module.id}
-                  onClick={() => setActiveModule(module.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                    activeModule === module.id
+                  onClick={() => setActiveModule('overview')}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                    activeModule === 'overview'
                       ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
                       : isDark
                         ? 'text-gray-400 hover:text-white hover:bg-gray-800'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
-                  <module.icon size={16} />
-                  {module.label}
+                  <PieChart size={14} />
+                  {t('Overview')}
                 </button>
-              ))}
+                <div className={`h-4 w-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-red-500 px-1">COS</span>
+                {COS_MODULES.map((module) => (
+                  <button
+                    key={module.id}
+                    onClick={() => setActiveModule(module.id)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                      activeModule === module.id
+                        ? 'bg-red-600 text-white shadow-lg shadow-red-600/20'
+                        : isDark
+                          ? 'text-gray-400 hover:text-white hover:bg-gray-800'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <module.icon size={13} />
+                    {module.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-[72px]"></div>
+                <div className={`h-4 w-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                <span className="text-[9px] font-bold uppercase tracking-wider text-orange-500 px-1">SG&A</span>
+                {SGA_MODULES.map((module) => (
+                  <button
+                    key={module.id}
+                    onClick={() => setActiveModule(module.id)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                      activeModule === module.id
+                        ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
+                        : isDark
+                          ? 'text-gray-400 hover:text-white hover:bg-gray-800'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <module.icon size={13} />
+                    {module.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -102,21 +140,48 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
           </div>
         </div>
 
-        <div className="md:hidden overflow-x-auto px-4 pb-2">
-          <div className="flex items-center gap-1">
-            {MODULES.map((module) => (
+        <div className="md:hidden px-4 pb-2 space-y-1.5">
+          <div className="flex items-center gap-1 overflow-x-auto">
+            <button
+              onClick={() => setActiveModule('overview')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap ${
+                activeModule === 'overview'
+                  ? 'bg-red-600 text-white'
+                  : isDark ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <PieChart size={12} />
+              {t('Overview')}
+            </button>
+            <span className="text-[8px] font-bold uppercase tracking-wider text-red-500 px-0.5">COS</span>
+            {COS_MODULES.map((module) => (
               <button
                 key={module.id}
                 onClick={() => setActiveModule(module.id)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap ${
                   activeModule === module.id
                     ? 'bg-red-600 text-white'
-                    : isDark
-                      ? 'text-gray-400 hover:bg-gray-800'
-                      : 'text-gray-600 hover:bg-gray-100'
+                    : isDark ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100'
                 }`}
               >
-                <module.icon size={14} />
+                <module.icon size={12} />
+                {module.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 overflow-x-auto">
+            <span className="text-[8px] font-bold uppercase tracking-wider text-orange-500 px-0.5 ml-1">SG&A</span>
+            {SGA_MODULES.map((module) => (
+              <button
+                key={module.id}
+                onClick={() => setActiveModule(module.id)}
+                className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap ${
+                  activeModule === module.id
+                    ? 'bg-orange-600 text-white'
+                    : isDark ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <module.icon size={12} />
                 {module.label}
               </button>
             ))}
