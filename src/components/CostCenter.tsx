@@ -218,6 +218,25 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
           <VenueOpsCostDashboard />
         ) : activeModule === 'merchandising' ? (
           <MerchandisingCostDashboard />
+        ) : activeModule === 'ebp' ? (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-red-100 dark:bg-red-900/20 rounded-xl">
+                <ActiveIcon className="text-red-600" size={22} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">EBP — {t('Cost Structure')}</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Monthly Actuals')} · Jul–Dec 2025</p>
+              </div>
+            </div>
+            <div className={`rounded-xl border p-12 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+              <div className="text-5xl font-bold text-gray-300 dark:text-gray-600 mb-3">€0</div>
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('No costs recorded YTD')}</h3>
+              <p className="text-sm text-gray-400 dark:text-gray-500 max-w-sm mx-auto">
+                {t('No EBP expenses have been recorded for the Jul–Dec 2025 period.')}
+              </p>
+            </div>
+          </div>
         ) : (
           <div className="space-y-6">
             <div>

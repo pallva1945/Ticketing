@@ -427,6 +427,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Aug spike': { en: 'Aug spike', it: 'Picco Ago' },
   'No costs recorded YTD': { en: 'No costs recorded YTD', it: 'Nessun costo registrato YTD' },
   'Zero Activity': { en: 'Zero Activity', it: 'Attività Zero' },
+  'No EBP expenses have been recorded for the Jul–Dec 2025 period.': { en: 'No EBP expenses have been recorded for the Jul–Dec 2025 period.', it: 'Nessuna spesa EBP registrata per il periodo Lug–Dic 2025.' },
   'Monthly Cost vs Games': { en: 'Monthly Cost vs Games', it: 'Costo Mensile vs Partite' },
   'Bars = total cost · Labels = number of games': { en: 'Bars = total cost · Labels = number of games', it: 'Barre = costo totale · Etichette = numero partite' },
   'Cost per Game by Month': { en: 'Cost per Game by Month', it: 'Costo per Partita per Mese' },
