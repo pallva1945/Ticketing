@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Flag, Activity, Landmark, ShoppingBag, Users, GraduationCap, Construction, Sun, Moon, PieChart, TrendingUp, Briefcase, Building2 } from 'lucide-react';
+import { Calendar, Flag, Activity, Landmark, ShoppingBag, Users, GraduationCap, Construction, Sun, Moon, PieChart, TrendingUp, Briefcase, Building2, Plane, HardHat, Megaphone, Building, Zap, Wrench, DollarSign, Scale, AlertTriangle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
@@ -8,8 +8,9 @@ import { GameDayCostDashboard } from './GameDayCostDashboard';
 import { SponsorshipCostDashboard } from './SponsorshipCostDashboard';
 import { VenueOpsCostDashboard } from './VenueOpsCostDashboard';
 import { MerchandisingCostDashboard } from './MerchandisingCostDashboard';
+import { TeamOpsCostDashboard } from './TeamOpsCostDashboard';
 
-type CostModule = 'overview' | 'gameday' | 'sponsorship' | 'bops' | 'venue_ops' | 'merchandising' | 'ebp' | 'varese_basketball';
+type CostModule = 'overview' | 'gameday' | 'sponsorship' | 'bops' | 'venue_ops' | 'merchandising' | 'ebp' | 'varese_basketball' | 'sga_team_ops' | 'sga_labor' | 'sga_marketing' | 'sga_office' | 'sga_utilities' | 'sga_maintenance' | 'sga_financial' | 'sga_professional' | 'sga_contingencies';
 
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 
@@ -23,8 +24,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
   const isDark = theme === 'dark';
   const [activeModule, setActiveModule] = useState<CostModule>('overview');
 
-  const MODULES: { id: CostModule; label: string; icon: any }[] = [
-    { id: 'overview', label: t('Executive Overview'), icon: PieChart },
+  const COS_MODULES: { id: CostModule; label: string; icon: any }[] = [
     { id: 'bops', label: t('BOps'), icon: Activity },
     { id: 'gameday', label: t('GameDay'), icon: Calendar },
     { id: 'sponsorship', label: t('Sponsorship'), icon: Flag },
@@ -32,6 +32,24 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
     { id: 'merchandising', label: t('Merchandising'), icon: ShoppingBag },
     { id: 'ebp', label: t('EBP'), icon: Users },
     { id: 'varese_basketball', label: t('Varese Basketball'), icon: GraduationCap },
+  ];
+
+  const SGA_MODULES: { id: CostModule; label: string; icon: any }[] = [
+    { id: 'sga_team_ops', label: t('Team Ops'), icon: Plane },
+    { id: 'sga_labor', label: t('Labor'), icon: HardHat },
+    { id: 'sga_marketing', label: t('Marketing'), icon: Megaphone },
+    { id: 'sga_office', label: t('Office'), icon: Building },
+    { id: 'sga_utilities', label: t('Utilities'), icon: Zap },
+    { id: 'sga_maintenance', label: t('Maintenance'), icon: Wrench },
+    { id: 'sga_financial', label: t('Financial'), icon: DollarSign },
+    { id: 'sga_professional', label: t('Professional Services'), icon: Scale },
+    { id: 'sga_contingencies', label: t('Contingencies'), icon: AlertTriangle },
+  ];
+
+  const MODULES: { id: CostModule; label: string; icon: any }[] = [
+    { id: 'overview', label: t('Executive Overview'), icon: PieChart },
+    ...COS_MODULES,
+    ...SGA_MODULES,
   ];
 
   const activeModuleInfo = MODULES.find(m => m.id === activeModule);
@@ -197,15 +215,66 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   <h2 className="text-lg font-bold text-gray-800 dark:text-white">{t('SG&A')}</h2>
                   <p className="text-[11px] text-gray-400 dark:text-gray-500">{t('Selling, General & Administrative')}</p>
                 </div>
-              </div>
-              <div className={`rounded-xl border p-10 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
-                <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <Construction size={24} className="text-orange-500" />
+                <div className="ml-auto text-right">
+                  <div className="text-lg font-bold text-orange-600">{formatCurrency(189691)}</div>
+                  <div className="text-[10px] text-gray-400">Jul–Dec 2025</div>
                 </div>
-                <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-1">{t('Coming Soon')}</h3>
-                <p className="text-sm text-gray-400 dark:text-gray-500 max-w-md mx-auto">
-                  {t('SG&A cost tracking will be added here — overhead, admin, and general business expenses.')}
-                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {(() => {
+                  const SGA_CARDS: { id: CostModule; amount: number; detail: string }[] = [
+                    { id: 'sga_team_ops', amount: 189691, detail: `${t('Travel')}: 46.1% · ${t('Team Registration')}: 25.6%` },
+                    { id: 'sga_labor', amount: -1, detail: '' },
+                    { id: 'sga_marketing', amount: -1, detail: '' },
+                    { id: 'sga_office', amount: -1, detail: '' },
+                    { id: 'sga_utilities', amount: -1, detail: '' },
+                    { id: 'sga_maintenance', amount: -1, detail: '' },
+                    { id: 'sga_financial', amount: -1, detail: '' },
+                    { id: 'sga_professional', amount: -1, detail: '' },
+                    { id: 'sga_contingencies', amount: -1, detail: '' },
+                  ];
+                  const sorted = [...SGA_CARDS].sort((a, b) => b.amount - a.amount);
+                  const totalSGA = SGA_CARDS.filter(c => c.amount >= 0).reduce((s, c) => s + c.amount, 0);
+                  return sorted.map(card => {
+                    const module = SGA_MODULES.find(m => m.id === card.id)!;
+                    const Icon = module.icon;
+                    const pctOfSGA = totalSGA > 0 && card.amount > 0 ? ((card.amount / totalSGA) * 100).toFixed(1) : null;
+                    return (
+                      <button
+                        key={card.id}
+                        onClick={() => setActiveModule(card.id)}
+                        className={`text-left p-5 rounded-xl border transition-all hover:shadow-lg cursor-pointer ${
+                          isDark ? 'bg-gray-900 border-gray-800 hover:border-gray-700' : 'bg-white border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-9 h-9 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
+                            <Icon size={18} className="text-orange-600" />
+                          </div>
+                          <h3 className="font-semibold text-sm text-gray-800 dark:text-white">{module.label}</h3>
+                        </div>
+                        {card.amount >= 0 ? (
+                          <div className="mt-2 space-y-2">
+                            <div className="flex items-baseline gap-2">
+                              <div className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(card.amount)}</div>
+                              {pctOfSGA && <span className="text-xs font-semibold text-orange-500">{pctOfSGA}%</span>}
+                            </div>
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500">{card.detail}</div>
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500">Jul–Dec 2025</div>
+                            <div className="mt-1 px-1.5 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[9px] text-emerald-600 dark:text-emerald-400 inline-block">
+                              {t('Monthly Actuals')}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 mt-3">
+                            <Construction size={14} className="text-gray-400" />
+                            <span className="text-xs text-gray-400">{t('Coming Soon')}</span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  });
+                })()}
               </div>
             </div>
           </div>
@@ -219,6 +288,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
           <VenueOpsCostDashboard />
         ) : activeModule === 'merchandising' ? (
           <MerchandisingCostDashboard />
+        ) : activeModule === 'sga_team_ops' ? (
+          <TeamOpsCostDashboard />
         ) : activeModule === 'ebp' ? (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-3">
