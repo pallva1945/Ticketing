@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { FinancialCenter } from './components/FinancialCenter';
+import { CostCenter } from './components/CostCenter';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 
@@ -12,10 +13,8 @@ const Root: React.FC = () => {
   });
 
   const handleNavigate = (section: string) => {
-    if (section === 'revenue') {
-      setCurrentView('revenue');
-      window.location.hash = 'revenue';
-    }
+    setCurrentView(section);
+    window.location.hash = section;
   };
 
   const handleBack = () => {
@@ -25,6 +24,10 @@ const Root: React.FC = () => {
 
   if (currentView === 'revenue') {
     return <App onBackToLanding={handleBack} />;
+  }
+
+  if (currentView === 'cost') {
+    return <CostCenter onBackToLanding={handleBack} />;
   }
 
   return <FinancialCenter onNavigate={handleNavigate} />;

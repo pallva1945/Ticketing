@@ -342,6 +342,9 @@ const translations: Record<string, Record<Language, string>> = {
   'Profit and loss analysis by business vertical — ticketing, sponsorship, merchandising, venue ops, and more.': { en: 'Profit and loss analysis by business vertical — ticketing, sponsorship, merchandising, venue ops, and more.', it: 'Analisi profitti e perdite per verticale di business — biglietteria, sponsorizzazioni, merchandising, venue ops e altro.' },
   'Comprehensive financial intelligence for Pallacanestro Varese': { en: 'Comprehensive financial intelligence for Pallacanestro Varese', it: 'Intelligence finanziaria completa per Pallacanestro Varese' },
   'Coming Soon': { en: 'Coming Soon', it: 'Prossimamente' },
+  'EBP': { en: 'EBP', it: 'EBP' },
+  'Back to Financial Center': { en: 'Back to Financial Center', it: 'Torna al Centro Finanziario' },
+  'This cost vertical is currently being integrated into the PV Financial Center.': { en: 'This cost vertical is currently being integrated into the PV Financial Center.', it: 'Questo verticale di costo è attualmente in fase di integrazione nel PV Financial Center.' },
   'Exclude VB': { en: 'Exclude VB', it: 'Escludi VB' },
   'Include GameDay Merch': { en: 'Include GameDay Merch', it: 'Includi Merch GameDay' },
 

@@ -32,7 +32,7 @@ export const FinancialCenter: React.FC<FinancialCenterProps> = ({ onNavigate }) 
       color: 'from-red-500 to-rose-600',
       iconBg: 'bg-red-100 dark:bg-red-900/30',
       iconColor: 'text-red-600',
-      available: false,
+      available: true,
     },
     {
       id: 'pnl',
