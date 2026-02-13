@@ -187,6 +187,16 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                           {t('Monthly Actuals')}
                         </div>
                       </div>
+                    ) : module.id === 'ebp' ? (
+                      <div className="mt-2 space-y-2">
+                        <div className="text-xl font-bold text-gray-900 dark:text-white">€0</div>
+                        <div className="text-[10px] text-gray-400 dark:text-gray-500">
+                          {t('No costs recorded YTD')}
+                        </div>
+                        <div className="mt-1 px-1.5 py-0.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-[9px] text-gray-500 dark:text-gray-400 inline-block">
+                          {t('Zero Activity')}
+                        </div>
+                      </div>
                     ) : (
                       <div className="flex items-center gap-2 mt-4">
                         <Construction size={14} className="text-gray-400" />
