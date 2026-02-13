@@ -217,7 +217,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   <p className="text-[11px] text-gray-400 dark:text-gray-500">{t('Selling, General & Administrative')}</p>
                 </div>
                 <div className="ml-auto text-right">
-                  <div className="text-lg font-bold text-orange-600">{formatCurrency(189691 + 511145)}</div>
+                  <div className="text-lg font-bold text-orange-600">{formatCurrency(189691 + Math.round(511145 * 6 / 12))}</div>
                   <div className="text-[10px] text-gray-400">Jul–Dec 2025</div>
                 </div>
               </div>
@@ -225,7 +225,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                 {(() => {
                   const SGA_CARDS: { id: CostModule; amount: number; detail: string; badge?: string; badgeStyle?: string }[] = [
                     { id: 'sga_team_ops', amount: 189691, detail: `${t('Travel')}: 46.1% · ${t('Team Registration')}: 25.6%` },
-                    { id: 'sga_labor', amount: 511145, detail: `14 ${t('employees')} · ${t('Executive')}: 44.5%`, badge: t('Season Projection'), badgeStyle: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400' },
+                    { id: 'sga_labor', amount: Math.round(511145 * 6 / 12), detail: `14 ${t('employees')} · ${t('Executive')}: 44.5%`, badge: t('YTD Prorated'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
                     { id: 'sga_marketing', amount: -1, detail: '' },
                     { id: 'sga_office', amount: -1, detail: '' },
                     { id: 'sga_utilities', amount: -1, detail: '' },

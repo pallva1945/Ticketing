@@ -15,7 +15,9 @@ interface DeptLine {
   color: string;
 }
 
-const DEPARTMENTS: DeptLine[] = [
+const PRORATE = 6 / 12;
+
+const DEPARTMENTS_ANNUAL: DeptLine[] = [
   { name: 'Executive', employees: 4, netSalary: 143200, taxes: 60024, relatedCost: 16928, total: 227252, color: '#ef4444' },
   { name: 'Sales', employees: 3, netSalary: 48000, taxes: 26854, relatedCost: 0, total: 70503, color: '#f97316' },
   { name: 'Finance', employees: 2, netSalary: 47120, taxes: 161303, relatedCost: 0, total: 60936, color: '#3b82f6' },
@@ -24,7 +26,16 @@ const DEPARTMENTS: DeptLine[] = [
   { name: 'Marketing', employees: 1, netSalary: 1760, taxes: 0, relatedCost: 0, total: 1760, color: '#f59e0b' },
 ];
 
+const DEPARTMENTS: DeptLine[] = DEPARTMENTS_ANNUAL.map(d => ({
+  ...d,
+  netSalary: Math.round(d.netSalary * PRORATE),
+  taxes: Math.round(d.taxes * PRORATE),
+  relatedCost: Math.round(d.relatedCost * PRORATE),
+  total: Math.round(d.total * PRORATE),
+}));
+
 const GRAND_TOTAL = DEPARTMENTS.reduce((s, d) => s + d.total, 0);
+const ANNUAL_TOTAL = DEPARTMENTS_ANNUAL.reduce((s, d) => s + d.total, 0);
 const TOTAL_EMPLOYEES = DEPARTMENTS.reduce((s, d) => s + d.employees, 0);
 const TOTAL_NET = DEPARTMENTS.reduce((s, d) => s + d.netSalary, 0);
 const TOTAL_TAXES = DEPARTMENTS.reduce((s, d) => s + d.taxes, 0);
@@ -56,10 +67,10 @@ export const LaborCostDashboard: React.FC = () => {
         </div>
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('Labor')} — {t('Cost Structure')}</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{t('Season')} 2025/26 · SG&A</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Jul–Dec 2025 · SG&A · {t('Prorated from annual')}</p>
         </div>
-        <div className="ml-auto px-2 py-0.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-[10px] text-amber-600 dark:text-amber-400">
-          {t('Season Projection')}
+        <div className="ml-auto px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[10px] text-emerald-600 dark:text-emerald-400">
+          {t('YTD Prorated')}
         </div>
       </div>
 
@@ -70,7 +81,7 @@ export const LaborCostDashboard: React.FC = () => {
             <span>{t('Total Labor Cost')}</span>
           </div>
           <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(GRAND_TOTAL)}</div>
-          <div className="text-[10px] text-gray-400 mt-1">{t('Costo Aziendale')}</div>
+          <div className="text-[10px] text-gray-400 mt-1">{t('Annual')}: {formatCurrency(ANNUAL_TOTAL)}</div>
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">

@@ -477,6 +477,8 @@ const translations: Record<string, Record<Language, string>> = {
   'Cost Composition': { en: 'Cost Composition', it: 'Composizione Costi' },
   'Cost by Department': { en: 'Cost by Department', it: 'Costo per Dipartimento' },
   'Employees': { en: 'Employees', it: 'Dipendenti' },
+  'Prorated from annual': { en: 'Prorated from annual', it: 'Prorata da annuale' },
+  'Annual': { en: 'Annual', it: 'Annuale' },
   'Monthly Cost vs Games': { en: 'Monthly Cost vs Games', it: 'Costo Mensile vs Partite' },
   'Bars = total cost · Labels = number of games': { en: 'Bars = total cost · Labels = number of games', it: 'Barre = costo totale · Etichette = numero partite' },
   'Cost per Game by Month': { en: 'Cost per Game by Month', it: 'Costo per Partita per Mese' },
