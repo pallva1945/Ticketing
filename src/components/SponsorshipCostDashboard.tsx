@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flag, Euro, TrendingUp } from 'lucide-react';
+import { Flag, Euro, TrendingUp, CalendarDays } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -87,6 +87,35 @@ export const SponsorshipCostDashboard: React.FC = () => {
           </div>
           <div className="text-xl font-bold text-blue-600">{formatCurrency(COST_LINES[1].total)}</div>
           <div className="text-[10px] text-gray-400 mt-1">{matPct.toFixed(1)}% {t('of total')}</div>
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <CalendarDays size={14} className="text-orange-500" />
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100">{t('Events Calendar')}</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30">
+            <div className="text-center min-w-[40px]">
+              <div className="text-[10px] font-medium text-orange-500 uppercase">{t('September').substring(0, 3)}</div>
+              <div className="text-lg font-bold text-orange-600">1</div>
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">{t('Team Presentation')}</div>
+              <div className="text-[10px] text-gray-400">{t('Season kickoff event')}</div>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30">
+            <div className="text-center min-w-[40px]">
+              <div className="text-[10px] font-medium text-red-500 uppercase">{t('December').substring(0, 3)}</div>
+              <div className="text-lg font-bold text-red-600">3</div>
+            </div>
+            <div>
+              <div className="text-xs font-semibold text-gray-800 dark:text-gray-200">OJM · BSN · {t('Christmas Dinner')}</div>
+              <div className="text-[10px] text-gray-400">{t('Municipality exams')}</div>
+            </div>
+          </div>
         </div>
       </div>
 
