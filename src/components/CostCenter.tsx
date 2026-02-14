@@ -72,37 +72,37 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   {t('Executive Overview')}
                 </button>
                 <div className={`self-stretch w-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
-                <div className="flex flex-col gap-0.5 overflow-x-auto min-w-0">
-                  <div className="flex items-center gap-0.5">
-                    <span className="text-[8px] font-bold uppercase tracking-wider text-red-500 px-0.5 w-7 flex-shrink-0">COS</span>
+                <div className="flex flex-col gap-1 overflow-x-auto min-w-0">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-red-500 px-0.5 w-8 flex-shrink-0">COS</span>
                     {COS_MODULES.map((module) => (
                       <button
                         key={module.id}
                         onClick={() => setActiveModule(module.id)}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                           activeModule === module.id
                             ? 'bg-slate-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
                             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                         }`}
                       >
-                        <module.icon size={12} className={activeModule === module.id ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
+                        <module.icon size={16} className={activeModule === module.id ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
                         {module.label}
                       </button>
                     ))}
                   </div>
-                  <div className="flex items-center gap-0.5">
-                    <span className="text-[8px] font-bold uppercase tracking-wider text-orange-500 px-0.5 w-7 flex-shrink-0">G&A</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-orange-500 px-0.5 w-8 flex-shrink-0">SG&A</span>
                     {SGA_MODULES.map((module) => (
                       <button
                         key={module.id}
                         onClick={() => setActiveModule(module.id)}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                           activeModule === module.id
                             ? 'bg-slate-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
                             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                         }`}
                       >
-                        <module.icon size={12} className={activeModule === module.id ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
+                        <module.icon size={16} className={activeModule === module.id ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
                         {module.label}
                       </button>
                     ))}
