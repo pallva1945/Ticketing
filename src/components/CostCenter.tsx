@@ -275,7 +275,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   <p className="text-[11px] text-gray-400 dark:text-gray-500">{t('Selling, General & Administrative')}</p>
                 </div>
                 <div className="ml-auto text-right">
-                  <div className="text-lg font-bold text-orange-600">{formatCurrency(189691 + Math.round(511145 * 6 / 12) + 53185 + 40726 + 36646 + 89117 + 8375)}</div>
+                  <div className="text-lg font-bold text-orange-600">{formatCurrency(189691 + Math.round(511145 * 6 / 12) + 53185 + 40726 + 36646 + 89117 + 8375 + 6410)}</div>
                   <div className="text-[10px] text-gray-400">Jul–Dec 2025</div>
                 </div>
               </div>
@@ -318,10 +318,10 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   </div>
                   <div className="mt-2 space-y-2">
                     <div className="flex items-baseline gap-2">
-                      <div className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(189691 + 40726 + 36646 + 89117 + 8375)}</div>
+                      <div className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(189691 + 40726 + 36646 + 89117 + 8375 + 6410)}</div>
                       <span className="text-xs font-semibold text-orange-500">54.0%</span>
                     </div>
-                    <div className="text-[10px] text-gray-400 dark:text-gray-500">{t('Team Ops')} · {t('Marketing')} · {t('Office')} · {t('Utilities & Maint.')} · {t('Financial')}</div>
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500">{t('Team Ops')} · {t('Marketing')} · {t('Office')} · {t('Utilities & Maint.')} · {t('Financial')} · {t('Contingencies')}</div>
                     <div className="text-[10px] text-gray-400 dark:text-gray-500">Jul–Dec 2025</div>
                     <div className="mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400">
                       {t('Monthly Actuals')}

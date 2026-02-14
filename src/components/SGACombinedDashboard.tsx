@@ -18,7 +18,7 @@ const SUB_MODULES: { id: SGASubModule; labelKey: string; icon: any; amount: numb
   { id: 'office', labelKey: 'Office', icon: Building, amount: 36646, detailFn: (t) => `${t('Software & Subs')}: 55.6% · 7 ${t('categories')}` },
   { id: 'utilities', labelKey: 'Utilities & Maint.', icon: Zap, amount: 89117, detailFn: (t) => `${t('Utilities')}: 37.3% · ${t('Maintenance')}: 36.3%` },
   { id: 'financial', labelKey: 'Financial', icon: DollarSign, amount: 8375, detailFn: (t) => `${t('Bank Charges')}: 92.3% · 4 ${t('categories')}` },
-  { id: 'contingencies', labelKey: 'Contingencies', icon: AlertTriangle, amount: 0, detailFn: () => '' },
+  { id: 'contingencies', labelKey: 'Contingencies', icon: AlertTriangle, amount: 6410, detailFn: () => 'Jul–Dec 2025' },
 ];
 
 const TOTAL_SGA_OTHER = SUB_MODULES.filter(m => m.amount > 0).reduce((s, m) => s + m.amount, 0);
@@ -43,7 +43,7 @@ export const SGACombinedDashboard: React.FC = () => {
         </div>
         <div className="ml-auto text-right">
           <div className="text-xl font-bold text-orange-600">{formatCurrency(TOTAL_SGA_OTHER)}</div>
-          <div className="text-[10px] text-gray-400">5 {t('categories')}</div>
+          <div className="text-[10px] text-gray-400">6 {t('categories')}</div>
         </div>
       </div>
 
