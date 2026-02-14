@@ -129,7 +129,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 py-8 pt-20">
+      <main className="max-w-7xl mx-auto px-4 py-8 pt-28">
         {activeModule === 'overview' ? (
           <div className="space-y-8">
             <div>
