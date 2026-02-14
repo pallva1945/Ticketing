@@ -62,13 +62,13 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
             <div className="hidden md:flex items-center gap-2 min-w-0">
                 <button
                   onClick={() => setActiveModule('overview')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap self-stretch ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                     activeModule === 'overview'
                       ? 'bg-slate-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
-                  <PieChart size={14} className={activeModule === 'overview' ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
+                  <PieChart size={16} className={activeModule === 'overview' ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
                   {t('Executive Overview')}
                 </button>
                 <div className={`self-stretch w-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
