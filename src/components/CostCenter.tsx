@@ -51,58 +51,58 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
 
   return (
     <div className={`min-h-screen ${isDark ? 'dark bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      <div className="fixed top-0 left-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-50 px-6 shadow-sm">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-4 w-full md:w-auto">
+      <div className="fixed top-0 left-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-50 px-4 shadow-sm">
+        <div className="flex items-center justify-between py-1.5">
+          <div className="flex items-center gap-3 min-w-0">
             <button onClick={onBackToLanding} className="w-8 h-8 flex-shrink-0 hover:opacity-70 transition-opacity" title={t('Back to Financial Center')}>
               <img src={PV_LOGO_URL} alt="PV" className="w-full h-full object-contain" />
             </button>
 
-            <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden md:block"></div>
-            <div className="hidden md:flex items-center gap-2">
+            <div className="h-10 w-px bg-gray-200 dark:bg-gray-700 hidden md:block flex-shrink-0"></div>
+            <div className="hidden md:flex items-center gap-2 min-w-0">
                 <button
                   onClick={() => setActiveModule('overview')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap self-stretch ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all whitespace-nowrap self-stretch ${
                     activeModule === 'overview'
                       ? 'bg-slate-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
                       : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                   }`}
                 >
-                  <PieChart size={16} className={activeModule === 'overview' ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
+                  <PieChart size={14} className={activeModule === 'overview' ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
                   {t('Executive Overview')}
                 </button>
                 <div className={`self-stretch w-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
-                <div className="flex flex-col gap-1 overflow-x-auto">
-                  <div className="flex items-center gap-1">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-red-500 px-0.5 w-8 flex-shrink-0">COS</span>
+                <div className="flex flex-col gap-0.5 overflow-x-auto min-w-0">
+                  <div className="flex items-center gap-0.5">
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-red-500 px-0.5 w-7 flex-shrink-0">COS</span>
                     {COS_MODULES.map((module) => (
                       <button
                         key={module.id}
                         onClick={() => setActiveModule(module.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
                           activeModule === module.id
                             ? 'bg-slate-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
                             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                         }`}
                       >
-                        <module.icon size={16} className={activeModule === module.id ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
+                        <module.icon size={12} className={activeModule === module.id ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
                         {module.label}
                       </button>
                     ))}
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-orange-500 px-0.5 w-8 flex-shrink-0">G&A</span>
+                  <div className="flex items-center gap-0.5">
+                    <span className="text-[8px] font-bold uppercase tracking-wider text-orange-500 px-0.5 w-7 flex-shrink-0">G&A</span>
                     {SGA_MODULES.map((module) => (
                       <button
                         key={module.id}
                         onClick={() => setActiveModule(module.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium transition-all whitespace-nowrap ${
                           activeModule === module.id
                             ? 'bg-slate-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
                             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                         }`}
                       >
-                        <module.icon size={16} className={activeModule === module.id ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
+                        <module.icon size={12} className={activeModule === module.id ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
                         {module.label}
                       </button>
                     ))}
@@ -111,35 +111,25 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
             </div>
           </div>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2 flex-shrink-0">
             <button
               onClick={toggleLanguage}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-bold transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
-              title={language === 'en' ? t('Switch to Italian') : t('Switch to English')}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-bold transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
             >
-              <span className="text-base">{language === 'en' ? '\u{1F1EE}\u{1F1F9}' : '\u{1F1EC}\u{1F1E7}'}</span>
-              <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">{language === 'en' ? 'IT' : 'EN'}</span>
+              <span className="text-sm">{language === 'en' ? '\u{1F1EE}\u{1F1F9}' : '\u{1F1EC}\u{1F1E7}'}</span>
+              <span className="text-[9px] text-gray-500 dark:text-gray-400 uppercase">{language === 'en' ? 'IT' : 'EN'}</span>
             </button>
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
-              title={isDark ? t('Switch to Light Mode') : t('Switch to Dark Mode')}
+              className="p-1.5 rounded-lg transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
             >
-              {isDark ? <Sun size={16} className="text-yellow-400" /> : <Moon size={16} className="text-gray-500" />}
+              {isDark ? <Sun size={14} className="text-yellow-400" /> : <Moon size={14} className="text-gray-500" />}
             </button>
-            <div className="h-6 w-px bg-gray-200 dark:bg-gray-700"></div>
-            <div className="text-right">
-                <p className="text-xs font-bold text-gray-900 dark:text-white">Pallacanestro Varese</p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">{t('Cost Intelligence')}</p>
-            </div>
-            <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700">
-                <span className="text-xs font-bold text-gray-600 dark:text-gray-300">PV</span>
-            </div>
           </div>
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 py-8 pt-24">
+      <main className="max-w-7xl mx-auto px-4 py-8 pt-20">
         {activeModule === 'overview' ? (
           <div className="space-y-8">
             <div>
