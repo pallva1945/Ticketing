@@ -7,8 +7,8 @@ The PV Financial Center is a React-based application designed for Pallacanestro 
 - **Landing Page** (`FinancialCenter.tsx`): Entry point with 3 cards — Revenue Center, Cost Center, Verticals P&Ls
 - **Revenue Center** (`App.tsx`): The full revenue dashboard with all modules
 - **Cost Center** (`CostCenter.tsx`): Cost dashboard with 7 modules (GameDay, Sponsorship, BOps, Venue Ops, Merchandising, EBP, Varese Basketball) — all placeholders
-- **Verticals P&Ls**: Placeholder (Coming Soon)
-- Hash-based routing: `#revenue` navigates to Revenue Center, `#cost` to Cost Center, empty hash shows landing
+- **Verticals P&Ls** (`VerticalsPnL.tsx`): P&L dashboard with 5 verticals — GameDay, Sponsorship, Merchandising, Venue Ops, Varese Basketball
+- Hash-based routing: `#revenue` navigates to Revenue Center, `#cost` to Cost Center, `#pnl` to Verticals P&Ls, empty hash shows landing
 - PV logo in Revenue Center header navigates back to landing page
 
 ## User Preferences
@@ -58,3 +58,15 @@ The application uses a modern web stack with React 18 and TypeScript for the fro
 - **Sales Channel ("Sell" column)**: Exactly 5 types - ABB, Tix, CORP, MP, VB
 - **Ticket Types (separate column)**: Includes categories like "promotion", "ridotto", "staff" - these are NOT sales channels
 - Sales channel breakdown in CRM analytics uses only the "Sell" column values
+
+## Verticals P&L
+- **Location**: `src/components/VerticalsPnL.tsx`
+- **Period**: H1 2025/26 (Jul–Dec 2025)
+- **5 Verticals**: GameDay, Sponsorship, Merchandising, Venue Ops, Varese Basketball
+- **GameDay Vertical**: Sales = Ticketing (€1,177,289) + BOps (€173,508); COS = GameDay (€206,015) + BOps (€1,691,290)
+- **Sponsorship**: Sales €1,097,254; COS €30,854
+- **Merchandising**: Sales €91,742; COS €81,849
+- **Venue Ops**: Sales €85,486; COS €49,877
+- **Varese Basketball**: Sales €386,020; COS €260,635; dedicated SG&A €148,459
+- **SG&A Allocation**: Total €837,843 = VB dedicated (€148,459) + Shared (€689,384). Shared split: GameDay 60%, Sponsorship 30%, Merchandising 5%, Venue Ops 5%
+- **Features**: Summary KPI cards, net income bar chart, individual vertical P&L cards, consolidated table with margins
