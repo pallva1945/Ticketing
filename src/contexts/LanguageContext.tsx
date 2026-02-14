@@ -340,6 +340,8 @@ const translations: Record<string, Record<Language, string>> = {
   'Total Sales': { en: 'Total Sales', it: 'Vendite Totali' },
   'Gross Profit': { en: 'Gross Profit', it: 'Utile Lordo' },
   'Net Income': { en: 'Net Income', it: 'Utile Netto' },
+  'EBITDA by Vertical': { en: 'EBITDA by Vertical', it: 'EBITDA per Verticale' },
+  'EBITDA Margin': { en: 'EBITDA Margin', it: 'Margine EBITDA' },
   'Gross Margin': { en: 'Gross Margin', it: 'Margine Lordo' },
   'Net Margin': { en: 'Net Margin', it: 'Margine Netto' },
   'Consolidated P&L': { en: 'Consolidated P&L', it: 'P&L Consolidato' },

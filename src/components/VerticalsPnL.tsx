@@ -54,10 +54,10 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
     return VERTICALS.map(v => {
       const sga = v.sgaFixed !== null ? v.sgaFixed : sharedAllocations[sharedIdx++];
       const grossProfit = v.sales - v.cos;
-      const netIncome = grossProfit - sga;
+      const ebitda = grossProfit - sga;
       const grossMargin = v.sales > 0 ? (grossProfit / v.sales) * 100 : 0;
-      const netMargin = v.sales > 0 ? (netIncome / v.sales) * 100 : 0;
-      return { ...v, sga, grossProfit, netIncome, grossMargin, netMargin };
+      const ebitdaMargin = v.sales > 0 ? (ebitda / v.sales) * 100 : 0;
+      return { ...v, sga, grossProfit, ebitda, grossMargin, ebitdaMargin };
     });
   })();
 
@@ -65,12 +65,12 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
   const totalCOS = computed.reduce((s, v) => s + v.cos, 0);
   const totalGrossProfit = totalSales - totalCOS;
   const totalSGA = computed.reduce((s, v) => s + v.sga, 0);
-  const totalNet = totalGrossProfit - totalSGA;
+  const totalEbitda = totalGrossProfit - totalSGA;
 
   const chartData = computed.map(v => ({
     name: v.labelKey === 'Varese Basketball' ? 'VB' : v.labelKey,
     fullName: v.labelKey,
-    netIncome: v.netIncome,
+    ebitda: v.ebitda,
     color: v.color,
   }));
 
@@ -140,14 +140,14 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
             <div className="text-[10px] text-gray-400 mt-1">{(totalSGA / totalSales * 100).toFixed(1)}% {t('of sales')}</div>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
-            <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-1">{t('Net Income')}</div>
-            <div className={`text-xl font-bold ${totalNet >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrencySign(totalNet)}</div>
-            <div className="text-[10px] text-gray-400 mt-1">{(totalNet / totalSales * 100).toFixed(1)}% {t('margin')}</div>
+            <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-1">EBITDA</div>
+            <div className={`text-xl font-bold ${totalEbitda >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrencySign(totalEbitda)}</div>
+            <div className="text-[10px] text-gray-400 mt-1">{(totalEbitda / totalSales * 100).toFixed(1)}% {t('margin')}</div>
           </div>
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5 mb-8">
-          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('Net Income by Vertical')}</h3>
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('EBITDA by Vertical')}</h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} barSize={56}>
@@ -163,16 +163,16 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
                       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-3 shadow-xl text-xs min-w-[160px]">
                         <div className="font-semibold text-gray-800 dark:text-white mb-1">{t(d.fullName)}</div>
                         <div className="flex justify-between">
-                          <span className="text-gray-500">{t('Net Income')}</span>
-                          <span className={`font-medium ${d.netIncome >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrencySign(d.netIncome)}</span>
+                          <span className="text-gray-500">EBITDA</span>
+                          <span className={`font-medium ${d.ebitda >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrencySign(d.ebitda)}</span>
                         </div>
                       </div>
                     );
                   }}
                 />
-                <Bar dataKey="netIncome" radius={[8, 8, 0, 0]}>
+                <Bar dataKey="ebitda" radius={[8, 8, 0, 0]}>
                   {chartData.map((entry, i) => (
-                    <Cell key={i} fill={entry.netIncome >= 0 ? entry.color : '#ef4444'} opacity={entry.netIncome >= 0 ? 1 : 0.6} />
+                    <Cell key={i} fill={entry.ebitda >= 0 ? entry.color : '#ef4444'} opacity={entry.ebitda >= 0 ? 1 : 0.6} />
                   ))}
                 </Bar>
               </BarChart>
@@ -182,7 +182,7 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
           {computed.map(v => {
-            const isProfit = v.netIncome >= 0;
+            const isProfit = v.ebitda >= 0;
             return (
               <div key={v.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
                 <div className="h-1" style={{ backgroundColor: v.color }}></div>
@@ -212,16 +212,16 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
                       <span className="text-sm text-red-500">({formatCurrency(v.sga)})</span>
                     </div>
                     <div className={`flex justify-between items-baseline pt-1.5 border-t-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                      <span className="text-[11px] font-bold text-gray-800 dark:text-white">{t('Net Income')}</span>
-                      <span className={`text-base font-bold ${isProfit ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrencySign(v.netIncome)}</span>
+                      <span className="text-[11px] font-bold text-gray-800 dark:text-white">EBITDA</span>
+                      <span className={`text-base font-bold ${isProfit ? 'text-emerald-600' : 'text-red-600'}`}>{formatCurrencySign(v.ebitda)}</span>
                     </div>
                     <div className="flex justify-between items-baseline">
                       <span className="text-[10px] text-gray-400">{t('Gross Margin')}</span>
                       <span className="text-[10px] font-medium text-gray-500 dark:text-gray-400">{v.grossMargin.toFixed(1)}%</span>
                     </div>
                     <div className="flex justify-between items-baseline">
-                      <span className="text-[10px] text-gray-400">{t('Net Margin')}</span>
-                      <span className={`text-[10px] font-medium ${isProfit ? 'text-emerald-500' : 'text-red-500'}`}>{v.netMargin.toFixed(1)}%</span>
+                      <span className="text-[10px] text-gray-400">{t('EBITDA Margin')}</span>
+                      <span className={`text-[10px] font-medium ${isProfit ? 'text-emerald-500' : 'text-red-500'}`}>{v.ebitdaMargin.toFixed(1)}%</span>
                     </div>
                   </div>
                 </div>
@@ -277,14 +277,14 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
                   <td className="text-right py-2.5 pl-4 font-bold text-red-600 tabular-nums border-l-2 border-gray-200 dark:border-gray-700">({formatCurrency(totalSGA)})</td>
                 </tr>
                 <tr className="bg-gray-50 dark:bg-gray-800/30 border-t-2 border-gray-300 dark:border-gray-600">
-                  <td className="py-3 pr-4 font-bold text-gray-900 dark:text-white">{t('Net Income')}</td>
+                  <td className="py-3 pr-4 font-bold text-gray-900 dark:text-white">EBITDA</td>
                   {computed.map(v => (
-                    <td key={v.id} className={`text-right py-3 px-3 font-bold tabular-nums ${v.netIncome >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {formatCurrencySign(v.netIncome)}
+                    <td key={v.id} className={`text-right py-3 px-3 font-bold tabular-nums ${v.ebitda >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {formatCurrencySign(v.ebitda)}
                     </td>
                   ))}
-                  <td className={`text-right py-3 pl-4 font-bold tabular-nums border-l-2 border-gray-200 dark:border-gray-700 ${totalNet >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                    {formatCurrencySign(totalNet)}
+                  <td className={`text-right py-3 pl-4 font-bold tabular-nums border-l-2 border-gray-200 dark:border-gray-700 ${totalEbitda >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                    {formatCurrencySign(totalEbitda)}
                   </td>
                 </tr>
                 <tr className="border-t border-gray-100 dark:border-gray-800">
@@ -295,11 +295,11 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
                   <td className="text-right py-2 pl-4 text-[10px] text-gray-500 font-medium tabular-nums border-l-2 border-gray-200 dark:border-gray-700">{(totalGrossProfit / totalSales * 100).toFixed(1)}%</td>
                 </tr>
                 <tr>
-                  <td className="py-2 pr-4 text-[10px] text-gray-400 italic">{t('Net Margin')}</td>
+                  <td className="py-2 pr-4 text-[10px] text-gray-400 italic">{t('EBITDA Margin')}</td>
                   {computed.map(v => (
-                    <td key={v.id} className={`text-right py-2 px-3 text-[10px] tabular-nums ${v.netMargin >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{v.netMargin.toFixed(1)}%</td>
+                    <td key={v.id} className={`text-right py-2 px-3 text-[10px] tabular-nums ${v.ebitdaMargin >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{v.ebitdaMargin.toFixed(1)}%</td>
                   ))}
-                  <td className={`text-right py-2 pl-4 text-[10px] font-medium tabular-nums border-l-2 border-gray-200 dark:border-gray-700 ${totalNet >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{(totalNet / totalSales * 100).toFixed(1)}%</td>
+                  <td className={`text-right py-2 pl-4 text-[10px] font-medium tabular-nums border-l-2 border-gray-200 dark:border-gray-700 ${totalEbitda >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>{(totalEbitda / totalSales * 100).toFixed(1)}%</td>
                 </tr>
               </tbody>
             </table>
