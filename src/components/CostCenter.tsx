@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Flag, Activity, Landmark, ShoppingBag, Users, GraduationCap, Construction, Sun, Moon, PieChart, TrendingUp, Briefcase, Building2, Plane, HardHat, Megaphone, Building, Zap, Wrench, DollarSign, Scale, AlertTriangle } from 'lucide-react';
+import { Calendar, Flag, Activity, Landmark, ShoppingBag, Users, GraduationCap, Construction, Sun, Moon, PieChart, TrendingUp, Briefcase, Building2, HardHat } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
@@ -8,14 +8,10 @@ import { GameDayCostDashboard } from './GameDayCostDashboard';
 import { SponsorshipCostDashboard } from './SponsorshipCostDashboard';
 import { VenueOpsCostDashboard } from './VenueOpsCostDashboard';
 import { MerchandisingCostDashboard } from './MerchandisingCostDashboard';
-import { TeamOpsCostDashboard } from './TeamOpsCostDashboard';
 import { LaborCostDashboard } from './LaborCostDashboard';
-import { MarketingCostDashboard } from './MarketingCostDashboard';
-import { OfficeCostDashboard } from './OfficeCostDashboard';
-import { UtilitiesCostDashboard } from './UtilitiesCostDashboard';
-import { FinancialCostDashboard } from './FinancialCostDashboard';
+import { SGACombinedDashboard } from './SGACombinedDashboard';
 
-type CostModule = 'overview' | 'gameday' | 'sponsorship' | 'bops' | 'venue_ops' | 'merchandising' | 'ebp' | 'varese_basketball' | 'sga_team_ops' | 'sga_labor' | 'sga_marketing' | 'sga_office' | 'sga_utilities' | 'sga_maintenance' | 'sga_financial' | 'sga_professional' | 'sga_contingencies';
+type CostModule = 'overview' | 'gameday' | 'sponsorship' | 'bops' | 'venue_ops' | 'merchandising' | 'ebp' | 'varese_basketball' | 'sga_labor' | 'sga_other';
 
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 
@@ -40,13 +36,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
   ];
 
   const SGA_MODULES: { id: CostModule; label: string; icon: any }[] = [
-    { id: 'sga_team_ops', label: t('Team Ops'), icon: Plane },
     { id: 'sga_labor', label: t('Labor'), icon: HardHat },
-    { id: 'sga_marketing', label: t('Marketing'), icon: Megaphone },
-    { id: 'sga_office', label: t('Office'), icon: Building },
-    { id: 'sga_utilities', label: t('Utilities & Maint.'), icon: Zap },
-    { id: 'sga_financial', label: t('Financial'), icon: DollarSign },
-    { id: 'sga_contingencies', label: t('Contingencies'), icon: AlertTriangle },
+    { id: 'sga_other', label: t('SG&A'), icon: Building2 },
   ];
 
   const MODULES: { id: CostModule; label: string; icon: any }[] = [
@@ -288,59 +279,55 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   <div className="text-[10px] text-gray-400">Jul–Dec 2025</div>
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {(() => {
-                  const SGA_CARDS: { id: CostModule; amount: number; detail: string; badge?: string; badgeStyle?: string }[] = [
-                    { id: 'sga_team_ops', amount: 189691, detail: `${t('Travel')}: 46.1% · ${t('Team Registration')}: 25.6%` },
-                    { id: 'sga_labor', amount: Math.round(511145 * 6 / 12) + 53185, detail: `20 ${t('headcount')} · ${t('Internal')} + ${t('External')}` },
-                    { id: 'sga_marketing', amount: 40726, detail: `${t('Advertising')}: 46.8% · 7 ${t('categories')}` },
-                    { id: 'sga_office', amount: 36646, detail: `${t('Software & Subs')}: 55.6% · 7 ${t('categories')}` },
-                    { id: 'sga_utilities', amount: 89117, detail: `${t('Utilities')}: 37.3% · ${t('Maintenance')}: 36.3%` },
-                    { id: 'sga_financial', amount: 8375, detail: `${t('Bank Charges')}: 92.3% · 4 ${t('categories')}` },
-                    { id: 'sga_contingencies', amount: -1, detail: '' },
-                  ];
-                  const sorted = [...SGA_CARDS].sort((a, b) => b.amount - a.amount);
-                  const totalSGA = SGA_CARDS.filter(c => c.amount >= 0).reduce((s, c) => s + c.amount, 0);
-                  return sorted.map(card => {
-                    const module = SGA_MODULES.find(m => m.id === card.id)!;
-                    const Icon = module.icon;
-                    const pctOfSGA = totalSGA > 0 && card.amount > 0 ? ((card.amount / totalSGA) * 100).toFixed(1) : null;
-                    return (
-                      <button
-                        key={card.id}
-                        onClick={() => setActiveModule(card.id)}
-                        className={`text-left p-5 rounded-xl border transition-all hover:shadow-lg cursor-pointer ${
-                          isDark ? 'bg-gray-900 border-gray-800 hover:border-gray-700' : 'bg-white border-gray-200 hover:border-gray-300'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-9 h-9 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
-                            <Icon size={18} className="text-orange-600" />
-                          </div>
-                          <h3 className="font-semibold text-sm text-gray-800 dark:text-white">{module.label}</h3>
-                        </div>
-                        {card.amount >= 0 ? (
-                          <div className="mt-2 space-y-2">
-                            <div className="flex items-baseline gap-2">
-                              <div className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(card.amount)}</div>
-                              {pctOfSGA && <span className="text-xs font-semibold text-orange-500">{pctOfSGA}%</span>}
-                            </div>
-                            <div className="text-[10px] text-gray-400 dark:text-gray-500">{card.detail}</div>
-                            <div className="text-[10px] text-gray-400 dark:text-gray-500">Jul–Dec 2025</div>
-                            <div className={`mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block ${card.badgeStyle || 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'}`}>
-                              {card.badge || t('Monthly Actuals')}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 mt-3">
-                            <Construction size={14} className="text-gray-400" />
-                            <span className="text-xs text-gray-400">{t('Coming Soon')}</span>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  });
-                })()}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  onClick={() => setActiveModule('sga_labor')}
+                  className={`text-left p-5 rounded-xl border transition-all hover:shadow-lg cursor-pointer ${
+                    isDark ? 'bg-gray-900 border-gray-800 hover:border-gray-700' : 'bg-white border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-9 h-9 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
+                      <HardHat size={18} className="text-orange-600" />
+                    </div>
+                    <h3 className="font-semibold text-sm text-gray-800 dark:text-white">{t('Labor')}</h3>
+                  </div>
+                  <div className="mt-2 space-y-2">
+                    <div className="flex items-baseline gap-2">
+                      <div className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(Math.round(511145 * 6 / 12) + 53185)}</div>
+                      <span className="text-xs font-semibold text-orange-500">46.0%</span>
+                    </div>
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500">20 {t('headcount')} · {t('Internal')} + {t('External')}</div>
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500">Jul–Dec 2025</div>
+                    <div className="mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400">
+                      {t('Monthly Actuals')}
+                    </div>
+                  </div>
+                </button>
+                <button
+                  onClick={() => setActiveModule('sga_other')}
+                  className={`text-left p-5 rounded-xl border transition-all hover:shadow-lg cursor-pointer ${
+                    isDark ? 'bg-gray-900 border-gray-800 hover:border-gray-700' : 'bg-white border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-9 h-9 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
+                      <Building2 size={18} className="text-orange-600" />
+                    </div>
+                    <h3 className="font-semibold text-sm text-gray-800 dark:text-white">{t('General & Administrative')}</h3>
+                  </div>
+                  <div className="mt-2 space-y-2">
+                    <div className="flex items-baseline gap-2">
+                      <div className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(189691 + 40726 + 36646 + 89117 + 8375)}</div>
+                      <span className="text-xs font-semibold text-orange-500">54.0%</span>
+                    </div>
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500">{t('Team Ops')} · {t('Marketing')} · {t('Office')} · {t('Utilities & Maint.')} · {t('Financial')}</div>
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500">Jul–Dec 2025</div>
+                    <div className="mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400">
+                      {t('Monthly Actuals')}
+                    </div>
+                  </div>
+                </button>
               </div>
             </div>
           </div>
@@ -354,18 +341,10 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
           <VenueOpsCostDashboard />
         ) : activeModule === 'merchandising' ? (
           <MerchandisingCostDashboard />
-        ) : activeModule === 'sga_team_ops' ? (
-          <TeamOpsCostDashboard />
         ) : activeModule === 'sga_labor' ? (
           <LaborCostDashboard />
-        ) : activeModule === 'sga_marketing' ? (
-          <MarketingCostDashboard />
-        ) : activeModule === 'sga_office' ? (
-          <OfficeCostDashboard />
-        ) : activeModule === 'sga_utilities' ? (
-          <UtilitiesCostDashboard />
-        ) : activeModule === 'sga_financial' ? (
-          <FinancialCostDashboard />
+        ) : activeModule === 'sga_other' ? (
+          <SGACombinedDashboard />
         ) : activeModule === 'ebp' ? (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-3">

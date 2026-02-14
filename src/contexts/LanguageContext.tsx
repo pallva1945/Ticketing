@@ -511,6 +511,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Foreign exchange gains (losses)': { en: 'Foreign exchange gains (losses)', it: 'Utili (perdite) su cambi' },
   'Miscellaneous': { en: 'Miscellaneous', it: 'Varie' },
   'Total Financial': { en: 'Total Financial', it: 'Totale Finanziario' },
+  'General & Administrative': { en: 'General & Administrative', it: 'Generali e Amministrativi' },
   'Annual': { en: 'Annual', it: 'Annuale' },
   'Monthly Cost vs Games': { en: 'Monthly Cost vs Games', it: 'Costo Mensile vs Partite' },
   'Bars = total cost · Labels = number of games': { en: 'Bars = total cost · Labels = number of games', it: 'Barre = costo totale · Etichette = numero partite' },
