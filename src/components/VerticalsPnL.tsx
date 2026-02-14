@@ -23,8 +23,8 @@ interface Vertical {
 }
 
 const VERTICALS: Vertical[] = [
-  { id: 'gameday', labelKey: 'GameDay', color: '#ef4444', sales: 1177289 + 173508, cos: 206015 + 1691290, sgaPct: 0.60, sgaFixed: null },
-  { id: 'sponsorship', labelKey: 'Sponsorship', color: '#f97316', sales: 1097254, cos: 30854, sgaPct: 0.30, sgaFixed: null },
+  { id: 'gameday', labelKey: 'GameDay', color: '#ef4444', sales: 1177289 + 173508, cos: 206015 + 1691290, sgaPct: 0.45, sgaFixed: null },
+  { id: 'sponsorship', labelKey: 'Sponsorship', color: '#f97316', sales: 1097254, cos: 30854, sgaPct: 0.45, sgaFixed: null },
   { id: 'merchandising', labelKey: 'Merchandising', color: '#3b82f6', sales: 91742, cos: 81849, sgaPct: 0.05, sgaFixed: null },
   { id: 'venue_ops', labelKey: 'Venue Ops', color: '#8b5cf6', sales: 85486, cos: 49877, sgaPct: 0.05, sgaFixed: null },
   { id: 'varese_basketball', labelKey: 'Varese Basketball', color: '#10b981', sales: 386020, cos: 260635, sgaPct: null, sgaFixed: VB_SGA },
