@@ -51,28 +51,63 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
 
   return (
     <div className={`min-h-screen ${isDark ? 'dark bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      <div className="fixed top-0 left-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 h-16 z-50 px-6 flex items-center justify-between shadow-sm">
+      <div className="fixed top-0 left-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 z-50 px-6 shadow-sm">
+        <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-4 w-full md:w-auto">
             <button onClick={onBackToLanding} className="w-8 h-8 flex-shrink-0 hover:opacity-70 transition-opacity" title={t('Back to Financial Center')}>
               <img src={PV_LOGO_URL} alt="PV" className="w-full h-full object-contain" />
             </button>
 
             <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden md:block"></div>
-            <div className="hidden md:flex items-center gap-1 overflow-x-auto">
-                {MODULES.map((module) => (
-                    <button
+            <div className="hidden md:flex items-center gap-2">
+                <button
+                  onClick={() => setActiveModule('overview')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap self-stretch ${
+                    activeModule === 'overview'
+                      ? 'bg-slate-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  <PieChart size={16} className={activeModule === 'overview' ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
+                  {t('Executive Overview')}
+                </button>
+                <div className={`self-stretch w-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
+                <div className="flex flex-col gap-1 overflow-x-auto">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-red-500 px-0.5 w-8 flex-shrink-0">COS</span>
+                    {COS_MODULES.map((module) => (
+                      <button
                         key={module.id}
                         onClick={() => setActiveModule(module.id)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                            activeModule === module.id
+                          activeModule === module.id
                             ? 'bg-slate-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
                             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                         }`}
-                    >
+                      >
                         <module.icon size={16} className={activeModule === module.id ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
                         {module.label}
-                    </button>
-                ))}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-orange-500 px-0.5 w-8 flex-shrink-0">G&A</span>
+                    {SGA_MODULES.map((module) => (
+                      <button
+                        key={module.id}
+                        onClick={() => setActiveModule(module.id)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                          activeModule === module.id
+                            ? 'bg-slate-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                        }`}
+                      >
+                        <module.icon size={16} className={activeModule === module.id ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
+                        {module.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
             </div>
           </div>
 
@@ -101,6 +136,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                 <span className="text-xs font-bold text-gray-600 dark:text-gray-300">PV</span>
             </div>
           </div>
+        </div>
       </div>
 
       <main className="max-w-7xl mx-auto px-4 py-8 pt-24">
