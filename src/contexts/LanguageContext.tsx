@@ -517,6 +517,8 @@ const translations: Record<string, Record<Language, string>> = {
   'Season kickoff event': { en: 'Season kickoff event', it: 'Evento di inizio stagione' },
   'Christmas Dinner': { en: 'Christmas Dinner', it: 'Cena di Natale' },
   'Municipality exams': { en: 'Municipality exams', it: 'Esami Comunali' },
+  'Cost Intelligence': { en: 'Cost Intelligence', it: 'Intelligence Costi' },
+  'Switch to English': { en: 'Switch to English', it: 'Passa a Inglese' },
   'Annual': { en: 'Annual', it: 'Annuale' },
   'Monthly Cost vs Games': { en: 'Monthly Cost vs Games', it: 'Costo Mensile vs Partite' },
   'Bars = total cost · Labels = number of games': { en: 'Bars = total cost · Labels = number of games', it: 'Barre = costo totale · Etichette = numero partite' },

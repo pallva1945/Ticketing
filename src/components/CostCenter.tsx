@@ -37,7 +37,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
 
   const SGA_MODULES: { id: CostModule; label: string; icon: any }[] = [
     { id: 'sga_labor', label: t('Labor'), icon: HardHat },
-    { id: 'sga_other', label: t('SG&A'), icon: Building2 },
+    { id: 'sga_other', label: t('General & Administrative'), icon: Building2 },
   ];
 
   const MODULES: { id: CostModule; label: string; icon: any }[] = [
@@ -51,138 +51,59 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
 
   return (
     <div className={`min-h-screen ${isDark ? 'dark bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      <header className={`sticky top-0 z-30 ${isDark ? 'bg-gray-900/95 border-gray-800' : 'bg-white/95 border-gray-200'} border-b backdrop-blur-md`}>
-        <div className="flex items-center justify-between px-4 py-3">
+      <div className="fixed top-0 left-0 w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 h-16 z-50 px-6 flex items-center justify-between shadow-sm">
           <div className="flex items-center gap-4 w-full md:w-auto">
             <button onClick={onBackToLanding} className="w-8 h-8 flex-shrink-0 hover:opacity-70 transition-opacity" title={t('Back to Financial Center')}>
               <img src={PV_LOGO_URL} alt="PV" className="w-full h-full object-contain" />
             </button>
 
             <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 hidden md:block"></div>
-            <div className="hidden md:flex items-center gap-2">
-                <button
-                  onClick={() => setActiveModule('overview')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap self-stretch ${
-                    activeModule === 'overview'
-                      ? 'bg-slate-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
-                      : isDark
-                        ? 'text-gray-400 hover:text-white hover:bg-gray-800'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  <PieChart size={16} className={activeModule === 'overview' ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
-                  {t('Overview')}
-                </button>
-                <div className={`self-stretch w-px ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
-                <div className="flex flex-col gap-1 overflow-x-auto">
-                  <div className="flex items-center gap-1">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-red-500 px-0.5 w-8 flex-shrink-0">COS</span>
-                    {COS_MODULES.map((module) => (
-                      <button
+            <div className="hidden md:flex items-center gap-1 overflow-x-auto">
+                {MODULES.map((module) => (
+                    <button
                         key={module.id}
                         onClick={() => setActiveModule(module.id)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                          activeModule === module.id
-                            ? 'bg-red-600 text-white shadow-md'
-                            : isDark
-                              ? 'text-gray-400 hover:text-white hover:bg-gray-800'
-                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                            activeModule === module.id
+                            ? 'bg-slate-900 dark:bg-white text-white dark:text-gray-900 shadow-md'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
                         }`}
-                      >
-                        <module.icon size={16} className={activeModule === module.id ? 'text-white' : 'text-gray-400'} />
+                    >
+                        <module.icon size={16} className={activeModule === module.id ? 'text-white dark:text-gray-900' : 'text-gray-400'} />
                         {module.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-orange-500 px-0.5 w-8 flex-shrink-0">SG&A</span>
-                    {SGA_MODULES.map((module) => (
-                      <button
-                        key={module.id}
-                        onClick={() => setActiveModule(module.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
-                          activeModule === module.id
-                            ? 'bg-orange-600 text-white shadow-md'
-                            : isDark
-                              ? 'text-gray-400 hover:text-white hover:bg-gray-800'
-                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                        }`}
-                      >
-                        <module.icon size={16} className={activeModule === module.id ? 'text-white' : 'text-gray-400'} />
-                        {module.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                    </button>
+                ))}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-3">
             <button
               onClick={toggleLanguage}
-              className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-bold transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
+              title={language === 'en' ? t('Switch to Italian') : t('Switch to English')}
             >
-              {language === 'en' ? '\u{1F1EE}\u{1F1F9} IT' : '\u{1F1EC}\u{1F1E7} EN'}
+              <span className="text-base">{language === 'en' ? '\u{1F1EE}\u{1F1F9}' : '\u{1F1EC}\u{1F1E7}'}</span>
+              <span className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">{language === 'en' ? 'IT' : 'EN'}</span>
             </button>
             <button
               onClick={toggleTheme}
-              className={`p-2 rounded-lg transition-colors ${isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              className="p-2 rounded-lg transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
+              title={isDark ? t('Switch to Light Mode') : t('Switch to Dark Mode')}
             >
-              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+              {isDark ? <Sun size={16} className="text-yellow-400" /> : <Moon size={16} className="text-gray-500" />}
             </button>
+            <div className="h-6 w-px bg-gray-200 dark:bg-gray-700"></div>
+            <div className="text-right">
+                <p className="text-xs font-bold text-gray-900 dark:text-white">Pallacanestro Varese</p>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">{t('Cost Intelligence')}</p>
+            </div>
+            <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                <span className="text-xs font-bold text-gray-600 dark:text-gray-300">PV</span>
+            </div>
           </div>
-        </div>
+      </div>
 
-        <div className="md:hidden px-4 pb-2 space-y-1.5">
-          <div className="flex items-center gap-1 overflow-x-auto">
-            <button
-              onClick={() => setActiveModule('overview')}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap ${
-                activeModule === 'overview'
-                  ? 'bg-red-600 text-white'
-                  : isDark ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              <PieChart size={12} />
-              {t('Overview')}
-            </button>
-            <span className="text-[8px] font-bold uppercase tracking-wider text-red-500 px-0.5">COS</span>
-            {COS_MODULES.map((module) => (
-              <button
-                key={module.id}
-                onClick={() => setActiveModule(module.id)}
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap ${
-                  activeModule === module.id
-                    ? 'bg-red-600 text-white'
-                    : isDark ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <module.icon size={12} />
-                {module.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-1 overflow-x-auto">
-            <span className="text-[8px] font-bold uppercase tracking-wider text-orange-500 px-0.5 ml-1">SG&A</span>
-            {SGA_MODULES.map((module) => (
-              <button
-                key={module.id}
-                onClick={() => setActiveModule(module.id)}
-                className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap ${
-                  activeModule === module.id
-                    ? 'bg-orange-600 text-white'
-                    : isDark ? 'text-gray-400 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <module.icon size={12} />
-                {module.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-8 pt-24">
         {activeModule === 'overview' ? (
           <div className="space-y-8">
             <div>
