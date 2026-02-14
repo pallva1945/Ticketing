@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { FinancialCenter } from './components/FinancialCenter';
 import { CostCenter } from './components/CostCenter';
+import { VerticalsPnL } from './components/VerticalsPnL';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 
@@ -28,6 +29,10 @@ const Root: React.FC = () => {
 
   if (currentView === 'cost') {
     return <CostCenter onBackToLanding={handleBack} />;
+  }
+
+  if (currentView === 'pnl') {
+    return <VerticalsPnL onBackToLanding={handleBack} />;
   }
 
   return <FinancialCenter onNavigate={handleNavigate} />;

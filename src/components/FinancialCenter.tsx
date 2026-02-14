@@ -42,7 +42,7 @@ export const FinancialCenter: React.FC<FinancialCenterProps> = ({ onNavigate }) 
       color: 'from-blue-500 to-indigo-600',
       iconBg: 'bg-blue-100 dark:bg-blue-900/30',
       iconColor: 'text-blue-600',
-      available: false,
+      available: true,
     },
   ];
 
