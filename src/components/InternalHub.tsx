@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -14,39 +14,88 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
   const { language, toggleLanguage, t } = useLanguage();
   const isDark = theme === 'dark';
 
-  const sectionRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [visible, setVisible] = useState<boolean[]>([false, false, false]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState<boolean[]>([true, false, false]);
   const [activeNav, setActiveNav] = useState(0);
+  const isScrolling = useRef(false);
+  const currentSection = useRef(0);
 
-  useEffect(() => {
-    const observers = sectionRefs.current.map((ref, i) => {
-      if (!ref) return null;
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setVisible(prev => { const n = [...prev]; n[i] = true; return n; });
-            setActiveNav(i);
-          }
-        },
-        { threshold: 0.3 }
-      );
-      observer.observe(ref);
-      return observer;
-    });
-    return () => observers.forEach(o => o?.disconnect());
+  const goToSection = useCallback((index: number) => {
+    if (isScrolling.current || index < 0 || index > 2) return;
+    isScrolling.current = true;
+    currentSection.current = index;
+    setActiveNav(index);
+    setVisible(prev => { const n = [...prev]; n[index] = true; return n; });
+
+    const container = containerRef.current;
+    if (!container) return;
+    const target = index * window.innerHeight;
+    container.scrollTo({ top: target, behavior: 'smooth' });
+
+    setTimeout(() => { isScrolling.current = false; }, 800);
   }, []);
 
-  const scrollTo = (i: number) => {
-    const el = sectionRefs.current[i];
-    if (!el) return;
-    const y = el.getBoundingClientRect().top + window.scrollY;
-    window.scrollTo({ top: y, behavior: 'smooth' });
-  };
-
   useEffect(() => {
-    document.documentElement.style.scrollBehavior = 'smooth';
-    return () => { document.documentElement.style.scrollBehavior = ''; };
-  }, []);
+    const container = containerRef.current;
+    if (!container) return;
+
+    let accumulated = 0;
+    const THRESHOLD = 50;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (isScrolling.current) return;
+
+      accumulated += e.deltaY;
+
+      if (Math.abs(accumulated) >= THRESHOLD) {
+        if (accumulated > 0 && currentSection.current < 2) {
+          goToSection(currentSection.current + 1);
+        } else if (accumulated < 0 && currentSection.current > 0) {
+          goToSection(currentSection.current - 1);
+        }
+        accumulated = 0;
+      }
+    };
+
+    let touchStartY = 0;
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (isScrolling.current) return;
+      const delta = touchStartY - e.changedTouches[0].clientY;
+      if (Math.abs(delta) > 40) {
+        if (delta > 0 && currentSection.current < 2) {
+          goToSection(currentSection.current + 1);
+        } else if (delta < 0 && currentSection.current > 0) {
+          goToSection(currentSection.current - 1);
+        }
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+        e.preventDefault();
+        goToSection(currentSection.current + 1);
+      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+        e.preventDefault();
+        goToSection(currentSection.current - 1);
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchend', handleTouchEnd, { passive: true });
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [goToSection]);
 
   const navItems = [
     t('Vision, Mission & Values'),
@@ -55,14 +104,14 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
   ];
 
   return (
-    <div className={`relative ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#fafafa]'}`} style={{ scrollBehavior: 'smooth' }}>
+    <div
+      ref={containerRef}
+      className={`h-screen overflow-hidden relative ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#fafafa]'}`}
+    >
       <style>{`
-        html { scroll-behavior: smooth; }
-        @keyframes fade-up { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes line-grow { from { width: 0; } to { width: 60px; } }
-        @keyframes bounce-subtle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
-        .fade-up { animation: fade-up 1s ease-out forwards; }
-        .line-grow { animation: line-grow 0.8s ease-out forwards; }
+        @keyframes bounce-subtle { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(6px); } }
+        .line-grow { animation: line-grow 0.8s ease-out 0.3s forwards; width: 0; }
         .bounce-arrow { animation: bounce-subtle 2s ease-in-out infinite; }
       `}</style>
 
@@ -79,8 +128,8 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               {navItems.map((label, i) => (
                 <button
                   key={i}
-                  onClick={() => scrollTo(i)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] tracking-[0.15em] uppercase font-medium transition-all ${
+                  onClick={() => goToSection(i)}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] tracking-[0.15em] uppercase font-medium transition-all duration-300 ${
                     activeNav === i
                       ? isDark ? 'text-white bg-gray-800' : 'text-gray-900 bg-gray-100'
                       : isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
@@ -102,11 +151,22 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
         </div>
       </nav>
 
-      <div
-        ref={el => { sectionRefs.current[0] = el; }}
-        className="min-h-screen flex flex-col items-center justify-center px-6 relative"
-      >
-        <div className={`transition-all duration-[1.2s] ease-out ${visible[0] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <div className={`fixed right-6 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-3`}>
+        {[0, 1, 2].map(i => (
+          <button
+            key={i}
+            onClick={() => goToSection(i)}
+            className={`w-2 h-2 rounded-full transition-all duration-500 ${
+              activeNav === i
+                ? isDark ? 'bg-white scale-125' : 'bg-gray-900 scale-125'
+                : isDark ? 'bg-gray-700 hover:bg-gray-500' : 'bg-gray-300 hover:bg-gray-400'
+            }`}
+          />
+        ))}
+      </div>
+
+      <div className="h-screen flex flex-col items-center justify-center px-6 relative">
+        <div className={`transition-all duration-[1s] ease-out ${visible[0] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="max-w-2xl mx-auto text-center">
             <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-10 ${
               isDark ? 'bg-amber-900/15 text-amber-500 border border-amber-800/20' : 'bg-amber-50 text-amber-600 border border-amber-100'
@@ -137,20 +197,15 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
         </div>
 
         <button
-          onClick={() => scrollTo(1)}
-          className={`absolute bottom-12 left-1/2 -translate-x-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
+          onClick={() => goToSection(1)}
+          className={`absolute bottom-12 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
         >
           <ChevronDown size={20} />
         </button>
       </div>
 
-      <div className={`w-full h-px ${isDark ? 'bg-gradient-to-r from-transparent via-gray-800 to-transparent' : 'bg-gradient-to-r from-transparent via-gray-200 to-transparent'}`}></div>
-
-      <div
-        ref={el => { sectionRefs.current[1] = el; }}
-        className="min-h-screen flex flex-col items-center justify-center px-6 relative"
-      >
-        <div className={`transition-all duration-[1.2s] ease-out ${visible[1] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <div className="h-screen flex flex-col items-center justify-center px-6 relative">
+        <div className={`transition-all duration-[1s] ease-out ${visible[1] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="max-w-2xl mx-auto text-center">
             <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-10 ${
               isDark ? 'bg-blue-900/15 text-blue-400 border border-blue-800/20' : 'bg-blue-50 text-blue-600 border border-blue-100'
@@ -181,20 +236,15 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
         </div>
 
         <button
-          onClick={() => scrollTo(2)}
-          className={`absolute bottom-12 left-1/2 -translate-x-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
+          onClick={() => goToSection(2)}
+          className={`absolute bottom-12 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
         >
           <ChevronDown size={20} />
         </button>
       </div>
 
-      <div className={`w-full h-px ${isDark ? 'bg-gradient-to-r from-transparent via-gray-800 to-transparent' : 'bg-gradient-to-r from-transparent via-gray-200 to-transparent'}`}></div>
-
-      <div
-        ref={el => { sectionRefs.current[2] = el; }}
-        className="min-h-screen flex flex-col items-center justify-center px-6 relative"
-      >
-        <div className={`transition-all duration-[1.2s] ease-out ${visible[2] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+      <div className="h-screen flex flex-col items-center justify-center px-6 relative">
+        <div className={`transition-all duration-[1s] ease-out ${visible[2] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="max-w-3xl mx-auto text-center mb-16">
             <p className={`text-[10px] tracking-[0.3em] uppercase font-medium mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
               {t('Departments')}
