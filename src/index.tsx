@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { WelcomePage } from './components/WelcomePage';
 import { FinancialCenter } from './components/FinancialCenter';
 import { CostCenter } from './components/CostCenter';
 import { VerticalsPnL } from './components/VerticalsPnL';
@@ -10,7 +11,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 const Root: React.FC = () => {
   const [currentView, setCurrentView] = useState<string>(() => {
     const hash = window.location.hash.replace('#', '');
-    return hash || 'landing';
+    return hash || 'welcome';
   });
 
   const handleNavigate = (section: string) => {
@@ -20,6 +21,11 @@ const Root: React.FC = () => {
 
   const handleBack = () => {
     setCurrentView('landing');
+    window.location.hash = 'landing';
+  };
+
+  const handleBackToWelcome = () => {
+    setCurrentView('welcome');
     window.location.hash = '';
   };
 
@@ -35,7 +41,11 @@ const Root: React.FC = () => {
     return <VerticalsPnL onBackToLanding={handleBack} />;
   }
 
-  return <FinancialCenter onNavigate={handleNavigate} />;
+  if (currentView === 'landing') {
+    return <FinancialCenter onNavigate={handleNavigate} />;
+  }
+
+  return <WelcomePage onEnter={() => handleNavigate('landing')} />;
 };
 
 const rootElement = document.getElementById('root');
