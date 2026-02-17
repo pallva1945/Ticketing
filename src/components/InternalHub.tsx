@@ -37,8 +37,16 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
   }, []);
 
   const scrollTo = (i: number) => {
-    sectionRefs.current[i]?.scrollIntoView({ behavior: 'smooth' });
+    const el = sectionRefs.current[i];
+    if (!el) return;
+    const y = el.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top: y, behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    document.documentElement.style.scrollBehavior = 'smooth';
+    return () => { document.documentElement.style.scrollBehavior = ''; };
+  }, []);
 
   const navItems = [
     t('Vision, Mission & Values'),
@@ -47,8 +55,9 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
   ];
 
   return (
-    <div className={`relative ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#fafafa]'}`}>
+    <div className={`relative ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#fafafa]'}`} style={{ scrollBehavior: 'smooth' }}>
       <style>{`
+        html { scroll-behavior: smooth; }
         @keyframes fade-up { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes line-grow { from { width: 0; } to { width: 60px; } }
         @keyframes bounce-subtle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
