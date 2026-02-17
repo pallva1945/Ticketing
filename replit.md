@@ -4,12 +4,14 @@
 The PV Financial Center is a React-based application designed for Pallacanestro Varese. It serves as the top-level hub with three sections: Revenue Center (active), Cost Center (placeholder), and Verticals P&Ls (placeholder). The Revenue Center provides an executive overview, detailed ticketing analytics, game day data, and various business operations metrics. The project aims to offer a comprehensive, real-time data visualization tool for strategic decision-making, improving operational efficiency, and enhancing fan engagement. It consolidates diverse data sources into a single, intuitive platform to support business growth and market potential within the sports industry.
 
 ## Navigation Architecture
-- **Landing Page** (`FinancialCenter.tsx`): Entry point with 3 cards — Revenue Center, Cost Center, Verticals P&Ls
+- **Welcome Page** (`WelcomePage.tsx`): Animated intro with logo fade, title, and Enter button
+- **Internal Hub** (`InternalHub.tsx`): Full-page scroll experience with 3 sections — Vision/Mission/Values, About Us, then Corp + BOps (Departments). Sections reveal on scroll with IntersectionObserver. Sticky nav with section indicators.
+- **Financial Center** (`FinancialCenter.tsx`): Entry point for Corp with 3 cards — Revenue Center, Cost Center, Verticals P&Ls
 - **Revenue Center** (`App.tsx`): The full revenue dashboard with all modules
 - **Cost Center** (`CostCenter.tsx`): Cost dashboard with 7 modules (GameDay, Sponsorship, BOps, Venue Ops, Merchandising, EBP, Varese Basketball) — all placeholders
 - **Verticals P&Ls** (`VerticalsPnL.tsx`): P&L dashboard with 5 verticals — GameDay, Sponsorship, Merchandising, Venue Ops, Varese Basketball
-- Hash-based routing: `#revenue` navigates to Revenue Center, `#cost` to Cost Center, `#pnl` to Verticals P&Ls, empty hash shows landing
-- PV logo in Revenue Center header navigates back to landing page
+- Hash-based routing: Welcome (empty/#welcome) → Hub (#hub) → Financial Center (#landing) → Revenue (#revenue) / Cost (#cost) / P&L (#pnl)
+- PV logo navigates back one level: Revenue→Financial Center, Financial Center→Hub, Hub→Welcome
 
 ## User Preferences
 Not specified.

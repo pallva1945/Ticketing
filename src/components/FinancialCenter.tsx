@@ -70,7 +70,9 @@ export const FinancialCenter: React.FC<FinancialCenterProps> = ({ onNavigate }) 
       <div className="max-w-5xl mx-auto px-4 py-16 sm:py-24">
         <div className="text-center mb-16">
           <div className="flex items-center justify-center mb-6">
-            <img src={PV_LOGO_URL} alt="Pallacanestro Varese" className="w-20 h-20 object-contain" />
+            <button onClick={() => onNavigate('hub')} className="hover:opacity-70 transition-opacity">
+              <img src={PV_LOGO_URL} alt="Pallacanestro Varese" className="w-20 h-20 object-contain" />
+            </button>
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
             PV Financial Center
