@@ -19,10 +19,6 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onEnter }) => {
     return () => clearTimeout(timer);
   }, []);
 
-  const now = new Date();
-  const hour = now.getHours();
-  const greeting = hour < 12 ? t('Good morning') : hour < 18 ? t('Good afternoon') : t('Good evening');
-
   return (
     <div className={`min-h-screen relative overflow-hidden ${isDark ? 'dark bg-gray-950' : 'bg-white'}`}>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -67,10 +63,10 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onEnter }) => {
             </div>
 
             <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {greeting}
+              Pallacanestro Varese
             </h1>
             <p className={`text-lg sm:text-xl max-w-lg leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              {t('Welcome to the Pallacanestro Varese internal operations hub')}
+              {t('Operations & Business Intelligence Hub')}
             </p>
           </div>
         </div>

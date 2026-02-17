@@ -358,6 +358,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Good evening': { en: 'Good evening', it: 'Buona sera' },
   'Welcome to the Pallacanestro Varese internal operations hub': { en: 'Welcome to the Pallacanestro Varese internal operations hub', it: 'Benvenuto nel portale operativo interno di Pallacanestro Varese' },
   'Internal Platform': { en: 'Internal Platform', it: 'Piattaforma Interna' },
+  'Operations & Business Intelligence Hub': { en: 'Operations & Business Intelligence Hub', it: 'Hub Operativo & Business Intelligence' },
   'Revenue, Costs & Business Intelligence': { en: 'Revenue, Costs & Business Intelligence', it: 'Ricavi, Costi & Business Intelligence' },
   'Comprehensive financial intelligence for Pallacanestro Varese': { en: 'Comprehensive financial intelligence for Pallacanestro Varese', it: 'Intelligence finanziaria completa per Pallacanestro Varese' },
   'Back to Financial Center': { en: 'Back to Financial Center', it: 'Torna al Centro Finanziario' },
