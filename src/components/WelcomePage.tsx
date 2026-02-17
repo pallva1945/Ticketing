@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart3, ArrowRight, Sun, Moon, Shield } from 'lucide-react';
+import { ArrowRight, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
@@ -12,87 +12,94 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onEnter }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
   const isDark = theme === 'dark';
-  const [mounted, setMounted] = useState(false);
+  const [phase, setPhase] = useState(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 100);
-    return () => clearTimeout(timer);
+    const t1 = setTimeout(() => setPhase(1), 200);
+    const t2 = setTimeout(() => setPhase(2), 1200);
+    const t3 = setTimeout(() => setPhase(3), 2000);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
   return (
-    <div className={`min-h-screen relative overflow-hidden ${isDark ? 'dark bg-gray-950' : 'bg-white'}`}>
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className={`absolute -top-40 -right-40 w-96 h-96 rounded-full blur-3xl ${isDark ? 'bg-red-900/10' : 'bg-red-50'}`}></div>
-        <div className={`absolute -bottom-40 -left-40 w-96 h-96 rounded-full blur-3xl ${isDark ? 'bg-orange-900/10' : 'bg-orange-50'}`}></div>
-        <div className={`absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full blur-3xl ${isDark ? 'bg-red-950/5' : 'bg-red-50/50'}`}></div>
+    <div className={`min-h-screen relative overflow-hidden ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#fafafa]'}`}>
+      <style>{`
+        @keyframes subtle-pulse {
+          0%, 100% { opacity: 0.4; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.05); }
+        }
+        @keyframes line-draw {
+          from { width: 0; }
+          to { width: 80px; }
+        }
+        .animate-line { animation: line-draw 1s ease-out 2.2s forwards; width: 0; }
+        .animate-glow { animation: subtle-pulse 4s ease-in-out infinite; }
+      `}</style>
+
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full animate-glow ${
+          isDark ? 'bg-red-950/20' : 'bg-red-50/80'
+        }`} style={{ filter: 'blur(120px)' }}></div>
       </div>
 
-      <div className="absolute top-5 right-5 flex items-center gap-2 z-10">
+      <div className={`absolute top-0 left-0 w-full h-px ${isDark ? 'bg-gradient-to-r from-transparent via-red-800/40 to-transparent' : 'bg-gradient-to-r from-transparent via-red-200 to-transparent'}`}></div>
+
+      <div className="absolute top-5 right-5 flex items-center gap-2 z-20">
         <button
           onClick={toggleLanguage}
-          className={`px-3 py-2 rounded-xl text-sm font-medium transition-all border ${
-            isDark ? 'bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-800' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-          } shadow-sm`}
+          className={`px-3 py-2 rounded-lg text-xs font-medium tracking-wider uppercase transition-all ${
+            isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+          }`}
         >
-          {language === 'en' ? '\u{1F1EE}\u{1F1F9} IT' : '\u{1F1EC}\u{1F1E7} EN'}
+          {language === 'en' ? 'IT' : 'EN'}
         </button>
         <button
           onClick={toggleTheme}
-          className={`p-2.5 rounded-xl transition-all border ${
-            isDark ? 'bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-800' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-          } shadow-sm`}
+          className={`p-2 rounded-lg transition-all ${
+            isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+          }`}
         >
-          {isDark ? <Sun size={16} className="text-yellow-400" /> : <Moon size={16} className="text-gray-500" />}
+          {isDark ? <Sun size={14} /> : <Moon size={14} />}
         </button>
       </div>
 
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6">
-        <div className={`transition-all duration-1000 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-          <div className="flex flex-col items-center text-center mb-12">
-            <div className={`w-28 h-28 rounded-3xl flex items-center justify-center mb-8 shadow-lg ${
-              isDark ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-100'
-            }`}>
-              <img src={PV_LOGO_URL} alt="Pallacanestro Varese" className="w-20 h-20 object-contain" />
-            </div>
+        <div className="flex flex-col items-center text-center">
+          <div className={`transition-all duration-[1.5s] ease-out ${phase >= 1 ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
+            <img src={PV_LOGO_URL} alt="Pallacanestro Varese" className="w-24 h-24 sm:w-28 sm:h-28 object-contain mb-10" />
+          </div>
 
-            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium mb-6 ${
-              isDark ? 'bg-red-900/20 text-red-400 border border-red-800/30' : 'bg-red-50 text-red-600 border border-red-100'
-            }`}>
-              <Shield size={12} />
-              {t('Internal Platform')}
-            </div>
-
-            <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <div className={`transition-all duration-[1.2s] ease-out ${phase >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-light tracking-[0.15em] uppercase mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
               Pallacanestro Varese
             </h1>
-            <p className={`text-lg sm:text-xl max-w-lg leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              {t('Operations & Business Intelligence Hub')}
+            <div className="flex justify-center mb-6">
+              <div className={`h-px animate-line ${isDark ? 'bg-red-700' : 'bg-red-400'}`}></div>
+            </div>
+            <p className={`text-sm sm:text-base tracking-[0.3em] uppercase font-light ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              {t('Operations & Business Intelligence')}
             </p>
+          </div>
+
+          <div className={`mt-16 transition-all duration-1000 ease-out ${phase >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <button
+              onClick={onEnter}
+              className={`group relative flex items-center gap-3 px-10 py-4 rounded-full transition-all duration-500 tracking-[0.2em] uppercase text-xs font-medium ${
+                isDark
+                  ? 'border border-gray-700 text-gray-300 hover:border-red-800 hover:text-white hover:shadow-lg hover:shadow-red-950/20'
+                  : 'border border-gray-300 text-gray-600 hover:border-red-400 hover:text-gray-900 hover:shadow-lg hover:shadow-red-100/50'
+              }`}
+            >
+              {t('Enter')}
+              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-300" />
+            </button>
           </div>
         </div>
 
-        <div className={`transition-all duration-1000 delay-300 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-          <button
-            onClick={onEnter}
-            className="group relative flex items-center gap-4 px-8 py-5 rounded-2xl transition-all duration-300 hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white shadow-lg shadow-red-600/20"
-          >
-            <div className="w-12 h-12 rounded-xl bg-white/15 flex items-center justify-center">
-              <BarChart3 size={24} />
-            </div>
-            <div className="text-left">
-              <div className="font-bold text-lg">PV Financial Center</div>
-              <div className="text-sm text-red-100">{t('Revenue, Costs & Business Intelligence')}</div>
-            </div>
-            <ArrowRight size={20} className="ml-4 group-hover:translate-x-1 transition-transform text-red-200" />
-          </button>
-        </div>
-
-        <div className={`transition-all duration-1000 delay-500 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
-          <div className={`mt-20 flex items-center gap-6 text-xs ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
-            <span>Pallacanestro Varese</span>
-            <span className="w-1 h-1 rounded-full bg-current"></span>
+        <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-all duration-1000 ${phase >= 3 ? 'opacity-100' : 'opacity-0'}`}>
+          <div className={`flex items-center gap-4 text-[10px] tracking-[0.25em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
             <span>{t('Season')} 2025/26</span>
-            <span className="w-1 h-1 rounded-full bg-current"></span>
+            <span className="w-px h-3 bg-current"></span>
             <span>pallva.it</span>
           </div>
         </div>
