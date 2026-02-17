@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { WelcomePage } from './components/WelcomePage';
+import { InternalHub } from './components/InternalHub';
 import { FinancialCenter } from './components/FinancialCenter';
 import { CostCenter } from './components/CostCenter';
 import { VerticalsPnL } from './components/VerticalsPnL';
@@ -19,7 +20,12 @@ const Root: React.FC = () => {
     window.location.hash = section;
   };
 
-  const handleBack = () => {
+  const handleBackToHub = () => {
+    setCurrentView('hub');
+    window.location.hash = 'hub';
+  };
+
+  const handleBackToFinancial = () => {
     setCurrentView('landing');
     window.location.hash = 'landing';
   };
@@ -30,22 +36,26 @@ const Root: React.FC = () => {
   };
 
   if (currentView === 'revenue') {
-    return <App onBackToLanding={handleBack} />;
+    return <App onBackToLanding={handleBackToFinancial} />;
   }
 
   if (currentView === 'cost') {
-    return <CostCenter onBackToLanding={handleBack} />;
+    return <CostCenter onBackToLanding={handleBackToFinancial} />;
   }
 
   if (currentView === 'pnl') {
-    return <VerticalsPnL onBackToLanding={handleBack} />;
+    return <VerticalsPnL onBackToLanding={handleBackToFinancial} />;
   }
 
   if (currentView === 'landing') {
     return <FinancialCenter onNavigate={handleNavigate} />;
   }
 
-  return <WelcomePage onEnter={() => handleNavigate('landing')} />;
+  if (currentView === 'hub') {
+    return <InternalHub onNavigate={handleNavigate} onBackToWelcome={handleBackToWelcome} />;
+  }
+
+  return <WelcomePage onEnter={() => handleNavigate('hub')} />;
 };
 
 const rootElement = document.getElementById('root');
