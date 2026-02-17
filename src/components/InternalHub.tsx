@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown } from 'lucide-react';
+import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, UserCircle2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
+
+const TOTAL_SECTIONS = 4;
 
 interface InternalHubProps {
   onNavigate: (section: string) => void;
@@ -15,7 +17,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
   const isDark = theme === 'dark';
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState<boolean[]>([true, false, false]);
+  const [visible, setVisible] = useState<boolean[]>([true, false, false, false]);
   const [activeNav, setActiveNav] = useState(0);
   const isScrolling = useRef(false);
   const currentSection = useRef(0);
@@ -43,7 +45,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
   }, []);
 
   const goToSection = useCallback((index: number) => {
-    if (isScrolling.current || index < 0 || index > 2) return;
+    if (isScrolling.current || index < 0 || index > TOTAL_SECTIONS - 1) return;
     isScrolling.current = true;
     currentSection.current = index;
     setActiveNav(index);
@@ -69,7 +71,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       accumulated += e.deltaY;
 
       if (Math.abs(accumulated) >= THRESHOLD) {
-        if (accumulated > 0 && currentSection.current < 2) {
+        if (accumulated > 0 && currentSection.current < TOTAL_SECTIONS - 1) {
           goToSection(currentSection.current + 1);
         } else if (accumulated < 0 && currentSection.current > 0) {
           goToSection(currentSection.current - 1);
@@ -86,7 +88,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       if (isScrolling.current) return;
       const delta = touchStartY - e.changedTouches[0].clientY;
       if (Math.abs(delta) > 40) {
-        if (delta > 0 && currentSection.current < 2) {
+        if (delta > 0 && currentSection.current < TOTAL_SECTIONS - 1) {
           goToSection(currentSection.current + 1);
         } else if (delta < 0 && currentSection.current > 0) {
           goToSection(currentSection.current - 1);
@@ -120,6 +122,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
   const navItems = [
     t('Vision, Mission & Values'),
     t('About Us'),
+    t('Our Team'),
     t('Departments'),
   ];
 
@@ -172,7 +175,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       </nav>
 
       <div className={`fixed right-6 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-3`}>
-        {[0, 1, 2].map(i => (
+        {Array.from({ length: TOTAL_SECTIONS }).map((_, i) => (
           <button
             key={i}
             onClick={() => goToSection(i)}
@@ -185,6 +188,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
         ))}
       </div>
 
+      {/* Section 1: Vision, Mission & Values */}
       <div className="h-screen flex flex-col items-center justify-center px-6 relative">
         <div className={`transition-all duration-[1s] ease-out ${visible[0] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="max-w-2xl mx-auto text-center">
@@ -224,6 +228,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
         </button>
       </div>
 
+      {/* Section 2: About Us */}
       <div className="h-screen flex flex-col items-center justify-center px-6 relative">
         <div className={`transition-all duration-[1s] ease-out ${visible[1] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="max-w-2xl mx-auto text-center">
@@ -263,8 +268,49 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
         </button>
       </div>
 
+      {/* Section 3: Our Team */}
       <div className="h-screen flex flex-col items-center justify-center px-6 relative">
         <div className={`transition-all duration-[1s] ease-out ${visible[2] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="max-w-2xl mx-auto text-center">
+            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-10 ${
+              isDark ? 'bg-purple-900/15 text-purple-400 border border-purple-800/20' : 'bg-purple-50 text-purple-600 border border-purple-100'
+            }`}>
+              <UserCircle2 size={12} />
+              {t('Our Team')}
+            </div>
+
+            <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight leading-tight mb-8 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {t('The people behind the mission')}
+            </h2>
+
+            <div className="flex justify-center mb-8">
+              <div className={`h-px line-grow ${isDark ? 'bg-purple-700/50' : 'bg-purple-300'}`}></div>
+            </div>
+
+            <p className={`text-base sm:text-lg leading-relaxed max-w-lg mx-auto mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              {t('Meet the professionals driving Pallacanestro Varese forward — on and off the court.')}
+            </p>
+
+            <div className={`mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs tracking-[0.15em] uppercase font-medium ${
+              isDark ? 'border border-gray-800 text-gray-500' : 'border border-gray-200 text-gray-400'
+            }`}>
+              <Lock size={10} />
+              {t('Coming Soon')}
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => goToSection(3)}
+          className={`absolute bottom-12 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
+        >
+          <ChevronDown size={20} />
+        </button>
+      </div>
+
+      {/* Section 4: Departments */}
+      <div className="h-screen flex flex-col items-center justify-center px-6 relative">
+        <div className={`transition-all duration-[1s] ease-out ${visible[3] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="max-w-3xl mx-auto text-center mb-16">
             <p className={`text-[10px] tracking-[0.3em] uppercase font-medium mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
               {t('Departments')}

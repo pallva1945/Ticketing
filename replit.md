@@ -5,7 +5,7 @@ The PV Financial Center is a React-based application designed for Pallacanestro 
 
 ## Navigation Architecture
 - **Welcome Page** (`WelcomePage.tsx`): Animated intro with logo fade, title, and Enter button
-- **Internal Hub** (`InternalHub.tsx`): Full-page scroll experience with 3 sections — Vision/Mission/Values, About Us, then Corp + BOps (Departments). Sections reveal on scroll with IntersectionObserver. Sticky nav with section indicators.
+- **Internal Hub** (`InternalHub.tsx`): Full-page snap-scroll experience with 4 sections — Vision/Mission/Values, About Us, Our Team, then Corp + BOps (Departments). Quintic ease animation (1.8s). Sticky nav with section indicators and side dots.
 - **Financial Center** (`FinancialCenter.tsx`): Entry point for Corp with 3 cards — Revenue Center, Cost Center, Verticals P&Ls
 - **Revenue Center** (`App.tsx`): The full revenue dashboard with all modules
 - **Cost Center** (`CostCenter.tsx`): Cost dashboard with 7 modules (GameDay, Sponsorship, BOps, Venue Ops, Merchandising, EBP, Varese Basketball) — all placeholders
