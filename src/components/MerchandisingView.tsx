@@ -1303,6 +1303,7 @@ export const MerchandisingView: React.FC = () => {
                   <SortableHeader label={t("Customer")} sortKey="customerName" currentSort={orderSort} onSort={() => handleSort(orderSort, 'customerName', setOrderSort)} />
                   <SortableHeader label={t("Items")} sortKey="itemCount" currentSort={orderSort} onSort={() => handleSort(orderSort, 'itemCount', setOrderSort)} align="right" />
                   <SortableHeader label={t("Total")} sortKey="totalPrice" currentSort={orderSort} onSort={() => handleSort(orderSort, 'totalPrice', setOrderSort)} align="right" />
+                  <th className="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">{t('Giveaway')}</th>
                   <SortableHeader label={t("Payment")} sortKey="paymentMethod" currentSort={orderSort} onSort={() => handleSort(orderSort, 'paymentMethod', setOrderSort)} align="center" />
                   <SortableHeader label={t("Fulfillment")} sortKey="fulfillmentStatus" currentSort={orderSort} onSort={() => handleSort(orderSort, 'fulfillmentStatus', setOrderSort)} align="center" />
                   <th className="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">{t('Actions')}</th>
@@ -1323,6 +1324,13 @@ export const MerchandisingView: React.FC = () => {
                     </td>
                     <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{order.itemCount}</td>
                     <td className="px-4 py-3 text-right font-medium text-gray-800 dark:text-gray-100">{formatCurrency(order.totalPrice - (order.totalTax || 0))}</td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        order.totalPrice === 0 ? 'bg-purple-100 dark:bg-purple-900/20 text-purple-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                      }`}>
+                        {order.totalPrice === 0 ? t('Yes') : t('No')}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-center">
                       <span className={`px-2 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1 ${
                         order.financialStatus === 'paid' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' :
