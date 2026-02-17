@@ -1,0 +1,59 @@
+The Master Prompt
+Role: Act as a world-class sports copywriter and web designer.
+Task: Generate a comprehensive "About Us" section for the official website of Pallacanestro Varese, an elite Italian professional basketball club.
+
+1. Tone & Style
+
+Tone: Prestigious, passionate, forward-thinking, and community-focused.
++1
+
+
+Style: Clean, modern "NBA-style" professional aesthetic mixed with deep-rooted European heritage.
++3
+
+
+Target Audience: Die-hard fans, international basketball enthusiasts, corporate sponsors, and the local Varese community.
++2
+
+2. Required Content Pillars
+Include the following four specific sections:
+
+
+A Legacy of Legends: Mention the club’s founding in 1945. Highlight the "Golden Era" of the 1970s, where the team appeared in 10 consecutive European finals, winning 5 EuroLeague titles. Reference the "Triple Crown" achievement of 1973.
++4
+
+
+The Varese Model (Ownership): Explain the unique ownership structure, featuring the "Varese nel Cuore" Consortium, the "Il Basket Siamo Noi" supporter trust, and the visionary leadership of majority owner and NBA legend Luis Scola.
++2
+
+Beyond the Court (Social Impact): Emphasize that we are more than a team. Highlight our Social Return on Investment (SROI) commitment, showing that for every €1 invested, we generate €2.36 in social and health value for our territory. Mention flagship programs like "Basket: Una Scuola di Vita".
++4
+
+
+Our Cathedral: A brief mention of our home, Itelyum Arena (Palasport Lino Oldrini), as the emotional and architectural heart of basketball in Varese since 1964.
++2
+
+3. Visual & Layout Instructions
+
+Hero Image Description: Use a high-resolution, monochrome or high-contrast image of fans at the arena or the ten gold stars representing our league titles.
++1
+
+
+Colors: Primary Red (#E30613) and White, reflecting the colors adopted at our birth.
++1
+
+Interactive Elements: Include a timeline widget of major trophies and a "Stat Counter" showing:
+
+10 Italian League Titles 
++1
+
+5 EuroLeague Championships 
++2
+
+3 Intercontinental Cups 
++4
+
+80 Years of History 
+
+4. Mandatory Keywords
+"Garden City," "Varesinità," "Organic Growth," "Social Return on Investment," "Luis Scola," "The Great Ignis," "Triple Crown"

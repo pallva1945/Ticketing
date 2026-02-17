@@ -1,8 +1,43 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, UserCircle2 } from 'lucide-react';
+import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, UserCircle2, Trophy, Crown, Heart, Landmark } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
+
+const StatCounter: React.FC<{ target: number; label: string; suffix?: string; active: boolean; isDark: boolean }> = ({ target, label, suffix, active, isDark }) => {
+  const [count, setCount] = useState(0);
+  const hasAnimated = useRef(false);
+
+  useEffect(() => {
+    if (!active || hasAnimated.current) return;
+    hasAnimated.current = true;
+    const duration = 2000;
+    const steps = 60;
+    const increment = target / steps;
+    let current = 0;
+    const interval = setInterval(() => {
+      current += increment;
+      if (current >= target) {
+        setCount(target);
+        clearInterval(interval);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, duration / steps);
+    return () => clearInterval(interval);
+  }, [active, target]);
+
+  return (
+    <div className="text-center">
+      <div className={`text-3xl sm:text-4xl font-bold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        {count}{suffix || ''}
+      </div>
+      <div className={`text-[10px] tracking-[0.2em] uppercase mt-1.5 font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+        {label}
+      </div>
+    </div>
+  );
+};
 
 const TOTAL_SECTIONS = 4;
 
@@ -229,40 +264,96 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       </div>
 
       {/* Section 2: About Us */}
-      <div className="h-screen flex flex-col items-center justify-center px-6 relative">
+      <div className="h-screen flex flex-col justify-center px-4 sm:px-6 relative pt-14">
         <div className={`transition-all duration-[1s] ease-out ${visible[1] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="max-w-2xl mx-auto text-center">
-            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-10 ${
-              isDark ? 'bg-blue-900/15 text-blue-400 border border-blue-800/20' : 'bg-blue-50 text-blue-600 border border-blue-100'
-            }`}>
-              <Users size={12} />
-              {t('About Us')}
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-6 sm:mb-8">
+              <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-4 ${
+                isDark ? 'bg-red-900/15 text-red-400 border border-red-800/20' : 'bg-red-50 text-red-600 border border-red-100'
+              }`}>
+                <Users size={12} />
+                {t('About Us')}
+              </div>
+              <h2 className={`text-2xl sm:text-3xl lg:text-4xl font-light tracking-tight leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {t('Born in the Garden City. Forged in European fire.')}
+              </h2>
+              <p className={`text-sm sm:text-base leading-relaxed max-w-2xl mx-auto mt-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                {t('Since 1945, Pallacanestro Varese has embodied Varesinit\u00e0 — a spirit of organic growth, resilience, and deep community roots.')}
+              </p>
             </div>
 
-            <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight leading-tight mb-8 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {t('A club with history, a team with ambition')}
-            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
+              <div className={`rounded-xl border p-4 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
+                    <Trophy size={16} className="text-amber-500" />
+                  </div>
+                  <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {t('A Legacy of Legends')}
+                  </h3>
+                </div>
+                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {t('about_legacy_desc')}
+                </p>
+              </div>
 
-            <div className="flex justify-center mb-8">
-              <div className={`h-px line-grow ${isDark ? 'bg-blue-700/50' : 'bg-blue-300'}`}></div>
+              <div className={`rounded-xl border p-4 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
+                    <Crown size={16} className="text-red-500" />
+                  </div>
+                  <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {t('The Varese Model')}
+                  </h3>
+                </div>
+                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {t('about_ownership_desc')}
+                </p>
+              </div>
+
+              <div className={`rounded-xl border p-4 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-emerald-900/25' : 'bg-emerald-50'}`}>
+                    <Heart size={16} className="text-emerald-500" />
+                  </div>
+                  <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {t('Beyond the Court')}
+                  </h3>
+                </div>
+                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {t('about_social_desc')}
+                </p>
+              </div>
+
+              <div className={`rounded-xl border p-4 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className="flex items-center gap-3 mb-2.5">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
+                    <Landmark size={16} className="text-blue-500" />
+                  </div>
+                  <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {t('Our Cathedral')}
+                  </h3>
+                </div>
+                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {t('about_arena_desc')}
+                </p>
+              </div>
             </div>
 
-            <p className={`text-base sm:text-lg leading-relaxed max-w-lg mx-auto mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              {t('Our organization, leadership, and the people who make Pallacanestro Varese a cornerstone of Italian sports.')}
-            </p>
-
-            <div className={`mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs tracking-[0.15em] uppercase font-medium ${
-              isDark ? 'border border-gray-800 text-gray-500' : 'border border-gray-200 text-gray-400'
-            }`}>
-              <Lock size={10} />
-              {t('Coming Soon')}
+            <div className={`rounded-xl border p-4 sm:p-5 ${isDark ? 'bg-gray-900/40 border-gray-800/40' : 'bg-gray-50/80 border-gray-200/60'}`}>
+              <div className="grid grid-cols-4 gap-4 sm:gap-8">
+                <StatCounter target={10} label={t('League Titles')} active={visible[1]} isDark={isDark} />
+                <StatCounter target={5} label={t('EuroLeague Titles')} active={visible[1]} isDark={isDark} />
+                <StatCounter target={3} label={t('Intercontinental Cups')} active={visible[1]} isDark={isDark} />
+                <StatCounter target={80} label={t('Years of History')} active={visible[1]} isDark={isDark} />
+              </div>
             </div>
           </div>
         </div>
 
         <button
           onClick={() => goToSection(2)}
-          className={`absolute bottom-12 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
+          className={`absolute bottom-8 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
         >
           <ChevronDown size={20} />
         </button>
