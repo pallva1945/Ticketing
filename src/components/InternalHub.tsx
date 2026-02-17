@@ -20,7 +20,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
   const isScrolling = useRef(false);
   const currentSection = useRef(0);
 
-  const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const easeInOutQuint = (t: number) => t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
 
   const smoothScrollTo = useCallback((container: HTMLDivElement, target: number, duration: number) => {
     const start = container.scrollTop;
@@ -32,7 +32,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       if (!startTime) startTime = timestamp;
       const elapsed = timestamp - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      container.scrollTop = start + distance * easeInOutCubic(progress);
+      container.scrollTop = start + distance * easeInOutQuint(progress);
       if (progress < 1) {
         requestAnimationFrame(step);
       } else {
@@ -52,7 +52,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
     const container = containerRef.current;
     if (!container) return;
     const target = index * window.innerHeight;
-    smoothScrollTo(container, target, 1200);
+    smoothScrollTo(container, target, 1800);
   }, [smoothScrollTo]);
 
   useEffect(() => {
