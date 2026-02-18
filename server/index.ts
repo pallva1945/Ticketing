@@ -79,7 +79,7 @@ app.post("/api/bigquery/sync", async (req, res) => {
 });
 
 let ticketingCache: { data: any[]; rawRows: any[]; timestamp: number } | null = null;
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes cache for faster loads
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours cache — refresh manually or daily
 
 app.get("/api/ticketing", async (req, res) => {
   try {
@@ -120,7 +120,7 @@ app.get("/api/ticketing", async (req, res) => {
 // CRM BigQuery endpoint with server-side processing for faster loads
 let crmCache: { rawRows: any[]; processedStats: any; fixedStats: any; flexibleStats: any; timestamp: number } | null = null;
 let crmCacheWarmingPromise: Promise<void> | null = null;
-const CRM_CACHE_TTL = 30 * 60 * 1000; // 30 minutes cache for faster loads
+const CRM_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours cache — refresh manually or daily
 
 // Parse European number format (1.234,56) and American format (1,234.56)
 const parseNumber = (val: any): number => {
@@ -656,17 +656,36 @@ app.get("/api/crm/bigquery", async (req, res) => {
 });
 
 // Sponsorship BigQuery endpoint
+let sponsorshipCache: { csvContent: string; rawRows: any[]; rowCount: number; timestamp: number } | null = null;
+
 app.get("/api/sponsorship/bigquery", async (req, res) => {
   try {
+    const now = Date.now();
+    const forceRefresh = req.query.refresh === 'true';
+
+    if (!forceRefresh && sponsorshipCache && (now - sponsorshipCache.timestamp) < CACHE_TTL) {
+      return res.json({
+        success: true,
+        csvContent: sponsorshipCache.csvContent,
+        rawRows: sponsorshipCache.rawRows,
+        rowCount: sponsorshipCache.rowCount,
+        cached: true,
+        cacheAge: now - sponsorshipCache.timestamp,
+        message: `Served ${sponsorshipCache.rowCount} sponsorship records from cache`
+      });
+    }
+
     const result = await fetchSponsorshipFromBigQuery();
     
     if (result.success && result.rawRows) {
       const csvContent = convertBigQueryRowsToSponsorCSV(result.rawRows);
+      sponsorshipCache = { csvContent, rawRows: result.rawRows, rowCount: result.rawRows.length, timestamp: now };
       res.json({ 
         success: true,
         csvContent,
         rawRows: result.rawRows,
         rowCount: result.rawRows.length,
+        cached: false,
         message: `Fetched ${result.rawRows.length} sponsorship records from BigQuery`
       });
     } else {
@@ -678,17 +697,36 @@ app.get("/api/sponsorship/bigquery", async (req, res) => {
 });
 
 // GameDay BigQuery endpoint
+let gameDayCache: { csvContent: string; rawRows: any[]; rowCount: number; timestamp: number } | null = null;
+
 app.get("/api/gameday/bigquery", async (req, res) => {
   try {
+    const now = Date.now();
+    const forceRefresh = req.query.refresh === 'true';
+
+    if (!forceRefresh && gameDayCache && (now - gameDayCache.timestamp) < CACHE_TTL) {
+      return res.json({
+        success: true,
+        csvContent: gameDayCache.csvContent,
+        rawRows: gameDayCache.rawRows,
+        rowCount: gameDayCache.rowCount,
+        cached: true,
+        cacheAge: now - gameDayCache.timestamp,
+        message: `Served ${gameDayCache.rowCount} GameDay records from cache`
+      });
+    }
+
     const result = await fetchGameDayFromBigQuery();
     
     if (result.success && result.rawRows) {
       const csvContent = convertBigQueryRowsToGameDayCSV(result.rawRows);
+      gameDayCache = { csvContent, rawRows: result.rawRows, rowCount: result.rawRows.length, timestamp: now };
       res.json({ 
         success: true,
         csvContent,
         rawRows: result.rawRows,
         rowCount: result.rawRows.length,
+        cached: false,
         message: `Fetched ${result.rawRows.length} GameDay records from BigQuery`
       });
     } else {
@@ -755,7 +793,7 @@ interface ShopifyCustomer {
 }
 
 let shopifyCache: { orders: ShopifyOrder[]; products: ShopifyProduct[]; customers: ShopifyCustomer[]; lastUpdated: string; timestamp: number } | null = null;
-const SHOPIFY_CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+const SHOPIFY_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours cache — refresh manually or daily
 
 // Normalize payment method from various gateway names
 function normalizePaymentMethod(method: string): string {
@@ -1100,6 +1138,28 @@ if (isProduction) {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
+
+app.post("/api/cache/clear", (req, res) => {
+  ticketingCache = null;
+  crmCache = null;
+  sponsorshipCache = null;
+  gameDayCache = null;
+  shopifyCache = null;
+  console.log('All server caches cleared by user request');
+  res.json({ success: true, message: 'All caches cleared' });
+});
+
+app.get("/api/cache/status", (req, res) => {
+  const now = Date.now();
+  const status = {
+    ticketing: ticketingCache ? { age: now - ticketingCache.timestamp, stale: (now - ticketingCache.timestamp) > CACHE_TTL } : null,
+    crm: crmCache ? { age: now - crmCache.timestamp, stale: (now - crmCache.timestamp) > CRM_CACHE_TTL } : null,
+    sponsorship: sponsorshipCache ? { age: now - sponsorshipCache.timestamp, stale: (now - sponsorshipCache.timestamp) > CACHE_TTL } : null,
+    gameday: gameDayCache ? { age: now - gameDayCache.timestamp, stale: (now - gameDayCache.timestamp) > CACHE_TTL } : null,
+    shopify: shopifyCache ? { age: now - shopifyCache.timestamp, stale: (now - shopifyCache.timestamp) > SHOPIFY_CACHE_TTL } : null,
+  };
+  res.json({ success: true, caches: status });
+});
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT} (${isProduction ? 'production' : 'development'})`);

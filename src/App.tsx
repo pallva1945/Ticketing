@@ -1075,18 +1075,76 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
     { id: 'sg', label: t('Varese Basketball'), icon: GraduationCap },
   ];
 
-  const loadData = async () => {
+  const LOCAL_CACHE_KEY = 'pv_data_cache';
+  const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
+
+  const saveToLocalCache = (key: string, data: any) => {
+    try {
+      const cache = JSON.parse(localStorage.getItem(LOCAL_CACHE_KEY) || '{}');
+      cache[key] = { data, timestamp: Date.now() };
+      localStorage.setItem(LOCAL_CACHE_KEY, JSON.stringify(cache));
+    } catch (e) { console.warn('Cache save failed:', e); }
+  };
+
+  const getFromLocalCache = (key: string): any | null => {
+    try {
+      const cache = JSON.parse(localStorage.getItem(LOCAL_CACHE_KEY) || '{}');
+      const entry = cache[key];
+      if (entry && (Date.now() - entry.timestamp) < CACHE_MAX_AGE) {
+        return entry.data;
+      }
+    } catch (e) { /* ignore */ }
+    return null;
+  };
+
+  const getLocalCacheAge = (): number | null => {
+    try {
+      const cache = JSON.parse(localStorage.getItem(LOCAL_CACHE_KEY) || '{}');
+      const timestamps = Object.values(cache).map((e: any) => e.timestamp).filter(Boolean);
+      if (timestamps.length > 0) return Math.min(...timestamps);
+    } catch (e) { /* ignore */ }
+    return null;
+  };
+
+  const clearLocalCache = () => {
+    try { localStorage.removeItem(LOCAL_CACHE_KEY); } catch(e) { /* ignore */ }
+  };
+
+  const loadData = async (forceRefresh = false) => {
+    // Try instant hydration from localStorage cache first (only on non-forced loads)
+    if (!forceRefresh) {
+      const cachedTicketing = getFromLocalCache('ticketing');
+      const cachedGameDay = getFromLocalCache('gameday');
+      const cachedSponsor = getFromLocalCache('sponsor');
+      const cachedMerch = getFromLocalCache('merch');
+
+      if (cachedTicketing && cachedGameDay && cachedSponsor) {
+        console.log('Hydrating from local cache (instant load)');
+        setData(cachedTicketing);
+        setGameDayData(cachedGameDay);
+        setSponsorData(cachedSponsor);
+        if (cachedMerch) setMerchRevenue(cachedMerch);
+        setDataSources({ ticketing: 'bigquery', gameday: 'bigquery', sponsorship: 'bigquery', crm: 'bigquery' });
+        setIsLoadingData(false);
+        return;
+      }
+    }
+
+    if (forceRefresh) {
+      clearLocalCache();
+      await fetch('/api/cache/clear', { method: 'POST' }).catch(() => {});
+    }
+
     setIsLoadingData(true);
     let loadedTicketing: GameData[] = [];
     let loadedGameDay: GameDayData[] = [];
     
-    // Start essential BigQuery fetches in parallel for faster loading
-    // CRM is loaded lazily when user navigates to CRM tab
+    const refreshParam = forceRefresh ? '?refresh=true' : '';
     const [ticketingResponse, gdResponse, sponsorResponse, merchResponse] = await Promise.all([
-      fetch('/api/ticketing').catch(e => { console.warn('Ticketing fetch failed:', e); return null; }),
-      fetch('/api/gameday/bigquery').catch(e => { console.warn('GameDay fetch failed:', e); return null; }),
-      fetch('/api/sponsorship/bigquery').catch(e => { console.warn('Sponsorship fetch failed:', e); return null; }),
-      fetch('/api/shopify/data').catch(e => { console.warn('Merch fetch failed:', e); return null; })
+      fetch(`/api/ticketing${refreshParam}`).catch(e => { console.warn('Ticketing fetch failed:', e); return null; }),
+      fetch(`/api/gameday/bigquery${refreshParam}`).catch(e => { console.warn('GameDay fetch failed:', e); return null; }),
+      fetch(`/api/sponsorship/bigquery${refreshParam}`).catch(e => { console.warn('Sponsorship fetch failed:', e); return null; }),
+      fetch(`/api/shopify/data${forceRefresh ? '?refresh=true' : ''}`).catch(e => { console.warn('Merch fetch failed:', e); return null; })
     ]);
     
     // 1. TICKETING DATA - Process first (most critical for Executive Overview)
@@ -1210,6 +1268,7 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
         setSponsorData(loadedSponsors);
         setSponsorDataSource(sponsorSource as any);
         setDataSources(prev => ({...prev, sponsorship: sponsorSource}));
+        if (loadedSponsors.length > 0) saveToLocalCache('sponsor', loadedSponsors);
     } catch(e) {
         console.error("Error loading Sponsor data", e);
         setSponsorData(processSponsorData(SPONSOR_CSV_CONTENT));
@@ -1236,12 +1295,17 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
                 const seasonTax = seasonOrders.reduce((sum: number, o: any) => sum + (o.totalTax || 0), 0);
                 const seasonRevenue = seasonRevenueWithTax - seasonTax;
                 setMerchRevenue(seasonRevenue);
+                saveToLocalCache('merch', seasonRevenue);
                 console.log(`Merch loaded: ${merchResult.orders.length} total orders, ${seasonOrders.length} in 25/26 season - ${seasonRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}`);
             }
         }
     } catch(e) {
         console.error("Error loading Merch data", e);
     }
+
+    // Save to localStorage for instant loading next time
+    if (loadedTicketing.length > 0) saveToLocalCache('ticketing', loadedTicketing);
+    if (loadedGameDay.length > 0) saveToLocalCache('gameday', loadedGameDay);
 
     // CRM is loaded lazily - see loadCRMData function
     setIsLoadingData(false);
@@ -1565,8 +1629,9 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
     setIsSyncingAll(true);
     try {
       console.log('Starting full BigQuery sync...');
+      clearLocalCache();
+      await fetch('/api/cache/clear', { method: 'POST' }).catch(() => {});
       
-      // Fetch all data sources in parallel with force refresh
       const [ticketingRes, crmRes, gameDayRes, sponsorRes] = await Promise.all([
         fetch('/api/ticketing?refresh=true'),
         fetch('/api/crm/bigquery?refresh=true&full=true'),
@@ -1585,6 +1650,7 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
             const loadedData = convertBigQueryToGameData(result.data, result.rawRows);
             setData(loadedData);
             setDataSources(prev => ({...prev, ticketing: 'bigquery'}));
+            saveToLocalCache('ticketing', loadedData);
             results.ticketing = true;
             console.log(`Synced ${loadedData.length} ticketing games`);
           } else {
@@ -1625,6 +1691,7 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
             const loadedGameDay = processGameDayData(convertBigQueryRowsToGameDayCSV(result.rawRows));
             setGameDayData(loadedGameDay);
             setDataSources(prev => ({...prev, gameday: 'bigquery'}));
+            saveToLocalCache('gameday', loadedGameDay);
             results.gameDay = true;
             console.log(`Synced ${loadedGameDay.length} GameDay records`);
           } else {
@@ -1645,6 +1712,7 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
             const loadedSponsors = processSponsorData(convertBigQueryRowsToSponsorCSV(result.rawRows));
             setSponsorData(loadedSponsors);
             setDataSources(prev => ({...prev, sponsor: 'bigquery'}));
+            saveToLocalCache('sponsor', loadedSponsors);
             results.sponsor = true;
             console.log(`Synced ${loadedSponsors.length} Sponsor records`);
           } else {
@@ -2729,9 +2797,26 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
                                 BIGQUERY
                             </strong>
                         </div>
-                        <div className="text-center py-2 px-3 text-[10px] text-blue-600 bg-blue-50 border border-blue-200 rounded-lg dark:text-blue-400 dark:bg-blue-900/30 dark:border-blue-800">
-                          {t('Auto-synced from BigQuery')}
-                        </div>
+                        {(() => {
+                          const cacheAge = getLocalCacheAge();
+                          if (cacheAge) {
+                            const ageMs = Date.now() - cacheAge;
+                            const ageHrs = Math.floor(ageMs / (1000 * 60 * 60));
+                            const ageMins = Math.floor((ageMs % (1000 * 60 * 60)) / (1000 * 60));
+                            const ageStr = ageHrs > 0 ? `${ageHrs}h ${ageMins}m ago` : `${ageMins}m ago`;
+                            return (
+                              <div className="text-center py-2 px-3 text-[10px] text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-lg dark:text-emerald-400 dark:bg-emerald-900/30 dark:border-emerald-800">
+                                <Clock size={10} className="inline mr-1" />
+                                {t('Cached')} · {ageStr}
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className="text-center py-2 px-3 text-[10px] text-blue-600 bg-blue-50 border border-blue-200 rounded-lg dark:text-blue-400 dark:bg-blue-900/30 dark:border-blue-800">
+                              {t('Auto-synced from BigQuery')}
+                            </div>
+                          );
+                        })()}
                         <button
                           onClick={syncAllFromBigQuery}
                           disabled={isSyncingAll}
