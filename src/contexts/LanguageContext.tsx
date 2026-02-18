@@ -379,7 +379,40 @@ const translations: Record<string, Record<Language, string>> = {
   'Meet the professionals driving Pallacanestro Varese forward — on and off the court.': { en: 'Meet the professionals driving Pallacanestro Varese forward — on and off the court.', it: 'Scopri i professionisti che guidano Pallacanestro Varese — dentro e fuori dal campo.' },
   'Born in the Garden City. Forged in European fire.': { en: 'Born in the Garden City. Forged in European fire.', it: 'Nati nella Citt\u00e0 Giardino. Forgiati nel fuoco europeo.' },
   'Since 1945, Pallacanestro Varese has embodied Varesinit\u00e0 — a spirit of organic growth, resilience, and deep community roots.': { en: 'Since 1945, Pallacanestro Varese has embodied Varesinit\u00e0 — a spirit of organic growth, resilience, and deep community roots.', it: 'Dal 1945, Pallacanestro Varese incarna la Varesinit\u00e0 — uno spirito di crescita organica, resilienza e profonde radici comunitarie.' },
-  'A Legacy of Legends': { en: 'A Legacy of Legends', it: 'Un\'Eredit\u00e0 di Leggende' },
+  'A Legacy of Legends': { en: 'A Legacy of Legends', it: 'Un\'Eredità di Leggende' },
+  'about_headline': {
+    en: 'Built on Legacy. Driven by Vision.',
+    it: 'Costruiti sulla Tradizione. Guidati dalla Visione.'
+  },
+  'about_subheadline': {
+    en: '10 league titles, 5 EuroLeague trophies, and 80 years of history — now channeled into building a modern sports organization that sets new standards across European basketball.',
+    it: '10 titoli di campione, 5 trofei di EuroLeague e 80 anni di storia — ora incanalati nella costruzione di un\'organizzazione sportiva moderna che stabilisce nuovi standard nel basket europeo.'
+  },
+  'Sustainability': { en: 'Sustainability', it: 'Sostenibilità' },
+  'Innovation': { en: 'Innovation', it: 'Innovazione' },
+  'Data-Driven': { en: 'Data-Driven', it: 'Data-Driven' },
+  'Ambition': { en: 'Ambition', it: 'Ambizione' },
+  'Development': { en: 'Development', it: 'Sviluppo' },
+  'pillar_sustainability': {
+    en: 'Building a financially self-sustaining model that ensures long-term competitiveness without dependency on external capital.',
+    it: 'Costruire un modello finanziariamente autosostenibile che garantisca competitività a lungo termine senza dipendenza da capitali esterni.'
+  },
+  'pillar_innovation': {
+    en: 'Applying NBA-caliber front office practices to European basketball — rethinking how clubs operate, scout, and grow.',
+    it: 'Applicare pratiche di front office di calibro NBA al basket europeo — ripensare come i club operano, fanno scouting e crescono.'
+  },
+  'pillar_datadriven': {
+    en: 'Every decision backed by analytics. From player evaluation to revenue optimization, data shapes our strategy.',
+    it: 'Ogni decisione supportata dai dati. Dalla valutazione dei giocatori all\'ottimizzazione dei ricavi, i dati guidano la nostra strategia.'
+  },
+  'pillar_ambition': {
+    en: 'Competing at the highest European level. Our trajectory aims beyond Serie A — toward EuroLeague and global relevance.',
+    it: 'Competere ai massimi livelli europei. La nostra traiettoria punta oltre la Serie A — verso l\'EuroLeague e la rilevanza globale.'
+  },
+  'pillar_development': {
+    en: 'Investing in people, infrastructure, and youth programs. Growing talent on and off the court as the foundation of everything.',
+    it: 'Investire nelle persone, nelle infrastrutture e nei programmi giovanili. Sviluppare talento dentro e fuori dal campo come base di tutto.'
+  },
   'about_legacy_desc': { en: 'Founded in 1945, "The Great Ignis" dominated European basketball with 10 consecutive finals in the 1970s, claiming 5 EuroLeague titles and the legendary Triple Crown in 1973.', it: 'Fondata nel 1945, "La Grande Ignis" ha dominato il basket europeo con 10 finali consecutive negli anni \'70, conquistando 5 titoli di EuroLega e la leggendaria Triple Crown nel 1973.' },
   'The Varese Model': { en: 'The Varese Model', it: 'Il Modello Varese' },
   'about_ownership_desc': { en: 'A governance model built on community ownership and local enterprise. Varese basketball belongs to its city — sustained by civic pride, entrepreneurial commitment, and a collective vision for the future.', it: 'Un modello di governance fondato sulla partecipazione comunitaria e l\'impresa locale. Il basket di Varese appartiene alla sua città — sostenuto dall\'orgoglio civico, dall\'impegno imprenditoriale e da una visione collettiva per il futuro.' },

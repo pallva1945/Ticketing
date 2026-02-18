@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, ChevronLeft, ChevronRight, UserCircle2, Trophy, Crown, Heart, Landmark, Briefcase, Star, Layers, Globe } from 'lucide-react';
+import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, ChevronLeft, ChevronRight, UserCircle2, Trophy, Crown, Heart, Landmark, Briefcase, Star, Layers, Globe, Leaf, Lightbulb, BarChart3, Rocket, TrendingUp } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -457,67 +457,71 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 {t('About Us')}
               </div>
               <h2 className={`text-2xl sm:text-3xl lg:text-4xl font-light tracking-tight leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                {t('Born in the Garden City. Forged in European fire.')}
+                {t('about_headline')}
               </h2>
               <p className={`text-sm sm:text-base leading-relaxed max-w-2xl mx-auto mt-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                {t('Since 1945, Pallacanestro Varese has embodied Varesinit\u00e0 — a spirit of organic growth, resilience, and deep community roots.')}
+                {t('about_subheadline')}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
-              <div className={`rounded-xl border p-4 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className="flex items-center gap-3 mb-2.5">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
-                    <Trophy size={16} className="text-amber-500" />
-                  </div>
-                  <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {t('A Legacy of Legends')}
-                  </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 mb-6 sm:mb-8">
+              <div className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 ${isDark ? 'bg-emerald-900/25' : 'bg-emerald-50'}`}>
+                  <Leaf size={16} className="text-emerald-500" />
                 </div>
-                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {t('about_legacy_desc')}
+                <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {t('Sustainability')}
+                </h3>
+                <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {t('pillar_sustainability')}
                 </p>
               </div>
 
-              <div className={`rounded-xl border p-4 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className="flex items-center gap-3 mb-2.5">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
-                    <Crown size={16} className="text-red-500" />
-                  </div>
-                  <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {t('The Varese Model')}
-                  </h3>
+              <div className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
+                  <Lightbulb size={16} className="text-amber-500" />
                 </div>
-                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {t('about_ownership_desc')}
+                <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {t('Innovation')}
+                </h3>
+                <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {t('pillar_innovation')}
                 </p>
               </div>
 
-              <div className={`rounded-xl border p-4 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className="flex items-center gap-3 mb-2.5">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-emerald-900/25' : 'bg-emerald-50'}`}>
-                    <Heart size={16} className="text-emerald-500" />
-                  </div>
-                  <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {t('Beyond the Court')}
-                  </h3>
+              <div className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
+                  <BarChart3 size={16} className="text-blue-500" />
                 </div>
-                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {t('about_social_desc')}
+                <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {t('Data-Driven')}
+                </h3>
+                <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {t('pillar_datadriven')}
                 </p>
               </div>
 
-              <div className={`rounded-xl border p-4 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className="flex items-center gap-3 mb-2.5">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
-                    <Landmark size={16} className="text-blue-500" />
-                  </div>
-                  <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {t('Our Cathedral')}
-                  </h3>
+              <div className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
+                  <Rocket size={16} className="text-red-500" />
                 </div>
-                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {t('about_arena_desc')}
+                <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {t('Ambition')}
+                </h3>
+                <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {t('pillar_ambition')}
+                </p>
+              </div>
+
+              <div className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 ${isDark ? 'bg-purple-900/25' : 'bg-purple-50'}`}>
+                  <TrendingUp size={16} className="text-purple-500" />
+                </div>
+                <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {t('Development')}
+                </h3>
+                <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {t('pillar_development')}
                 </p>
               </div>
             </div>
