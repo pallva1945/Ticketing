@@ -408,85 +408,85 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       {/* Section 1: Vision, Mission & Values */}
       <div className="h-screen flex flex-col justify-center px-4 sm:px-6 relative pt-14">
         <div className={`transition-all duration-[1s] ease-out ${visible[0] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="max-w-5xl mx-auto w-full">
-            <div className="text-center mb-5">
-              <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-3 ${
+          <div className="max-w-6xl mx-auto w-full">
+            <div className="text-center mb-6">
+              <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
                 isDark ? 'bg-amber-900/15 text-amber-500 border border-amber-800/20' : 'bg-amber-50 text-amber-600 border border-amber-100'
               }`}>
-                <Compass size={12} />
+                <Compass size={14} />
                 {t('Vision, Mission & Values')}
               </div>
-              <p className={`text-sm italic max-w-md mx-auto ${isDark ? 'text-amber-400/80' : 'text-amber-600/80'}`}>
+              <p className={`text-base sm:text-lg italic max-w-lg mx-auto ${isDark ? 'text-amber-400/80' : 'text-amber-600/80'}`}>
                 {t('brand_promise')}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-              <div className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className="flex items-center gap-2.5 mb-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
-                    <Rocket size={16} className="text-red-500" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className={`rounded-xl border p-5 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
+                    <Rocket size={18} className="text-red-500" />
                   </div>
-                  <h3 className={`text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <h3 className={`text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {t('Mission')}
                   </h3>
                 </div>
-                <p className={`text-[11px] leading-relaxed mb-3 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p className={`text-sm leading-relaxed mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                   {t('mission_statement')}
                 </p>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {['mission_1', 'mission_2', 'mission_3', 'mission_4'].map((key) => (
-                    <div key={key} className="flex items-start gap-2">
-                      <div className="w-1 h-1 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
-                      <p className={`text-[10px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t(key)}</p>
+                    <div key={key} className="flex items-start gap-2.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-[7px] flex-shrink-0" />
+                      <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t(key)}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className="flex items-center gap-2.5 mb-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
-                    <Compass size={16} className="text-blue-500" />
+              <div className={`rounded-xl border p-5 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
+                    <Compass size={18} className="text-blue-500" />
                   </div>
-                  <h3 className={`text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <h3 className={`text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {t('Vision')}
                   </h3>
                 </div>
-                <p className={`text-[11px] leading-relaxed mb-3 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p className={`text-sm leading-relaxed mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                   {t('vision_statement')}
                 </p>
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {['vision_1', 'vision_2', 'vision_3', 'vision_4'].map((key) => (
-                    <div key={key} className="flex items-start gap-2">
-                      <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 flex-shrink-0" />
-                      <p className={`text-[10px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t(key)}</p>
+                    <div key={key} className="flex items-start gap-2.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-[7px] flex-shrink-0" />
+                      <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t(key)}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className="flex items-center gap-2.5 mb-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
-                    <Star size={16} className="text-amber-500" />
+              <div className={`rounded-xl border p-5 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
+                    <Star size={18} className="text-amber-500" />
                   </div>
-                  <h3 className={`text-sm font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <h3 className={`text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {t('Core Values')}
                   </h3>
                 </div>
-                <div className="space-y-2.5">
+                <div className="space-y-3.5">
                   <div>
-                    <p className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('values_athlete_title')}</p>
-                    <p className={`text-[10px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_athlete_desc')}</p>
+                    <p className={`text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('values_athlete_title')}</p>
+                    <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_athlete_desc')}</p>
                   </div>
                   <div>
-                    <p className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{t('values_citizen_title')}</p>
-                    <p className={`text-[10px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_citizen_desc')}</p>
+                    <p className={`text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{t('values_citizen_title')}</p>
+                    <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_citizen_desc')}</p>
                   </div>
                   <div>
-                    <p className={`text-[10px] font-semibold uppercase tracking-wider mb-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{t('values_org_title')}</p>
-                    <p className={`text-[10px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_org_desc')}</p>
+                    <p className={`text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{t('values_org_title')}</p>
+                    <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_org_desc')}</p>
                   </div>
                 </div>
               </div>
