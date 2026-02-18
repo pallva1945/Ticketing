@@ -74,6 +74,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     verify().finally(() => setIsLoading(false));
+    const interval = setInterval(verify, 60000);
+    return () => clearInterval(interval);
   }, [verify]);
 
   const loginWithGoogle = async (credential: string) => {

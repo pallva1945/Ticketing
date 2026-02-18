@@ -107,7 +107,7 @@ app.post("/api/auth/google", async (req, res) => {
   }
 });
 
-app.get("/api/auth/verify", (req, res) => {
+app.get("/api/auth/verify", async (req, res) => {
   const token = req.cookies?.pv_auth;
   if (!token) {
     return res.status(401).json({ success: false, message: 'Not authenticated' });
@@ -115,9 +115,26 @@ app.get("/api/auth/verify", (req, res) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as any;
 
-    if (decoded.expires_at && new Date(decoded.expires_at) < new Date()) {
+    const { pool } = await import('./db.js');
+    const userResult = await pool.query('SELECT id, status, access_level, expires_at FROM users WHERE email = $1', [decoded.email]);
+    const dbUser = userResult.rows[0];
+
+    if (!dbUser) {
+      res.clearCookie('pv_auth', { path: '/', httpOnly: true, secure: isProduction, sameSite: isProduction ? 'none' as const : 'lax' as const });
+      return res.status(401).json({ success: false, message: 'Account not found. Please sign in again.' });
+    }
+
+    if (dbUser.status === 'revoked') {
+      res.clearCookie('pv_auth', { path: '/', httpOnly: true, secure: isProduction, sameSite: isProduction ? 'none' as const : 'lax' as const });
+      return res.status(403).json({ success: false, message: 'Your access has been revoked. Contact the administrator.' });
+    }
+    if (dbUser.expires_at && new Date(dbUser.expires_at) < new Date()) {
+      res.clearCookie('pv_auth', { path: '/', httpOnly: true, secure: isProduction, sameSite: isProduction ? 'none' as const : 'lax' as const });
       return res.status(403).json({ success: false, message: 'Your access has expired' });
     }
+
+    const permResult = await pool.query('SELECT page_id FROM user_permissions WHERE user_id = $1', [dbUser.id]);
+    const freshPermissions = permResult.rows.map((r: any) => r.page_id);
 
     return res.json({
       success: true,
@@ -125,8 +142,8 @@ app.get("/api/auth/verify", (req, res) => {
       name: decoded.name,
       picture: decoded.picture,
       role: decoded.role || 'user',
-      accessLevel: decoded.accessLevel || 'full',
-      permissions: decoded.permissions || [],
+      accessLevel: dbUser.access_level || 'full',
+      permissions: freshPermissions,
       isAdmin: decoded.email === 'luisscola@pallacanestrovarese.it'
     });
   } catch {
