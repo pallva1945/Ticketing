@@ -1,8 +1,9 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Bell, Users, FileText, ChevronDown, Target, Shield, RefreshCw, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Bell, Users, FileText, ChevronDown, Target, Shield, RefreshCw, Sun, Moon, LogOut } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
 import { useLanguage } from './contexts/LanguageContext';
+import { useAuth } from './contexts/AuthContext';
 import { DashboardChart } from './components/DashboardChart';
 import { StatsCards } from './components/StatsCards';
 import { ZoneTable } from './components/ZoneTable';
@@ -982,6 +983,7 @@ service cloud.firestore {
 const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
+  const { userEmail, logout } = useAuth();
   const isDark = theme === 'dark';
   
   // Navigation State - Defaults to HOME
@@ -2628,8 +2630,27 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
                  <p className="text-xs font-bold text-gray-900 dark:text-white">{TEAM_NAME}</p>
                  <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">{t('Revenue Intelligence')}</p>
              </div>
-             <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700">
-                 <span className="text-xs font-bold text-gray-600 dark:text-gray-300">PV</span>
+             <div className="relative group">
+               <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700 cursor-pointer">
+                 <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
+                   {userEmail ? userEmail.substring(0, 2).toUpperCase() : 'PV'}
+                 </span>
+               </div>
+               <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                 {userEmail && (
+                   <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+                     <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('Signed in as')}</p>
+                     <p className="text-xs text-gray-700 dark:text-gray-300 truncate font-medium">{userEmail}</p>
+                   </div>
+                 )}
+                 <button
+                   onClick={logout}
+                   className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors rounded-b-lg"
+                 >
+                   <LogOut size={12} />
+                   {t('Sign Out')}
+                 </button>
+               </div>
              </div>
           </div>
       </div>

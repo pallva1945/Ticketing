@@ -6,10 +6,13 @@ import { InternalHub } from './components/InternalHub';
 import { FinancialCenter } from './components/FinancialCenter';
 import { CostCenter } from './components/CostCenter';
 import { VerticalsPnL } from './components/VerticalsPnL';
+import { LoginPage } from './components/LoginPage';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const Root: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
   const [currentView, setCurrentView] = useState<string>(() => {
     const hash = window.location.hash.replace('#', '');
     return hash || 'welcome';
@@ -34,6 +37,18 @@ const Root: React.FC = () => {
     setCurrentView('welcome');
     window.location.hash = '';
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
+        <div className="w-8 h-8 border-2 border-red-800 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
 
   if (currentView === 'revenue') {
     return <App onBackToLanding={handleBackToFinancial} />;
@@ -68,7 +83,9 @@ root.render(
   <React.StrictMode>
     <ThemeProvider>
       <LanguageProvider>
-        <Root />
+        <AuthProvider>
+          <Root />
+        </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>
   </React.StrictMode>

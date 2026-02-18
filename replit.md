@@ -3,7 +3,15 @@
 ## Overview
 The PV Financial Center is a React-based application designed for Pallacanestro Varese. It serves as the top-level hub with three sections: Revenue Center (active), Cost Center (placeholder), and Verticals P&Ls (placeholder). The Revenue Center provides an executive overview, detailed ticketing analytics, game day data, and various business operations metrics. The project aims to offer a comprehensive, real-time data visualization tool for strategic decision-making, improving operational efficiency, and enhancing fan engagement. It consolidates diverse data sources into a single, intuitive platform to support business growth and market potential within the sports industry.
 
+## Authentication
+- **Login Gate** (`LoginPage.tsx` + `AuthContext.tsx`): Corporate email login restricted to @pallacanestrovarese.it domain
+- **Server Auth** (`server/index.ts`): JWT-based session with httpOnly cookies, 7-day expiry
+- **Endpoints**: POST /api/auth/login (domain validation + JWT), GET /api/auth/verify (token check), POST /api/auth/logout (cookie clear)
+- **Sign Out**: User avatar dropdown in Revenue Center header shows email and sign-out option
+- **Security**: JWT_SECRET required from environment variable (no fallback), cookie secure flag adapts to production/dev
+
 ## Navigation Architecture
+- **Login Page** (`LoginPage.tsx`): Corporate access gate — email-only login for @pallacanestrovarese.it
 - **Welcome Page** (`WelcomePage.tsx`): Animated intro with logo fade, title, and Enter button
 - **Internal Hub** (`InternalHub.tsx`): Full-page snap-scroll experience with 4 sections — Vision/Mission/Values, About Us, Our Team, then Corp + BOps (Departments). Quintic ease animation (1.8s). Sticky nav with section indicators and side dots.
 - **Financial Center** (`FinancialCenter.tsx`): Entry point for Corp with 3 cards — Revenue Center, Cost Center, Verticals P&Ls

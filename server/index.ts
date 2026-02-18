@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import compression from "compression";
+import cookieParser from "cookie-parser";
+import jwt from "jsonwebtoken";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -11,6 +13,14 @@ const SHOPIFY_STORE = process.env.SHOPIFY_STORE_NAME || 'pallacanestro-varese';
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
 const SHOPIFY_API_VERSION = process.env.SHOPIFY_API_VERSION || '2026-01';
 
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is required');
+  process.exit(1);
+}
+const ALLOWED_DOMAIN = 'pallacanestrovarese.it';
+const JWT_EXPIRY = '7d';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -18,13 +28,57 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Enable compression for all responses (helps with large CRM payloads)
 app.use(compression());
 app.use(cors());
+app.use(cookieParser());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 registerObjectStorageRoutes(app);
+
+app.post("/api/auth/login", (req, res) => {
+  const { email } = req.body;
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({ success: false, message: 'Email is required' });
+  }
+  const normalizedEmail = email.trim().toLowerCase();
+  const domain = normalizedEmail.split('@')[1];
+  if (domain !== ALLOWED_DOMAIN) {
+    return res.status(403).json({ success: false, message: 'Access restricted to @pallacanestrovarese.it accounts' });
+  }
+  const token = jwt.sign({ email: normalizedEmail }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
+  res.cookie('pv_auth', token, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/'
+  });
+  return res.json({ success: true, email: normalizedEmail });
+});
+
+app.get("/api/auth/verify", (req, res) => {
+  const token = req.cookies?.pv_auth;
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Not authenticated' });
+  }
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { email: string };
+    return res.json({ success: true, email: decoded.email });
+  } catch {
+    return res.status(401).json({ success: false, message: 'Invalid or expired session' });
+  }
+});
+
+app.post("/api/auth/logout", (_req, res) => {
+  res.clearCookie('pv_auth', {
+    path: '/',
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+  });
+  return res.json({ success: true });
+});
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
@@ -1130,15 +1184,6 @@ app.get("/api/shopify/customers", async (req, res) => {
   }
 });
 
-// --- PRODUCTION STATIC FILE SERVING (must be after all API routes) ---
-if (isProduction) {
-  const distPath = path.join(__dirname, '..', 'dist');
-  app.use(express.static(distPath));
-  app.use((req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
-  });
-}
-
 app.post("/api/cache/clear", (req, res) => {
   ticketingCache = null;
   crmCache = null;
@@ -1160,6 +1205,15 @@ app.get("/api/cache/status", (req, res) => {
   };
   res.json({ success: true, caches: status });
 });
+
+if (isProduction) {
+  app.set('trust proxy', 1);
+  const distPath = path.join(__dirname, '..', 'dist');
+  app.use(express.static(distPath));
+  app.use((req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT} (${isProduction ? 'production' : 'development'})`);

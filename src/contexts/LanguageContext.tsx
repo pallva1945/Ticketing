@@ -1063,6 +1063,14 @@ const translations: Record<string, Record<Language, string>> = {
   'Unrealized & Pending Opportunities': { en: 'Unrealized & Pending Opportunities', it: 'Opportunità Non Realizzate e In Sospeso' },
   'Total Confirmed Revenue': { en: 'Total Confirmed Revenue', it: 'Ricavi Confermati Totali' },
   'H1 Actual (Jul – Dec 2025)': { en: 'H1 Actual (Jul – Dec 2025)', it: 'H1 Effettivo (Lug – Dic 2025)' },
+  'Corporate Access': { en: 'Corporate Access', it: 'Accesso Aziendale' },
+  'Sign In': { en: 'Sign In', it: 'Accedi' },
+  'Restricted to Pallacanestro Varese staff': { en: 'Restricted to Pallacanestro Varese staff', it: 'Riservato al personale di Pallacanestro Varese' },
+  'Please enter your email address': { en: 'Please enter your email address', it: 'Inserisci il tuo indirizzo email' },
+  'Access restricted to @pallacanestrovarese.it accounts': { en: 'Access restricted to @pallacanestrovarese.it accounts', it: 'Accesso riservato agli account @pallacanestrovarese.it' },
+  'Login failed': { en: 'Login failed', it: 'Accesso fallito' },
+  'Sign Out': { en: 'Sign Out', it: 'Esci' },
+  'Signed in as': { en: 'Signed in as', it: 'Connesso come' },
 };
 
 interface LanguageContextType {
