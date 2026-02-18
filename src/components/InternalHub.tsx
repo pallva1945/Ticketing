@@ -16,6 +16,44 @@ const OWNERSHIP_DATA = [
   { name: 'Basket Siamo Noi', value: 1.9, color: '#8b5cf6' },
 ];
 
+const BOARD_MEMBERS = [
+  {
+    name: 'Antonio Bulgheroni',
+    initials: 'AB',
+    roleKey: 'Presidente',
+    bioKey: 'bio_bulgheroni',
+    color: '#E30613',
+  },
+  {
+    name: 'Luis Scola',
+    initials: 'LS',
+    roleKey: 'Amministratore Delegato',
+    bioKey: 'bio_scola',
+    color: '#1e3a5f',
+  },
+  {
+    name: 'Paolo Perego',
+    initials: 'PP',
+    roleKey: 'Vice Presidente',
+    bioKey: 'bio_perego',
+    color: '#6366f1',
+  },
+  {
+    name: 'Paolo Orrigoni',
+    initials: 'PO',
+    roleKey: 'Consigliere',
+    bioKey: 'bio_orrigoni',
+    color: '#f59e0b',
+  },
+  {
+    name: 'Roberto D\'Avola',
+    initials: 'RD',
+    roleKey: 'Consigliere',
+    bioKey: 'bio_davola',
+    color: '#10b981',
+  },
+];
+
 const StatCounter: React.FC<{ target: number; label: string; suffix?: string; active: boolean; isDark: boolean }> = ({ target, label, suffix, active, isDark }) => {
   const [count, setCount] = useState(0);
   const hasAnimated = useRef(false);
@@ -518,25 +556,45 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             </div>
 
             {/* Sub-slide 2: Board */}
-            <div className="w-full flex-shrink-0 h-full flex flex-col items-center justify-center px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
-              <div className="max-w-2xl mx-auto text-center">
-                <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-6 ${
-                  isDark ? 'bg-indigo-900/15 text-indigo-400 border border-indigo-800/20' : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
-                }`}>
-                  <Briefcase size={12} />
-                  {t('Board of Directors')}
+            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+              <div className="max-w-5xl mx-auto w-full">
+                <div className="text-center mb-5">
+                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-3 ${
+                    isDark ? 'bg-indigo-900/15 text-indigo-400 border border-indigo-800/20' : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                  }`}>
+                    <Briefcase size={12} />
+                    {t('Board of Directors')}
+                  </div>
+                  <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {t('Consiglio di Amministrazione')}
+                  </h2>
                 </div>
-                <h2 className={`text-2xl sm:text-3xl font-light tracking-tight mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {t('Board of Directors')}
-                </h2>
-                <p className={`text-sm max-w-lg mx-auto mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                  {t('Strategic governance and oversight')}
-                </p>
-                <div className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs tracking-[0.15em] uppercase font-medium ${
-                  isDark ? 'border border-gray-800 text-gray-500' : 'border border-gray-200 text-gray-400'
-                }`}>
-                  <Lock size={10} />
-                  {t('Coming Soon')}
+
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                  {BOARD_MEMBERS.map((member, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-xl border p-4 text-center transition-all duration-500 hover:scale-[1.02] ${
+                        isDark ? 'bg-gray-900/60 border-gray-800/60 hover:border-gray-700' : 'bg-white border-gray-200/80 hover:border-gray-300'
+                      }`}
+                    >
+                      <div
+                        className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-lg font-bold"
+                        style={{ backgroundColor: member.color }}
+                      >
+                        {member.initials}
+                      </div>
+                      <h3 className={`text-sm font-semibold mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {member.name}
+                      </h3>
+                      <p className="text-[10px] tracking-[0.1em] uppercase font-medium mb-2.5" style={{ color: member.color }}>
+                        {t(member.roleKey)}
+                      </p>
+                      <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {t(member.bioKey)}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>

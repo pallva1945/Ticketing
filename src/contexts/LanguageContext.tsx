@@ -403,6 +403,31 @@ const translations: Record<string, Record<Language, string>> = {
   'Board': { en: 'Board', it: 'CdA' },
   'ELT': { en: 'ELT', it: 'ELT' },
   'Depts': { en: 'Depts', it: 'Dip.' },
+  'Presidente': { en: 'President', it: 'Presidente' },
+  'Vice Presidente': { en: 'Vice President', it: 'Vice Presidente' },
+  'Amministratore Delegato': { en: 'CEO', it: 'Amministratore Delegato' },
+  'Consigliere': { en: 'Board Member', it: 'Consigliere' },
+  'Consiglio di Amministrazione': { en: 'Board of Directors', it: 'Consiglio di Amministrazione' },
+  'bio_bulgheroni': {
+    en: 'Former PV player and 2x Italian champion. Law degree, CEO of Bulgheroni SpA, President of Lindt & Sprüngli Italia. First PV president 1981–1992, returned 2023. Italia Basket Hall of Fame.',
+    it: 'Ex giocatore PV e 2 volte campione d\'Italia. Laurea in Giurisprudenza, AD Bulgheroni SpA, Presidente Lindt & Sprüngli Italia. Primo presidente PV 1981–1992, ritornato nel 2023. Hall of Fame del basket italiano.'
+  },
+  'bio_scola': {
+    en: '2004 Olympic Gold medalist with Argentina\'s "Golden Generation." 10 NBA seasons, 743 games. 3x All-EuroLeague. Retired at PV in 2021, immediately transitioned to CEO leading the club\'s transformation.',
+    it: 'Oro olimpico 2004 con la "Generación Dorada" argentina. 10 stagioni NBA, 743 partite. 3x All-EuroLeague. Ritiratosi alla PV nel 2021, subito diventato AD guidando la trasformazione del club.'
+  },
+  'bio_perego': {
+    en: 'Former CEO of IRCA Group, international leader in chocolate production. Key investor in VSE and architect of PV\'s financial turnaround, driving 50% revenue growth and infrastructure modernization.',
+    it: 'Ex AD di IRCA Group, leader internazionale nella produzione di cioccolato. Investitore chiave in VSE e artefice della svolta finanziaria di PV, guidando una crescita dei ricavi del 50% e la modernizzazione infrastrutturale.'
+  },
+  'bio_orrigoni': {
+    en: 'CEO of Tigros S.p.A., 83 supermarkets across Lombardy and Piedmont with €1.2B revenue. President of ESD Italia. New shareholder investing €2M in PV\'s growth.',
+    it: 'AD di Tigros S.p.A., 83 supermercati tra Lombardia e Piemonte con €1,2 miliardi di fatturato. Presidente ESD Italia. Nuovo azionista con €2M investiti nella crescita di PV.'
+  },
+  'bio_davola': {
+    en: 'NYU MBA. Former Managing Director and Head of Latin America Debt Capital Markets at J.P. Morgan. Previously at HSBC and UBS. Now Group Head of Corporate Finance at Latin Securities.',
+    it: 'MBA NYU. Ex Managing Director e Responsabile Mercati dei Capitali America Latina presso J.P. Morgan. Precedentemente in HSBC e UBS. Ora Group Head Corporate Finance di Latin Securities.'
+  },
   'Revenue, Costs & Business Intelligence': { en: 'Revenue, Costs & Business Intelligence', it: 'Ricavi, Costi & Business Intelligence' },
   'Comprehensive financial intelligence for Pallacanestro Varese': { en: 'Comprehensive financial intelligence for Pallacanestro Varese', it: 'Intelligence finanziaria completa per Pallacanestro Varese' },
   'Back to Financial Center': { en: 'Back to Financial Center', it: 'Torna al Centro Finanziario' },
