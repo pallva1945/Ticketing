@@ -421,8 +421,8 @@ const translations: Record<string, Record<Language, string>> = {
     it: 'Ex AD di IRCA Group, leader internazionale nella produzione di cioccolato. Investitore chiave in VSE e artefice della svolta finanziaria di PV, guidando una crescita dei ricavi del 50% e la modernizzazione infrastrutturale.'
   },
   'bio_orrigoni': {
-    en: 'CEO of Tigros S.p.A., 83 supermarkets across Lombardy and Piedmont with €1.2B revenue. President of ESD Italia. New shareholder investing €2M in PV\'s growth.',
-    it: 'AD di Tigros S.p.A., 83 supermercati tra Lombardia e Piemonte con €1,2 miliardi di fatturato. Presidente ESD Italia. Nuovo azionista con €2M investiti nella crescita di PV.'
+    en: 'CEO of Tigros S.p.A., 83 supermarkets across Lombardy and Piedmont with €1.2B revenue. President of ESD Italia. New shareholder invested in PV\'s growth.',
+    it: 'AD di Tigros S.p.A., 83 supermercati tra Lombardia e Piemonte con €1,2 miliardi di fatturato. Presidente ESD Italia. Nuovo azionista investito nella crescita di PV.'
   },
   'bio_davola': {
     en: 'NYU MBA. Former Managing Director and Head of Latin America Debt Capital Markets at J.P. Morgan. Previously at HSBC and UBS. Now Group Head of Corporate Finance at Latin Securities.',
