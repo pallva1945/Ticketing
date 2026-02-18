@@ -1,8 +1,20 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, UserCircle2, Trophy, Crown, Heart, Landmark } from 'lucide-react';
+import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, ChevronLeft, ChevronRight, UserCircle2, Trophy, Crown, Heart, Landmark, Briefcase, Star, Layers } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
+
+const TEAM_SLIDES = 4;
+
+const OWNERSHIP_DATA = [
+  { name: 'Varese Sports & Entertainment', value: 51.5, color: '#E30613' },
+  { name: 'Luis Scola Group', value: 21.3, color: '#1e3a5f' },
+  { name: 'Verofin', value: 11.9, color: '#6366f1' },
+  { name: 'PV Ignis', value: 9.0, color: '#f59e0b' },
+  { name: 'Varese Nel Cuore', value: 4.4, color: '#10b981' },
+  { name: 'Basket Siamo Noi', value: 1.9, color: '#8b5cf6' },
+];
 
 const StatCounter: React.FC<{ target: number; label: string; suffix?: string; active: boolean; isDark: boolean }> = ({ target, label, suffix, active, isDark }) => {
   const [count, setCount] = useState(0);
@@ -54,8 +66,19 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
   const containerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState<boolean[]>([true, false, false, false]);
   const [activeNav, setActiveNav] = useState(0);
+  const [teamSlide, setTeamSlide] = useState(0);
   const isScrolling = useRef(false);
+  const isSliding = useRef(false);
   const currentSection = useRef(0);
+  const currentTeamSlide = useRef(0);
+
+  const goToTeamSlide = useCallback((index: number) => {
+    if (isSliding.current || index < 0 || index >= TEAM_SLIDES) return;
+    isSliding.current = true;
+    currentTeamSlide.current = index;
+    setTeamSlide(index);
+    setTimeout(() => { isSliding.current = false; }, 700);
+  }, []);
 
   const easeInOutQuint = (t: number) => t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
 
@@ -86,6 +109,11 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
     setActiveNav(index);
     setVisible(prev => { const n = [...prev]; n[index] = true; return n; });
 
+    if (index !== 2) {
+      currentTeamSlide.current = 0;
+      setTeamSlide(0);
+    }
+
     const container = containerRef.current;
     if (!container) return;
     const target = index * window.innerHeight;
@@ -101,11 +129,22 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      if (isScrolling.current) return;
+      if (isScrolling.current || isSliding.current) return;
 
       accumulated += e.deltaY;
 
       if (Math.abs(accumulated) >= THRESHOLD) {
+        if (currentSection.current === 2) {
+          if (accumulated > 0 && currentTeamSlide.current < TEAM_SLIDES - 1) {
+            goToTeamSlide(currentTeamSlide.current + 1);
+            accumulated = 0;
+            return;
+          } else if (accumulated < 0 && currentTeamSlide.current > 0) {
+            goToTeamSlide(currentTeamSlide.current - 1);
+            accumulated = 0;
+            return;
+          }
+        }
         if (accumulated > 0 && currentSection.current < TOTAL_SECTIONS - 1) {
           goToSection(currentSection.current + 1);
         } else if (accumulated < 0 && currentSection.current > 0) {
@@ -116,22 +155,72 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
     };
 
     let touchStartY = 0;
+    let touchStartX = 0;
     const handleTouchStart = (e: TouchEvent) => {
       touchStartY = e.touches[0].clientY;
+      touchStartX = e.touches[0].clientX;
     };
     const handleTouchEnd = (e: TouchEvent) => {
-      if (isScrolling.current) return;
-      const delta = touchStartY - e.changedTouches[0].clientY;
-      if (Math.abs(delta) > 40) {
-        if (delta > 0 && currentSection.current < TOTAL_SECTIONS - 1) {
+      if (isScrolling.current || isSliding.current) return;
+      const deltaY = touchStartY - e.changedTouches[0].clientY;
+      const deltaX = touchStartX - e.changedTouches[0].clientX;
+
+      if (currentSection.current === 2 && Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
+        if (deltaX > 0 && currentTeamSlide.current < TEAM_SLIDES - 1) {
+          goToTeamSlide(currentTeamSlide.current + 1);
+        } else if (deltaX < 0 && currentTeamSlide.current > 0) {
+          goToTeamSlide(currentTeamSlide.current - 1);
+        }
+        return;
+      }
+
+      if (Math.abs(deltaY) > 40) {
+        if (currentSection.current === 2) {
+          if (deltaY > 0 && currentTeamSlide.current < TEAM_SLIDES - 1) {
+            goToTeamSlide(currentTeamSlide.current + 1);
+            return;
+          } else if (deltaY < 0 && currentTeamSlide.current > 0) {
+            goToTeamSlide(currentTeamSlide.current - 1);
+            return;
+          }
+        }
+        if (deltaY > 0 && currentSection.current < TOTAL_SECTIONS - 1) {
           goToSection(currentSection.current + 1);
-        } else if (delta < 0 && currentSection.current > 0) {
+        } else if (deltaY < 0 && currentSection.current > 0) {
           goToSection(currentSection.current - 1);
         }
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (currentSection.current === 2) {
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          goToTeamSlide(currentTeamSlide.current + 1);
+          return;
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          goToTeamSlide(currentTeamSlide.current - 1);
+          return;
+        }
+        if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+          e.preventDefault();
+          if (currentTeamSlide.current < TEAM_SLIDES - 1) {
+            goToTeamSlide(currentTeamSlide.current + 1);
+          } else {
+            goToSection(currentSection.current + 1);
+          }
+          return;
+        } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+          e.preventDefault();
+          if (currentTeamSlide.current > 0) {
+            goToTeamSlide(currentTeamSlide.current - 1);
+          } else {
+            goToSection(currentSection.current - 1);
+          }
+          return;
+        }
+      }
       if (e.key === 'ArrowDown' || e.key === 'PageDown') {
         e.preventDefault();
         goToSection(currentSection.current + 1);
@@ -152,7 +241,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       container.removeEventListener('touchend', handleTouchEnd);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [goToSection]);
+  }, [goToSection, goToTeamSlide]);
 
   const navItems = [
     t('Vision, Mission & Values'),
@@ -359,43 +448,209 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
         </button>
       </div>
 
-      {/* Section 3: Our Team */}
-      <div className="h-screen flex flex-col items-center justify-center px-6 relative">
-        <div className={`transition-all duration-[1s] ease-out ${visible[2] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="max-w-2xl mx-auto text-center">
-            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-10 ${
-              isDark ? 'bg-purple-900/15 text-purple-400 border border-purple-800/20' : 'bg-purple-50 text-purple-600 border border-purple-100'
-            }`}>
-              <UserCircle2 size={12} />
-              {t('Our Team')}
+      {/* Section 3: Our Team — Sub-slide carousel */}
+      <div className="h-screen relative overflow-hidden">
+        <div className={`transition-all duration-[1s] ease-out h-full ${visible[2] ? 'opacity-100' : 'opacity-0'}`}>
+
+          <div
+            className="flex h-full transition-transform duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+            style={{ transform: `translateX(-${teamSlide * (100 / TEAM_SLIDES)}%)`, width: `${TEAM_SLIDES * 100}%` }}
+          >
+            {/* Sub-slide 1: Ownership */}
+            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-8 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+              <div className="max-w-5xl mx-auto w-full">
+                <div className="text-center mb-6">
+                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-3 ${
+                    isDark ? 'bg-purple-900/15 text-purple-400 border border-purple-800/20' : 'bg-purple-50 text-purple-600 border border-purple-100'
+                  }`}>
+                    <Shield size={12} />
+                    {t('Ownership')}
+                  </div>
+                  <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {t('Shareholder Structure')}
+                  </h2>
+                  <p className={`text-sm mt-2 max-w-lg mx-auto ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {t('ownership_subtitle')}
+                  </p>
+                </div>
+
+                <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
+                  <div className="flex-shrink-0" style={{ width: 260, height: 260 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={OWNERSHIP_DATA}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={70}
+                          outerRadius={115}
+                          paddingAngle={2}
+                          dataKey="value"
+                          stroke="none"
+                          animationBegin={200}
+                          animationDuration={1200}
+                        >
+                          {OWNERSHIP_DATA.map((entry, index) => (
+                            <Cell key={index} fill={entry.color} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="flex-1 w-full max-w-md">
+                    <div className="space-y-2.5">
+                      {OWNERSHIP_DATA.map((item, i) => (
+                        <div key={i} className={`flex items-center justify-between px-4 py-2.5 rounded-lg ${
+                          isDark ? 'bg-gray-900/60 border border-gray-800/50' : 'bg-white border border-gray-200/80'
+                        }`}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                            <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{item.name}</span>
+                          </div>
+                          <span className={`text-sm font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>{item.value}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <h2 className={`text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight leading-tight mb-8 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {t('The people behind the mission')}
-            </h2>
-
-            <div className="flex justify-center mb-8">
-              <div className={`h-px line-grow ${isDark ? 'bg-purple-700/50' : 'bg-purple-300'}`}></div>
+            {/* Sub-slide 2: Board */}
+            <div className="w-full flex-shrink-0 h-full flex flex-col items-center justify-center px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+              <div className="max-w-2xl mx-auto text-center">
+                <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-6 ${
+                  isDark ? 'bg-indigo-900/15 text-indigo-400 border border-indigo-800/20' : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                }`}>
+                  <Briefcase size={12} />
+                  {t('Board of Directors')}
+                </div>
+                <h2 className={`text-2xl sm:text-3xl font-light tracking-tight mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {t('Board of Directors')}
+                </h2>
+                <p className={`text-sm max-w-lg mx-auto mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {t('Strategic governance and oversight')}
+                </p>
+                <div className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs tracking-[0.15em] uppercase font-medium ${
+                  isDark ? 'border border-gray-800 text-gray-500' : 'border border-gray-200 text-gray-400'
+                }`}>
+                  <Lock size={10} />
+                  {t('Coming Soon')}
+                </div>
+              </div>
             </div>
 
-            <p className={`text-base sm:text-lg leading-relaxed max-w-lg mx-auto mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              {t('Meet the professionals driving Pallacanestro Varese forward — on and off the court.')}
-            </p>
-
-            <div className={`mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs tracking-[0.15em] uppercase font-medium ${
-              isDark ? 'border border-gray-800 text-gray-500' : 'border border-gray-200 text-gray-400'
-            }`}>
-              <Lock size={10} />
-              {t('Coming Soon')}
+            {/* Sub-slide 3: ELT */}
+            <div className="w-full flex-shrink-0 h-full flex flex-col items-center justify-center px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+              <div className="max-w-2xl mx-auto text-center">
+                <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-6 ${
+                  isDark ? 'bg-emerald-900/15 text-emerald-400 border border-emerald-800/20' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                }`}>
+                  <Star size={12} />
+                  {t('Elite Leadership Team')}
+                </div>
+                <h2 className={`text-2xl sm:text-3xl font-light tracking-tight mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {t('Elite Leadership Team')}
+                </h2>
+                <p className={`text-sm max-w-lg mx-auto mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {t('The executive team driving daily operations')}
+                </p>
+                <div className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs tracking-[0.15em] uppercase font-medium ${
+                  isDark ? 'border border-gray-800 text-gray-500' : 'border border-gray-200 text-gray-400'
+                }`}>
+                  <Lock size={10} />
+                  {t('Coming Soon')}
+                </div>
+              </div>
             </div>
+
+            {/* Sub-slide 4: Departments */}
+            <div className="w-full flex-shrink-0 h-full flex flex-col items-center justify-center px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+              <div className="max-w-2xl mx-auto text-center">
+                <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-6 ${
+                  isDark ? 'bg-amber-900/15 text-amber-400 border border-amber-800/20' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                }`}>
+                  <Layers size={12} />
+                  {t('Departments')}
+                </div>
+                <h2 className={`text-2xl sm:text-3xl font-light tracking-tight mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {t('Department Overview')}
+                </h2>
+                <p className={`text-sm max-w-lg mx-auto mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {t('Functional areas powering the organization')}
+                </p>
+                <div className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs tracking-[0.15em] uppercase font-medium ${
+                  isDark ? 'border border-gray-800 text-gray-500' : 'border border-gray-200 text-gray-400'
+                }`}>
+                  <Lock size={10} />
+                  {t('Coming Soon')}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Sub-slide navigation */}
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-4 z-10">
+            <button
+              onClick={() => goToTeamSlide(teamSlide - 1)}
+              className={`p-2 rounded-full transition-all duration-300 ${
+                teamSlide === 0
+                  ? 'opacity-0 pointer-events-none'
+                  : isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <ChevronLeft size={18} />
+            </button>
+
+            <div className="flex items-center gap-2">
+              {[t('Ownership'), t('Board'), t('ELT'), t('Depts')].map((label, i) => (
+                <button
+                  key={i}
+                  onClick={() => goToTeamSlide(i)}
+                  className={`px-3 py-1 rounded-full text-[9px] tracking-[0.15em] uppercase font-medium transition-all duration-500 ${
+                    teamSlide === i
+                      ? isDark ? 'bg-white/10 text-white' : 'bg-gray-900/10 text-gray-900'
+                      : isDark ? 'text-gray-600 hover:text-gray-400' : 'text-gray-300 hover:text-gray-500'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => goToTeamSlide(teamSlide + 1)}
+              className={`p-2 rounded-full transition-all duration-300 ${
+                teamSlide === TEAM_SLIDES - 1
+                  ? 'opacity-0 pointer-events-none'
+                  : isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
+
+          {/* Progress bar */}
+          <div className={`absolute bottom-10 left-1/2 -translate-x-1/2 w-48 h-0.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
+            <div
+              className={`h-full rounded-full transition-all duration-700 ease-out ${isDark ? 'bg-purple-500' : 'bg-purple-400'}`}
+              style={{ width: `${((teamSlide + 1) / TEAM_SLIDES) * 100}%` }}
+            />
           </div>
         </div>
 
         <button
-          onClick={() => goToSection(3)}
-          className={`absolute bottom-12 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
+          onClick={() => {
+            if (teamSlide < TEAM_SLIDES - 1) {
+              goToTeamSlide(teamSlide + 1);
+            } else {
+              goToSection(3);
+            }
+          }}
+          className={`absolute bottom-3 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
         >
-          <ChevronDown size={20} />
+          <ChevronDown size={16} />
         </button>
       </div>
 
