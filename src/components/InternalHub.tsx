@@ -3,6 +3,7 @@ import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, Chevron
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { PV_LOGO_URL } from '../constants';
 
 const TEAM_SLIDES = 5;
@@ -158,6 +159,7 @@ interface InternalHubProps {
 export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWelcome }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
+  const { isAdmin } = useAuth();
   const isDark = theme === 'dark';
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -936,7 +938,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+          <div className={`grid grid-cols-1 md:grid-cols-2 ${isAdmin ? 'lg:grid-cols-3' : ''} gap-6 max-w-5xl mx-auto`}>
             <button
               onClick={() => onNavigate('landing')}
               className={`group relative text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl ${
@@ -982,6 +984,32 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 </div>
               </div>
             </div>
+
+            {isAdmin && (
+              <button
+                onClick={() => onNavigate('admin')}
+                className={`group relative text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl ${
+                  isDark ? 'bg-gray-900 border-gray-800 hover:border-amber-800/60' : 'bg-white border-gray-200 hover:border-amber-300'
+                }`}
+              >
+                <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-amber-600 to-amber-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                <div className="p-8 sm:p-10">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${isDark ? 'bg-amber-900/20' : 'bg-amber-50'}`}>
+                    <Shield size={26} className="text-amber-600" />
+                  </div>
+                  <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    Access Management
+                  </h3>
+                  <p className={`text-sm leading-relaxed mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    Manage user access, permissions & invitations
+                  </p>
+                  <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-amber-500' : 'text-amber-600'}`}>
+                    {t('Enter')}
+                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </div>
+              </button>
+            )}
           </div>
         </div>
 

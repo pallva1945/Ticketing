@@ -983,7 +983,7 @@ service cloud.firestore {
 const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
-  const { userEmail, userName, userPicture, logout } = useAuth();
+  const { userEmail, userName, userPicture, logout, isAdmin, accessLevel, permissions } = useAuth();
   const isDark = theme === 'dark';
   
   // Navigation State - Defaults to HOME
@@ -1066,7 +1066,7 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
   const [ignoreOspiti, setIgnoreOspiti] = useState(false);
 
   // --- VERTICALS CONFIGURATION ---
-  const MODULES: { id: RevenueModule; label: string; icon: any }[] = [
+  const ALL_MODULES: { id: RevenueModule; label: string; icon: any }[] = [
     { id: 'home', label: t('Executive Overview'), icon: PieChart },
     { id: 'ticketing', label: t('Ticketing'), icon: Ticket },
     { id: 'gameday', label: t('GameDay'), icon: Calendar },
@@ -1076,6 +1076,10 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
     { id: 'bops', label: t('BOps'), icon: Activity },
     { id: 'sg', label: t('Varese Basketball'), icon: GraduationCap },
   ];
+
+  const MODULES = isAdmin || accessLevel === 'full' || permissions.length === 0
+    ? ALL_MODULES
+    : ALL_MODULES.filter(m => permissions.includes(m.id));
 
   const LOCAL_CACHE_KEY = 'pv_data_cache';
   const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours

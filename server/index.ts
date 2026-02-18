@@ -9,6 +9,8 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV } from "../src/services/bigQueryService";
+import { initDatabase, upsertUser, getUserByEmail, getUserPermissions } from "./db.js";
+import { registerAdminRoutes } from "./adminRoutes.js";
 
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE_NAME || 'pallacanestro-varese';
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
@@ -38,6 +40,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 registerObjectStorageRoutes(app);
+registerAdminRoutes(app);
 
 app.get("/api/auth/client-id", (_req, res) => {
   res.json({ clientId: GOOGLE_CLIENT_ID });
@@ -66,8 +69,25 @@ app.post("/api/auth/google", async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access restricted to @pallacanestrovarese.it accounts' });
     }
 
+    const user = await upsertUser(email, payload.name || email, payload.picture || '', 'google');
+
+    if (user.status === 'revoked') {
+      return res.status(403).json({ success: false, message: 'Your access has been revoked. Contact the administrator.' });
+    }
+
+    const permissions = await getUserPermissions(user.id);
+    const isAdmin = email === 'luisscola@pallacanestrovarese.it';
+
     const sessionToken = jwt.sign(
-      { email, name: payload.name || email, picture: payload.picture || '' },
+      {
+        email,
+        name: payload.name || email,
+        picture: payload.picture || '',
+        userId: user.id,
+        role: isAdmin ? 'admin' : 'user',
+        accessLevel: user.access_level || 'full',
+        permissions: isAdmin ? [] : permissions
+      },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRY }
     );
@@ -93,8 +113,22 @@ app.get("/api/auth/verify", (req, res) => {
     return res.status(401).json({ success: false, message: 'Not authenticated' });
   }
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { email: string; name?: string; picture?: string };
-    return res.json({ success: true, email: decoded.email, name: decoded.name, picture: decoded.picture });
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    if (decoded.expires_at && new Date(decoded.expires_at) < new Date()) {
+      return res.status(403).json({ success: false, message: 'Your access has expired' });
+    }
+
+    return res.json({
+      success: true,
+      email: decoded.email,
+      name: decoded.name,
+      picture: decoded.picture,
+      role: decoded.role || 'user',
+      accessLevel: decoded.accessLevel || 'full',
+      permissions: decoded.permissions || [],
+      isAdmin: decoded.email === 'luisscola@pallacanestrovarese.it'
+    });
   } catch {
     return res.status(401).json({ success: false, message: 'Invalid or expired session' });
   }
@@ -1244,6 +1278,10 @@ if (isProduction) {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }
+
+initDatabase().catch(err => {
+  console.error('Database initialization failed:', err.message);
+});
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT} (${isProduction ? 'production' : 'development'})`);
