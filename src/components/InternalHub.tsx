@@ -31,7 +31,7 @@ const BOARD_MEMBERS = [
     roleKey: 'Amministratore Delegato',
     bioKey: 'bio_scola',
     color: '#1e3a5f',
-    photo: 'https://i.imgur.com/cooPo2X.png',
+    photo: 'https://i.imgur.com/F6EEMwg.jpeg',
   },
   {
     name: 'Paolo Perego',
