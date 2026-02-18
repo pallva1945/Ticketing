@@ -90,6 +90,17 @@ const ELT_MEMBERS = [
   },
 ];
 
+const DEPT_MEMBERS = [
+  { name: 'Mario Oioli', initials: 'MO', roleKey: 'role_oioli', color: '#E30613' },
+  { name: 'Maria Grazia Ferrari', initials: 'MF', roleKey: 'role_ferrari', color: '#1e3a5f' },
+  { name: 'Raffaella Damatè', initials: 'RD', roleKey: 'role_damate', color: '#6366f1' },
+  { name: 'Federico Pisanti', initials: 'FP', roleKey: 'role_pisanti', color: '#f59e0b' },
+  { name: 'Marco Gandini', initials: 'MG', roleKey: 'role_gandini', color: '#10b981' },
+  { name: 'Lorenzo Gaudina', initials: 'LG', roleKey: 'role_gaudina', color: '#8b5cf6' },
+  { name: 'Filippo Buttarelli', initials: 'FB', roleKey: 'role_buttarelli', color: '#ec4899' },
+  { name: 'Nicola Artuso', initials: 'NA', roleKey: 'role_artuso', color: '#14b8a6' },
+];
+
 const StatCounter: React.FC<{ target: number; label: string; suffix?: string; active: boolean; isDark: boolean }> = ({ target, label, suffix, active, isDark }) => {
   const [count, setCount] = useState(0);
   const hasAnimated = useRef(false);
@@ -680,25 +691,42 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             </div>
 
             {/* Sub-slide 4: Departments */}
-            <div className="w-full flex-shrink-0 h-full flex flex-col items-center justify-center px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
-              <div className="max-w-2xl mx-auto text-center">
-                <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-6 ${
-                  isDark ? 'bg-amber-900/15 text-amber-400 border border-amber-800/20' : 'bg-amber-50 text-amber-600 border border-amber-100'
-                }`}>
-                  <Layers size={12} />
-                  {t('Departments')}
+            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+              <div className="max-w-5xl mx-auto w-full">
+                <div className="text-center mb-5">
+                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-3 ${
+                    isDark ? 'bg-amber-900/15 text-amber-400 border border-amber-800/20' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                  }`}>
+                    <Layers size={12} />
+                    {t('Departments')}
+                  </div>
+                  <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {t('Department Overview')}
+                  </h2>
                 </div>
-                <h2 className={`text-2xl sm:text-3xl font-light tracking-tight mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {t('Department Overview')}
-                </h2>
-                <p className={`text-sm max-w-lg mx-auto mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                  {t('Functional areas powering the organization')}
-                </p>
-                <div className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs tracking-[0.15em] uppercase font-medium ${
-                  isDark ? 'border border-gray-800 text-gray-500' : 'border border-gray-200 text-gray-400'
-                }`}>
-                  <Lock size={10} />
-                  {t('Coming Soon')}
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {DEPT_MEMBERS.map((member, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-xl border p-3 text-center transition-all duration-500 hover:scale-[1.02] ${
+                        isDark ? 'bg-gray-900/60 border-gray-800/60 hover:border-gray-700' : 'bg-white border-gray-200/80 hover:border-gray-300'
+                      }`}
+                    >
+                      <div
+                        className="w-11 h-11 rounded-full mx-auto mb-2 flex items-center justify-center text-white text-sm font-bold"
+                        style={{ backgroundColor: member.color }}
+                      >
+                        {member.initials}
+                      </div>
+                      <h3 className={`text-xs font-semibold mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {member.name}
+                      </h3>
+                      <p className="text-[10px] tracking-[0.05em] uppercase font-medium" style={{ color: member.color }}>
+                        {t(member.roleKey)}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
