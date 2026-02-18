@@ -4,11 +4,24 @@
 The PV Internal Portal is a React-based application designed for Pallacanestro Varese. It serves as the top-level hub with three sections: Revenue Center (active), Cost Center (placeholder), and Verticals P&Ls (placeholder). The Revenue Center provides an executive overview, detailed ticketing analytics, game day data, and various business operations metrics. The project aims to offer a comprehensive, real-time data visualization tool for strategic decision-making, improving operational efficiency, and enhancing fan engagement. It consolidates diverse data sources into a single, intuitive platform to support business growth and market potential within the sports industry.
 
 ## Authentication
+- **Dual Auth**: Google OAuth for @pallacanestrovarese.it internal users + password-based auth for external invited users
 - **Google Sign-In** (`LoginPage.tsx` + `AuthContext.tsx`): Google OAuth login restricted to @pallacanestrovarese.it domain
+- **Password Login** (`LoginPage.tsx`): External users log in with email + password (set during invite acceptance)
 - **Server Auth** (`server/index.ts`): Google ID token verification via `google-auth-library`, then JWT session with httpOnly cookies, 7-day expiry
-- **Endpoints**: POST /api/auth/google (Google token verification + domain check + JWT), GET /api/auth/verify (session check), POST /api/auth/logout (cookie clear), GET /api/auth/client-id (serves Google Client ID to frontend)
+- **Endpoints**: POST /api/auth/google (Google token verification + domain check + JWT), POST /api/auth/password (password login for external users), GET /api/auth/verify (session check), POST /api/auth/logout (cookie clear), GET /api/auth/client-id (serves Google Client ID to frontend)
 - **Sign Out**: User avatar dropdown in Revenue Center header shows Google profile picture, name, email, and sign-out option
-- **Security**: JWT_SECRET required (no fallback), GOOGLE_CLIENT_ID env var required, cookie secure flag adapts to production/dev, server-side Google token verification with `hd` (hosted domain) check
+- **Security**: JWT_SECRET required (no fallback), GOOGLE_CLIENT_ID env var required, cookie httpOnly+secure, server-side Google token verification with `hd` (hosted domain) check
+
+## Access Management
+- **Admin**: Only luisscola@pallacanestrovarese.it has admin access (hardcoded ADMIN_EMAIL in server/adminRoutes.ts)
+- **Admin Panel** (`AdminPanel.tsx`): Accessible from Internal Hub departments section via "Access Management" button (visible only to admin)
+- **Database** (`server/db.ts`): PostgreSQL tables — users, user_permissions, invitations, invitation_pages
+- **User Types**: Internal (Google OAuth, auto-created on first login) and External (password-based, created via invitation)
+- **Access Levels**: full (all pages/modules) or partial (only permitted pages/modules)
+- **Page Permissions**: hub, revenue, cost, pnl (route-level); home, ticketing, gameday, sponsorship, merchandising, venue_ops, bops, sg (module-level within Revenue Center)
+- **Invitation Flow**: Admin generates invite link → copies to clipboard → sends manually (email/WhatsApp) → recipient opens link → sets name + password → account created with specified permissions
+- **Invitation Validation**: Token checked for existence, status (pending only), and expiry before acceptance; marked accepted after use
+- **Access Control**: Enforced in index.tsx (route-level canAccessPage) and App.tsx (module filtering); partial access with no permissions = no access
 
 ## Navigation Architecture
 - **Login Page** (`LoginPage.tsx`): Corporate access gate — email-only login for @pallacanestrovarese.it

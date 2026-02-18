@@ -1077,7 +1077,7 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
     { id: 'sg', label: t('Varese Basketball'), icon: GraduationCap },
   ];
 
-  const MODULES = isAdmin || accessLevel === 'full' || permissions.length === 0
+  const MODULES = isAdmin || accessLevel === 'full'
     ? ALL_MODULES
     : ALL_MODULES.filter(m => permissions.includes(m.id));
 

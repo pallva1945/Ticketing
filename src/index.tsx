@@ -52,8 +52,8 @@ const Root: React.FC = () => {
   const canAccessPage = (pageId: string): boolean => {
     if (isAdmin) return true;
     if (accessLevel === 'full') return true;
-    if (permissions.length === 0) return true;
-    return permissions.includes(pageId);
+    if (accessLevel === 'partial') return permissions.includes(pageId);
+    return true;
   };
 
   if (isLoading) {
