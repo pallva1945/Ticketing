@@ -66,6 +66,7 @@ const ELT_MEMBERS = [
     roleKey: 'GM Basketball Operations',
     bioKey: 'bio_sogolow',
     color: '#E30613',
+    photo: 'https://i.imgur.com/wHVwtM7.jpeg',
   },
   {
     name: 'Maksim Horowitz',
@@ -73,6 +74,7 @@ const ELT_MEMBERS = [
     roleKey: 'GM Basketball Operations',
     bioKey: 'bio_horowitz',
     color: '#1e3a5f',
+    photo: 'https://i.imgur.com/jAMPp3V.jpeg',
   },
   {
     name: 'Marco Zamberletti',
@@ -80,6 +82,7 @@ const ELT_MEMBERS = [
     roleKey: 'CSO',
     bioKey: 'bio_zamberletti',
     color: '#6366f1',
+    photo: 'https://i.imgur.com/lRgRD1m.jpeg',
   },
   {
     name: 'Federico Bellotto',
@@ -87,6 +90,7 @@ const ELT_MEMBERS = [
     roleKey: 'COO',
     bioKey: 'bio_bellotto',
     color: '#f59e0b',
+    photo: 'https://i.imgur.com/3lFQ9uQ.jpeg',
   },
 ];
 
@@ -749,11 +753,12 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                         isDark ? 'bg-gray-900/60 border-gray-800/60 hover:border-gray-700' : 'bg-white border-gray-200/80 hover:border-gray-300'
                       }`}
                     >
-                      <div
-                        className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-lg font-bold"
-                        style={{ backgroundColor: member.color }}
-                      >
-                        {member.initials}
+                      <div className="w-16 h-16 rounded-full mx-auto mb-3 overflow-hidden flex items-center justify-center text-white text-lg font-bold" style={{ backgroundColor: member.color }}>
+                        {member.photo ? (
+                          <img src={member.photo} alt={member.name} className="w-full h-full object-cover" />
+                        ) : (
+                          member.initials
+                        )}
                       </div>
                       <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {member.name}
