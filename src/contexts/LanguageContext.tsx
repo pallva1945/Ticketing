@@ -385,8 +385,8 @@ const translations: Record<string, Record<Language, string>> = {
     it: 'Costruiti sulla Tradizione. Guidati dalla Visione.'
   },
   'about_subheadline': {
-    en: '10 league titles, 5 EuroLeague trophies, and 80 years of history — now channeled into building a modern sports organization that sets new standards across European basketball.',
-    it: '10 titoli di campione, 5 trofei di EuroLeague e 80 anni di storia — ora incanalati nella costruzione di un\'organizzazione sportiva moderna che stabilisce nuovi standard nel basket europeo.'
+    en: 'Five pillars cemented in our foundation — the cornerstones of our project, rooted in our community, our history, and our city.',
+    it: 'Cinque pilastri cementati nelle nostre fondamenta — le pietre angolari del nostro progetto, radicate nella nostra comunità, nella nostra storia e nella nostra città.'
   },
   'Sustainability': { en: 'Sustainability', it: 'Sostenibilità' },
   'Innovation': { en: 'Innovation', it: 'Innovazione' },
