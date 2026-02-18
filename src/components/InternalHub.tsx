@@ -23,6 +23,7 @@ const BOARD_MEMBERS = [
     roleKey: 'Presidente',
     bioKey: 'bio_bulgheroni',
     color: '#E30613',
+    photo: 'https://i.imgur.com/Ot1rDJr.jpeg',
   },
   {
     name: 'Luis Scola',
@@ -30,6 +31,7 @@ const BOARD_MEMBERS = [
     roleKey: 'Amministratore Delegato',
     bioKey: 'bio_scola',
     color: '#1e3a5f',
+    photo: 'https://i.imgur.com/cooPo2X.png',
   },
   {
     name: 'Paolo Perego',
@@ -37,6 +39,7 @@ const BOARD_MEMBERS = [
     roleKey: 'Vice Presidente',
     bioKey: 'bio_perego',
     color: '#6366f1',
+    photo: 'https://i.imgur.com/4XWGZ9A.jpeg',
   },
   {
     name: 'Paolo Orrigoni',
@@ -44,6 +47,7 @@ const BOARD_MEMBERS = [
     roleKey: 'Consigliere',
     bioKey: 'bio_orrigoni',
     color: '#f59e0b',
+    photo: 'https://i.imgur.com/XUTdo02.jpeg',
   },
   {
     name: 'Roberto D\'Avola',
@@ -51,6 +55,7 @@ const BOARD_MEMBERS = [
     roleKey: 'Consigliere',
     bioKey: 'bio_davola',
     color: '#10b981',
+    photo: 'https://i.imgur.com/zXFeyU6.jpeg',
   },
 ];
 
@@ -579,10 +584,10 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                       }`}
                     >
                       <div
-                        className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-lg font-bold"
-                        style={{ backgroundColor: member.color }}
+                        className="w-14 h-14 rounded-full mx-auto mb-3 overflow-hidden border-2"
+                        style={{ borderColor: member.color }}
                       >
-                        {member.initials}
+                        <img src={member.photo} alt={member.name} className="w-full h-full object-cover" />
                       </div>
                       <h3 className={`text-sm font-semibold mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {member.name}
