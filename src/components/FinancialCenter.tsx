@@ -75,7 +75,7 @@ export const FinancialCenter: React.FC<FinancialCenterProps> = ({ onNavigate }) 
             </button>
           </div>
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">
-            PV Financial Center
+            PV Internal Portal
           </h1>
           <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
             {t('Comprehensive financial intelligence for Pallacanestro Varese')}
