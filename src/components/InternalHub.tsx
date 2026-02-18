@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, ChevronLeft, ChevronRight, UserCircle2, Trophy, Crown, Heart, Landmark, Briefcase, Star, Layers } from 'lucide-react';
+import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, ChevronLeft, ChevronRight, UserCircle2, Trophy, Crown, Heart, Landmark, Briefcase, Star, Layers, Globe } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
 
-const TEAM_SLIDES = 4;
+const TEAM_SLIDES = 5;
 
 const OWNERSHIP_DATA = [
   { name: 'Varese Sports & Entertainment', value: 51.5, color: '#E30613' },
@@ -101,6 +101,14 @@ const DEPT_MEMBERS = [
   { name: 'Nicola Artuso', initials: 'NA', roleKey: 'role_artuso', color: '#14b8a6' },
 ];
 
+const EXT_SERVICES = [
+  { name: 'FullField', initials: 'FF', roleKey: 'role_fullfield', color: '#E30613' },
+  { name: 'Oltre', initials: 'OL', roleKey: 'role_oltre', color: '#6366f1' },
+  { name: 'BSN', initials: 'BS', roleKey: 'role_bsn', color: '#10b981' },
+  { name: 'Airish Waclin', initials: 'AW', roleKey: 'role_airish', color: '#f59e0b' },
+  { name: 'Studio Broggini', initials: 'SB', roleKey: 'role_broggini', color: '#1e3a5f' },
+];
+
 const StatCounter: React.FC<{ target: number; label: string; suffix?: string; active: boolean; isDark: boolean }> = ({ target, label, suffix, active, isDark }) => {
   const [count, setCount] = useState(0);
   const hasAnimated = useRef(false);
@@ -162,7 +170,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
     isSliding.current = true;
     currentTeamSlide.current = index;
     setTeamSlide(index);
-    setTimeout(() => { isSliding.current = false; }, 700);
+    setTimeout(() => { isSliding.current = false; }, 650);
   }, []);
 
   const easeInOutQuint = (t: number) => t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
@@ -538,8 +546,13 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
         <div className={`transition-all duration-[1s] ease-out h-full ${visible[2] ? 'opacity-100' : 'opacity-0'}`}>
 
           <div
-            className="flex h-full transition-transform duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
-            style={{ transform: `translateX(-${teamSlide * (100 / TEAM_SLIDES)}%)`, width: `${TEAM_SLIDES * 100}%` }}
+            className="flex h-full"
+            style={{
+              transform: `translateX(-${teamSlide * (100 / TEAM_SLIDES)}%)`,
+              width: `${TEAM_SLIDES * 100}%`,
+              transition: 'transform 600ms cubic-bezier(0.4, 0, 0.2, 1)',
+              willChange: 'transform',
+            }}
           >
             {/* Sub-slide 1: Ownership */}
             <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-8 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
@@ -730,6 +743,47 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 </div>
               </div>
             </div>
+
+            {/* Sub-slide 5: External Services */}
+            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+              <div className="max-w-4xl mx-auto w-full">
+                <div className="text-center mb-5">
+                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-3 ${
+                    isDark ? 'bg-cyan-900/15 text-cyan-400 border border-cyan-800/20' : 'bg-cyan-50 text-cyan-600 border border-cyan-100'
+                  }`}>
+                    <Globe size={12} />
+                    {t('External Services')}
+                  </div>
+                  <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {t('Partner Network')}
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                  {EXT_SERVICES.map((svc, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-xl border p-4 text-center transition-all duration-500 hover:scale-[1.02] ${
+                        isDark ? 'bg-gray-900/60 border-gray-800/60 hover:border-gray-700' : 'bg-white border-gray-200/80 hover:border-gray-300'
+                      }`}
+                    >
+                      <div
+                        className="w-12 h-12 rounded-full mx-auto mb-2.5 flex items-center justify-center text-white text-sm font-bold"
+                        style={{ backgroundColor: svc.color }}
+                      >
+                        {svc.initials}
+                      </div>
+                      <h3 className={`text-sm font-semibold mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {svc.name}
+                      </h3>
+                      <p className="text-[10px] tracking-[0.05em] uppercase font-medium" style={{ color: svc.color }}>
+                        {t(svc.roleKey)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Sub-slide navigation */}
@@ -746,7 +800,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             </button>
 
             <div className="flex items-center gap-2">
-              {[t('Ownership'), t('Board'), t('ELT'), t('Depts')].map((label, i) => (
+              {[t('Ownership'), t('Board'), t('ELT'), t('Depts'), t('External')].map((label, i) => (
                 <button
                   key={i}
                   onClick={() => goToTeamSlide(i)}
