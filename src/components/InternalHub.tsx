@@ -137,7 +137,7 @@ const StatCounter: React.FC<{ target: number; label: string; suffix?: string; ac
       <div className={`text-3xl sm:text-4xl font-bold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
         {count}{suffix || ''}
       </div>
-      <div className={`text-[10px] tracking-[0.2em] uppercase mt-1.5 font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+      <div className={`text-xs tracking-[0.2em] uppercase mt-1.5 font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
         {label}
       </div>
     </div>
@@ -170,7 +170,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
     isSliding.current = true;
     currentTeamSlide.current = index;
     setTeamSlide(index);
-    setTimeout(() => { isSliding.current = false; }, 650);
+    setTimeout(() => { isSliding.current = false; }, 820);
   }, []);
 
   const easeInOutQuint = (t: number) => t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
@@ -218,11 +218,16 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
     if (!container) return;
 
     let accumulated = 0;
-    const THRESHOLD = 50;
+    let lastWheelTime = 0;
+    const THRESHOLD = 60;
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       if (isScrolling.current || isSliding.current) return;
+
+      const now = Date.now();
+      if (now - lastWheelTime > 200) accumulated = 0;
+      lastWheelTime = now;
 
       accumulated += e.deltaY;
 
@@ -369,7 +374,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 <button
                   key={i}
                   onClick={() => goToSection(i)}
-                  className={`px-3 py-1.5 rounded-lg text-[10px] tracking-[0.15em] uppercase font-medium transition-all duration-300 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs tracking-[0.15em] uppercase font-medium transition-all duration-300 ${
                     activeNav === i
                       ? isDark ? 'text-white bg-gray-800' : 'text-gray-900 bg-gray-100'
                       : isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
@@ -381,7 +386,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={toggleLanguage} className={`px-3 py-1.5 rounded-lg text-[10px] tracking-wider uppercase transition-all ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}>
+            <button onClick={toggleLanguage} className={`px-3 py-1.5 rounded-lg text-xs tracking-wider uppercase transition-all ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}>
               {language === 'en' ? 'IT' : 'EN'}
             </button>
             <button onClick={toggleTheme} className={`p-2 rounded-lg transition-all ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}>
@@ -505,12 +510,12 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       {/* Section 2: About Us */}
       <div className="h-screen flex flex-col justify-center px-4 sm:px-6 relative pt-14">
         <div className={`transition-all duration-[1s] ease-out ${visible[1] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="max-w-5xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <div className="text-center mb-6 sm:mb-8">
-              <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-4 ${
+              <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
                 isDark ? 'bg-red-900/15 text-red-400 border border-red-800/20' : 'bg-red-50 text-red-600 border border-red-100'
               }`}>
-                <Users size={12} />
+                <Users size={14} />
                 {t('About Us')}
               </div>
               <h2 className={`text-2xl sm:text-3xl lg:text-4xl font-light tracking-tight leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -521,69 +526,69 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 mb-6 sm:mb-8">
-              <div className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 ${isDark ? 'bg-emerald-900/25' : 'bg-emerald-50'}`}>
-                  <Leaf size={16} className="text-emerald-500" />
+            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mb-6 sm:mb-8">
+              <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${isDark ? 'bg-emerald-900/25' : 'bg-emerald-50'}`}>
+                  <Leaf size={18} className="text-emerald-500" />
                 </div>
-                <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-base font-semibold mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {t('Sustainability')}
                 </h3>
-                <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('pillar_sustainability')}
                 </p>
               </div>
 
-              <div className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
-                  <Lightbulb size={16} className="text-amber-500" />
+              <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
+                  <Lightbulb size={18} className="text-amber-500" />
                 </div>
-                <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-base font-semibold mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {t('Innovation')}
                 </h3>
-                <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('pillar_innovation')}
                 </p>
               </div>
 
-              <div className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
-                  <BarChart3 size={16} className="text-blue-500" />
+              <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
+                  <BarChart3 size={18} className="text-blue-500" />
                 </div>
-                <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-base font-semibold mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {t('Data-Driven')}
                 </h3>
-                <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('pillar_datadriven')}
                 </p>
               </div>
 
-              <div className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
-                  <Rocket size={16} className="text-red-500" />
+              <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
+                  <Rocket size={18} className="text-red-500" />
                 </div>
-                <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-base font-semibold mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {t('Ambition')}
                 </h3>
-                <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('pillar_ambition')}
                 </p>
               </div>
 
-              <div className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 ${isDark ? 'bg-purple-900/25' : 'bg-purple-50'}`}>
-                  <TrendingUp size={16} className="text-purple-500" />
+              <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${isDark ? 'bg-purple-900/25' : 'bg-purple-50'}`}>
+                  <TrendingUp size={18} className="text-purple-500" />
                 </div>
-                <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-base font-semibold mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {t('Development')}
                 </h3>
-                <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('pillar_development')}
                 </p>
               </div>
             </div>
 
-            <div className={`rounded-xl border p-4 sm:p-5 ${isDark ? 'bg-gray-900/40 border-gray-800/40' : 'bg-gray-50/80 border-gray-200/60'}`}>
+            <div className={`rounded-xl border p-5 sm:p-6 ${isDark ? 'bg-gray-900/40 border-gray-800/40' : 'bg-gray-50/80 border-gray-200/60'}`}>
               <div className="grid grid-cols-4 gap-4 sm:gap-8">
                 <StatCounter target={10} label={t('League Titles')} active={visible[1]} isDark={isDark} />
                 <StatCounter target={5} label={t('EuroLeague Titles')} active={visible[1]} isDark={isDark} />
@@ -609,40 +614,41 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
           <div
             className="flex h-full"
             style={{
-              transform: `translateX(-${teamSlide * (100 / TEAM_SLIDES)}%)`,
+              transform: `translate3d(-${teamSlide * (100 / TEAM_SLIDES)}%, 0, 0)`,
               width: `${TEAM_SLIDES * 100}%`,
-              transition: 'transform 600ms cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: 'transform 750ms cubic-bezier(0.22, 1, 0.36, 1)',
               willChange: 'transform',
+              backfaceVisibility: 'hidden' as const,
             }}
           >
             {/* Sub-slide 1: Ownership */}
             <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-8 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
-              <div className="max-w-5xl mx-auto w-full">
+              <div className="max-w-6xl mx-auto w-full">
                 <div className="text-center mb-6">
-                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-3 ${
+                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
                     isDark ? 'bg-purple-900/15 text-purple-400 border border-purple-800/20' : 'bg-purple-50 text-purple-600 border border-purple-100'
                   }`}>
-                    <Shield size={12} />
+                    <Shield size={14} />
                     {t('Ownership')}
                   </div>
                   <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {t('Shareholder Structure')}
                   </h2>
-                  <p className={`text-sm mt-2 max-w-lg mx-auto ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  <p className={`text-sm sm:text-base mt-2 max-w-lg mx-auto ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                     {t('ownership_subtitle')}
                   </p>
                 </div>
 
                 <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
-                  <div className="flex-shrink-0" style={{ width: 260, height: 260 }}>
+                  <div className="flex-shrink-0" style={{ width: 280, height: 280 }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={OWNERSHIP_DATA}
                           cx="50%"
                           cy="50%"
-                          innerRadius={70}
-                          outerRadius={115}
+                          innerRadius={75}
+                          outerRadius={125}
                           paddingAngle={2}
                           dataKey="value"
                           stroke="none"
@@ -658,16 +664,16 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                   </div>
 
                   <div className="flex-1 w-full max-w-md">
-                    <div className="space-y-2.5">
+                    <div className="space-y-3">
                       {OWNERSHIP_DATA.map((item, i) => (
-                        <div key={i} className={`flex items-center justify-between px-4 py-2.5 rounded-lg ${
+                        <div key={i} className={`flex items-center justify-between px-5 py-3 rounded-lg ${
                           isDark ? 'bg-gray-900/60 border border-gray-800/50' : 'bg-white border border-gray-200/80'
                         }`}>
                           <div className="flex items-center gap-3">
-                            <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                            <div className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
                             <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{item.name}</span>
                           </div>
-                          <span className={`text-sm font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>{item.value}%</span>
+                          <span className={`text-base font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>{item.value}%</span>
                         </div>
                       ))}
                     </div>
@@ -678,12 +684,12 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
 
             {/* Sub-slide 2: Board */}
             <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
-              <div className="max-w-5xl mx-auto w-full">
-                <div className="text-center mb-5">
-                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-3 ${
+              <div className="max-w-6xl mx-auto w-full">
+                <div className="text-center mb-6">
+                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
                     isDark ? 'bg-indigo-900/15 text-indigo-400 border border-indigo-800/20' : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
                   }`}>
-                    <Briefcase size={12} />
+                    <Briefcase size={14} />
                     {t('Board of Directors')}
                   </div>
                   <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -691,27 +697,27 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
                   {BOARD_MEMBERS.map((member, i) => (
                     <div
                       key={i}
-                      className={`rounded-xl border p-4 text-center transition-all duration-500 hover:scale-[1.02] ${
+                      className={`rounded-xl border p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
                         isDark ? 'bg-gray-900/60 border-gray-800/60 hover:border-gray-700' : 'bg-white border-gray-200/80 hover:border-gray-300'
                       }`}
                     >
                       <div
-                        className="w-14 h-14 rounded-full mx-auto mb-3 overflow-hidden border-2"
+                        className="w-16 h-16 rounded-full mx-auto mb-3 overflow-hidden border-2"
                         style={{ borderColor: member.color }}
                       >
                         <img src={member.photo} alt={member.name} className="w-full h-full object-cover" />
                       </div>
-                      <h3 className={`text-sm font-semibold mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {member.name}
                       </h3>
-                      <p className="text-[10px] tracking-[0.1em] uppercase font-medium mb-2.5" style={{ color: member.color }}>
+                      <p className="text-xs tracking-[0.1em] uppercase font-medium mb-3" style={{ color: member.color }}>
                         {t(member.roleKey)}
                       </p>
-                      <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         {t(member.bioKey)}
                       </p>
                     </div>
@@ -722,12 +728,12 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
 
             {/* Sub-slide 3: ELT */}
             <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
-              <div className="max-w-4xl mx-auto w-full">
-                <div className="text-center mb-5">
-                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-3 ${
+              <div className="max-w-5xl mx-auto w-full">
+                <div className="text-center mb-6">
+                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
                     isDark ? 'bg-emerald-900/15 text-emerald-400 border border-emerald-800/20' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                   }`}>
-                    <Star size={12} />
+                    <Star size={14} />
                     {t('Elite Leadership Team')}
                   </div>
                   <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -735,27 +741,27 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                   {ELT_MEMBERS.map((member, i) => (
                     <div
                       key={i}
-                      className={`rounded-xl border p-4 text-center transition-all duration-500 hover:scale-[1.02] ${
+                      className={`rounded-xl border p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
                         isDark ? 'bg-gray-900/60 border-gray-800/60 hover:border-gray-700' : 'bg-white border-gray-200/80 hover:border-gray-300'
                       }`}
                     >
                       <div
-                        className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-lg font-bold"
+                        className="w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-lg font-bold"
                         style={{ backgroundColor: member.color }}
                       >
                         {member.initials}
                       </div>
-                      <h3 className={`text-sm font-semibold mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {member.name}
                       </h3>
-                      <p className="text-[10px] tracking-[0.1em] uppercase font-medium mb-2.5" style={{ color: member.color }}>
+                      <p className="text-xs tracking-[0.1em] uppercase font-medium mb-3" style={{ color: member.color }}>
                         {t(member.roleKey)}
                       </p>
-                      <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         {t(member.bioKey)}
                       </p>
                     </div>
@@ -766,12 +772,12 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
 
             {/* Sub-slide 4: Departments */}
             <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
-              <div className="max-w-5xl mx-auto w-full">
-                <div className="text-center mb-5">
-                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-3 ${
+              <div className="max-w-6xl mx-auto w-full">
+                <div className="text-center mb-6">
+                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
                     isDark ? 'bg-amber-900/15 text-amber-400 border border-amber-800/20' : 'bg-amber-50 text-amber-600 border border-amber-100'
                   }`}>
-                    <Layers size={12} />
+                    <Layers size={14} />
                     {t('Departments')}
                   </div>
                   <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -779,24 +785,23 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {DEPT_MEMBERS.map((member, i) => (
                     <div
                       key={i}
-                      className={`rounded-xl border p-3 text-center transition-all duration-500 hover:scale-[1.02] ${
+                      className={`rounded-xl border p-4 sm:p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
                         isDark ? 'bg-gray-900/60 border-gray-800/60 hover:border-gray-700' : 'bg-white border-gray-200/80 hover:border-gray-300'
                       }`}
                     >
                       <div
-                        className="w-11 h-11 rounded-full mx-auto mb-2 flex items-center justify-center text-white text-sm font-bold"
-                        style={{ backgroundColor: member.color }}
+                        className="w-13 h-13 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-base font-bold" style={{ backgroundColor: member.color, width: '3.25rem', height: '3.25rem' }}
                       >
                         {member.initials}
                       </div>
-                      <h3 className={`text-xs font-semibold mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {member.name}
                       </h3>
-                      <p className="text-[10px] tracking-[0.05em] uppercase font-medium" style={{ color: member.color }}>
+                      <p className="text-xs tracking-[0.05em] uppercase font-medium" style={{ color: member.color }}>
                         {t(member.roleKey)}
                       </p>
                     </div>
@@ -807,12 +812,12 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
 
             {/* Sub-slide 5: External Services */}
             <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
-              <div className="max-w-4xl mx-auto w-full">
-                <div className="text-center mb-5">
-                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[10px] tracking-[0.2em] uppercase font-medium mb-3 ${
+              <div className="max-w-5xl mx-auto w-full">
+                <div className="text-center mb-6">
+                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
                     isDark ? 'bg-cyan-900/15 text-cyan-400 border border-cyan-800/20' : 'bg-cyan-50 text-cyan-600 border border-cyan-100'
                   }`}>
-                    <Globe size={12} />
+                    <Globe size={14} />
                     {t('External Services')}
                   </div>
                   <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -820,24 +825,24 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
                   {EXT_SERVICES.map((svc, i) => (
                     <div
                       key={i}
-                      className={`rounded-xl border p-4 text-center transition-all duration-500 hover:scale-[1.02] ${
+                      className={`rounded-xl border p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
                         isDark ? 'bg-gray-900/60 border-gray-800/60 hover:border-gray-700' : 'bg-white border-gray-200/80 hover:border-gray-300'
                       }`}
                     >
                       <div
-                        className="w-12 h-12 rounded-full mx-auto mb-2.5 flex items-center justify-center text-white text-sm font-bold"
+                        className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-base font-bold"
                         style={{ backgroundColor: svc.color }}
                       >
                         {svc.initials}
                       </div>
-                      <h3 className={`text-sm font-semibold mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {svc.name}
                       </h3>
-                      <p className="text-[10px] tracking-[0.05em] uppercase font-medium" style={{ color: svc.color }}>
+                      <p className="text-xs tracking-[0.05em] uppercase font-medium" style={{ color: svc.color }}>
                         {t(svc.roleKey)}
                       </p>
                     </div>
@@ -865,7 +870,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 <button
                   key={i}
                   onClick={() => goToTeamSlide(i)}
-                  className={`px-3 py-1 rounded-full text-[9px] tracking-[0.15em] uppercase font-medium transition-all duration-500 ${
+                  className={`px-3 py-1.5 rounded-full text-xs tracking-[0.15em] uppercase font-medium transition-all duration-500 ${
                     teamSlide === i
                       ? isDark ? 'bg-white/10 text-white' : 'bg-gray-900/10 text-gray-900'
                       : isDark ? 'text-gray-600 hover:text-gray-400' : 'text-gray-300 hover:text-gray-500'
@@ -915,10 +920,10 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       <div className="h-screen flex flex-col items-center justify-center px-6 relative">
         <div className={`transition-all duration-[1s] ease-out ${visible[3] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="max-w-3xl mx-auto text-center mb-16">
-            <p className={`text-[10px] tracking-[0.3em] uppercase font-medium mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+            <p className={`text-xs tracking-[0.3em] uppercase font-medium mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
               {t('Departments')}
             </p>
-            <h2 className={`text-3xl sm:text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            <h2 className={`text-2xl sm:text-3xl lg:text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
               {t('Choose your area')}
             </h2>
             <div className="flex justify-center mt-6">
@@ -976,7 +981,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
         </div>
 
         <div className={`absolute bottom-8 left-1/2 -translate-x-1/2`}>
-          <div className={`flex items-center gap-4 text-[10px] tracking-[0.25em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
+          <div className={`flex items-center gap-4 text-xs tracking-[0.25em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
             <span>Pallacanestro Varese</span>
             <span className="w-px h-3 bg-current"></span>
             <span>{t('Season')} 2025/26</span>
