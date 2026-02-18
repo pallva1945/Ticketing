@@ -379,6 +379,77 @@ const translations: Record<string, Record<Language, string>> = {
   'Meet the professionals driving Pallacanestro Varese forward — on and off the court.': { en: 'Meet the professionals driving Pallacanestro Varese forward — on and off the court.', it: 'Scopri i professionisti che guidano Pallacanestro Varese — dentro e fuori dal campo.' },
   'Born in the Garden City. Forged in European fire.': { en: 'Born in the Garden City. Forged in European fire.', it: 'Nati nella Citt\u00e0 Giardino. Forgiati nel fuoco europeo.' },
   'Since 1945, Pallacanestro Varese has embodied Varesinit\u00e0 — a spirit of organic growth, resilience, and deep community roots.': { en: 'Since 1945, Pallacanestro Varese has embodied Varesinit\u00e0 — a spirit of organic growth, resilience, and deep community roots.', it: 'Dal 1945, Pallacanestro Varese incarna la Varesinit\u00e0 — uno spirito di crescita organica, resilienza e profonde radici comunitarie.' },
+  'brand_promise': {
+    en: '"Heart in Varese, Vision on the World."',
+    it: '"Cuore a Varese, Visione nel Mondo."'
+  },
+  'Mission': { en: 'Mission', it: 'Missione' },
+  'Vision': { en: 'Vision', it: 'Visione' },
+  'Core Values': { en: 'Core Values', it: 'Valori Fondamentali' },
+  'mission_statement': {
+    en: 'To honor our legendary heritage by competing at the highest level, while serving as a premier engine for youth development and social innovation.',
+    it: 'Onorare la nostra eredità leggendaria competendo ai massimi livelli, fungendo da motore principale per lo sviluppo giovanile e l\'innovazione sociale.'
+  },
+  'mission_1': {
+    en: 'Pursue Athletic Excellence — recreate the winning culture of the "Great Varese" with modern, data-driven methodologies.',
+    it: 'Perseguire l\'Eccellenza Sportiva — ricreare la cultura vincente della "Grande Varese" con metodologie moderne e data-driven.'
+  },
+  'mission_2': {
+    en: 'Empower the Next Generation — use our youth academy to shape athletes and the character of young people.',
+    it: 'Formare la Prossima Generazione — usare la nostra academy giovanile per formare atleti e il carattere dei giovani.'
+  },
+  'mission_3': {
+    en: 'Unite the Community — leverage basketball as a universal language to promote inclusion, education, and well-being.',
+    it: 'Unire la Comunità — usare il basket come linguaggio universale per promuovere inclusione, educazione e benessere.'
+  },
+  'mission_4': {
+    en: 'Manage with Rigor — ensure longevity through professional, NBA-style organic growth and analytical efficiency.',
+    it: 'Gestire con Rigore — garantire la longevità attraverso crescita organica professionale e efficienza analitica stile NBA.'
+  },
+  'vision_statement': {
+    en: 'To establish the "Varese Model" as a global benchmark for sustainable sports management — where athletic success, financial transparency, and community impact are inseparable.',
+    it: 'Stabilire il "Modello Varese" come benchmark globale per la gestione sportiva sostenibile — dove successo atletico, trasparenza finanziaria e impatto sociale sono inseparabili.'
+  },
+  'vision_1': {
+    en: 'Create Integrated Value — deliver economic, social, and health benefits beyond the scoreboard.',
+    it: 'Creare Valore Integrato — generare benefici economici, sociali e di salute oltre il risultato sportivo.'
+  },
+  'vision_2': {
+    en: 'Lead in Sustainability — become a pioneer in eco-friendly sports management and environmental education.',
+    it: 'Guidare la Sostenibilità — diventare pionieri nella gestione sportiva eco-sostenibile e nell\'educazione ambientale.'
+  },
+  'vision_3': {
+    en: 'Build Bridges — connect local businesses, schools, and diverse cultures through our network.',
+    it: 'Costruire Ponti — collegare imprese locali, scuole e culture diverse attraverso la nostra rete.'
+  },
+  'vision_4': {
+    en: 'Govern with Integrity — maintain total transparency and ethical leadership.',
+    it: 'Governare con Integrità — mantenere totale trasparenza e leadership etica.'
+  },
+  'values_athlete_title': {
+    en: 'The Athlete — Sporting & Educational',
+    it: 'L\'Atleta — Sportivo & Educativo'
+  },
+  'values_athlete_desc': {
+    en: 'Excellence, discipline, teamwork, and fair play. Victory is the result of rigor, preparation, and daily hard work.',
+    it: 'Eccellenza, disciplina, lavoro di squadra e fair play. La vittoria è il risultato di rigore, preparazione e lavoro quotidiano.'
+  },
+  'values_citizen_title': {
+    en: 'The Citizen — Social & Ethical',
+    it: 'Il Cittadino — Sociale & Etico'
+  },
+  'values_citizen_desc': {
+    en: 'Inclusivity, respect, and solidarity. We fight discrimination and view diversity as a competitive advantage.',
+    it: 'Inclusività, rispetto e solidarietà. Combattiamo la discriminazione e consideriamo la diversità un vantaggio competitivo.'
+  },
+  'values_org_title': {
+    en: 'The Organization — Corporate & Environmental',
+    it: 'L\'Organizzazione — Aziendale & Ambientale'
+  },
+  'values_org_desc': {
+    en: 'Innovation, sustainability, and transparency. Guardians of the future, operating with full accountability.',
+    it: 'Innovazione, sostenibilità e trasparenza. Guardiani del futuro, operando con piena responsabilità.'
+  },
   'A Legacy of Legends': { en: 'A Legacy of Legends', it: 'Un\'Eredità di Leggende' },
   'about_headline': {
     en: 'Built on Legacy. Driven by Vision.',
