@@ -428,6 +428,26 @@ const translations: Record<string, Record<Language, string>> = {
     en: 'NYU MBA. Former Managing Director and Head of Latin America Debt Capital Markets at J.P. Morgan. Previously at HSBC and UBS. Now Group Head of Corporate Finance at Latin Securities.',
     it: 'MBA NYU. Ex Managing Director e Responsabile Mercati dei Capitali America Latina presso J.P. Morgan. Precedentemente in HSBC e UBS. Ora Group Head Corporate Finance di Latin Securities.'
   },
+  'GM Basketball Operations': { en: 'GM Basketball Operations', it: 'GM Operazioni Sportive' },
+  'CSO': { en: 'Chief Sales Officer', it: 'Direttore Commerciale' },
+  'COO': { en: 'Chief Operating Officer', it: 'Direttore Operativo' },
+  'Executive Leadership': { en: 'Executive Leadership', it: 'Leadership Esecutiva' },
+  'bio_sogolow': {
+    en: 'Harvard alumnus. Former Director of Basketball Operations at the Philadelphia 76ers (2017–2023). Previously at the NBA League Office. Brings NBA-level analytics, scouting, and roster management to PV.',
+    it: 'Laureato ad Harvard. Ex Direttore delle Operazioni Sportive ai Philadelphia 76ers (2017–2023). Precedentemente alla NBA League Office. Porta analisi, scouting e gestione del roster di livello NBA alla PV.'
+  },
+  'bio_horowitz': {
+    en: 'Carnegie Mellon graduate in Economics & Statistics. Former Director of Basketball Strategy & Analytics at the Atlanta Hawks (2018–2023). Previously at the NBA League Office and NY Mets analytics.',
+    it: 'Laureato alla Carnegie Mellon in Economia e Statistica. Ex Direttore Strategia e Analytics sportive agli Atlanta Hawks (2018–2023). Precedentemente alla NBA League Office e analytics dei NY Mets.'
+  },
+  'bio_zamberletti': {
+    en: '15+ years at PV across press, marketing, and sponsorship roles under three ownership groups. Deep expertise in Italian basketball commercial operations and partnership development.',
+    it: 'Oltre 15 anni alla PV tra stampa, marketing e sponsorizzazioni sotto tre proprietà. Profonda esperienza nelle operazioni commerciali del basket italiano e sviluppo delle partnership.'
+  },
+  'bio_bellotto': {
+    en: 'UC Riverside graduate and former PV youth player. Oversees corporate strategy, partnerships, and daily operations. Led NBA benchmarking missions visiting 76ers, Knicks, Wizards, and Nets front offices.',
+    it: 'Laureato alla UC Riverside ed ex giocatore del settore giovanile PV. Supervisiona strategia aziendale, partnership e operazioni quotidiane. Ha guidato missioni di benchmarking NBA visitando 76ers, Knicks, Wizards e Nets.'
+  },
   'Revenue, Costs & Business Intelligence': { en: 'Revenue, Costs & Business Intelligence', it: 'Ricavi, Costi & Business Intelligence' },
   'Comprehensive financial intelligence for Pallacanestro Varese': { en: 'Comprehensive financial intelligence for Pallacanestro Varese', it: 'Intelligence finanziaria completa per Pallacanestro Varese' },
   'Back to Financial Center': { en: 'Back to Financial Center', it: 'Torna al Centro Finanziario' },
