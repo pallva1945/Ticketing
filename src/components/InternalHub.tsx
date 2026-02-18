@@ -170,7 +170,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
     isSliding.current = true;
     currentTeamSlide.current = index;
     setTeamSlide(index);
-    setTimeout(() => { isSliding.current = false; }, 820);
+    setTimeout(() => { isSliding.current = false; }, 1400);
   }, []);
 
   const easeInOutQuint = (t: number) => t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
@@ -616,7 +616,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             style={{
               transform: `translate3d(-${teamSlide * (100 / TEAM_SLIDES)}%, 0, 0)`,
               width: `${TEAM_SLIDES * 100}%`,
-              transition: 'transform 750ms cubic-bezier(0.22, 1, 0.36, 1)',
+              transition: 'transform 1200ms cubic-bezier(0.16, 1, 0.3, 1)',
               willChange: 'transform',
               backfaceVisibility: 'hidden' as const,
             }}
@@ -896,8 +896,8 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
           {/* Progress bar */}
           <div className={`absolute bottom-10 left-1/2 -translate-x-1/2 w-48 h-0.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
             <div
-              className={`h-full rounded-full transition-all duration-700 ease-out ${isDark ? 'bg-purple-500' : 'bg-purple-400'}`}
-              style={{ width: `${((teamSlide + 1) / TEAM_SLIDES) * 100}%` }}
+              className={`h-full rounded-full ${isDark ? 'bg-purple-500' : 'bg-purple-400'}`}
+              style={{ width: `${((teamSlide + 1) / TEAM_SLIDES) * 100}%`, transition: 'width 1200ms cubic-bezier(0.16, 1, 0.3, 1)' }}
             />
           </div>
         </div>
