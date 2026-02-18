@@ -4,11 +4,11 @@
 The PV Financial Center is a React-based application designed for Pallacanestro Varese. It serves as the top-level hub with three sections: Revenue Center (active), Cost Center (placeholder), and Verticals P&Ls (placeholder). The Revenue Center provides an executive overview, detailed ticketing analytics, game day data, and various business operations metrics. The project aims to offer a comprehensive, real-time data visualization tool for strategic decision-making, improving operational efficiency, and enhancing fan engagement. It consolidates diverse data sources into a single, intuitive platform to support business growth and market potential within the sports industry.
 
 ## Authentication
-- **Login Gate** (`LoginPage.tsx` + `AuthContext.tsx`): Corporate email login restricted to @pallacanestrovarese.it domain
-- **Server Auth** (`server/index.ts`): JWT-based session with httpOnly cookies, 7-day expiry
-- **Endpoints**: POST /api/auth/login (domain validation + JWT), GET /api/auth/verify (token check), POST /api/auth/logout (cookie clear)
-- **Sign Out**: User avatar dropdown in Revenue Center header shows email and sign-out option
-- **Security**: JWT_SECRET required from environment variable (no fallback), cookie secure flag adapts to production/dev
+- **Google Sign-In** (`LoginPage.tsx` + `AuthContext.tsx`): Google OAuth login restricted to @pallacanestrovarese.it domain
+- **Server Auth** (`server/index.ts`): Google ID token verification via `google-auth-library`, then JWT session with httpOnly cookies, 7-day expiry
+- **Endpoints**: POST /api/auth/google (Google token verification + domain check + JWT), GET /api/auth/verify (session check), POST /api/auth/logout (cookie clear), GET /api/auth/client-id (serves Google Client ID to frontend)
+- **Sign Out**: User avatar dropdown in Revenue Center header shows Google profile picture, name, email, and sign-out option
+- **Security**: JWT_SECRET required (no fallback), GOOGLE_CLIENT_ID env var required, cookie secure flag adapts to production/dev, server-side Google token verification with `hd` (hosted domain) check
 
 ## Navigation Architecture
 - **Login Page** (`LoginPage.tsx`): Corporate access gate — email-only login for @pallacanestrovarese.it

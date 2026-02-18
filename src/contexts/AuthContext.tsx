@@ -4,7 +4,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   userEmail: string | null;
-  login: (email: string) => Promise<{ success: boolean; message?: string }>;
+  userName: string | null;
+  userPicture: string | null;
+  loginWithGoogle: (credential: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
 }
 
@@ -12,7 +14,9 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: true,
   userEmail: null,
-  login: async () => ({ success: false }),
+  userName: null,
+  userPicture: null,
+  loginWithGoogle: async () => ({ success: false }),
   logout: async () => {},
 });
 
@@ -22,6 +26,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
+  const [userPicture, setUserPicture] = useState<string | null>(null);
 
   const verify = useCallback(async () => {
     try {
@@ -31,12 +37,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data.success) {
           setIsAuthenticated(true);
           setUserEmail(data.email);
+          setUserName(data.name || null);
+          setUserPicture(data.picture || null);
           return;
         }
       }
     } catch {}
     setIsAuthenticated(false);
     setUserEmail(null);
+    setUserName(null);
+    setUserPicture(null);
     setIsLoading(false);
   }, []);
 
@@ -44,18 +54,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     verify().finally(() => setIsLoading(false));
   }, [verify]);
 
-  const login = async (email: string) => {
+  const loginWithGoogle = async (credential: string) => {
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ credential }),
       });
       const data = await res.json();
       if (data.success) {
         setIsAuthenticated(true);
         setUserEmail(data.email);
+        setUserName(data.name || null);
         return { success: true };
       }
       return { success: false, message: data.message || 'Login failed' };
@@ -70,10 +81,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {}
     setIsAuthenticated(false);
     setUserEmail(null);
+    setUserName(null);
+    setUserPicture(null);
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, userEmail, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, userEmail, userName, userPicture, loginWithGoogle, logout }}>
       {children}
     </AuthContext.Provider>
   );

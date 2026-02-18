@@ -1,51 +1,103 @@
-import React, { useState } from 'react';
-import { Lock, Mail, ArrowRight, AlertCircle, Sun, Moon } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Lock, AlertCircle, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { PV_LOGO_URL } from '../constants';
 
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: any) => void;
+          renderButton: (element: HTMLElement, config: any) => void;
+          prompt: () => void;
+        };
+      };
+    };
+    handleGoogleLogin?: (response: any) => void;
+  }
+}
+
 export const LoginPage: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
-  const { login } = useAuth();
+  const { loginWithGoogle } = useAuth();
   const isDark = theme === 'dark';
 
-  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [phase, setPhase] = useState(0);
+  const [clientId, setClientId] = useState('');
+  const googleButtonRef = useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const t1 = setTimeout(() => setPhase(1), 200);
     const t2 = setTimeout(() => setPhase(2), 800);
     const t3 = setTimeout(() => setPhase(3), 1400);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
+  useEffect(() => {
+    fetch('/api/auth/client-id')
+      .then(r => r.json())
+      .then(data => {
+        if (data.clientId) setClientId(data.clientId);
+      })
+      .catch(() => {});
+  }, []);
 
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed) {
-      setError(t('Please enter your email address'));
-      return;
+  useEffect(() => {
+    if (!clientId || !googleButtonRef.current) return;
+
+    window.handleGoogleLogin = async (response: any) => {
+      if (response.credential) {
+        setIsSubmitting(true);
+        setError('');
+        const result = await loginWithGoogle(response.credential);
+        setIsSubmitting(false);
+        if (!result.success) {
+          setError(result.message || t('Login failed'));
+        }
+      }
+    };
+
+    const initGoogle = () => {
+      if (window.google?.accounts?.id && googleButtonRef.current) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: window.handleGoogleLogin,
+          auto_select: false,
+          itp_support: true,
+        });
+        window.google.accounts.id.renderButton(
+          googleButtonRef.current,
+          {
+            type: 'standard',
+            theme: isDark ? 'filled_black' : 'outline',
+            size: 'large',
+            text: 'signin_with',
+            shape: 'pill',
+            width: 320,
+            locale: language === 'it' ? 'it' : 'en',
+          }
+        );
+      }
+    };
+
+    if (window.google?.accounts?.id) {
+      initGoogle();
+    } else {
+      const interval = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          clearInterval(interval);
+          initGoogle();
+        }
+      }, 200);
+      return () => clearInterval(interval);
     }
-
-    if (!trimmed.endsWith('@pallacanestrovarese.it')) {
-      setError(t('Access restricted to @pallacanestrovarese.it accounts'));
-      return;
-    }
-
-    setIsSubmitting(true);
-    const result = await login(trimmed);
-    setIsSubmitting(false);
-
-    if (!result.success) {
-      setError(result.message || t('Login failed'));
-    }
-  };
+  }, [clientId, isDark, language, loginWithGoogle, t]);
 
   return (
     <div className={`min-h-screen relative overflow-hidden ${isDark ? 'bg-[#0a0a0a]' : 'bg-[#fafafa]'}`}>
@@ -108,53 +160,26 @@ export const LoginPage: React.FC = () => {
           </div>
 
           <div className={`w-full transition-all duration-[1s] ease-out ${phase >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <form onSubmit={handleSubmit} className="w-full">
-              <div className="relative mb-4">
-                <Mail size={16} className={`absolute left-4 top-1/2 -translate-y-1/2 ${isDark ? 'text-gray-600' : 'text-gray-400'}`} />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                  placeholder="nome@pallacanestrovarese.it"
-                  autoComplete="email"
-                  autoFocus
-                  className={`w-full pl-11 pr-4 py-3.5 rounded-xl text-sm tracking-wide transition-all outline-none ${
-                    isDark
-                      ? 'bg-white/5 border border-gray-800 text-white placeholder-gray-600 focus:border-red-800 focus:bg-white/[0.07]'
-                      : 'bg-white border border-gray-200 text-gray-900 placeholder-gray-400 focus:border-red-400 focus:shadow-sm'
-                  } ${error ? (isDark ? 'border-red-800' : 'border-red-300') : ''}`}
-                />
+            {isSubmitting && (
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Signing in...')}</span>
               </div>
+            )}
 
-              {error && (
-                <div className={`flex items-center gap-2 mb-4 px-1 text-xs ${isDark ? 'text-red-400' : 'text-red-500'}`}>
-                  <AlertCircle size={12} />
-                  <span>{error}</span>
-                </div>
-              )}
+            {error && (
+              <div className={`flex items-center gap-2 mb-4 px-3 py-2 rounded-lg text-xs ${
+                isDark ? 'text-red-400 bg-red-900/20 border border-red-800/40' : 'text-red-600 bg-red-50 border border-red-200'
+              }`}>
+                <AlertCircle size={14} className="flex-shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`w-full group flex items-center justify-center gap-3 py-3.5 rounded-xl transition-all duration-500 tracking-[0.15em] uppercase text-xs font-medium ${
-                  isDark
-                    ? 'bg-red-900/40 border border-red-800/60 text-red-200 hover:bg-red-900/60 hover:border-red-700 disabled:opacity-40'
-                    : 'bg-red-50 border border-red-200 text-red-700 hover:bg-red-100 hover:border-red-300 disabled:opacity-40'
-                } disabled:cursor-not-allowed`}
-              >
-                {isSubmitting ? (
-                  <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <>
-                    {t('Sign In')}
-                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-300" />
-                  </>
-                )}
-              </button>
-            </form>
+            <div className="flex justify-center mb-6" ref={googleButtonRef}></div>
 
-            <p className={`mt-6 text-[10px] tracking-wide ${isDark ? 'text-gray-700' : 'text-gray-400'}`}>
-              {t('Restricted to Pallacanestro Varese staff')}
+            <p className={`text-[10px] tracking-wide ${isDark ? 'text-gray-700' : 'text-gray-400'}`}>
+              {t('Sign in with your @pallacanestrovarese.it Google account')}
             </p>
           </div>
         </div>

@@ -1071,6 +1071,8 @@ const translations: Record<string, Record<Language, string>> = {
   'Login failed': { en: 'Login failed', it: 'Accesso fallito' },
   'Sign Out': { en: 'Sign Out', it: 'Esci' },
   'Signed in as': { en: 'Signed in as', it: 'Connesso come' },
+  'Sign in with your @pallacanestrovarese.it Google account': { en: 'Sign in with your @pallacanestrovarese.it Google account', it: 'Accedi con il tuo account Google @pallacanestrovarese.it' },
+  'Signing in...': { en: 'Signing in...', it: 'Accesso in corso...' },
 };
 
 interface LanguageContextType {

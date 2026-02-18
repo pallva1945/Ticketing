@@ -983,7 +983,7 @@ service cloud.firestore {
 const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
-  const { userEmail, logout } = useAuth();
+  const { userEmail, userName, userPicture, logout } = useAuth();
   const isDark = theme === 'dark';
   
   // Navigation State - Defaults to HOME
@@ -2631,16 +2631,23 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
                  <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase">{t('Revenue Intelligence')}</p>
              </div>
              <div className="relative group">
-               <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700 cursor-pointer">
-                 <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
-                   {userEmail ? userEmail.substring(0, 2).toUpperCase() : 'PV'}
-                 </span>
-               </div>
-               <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+               {userPicture ? (
+                 <img src={userPicture} alt="" className="w-8 h-8 rounded-full border border-gray-200 dark:border-gray-700 cursor-pointer object-cover" referrerPolicy="no-referrer" />
+               ) : (
+                 <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700 cursor-pointer">
+                   <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
+                     {userEmail ? userEmail.substring(0, 2).toUpperCase() : 'PV'}
+                   </span>
+                 </div>
+               )}
+               <div className="absolute right-0 top-full mt-1 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                  {userEmail && (
-                   <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700">
-                     <p className="text-[10px] text-gray-400 dark:text-gray-500 uppercase tracking-wider">{t('Signed in as')}</p>
-                     <p className="text-xs text-gray-700 dark:text-gray-300 truncate font-medium">{userEmail}</p>
+                   <div className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700 flex items-center gap-2.5">
+                     {userPicture && <img src={userPicture} alt="" className="w-7 h-7 rounded-full flex-shrink-0" referrerPolicy="no-referrer" />}
+                     <div className="min-w-0">
+                       {userName && <p className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{userName}</p>}
+                       <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{userEmail}</p>
+                     </div>
                    </div>
                  )}
                  <button

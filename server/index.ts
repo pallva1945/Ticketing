@@ -3,6 +3,7 @@ import cors from "cors";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
@@ -18,6 +19,8 @@ if (!JWT_SECRET) {
   console.error('FATAL: JWT_SECRET environment variable is required');
   process.exit(1);
 }
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 const ALLOWED_DOMAIN = 'pallacanestrovarese.it';
 const JWT_EXPIRY = '7d';
 
@@ -36,25 +39,52 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 registerObjectStorageRoutes(app);
 
-app.post("/api/auth/login", (req, res) => {
-  const { email } = req.body;
-  if (!email || typeof email !== 'string') {
-    return res.status(400).json({ success: false, message: 'Email is required' });
+app.get("/api/auth/client-id", (_req, res) => {
+  res.json({ clientId: GOOGLE_CLIENT_ID });
+});
+
+app.post("/api/auth/google", async (req, res) => {
+  const { credential } = req.body;
+  if (!credential) {
+    return res.status(400).json({ success: false, message: 'Google credential is required' });
   }
-  const normalizedEmail = email.trim().toLowerCase();
-  const domain = normalizedEmail.split('@')[1];
-  if (domain !== ALLOWED_DOMAIN) {
-    return res.status(403).json({ success: false, message: 'Access restricted to @pallacanestrovarese.it accounts' });
+
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return res.status(400).json({ success: false, message: 'Invalid Google token' });
+    }
+
+    const email = payload.email.toLowerCase();
+    const hd = payload.hd;
+
+    if (hd !== ALLOWED_DOMAIN && !email.endsWith('@' + ALLOWED_DOMAIN)) {
+      return res.status(403).json({ success: false, message: 'Access restricted to @pallacanestrovarese.it accounts' });
+    }
+
+    const sessionToken = jwt.sign(
+      { email, name: payload.name || email, picture: payload.picture || '' },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRY }
+    );
+
+    res.cookie('pv_auth', sessionToken, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/'
+    });
+
+    return res.json({ success: true, email, name: payload.name || email });
+  } catch (error: any) {
+    console.error('Google token verification failed:', error.message);
+    return res.status(401).json({ success: false, message: 'Invalid Google sign-in. Please try again.' });
   }
-  const token = jwt.sign({ email: normalizedEmail }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
-  res.cookie('pv_auth', token, {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-    path: '/'
-  });
-  return res.json({ success: true, email: normalizedEmail });
 });
 
 app.get("/api/auth/verify", (req, res) => {
@@ -63,8 +93,8 @@ app.get("/api/auth/verify", (req, res) => {
     return res.status(401).json({ success: false, message: 'Not authenticated' });
   }
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { email: string };
-    return res.json({ success: true, email: decoded.email });
+    const decoded = jwt.verify(token, JWT_SECRET) as { email: string; name?: string; picture?: string };
+    return res.json({ success: true, email: decoded.email, name: decoded.name, picture: decoded.picture });
   } catch {
     return res.status(401).json({ success: false, message: 'Invalid or expired session' });
   }
