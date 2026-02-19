@@ -57,7 +57,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Pure Vertical': { en: 'Pure Vertical', it: 'Verticale Puro' },
   'No-Step Vertical': { en: 'No-Step Vertical', it: 'Verticale Senza Passo' },
   'Sprint': { en: 'Sprint', it: 'Sprint' },
-  'Cone Drill': { en: 'Cone Drill', it: 'Cone Drill' },
+  'Cone Drill': { en: 'Agility', it: 'Agilità' },
   'Deadlift': { en: 'Deadlift', it: 'Stacco' },
   'Injury': { en: 'Injury', it: 'Infortunio' },
   'Injury Level': { en: 'Injury Level', it: 'Livello Infortunio' },
