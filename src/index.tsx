@@ -11,6 +11,7 @@ import { AdminPanel } from './components/AdminPanel';
 import { InviteAcceptPage } from './components/InviteAcceptPage';
 import { ApprovalPage } from './components/ApprovalPage';
 import { AccessPendingPage } from './components/AccessPendingPage';
+import { VBDashboard } from './components/VBDashboard';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -91,6 +92,10 @@ const Root: React.FC = () => {
 
   if (currentView === 'admin' && isAdmin) {
     return <AdminPanel onBack={() => handleNavigate('hub')} />;
+  }
+
+  if (currentView === 'vb' && canAccessPage('hub')) {
+    return <VBDashboard onBack={handleBackToHub} />;
   }
 
   if (currentView === 'revenue' && canAccessPage('revenue')) {

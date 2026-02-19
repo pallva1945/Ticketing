@@ -26,6 +26,157 @@ function getBigQueryClient(): BigQuery {
   return bigquery;
 }
 
+const VB_TABLE = 'ticketing-migration.ticketing_migration.sg_db';
+
+export interface VBRawRow {
+  timestamp: string;
+  Practice_Load: number | null;
+  Height: number | null;
+  Player: string | null;
+  Weight: number | null;
+  Wingspan: number | null;
+  Standing_Reach: number | null;
+  Date_of_Session: string | null;
+  Vitamins_Load: number | null;
+  Weights_Load: number | null;
+  BodyFat: number | null;
+  Pure_Vertical_Jump: number | null;
+  No_Step_Vertical_Jump: number | null;
+  Sprint: number | null;
+  Cone_Drill: number | null;
+  Deadlift: number | null;
+  Shoots_Taken: number | null;
+  Shoots_Made: number | null;
+  email: string | null;
+  Game_Load: number | null;
+  Form_Shooting: number | null;
+  Injured: number | null;
+  National_Team: number | null;
+}
+
+export interface VBMergedSession {
+  player: string;
+  date: string;
+  practiceLoad: number | null;
+  vitaminsLoad: number | null;
+  weightsLoad: number | null;
+  gameLoad: number | null;
+  height: number | null;
+  weight: number | null;
+  wingspan: number | null;
+  standingReach: number | null;
+  bodyFat: number | null;
+  pureVertical: number | null;
+  noStepVertical: number | null;
+  sprint: number | null;
+  coneDrill: number | null;
+  deadlift: number | null;
+  shootsTaken: number | null;
+  shootsMade: number | null;
+  shootingPct: number | null;
+  formShooting: number | null;
+  injured: number | null;
+  nationalTeam: number | null;
+}
+
+function parseVBDate(row: any): string {
+  const dos = row.Date_of_Session;
+  if (dos && String(dos).trim()) {
+    const d = new Date(String(dos));
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+  }
+  const ts = row.timestamp;
+  if (ts) {
+    const d = new Date(String(ts));
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+  }
+  return 'unknown';
+}
+
+function coalesce(a: number | null | undefined, b: number | null | undefined): number | null {
+  if (a !== null && a !== undefined && !isNaN(Number(a))) return Number(a);
+  if (b !== null && b !== undefined && !isNaN(Number(b))) return Number(b);
+  return null;
+}
+
+function mergeVBRows(rows: any[]): VBMergedSession[] {
+  const groups = new Map<string, any[]>();
+  
+  for (const row of rows) {
+    const player = row.Player ? String(row.Player).trim() : null;
+    if (!player) continue;
+    const date = parseVBDate(row);
+    const key = `${player.toLowerCase()}|${date}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(row);
+  }
+  
+  const merged: VBMergedSession[] = [];
+  for (const [, groupRows] of groups) {
+    const base: VBMergedSession = {
+      player: String(groupRows[0].Player).trim(),
+      date: parseVBDate(groupRows[0]),
+      practiceLoad: null, vitaminsLoad: null, weightsLoad: null, gameLoad: null,
+      height: null, weight: null, wingspan: null, standingReach: null, bodyFat: null,
+      pureVertical: null, noStepVertical: null, sprint: null, coneDrill: null, deadlift: null,
+      shootsTaken: null, shootsMade: null, shootingPct: null,
+      formShooting: null, injured: null, nationalTeam: null,
+    };
+    
+    for (const r of groupRows) {
+      base.practiceLoad = coalesce(base.practiceLoad, r.Practice_Load);
+      base.vitaminsLoad = coalesce(base.vitaminsLoad, r.Vitamins_Load);
+      base.weightsLoad = coalesce(base.weightsLoad, r.Weights_Load);
+      base.gameLoad = coalesce(base.gameLoad, r.Game_Load);
+      base.height = coalesce(base.height, r.Height);
+      base.weight = coalesce(base.weight, r.Weight);
+      base.wingspan = coalesce(base.wingspan, r.Wingspan);
+      base.standingReach = coalesce(base.standingReach, r.Standing_Reach);
+      base.bodyFat = coalesce(base.bodyFat, r.BodyFat);
+      base.pureVertical = coalesce(base.pureVertical, r.Pure_Vertical_Jump);
+      base.noStepVertical = coalesce(base.noStepVertical, r.No_Step_Vertical_Jump);
+      base.sprint = coalesce(base.sprint, r.Sprint);
+      base.coneDrill = coalesce(base.coneDrill, r.Cone_Drill);
+      base.deadlift = coalesce(base.deadlift, r.Deadlift);
+      base.shootsTaken = coalesce(base.shootsTaken, r.Shoots_Taken);
+      base.shootsMade = coalesce(base.shootsMade, r.Shoots_Made);
+      base.formShooting = coalesce(base.formShooting, r.Form_Shooting);
+      base.injured = coalesce(base.injured, r.Injured);
+      base.nationalTeam = coalesce(base.nationalTeam, r.National_Team);
+    }
+    
+    if (base.shootsTaken && base.shootsTaken > 0 && base.shootsMade !== null) {
+      base.shootingPct = Math.round((base.shootsMade / base.shootsTaken) * 1000) / 10;
+    }
+    
+    merged.push(base);
+  }
+  
+  return merged.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export async function fetchVBDataFromBigQuery(): Promise<{ success: boolean; data: VBMergedSession[]; rawCount: number; mergedCount: number; players: string[] }> {
+  try {
+    const client = getBigQueryClient();
+    const query = `SELECT * FROM \`${VB_TABLE}\` ORDER BY timestamp DESC`;
+    const [rows] = await client.query({ query });
+    
+    const merged = mergeVBRows(rows);
+    const players = [...new Set(merged.map(r => r.player))].sort();
+    
+    return {
+      success: true,
+      data: merged,
+      rawCount: rows.length,
+      mergedCount: merged.length,
+      players,
+    };
+  } catch (error: any) {
+    console.error('VB BigQuery fetch error:', error.message);
+    return { success: false, data: [], rawCount: 0, mergedCount: 0, players: [] };
+  }
+}
+
 export interface TicketingRow {
   game_id: string;
   season: string;

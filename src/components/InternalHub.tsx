@@ -1079,11 +1079,13 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               </div>
             </a>
 
-            <div
-              className={`relative text-left rounded-2xl border overflow-hidden opacity-50 ${
-                isDark ? 'bg-gray-900/50 border-gray-800/50' : 'bg-white/50 border-gray-200/50'
+            <button
+              onClick={() => onNavigate('vb')}
+              className={`group relative text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl ${
+                isDark ? 'bg-gray-900 border-gray-800 hover:border-orange-800/60' : 'bg-white border-gray-200 hover:border-orange-300'
               }`}
             >
+              <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-orange-500 to-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
               <div className="p-5 sm:p-8">
                 <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center mb-3 sm:mb-5 ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
                   <Activity size={20} className="text-orange-500 sm:w-[22px] sm:h-[22px]" />
@@ -1099,12 +1101,12 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 <p className={`text-xs sm:text-sm leading-relaxed mb-3 sm:mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                   {t('Youth development, academy & grassroots programs')}
                 </p>
-                <div className={`inline-flex items-center gap-2 text-[10px] sm:text-xs tracking-[0.15em] uppercase font-medium ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
-                  <Lock size={10} />
-                  {t('Coming Soon')}
+                <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-orange-500' : 'text-orange-600'}`}>
+                  {t('Enter')}
+                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
-            </div>
+            </button>
 
           </div>
         </div>
