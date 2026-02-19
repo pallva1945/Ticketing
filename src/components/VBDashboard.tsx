@@ -162,7 +162,22 @@ const SEASON_START_DATES: Record<string, Date> = {
   '2025/26': new Date(2025, 7, 11),
 };
 
-function getSeasonStartDate(selectedSeason: string): Date | null {
+const PLAYER_START_OVERRIDES: Record<string, Record<string, Date>> = {
+  '2025/26': {
+    'ciocchetti, filippo': new Date(2025, 11, 1),
+  },
+};
+
+function getSeasonStartDate(selectedSeason: string, player?: string): Date | null {
+  if (player) {
+    const overrides = PLAYER_START_OVERRIDES[selectedSeason];
+    if (overrides) {
+      const key = player.toLowerCase().trim();
+      for (const [name, date] of Object.entries(overrides)) {
+        if (key.includes(name) || name.includes(key)) return date;
+      }
+    }
+  }
   if (SEASON_START_DATES[selectedSeason]) return SEASON_START_DATES[selectedSeason];
   const parts = selectedSeason.match(/^(\d{4})\//);
   if (!parts) return null;
@@ -170,11 +185,11 @@ function getSeasonStartDate(selectedSeason: string): Date | null {
   return new Date(startYear, 7, 1);
 }
 
-function getSeasonDays(selectedSeason: string): number {
+function getSeasonDays(selectedSeason: string, player?: string): number {
   if (selectedSeason === 'all') {
     return 0;
   }
-  const seasonStart = getSeasonStartDate(selectedSeason);
+  const seasonStart = getSeasonStartDate(selectedSeason, player);
   if (!seasonStart) return 1;
   const parts = selectedSeason.match(/^(\d{4})\//);
   const startYear = parts ? parseInt(parts[1], 10) : new Date().getFullYear();
@@ -190,8 +205,8 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [viewMode, setViewMode] = useState<'total' | 'perDay'>('total');
 
-  const seasonDays = useMemo(() => getSeasonDays(selectedSeason), [selectedSeason]);
-  const canShowPerDay = seasonDays > 0;
+  const baseSeasonDays = useMemo(() => getSeasonDays(selectedSeason), [selectedSeason]);
+  const canShowPerDay = baseSeasonDays > 0;
 
   useEffect(() => {
     if (!canShowPerDay && viewMode === 'perDay') setViewMode('total');
@@ -200,20 +215,21 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
   const rows: RosterRow[] = useMemo(() => activePlayers.map(player => {
     const ps = getPlayerSessions(filtered, player);
     const shootingSessions = ps.filter(s => s.shootingPct !== null);
+    const playerSeasonDays = getSeasonDays(selectedSeason, player);
     const isPerDay = viewMode === 'perDay' && canShowPerDay;
 
     const sumOrAvg = (values: (number | null)[]): number => {
       const valid = values.filter(v => v !== null && v !== undefined) as number[];
       if (valid.length === 0) return 0;
       const total = valid.reduce((a, b) => a + b, 0);
-      return isPerDay ? Math.round((total / seasonDays) * 10) / 10 : total;
+      return isPerDay ? Math.round((total / playerSeasonDays) * 10) / 10 : total;
     };
 
     const injuryDateSet = new Set(ps.filter(s => s.injured !== null && s.injured > 0).map(s => s.date));
     const injuryDays = injuryDateSet.size;
     const ntDateSet = new Set(ps.filter(s => s.nationalTeam !== null && s.nationalTeam > 0).map(s => s.date));
     const ntDays = ntDateSet.size;
-    const seasonStartDate = getSeasonStartDate(selectedSeason);
+    const seasonStartDate = getSeasonStartDate(selectedSeason, player);
     const psInRange = seasonStartDate ? ps.filter(s => new Date(s.date) >= seasonStartDate) : ps;
     const activeDateSet = new Set<string>();
     for (const s of psInRange) {
@@ -221,7 +237,7 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
         activeDateSet.add(s.date);
       }
     }
-    const daysOff = isPerDay ? 0 : Math.max(0, seasonDays - activeDateSet.size);
+    const daysOff = isPerDay ? 0 : Math.max(0, playerSeasonDays - activeDateSet.size);
 
     return {
       player,
@@ -240,7 +256,7 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
       nt: ntDays,
       daysOff: daysOff,
     };
-  }), [filtered, activePlayers, viewMode, seasonDays]);
+  }), [filtered, activePlayers, viewMode, selectedSeason]);
 
   const sorted = useMemo(() => {
     const arr = [...rows];
