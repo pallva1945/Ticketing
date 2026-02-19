@@ -82,6 +82,8 @@ const translations: Record<string, Record<Language, string>> = {
   'Reach': { en: 'Reach', it: 'Reach' },
   'Shots': { en: 'Shots', it: 'Tiri' },
   'Per Day': { en: 'Per Day', it: 'Per Giorno' },
+  'Per Week': { en: 'Per Week', it: 'Per Settimana' },
+  'Per Month': { en: 'Per Month', it: 'Per Mese' },
   'No-Step V.': { en: 'No-Step V.', it: 'Vert. Senza Passo' },
   'CRM': { en: 'CRM', it: 'CRM' },
   'Comparison': { en: 'Comparison', it: 'Confronto' },

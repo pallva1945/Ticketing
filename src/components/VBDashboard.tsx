@@ -203,32 +203,31 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
   const { t } = useLanguage();
   const [sortKey, setSortKey] = useState<SortKey>('player');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
-  const [viewMode, setViewMode] = useState<'total' | 'perDay'>('total');
+  const [viewMode, setViewMode] = useState<'total' | 'perDay' | 'perWeek' | 'perMonth'>('total');
 
   const baseSeasonDays = useMemo(() => getSeasonDays(selectedSeason), [selectedSeason]);
-  const canShowPerDay = baseSeasonDays > 0;
+  const canShowRates = baseSeasonDays > 0;
 
   useEffect(() => {
-    if (!canShowPerDay && viewMode === 'perDay') setViewMode('total');
-  }, [canShowPerDay]);
+    if (!canShowRates && viewMode !== 'total') setViewMode('total');
+  }, [canShowRates]);
 
   const rows: RosterRow[] = useMemo(() => activePlayers.map(player => {
     const ps = getPlayerSessions(filtered, player);
     const shootingSessions = ps.filter(s => s.shootingPct !== null);
     const playerSeasonDays = getSeasonDays(selectedSeason, player);
-    const isPerDay = viewMode === 'perDay' && canShowPerDay;
+    const isRate = viewMode !== 'total' && canShowRates;
+    const divisor = viewMode === 'perWeek' ? playerSeasonDays / 7 : viewMode === 'perMonth' ? playerSeasonDays / 30 : playerSeasonDays;
 
-    const sumOrAvg = (values: (number | null)[]): number => {
+    const sumOrRate = (values: (number | null)[]): number => {
       const valid = values.filter(v => v !== null && v !== undefined) as number[];
       if (valid.length === 0) return 0;
       const total = valid.reduce((a, b) => a + b, 0);
-      return isPerDay ? Math.round((total / playerSeasonDays) * 10) / 10 : total;
+      return isRate ? Math.round((total / divisor) * 10) / 10 : total;
     };
 
     const injuryDateSet = new Set(ps.filter(s => s.injured !== null && s.injured > 0).map(s => s.date));
-    const injuryDays = injuryDateSet.size;
     const ntDateSet = new Set(ps.filter(s => s.nationalTeam !== null && s.nationalTeam > 0).map(s => s.date));
-    const ntDays = ntDateSet.size;
     const seasonStartDate = getSeasonStartDate(selectedSeason, player);
     const psInRange = seasonStartDate ? ps.filter(s => new Date(s.date) >= seasonStartDate) : ps;
     const activeDateSet = new Set<string>();
@@ -237,7 +236,10 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
         activeDateSet.add(s.date);
       }
     }
-    const daysOff = isPerDay ? 0 : Math.max(0, playerSeasonDays - activeDateSet.size);
+    const rawDaysOff = Math.max(0, playerSeasonDays - activeDateSet.size);
+    const injuryVal = isRate ? Math.round((injuryDateSet.size / divisor) * 10) / 10 : injuryDateSet.size;
+    const ntVal = isRate ? Math.round((ntDateSet.size / divisor) * 10) / 10 : ntDateSet.size;
+    const daysOffVal = isRate ? Math.round((rawDaysOff / divisor) * 10) / 10 : rawDaysOff;
 
     return {
       player,
@@ -247,14 +249,14 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
       reach: getLatestMetric(filtered, player, 'standingReach'),
       bodyFat: getLatestMetric(filtered, player, 'bodyFat'),
       pct: getAvg(shootingSessions.map(s => s.shootingPct)),
-      shots: sumOrAvg(ps.map(s => s.shootsTaken)),
-      vitamins: sumOrAvg(ps.map(s => s.vitaminsLoad)),
-      weights: sumOrAvg(ps.map(s => s.weightsLoad)),
-      practice: sumOrAvg(ps.map(s => s.practiceLoad)),
-      game: sumOrAvg(ps.map(s => s.gameLoad)),
-      injury: injuryDays,
-      nt: ntDays,
-      daysOff: daysOff,
+      shots: sumOrRate(ps.map(s => s.shootsTaken)),
+      vitamins: sumOrRate(ps.map(s => s.vitaminsLoad)),
+      weights: sumOrRate(ps.map(s => s.weightsLoad)),
+      practice: sumOrRate(ps.map(s => s.practiceLoad)),
+      game: sumOrRate(ps.map(s => s.gameLoad)),
+      injury: injuryVal,
+      nt: ntVal,
+      daysOff: daysOffVal,
     };
   }), [filtered, activePlayers, viewMode, selectedSeason]);
 
@@ -317,20 +319,17 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
     <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
       <div className="flex items-center justify-between mb-4">
         <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Player Roster')}</h3>
-        {canShowPerDay && (
+        {canShowRates && (
           <div className={`inline-flex rounded-lg p-0.5 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-            <button
-              onClick={() => setViewMode('total')}
-              className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${viewMode === 'total' ? (isDark ? 'bg-orange-600 text-white shadow-sm' : 'bg-white text-gray-900 shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700')}`}
-            >
-              {t('Total')}
-            </button>
-            <button
-              onClick={() => setViewMode('perDay')}
-              className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${viewMode === 'perDay' ? (isDark ? 'bg-orange-600 text-white shadow-sm' : 'bg-white text-gray-900 shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700')}`}
-            >
-              {t('Per Day')}
-            </button>
+            {(['total', 'perDay', 'perWeek', 'perMonth'] as const).map(mode => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${viewMode === mode ? (isDark ? 'bg-orange-600 text-white shadow-sm' : 'bg-white text-gray-900 shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700')}`}
+              >
+                {t(mode === 'total' ? 'Total' : mode === 'perDay' ? 'Per Day' : mode === 'perWeek' ? 'Per Week' : 'Per Month')}
+              </button>
+            ))}
           </div>
         )}
       </div>
