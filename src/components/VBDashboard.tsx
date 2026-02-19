@@ -164,7 +164,7 @@ const SEASON_START_DATES: Record<string, Date> = {
 
 const PLAYER_START_OVERRIDES: Record<string, Record<string, Date>> = {
   '2025/26': {
-    'ciocchetti, filippo': new Date(2025, 11, 1),
+    'filippo ciocchetti': new Date(2025, 11, 1),
   },
 };
 
