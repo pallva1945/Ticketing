@@ -782,25 +782,69 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
     return playerDaysOff.length ? Math.round(playerDaysOff.reduce((a, b) => a + b, 0) / playerDaysOff.length * 10) / 10 : null;
   }, [filtered, activePlayers, selectedSeason, selectedMonth, selectedWeek, selectedDay, filteredPeriodDays]);
 
+  const filterGranularity = useMemo(() => {
+    if (selectedDay !== 'all') return 'day';
+    if (selectedWeek !== 'all') return 'week';
+    if (selectedMonth !== 'all') return 'month';
+    return 'season';
+  }, [selectedDay, selectedWeek, selectedMonth]);
+
   const loadData = useMemo(() => {
     const buckets = new Map<string, { practice: number[]; vitamins: number[]; weights: number[]; game: number[] }>();
+
+    const getBucketKey = (s: VBSession): string => {
+      if (filterGranularity === 'day') return s.player;
+      if (filterGranularity === 'week') {
+        const dt = new Date(s.date);
+        return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      }
+      if (filterGranularity === 'month') {
+        const dt = new Date(s.date);
+        const dayOfMonth = dt.getDate();
+        const weekNum = Math.ceil(dayOfMonth / 7);
+        return `W${weekNum} (${dt.toLocaleDateString('en-US', { month: 'short' })})`;
+      }
+      return s.date.substring(5, 7) + '/' + s.date.substring(2, 4);
+    };
+
+    const getSortKey = (s: VBSession): string => {
+      if (filterGranularity === 'day') return s.player;
+      if (filterGranularity === 'week') return s.date;
+      if (filterGranularity === 'month') {
+        const dayOfMonth = new Date(s.date).getDate();
+        return String(Math.ceil(dayOfMonth / 7)).padStart(2, '0');
+      }
+      return s.date.substring(0, 7);
+    };
+
+    const sortedEntries: { key: string; sortKey: string; data: { practice: number[]; vitamins: number[]; weights: number[]; game: number[] } }[] = [];
+    const sortKeyMap = new Map<string, string>();
+
     filtered.forEach(s => {
-      const m = s.date.substring(0, 7);
-      if (!buckets.has(m)) buckets.set(m, { practice: [], vitamins: [], weights: [], game: [] });
-      const entry = buckets.get(m)!;
+      const key = getBucketKey(s);
+      const sortKey = getSortKey(s);
+      if (!buckets.has(key)) {
+        buckets.set(key, { practice: [], vitamins: [], weights: [], game: [] });
+        sortKeyMap.set(key, sortKey);
+      }
+      if (sortKey < (sortKeyMap.get(key) || sortKey)) sortKeyMap.set(key, sortKey);
+      const entry = buckets.get(key)!;
       if (s.practiceLoad) entry.practice.push(s.practiceLoad);
       if (s.vitaminsLoad) entry.vitamins.push(s.vitaminsLoad);
       if (s.weightsLoad) entry.weights.push(s.weightsLoad);
       if (s.gameLoad) entry.game.push(s.gameLoad);
     });
-    return [...buckets.entries()].sort().map(([month, data]) => ({
-      month: month.substring(5) + '/' + month.substring(2, 4),
-      practice: data.practice.length ? +(data.practice.reduce((a, b) => a + b, 0) / data.practice.length).toFixed(1) : 0,
-      vitamins: data.vitamins.length ? +(data.vitamins.reduce((a, b) => a + b, 0) / data.vitamins.length).toFixed(1) : 0,
-      weights: data.weights.length ? +(data.weights.reduce((a, b) => a + b, 0) / data.weights.length).toFixed(1) : 0,
-      game: data.game.length ? +(data.game.reduce((a, b) => a + b, 0) / data.game.length).toFixed(1) : 0,
-    }));
-  }, [filtered]);
+
+    return [...buckets.entries()]
+      .sort((a, b) => (sortKeyMap.get(a[0]) || '').localeCompare(sortKeyMap.get(b[0]) || ''))
+      .map(([label, data]) => ({
+        month: label,
+        practice: data.practice.length ? +(data.practice.reduce((a, b) => a + b, 0) / data.practice.length).toFixed(1) : 0,
+        vitamins: data.vitamins.length ? +(data.vitamins.reduce((a, b) => a + b, 0) / data.vitamins.length).toFixed(1) : 0,
+        weights: data.weights.length ? +(data.weights.reduce((a, b) => a + b, 0) / data.weights.length).toFixed(1) : 0,
+        game: data.game.length ? +(data.game.reduce((a, b) => a + b, 0) / data.game.length).toFixed(1) : 0,
+      }));
+  }, [filtered, filterGranularity]);
 
   const selectClass = `px-3 py-1.5 rounded-lg text-xs font-medium appearance-none pr-7 ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-gray-700 border-gray-200'} border`;
 
@@ -876,13 +920,13 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
       </div>
 
       <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-        <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Training Load Trends')}</h3>
+        <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Training Load Trends')} — {filterGranularity === 'day' ? t('By Player') : filterGranularity === 'week' ? t('By Day') : filterGranularity === 'month' ? t('By Week') : t('By Month')}</h3>
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={loadData}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
               <XAxis dataKey="month" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-              <YAxis domain={[0, 4]} tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+              <YAxis tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
               <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               <Bar dataKey="practice" name={t('Practice')} fill="#3b82f6" radius={[2, 2, 0, 0]} />
