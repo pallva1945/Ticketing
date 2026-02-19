@@ -1,21 +1,59 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Shield, Users, Mail, UserPlus, X, Check, Ban, RefreshCw, Copy, Trash2, Eye, EyeOff, ChevronDown, Clock, Globe, Building } from 'lucide-react';
+import { Shield, Users, Mail, UserPlus, X, Check, Ban, RefreshCw, Copy, Trash2, Eye, EyeOff, ChevronDown, Clock, Globe, Building, Zap } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const ALL_PAGES = [
-  { id: 'hub', label: 'Internal Hub' },
-  { id: 'revenue', label: 'Revenue Center' },
-  { id: 'cost', label: 'Cost Center' },
-  { id: 'pnl', label: 'Verticals P&L' },
-  { id: 'home', label: 'Executive Overview' },
-  { id: 'ticketing', label: 'Ticketing' },
-  { id: 'gameday', label: 'GameDay' },
-  { id: 'sponsorship', label: 'Sponsorship' },
-  { id: 'merchandising', label: 'Merchandising' },
-  { id: 'venue_ops', label: 'Venue Ops' },
-  { id: 'bops', label: 'BOps' },
-  { id: 'sg', label: 'Varese Basketball' },
+  { id: 'hub', label: 'Internal Hub', group: 'sections' },
+  { id: 'revenue', label: 'Revenue Center', group: 'corp' },
+  { id: 'cost', label: 'Cost Center', group: 'corp' },
+  { id: 'pnl', label: 'Verticals P&L', group: 'corp' },
+  { id: 'home', label: 'Executive Overview', group: 'modules' },
+  { id: 'ticketing', label: 'Ticketing', group: 'modules' },
+  { id: 'gameday', label: 'GameDay', group: 'modules' },
+  { id: 'sponsorship', label: 'Sponsorship', group: 'modules' },
+  { id: 'merchandising', label: 'Merchandising', group: 'modules' },
+  { id: 'venue_ops', label: 'Venue Ops', group: 'modules' },
+  { id: 'bops', label: 'BOps', group: 'modules' },
+  { id: 'sg', label: 'Varese Basketball', group: 'modules' },
+];
+
+const ACCESS_PRESETS = [
+  {
+    id: 'full',
+    label: 'Full Access',
+    description: 'Access to everything',
+    accessLevel: 'full' as const,
+    pages: ALL_PAGES.map(p => p.id),
+  },
+  {
+    id: 'coaches',
+    label: 'Coaches',
+    description: 'Hub sections only — no Corp area',
+    accessLevel: 'partial' as const,
+    pages: ['hub'],
+  },
+  {
+    id: 'corp_readonly',
+    label: 'Corp (Read Only)',
+    description: 'Hub + Revenue Center (all modules)',
+    accessLevel: 'partial' as const,
+    pages: ['hub', 'revenue', 'home', 'ticketing', 'gameday', 'sponsorship', 'merchandising', 'venue_ops', 'bops', 'sg'],
+  },
+  {
+    id: 'finance',
+    label: 'Finance',
+    description: 'Hub + Revenue, Cost & P&L',
+    accessLevel: 'partial' as const,
+    pages: ['hub', 'revenue', 'cost', 'pnl', 'home', 'ticketing', 'gameday', 'sponsorship', 'merchandising', 'venue_ops', 'bops', 'sg'],
+  },
+  {
+    id: 'custom',
+    label: 'Custom',
+    description: 'Pick specific pages',
+    accessLevel: 'partial' as const,
+    pages: [],
+  },
 ];
 
 interface User {
@@ -45,6 +83,18 @@ interface Invitation {
   pages: string[];
 }
 
+function getPresetForUser(user: User): string {
+  if (user.access_level === 'full') return 'full';
+  const pages = user.allowed_pages || [];
+  for (const preset of ACCESS_PRESETS) {
+    if (preset.id === 'full' || preset.id === 'custom') continue;
+    if (pages.length === preset.pages.length && preset.pages.every(p => pages.includes(p))) {
+      return preset.id;
+    }
+  }
+  return 'custom';
+}
+
 export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { theme } = useTheme();
   const { t } = useLanguage();
@@ -58,20 +108,29 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [success, setSuccess] = useState('');
 
   const [newInternalEmail, setNewInternalEmail] = useState('');
-  const [newInternalAccess, setNewInternalAccess] = useState('full');
-  const [newInternalPages, setNewInternalPages] = useState<string[]>([]);
+  const [newInternalPreset, setNewInternalPreset] = useState('full');
+  const [newInternalPages, setNewInternalPages] = useState<string[]>(ALL_PAGES.map(p => p.id));
 
   const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteAccess, setInviteAccess] = useState('partial');
-  const [invitePages, setInvitePages] = useState<string[]>(ALL_PAGES.map(p => p.id));
+  const [invitePreset, setInvitePreset] = useState('corp_readonly');
+  const [invitePages, setInvitePages] = useState<string[]>(ACCESS_PRESETS.find(p => p.id === 'corp_readonly')!.pages);
   const [inviteTemporary, setInviteTemporary] = useState(false);
   const [inviteExpiry, setInviteExpiry] = useState('');
   const [generatedLink, setGeneratedLink] = useState('');
 
   const [editingUser, setEditingUser] = useState<number | null>(null);
-  const [editAccess, setEditAccess] = useState('full');
+  const [editPreset, setEditPreset] = useState('full');
   const [editPages, setEditPages] = useState<string[]>([]);
   const [editExpiry, setEditExpiry] = useState('');
+
+  const applyPreset = (presetId: string, setPages: (p: string[]) => void, currentPages?: string[]) => {
+    const preset = ACCESS_PRESETS.find(p => p.id === presetId);
+    if (preset && preset.id !== 'custom') {
+      setPages([...preset.pages]);
+    } else if (preset?.id === 'custom') {
+      setPages(currentPages || []);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -105,18 +164,21 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const addInternalUser = async () => {
     if (!newInternalEmail) return;
     const email = newInternalEmail.includes('@') ? newInternalEmail : `${newInternalEmail}@pallacanestrovarese.it`;
+    const preset = ACCESS_PRESETS.find(p => p.id === newInternalPreset);
+    const accessLevel = preset?.accessLevel === 'full' ? 'full' : 'partial';
     try {
       const res = await fetch('/api/admin/users/internal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email, accessLevel: newInternalAccess, pages: newInternalPages })
+        body: JSON.stringify({ email, accessLevel, pages: accessLevel === 'full' ? ALL_PAGES.map(p => p.id) : newInternalPages })
       });
       const data = await res.json();
       if (data.success) {
         showMessage(`Access granted to ${email}`);
         setNewInternalEmail('');
-        setNewInternalPages([]);
+        setNewInternalPages(ALL_PAGES.map(p => p.id));
+        setNewInternalPreset('full');
         fetchData();
       } else {
         showMessage(data.message, true);
@@ -128,6 +190,8 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const sendInvite = async () => {
     if (!inviteEmail) return;
+    const preset = ACCESS_PRESETS.find(p => p.id === invitePreset);
+    const accessLevel = preset?.accessLevel === 'full' ? 'full' : 'partial';
     try {
       const res = await fetch('/api/admin/invite', {
         method: 'POST',
@@ -135,8 +199,8 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         credentials: 'include',
         body: JSON.stringify({
           email: inviteEmail,
-          accessLevel: inviteAccess,
-          pages: invitePages,
+          accessLevel,
+          pages: accessLevel === 'full' ? ALL_PAGES.map(p => p.id) : invitePages,
           isTemporary: inviteTemporary,
           expiresAt: inviteExpiry || null
         })
@@ -155,12 +219,14 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const updateAccess = async (userId: number) => {
+    const preset = ACCESS_PRESETS.find(p => p.id === editPreset);
+    const accessLevel = preset?.accessLevel === 'full' ? 'full' : 'partial';
     try {
       const res = await fetch(`/api/admin/users/${userId}/access`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ accessLevel: editAccess, pages: editPages, expiresAt: editExpiry || null })
+        body: JSON.stringify({ accessLevel, pages: accessLevel === 'full' ? ALL_PAGES.map(p => p.id) : editPages, expiresAt: editExpiry || null })
       });
       const data = await res.json();
       if (data.success) {
@@ -233,23 +299,88 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const btnPrimary = `px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors`;
   const btnSecondary = `px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`;
 
-  const PageCheckboxes: React.FC<{ selected: string[], onChange: (pages: string[]) => void }> = ({ selected, onChange }) => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-      {ALL_PAGES.map(page => (
-        <label key={page.id} className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs ${
-          isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-50'
-        }`}>
-          <input
-            type="checkbox"
-            checked={selected.includes(page.id)}
-            onChange={() => togglePage(page.id, selected, onChange)}
-            className="rounded"
-          />
-          <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{page.label}</span>
-        </label>
-      ))}
+  const PresetSelector: React.FC<{
+    value: string;
+    onChange: (presetId: string) => void;
+    pages: string[];
+    onPagesChange: (pages: string[]) => void;
+  }> = ({ value, onChange, pages, onPagesChange }) => (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+        {ACCESS_PRESETS.map(preset => (
+          <button
+            key={preset.id}
+            onClick={() => {
+              onChange(preset.id);
+              applyPreset(preset.id, onPagesChange);
+            }}
+            className={`text-left p-3 rounded-lg border text-xs transition-all ${
+              value === preset.id
+                ? 'border-red-500 bg-red-600/10 ring-1 ring-red-500/30'
+                : isDark ? 'border-gray-700 hover:border-gray-600 bg-gray-800/50' : 'border-gray-200 hover:border-gray-300 bg-gray-50'
+            }`}
+          >
+            <div className={`font-semibold mb-0.5 ${value === preset.id ? 'text-red-500' : isDark ? 'text-white' : 'text-gray-900'}`}>
+              {preset.label}
+            </div>
+            <div className={`text-[10px] leading-tight ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              {preset.description}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {value === 'custom' && (
+        <div className={`p-3 rounded-lg border ${isDark ? 'border-gray-700 bg-gray-800/30' : 'border-gray-200 bg-gray-50'}`}>
+          <p className={`text-xs font-medium mb-2 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Select pages:</p>
+          <div className="space-y-2">
+            <div>
+              <p className={`text-[10px] uppercase tracking-wider font-semibold mb-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Sections</p>
+              <div className="flex flex-wrap gap-1.5">
+                {ALL_PAGES.filter(p => p.group === 'sections' || p.group === 'corp').map(page => (
+                  <button
+                    key={page.id}
+                    onClick={() => togglePage(page.id, pages, onPagesChange)}
+                    className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
+                      pages.includes(page.id)
+                        ? 'bg-red-600 text-white'
+                        : isDark ? 'bg-gray-700 text-gray-400 hover:bg-gray-600' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                    }`}
+                  >
+                    {page.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className={`text-[10px] uppercase tracking-wider font-semibold mb-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Revenue Center Modules</p>
+              <div className="flex flex-wrap gap-1.5">
+                {ALL_PAGES.filter(p => p.group === 'modules').map(page => (
+                  <button
+                    key={page.id}
+                    onClick={() => togglePage(page.id, pages, onPagesChange)}
+                    className={`px-2.5 py-1 rounded-md text-xs transition-colors ${
+                      pages.includes(page.id)
+                        ? 'bg-red-600 text-white'
+                        : isDark ? 'bg-gray-700 text-gray-400 hover:bg-gray-600' : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                    }`}
+                  >
+                    {page.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
+
+  const getPresetLabel = (user: User) => {
+    const presetId = getPresetForUser(user);
+    const preset = ACCESS_PRESETS.find(p => p.id === presetId);
+    return preset?.label || 'Custom';
+  };
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-gray-50 text-gray-900'}`}>
@@ -301,9 +432,9 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div className={cardClass}>
               <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
                 <UserPlus size={16} className="text-red-500" />
-                Add Internal Member
+                Add PV Account
               </h3>
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row gap-3 mb-3">
                 <input
                   type="text"
                   placeholder="email or username (auto-adds @pallacanestrovarese.it)"
@@ -311,15 +442,14 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   onChange={e => setNewInternalEmail(e.target.value)}
                   className={`${inputClass} flex-1`}
                 />
-                <select value={newInternalAccess} onChange={e => setNewInternalAccess(e.target.value)} className={`${inputClass} w-40`}>
-                  <option value="full">Full Access</option>
-                  <option value="partial">Partial Access</option>
-                </select>
                 <button onClick={addInternalUser} className={btnPrimary}>Add</button>
               </div>
-              {newInternalAccess === 'partial' && (
-                <PageCheckboxes selected={newInternalPages} onChange={setNewInternalPages} />
-              )}
+              <PresetSelector
+                value={newInternalPreset}
+                onChange={setNewInternalPreset}
+                pages={newInternalPages}
+                onPagesChange={setNewInternalPages}
+              />
             </div>
 
             {loading ? (
@@ -327,96 +457,99 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             ) : (
               <div className="space-y-2">
                 {users.map(user => (
-                  <div key={user.id} className={`${cardClass} flex flex-col sm:flex-row sm:items-center gap-3`}>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm truncate">{user.email}</span>
-                        {user.role === 'admin' && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-600 text-white">ADMIN</span>
+                  <div key={user.id} className={`${cardClass} flex flex-col`}>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-sm truncate">{user.email}</span>
+                          {user.role === 'admin' && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-600 text-white">ADMIN</span>
+                          )}
+                          {user.is_external && (
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>EXTERNAL</span>
+                          )}
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            user.status === 'active'
+                              ? isDark ? 'bg-green-900/30 text-green-400' : 'bg-green-50 text-green-600'
+                              : isDark ? 'bg-red-900/30 text-red-400' : 'bg-red-50 text-red-600'
+                          }`}>
+                            {user.status.toUpperCase()}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] flex items-center gap-1 ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+                            <Zap size={8} />
+                            {getPresetLabel(user)}
+                          </span>
+                        </div>
+                        {user.name && user.name !== user.email && (
+                          <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{user.name}</p>
                         )}
-                        {user.is_external && (
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>EXTERNAL</span>
+                        {user.expires_at && (
+                          <p className="text-xs text-amber-500 mt-0.5 flex items-center gap-1">
+                            <Clock size={10} /> Expires: {new Date(user.expires_at).toLocaleDateString()}
+                          </p>
                         )}
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          user.status === 'active'
-                            ? isDark ? 'bg-green-900/30 text-green-400' : 'bg-green-50 text-green-600'
-                            : isDark ? 'bg-red-900/30 text-red-400' : 'bg-red-50 text-red-600'
-                        }`}>
-                          {user.status.toUpperCase()}
-                        </span>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
-                          {user.access_level === 'full' ? 'Full Access' : 'Partial'}
-                        </span>
+                        {user.last_login && (
+                          <p className={`text-[10px] mt-0.5 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                            Last login: {new Date(user.last_login).toLocaleDateString()}
+                          </p>
+                        )}
                       </div>
-                      {user.name && user.name !== user.email && (
-                        <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{user.name}</p>
-                      )}
-                      {user.expires_at && (
-                        <p className="text-xs text-amber-500 mt-0.5 flex items-center gap-1">
-                          <Clock size={10} /> Expires: {new Date(user.expires_at).toLocaleDateString()}
-                        </p>
-                      )}
-                      {user.access_level === 'partial' && user.allowed_pages?.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {user.allowed_pages.map((p: string) => (
-                            <span key={p} className={`text-[10px] px-1.5 py-0.5 rounded ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>{p}</span>
-                          ))}
+
+                      {user.role !== 'admin' && (
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <button
+                            onClick={() => {
+                              if (editingUser === user.id) { setEditingUser(null); return; }
+                              setEditingUser(user.id);
+                              setEditPreset(getPresetForUser(user));
+                              setEditPages(user.allowed_pages || []);
+                              setEditExpiry(user.expires_at ? user.expires_at.split('T')[0] : '');
+                            }}
+                            className={btnSecondary}
+                            title="Edit access"
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button
+                            onClick={() => toggleStatus(user)}
+                            className={`${btnSecondary} ${user.status === 'active' ? 'text-red-500' : 'text-green-500'}`}
+                            title={user.status === 'active' ? 'Revoke' : 'Restore'}
+                          >
+                            {user.status === 'active' ? <Ban size={14} /> : <Check size={14} />}
+                          </button>
+                          <button
+                            onClick={() => deleteUserById(user.id)}
+                            className={`${btnSecondary} text-red-500`}
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       )}
                     </div>
 
-                    {user.role !== 'admin' && (
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <button
-                          onClick={() => {
-                            if (editingUser === user.id) { setEditingUser(null); return; }
-                            setEditingUser(user.id);
-                            setEditAccess(user.access_level);
-                            setEditPages(user.allowed_pages || []);
-                            setEditExpiry(user.expires_at ? user.expires_at.split('T')[0] : '');
-                          }}
-                          className={btnSecondary}
-                          title="Edit access"
-                        >
-                          <Eye size={14} />
-                        </button>
-                        <button
-                          onClick={() => toggleStatus(user)}
-                          className={`${btnSecondary} ${user.status === 'active' ? 'text-red-500' : 'text-green-500'}`}
-                          title={user.status === 'active' ? 'Revoke' : 'Restore'}
-                        >
-                          {user.status === 'active' ? <Ban size={14} /> : <Check size={14} />}
-                        </button>
-                        <button
-                          onClick={() => deleteUserById(user.id)}
-                          className={`${btnSecondary} text-red-500`}
-                          title="Delete"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    )}
-
                     {editingUser === user.id && (
-                      <div className={`w-full mt-3 pt-3 border-t ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                        <div className="flex flex-col sm:flex-row gap-3 mb-3">
-                          <select value={editAccess} onChange={e => setEditAccess(e.target.value)} className={`${inputClass} w-40`}>
-                            <option value="full">Full Access</option>
-                            <option value="partial">Partial Access</option>
-                          </select>
-                          <input
-                            type="date"
-                            placeholder="Expiry date (optional)"
-                            value={editExpiry}
-                            onChange={e => setEditExpiry(e.target.value)}
-                            className={`${inputClass} w-48`}
-                          />
+                      <div className={`mt-3 pt-3 border-t ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                        <div className="flex items-center gap-3 mb-3">
+                          <div>
+                            <label className={`text-[10px] uppercase tracking-wider font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Expiry (optional)</label>
+                            <input
+                              type="date"
+                              value={editExpiry}
+                              onChange={e => setEditExpiry(e.target.value)}
+                              className={`${inputClass} w-48 mt-1`}
+                            />
+                          </div>
+                          <div className="flex-1" />
                           <button onClick={() => updateAccess(user.id)} className={btnPrimary}>Save</button>
                           <button onClick={() => setEditingUser(null)} className={btnSecondary}>Cancel</button>
                         </div>
-                        {editAccess === 'partial' && (
-                          <PageCheckboxes selected={editPages} onChange={setEditPages} />
-                        )}
+                        <PresetSelector
+                          value={editPreset}
+                          onChange={setEditPreset}
+                          pages={editPages}
+                          onPagesChange={setEditPages}
+                        />
                       </div>
                     )}
                   </div>
@@ -445,26 +578,27 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className={`text-xs font-medium mb-1 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Access Level</label>
-                    <select value={inviteAccess} onChange={e => setInviteAccess(e.target.value)} className={inputClass}>
-                      <option value="full">Full Access</option>
-                      <option value="partial">Partial Access</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className={`text-xs font-medium mb-1 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Duration</label>
-                    <div className="flex items-center gap-3">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" checked={!inviteTemporary} onChange={() => setInviteTemporary(false)} />
-                        <span className="text-sm">Permanent</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" checked={inviteTemporary} onChange={() => setInviteTemporary(true)} />
-                        <span className="text-sm">Temporary</span>
-                      </label>
-                    </div>
+                <div>
+                  <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Access Level</label>
+                  <PresetSelector
+                    value={invitePreset}
+                    onChange={setInvitePreset}
+                    pages={invitePages}
+                    onPagesChange={setInvitePages}
+                  />
+                </div>
+
+                <div>
+                  <label className={`text-xs font-medium mb-1 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Duration</label>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" checked={!inviteTemporary} onChange={() => setInviteTemporary(false)} />
+                      <span className="text-sm">Permanent</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" checked={inviteTemporary} onChange={() => setInviteTemporary(true)} />
+                      <span className="text-sm">Temporary</span>
+                    </label>
                   </div>
                 </div>
 
@@ -472,13 +606,6 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   <div>
                     <label className={`text-xs font-medium mb-1 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Expires On</label>
                     <input type="date" value={inviteExpiry} onChange={e => setInviteExpiry(e.target.value)} className={`${inputClass} w-48`} />
-                  </div>
-                )}
-
-                {inviteAccess === 'partial' && (
-                  <div>
-                    <label className={`text-xs font-medium mb-1 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Allowed Pages</label>
-                    <PageCheckboxes selected={invitePages} onChange={setInvitePages} />
                   </div>
                 )}
 
