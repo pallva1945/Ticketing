@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2 } from 'lucide-react';
+import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, CartesianGrid, Legend } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -128,6 +128,138 @@ function PlayerSelector({ players, selected, onChange, multiple }: { players: st
   );
 }
 
+type SortKey = 'player' | 'height' | 'weight' | 'wingspan' | 'reach' | 'bodyFat' | 'pct' | 'shots' | 'vitamins' | 'weights' | 'practice' | 'game';
+type SortDir = 'asc' | 'desc';
+
+interface RosterRow {
+  player: string;
+  height: number | null;
+  weight: number | null;
+  wingspan: number | null;
+  reach: number | null;
+  bodyFat: number | null;
+  pct: number | null;
+  shots: number;
+  vitamins: number;
+  weights: number;
+  practice: number;
+  game: number;
+}
+
+function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark }: { filtered: VBSession[]; activePlayers: string[]; onSelectPlayer: (p: string) => void; isDark: boolean }) {
+  const { t } = useLanguage();
+  const [sortKey, setSortKey] = useState<SortKey>('player');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  const rows: RosterRow[] = useMemo(() => activePlayers.map(player => {
+    const ps = getPlayerSessions(filtered, player);
+    const shootingSessions = ps.filter(s => s.shootingPct !== null);
+    return {
+      player,
+      height: getLatestMetric(filtered, player, 'height'),
+      weight: getLatestMetric(filtered, player, 'weight'),
+      wingspan: getLatestMetric(filtered, player, 'wingspan'),
+      reach: getLatestMetric(filtered, player, 'standingReach'),
+      bodyFat: getLatestMetric(filtered, player, 'bodyFat'),
+      pct: getAvg(shootingSessions.map(s => s.shootingPct)),
+      shots: ps.reduce((sum, s) => sum + (s.shootsTaken || 0), 0),
+      vitamins: ps.reduce((sum, s) => sum + (s.vitaminsLoad || 0), 0),
+      weights: ps.reduce((sum, s) => sum + (s.weightsLoad || 0), 0),
+      practice: ps.reduce((sum, s) => sum + (s.practiceLoad || 0), 0),
+      game: ps.reduce((sum, s) => sum + (s.gameLoad || 0), 0),
+    };
+  }), [filtered, activePlayers]);
+
+  const sorted = useMemo(() => {
+    const arr = [...rows];
+    arr.sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      if (sortKey === 'player') {
+        const cmp = String(av).localeCompare(String(bv));
+        return sortDir === 'asc' ? cmp : -cmp;
+      }
+      const an = av as number | null;
+      const bn = bv as number | null;
+      if (an === null && bn === null) return 0;
+      if (an === null) return 1;
+      if (bn === null) return -1;
+      return sortDir === 'asc' ? an - bn : bn - an;
+    });
+    return arr;
+  }, [rows, sortKey, sortDir]);
+
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir(key === 'player' ? 'asc' : 'desc');
+    }
+  };
+
+  const SortIcon = ({ col }: { col: SortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown size={10} className="opacity-30 ml-0.5 inline" />;
+    return sortDir === 'asc' 
+      ? <ArrowUp size={10} className="text-orange-500 ml-0.5 inline" /> 
+      : <ArrowDown size={10} className="text-orange-500 ml-0.5 inline" />;
+  };
+
+  const thClass = (align: string = 'center') => `${align === 'left' ? 'text-left' : 'text-center'} py-2 px-1 font-semibold cursor-pointer select-none hover:text-orange-500 transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`;
+
+  const columns: { key: SortKey; label: string; align?: string }[] = [
+    { key: 'player', label: t('Player'), align: 'left' },
+    { key: 'height', label: t('Height') },
+    { key: 'weight', label: t('Weight') },
+    { key: 'wingspan', label: t('Wingspan') },
+    { key: 'reach', label: t('Reach') },
+    { key: 'bodyFat', label: t('Body Fat') },
+    { key: 'pct', label: t('3PT %') },
+    { key: 'shots', label: t('Shots') },
+    { key: 'vitamins', label: t('Vitamins') },
+    { key: 'weights', label: t('Weights') },
+    { key: 'practice', label: t('Practice') },
+    { key: 'game', label: t('Game') },
+  ];
+
+  return (
+    <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+      <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Player Roster')}</h3>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead>
+            <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+              {columns.map(col => (
+                <th key={col.key} onClick={() => handleSort(col.key)} className={thClass(col.align)} style={col.key === 'player' ? { paddingLeft: 8 } : undefined}>
+                  {col.label}<SortIcon col={col.key} />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map(row => (
+              <tr key={row.player} onClick={() => onSelectPlayer(row.player)} className={`border-b cursor-pointer transition-colors ${isDark ? 'border-gray-800/50 hover:bg-gray-800/50' : 'border-gray-50 hover:bg-gray-50'}`}>
+                <td className={`py-2.5 px-2 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{row.player}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.height ?? '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.weight ?? '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.wingspan ?? '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.reach ?? '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.bodyFat ?? '—'}</td>
+                <td className={`text-center py-2.5 px-1 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{row.pct != null ? `${row.pct}%` : '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.shots || '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.vitamins || '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.weights || '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.practice || '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.game || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSession[]; players: string[]; onSelectPlayer: (p: string) => void }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
@@ -215,57 +347,7 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
         </div>
       </div>
 
-      <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-        <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Player Roster')}</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
-                <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Player')}</th>
-                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Height')}</th>
-                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Weight')}</th>
-                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Wingspan')}</th>
-                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Reach')}</th>
-                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Body Fat')}</th>
-                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('3PT %')}</th>
-                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Shots')}</th>
-                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Vitamins')}</th>
-                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Weights')}</th>
-                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Practice')}</th>
-                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Game')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {activePlayers.map(player => {
-                const ps = getPlayerSessions(filtered, player);
-                const shootingSessions = ps.filter(s => s.shootingPct !== null);
-                const avgPct = getAvg(shootingSessions.map(s => s.shootingPct));
-                const totalShots = ps.reduce((sum, s) => sum + (s.shootsTaken || 0), 0);
-                const totalVitamins = ps.reduce((sum, s) => sum + (s.vitaminsLoad || 0), 0);
-                const totalWeights = ps.reduce((sum, s) => sum + (s.weightsLoad || 0), 0);
-                const totalPractice = ps.reduce((sum, s) => sum + (s.practiceLoad || 0), 0);
-                const totalGame = ps.reduce((sum, s) => sum + (s.gameLoad || 0), 0);
-                return (
-                  <tr key={player} onClick={() => onSelectPlayer(player)} className={`border-b cursor-pointer transition-colors ${isDark ? 'border-gray-800/50 hover:bg-gray-800/50' : 'border-gray-50 hover:bg-gray-50'}`}>
-                    <td className={`py-2.5 px-2 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{player}</td>
-                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{getLatestMetric(filtered, player, 'height') ?? '—'}</td>
-                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{getLatestMetric(filtered, player, 'weight') ?? '—'}</td>
-                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{getLatestMetric(filtered, player, 'wingspan') ?? '—'}</td>
-                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{getLatestMetric(filtered, player, 'standingReach') ?? '—'}</td>
-                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{getLatestMetric(filtered, player, 'bodyFat') ?? '—'}</td>
-                    <td className={`text-center py-2.5 px-1 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{avgPct != null ? `${avgPct}%` : '—'}</td>
-                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{totalShots || '—'}</td>
-                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{totalVitamins || '—'}</td>
-                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{totalWeights || '—'}</td>
-                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{totalPractice || '—'}</td>
-                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{totalGame || '—'}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <RosterTable filtered={filtered} activePlayers={activePlayers} onSelectPlayer={onSelectPlayer} isDark={isDark} />
     </div>
   );
 }
