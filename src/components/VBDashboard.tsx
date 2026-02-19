@@ -720,6 +720,14 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
     const vals = activePlayers.map(p => getLatestMetric(filtered, p, 'standingReach')).filter(v => v !== null) as number[];
     return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
   }, [filtered, activePlayers]);
+  const teamAvgProjHeight = useMemo(() => {
+    const vals = activePlayers.map(p => getProjectedHeight(p, profiles, filtered)).filter(v => v !== null) as number[];
+    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+  }, [filtered, activePlayers, profiles]);
+  const teamAvgProjReach = useMemo(() => {
+    const vals = activePlayers.map(p => getProjectedReach(p, profiles, filtered)).filter(v => v !== null) as number[];
+    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+  }, [filtered, activePlayers, profiles]);
   const teamAvgVertical = useMemo(() => {
     const vals = activePlayers.map(p => {
       const pv = getLatestMetric(filtered, p, 'pureVertical');
@@ -857,12 +865,14 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
         <StatCard label={t('Injuries')} value={teamAvgInjuries} icon={Heart} color="#ef4444" subtitle={t('Avg / Player')} />
         <StatCard label={t('Days Off')} value={teamDaysOff} icon={CalendarOff} color="#6b7280" subtitle={t('Avg / Player')} />
       </div>
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-7 gap-3">
         <StatCard label={t('Height')} value={teamAvgHeight} unit=" cm" icon={Ruler} color="#3b82f6" subtitle={t('Team Average')} />
+        <StatCard label={t('Projected Height')} value={teamAvgProjHeight} unit=" cm" icon={Ruler} color="#6366f1" subtitle={t('Team Average')} />
         <StatCard label={t('Reach')} value={teamAvgReach} unit=" cm" icon={ArrowUpFromDot} color="#8b5cf6" subtitle={t('Team Average')} />
-        <StatCard label={t('Pure Vertical')} value={teamAvgVertical} unit=" cm" icon={Zap} color="#f59e0b" subtitle={t('Team Average')} />
-        <StatCard label={t('Sprint')} value={teamAvgSprint} unit=" ms" icon={Timer} color="#10b981" subtitle={t('Team Average')} />
-        <StatCard label={t('Cone Drill')} value={teamAvgCone} unit=" ms" icon={Gauge} color="#f97316" subtitle={t('Team Average')} />
+        <StatCard label={t('Projected Reach')} value={teamAvgProjReach} unit=" cm" icon={ArrowUpFromDot} color="#a855f7" subtitle={t('Team Average')} />
+        <StatCard label={t('Vertical')} value={teamAvgVertical} unit=" cm" icon={Zap} color="#f59e0b" subtitle={t('Team Average')} />
+        <StatCard label={t('Speed')} value={teamAvgSprint} unit=" ms" icon={Timer} color="#10b981" subtitle={t('Team Average')} />
+        <StatCard label={t('Agility')} value={teamAvgCone} unit=" ms" icon={Gauge} color="#f97316" subtitle={t('Team Average')} />
       </div>
 
       <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
