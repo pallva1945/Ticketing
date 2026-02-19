@@ -147,15 +147,20 @@ function PlayerSelector({ players, selected, onChange, multiple }: { players: st
   );
 }
 
-type SortKey = 'player' | 'height' | 'weight' | 'wingspan' | 'reach' | 'bodyFat' | 'pct' | 'shots' | 'vitamins' | 'weights' | 'practice' | 'game' | 'injury' | 'nt' | 'daysOff';
+type SortKey = 'player' | 'height' | 'projHeight' | 'reach' | 'projReach' | 'pureVertical' | 'sprint' | 'coneDrill' | 'weight' | 'wingspan' | 'bodyFat' | 'pct' | 'shots' | 'vitamins' | 'weights' | 'practice' | 'game' | 'injury' | 'nt' | 'daysOff';
 type SortDir = 'asc' | 'desc';
 
 interface RosterRow {
   player: string;
   height: number | null;
+  projHeight: number | null;
+  reach: number | null;
+  projReach: number | null;
+  pureVertical: number | null;
+  sprint: number | null;
+  coneDrill: number | null;
   weight: number | null;
   wingspan: number | null;
-  reach: number | null;
   bodyFat: number | null;
   pct: number | null;
   shots: number;
@@ -426,9 +431,14 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
     return {
       player,
       height: getLatestMetric(filtered, player, 'height'),
+      projHeight: getProjectedHeight(player, profiles, filtered),
+      reach: getLatestMetric(filtered, player, 'standingReach'),
+      projReach: getProjectedReach(player, profiles, filtered),
+      pureVertical: getLatestMetric(filtered, player, 'pureVertical'),
+      sprint: getLatestMetric(filtered, player, 'sprint'),
+      coneDrill: getLatestMetric(filtered, player, 'coneDrill'),
       weight: getLatestMetric(filtered, player, 'weight'),
       wingspan: getLatestMetric(filtered, player, 'wingspan'),
-      reach: getLatestMetric(filtered, player, 'standingReach'),
       bodyFat: (() => {
         const rawSF = getLatestMetric(filtered, player, 'bodyFat');
         if (rawSF === null) return null;
@@ -489,9 +499,12 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
   const columns: { key: SortKey; label: string; align?: string }[] = [
     { key: 'player', label: t('Player'), align: 'left' },
     { key: 'height', label: t('Height') },
-    { key: 'weight', label: t('Weight') },
-    { key: 'wingspan', label: t('Wingspan') },
+    { key: 'projHeight', label: t('Projected Height') },
     { key: 'reach', label: t('Reach') },
+    { key: 'projReach', label: t('Projected Reach') },
+    { key: 'pureVertical', label: t('Pure Vertical') },
+    { key: 'sprint', label: t('Sprint') },
+    { key: 'coneDrill', label: t('Cone Drill') },
     { key: 'bodyFat', label: t('Body Fat') + ' %' },
     { key: 'pct', label: t('3PT %') },
     { key: 'shots', label: t('Shots') },
@@ -538,9 +551,12 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
               <tr key={row.player} onClick={() => onSelectPlayer(row.player)} className={`border-b cursor-pointer transition-colors ${isDark ? 'border-gray-800/50 hover:bg-gray-800/50' : 'border-gray-50 hover:bg-gray-50'}`}>
                 <td className={`py-2.5 px-2 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{row.player}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.height ?? '—'}</td>
-                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.weight ?? '—'}</td>
-                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.wingspan ?? '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.projHeight ?? '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.reach ?? '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.projReach ?? '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.pureVertical ?? '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.sprint ?? '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.coneDrill ?? '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.bodyFat != null ? `${row.bodyFat}%` : '—'}</td>
                 <td className={`text-center py-2.5 px-1 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{row.pct != null ? `${row.pct}%` : '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.shots || '—'}</td>
@@ -959,22 +975,21 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
         <PlayerSelector players={players} selected={selectedPlayer} onChange={setSelectedPlayer} />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <StatCard label={t('Height')} value={latestAnthro.height} unit=" cm" icon={Ruler} color="#3b82f6" />
         <StatCard label={t('Projected Height') + ' (KR)'} value={getProjectedHeight(selectedPlayer, profiles, sessions)} unit=" cm" icon={Ruler} color="#6366f1" />
-        <StatCard label={t('Reach')} value={latestAnthro.standingReach} unit=" cm" icon={Ruler} color="#8b5cf6" />
-        <StatCard label={t('Projected Reach') + ' (KR)'} value={getProjectedReach(selectedPlayer, profiles, sessions)} unit=" cm" icon={Ruler} color="#a855f7" />
-        <StatCard label={t('Pure Vertical')} value={latestAthletic.pureVertical} unit=" cm" icon={Zap} color="#06b6d4" />
-        <StatCard label={t('Sprint')} value={latestAthletic.sprint} unit=" ms" icon={Timer} color="#f97316" />
-        <StatCard label={t('Cone Drill')} value={latestAthletic.coneDrill} unit=" ms" icon={Timer} color="#ec4899" />
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <StatCard label={t('Weight')} value={latestAnthro.weight} unit=" kg" icon={Weight} color="#10b981" />
         <StatCard label={t('Wingspan')} value={latestAnthro.wingspan} unit=" cm" icon={Ruler} color="#8b5cf6" />
         <StatCard label={t('Body Fat')} value={latestAnthro.bodyFat} unit="%" icon={Heart} color="#ef4444" />
-        <StatCard label={t('No-Step Vertical')} value={latestAthletic.noStepVertical} unit=" cm" icon={Zap} color="#8b5cf6" />
-        <StatCard label={t('Deadlift')} value={latestAthletic.deadlift} unit=" kg" icon={Dumbbell} color="#10b981" />
         <StatCard label={t('3PT %')} value={overallPct} unit="%" icon={Target} color="#f59e0b" subtitle={`${totalMade}/${totalTaken}`} />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <StatCard label={t('Pure Vertical')} value={latestAthletic.pureVertical} unit=" cm" icon={Zap} color="#06b6d4" />
+        <StatCard label={t('No-Step Vertical')} value={latestAthletic.noStepVertical} unit=" cm" icon={Zap} color="#8b5cf6" />
+        <StatCard label={t('Sprint')} value={latestAthletic.sprint} unit=" ms" icon={Timer} color="#f97316" />
+        <StatCard label={t('Cone Drill')} value={latestAthletic.coneDrill} unit=" ms" icon={Timer} color="#ec4899" />
+        <StatCard label={t('Deadlift')} value={latestAthletic.deadlift} unit=" kg" icon={Dumbbell} color="#10b981" />
       </div>
 
       <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
