@@ -157,14 +157,27 @@ function getCurrentSeason(): string {
   return `${year - 1}/${year.toString().slice(2)}`;
 }
 
+const SEASON_START_DATES: Record<string, Date> = {
+  '2024/25': new Date(2024, 7, 23),
+  '2025/26': new Date(2025, 7, 11),
+};
+
+function getSeasonStartDate(selectedSeason: string): Date | null {
+  if (SEASON_START_DATES[selectedSeason]) return SEASON_START_DATES[selectedSeason];
+  const parts = selectedSeason.match(/^(\d{4})\//);
+  if (!parts) return null;
+  const startYear = parseInt(parts[1], 10);
+  return new Date(startYear, 7, 1);
+}
+
 function getSeasonDays(selectedSeason: string): number {
   if (selectedSeason === 'all') {
     return 0;
   }
+  const seasonStart = getSeasonStartDate(selectedSeason);
+  if (!seasonStart) return 1;
   const parts = selectedSeason.match(/^(\d{4})\//);
-  if (!parts) return 1;
-  const startYear = parseInt(parts[1], 10);
-  const seasonStart = new Date(startYear, 7, 1);
+  const startYear = parts ? parseInt(parts[1], 10) : new Date().getFullYear();
   const seasonEnd = new Date(startYear + 1, 5, 30);
   const now = new Date();
   const end = now < seasonEnd ? now : seasonEnd;
@@ -198,7 +211,9 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
 
     const injuryDays = ps.filter(s => s.injured !== null && s.injured > 0).length;
     const ntDays = ps.filter(s => s.nationalTeam !== null && s.nationalTeam > 0).length;
-    const activeDays = ps.filter(s => {
+    const seasonStartDate = getSeasonStartDate(selectedSeason);
+    const psInRange = seasonStartDate ? ps.filter(s => new Date(s.date) >= seasonStartDate) : ps;
+    const activeDays = psInRange.filter(s => {
       return (s.vitaminsLoad || 0) > 0 || (s.weightsLoad || 0) > 0 || (s.practiceLoad || 0) > 0 || (s.gameLoad || 0) > 0 || (s.injured !== null && s.injured > 0) || (s.nationalTeam !== null && s.nationalTeam > 0);
     }).length;
     const daysOff = isPerDay ? 0 : Math.max(0, seasonDays - activeDays);
