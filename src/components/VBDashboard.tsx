@@ -164,8 +164,8 @@ function getSeasonDays(selectedSeason: string): number {
   const parts = selectedSeason.match(/^(\d{4})\//);
   if (!parts) return 1;
   const startYear = parseInt(parts[1], 10);
-  const seasonStart = new Date(startYear, 6, 1);
-  const seasonEnd = new Date(startYear + 1, 6, 1);
+  const seasonStart = new Date(startYear, 7, 1);
+  const seasonEnd = new Date(startYear + 1, 5, 30);
   const now = new Date();
   const end = now < seasonEnd ? now : seasonEnd;
   return Math.max(1, Math.ceil((end.getTime() - seasonStart.getTime()) / 86400000));
@@ -446,16 +446,16 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
 
   return (
     <div className="space-y-6">
-      <div className={`flex items-center gap-2 flex-wrap rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+      <div className={`grid grid-cols-4 gap-3 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
         <div className="relative">
-          <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass}>
+          <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass + ' w-full'}>
             <option value="all">{t('All Seasons')}</option>
             {seasons.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
         </div>
         <div className="relative">
-          <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className={selectClass}>
+          <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className={selectClass + ' w-full'}>
             <option value="all">{t('All Months')}</option>
             {months.map(m => {
               const d = new Date(m + '-01');
@@ -465,14 +465,14 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
           <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
         </div>
         <div className="relative">
-          <select value={selectedWeek} onChange={e => setSelectedWeek(e.target.value)} className={selectClass}>
+          <select value={selectedWeek} onChange={e => setSelectedWeek(e.target.value)} className={selectClass + ' w-full'}>
             <option value="all">{t('All Weeks')}</option>
             {weeks.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
           </select>
           <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
         </div>
         <div className="relative">
-          <select value={selectedDay} onChange={e => setSelectedDay(e.target.value)} className={selectClass}>
+          <select value={selectedDay} onChange={e => setSelectedDay(e.target.value)} className={selectClass + ' w-full'}>
             <option value="all">{t('All Days')}</option>
             {days.map(d => {
               const dt = new Date(d);
