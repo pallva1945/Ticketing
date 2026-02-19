@@ -150,10 +150,21 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark }: { filt
   const { t } = useLanguage();
   const [sortKey, setSortKey] = useState<SortKey>('player');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [viewMode, setViewMode] = useState<'total' | 'perDay'>('total');
 
   const rows: RosterRow[] = useMemo(() => activePlayers.map(player => {
     const ps = getPlayerSessions(filtered, player);
     const shootingSessions = ps.filter(s => s.shootingPct !== null);
+    const days = ps.length || 1;
+    const isPerDay = viewMode === 'perDay';
+
+    const sumOrAvg = (values: (number | null)[]): number => {
+      const valid = values.filter(v => v !== null && v !== undefined) as number[];
+      if (valid.length === 0) return 0;
+      const total = valid.reduce((a, b) => a + b, 0);
+      return isPerDay ? Math.round((total / days) * 10) / 10 : total;
+    };
+
     return {
       player,
       height: getLatestMetric(filtered, player, 'height'),
@@ -162,13 +173,13 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark }: { filt
       reach: getLatestMetric(filtered, player, 'standingReach'),
       bodyFat: getLatestMetric(filtered, player, 'bodyFat'),
       pct: getAvg(shootingSessions.map(s => s.shootingPct)),
-      shots: ps.reduce((sum, s) => sum + (s.shootsTaken || 0), 0),
-      vitamins: ps.reduce((sum, s) => sum + (s.vitaminsLoad || 0), 0),
-      weights: ps.reduce((sum, s) => sum + (s.weightsLoad || 0), 0),
-      practice: ps.reduce((sum, s) => sum + (s.practiceLoad || 0), 0),
-      game: ps.reduce((sum, s) => sum + (s.gameLoad || 0), 0),
+      shots: sumOrAvg(ps.map(s => s.shootsTaken)),
+      vitamins: sumOrAvg(ps.map(s => s.vitaminsLoad)),
+      weights: sumOrAvg(ps.map(s => s.weightsLoad)),
+      practice: sumOrAvg(ps.map(s => s.practiceLoad)),
+      game: sumOrAvg(ps.map(s => s.gameLoad)),
     };
-  }), [filtered, activePlayers]);
+  }), [filtered, activePlayers, viewMode]);
 
   const sorted = useMemo(() => {
     const arr = [...rows];
@@ -224,7 +235,23 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark }: { filt
 
   return (
     <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-      <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Player Roster')}</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Player Roster')}</h3>
+        <div className={`inline-flex rounded-lg p-0.5 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+          <button
+            onClick={() => setViewMode('total')}
+            className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${viewMode === 'total' ? (isDark ? 'bg-orange-600 text-white shadow-sm' : 'bg-white text-gray-900 shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700')}`}
+          >
+            {t('Total')}
+          </button>
+          <button
+            onClick={() => setViewMode('perDay')}
+            className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${viewMode === 'perDay' ? (isDark ? 'bg-orange-600 text-white shadow-sm' : 'bg-white text-gray-900 shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700')}`}
+          >
+            {t('Per Day')}
+          </button>
+        </div>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>

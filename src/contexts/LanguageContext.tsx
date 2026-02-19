@@ -75,6 +75,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Standing Reach': { en: 'Standing Reach', it: 'Elevazione da Fermo' },
   'Reach': { en: 'Reach', it: 'Reach' },
   'Shots': { en: 'Shots', it: 'Tiri' },
+  'Per Day': { en: 'Per Day', it: 'Per Giorno' },
   'No-Step V.': { en: 'No-Step V.', it: 'Vert. Senza Passo' },
   'CRM': { en: 'CRM', it: 'CRM' },
   'Comparison': { en: 'Comparison', it: 'Confronto' },
