@@ -162,6 +162,19 @@ const SEASON_START_DATES: Record<string, Date> = {
   '2025/26': new Date(2025, 7, 11),
 };
 
+const PLAYER_POSITIONS: Record<string, string> = {
+};
+
+const POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C'];
+
+function getPlayerPosition(player: string): string {
+  const key = player.toLowerCase().trim();
+  for (const [name, pos] of Object.entries(PLAYER_POSITIONS)) {
+    if (key.includes(name) || name.includes(key)) return pos;
+  }
+  return '';
+}
+
 const PLAYER_START_OVERRIDES: Record<string, Record<string, Date>> = {
   '2025/26': {
     'filippo ciocchetti': new Date(2025, 11, 1),
@@ -390,6 +403,8 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [selectedWeek, setSelectedWeek] = useState<string>('all');
   const [selectedDay, setSelectedDay] = useState<string>('all');
+  const [selectedPosition, setSelectedPosition] = useState<string>('all');
+  const [selectedPlayerFilter, setSelectedPlayerFilter] = useState<string>('all');
   
   const validSessions = useMemo(() => sessions.filter(s => getSeason(s.date) !== null), [sessions]);
 
@@ -439,14 +454,34 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
     return [...new Set(weekFiltered.map(s => s.date))].sort().reverse();
   }, [weekFiltered]);
 
-  const filtered = useMemo(() => {
+  const dayFiltered = useMemo(() => {
     if (selectedDay === 'all') return weekFiltered;
     return weekFiltered.filter(s => s.date === selectedDay);
   }, [weekFiltered, selectedDay]);
 
-  useEffect(() => { setSelectedMonth('all'); setSelectedWeek('all'); setSelectedDay('all'); }, [selectedSeason]);
+  const positionFiltered = useMemo(() => {
+    if (selectedPosition === 'all') return dayFiltered;
+    return dayFiltered.filter(s => getPlayerPosition(s.player) === selectedPosition);
+  }, [dayFiltered, selectedPosition]);
+
+  const availablePositions = useMemo(() => {
+    const pos = [...new Set(dayFiltered.map(s => getPlayerPosition(s.player)).filter(p => p))].sort();
+    return pos;
+  }, [dayFiltered]);
+
+  const playersInFilter = useMemo(() => {
+    return [...new Set(positionFiltered.map(s => s.player))].sort();
+  }, [positionFiltered]);
+
+  const filtered = useMemo(() => {
+    if (selectedPlayerFilter === 'all') return positionFiltered;
+    return positionFiltered.filter(s => s.player === selectedPlayerFilter);
+  }, [positionFiltered, selectedPlayerFilter]);
+
+  useEffect(() => { setSelectedMonth('all'); setSelectedWeek('all'); setSelectedDay('all'); setSelectedPosition('all'); setSelectedPlayerFilter('all'); }, [selectedSeason]);
   useEffect(() => { setSelectedWeek('all'); setSelectedDay('all'); }, [selectedMonth]);
   useEffect(() => { setSelectedDay('all'); }, [selectedWeek]);
+  useEffect(() => { setSelectedPlayerFilter('all'); }, [selectedPosition]);
 
   const activePlayers = useMemo(() => {
     return [...new Set(filtered.map(s => s.player))].sort();
@@ -571,7 +606,7 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
 
   return (
     <div className="space-y-6">
-      <div className={`grid grid-cols-4 gap-3 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+      <div className={`grid grid-cols-6 gap-3 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
         <div className="relative">
           <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass + ' w-full'}>
             <option value="all">{t('All Seasons')}</option>
@@ -603,6 +638,20 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
               const dt = new Date(d);
               return <option key={d} value={d}>{dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</option>;
             })}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={selectedPosition} onChange={e => setSelectedPosition(e.target.value)} className={selectClass + ' w-full'}>
+            <option value="all">{t('All Positions')}</option>
+            {availablePositions.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={selectedPlayerFilter} onChange={e => setSelectedPlayerFilter(e.target.value)} className={selectClass + ' w-full'}>
+            <option value="all">{t('All Players')}</option>
+            {playersInFilter.map(p => <option key={p} value={p}>{p}</option>)}
           </select>
           <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
         </div>

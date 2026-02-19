@@ -65,6 +65,8 @@ const translations: Record<string, Record<Language, string>> = {
   'Avg / Player': { en: 'Avg / Player', it: 'Media / Giocatore' },
   'Injuries': { en: 'Injuries', it: 'Infortuni' },
   'Pure Vertical': { en: 'Pure Vertical', it: 'Verticale Puro' },
+  'All Positions': { en: 'All Positions', it: 'Tutte le Posizioni' },
+  'All Players': { en: 'All Players', it: 'Tutti i Giocatori' },
   'All Months': { en: 'All Months', it: 'Tutti i Mesi' },
   'All Weeks': { en: 'All Weeks', it: 'Tutte le Settimane' },
   'All Days': { en: 'All Days', it: 'Tutti i Giorni' },
