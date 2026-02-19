@@ -225,11 +225,71 @@ function getPlayerPosition(player: string, profiles: PlayerProfile[]): string {
   return '';
 }
 
-function getProjectedHeight(player: string, profiles: PlayerProfile[], season?: string): number | null {
-  const profile = getPlayerProfile(player, profiles, season);
+const KR_COEFFICIENTS: Record<number, { intercept: number; ht: number; wt: number; mph: number }> = {
+  10: { intercept: 12.5, ht: 0.78, wt: -0.05, mph: 0.23 },
+  11: { intercept: 11.8, ht: 0.75, wt: -0.04, mph: 0.26 },
+  12: { intercept: 11.2, ht: 0.72, wt: -0.03, mph: 0.28 },
+  13: { intercept: 10.5, ht: 0.68, wt: -0.02, mph: 0.31 },
+  14: { intercept: 9.8, ht: 0.63, wt: -0.01, mph: 0.35 },
+  15: { intercept: 8.5, ht: 0.58, wt: -0.01, mph: 0.40 },
+};
+
+function getKRCoefficients(age: number): { intercept: number; ht: number; wt: number; mph: number } | null {
+  const ages = [10, 11, 12, 13, 14, 15];
+  if (age < 10 || age > 15) {
+    const clamped = Math.max(10, Math.min(15, Math.round(age)));
+    return KR_COEFFICIENTS[clamped];
+  }
+  const lower = Math.floor(age);
+  const upper = Math.ceil(age);
+  if (lower === upper || !KR_COEFFICIENTS[lower] || !KR_COEFFICIENTS[upper]) {
+    const closest = ages.reduce((a, b) => Math.abs(b - age) < Math.abs(a - age) ? b : a);
+    return KR_COEFFICIENTS[closest];
+  }
+  const frac = age - lower;
+  const lo = KR_COEFFICIENTS[lower];
+  const hi = KR_COEFFICIENTS[upper];
+  return {
+    intercept: lo.intercept + frac * (hi.intercept - lo.intercept),
+    ht: lo.ht + frac * (hi.ht - lo.ht),
+    wt: lo.wt + frac * (hi.wt - lo.wt),
+    mph: lo.mph + frac * (hi.mph - lo.mph),
+  };
+}
+
+function getProjectedHeight(player: string, profiles: PlayerProfile[], sessions: VBSession[]): number | null {
+  const profile = getPlayerProfile(player, profiles);
   if (!profile || profile.momHeight == null || profile.dadHeight == null) return null;
-  const projected = (profile.momHeight + profile.dadHeight + 13) / 2;
-  return Math.round(projected * 10) / 10;
+  const dobSerial = getPlayerDobSerial(player, profiles);
+  if (!dobSerial) return null;
+
+  const playerSessions = getPlayerSessions(sessions, player)
+    .filter(s => s.height !== null && s.weight !== null)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  if (playerSessions.length === 0) return null;
+  const latest = playerSessions[0];
+  const currentHeightCm = latest.height!;
+  const currentWeightKg = latest.weight!;
+
+  const dobDate = excelSerialToDate(dobSerial);
+  const sessionDate = new Date(latest.date);
+  const ageYears = (sessionDate.getTime() - dobDate.getTime()) / (365.25 * 86400000);
+
+  const coeffs = getKRCoefficients(ageYears);
+  if (!coeffs) return null;
+
+  const currentHeightIn = currentHeightCm / 2.54;
+  const currentWeightLbs = currentWeightKg * 2.20462;
+  const dadHeightIn = profile.dadHeight / 2.54;
+  const momHeightIn = profile.momHeight / 2.54;
+  const mph = (dadHeightIn + momHeightIn) / 2;
+
+  const predictedIn = coeffs.intercept + (coeffs.ht * currentHeightIn) + (coeffs.wt * currentWeightLbs) + (coeffs.mph * mph);
+  let predictedCm = predictedIn * 2.54;
+
+  if (predictedCm < currentHeightCm) predictedCm = currentHeightCm;
+
+  return Math.round(predictedCm * 10) / 10;
 }
 
 function getPlayerProfile(player: string, profiles: PlayerProfile[], season?: string): PlayerProfile | null {
@@ -860,7 +920,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 
       <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
         <StatCard label={t('Height')} value={latestAnthro.height} unit=" cm" icon={Ruler} color="#3b82f6" />
-        <StatCard label={t('Projected Height')} value={getProjectedHeight(selectedPlayer, profiles)} unit=" cm" icon={Ruler} color="#6366f1" />
+        <StatCard label={t('Projected Height') + ' (KR)'} value={getProjectedHeight(selectedPlayer, profiles, sessions)} unit=" cm" icon={Ruler} color="#6366f1" />
         <StatCard label={t('Weight')} value={latestAnthro.weight} unit=" kg" icon={Weight} color="#10b981" />
         <StatCard label={t('Wingspan')} value={latestAnthro.wingspan} unit=" cm" icon={Ruler} color="#8b5cf6" />
         <StatCard label={t('Body Fat')} value={latestAnthro.bodyFat} unit="%" icon={Heart} color="#ef4444" />
