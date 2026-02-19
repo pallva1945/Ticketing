@@ -562,7 +562,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-4 mb-6 sm:mb-8">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6 sm:mb-8">
               <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
                 <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${isDark ? 'bg-emerald-900/25' : 'bg-emerald-50'}`}>
                   <Leaf size={18} className="text-emerald-500" />
@@ -625,7 +625,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             </div>
 
             <div className={`rounded-xl border p-5 sm:p-6 ${isDark ? 'bg-gray-900/40 border-gray-800/40' : 'bg-gray-50/80 border-gray-200/60'}`}>
-              <div className="grid grid-cols-4 gap-4 sm:gap-8">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8">
                 <StatCounter target={10} label={t('League Titles')} active={visible[1]} isDark={isDark} />
                 <StatCounter target={5} label={t('EuroLeague Titles')} active={visible[1]} isDark={isDark} />
                 <StatCounter target={3} label={t('Intercontinental Cups')} active={visible[1]} isDark={isDark} />
@@ -676,7 +676,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 </div>
 
                 <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
-                  <div className="flex-shrink-0" style={{ width: 280, height: 280 }}>
+                  <div className="flex-shrink-0" style={{ width: 'min(280px, 70vw)', height: 'min(280px, 70vw)' }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
@@ -733,7 +733,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                   {BOARD_MEMBERS.map((member, i) => (
                     <div
                       key={i}
@@ -753,7 +753,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                       <p className="text-xs tracking-[0.1em] uppercase font-medium mb-3" style={{ color: member.color }}>
                         {t(member.roleKey)}
                       </p>
-                      <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      <p className={`text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         {t(member.bioKey)}
                       </p>
                     </div>
@@ -801,7 +801,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                       <p className="text-xs tracking-[0.1em] uppercase font-medium mb-3" style={{ color: advisor.color, opacity: 0.7 }}>
                         {t(advisor.roleKey)}
                       </p>
-                      <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      <p className={`text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         {t(advisor.bioKey)}
                       </p>
                     </div>
@@ -825,7 +825,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {ELT_MEMBERS.map((member, i) => (
                     <div
                       key={i}
@@ -846,7 +846,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                       <p className="text-xs tracking-[0.1em] uppercase font-medium mb-3" style={{ color: member.color }}>
                         {t(member.roleKey)}
                       </p>
-                      <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      <p className={`text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                         {t(member.bioKey)}
                       </p>
                     </div>
@@ -955,13 +955,20 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 <button
                   key={i}
                   onClick={() => goToTeamSlide(i)}
-                  className={`px-3 py-1.5 rounded-full text-xs tracking-[0.15em] uppercase font-medium transition-all duration-500 ${
+                  className={`rounded-full transition-all duration-500 ${
                     teamSlide === i
                       ? isDark ? 'bg-white/10 text-white' : 'bg-gray-900/10 text-gray-900'
                       : isDark ? 'text-gray-600 hover:text-gray-400' : 'text-gray-300 hover:text-gray-500'
                   }`}
                 >
-                  {label}
+                  <span className="hidden sm:inline px-3 py-1.5 text-xs tracking-[0.15em] uppercase font-medium">{label}</span>
+                  <span className={`sm:hidden flex items-center justify-center w-8 h-8`}>
+                    <span className={`block w-2.5 h-2.5 rounded-full transition-all ${
+                      teamSlide === i
+                        ? isDark ? 'bg-white scale-125' : 'bg-gray-900 scale-125'
+                        : isDark ? 'bg-gray-600' : 'bg-gray-300'
+                    }`} />
+                  </span>
                 </button>
               ))}
             </div>
