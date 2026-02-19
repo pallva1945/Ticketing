@@ -457,9 +457,33 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
   const injuredDays = new Set(filtered.filter(s => s.injured && s.injured > 0).map(s => s.player + '|' + s.date)).size;
   const ntDays = new Set(filtered.filter(s => s.nationalTeam && s.nationalTeam > 0).map(s => s.player + '|' + s.date)).size;
 
-  const teamAvgVitamins = getAvg(filtered.map(s => s.vitaminsLoad));
-  const teamAvgWeights = getAvg(filtered.map(s => s.weightsLoad));
-  const teamAvgGame = getAvg(filtered.map(s => s.gameLoad));
+  const teamAvgVitamins = useMemo(() => {
+    const playerAvgs = activePlayers.map(p => {
+      const vals = filtered.filter(s => s.player === p && s.vitaminsLoad).map(s => s.vitaminsLoad!);
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    }).filter(v => v !== null) as number[];
+    return playerAvgs.length ? Math.round(playerAvgs.reduce((a, b) => a + b, 0) / playerAvgs.length * 10) / 10 : null;
+  }, [filtered, activePlayers]);
+  const teamAvgWeights = useMemo(() => {
+    const playerAvgs = activePlayers.map(p => {
+      const vals = filtered.filter(s => s.player === p && s.weightsLoad).map(s => s.weightsLoad!);
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    }).filter(v => v !== null) as number[];
+    return playerAvgs.length ? Math.round(playerAvgs.reduce((a, b) => a + b, 0) / playerAvgs.length * 10) / 10 : null;
+  }, [filtered, activePlayers]);
+  const teamAvgGame = useMemo(() => {
+    const playerAvgs = activePlayers.map(p => {
+      const vals = filtered.filter(s => s.player === p && s.gameLoad).map(s => s.gameLoad!);
+      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+    }).filter(v => v !== null) as number[];
+    return playerAvgs.length ? Math.round(playerAvgs.reduce((a, b) => a + b, 0) / playerAvgs.length * 10) / 10 : null;
+  }, [filtered, activePlayers]);
+  const teamAvgInjuries = useMemo(() => {
+    const playerCounts = activePlayers.map(p => {
+      return new Set(filtered.filter(s => s.player === p && s.injured && s.injured > 0).map(s => s.date)).size;
+    });
+    return playerCounts.length ? Math.round(playerCounts.reduce((a, b) => a + b, 0) / playerCounts.length * 10) / 10 : null;
+  }, [filtered, activePlayers]);
 
   const teamAvgHeight = useMemo(() => {
     const vals = activePlayers.map(p => getLatestMetric(filtered, p, 'height')).filter(v => v !== null) as number[];
@@ -470,7 +494,11 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
     return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
   }, [filtered, activePlayers]);
   const teamAvgVertical = useMemo(() => {
-    const vals = activePlayers.map(p => getLatestMetric(filtered, p, 'pureVertical')).filter(v => v !== null) as number[];
+    const vals = activePlayers.map(p => {
+      const pv = getLatestMetric(filtered, p, 'pureVertical');
+      const sr = getLatestMetric(filtered, p, 'standingReach');
+      return (pv !== null && sr !== null) ? pv - sr : null;
+    }).filter(v => v !== null) as number[];
     return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
   }, [filtered, activePlayers]);
   const teamAvgSprint = useMemo(() => {
@@ -562,21 +590,20 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-3">
-        <StatCard label={t('Players')} value={activePlayers.length} icon={Users} color="#3b82f6" />
+      <div className="grid grid-cols-6 gap-3">
         <StatCard label={t('3PT %')} value={avgShootingPct} unit="%" icon={Target} color="#f59e0b" subtitle={t('Team Average')} />
-        <StatCard label={t('Vitamins')} value={teamAvgVitamins} icon={Pill} color="#8b5cf6" subtitle={t('Avg Load')} />
-        <StatCard label={t('Weights')} value={teamAvgWeights} icon={Dumbbell} color="#10b981" subtitle={t('Avg Load')} />
-        <StatCard label={t('Game')} value={teamAvgGame} icon={Gamepad2} color="#f97316" subtitle={t('Avg Load')} />
+        <StatCard label={t('Vitamins')} value={teamAvgVitamins} icon={Pill} color="#8b5cf6" subtitle={t('Avg / Player')} />
+        <StatCard label={t('Weights')} value={teamAvgWeights} icon={Dumbbell} color="#10b981" subtitle={t('Avg / Player')} />
+        <StatCard label={t('Game')} value={teamAvgGame} icon={Gamepad2} color="#f97316" subtitle={t('Avg / Player')} />
+        <StatCard label={t('Injuries')} value={teamAvgInjuries} icon={Heart} color="#ef4444" subtitle={t('Avg / Player')} />
         <StatCard label={t('Days Off')} value={teamDaysOff} icon={CalendarOff} color="#6b7280" subtitle={t('Avg / Player')} />
-        <StatCard label={t('Injuries')} value={injuredDays} icon={Heart} color="#ef4444" subtitle={`${ntDays} NT ${t('days')}`} />
       </div>
       <div className="grid grid-cols-5 gap-3">
         <StatCard label={t('Height')} value={teamAvgHeight} unit=" cm" icon={Ruler} color="#3b82f6" subtitle={t('Team Average')} />
         <StatCard label={t('Reach')} value={teamAvgReach} unit=" cm" icon={ArrowUpFromDot} color="#8b5cf6" subtitle={t('Team Average')} />
         <StatCard label={t('Pure Vertical')} value={teamAvgVertical} unit=" cm" icon={Zap} color="#f59e0b" subtitle={t('Team Average')} />
-        <StatCard label={t('Sprint')} value={teamAvgSprint} unit=" s" icon={Timer} color="#10b981" subtitle={t('Team Average')} />
-        <StatCard label={t('Cone Drill')} value={teamAvgCone} unit=" s" icon={Gauge} color="#f97316" subtitle={t('Team Average')} />
+        <StatCard label={t('Sprint')} value={teamAvgSprint} unit=" ms" icon={Timer} color="#10b981" subtitle={t('Team Average')} />
+        <StatCard label={t('Cone Drill')} value={teamAvgCone} unit=" ms" icon={Gauge} color="#f97316" subtitle={t('Team Average')} />
       </div>
 
       <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
