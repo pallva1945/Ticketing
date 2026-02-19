@@ -225,6 +225,13 @@ function getPlayerPosition(player: string, profiles: PlayerProfile[]): string {
   return '';
 }
 
+function getProjectedHeight(player: string, profiles: PlayerProfile[], season?: string): number | null {
+  const profile = getPlayerProfile(player, profiles, season);
+  if (!profile || profile.momHeight == null || profile.dadHeight == null) return null;
+  const projected = (profile.momHeight + profile.dadHeight + 13) / 2;
+  return Math.round(projected * 10) / 10;
+}
+
 function getPlayerProfile(player: string, profiles: PlayerProfile[], season?: string): PlayerProfile | null {
   let match: PlayerProfile | null = null;
   for (const p of profiles) {
@@ -851,8 +858,9 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
         <PlayerSelector players={players} selected={selectedPlayer} onChange={setSelectedPlayer} />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
         <StatCard label={t('Height')} value={latestAnthro.height} unit=" cm" icon={Ruler} color="#3b82f6" />
+        <StatCard label={t('Projected Height')} value={getProjectedHeight(selectedPlayer, profiles)} unit=" cm" icon={Ruler} color="#6366f1" />
         <StatCard label={t('Weight')} value={latestAnthro.weight} unit=" kg" icon={Weight} color="#10b981" />
         <StatCard label={t('Wingspan')} value={latestAnthro.wingspan} unit=" cm" icon={Ruler} color="#8b5cf6" />
         <StatCard label={t('Body Fat')} value={latestAnthro.bodyFat} unit="%" icon={Heart} color="#ef4444" />
