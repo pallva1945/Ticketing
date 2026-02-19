@@ -148,16 +148,13 @@ interface RosterRow {
 
 function getSeasonDays(selectedSeason: string): number {
   if (selectedSeason === 'all') {
-    const now = new Date();
-    const year = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
-    const seasonStart = new Date(year, 6, 1);
-    return Math.max(1, Math.ceil((now.getTime() - seasonStart.getTime()) / 86400000));
+    return 0;
   }
   const parts = selectedSeason.match(/^(\d{4})\//);
   if (!parts) return 1;
   const startYear = parseInt(parts[1], 10);
   const seasonStart = new Date(startYear, 6, 1);
-  const seasonEnd = new Date(startYear + 1, 5, 30);
+  const seasonEnd = new Date(startYear + 1, 6, 1);
   const now = new Date();
   const end = now < seasonEnd ? now : seasonEnd;
   return Math.max(1, Math.ceil((end.getTime() - seasonStart.getTime()) / 86400000));
@@ -170,11 +167,16 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
   const [viewMode, setViewMode] = useState<'total' | 'perDay'>('total');
 
   const seasonDays = useMemo(() => getSeasonDays(selectedSeason), [selectedSeason]);
+  const canShowPerDay = seasonDays > 0;
+
+  useEffect(() => {
+    if (!canShowPerDay && viewMode === 'perDay') setViewMode('total');
+  }, [canShowPerDay]);
 
   const rows: RosterRow[] = useMemo(() => activePlayers.map(player => {
     const ps = getPlayerSessions(filtered, player);
     const shootingSessions = ps.filter(s => s.shootingPct !== null);
-    const isPerDay = viewMode === 'perDay';
+    const isPerDay = viewMode === 'perDay' && canShowPerDay;
 
     const sumOrAvg = (values: (number | null)[]): number => {
       const valid = values.filter(v => v !== null && v !== undefined) as number[];
@@ -255,20 +257,22 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
     <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
       <div className="flex items-center justify-between mb-4">
         <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Player Roster')}</h3>
-        <div className={`inline-flex rounded-lg p-0.5 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-          <button
-            onClick={() => setViewMode('total')}
-            className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${viewMode === 'total' ? (isDark ? 'bg-orange-600 text-white shadow-sm' : 'bg-white text-gray-900 shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700')}`}
-          >
-            {t('Total')}
-          </button>
-          <button
-            onClick={() => setViewMode('perDay')}
-            className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${viewMode === 'perDay' ? (isDark ? 'bg-orange-600 text-white shadow-sm' : 'bg-white text-gray-900 shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700')}`}
-          >
-            {t('Per Day')}
-          </button>
-        </div>
+        {canShowPerDay && (
+          <div className={`inline-flex rounded-lg p-0.5 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+            <button
+              onClick={() => setViewMode('total')}
+              className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${viewMode === 'total' ? (isDark ? 'bg-orange-600 text-white shadow-sm' : 'bg-white text-gray-900 shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700')}`}
+            >
+              {t('Total')}
+            </button>
+            <button
+              onClick={() => setViewMode('perDay')}
+              className={`px-3 py-1 rounded-md text-[11px] font-medium transition-all ${viewMode === 'perDay' ? (isDark ? 'bg-orange-600 text-white shadow-sm' : 'bg-white text-gray-900 shadow-sm') : (isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700')}`}
+            >
+              {t('Per Day')}
+            </button>
+          </div>
+        )}
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs">

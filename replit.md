@@ -97,3 +97,19 @@ The application uses a modern web stack with React 18 and TypeScript for the fro
 - **Varese Basketball**: Sales €386,020; COS €260,635; dedicated SG&A €148,459
 - **SG&A Allocation**: Total €837,843 = VB dedicated (€148,459) + Shared (€689,384). Shared split: GameDay 60%, Sponsorship 30%, Merchandising 5%, Venue Ops 5%
 - **Features**: Summary KPI cards, net income bar chart, individual vertical P&L cards, consolidated table with margins
+
+## VB Dashboard (Varese Basketball Youth Development)
+- **Location**: `src/components/VBDashboard.tsx`
+- **Navigation**: InternalHub → BOps · VB card → hash route `#vb`
+- **Data Source**: BigQuery (Google Forms submissions), fetched via `/api/vb-data` endpoint with 10-minute cache
+- **Data Structure**: `VBSession` interface — player, date, practiceLoad, vitaminsLoad, weightsLoad, gameLoad, height, weight, wingspan, standingReach, bodyFat, pureVertical, noStepVertical, sprint, coneDrill, deadlift, shootsTaken, shootsMade, shootingPct, injured
+- **Date Format**: Italian D/M/YYYY parsed to YYYY-MM-DD; seasons run July 1 – June 30
+- **Column Mapping**: BigQuery returns lowercase (player, practice_load, shots_taken) → camelCase via getField() helper
+- **Tabs**:
+  - **Overview**: Season filter, KPI cards (players/sessions/avg 3PT%/injury rate), session distribution bar chart, Player Roster table
+  - **Player Profile**: Player selector, anthropometric + athletic stat cards, progression chart (4 metric groups), availability log, shooting history
+  - **Compare**: Multi-player selector (max 4), radar chart (normalized 0–100), side-by-side metric table with best-value highlighting
+  - **Progression**: Metric selector, multi-player line chart over time, delta cards (first→last measurement change)
+- **Player Roster Table**: Sortable columns (click to toggle asc/desc), Total/Per Day toggle (Per Day divides by season calendar days, not session count)
+- **Season Days Calculation**: `getSeasonDays()` — for selected season, calculates days from July 1 to current date (or season end for past seasons)
+- **Features**: Dark mode support, English/Italian translations, responsive design, data refresh button
