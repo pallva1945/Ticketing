@@ -19,9 +19,12 @@ The PV Internal Portal is a React-based application designed for Pallacanestro V
 - **User Types**: Internal (Google OAuth, auto-created on first login) and External (password-based, created via invitation)
 - **Access Levels**: full (all pages/modules) or partial (only permitted pages/modules)
 - **Page Permissions**: hub, revenue, cost, pnl (route-level); home, ticketing, gameday, sponsorship, merchandising, venue_ops, bops, sg (module-level within Revenue Center)
-- **Invitation Flow**: Admin generates invite link → copies to clipboard → sends manually (email/WhatsApp) → recipient opens link → sets name + password → account created with specified permissions
+- **Access Request Flow**: New @pallacanestrovarese.it users don't get immediate access. Instead: User signs in with Google → access request created → admin gets email (via Resend) with approval link → admin clicks link (#approve/{token}) → selects access preset and approves → user account created with chosen permissions → user can now log in
+- **Access Presets**: Full Access, Coaches (hub only), Corp Read Only, Finance, Custom — admin selects a preset when approving requests or managing users
+- **Invitation Flow** (for external users): Admin generates invite link → copies to clipboard → sends manually (email/WhatsApp) → recipient opens link → sets name + password → account created with specified permissions
 - **Invitation Validation**: Token checked for existence, status (pending only), and expiry before acceptance; marked accepted after use
 - **Access Control**: Enforced in index.tsx (route-level canAccessPage) and App.tsx (module filtering); partial access with no permissions = no access
+- **Email**: Resend API used for sending access request notification emails to admin (RESEND_API_KEY secret required); graceful fallback to console logging if not configured
 
 ## Navigation Architecture
 - **Login Page** (`LoginPage.tsx`): Corporate access gate — email-only login for @pallacanestrovarese.it

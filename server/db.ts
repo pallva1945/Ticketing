@@ -51,6 +51,17 @@ export async function initDatabase() {
         page_id VARCHAR(100) NOT NULL,
         UNIQUE(invitation_id, page_id)
       );
+
+      CREATE TABLE IF NOT EXISTS access_requests (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        name VARCHAR(255),
+        picture TEXT,
+        approval_token VARCHAR(255) UNIQUE NOT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        reviewed_at TIMESTAMPTZ
+      );
     `);
 
     const adminEmail = 'luisscola@pallacanestrovarese.it';
@@ -211,6 +222,39 @@ export async function acceptInvitation(token: string) {
 export async function getUserByEmailWithPassword(email: string) {
   const result = await pool.query('SELECT * FROM users WHERE email = $1 AND auth_type = $2', [email, 'password']);
   return result.rows[0] || null;
+}
+
+export async function createAccessRequest(email: string, name: string, picture: string, approvalToken: string) {
+  const existing = await pool.query('SELECT * FROM access_requests WHERE email = $1 AND status = $2', [email, 'pending']);
+  if (existing.rows.length > 0) {
+    await pool.query('UPDATE access_requests SET name = COALESCE($1, name), picture = COALESCE($2, picture) WHERE id = $3', [name, picture, existing.rows[0].id]);
+    return existing.rows[0];
+  }
+  const result = await pool.query(
+    `INSERT INTO access_requests (email, name, picture, approval_token)
+     VALUES ($1, $2, $3, $4) RETURNING *`,
+    [email, name, picture, approvalToken]
+  );
+  return result.rows[0];
+}
+
+export async function getAccessRequestByToken(token: string) {
+  const result = await pool.query('SELECT * FROM access_requests WHERE approval_token = $1', [token]);
+  return result.rows[0] || null;
+}
+
+export async function getAccessRequestByEmail(email: string) {
+  const result = await pool.query('SELECT * FROM access_requests WHERE email = $1 ORDER BY created_at DESC LIMIT 1', [email]);
+  return result.rows[0] || null;
+}
+
+export async function getAllAccessRequests() {
+  const result = await pool.query('SELECT * FROM access_requests ORDER BY created_at DESC');
+  return result.rows;
+}
+
+export async function updateAccessRequestStatus(id: number, status: string) {
+  await pool.query('UPDATE access_requests SET status = $1, reviewed_at = NOW() WHERE id = $2', [status, id]);
 }
 
 export { pool };

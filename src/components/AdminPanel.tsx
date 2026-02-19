@@ -100,9 +100,10 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { t } = useLanguage();
   const isDark = theme === 'dark';
 
-  const [activeTab, setActiveTab] = useState<'users' | 'invite' | 'invitations'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'requests' | 'invite' | 'invitations'>('users');
   const [users, setUsers] = useState<User[]>([]);
   const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [accessRequests, setAccessRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -135,9 +136,10 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [usersRes, invRes] = await Promise.all([
+      const [usersRes, invRes, reqRes] = await Promise.all([
         fetch('/api/admin/users', { credentials: 'include' }),
-        fetch('/api/admin/invitations', { credentials: 'include' })
+        fetch('/api/admin/invitations', { credentials: 'include' }),
+        fetch('/api/admin/access-requests', { credentials: 'include' })
       ]);
       if (usersRes.ok) {
         const data = await usersRes.json();
@@ -146,6 +148,10 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       if (invRes.ok) {
         const data = await invRes.json();
         setInvitations(data.invitations || []);
+      }
+      if (reqRes.ok) {
+        const data = await reqRes.json();
+        setAccessRequests(data.requests || []);
       }
     } catch (e: any) {
       setError(e.message);
@@ -409,6 +415,7 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="flex gap-2 mb-6">
           {[
             { id: 'users' as const, icon: Users, label: 'Users' },
+            { id: 'requests' as const, icon: Clock, label: 'Requests', badge: accessRequests.filter(r => r.status === 'pending').length },
             { id: 'invite' as const, icon: Mail, label: 'Invite External' },
             { id: 'invitations' as const, icon: Globe, label: 'Invitations' },
           ].map(tab => (
@@ -423,9 +430,61 @@ export const AdminPanel: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             >
               <tab.icon size={16} />
               {tab.label}
+              {'badge' in tab && (tab as any).badge > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500 text-white">{(tab as any).badge}</span>
+              )}
             </button>
           ))}
         </div>
+
+        {activeTab === 'requests' && (
+          <div className="space-y-2">
+            {accessRequests.length === 0 ? (
+              <div className={`${cardClass} text-center py-8`}>
+                <Clock size={24} className={`mx-auto mb-2 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
+                <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>No access requests yet</p>
+              </div>
+            ) : (
+              accessRequests.map((req: any) => (
+                <div key={req.id} className={`${cardClass} flex flex-col sm:flex-row sm:items-center gap-3`}>
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {req.picture ? (
+                      <img src={req.picture} alt="" className="w-10 h-10 rounded-full flex-shrink-0" />
+                    ) : (
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                        <Users size={16} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm">{req.name || req.email}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          req.status === 'pending' ? isDark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-50 text-amber-600'
+                          : req.status === 'approved' ? isDark ? 'bg-green-900/30 text-green-400' : 'bg-green-50 text-green-600'
+                          : isDark ? 'bg-red-900/30 text-red-400' : 'bg-red-50 text-red-600'
+                        }`}>
+                          {req.status.toUpperCase()}
+                        </span>
+                      </div>
+                      <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{req.email}</p>
+                      <p className={`text-[10px] ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                        {new Date(req.created_at).toLocaleDateString()} {new Date(req.created_at).toLocaleTimeString()}
+                      </p>
+                    </div>
+                  </div>
+                  {req.status === 'pending' && (
+                    <a
+                      href={`#approve/${req.approval_token}`}
+                      className={btnPrimary}
+                    >
+                      Review
+                    </a>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        )}
 
         {activeTab === 'users' && (
           <div className="space-y-4">

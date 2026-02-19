@@ -9,12 +9,14 @@ import { VerticalsPnL } from './components/VerticalsPnL';
 import { LoginPage } from './components/LoginPage';
 import { AdminPanel } from './components/AdminPanel';
 import { InviteAcceptPage } from './components/InviteAcceptPage';
+import { ApprovalPage } from './components/ApprovalPage';
+import { AccessPendingPage } from './components/AccessPendingPage';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const Root: React.FC = () => {
-  const { isAuthenticated, isLoading, isAdmin, accessLevel, permissions } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin, isPendingApproval, accessLevel, permissions } = useAuth();
   const [currentView, setCurrentView] = useState<string>(() => {
     const hash = window.location.hash.replace('#', '');
     return hash || 'welcome';
@@ -70,6 +72,17 @@ const Root: React.FC = () => {
       handleNavigate('welcome');
       window.location.reload();
     }} />;
+  }
+
+  if (currentView.startsWith('approve/')) {
+    const token = currentView.replace('approve/', '');
+    return <ApprovalPage token={token} onDone={() => {
+      handleNavigate('hub');
+    }} />;
+  }
+
+  if (isPendingApproval) {
+    return <AccessPendingPage />;
   }
 
   if (!isAuthenticated) {

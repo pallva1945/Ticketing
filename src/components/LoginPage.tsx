@@ -60,7 +60,7 @@ export const LoginPage: React.FC = () => {
         setError('');
         const result = await loginWithGoogle(response.credential);
         setIsSubmitting(false);
-        if (!result.success) {
+        if (!result.success && !(result as any).pending) {
           setError(result.message || t('Login failed'));
         }
       }

@@ -7,7 +7,8 @@ import {
   updateUserAccess, revokeUser, restoreUser, deleteUser,
   createInvitation, getAllInvitations, revokeInvitation,
   getInvitationByToken, acceptInvitation, getUserPermissions,
-  getUserByEmailWithPassword
+  getUserByEmailWithPassword,
+  getAccessRequestByToken, getAllAccessRequests, updateAccessRequestStatus
 } from './db.js';
 
 const ADMIN_EMAIL = 'luisscola@pallacanestrovarese.it';
@@ -329,5 +330,79 @@ export function registerAdminRoutes(app: express.Application) {
       permissions: decoded.permissions || [],
       isAdmin: decoded.email === ADMIN_EMAIL
     });
+  });
+
+  app.get('/api/admin/access-requests', async (req, res) => {
+    if (!authenticateAdmin(req, res)) return;
+    try {
+      const requests = await getAllAccessRequests();
+      res.json({ success: true, requests });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  app.get('/api/approve/:token', async (req, res) => {
+    try {
+      const request = await getAccessRequestByToken(req.params.token);
+      if (!request) {
+        return res.status(404).json({ success: false, message: 'Access request not found' });
+      }
+      if (request.status !== 'pending') {
+        return res.status(410).json({ success: false, message: `This request has already been ${request.status}` });
+      }
+      res.json({
+        success: true,
+        email: request.email,
+        name: request.name,
+        picture: request.picture,
+        createdAt: request.created_at
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  app.post('/api/approve/:token', async (req, res) => {
+    if (!authenticateAdmin(req, res)) return;
+    try {
+      const request = await getAccessRequestByToken(req.params.token);
+      if (!request) {
+        return res.status(404).json({ success: false, message: 'Access request not found' });
+      }
+      if (request.status !== 'pending') {
+        return res.status(410).json({ success: false, message: `This request has already been ${request.status}` });
+      }
+
+      const { accessLevel, pages } = req.body;
+      const selectedPages = accessLevel === 'full' ? ALL_PAGES : (pages || ['hub']);
+
+      const user = await upsertUser(request.email, request.name || request.email, request.picture || '', 'google');
+      await updateUserAccess(user.id, accessLevel || 'full', null);
+      await setUserPermissions(user.id, selectedPages);
+
+      await updateAccessRequestStatus(request.id, 'approved');
+
+      res.json({ success: true, message: `Access granted to ${request.email}` });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  app.post('/api/approve/:token/deny', async (req, res) => {
+    if (!authenticateAdmin(req, res)) return;
+    try {
+      const request = await getAccessRequestByToken(req.params.token);
+      if (!request) {
+        return res.status(404).json({ success: false, message: 'Access request not found' });
+      }
+      if (request.status !== 'pending') {
+        return res.status(410).json({ success: false, message: `This request has already been ${request.status}` });
+      }
+      await updateAccessRequestStatus(request.id, 'denied');
+      res.json({ success: true, message: `Access denied for ${request.email}` });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
   });
 }

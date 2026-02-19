@@ -3,6 +3,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
+  isPendingApproval: boolean;
+  pendingEmail: string | null;
   userEmail: string | null;
   userName: string | null;
   userPicture: string | null;
@@ -10,7 +12,7 @@ interface AuthContextType {
   role: string;
   accessLevel: string;
   permissions: string[];
-  loginWithGoogle: (credential: string) => Promise<{ success: boolean; message?: string }>;
+  loginWithGoogle: (credential: string) => Promise<{ success: boolean; message?: string; pending?: boolean }>;
   loginWithPassword: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
 }
@@ -18,6 +20,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: true,
+  isPendingApproval: false,
+  pendingEmail: null,
   userEmail: null,
   userName: null,
   userPicture: null,
@@ -35,6 +39,8 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPendingApproval, setIsPendingApproval] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [userPicture, setUserPicture] = useState<string | null>(null);
@@ -88,8 +94,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       const data = await res.json();
       if (data.success) {
+        setIsPendingApproval(false);
+        setPendingEmail(null);
         await verify();
         return { success: true };
+      }
+      if (data.pending) {
+        setIsPendingApproval(true);
+        setPendingEmail(data.email || null);
+        return { success: false, pending: true, message: data.message };
       }
       return { success: false, message: data.message || 'Login failed' };
     } catch {
@@ -121,6 +134,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     } catch {}
     setIsAuthenticated(false);
+    setIsPendingApproval(false);
+    setPendingEmail(null);
     setUserEmail(null);
     setUserName(null);
     setUserPicture(null);
@@ -131,7 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, userEmail, userName, userPicture, isAdmin, role, accessLevel, permissions, loginWithGoogle, loginWithPassword, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, isPendingApproval, pendingEmail, userEmail, userName, userPicture, isAdmin, role, accessLevel, permissions, loginWithGoogle, loginWithPassword, logout }}>
       {children}
     </AuthContext.Provider>
   );

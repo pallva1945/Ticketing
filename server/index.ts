@@ -9,8 +9,9 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV } from "../src/services/bigQueryService";
-import { initDatabase, upsertUser, getUserByEmail, getUserPermissions } from "./db.js";
+import { initDatabase, upsertUser, getUserByEmail, getUserPermissions, createAccessRequest, getAccessRequestByEmail } from "./db.js";
 import { registerAdminRoutes } from "./adminRoutes.js";
+import crypto from "crypto";
 
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE_NAME || 'pallacanestro-varese';
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
@@ -42,6 +43,53 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 registerObjectStorageRoutes(app);
 registerAdminRoutes(app);
 
+const ADMIN_EMAIL = 'luisscola@pallacanestrovarese.it';
+const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
+
+async function sendAccessRequestEmail(userEmail: string, userName: string, approvalToken: string, req: express.Request) {
+  if (!RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY not set — skipping email notification. Approval link logged below.');
+    const baseUrl = req.headers.origin || `https://${req.headers.host}`;
+    console.log(`[ACCESS REQUEST] ${userEmail} (${userName}) — Approval link: ${baseUrl}/#approve/${approvalToken}`);
+    return;
+  }
+
+  const baseUrl = req.headers.origin || `https://${req.headers.host}`;
+  const approvalLink = `${baseUrl}/#approve/${approvalToken}`;
+
+  const response = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: 'PV Portal <onboarding@resend.dev>',
+      to: [ADMIN_EMAIL],
+      subject: `🔐 Access Request: ${userName} (${userEmail})`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 500px; margin: 0 auto; padding: 32px 24px;">
+          <div style="text-align: center; margin-bottom: 24px;">
+            <h2 style="margin: 0; color: #1a1a1a; font-size: 20px;">New Access Request</h2>
+            <p style="color: #6b7280; font-size: 13px; margin-top: 4px;">PV Internal Portal</p>
+          </div>
+          <div style="background: #f9fafb; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+            <p style="margin: 0 0 4px; font-size: 15px; font-weight: 600; color: #111;">${userName}</p>
+            <p style="margin: 0; font-size: 13px; color: #6b7280;">${userEmail}</p>
+          </div>
+          <p style="font-size: 13px; color: #6b7280; margin-bottom: 16px;">Click below to review and customize their access level:</p>
+          <div style="text-align: center;">
+            <a href="${approvalLink}" style="display: inline-block; background: #dc2626; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600;">Review & Approve</a>
+          </div>
+          <p style="font-size: 11px; color: #9ca3af; margin-top: 24px; text-align: center;">Or copy this link: ${approvalLink}</p>
+        </div>
+      `
+    })
+  });
+
+  if (!response.ok) {
+    const errBody = await response.text();
+    throw new Error(`Resend API error: ${response.status} — ${errBody}`);
+  }
+}
+
 app.get("/api/auth/client-id", (_req, res) => {
   res.json({ clientId: GOOGLE_CLIENT_ID });
 });
@@ -69,38 +117,74 @@ app.post("/api/auth/google", async (req, res) => {
       return res.status(403).json({ success: false, message: 'Access restricted to @pallacanestrovarese.it accounts' });
     }
 
-    const user = await upsertUser(email, payload.name || email, payload.picture || '', 'google');
-
-    if (user.status === 'revoked') {
-      return res.status(403).json({ success: false, message: 'Your access has been revoked. Contact the administrator.' });
-    }
-
-    const permissions = await getUserPermissions(user.id);
     const isAdmin = email === 'luisscola@pallacanestrovarese.it';
 
-    const sessionToken = jwt.sign(
-      {
-        email,
-        name: payload.name || email,
-        picture: payload.picture || '',
-        userId: user.id,
-        role: isAdmin ? 'admin' : 'user',
-        accessLevel: user.access_level || 'full',
-        permissions: isAdmin ? [] : permissions
-      },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRY }
-    );
+    const existingUser = await getUserByEmail(email);
 
-    res.cookie('pv_auth', sessionToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/'
-    });
+    if (existingUser) {
+      if (existingUser.status === 'revoked') {
+        return res.status(403).json({ success: false, message: 'Your access has been revoked. Contact the administrator.' });
+      }
+      if (existingUser.status === 'pending_approval') {
+        return res.status(202).json({ success: false, pending: true, message: 'Your access request is pending approval by the administrator.' });
+      }
 
-    return res.json({ success: true, email, name: payload.name || email });
+      const { pool: dbPool } = await import('./db.js');
+      await dbPool.query('UPDATE users SET name = COALESCE($1, name), picture = COALESCE($2, picture), last_login = NOW() WHERE id = $3', [payload.name, payload.picture, existingUser.id]);
+
+      const permissions = await getUserPermissions(existingUser.id);
+
+      const sessionToken = jwt.sign(
+        {
+          email,
+          name: payload.name || email,
+          picture: payload.picture || '',
+          userId: existingUser.id,
+          role: isAdmin ? 'admin' : 'user',
+          accessLevel: existingUser.access_level || 'full',
+          permissions: isAdmin ? [] : permissions
+        },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRY }
+      );
+
+      res.cookie('pv_auth', sessionToken, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/'
+      });
+
+      return res.json({ success: true, email, name: payload.name || email });
+    }
+
+    if (isAdmin) {
+      const user = await upsertUser(email, payload.name || email, payload.picture || '', 'google');
+      const permissions = await getUserPermissions(user.id);
+      const sessionToken = jwt.sign(
+        { email, name: payload.name || email, picture: payload.picture || '', userId: user.id, role: 'admin', accessLevel: 'full', permissions: [] },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRY }
+      );
+      res.cookie('pv_auth', sessionToken, {
+        httpOnly: true, secure: isProduction, sameSite: isProduction ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, path: '/'
+      });
+      return res.json({ success: true, email, name: payload.name || email });
+    }
+
+    const approvalToken = crypto.randomBytes(32).toString('hex');
+    const accessRequest = await createAccessRequest(email, payload.name || email, payload.picture || '', approvalToken);
+    const tokenToUse = accessRequest.approval_token;
+
+    try {
+      await sendAccessRequestEmail(email, payload.name || email, tokenToUse, req);
+    } catch (emailErr: any) {
+      console.error('Failed to send access request email:', emailErr.message);
+    }
+
+    return res.status(202).json({ success: false, pending: true, message: 'Your access request has been sent to the administrator. You will be notified once approved.' });
   } catch (error: any) {
     console.error('Google token verification failed:', error.message);
     return res.status(401).json({ success: false, message: 'Invalid Google sign-in. Please try again.' });
