@@ -79,16 +79,35 @@ export interface VBMergedSession {
   nationalTeam: number | null;
 }
 
+function getField(row: any, ...keys: string[]): any {
+  for (const k of keys) {
+    if (row[k] !== undefined && row[k] !== null) return row[k];
+  }
+  return null;
+}
+
 function parseVBDate(row: any): string {
-  const dos = row.Date_of_Session;
+  const dos = getField(row, 'date_of_session', 'Date_of_Session');
   if (dos && String(dos).trim()) {
-    const d = new Date(String(dos));
-    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    const s = String(dos).trim();
+    const slashParts = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (slashParts) {
+      const [, m, d, y] = slashParts;
+      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+    const dt = new Date(s);
+    if (!isNaN(dt.getTime()) && dt.getFullYear() >= 2000) return dt.toISOString().split('T')[0];
   }
   const ts = row.timestamp;
   if (ts) {
-    const d = new Date(String(ts));
-    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    const s = String(ts).trim();
+    const slashTs = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (slashTs) {
+      const [, m, d, y] = slashTs;
+      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+    const dt = new Date(s);
+    if (!isNaN(dt.getTime()) && dt.getFullYear() >= 2000) return dt.toISOString().split('T')[0];
   }
   return 'unknown';
 }
@@ -103,18 +122,20 @@ function mergeVBRows(rows: any[]): VBMergedSession[] {
   const groups = new Map<string, any[]>();
   
   for (const row of rows) {
-    const player = row.Player ? String(row.Player).trim() : null;
-    if (!player) continue;
+    const player = getField(row, 'player', 'Player');
+    if (!player || !String(player).trim()) continue;
+    const playerName = String(player).trim();
     const date = parseVBDate(row);
-    const key = `${player.toLowerCase()}|${date}`;
+    const key = `${playerName.toLowerCase()}|${date}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(row);
   }
   
   const merged: VBMergedSession[] = [];
   for (const [, groupRows] of groups) {
+    const firstPlayer = getField(groupRows[0], 'player', 'Player');
     const base: VBMergedSession = {
-      player: String(groupRows[0].Player).trim(),
+      player: String(firstPlayer).trim(),
       date: parseVBDate(groupRows[0]),
       practiceLoad: null, vitaminsLoad: null, weightsLoad: null, gameLoad: null,
       height: null, weight: null, wingspan: null, standingReach: null, bodyFat: null,
@@ -124,25 +145,25 @@ function mergeVBRows(rows: any[]): VBMergedSession[] {
     };
     
     for (const r of groupRows) {
-      base.practiceLoad = coalesce(base.practiceLoad, r.Practice_Load);
-      base.vitaminsLoad = coalesce(base.vitaminsLoad, r.Vitamins_Load);
-      base.weightsLoad = coalesce(base.weightsLoad, r.Weights_Load);
-      base.gameLoad = coalesce(base.gameLoad, r.Game_Load);
-      base.height = coalesce(base.height, r.Height);
-      base.weight = coalesce(base.weight, r.Weight);
-      base.wingspan = coalesce(base.wingspan, r.Wingspan);
-      base.standingReach = coalesce(base.standingReach, r.Standing_Reach);
-      base.bodyFat = coalesce(base.bodyFat, r.BodyFat);
-      base.pureVertical = coalesce(base.pureVertical, r.Pure_Vertical_Jump);
-      base.noStepVertical = coalesce(base.noStepVertical, r.No_Step_Vertical_Jump);
-      base.sprint = coalesce(base.sprint, r.Sprint);
-      base.coneDrill = coalesce(base.coneDrill, r.Cone_Drill);
-      base.deadlift = coalesce(base.deadlift, r.Deadlift);
-      base.shootsTaken = coalesce(base.shootsTaken, r.Shoots_Taken);
-      base.shootsMade = coalesce(base.shootsMade, r.Shoots_Made);
-      base.formShooting = coalesce(base.formShooting, r.Form_Shooting);
-      base.injured = coalesce(base.injured, r.Injured);
-      base.nationalTeam = coalesce(base.nationalTeam, r.National_Team);
+      base.practiceLoad = coalesce(base.practiceLoad, getField(r, 'practice_load', 'Practice_Load'));
+      base.vitaminsLoad = coalesce(base.vitaminsLoad, getField(r, 'vitamins_load', 'Vitamins_Load'));
+      base.weightsLoad = coalesce(base.weightsLoad, getField(r, 'weights_load', 'Weights_Load'));
+      base.gameLoad = coalesce(base.gameLoad, getField(r, 'game_load', 'Game_Load'));
+      base.height = coalesce(base.height, getField(r, 'height', 'Height'));
+      base.weight = coalesce(base.weight, getField(r, 'weight', 'Weight'));
+      base.wingspan = coalesce(base.wingspan, getField(r, 'wingspan', 'Wingspan'));
+      base.standingReach = coalesce(base.standingReach, getField(r, 'standing_reach', 'Standing_Reach'));
+      base.bodyFat = coalesce(base.bodyFat, getField(r, 'body_fat', 'BodyFat'));
+      base.pureVertical = coalesce(base.pureVertical, getField(r, 'pure_vertical_jump', 'Pure_Vertical_Jump'));
+      base.noStepVertical = coalesce(base.noStepVertical, getField(r, 'no_step_vertical_jump', 'No_Step_Vertical_Jump'));
+      base.sprint = coalesce(base.sprint, getField(r, 'sprint', 'Sprint'));
+      base.coneDrill = coalesce(base.coneDrill, getField(r, 'cone_drill', 'Cone_Drill'));
+      base.deadlift = coalesce(base.deadlift, getField(r, 'deadlift', 'Deadlift'));
+      base.shootsTaken = coalesce(base.shootsTaken, getField(r, 'shots_taken', 'Shoots_Taken'));
+      base.shootsMade = coalesce(base.shootsMade, getField(r, 'shots_made', 'Shoots_Made'));
+      base.formShooting = coalesce(base.formShooting, getField(r, 'form_shooting', 'Form_Shooting'));
+      base.injured = coalesce(base.injured, getField(r, 'injured', 'Injured'));
+      base.nationalTeam = coalesce(base.nationalTeam, getField(r, 'national_team', 'National_Team'));
     }
     
     if (base.shootsTaken && base.shootsTaken > 0 && base.shootsMade !== null) {
