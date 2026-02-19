@@ -146,23 +146,41 @@ interface RosterRow {
   game: number;
 }
 
-function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark }: { filtered: VBSession[]; activePlayers: string[]; onSelectPlayer: (p: string) => void; isDark: boolean }) {
+function getSeasonDays(selectedSeason: string): number {
+  if (selectedSeason === 'all') {
+    const now = new Date();
+    const year = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
+    const seasonStart = new Date(year, 6, 1);
+    return Math.max(1, Math.ceil((now.getTime() - seasonStart.getTime()) / 86400000));
+  }
+  const parts = selectedSeason.match(/^(\d{4})\//);
+  if (!parts) return 1;
+  const startYear = parseInt(parts[1], 10);
+  const seasonStart = new Date(startYear, 6, 1);
+  const seasonEnd = new Date(startYear + 1, 5, 30);
+  const now = new Date();
+  const end = now < seasonEnd ? now : seasonEnd;
+  return Math.max(1, Math.ceil((end.getTime() - seasonStart.getTime()) / 86400000));
+}
+
+function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selectedSeason }: { filtered: VBSession[]; activePlayers: string[]; onSelectPlayer: (p: string) => void; isDark: boolean; selectedSeason: string }) {
   const { t } = useLanguage();
   const [sortKey, setSortKey] = useState<SortKey>('player');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [viewMode, setViewMode] = useState<'total' | 'perDay'>('total');
 
+  const seasonDays = useMemo(() => getSeasonDays(selectedSeason), [selectedSeason]);
+
   const rows: RosterRow[] = useMemo(() => activePlayers.map(player => {
     const ps = getPlayerSessions(filtered, player);
     const shootingSessions = ps.filter(s => s.shootingPct !== null);
-    const days = ps.length || 1;
     const isPerDay = viewMode === 'perDay';
 
     const sumOrAvg = (values: (number | null)[]): number => {
       const valid = values.filter(v => v !== null && v !== undefined) as number[];
       if (valid.length === 0) return 0;
       const total = valid.reduce((a, b) => a + b, 0);
-      return isPerDay ? Math.round((total / days) * 10) / 10 : total;
+      return isPerDay ? Math.round((total / seasonDays) * 10) / 10 : total;
     };
 
     return {
@@ -179,7 +197,7 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark }: { filt
       practice: sumOrAvg(ps.map(s => s.practiceLoad)),
       game: sumOrAvg(ps.map(s => s.gameLoad)),
     };
-  }), [filtered, activePlayers, viewMode]);
+  }), [filtered, activePlayers, viewMode, seasonDays]);
 
   const sorted = useMemo(() => {
     const arr = [...rows];
@@ -374,7 +392,7 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
         </div>
       </div>
 
-      <RosterTable filtered={filtered} activePlayers={activePlayers} onSelectPlayer={onSelectPlayer} isDark={isDark} />
+      <RosterTable filtered={filtered} activePlayers={activePlayers} onSelectPlayer={onSelectPlayer} isDark={isDark} selectedSeason={selectedSeason} />
     </div>
   );
 }
