@@ -20,6 +20,8 @@ const translations: Record<string, Record<Language, string>> = {
   'GameDay Tickets Projection': { en: 'GameDay Tickets Projection', it: 'Proiezione Biglietti GameDay' },
   'Attention Required': { en: 'Attention Required', it: 'Attenzione Richiesta' },
   'Coming Soon': { en: 'Coming Soon', it: 'In Arrivo' },
+  'Open': { en: 'Open', it: 'Apri' },
+  'Youth development, academy & grassroots programs': { en: 'Youth development, academy & grassroots programs', it: 'Sviluppo giovanile, academy & programmi di base' },
   'Progress': { en: 'Progress', it: 'Progresso' },
   'Accounted': { en: 'Accounted', it: 'Contabilizzato' },
   'Pace': { en: 'Pace', it: 'Ritmo' },

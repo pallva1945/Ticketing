@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, ChevronLeft, ChevronRight, UserCircle2, Trophy, Crown, Heart, Landmark, Briefcase, Star, Layers, Globe, Leaf, Lightbulb, BarChart3, Rocket, TrendingUp, Settings } from 'lucide-react';
+import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, ChevronLeft, ChevronRight, UserCircle2, Trophy, Crown, Heart, Landmark, Briefcase, Star, Layers, Globe, Leaf, Lightbulb, BarChart3, Rocket, TrendingUp, Settings, ExternalLink, Activity } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -1023,7 +1023,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             </div>
           </div>
 
-          <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-5xl mx-auto`}>
+          <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto`}>
             <button
               onClick={() => onNavigate('landing')}
               className={`group relative text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl ${
@@ -1031,14 +1031,14 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               }`}
             >
               <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-red-600 to-red-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
-              <div className="p-5 sm:p-10">
-                <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-6 ${isDark ? 'bg-red-900/20' : 'bg-red-50'}`}>
-                  <Building2 size={20} className="text-red-600 sm:w-[26px] sm:h-[26px]" />
+              <div className="p-5 sm:p-8">
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center mb-3 sm:mb-5 ${isDark ? 'bg-red-900/20' : 'bg-red-50'}`}>
+                  <Building2 size={20} className="text-red-600 sm:w-[22px] sm:h-[22px]" />
                 </div>
                 <h3 className={`text-lg sm:text-xl font-semibold mb-1 sm:mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   Corp
                 </h3>
-                <p className={`text-xs sm:text-sm leading-relaxed mb-3 sm:mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                <p className={`text-xs sm:text-sm leading-relaxed mb-3 sm:mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                   {t('Financial Center — Revenue, Costs & Verticals P&L')}
                 </p>
                 <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-red-500' : 'text-red-600'}`}>
@@ -1048,20 +1048,56 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               </div>
             </button>
 
+            <a
+              href="https://basket.pallacanestrovarese.club"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`group relative text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl block ${
+                isDark ? 'bg-gray-900 border-gray-800 hover:border-emerald-800/60' : 'bg-white border-gray-200 hover:border-emerald-300'
+              }`}
+            >
+              <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-600 to-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+              <div className="p-5 sm:p-8">
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center mb-3 sm:mb-5 ${isDark ? 'bg-emerald-900/20' : 'bg-emerald-50'}`}>
+                  <Shield size={20} className="text-emerald-600 sm:w-[22px] sm:h-[22px]" />
+                </div>
+                <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                  <h3 className={`text-lg sm:text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    BOps · PV
+                  </h3>
+                </div>
+                <p className={`text-[10px] sm:text-xs tracking-[0.1em] uppercase font-medium mb-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                  Pallacanestro Varese
+                </p>
+                <p className={`text-xs sm:text-sm leading-relaxed mb-3 sm:mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {t('Basketball Operations — Team management, roster & performance')}
+                </p>
+                <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-emerald-500' : 'text-emerald-600'}`}>
+                  {t('Open')}
+                  <ExternalLink size={13} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </div>
+              </div>
+            </a>
+
             <div
               className={`relative text-left rounded-2xl border overflow-hidden opacity-50 ${
                 isDark ? 'bg-gray-900/50 border-gray-800/50' : 'bg-white/50 border-gray-200/50'
               }`}
             >
-              <div className="p-5 sm:p-10">
-                <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-6 ${isDark ? 'bg-emerald-900/20' : 'bg-emerald-50'}`}>
-                  <Shield size={20} className="text-emerald-600 sm:w-[26px] sm:h-[26px]" />
+              <div className="p-5 sm:p-8">
+                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center mb-3 sm:mb-5 ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
+                  <Activity size={20} className="text-orange-500 sm:w-[22px] sm:h-[22px]" />
                 </div>
-                <h3 className={`text-lg sm:text-xl font-semibold mb-1 sm:mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  BOps
-                </h3>
-                <p className={`text-xs sm:text-sm leading-relaxed mb-3 sm:mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                  {t('Basketball Operations — Team management, roster & performance')}
+                <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                  <h3 className={`text-lg sm:text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    BOps · VB
+                  </h3>
+                </div>
+                <p className={`text-[10px] sm:text-xs tracking-[0.1em] uppercase font-medium mb-1 ${isDark ? 'text-orange-400' : 'text-orange-500'}`}>
+                  Varese Basketball
+                </p>
+                <p className={`text-xs sm:text-sm leading-relaxed mb-3 sm:mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {t('Youth development, academy & grassroots programs')}
                 </p>
                 <div className={`inline-flex items-center gap-2 text-[10px] sm:text-xs tracking-[0.15em] uppercase font-medium ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
                   <Lock size={10} />

@@ -29,7 +29,8 @@ The PV Internal Portal is a React-based application designed for Pallacanestro V
 ## Navigation Architecture
 - **Login Page** (`LoginPage.tsx`): Corporate access gate — email-only login for @pallacanestrovarese.it
 - **Welcome Page** (`WelcomePage.tsx`): Animated intro with logo fade, title, and Enter button
-- **Internal Hub** (`InternalHub.tsx`): Full-page snap-scroll experience with 4 sections — Vision/Mission/Values, About Us, Our Team, then Corp + BOps (Departments). Quintic ease animation (1.8s). Sticky nav with section indicators and side dots.
+- **Internal Hub** (`InternalHub.tsx`): Full-page snap-scroll experience with 4 sections — Vision/Mission/Values, About Us, Our Team, then Departments (Corp, BOps·PV, BOps·VB). Quintic ease animation (1.8s). Sticky nav with section indicators and side dots.
+  - **BOps Split**: Section 4 has 3 cards — Corp (navigates to Financial Center), BOps·PV (links externally to basket.pallacanestrovarese.club), BOps·VB (Varese Basketball, placeholder/coming soon)
 - **Financial Center** (`FinancialCenter.tsx`): Entry point for Corp with 3 cards — Revenue Center, Cost Center, Verticals P&Ls
 - **Revenue Center** (`App.tsx`): The full revenue dashboard with all modules
 - **Cost Center** (`CostCenter.tsx`): Cost dashboard with 7 modules (GameDay, Sponsorship, BOps, Venue Ops, Merchandising, EBP, Varese Basketball) — all placeholders
