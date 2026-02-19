@@ -8,7 +8,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV, fetchVBDataFromBigQuery } from "../src/services/bigQueryService";
+import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV, fetchVBDataFromBigQuery, fetchVBProfilesFromBigQuery } from "../src/services/bigQueryService";
 import { initDatabase, upsertUser, getUserByEmail, getUserPermissions, createAccessRequest, getAccessRequestByEmail } from "./db.js";
 import { registerAdminRoutes } from "./adminRoutes.js";
 import crypto from "crypto";
@@ -974,6 +974,29 @@ app.get("/api/vb-data", async (req, res) => {
     if (result.success) {
       vbCache = { data: result.data, rawCount: result.rawCount, mergedCount: result.mergedCount, players: result.players, timestamp: now };
       res.json({ success: true, ...vbCache, cached: false });
+    } else {
+      res.json(result);
+    }
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+let vbProfileCache: { data: any; timestamp: number } | null = null;
+
+app.get("/api/vb-profiles", async (req, res) => {
+  try {
+    const forceRefresh = req.query.refresh === 'true';
+    const now = Date.now();
+
+    if (vbProfileCache && !forceRefresh && (now - vbProfileCache.timestamp) < VB_CACHE_TTL) {
+      return res.json({ success: true, data: vbProfileCache.data, cached: true });
+    }
+
+    const result = await fetchVBProfilesFromBigQuery();
+    if (result.success) {
+      vbProfileCache = { data: result.data, timestamp: now };
+      res.json({ success: true, data: result.data, cached: false });
     } else {
       res.json(result);
     }

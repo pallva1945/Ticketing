@@ -34,6 +34,25 @@ interface VBSession {
   nationalTeam: number | null;
 }
 
+interface PlayerProfile {
+  name: string;
+  email: string | null;
+  cellNumber: string | null;
+  momHeight: number | null;
+  dadHeight: number | null;
+  dob: string | null;
+  role: string | null;
+  midParentalHeight: number | null;
+  mugShot: string | null;
+  season: string | null;
+  passport: string | null;
+  italianFormation: number | null;
+  soyStatus: string | null;
+  eoyStatus: string | null;
+  year1Destination: string | null;
+  revenueGenerated: number | null;
+}
+
 type TabId = 'overview' | 'player' | 'compare' | 'progression';
 
 const METRIC_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
@@ -162,17 +181,30 @@ const SEASON_START_DATES: Record<string, Date> = {
   '2025/26': new Date(2025, 7, 11),
 };
 
-const PLAYER_POSITIONS: Record<string, string> = {
-};
+function matchesPlayerName(profileName: string, sessionPlayer: string): boolean {
+  const a = profileName.toLowerCase().trim();
+  const b = sessionPlayer.toLowerCase().trim();
+  return a === b || a.includes(b) || b.includes(a);
+}
 
-const POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C'];
-
-function getPlayerPosition(player: string): string {
-  const key = player.toLowerCase().trim();
-  for (const [name, pos] of Object.entries(PLAYER_POSITIONS)) {
-    if (key.includes(name) || name.includes(key)) return pos;
+function getPlayerPosition(player: string, profiles: PlayerProfile[]): string {
+  for (const p of profiles) {
+    if (matchesPlayerName(p.name, player)) {
+      return p.role || '';
+    }
   }
   return '';
+}
+
+function getPlayerProfile(player: string, profiles: PlayerProfile[], season?: string): PlayerProfile | null {
+  let match: PlayerProfile | null = null;
+  for (const p of profiles) {
+    if (matchesPlayerName(p.name, player)) {
+      if (season && p.season === season) return p;
+      if (!match) match = p;
+    }
+  }
+  return match;
 }
 
 const PLAYER_START_OVERRIDES: Record<string, Record<string, Date>> = {
@@ -396,7 +428,7 @@ function getWeekLabel(dateStr: string): string {
   return `W${weekNum} ${d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}`;
 }
 
-function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSession[]; players: string[]; onSelectPlayer: (p: string) => void }) {
+function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions: VBSession[]; players: string[]; onSelectPlayer: (p: string) => void; profiles: PlayerProfile[] }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
   const [selectedSeason, setSelectedSeason] = useState<string>(() => getCurrentSeason());
@@ -461,13 +493,13 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
 
   const positionFiltered = useMemo(() => {
     if (selectedPosition === 'all') return dayFiltered;
-    return dayFiltered.filter(s => getPlayerPosition(s.player) === selectedPosition);
-  }, [dayFiltered, selectedPosition]);
+    return dayFiltered.filter(s => getPlayerPosition(s.player, profiles) === selectedPosition);
+  }, [dayFiltered, selectedPosition, profiles]);
 
   const availablePositions = useMemo(() => {
-    const pos = [...new Set(dayFiltered.map(s => getPlayerPosition(s.player)).filter(p => p))].sort();
+    const pos = [...new Set(dayFiltered.map(s => getPlayerPosition(s.player, profiles)).filter(p => p))].sort();
     return pos;
-  }, [dayFiltered]);
+  }, [dayFiltered, profiles]);
 
   const playersInFilter = useMemo(() => {
     return [...new Set(positionFiltered.map(s => s.player))].sort();
@@ -1088,6 +1120,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const isDark = useIsDark();
   const [sessions, setSessions] = useState<VBSession[]>([]);
   const [players, setPlayers] = useState<string[]>([]);
+  const [profiles, setProfiles] = useState<PlayerProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
@@ -1099,8 +1132,12 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       if (refresh) setRefreshing(true);
       else setLoading(true);
       
-      const res = await fetch(`/api/vb-data${refresh ? '?refresh=true' : ''}`);
-      const json = await res.json();
+      const [dataRes, profileRes] = await Promise.all([
+        fetch(`/api/vb-data${refresh ? '?refresh=true' : ''}`),
+        fetch(`/api/vb-profiles${refresh ? '?refresh=true' : ''}`)
+      ]);
+      const json = await dataRes.json();
+      const profileJson = await profileRes.json();
       
       if (json.success) {
         setSessions(json.data);
@@ -1108,6 +1145,9 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         if (json.players.length > 0 && !selectedPlayer) setSelectedPlayer(json.players[0]);
       } else {
         setError(json.message || 'Failed to load data');
+      }
+      if (profileJson.success) {
+        setProfiles(profileJson.data);
       }
     } catch (e: any) {
       setError(e.message);
@@ -1203,7 +1243,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         ) : (
           <>
-            {activeTab === 'overview' && <OverviewTab sessions={sessions} players={players} onSelectPlayer={handleSelectPlayer} />}
+            {activeTab === 'overview' && <OverviewTab sessions={sessions} players={players} onSelectPlayer={handleSelectPlayer} profiles={profiles} />}
             {activeTab === 'player' && <PlayerProfileTab sessions={sessions} players={players} initialPlayer={selectedPlayer} />}
             {activeTab === 'compare' && <CompareTab sessions={sessions} players={players} />}
             {activeTab === 'progression' && <ProgressionTab sessions={sessions} players={players} />}

@@ -185,6 +185,59 @@ function mergeVBRows(rows: any[]): VBMergedSession[] {
   return merged.sort((a, b) => a.date.localeCompare(b.date));
 }
 
+const VB_PROFILE_TABLE = 'ticketing-migration.ticketing_migration.sg_profile';
+
+export interface VBPlayerProfile {
+  name: string;
+  email: string | null;
+  cellNumber: string | null;
+  momHeight: number | null;
+  dadHeight: number | null;
+  dob: string | null;
+  role: string | null;
+  midParentalHeight: number | null;
+  mugShot: string | null;
+  season: string | null;
+  passport: string | null;
+  italianFormation: number | null;
+  soyStatus: string | null;
+  eoyStatus: string | null;
+  year1Destination: string | null;
+  revenueGenerated: number | null;
+}
+
+export async function fetchVBProfilesFromBigQuery(): Promise<{ success: boolean; data: VBPlayerProfile[] }> {
+  try {
+    const client = getBigQueryClient();
+    const query = `SELECT * FROM \`${VB_PROFILE_TABLE}\``;
+    const [rows] = await client.query({ query });
+
+    const profiles: VBPlayerProfile[] = rows.map((row: any) => ({
+      name: String(getField(row, 'Name', 'name') || '').trim(),
+      email: getField(row, 'Email', 'email') ? String(getField(row, 'Email', 'email')).trim() : null,
+      cellNumber: getField(row, 'Cell_N', 'cell_n') ? String(getField(row, 'Cell_N', 'cell_n')).trim() : null,
+      momHeight: parseFloat(getField(row, 'Mom_Height', 'mom_height')) || null,
+      dadHeight: parseFloat(getField(row, 'Dad_Height', 'dad_height')) || null,
+      dob: getField(row, 'DOB', 'dob') ? String(getField(row, 'DOB', 'dob')).trim() : null,
+      role: getField(row, 'Role', 'role') ? String(getField(row, 'Role', 'role')).trim() : null,
+      midParentalHeight: parseFloat(getField(row, 'Mid_Parental_Height', 'mid_parental_height')) || null,
+      mugShot: getField(row, 'Mug_Shot', 'mug_shot') ? String(getField(row, 'Mug_Shot', 'mug_shot')).trim() : null,
+      season: getField(row, 'Season', 'season') ? String(getField(row, 'Season', 'season')).trim() : null,
+      passport: getField(row, 'Passport', 'passport') ? String(getField(row, 'Passport', 'passport')).trim() : null,
+      italianFormation: getField(row, 'Italian_Formation', 'italian_formation') !== null && getField(row, 'Italian_Formation', 'italian_formation') !== undefined ? parseInt(getField(row, 'Italian_Formation', 'italian_formation')) : null,
+      soyStatus: getField(row, 'SoY_Status', 'soy_status') ? String(getField(row, 'SoY_Status', 'soy_status')).trim() : null,
+      eoyStatus: getField(row, 'EoY_Status', 'eoy_status') ? String(getField(row, 'EoY_Status', 'eoy_status')).trim() : null,
+      year1Destination: getField(row, 'Year_1_Destination', 'year_1_destination') ? String(getField(row, 'Year_1_Destination', 'year_1_destination')).trim() : null,
+      revenueGenerated: parseFloat(getField(row, 'Revenue_Generated', 'revenue_generated')) || null,
+    }));
+
+    return { success: true, data: profiles };
+  } catch (error: any) {
+    console.error('VB Profile BigQuery fetch error:', error.message);
+    return { success: false, data: [] };
+  }
+}
+
 export async function fetchVBDataFromBigQuery(): Promise<{ success: boolean; data: VBMergedSession[]; rawCount: number; mergedCount: number; players: string[] }> {
   try {
     const client = getBigQueryClient();
