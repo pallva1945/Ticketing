@@ -198,12 +198,10 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
 
     const injuryDays = ps.filter(s => s.injured !== null && s.injured > 0).length;
     const ntDays = ps.filter(s => s.nationalTeam !== null && s.nationalTeam > 0).length;
-    const daysOff = ps.filter(s => {
-      const totalLoad = (s.practiceLoad || 0) + (s.vitaminsLoad || 0) + (s.weightsLoad || 0) + (s.gameLoad || 0);
-      const isInjured = s.injured !== null && s.injured > 0;
-      const isNT = s.nationalTeam !== null && s.nationalTeam > 0;
-      return totalLoad === 0 && !isInjured && !isNT;
+    const activeDays = ps.filter(s => {
+      return (s.vitaminsLoad || 0) > 0 || (s.weightsLoad || 0) > 0 || (s.practiceLoad || 0) > 0 || (s.gameLoad || 0) > 0 || (s.injured !== null && s.injured > 0) || (s.nationalTeam !== null && s.nationalTeam > 0);
     }).length;
+    const daysOff = isPerDay ? 0 : Math.max(0, seasonDays - activeDays);
 
     return {
       player,
