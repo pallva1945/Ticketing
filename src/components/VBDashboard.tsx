@@ -225,35 +225,55 @@ function getPlayerPosition(player: string, profiles: PlayerProfile[]): string {
   return '';
 }
 
-const KR_COEFFICIENTS: Record<number, { intercept: number; ht: number; wt: number; mph: number }> = {
-  10: { intercept: 12.5, ht: 0.78, wt: -0.05, mph: 0.23 },
-  11: { intercept: 11.8, ht: 0.75, wt: -0.04, mph: 0.26 },
-  12: { intercept: 11.2, ht: 0.72, wt: -0.03, mph: 0.28 },
-  13: { intercept: 10.5, ht: 0.68, wt: -0.02, mph: 0.31 },
-  14: { intercept: 9.8, ht: 0.63, wt: -0.01, mph: 0.35 },
-  15: { intercept: 8.5, ht: 0.58, wt: -0.01, mph: 0.40 },
-};
+const KR_TABLE: { age: number; wt: number; ht: number; mph: number; beta: number }[] = [
+  { age: 4,    wt: -0.087235, ht: 1.23812, mph: 0.50286, beta: -10.2567 },
+  { age: 4.5,  wt: -0.074454, ht: 1.15964, mph: 0.52887, beta: -10.719 },
+  { age: 5,    wt: -0.064778, ht: 1.10674, mph: 0.53919, beta: -11.0213 },
+  { age: 5.5,  wt: -0.05776,  ht: 1.0748,  mph: 0.53691, beta: -11.1556 },
+  { age: 6,    wt: -0.052947, ht: 1.05923, mph: 0.52513, beta: -11.1138 },
+  { age: 6.5,  wt: -0.049892, ht: 1.05542, mph: 0.50692, beta: -11.0221 },
+  { age: 7,    wt: -0.048144, ht: 1.05877, mph: 0.48538, beta: -10.9984 },
+  { age: 7.5,  wt: -0.047256, ht: 1.06467, mph: 0.46361, beta: -11.0214 },
+  { age: 8,    wt: -0.046778, ht: 1.06853, mph: 0.44469, beta: -11.0696 },
+  { age: 8.5,  wt: -0.046261, ht: 1.06572, mph: 0.43171, beta: -11.122 },
+  { age: 9,    wt: -0.045254, ht: 1.05166, mph: 0.42776, beta: -11.1571 },
+  { age: 9.5,  wt: -0.043311, ht: 1.02174, mph: 0.43593, beta: -11.1405 },
+  { age: 10,   wt: -0.039981, ht: 0.97135, mph: 0.45932, beta: -11.038 },
+  { age: 10.5, wt: -0.034814, ht: 0.89589, mph: 0.50101, beta: -10.8286 },
+  { age: 11,   wt: -0.02905,  ht: 0.81239, mph: 0.54781, beta: -10.4917 },
+  { age: 11.5, wt: -0.024167, ht: 0.74134, mph: 0.58409, beta: -10.0065 },
+  { age: 12,   wt: -0.020076, ht: 0.68325, mph: 0.60927, beta: -9.3522 },
+  { age: 12.5, wt: -0.016681, ht: 0.63869, mph: 0.62279, beta: -8.6055 },
+  { age: 13,   wt: -0.013895, ht: 0.60818, mph: 0.62407, beta: -7.8632 },
+  { age: 13.5, wt: -0.011624, ht: 0.59228, mph: 0.61253, beta: -7.1348 },
+  { age: 14,   wt: -0.009776, ht: 0.59151, mph: 0.58762, beta: -6.4299 },
+  { age: 14.5, wt: -0.008261, ht: 0.60643, mph: 0.54875, beta: -5.7578 },
+  { age: 15,   wt: -0.006988, ht: 0.63757, mph: 0.49536, beta: -5.1282 },
+  { age: 15.5, wt: -0.005863, ht: 0.68548, mph: 0.42687, beta: -4.5092 },
+  { age: 16,   wt: -0.004795, ht: 0.75069, mph: 0.34271, beta: -3.9292 },
+  { age: 16.5, wt: -0.003695, ht: 0.83375, mph: 0.24231, beta: -3.4873 },
+  { age: 17,   wt: -0.00247,  ht: 0.9352,  mph: 0.1251,  beta: -3.283 },
+  { age: 17.5, wt: -0.001027, ht: 1.05558, mph: -0.0095, beta: -3.4156 },
+];
 
-function getKRCoefficients(age: number): { intercept: number; ht: number; wt: number; mph: number } | null {
-  const ages = [10, 11, 12, 13, 14, 15];
-  if (age < 10 || age > 15) {
-    const clamped = Math.max(10, Math.min(15, Math.round(age)));
-    return KR_COEFFICIENTS[clamped];
+function getKRCoefficients(age: number): { wt: number; ht: number; mph: number; beta: number } {
+  if (age <= KR_TABLE[0].age) return KR_TABLE[0];
+  if (age >= KR_TABLE[KR_TABLE.length - 1].age) return KR_TABLE[KR_TABLE.length - 1];
+  let lo = KR_TABLE[0], hi = KR_TABLE[1];
+  for (let i = 0; i < KR_TABLE.length - 1; i++) {
+    if (age >= KR_TABLE[i].age && age <= KR_TABLE[i + 1].age) {
+      lo = KR_TABLE[i];
+      hi = KR_TABLE[i + 1];
+      break;
+    }
   }
-  const lower = Math.floor(age);
-  const upper = Math.ceil(age);
-  if (lower === upper || !KR_COEFFICIENTS[lower] || !KR_COEFFICIENTS[upper]) {
-    const closest = ages.reduce((a, b) => Math.abs(b - age) < Math.abs(a - age) ? b : a);
-    return KR_COEFFICIENTS[closest];
-  }
-  const frac = age - lower;
-  const lo = KR_COEFFICIENTS[lower];
-  const hi = KR_COEFFICIENTS[upper];
+  if (lo.age === hi.age) return lo;
+  const frac = (age - lo.age) / (hi.age - lo.age);
   return {
-    intercept: lo.intercept + frac * (hi.intercept - lo.intercept),
-    ht: lo.ht + frac * (hi.ht - lo.ht),
     wt: lo.wt + frac * (hi.wt - lo.wt),
+    ht: lo.ht + frac * (hi.ht - lo.ht),
     mph: lo.mph + frac * (hi.mph - lo.mph),
+    beta: lo.beta + frac * (hi.beta - lo.beta),
   };
 }
 
@@ -276,7 +296,6 @@ function getProjectedHeight(player: string, profiles: PlayerProfile[], sessions:
   const ageYears = (sessionDate.getTime() - dobDate.getTime()) / (365.25 * 86400000);
 
   const coeffs = getKRCoefficients(ageYears);
-  if (!coeffs) return null;
 
   const currentHeightIn = currentHeightCm / 2.54;
   const currentWeightLbs = currentWeightKg * 2.20462;
@@ -284,7 +303,7 @@ function getProjectedHeight(player: string, profiles: PlayerProfile[], sessions:
   const momHeightIn = profile.momHeight / 2.54;
   const mph = (dadHeightIn + momHeightIn) / 2;
 
-  const predictedIn = coeffs.intercept + (coeffs.ht * currentHeightIn) + (coeffs.wt * currentWeightLbs) + (coeffs.mph * mph);
+  const predictedIn = coeffs.beta + (coeffs.ht * currentHeightIn) + (coeffs.wt * currentWeightLbs) + (coeffs.mph * mph);
   let predictedCm = predictedIn * 2.54;
 
   if (predictedCm < currentHeightCm) predictedCm = currentHeightCm;
