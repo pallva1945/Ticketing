@@ -225,9 +225,14 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
                 <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Height')}</th>
                 <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Weight')}</th>
                 <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Wingspan')}</th>
+                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Reach')}</th>
                 <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Body Fat')}</th>
                 <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('3PT %')}</th>
-                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Sessions')}</th>
+                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Shots')}</th>
+                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Vitamins')}</th>
+                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Weights')}</th>
+                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Practice')}</th>
+                <th className={`text-center py-2 px-1 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Game')}</th>
               </tr>
             </thead>
             <tbody>
@@ -235,15 +240,25 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
                 const ps = getPlayerSessions(filtered, player);
                 const shootingSessions = ps.filter(s => s.shootingPct !== null);
                 const avgPct = getAvg(shootingSessions.map(s => s.shootingPct));
+                const totalShots = ps.reduce((sum, s) => sum + (s.shootsTaken || 0), 0);
+                const totalVitamins = ps.reduce((sum, s) => sum + (s.vitaminsLoad || 0), 0);
+                const totalWeights = ps.reduce((sum, s) => sum + (s.weightsLoad || 0), 0);
+                const totalPractice = ps.reduce((sum, s) => sum + (s.practiceLoad || 0), 0);
+                const totalGame = ps.reduce((sum, s) => sum + (s.gameLoad || 0), 0);
                 return (
                   <tr key={player} onClick={() => onSelectPlayer(player)} className={`border-b cursor-pointer transition-colors ${isDark ? 'border-gray-800/50 hover:bg-gray-800/50' : 'border-gray-50 hover:bg-gray-50'}`}>
                     <td className={`py-2.5 px-2 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{player}</td>
                     <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{getLatestMetric(filtered, player, 'height') ?? '—'}</td>
                     <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{getLatestMetric(filtered, player, 'weight') ?? '—'}</td>
                     <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{getLatestMetric(filtered, player, 'wingspan') ?? '—'}</td>
-                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{getLatestMetric(filtered, player, 'bodyFat') != null ? `${getLatestMetric(filtered, player, 'bodyFat')}%` : '—'}</td>
+                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{getLatestMetric(filtered, player, 'standingReach') ?? '—'}</td>
+                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{getLatestMetric(filtered, player, 'bodyFat') ?? '—'}</td>
                     <td className={`text-center py-2.5 px-1 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{avgPct != null ? `${avgPct}%` : '—'}</td>
-                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{ps.length}</td>
+                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{totalShots || '—'}</td>
+                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{totalVitamins || '—'}</td>
+                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{totalWeights || '—'}</td>
+                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{totalPractice || '—'}</td>
+                    <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{totalGame || '—'}</td>
                   </tr>
                 );
               })}

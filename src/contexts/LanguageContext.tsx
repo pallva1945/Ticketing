@@ -73,6 +73,8 @@ const translations: Record<string, Record<Language, string>> = {
   'Loading VB data...': { en: 'Loading VB data...', it: 'Caricamento dati VB...' },
   'No VB data available': { en: 'No VB data available', it: 'Nessun dato VB disponibile' },
   'Standing Reach': { en: 'Standing Reach', it: 'Elevazione da Fermo' },
+  'Reach': { en: 'Reach', it: 'Reach' },
+  'Shots': { en: 'Shots', it: 'Tiri' },
   'No-Step V.': { en: 'No-Step V.', it: 'Vert. Senza Passo' },
   'CRM': { en: 'CRM', it: 'CRM' },
   'Comparison': { en: 'Comparison', it: 'Confronto' },
