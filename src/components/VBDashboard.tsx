@@ -458,25 +458,25 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
   const ntDays = new Set(filtered.filter(s => s.nationalTeam && s.nationalTeam > 0).map(s => s.player + '|' + s.date)).size;
 
   const teamAvgVitamins = useMemo(() => {
-    const playerAvgs = activePlayers.map(p => {
+    const playerTotals = activePlayers.map(p => {
       const vals = filtered.filter(s => s.player === p && s.vitaminsLoad).map(s => s.vitaminsLoad!);
-      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-    }).filter(v => v !== null) as number[];
-    return playerAvgs.length ? Math.round(playerAvgs.reduce((a, b) => a + b, 0) / playerAvgs.length * 10) / 10 : null;
+      return vals.reduce((a, b) => a + b, 0);
+    });
+    return playerTotals.length ? Math.round(playerTotals.reduce((a, b) => a + b, 0) / playerTotals.length * 10) / 10 : null;
   }, [filtered, activePlayers]);
   const teamAvgWeights = useMemo(() => {
-    const playerAvgs = activePlayers.map(p => {
+    const playerTotals = activePlayers.map(p => {
       const vals = filtered.filter(s => s.player === p && s.weightsLoad).map(s => s.weightsLoad!);
-      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-    }).filter(v => v !== null) as number[];
-    return playerAvgs.length ? Math.round(playerAvgs.reduce((a, b) => a + b, 0) / playerAvgs.length * 10) / 10 : null;
+      return vals.reduce((a, b) => a + b, 0);
+    });
+    return playerTotals.length ? Math.round(playerTotals.reduce((a, b) => a + b, 0) / playerTotals.length * 10) / 10 : null;
   }, [filtered, activePlayers]);
   const teamAvgGame = useMemo(() => {
-    const playerAvgs = activePlayers.map(p => {
+    const playerTotals = activePlayers.map(p => {
       const vals = filtered.filter(s => s.player === p && s.gameLoad).map(s => s.gameLoad!);
-      return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
-    }).filter(v => v !== null) as number[];
-    return playerAvgs.length ? Math.round(playerAvgs.reduce((a, b) => a + b, 0) / playerAvgs.length * 10) / 10 : null;
+      return vals.reduce((a, b) => a + b, 0);
+    });
+    return playerTotals.length ? Math.round(playerTotals.reduce((a, b) => a + b, 0) / playerTotals.length * 10) / 10 : null;
   }, [filtered, activePlayers]);
   const teamAvgInjuries = useMemo(() => {
     const playerCounts = activePlayers.map(p => {
