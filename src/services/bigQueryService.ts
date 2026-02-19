@@ -86,26 +86,35 @@ function getField(row: any, ...keys: string[]): any {
   return null;
 }
 
+function parseSlashDate(s: string): string | null {
+  const parts = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (!parts) return null;
+  const [, a, b, y] = parts;
+  const aNum = parseInt(a, 10);
+  const bNum = parseInt(b, 10);
+  if (aNum > 12) {
+    return `${y}-${bNum.toString().padStart(2, '0')}-${aNum.toString().padStart(2, '0')}`;
+  }
+  if (bNum > 12) {
+    return `${y}-${aNum.toString().padStart(2, '0')}-${bNum.toString().padStart(2, '0')}`;
+  }
+  return `${y}-${bNum.toString().padStart(2, '0')}-${aNum.toString().padStart(2, '0')}`;
+}
+
 function parseVBDate(row: any): string {
   const dos = getField(row, 'date_of_session', 'Date_of_Session');
   if (dos && String(dos).trim()) {
     const s = String(dos).trim();
-    const slashParts = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (slashParts) {
-      const [, m, d, y] = slashParts;
-      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-    }
+    const parsed = parseSlashDate(s);
+    if (parsed) return parsed;
     const dt = new Date(s);
     if (!isNaN(dt.getTime()) && dt.getFullYear() >= 2000) return dt.toISOString().split('T')[0];
   }
   const ts = row.timestamp;
   if (ts) {
     const s = String(ts).trim();
-    const slashTs = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-    if (slashTs) {
-      const [, m, d, y] = slashTs;
-      return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-    }
+    const parsed = parseSlashDate(s);
+    if (parsed) return parsed;
     const dt = new Date(s);
     if (!isNaN(dt.getTime()) && dt.getFullYear() >= 2000) return dt.toISOString().split('T')[0];
   }

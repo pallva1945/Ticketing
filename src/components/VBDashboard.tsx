@@ -52,14 +52,19 @@ function getPlayerSessions(sessions: VBSession[], player: string): VBSession[] {
 }
 
 function getAvg(values: (number | null)[]): number | null {
-  const valid = values.filter(v => v !== null) as number[];
-  return valid.length > 0 ? Math.round((valid.reduce((a, b) => a + b, 0) / valid.length) * 10) / 10 : null;
+  const valid = values.filter(v => v !== null && !isNaN(Number(v))) as number[];
+  if (valid.length === 0) return null;
+  const avg = Math.round((valid.reduce((a, b) => a + b, 0) / valid.length) * 10) / 10;
+  return isNaN(avg) ? null : avg;
 }
 
-function getSeason(dateStr: string): string {
+function getSeason(dateStr: string): string | null {
+  if (!dateStr || dateStr === 'unknown') return null;
   const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
   const year = d.getFullYear();
   const month = d.getMonth() + 1;
+  if (year < 2000) return null;
   if (month >= 7) return `${year}/${(year + 1).toString().slice(2)}`;
   return `${year - 1}/${year.toString().slice(2)}`;
 }
@@ -75,7 +80,7 @@ function StatCard({ label, value, unit, icon: Icon, color, subtitle }: { label: 
         <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{label}</span>
       </div>
       <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-        {value !== null && value !== undefined ? `${value}${unit || ''}` : '—'}
+        {value !== null && value !== undefined && !Number.isNaN(value) ? `${value}${unit || ''}` : '—'}
       </div>
       {subtitle && <div className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{subtitle}</div>}
     </div>
@@ -128,15 +133,17 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
   const isDark = useIsDark();
   const [selectedSeason, setSelectedSeason] = useState<string>('all');
   
+  const validSessions = useMemo(() => sessions.filter(s => getSeason(s.date) !== null), [sessions]);
+
   const seasons = useMemo(() => {
-    const s = [...new Set(sessions.map(s => getSeason(s.date)))].sort().reverse();
+    const s = [...new Set(validSessions.map(s => getSeason(s.date)!))].sort().reverse();
     return s;
-  }, [sessions]);
+  }, [validSessions]);
 
   const filtered = useMemo(() => {
-    if (selectedSeason === 'all') return sessions;
-    return sessions.filter(s => getSeason(s.date) === selectedSeason);
-  }, [sessions, selectedSeason]);
+    if (selectedSeason === 'all') return validSessions;
+    return validSessions.filter(s => getSeason(s.date) === selectedSeason);
+  }, [validSessions, selectedSeason]);
 
   const activePlayers = useMemo(() => {
     return [...new Set(filtered.map(s => s.player))].sort();
