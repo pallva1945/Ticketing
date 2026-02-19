@@ -510,24 +510,42 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
     return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
   }, [filtered, activePlayers]);
 
-  const seasonDaysForOverview = useMemo(() => getSeasonDays(selectedSeason), [selectedSeason]);
+  const filteredPeriodDays = useMemo(() => {
+    if (selectedSeason === 'all') return 0;
+    if (selectedDay !== 'all') return 1;
+    if (selectedWeek !== 'all') return 7;
+    if (selectedMonth !== 'all') {
+      const year = parseInt(selectedMonth.substring(0, 4));
+      const month = parseInt(selectedMonth.substring(5, 7));
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const now = new Date();
+      const monthEnd = new Date(year, month, 0);
+      if (now < monthEnd) {
+        return now.getDate();
+      }
+      return daysInMonth;
+    }
+    return getSeasonDays(selectedSeason);
+  }, [selectedSeason, selectedMonth, selectedWeek, selectedDay]);
+
   const teamDaysOff = useMemo(() => {
-    if (seasonDaysForOverview <= 0) return null;
+    if (filteredPeriodDays <= 0) return null;
     const playerDaysOff = activePlayers.map(player => {
-      const ps = getPlayerSessions(filtered, player);
-      const psd = getSeasonDays(selectedSeason, player);
-      const startDate = getSeasonStartDate(selectedSeason, player);
-      const inRange = startDate ? ps.filter(s => new Date(s.date) >= startDate) : ps;
+      const ps = filtered.filter(s => s.player === player);
       const active = new Set<string>();
-      for (const s of inRange) {
+      for (const s of ps) {
         if ((s.vitaminsLoad || 0) > 0 || (s.weightsLoad || 0) > 0 || (s.practiceLoad || 0) > 0 || (s.gameLoad || 0) > 0 || (s.injured !== null && s.injured > 0) || (s.nationalTeam !== null && s.nationalTeam > 0)) {
           active.add(s.date);
         }
       }
-      return Math.max(0, psd - active.size);
+      let periodDays = filteredPeriodDays;
+      if (selectedMonth === 'all' && selectedWeek === 'all' && selectedDay === 'all') {
+        periodDays = getSeasonDays(selectedSeason, player);
+      }
+      return Math.max(0, periodDays - active.size);
     });
-    return Math.round(playerDaysOff.reduce((a, b) => a + b, 0) / playerDaysOff.length * 10) / 10;
-  }, [filtered, activePlayers, selectedSeason]);
+    return playerDaysOff.length ? Math.round(playerDaysOff.reduce((a, b) => a + b, 0) / playerDaysOff.length * 10) / 10 : null;
+  }, [filtered, activePlayers, selectedSeason, selectedMonth, selectedWeek, selectedDay, filteredPeriodDays]);
 
   const loadData = useMemo(() => {
     const buckets = new Map<string, { practice: number[]; vitamins: number[]; weights: number[]; game: number[] }>();
