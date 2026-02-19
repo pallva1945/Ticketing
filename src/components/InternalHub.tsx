@@ -169,10 +169,10 @@ const StatCounter: React.FC<{ target: number; label: string; suffix?: string; ac
 
   return (
     <div className="text-center">
-      <div className={`text-3xl sm:text-4xl font-bold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
+      <div className={`text-2xl sm:text-4xl font-bold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>
         {count}{suffix || ''}
       </div>
-      <div className={`text-xs tracking-[0.2em] uppercase mt-1.5 font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+      <div className={`text-[10px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] uppercase mt-1 sm:mt-1.5 font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
         {label}
       </div>
     </div>
@@ -432,7 +432,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
         </div>
       </nav>
 
-      <div className={`fixed right-6 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-3`}>
+      <div className={`fixed right-6 top-1/2 -translate-y-1/2 z-40 hidden sm:flex flex-col gap-3`}>
         {Array.from({ length: TOTAL_SECTIONS }).map((_, i) => (
           <button
             key={i}
@@ -447,35 +447,35 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       </div>
 
       {/* Section 1: Vision, Mission & Values */}
-      <div className="h-screen flex flex-col justify-center px-4 sm:px-6 relative pt-14">
+      <div className="h-screen flex flex-col justify-center px-3 sm:px-6 relative pt-14">
         <div className={`transition-all duration-[1s] ease-out ${visible[0] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="max-w-6xl mx-auto w-full">
-            <div className="text-center mb-6">
-              <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
+            <div className="text-center mb-3 sm:mb-6">
+              <div className={`inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs tracking-[0.2em] uppercase font-medium mb-2 sm:mb-4 ${
                 isDark ? 'bg-amber-900/15 text-amber-500 border border-amber-800/20' : 'bg-amber-50 text-amber-600 border border-amber-100'
               }`}>
-                <Compass size={14} />
+                <Compass size={12} className="sm:w-[14px] sm:h-[14px]" />
                 {t('Vision, Mission & Values')}
               </div>
-              <p className={`text-base sm:text-lg italic max-w-lg mx-auto ${isDark ? 'text-amber-400/80' : 'text-amber-600/80'}`}>
+              <p className={`text-sm sm:text-lg italic max-w-lg mx-auto ${isDark ? 'text-amber-400/80' : 'text-amber-600/80'}`}>
                 {t('brand_promise')}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className={`rounded-xl border p-5 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
-                    <Rocket size={18} className="text-red-500" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-4">
+              <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
+                  <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
+                    <Rocket size={14} className="text-red-500 sm:w-[18px] sm:h-[18px]" />
                   </div>
-                  <h3 className={`text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {t('Mission')}
                   </h3>
                 </div>
-                <p className={`text-sm leading-relaxed mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                   {t('mission_statement')}
                 </p>
-                <div className="space-y-2">
+                <div className="hidden sm:block space-y-2">
                   {['mission_1', 'mission_2', 'mission_3', 'mission_4'].map((key) => (
                     <div key={key} className="flex items-start gap-2.5">
                       <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-[7px] flex-shrink-0" />
@@ -485,19 +485,19 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 </div>
               </div>
 
-              <div className={`rounded-xl border p-5 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
-                    <Compass size={18} className="text-blue-500" />
+              <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
+                  <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
+                    <Compass size={14} className="text-blue-500 sm:w-[18px] sm:h-[18px]" />
                   </div>
-                  <h3 className={`text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {t('Vision')}
                   </h3>
                 </div>
-                <p className={`text-sm leading-relaxed mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                   {t('vision_statement')}
                 </p>
-                <div className="space-y-2">
+                <div className="hidden sm:block space-y-2">
                   {['vision_1', 'vision_2', 'vision_3', 'vision_4'].map((key) => (
                     <div key={key} className="flex items-start gap-2.5">
                       <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-[7px] flex-shrink-0" />
@@ -507,27 +507,27 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 </div>
               </div>
 
-              <div className={`rounded-xl border p-5 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
-                    <Star size={18} className="text-amber-500" />
+              <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
+                  <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
+                    <Star size={14} className="text-amber-500 sm:w-[18px] sm:h-[18px]" />
                   </div>
-                  <h3 className={`text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {t('Core Values')}
                   </h3>
                 </div>
-                <div className="space-y-3.5">
+                <div className="space-y-1.5 sm:space-y-3.5">
                   <div>
-                    <p className={`text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('values_athlete_title')}</p>
-                    <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_athlete_desc')}</p>
+                    <p className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-0.5 sm:mb-1.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('values_athlete_title')}</p>
+                    <p className={`text-[10px] sm:text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_athlete_desc')}</p>
                   </div>
                   <div>
-                    <p className={`text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{t('values_citizen_title')}</p>
-                    <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_citizen_desc')}</p>
+                    <p className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-0.5 sm:mb-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{t('values_citizen_title')}</p>
+                    <p className={`text-[10px] sm:text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_citizen_desc')}</p>
                   </div>
                   <div>
-                    <p className={`text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{t('values_org_title')}</p>
-                    <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_org_desc')}</p>
+                    <p className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-0.5 sm:mb-1.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{t('values_org_title')}</p>
+                    <p className={`text-[10px] sm:text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_org_desc')}</p>
                   </div>
                 </div>
               </div>
@@ -537,95 +537,95 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
 
         <button
           onClick={() => goToSection(1)}
-          className={`absolute bottom-8 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
+          className={`absolute bottom-4 sm:bottom-8 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
         >
           <ChevronDown size={20} />
         </button>
       </div>
 
       {/* Section 2: About Us */}
-      <div className="h-screen flex flex-col justify-center px-4 sm:px-6 relative pt-14">
+      <div className="h-screen flex flex-col justify-center px-3 sm:px-6 relative pt-14">
         <div className={`transition-all duration-[1s] ease-out ${visible[1] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-6 sm:mb-8">
-              <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
+            <div className="text-center mb-3 sm:mb-8">
+              <div className={`inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs tracking-[0.2em] uppercase font-medium mb-2 sm:mb-4 ${
                 isDark ? 'bg-red-900/15 text-red-400 border border-red-800/20' : 'bg-red-50 text-red-600 border border-red-100'
               }`}>
-                <Users size={14} />
+                <Users size={12} className="sm:w-[14px] sm:h-[14px]" />
                 {t('About Us')}
               </div>
-              <h2 className={`text-2xl sm:text-3xl lg:text-4xl font-light tracking-tight leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <h2 className={`text-xl sm:text-3xl lg:text-4xl font-light tracking-tight leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 {t('about_headline')}
               </h2>
-              <p className={`text-sm sm:text-base leading-relaxed max-w-2xl mx-auto mt-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              <p className={`text-xs sm:text-base leading-relaxed max-w-2xl mx-auto mt-2 sm:mt-3 hidden sm:block ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                 {t('about_subheadline')}
               </p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6 sm:mb-8">
-              <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${isDark ? 'bg-emerald-900/25' : 'bg-emerald-50'}`}>
-                  <Leaf size={18} className="text-emerald-500" />
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-4 mb-3 sm:mb-8">
+              <div className={`rounded-xl border p-3 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-emerald-900/25' : 'bg-emerald-50'}`}>
+                  <Leaf size={14} className="text-emerald-500 sm:w-[18px] sm:h-[18px]" />
                 </div>
-                <h3 className={`text-base font-semibold mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {t('Sustainability')}
                 </h3>
-                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('pillar_sustainability')}
                 </p>
               </div>
 
-              <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
-                  <Lightbulb size={18} className="text-amber-500" />
+              <div className={`rounded-xl border p-3 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
+                  <Lightbulb size={14} className="text-amber-500 sm:w-[18px] sm:h-[18px]" />
                 </div>
-                <h3 className={`text-base font-semibold mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {t('Innovation')}
                 </h3>
-                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('pillar_innovation')}
                 </p>
               </div>
 
-              <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
-                  <BarChart3 size={18} className="text-blue-500" />
+              <div className={`rounded-xl border p-3 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
+                  <BarChart3 size={14} className="text-blue-500 sm:w-[18px] sm:h-[18px]" />
                 </div>
-                <h3 className={`text-base font-semibold mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {t('Data-Driven')}
                 </h3>
-                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('pillar_datadriven')}
                 </p>
               </div>
 
-              <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
-                  <Rocket size={18} className="text-red-500" />
+              <div className={`rounded-xl border p-3 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
+                  <Rocket size={14} className="text-red-500 sm:w-[18px] sm:h-[18px]" />
                 </div>
-                <h3 className={`text-base font-semibold mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {t('Ambition')}
                 </h3>
-                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('pillar_ambition')}
                 </p>
               </div>
 
-              <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center mb-3 ${isDark ? 'bg-purple-900/25' : 'bg-purple-50'}`}>
-                  <TrendingUp size={18} className="text-purple-500" />
+              <div className={`rounded-xl border p-3 sm:p-5 col-span-2 sm:col-span-1 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-purple-900/25' : 'bg-purple-50'}`}>
+                  <TrendingUp size={14} className="text-purple-500 sm:w-[18px] sm:h-[18px]" />
                 </div>
-                <h3 className={`text-base font-semibold mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {t('Development')}
                 </h3>
-                <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {t('pillar_development')}
                 </p>
               </div>
             </div>
 
-            <div className={`rounded-xl border p-5 sm:p-6 ${isDark ? 'bg-gray-900/40 border-gray-800/40' : 'bg-gray-50/80 border-gray-200/60'}`}>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8">
+            <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/40 border-gray-800/40' : 'bg-gray-50/80 border-gray-200/60'}`}>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-8">
                 <StatCounter target={10} label={t('League Titles')} active={visible[1]} isDark={isDark} />
                 <StatCounter target={5} label={t('EuroLeague Titles')} active={visible[1]} isDark={isDark} />
                 <StatCounter target={3} label={t('Intercontinental Cups')} active={visible[1]} isDark={isDark} />
@@ -637,7 +637,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
 
         <button
           onClick={() => goToSection(2)}
-          className={`absolute bottom-8 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
+          className={`absolute bottom-4 sm:bottom-8 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
         >
           <ChevronDown size={20} />
         </button>
@@ -658,33 +658,33 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             }}
           >
             {/* Sub-slide 1: Ownership */}
-            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-8 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-3 sm:px-8 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
               <div className="max-w-6xl mx-auto w-full">
-                <div className="text-center mb-6">
-                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
+                <div className="text-center mb-3 sm:mb-6">
+                  <div className={`inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs tracking-[0.2em] uppercase font-medium mb-2 sm:mb-4 ${
                     isDark ? 'bg-purple-900/15 text-purple-400 border border-purple-800/20' : 'bg-purple-50 text-purple-600 border border-purple-100'
                   }`}>
-                    <Shield size={14} />
+                    <Shield size={12} className="sm:w-[14px] sm:h-[14px]" />
                     {t('Ownership')}
                   </div>
-                  <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <h2 className={`text-xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {t('Shareholder Structure')}
                   </h2>
-                  <p className={`text-sm sm:text-base mt-2 max-w-lg mx-auto ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  <p className={`text-xs sm:text-base mt-1 sm:mt-2 max-w-lg mx-auto hidden sm:block ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                     {t('ownership_subtitle')}
                   </p>
                 </div>
 
-                <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
-                  <div className="flex-shrink-0" style={{ width: 'min(280px, 70vw)', height: 'min(280px, 70vw)' }}>
+                <div className="flex flex-col md:flex-row items-center gap-3 sm:gap-6 md:gap-10">
+                  <div className="flex-shrink-0" style={{ width: 'min(200px, 50vw)', height: 'min(200px, 50vw)' }}>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
                           data={OWNERSHIP_DATA}
                           cx="50%"
                           cy="50%"
-                          innerRadius={75}
-                          outerRadius={125}
+                          innerRadius="55%"
+                          outerRadius="95%"
                           paddingAngle={2}
                           dataKey="value"
                           stroke="none"
@@ -700,16 +700,16 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                   </div>
 
                   <div className="flex-1 w-full max-w-md">
-                    <div className="space-y-3">
+                    <div className="space-y-1.5 sm:space-y-3">
                       {OWNERSHIP_DATA.map((item, i) => (
-                        <div key={i} className={`flex items-center justify-between px-5 py-3 rounded-lg ${
+                        <div key={i} className={`flex items-center justify-between px-3 py-2 sm:px-5 sm:py-3 rounded-lg ${
                           isDark ? 'bg-gray-900/60 border border-gray-800/50' : 'bg-white border border-gray-200/80'
                         }`}>
-                          <div className="flex items-center gap-3">
-                            <div className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
-                            <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{item.name}</span>
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                            <span className={`text-[11px] sm:text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{item.name}</span>
                           </div>
-                          <span className={`text-base font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-900'}`}>{item.value}%</span>
+                          <span className={`text-xs sm:text-base font-semibold tabular-nums ml-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{item.value}%</span>
                         </div>
                       ))}
                     </div>
@@ -719,38 +719,38 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             </div>
 
             {/* Sub-slide 2: Board */}
-            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-3 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
               <div className="max-w-6xl mx-auto w-full">
-                <div className="text-center mb-6">
-                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
+                <div className="text-center mb-3 sm:mb-6">
+                  <div className={`inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs tracking-[0.2em] uppercase font-medium mb-2 sm:mb-4 ${
                     isDark ? 'bg-indigo-900/15 text-indigo-400 border border-indigo-800/20' : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
                   }`}>
-                    <Briefcase size={14} />
+                    <Briefcase size={12} className="sm:w-[14px] sm:h-[14px]" />
                     {t('Board of Directors')}
                   </div>
-                  <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <h2 className={`text-xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {t('Consiglio di Amministrazione')}
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4">
                   {BOARD_MEMBERS.map((member, i) => (
                     <div
                       key={i}
-                      className={`rounded-xl border p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
+                      className={`rounded-xl border p-2.5 sm:p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
                         isDark ? 'bg-gray-900/60 border-gray-800/60 hover:border-gray-700' : 'bg-white border-gray-200/80 hover:border-gray-300'
                       }`}
                     >
                       <div
-                        className="w-16 h-16 rounded-full mx-auto mb-3 overflow-hidden border-2"
+                        className="w-11 h-11 sm:w-16 sm:h-16 rounded-full mx-auto mb-2 sm:mb-3 overflow-hidden border-2"
                         style={{ borderColor: member.color }}
                       >
                         <img src={member.photo} alt={member.name} className="w-full h-full object-cover" />
                       </div>
-                      <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <h3 className={`text-[11px] sm:text-sm font-semibold mb-0.5 sm:mb-1 leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {member.name}
                       </h3>
-                      <p className="text-xs tracking-[0.1em] uppercase font-medium mb-3" style={{ color: member.color }}>
+                      <p className="text-[10px] sm:text-xs tracking-[0.05em] sm:tracking-[0.1em] uppercase font-medium sm:mb-3" style={{ color: member.color }}>
                         {t(member.roleKey)}
                       </p>
                       <p className={`text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -763,42 +763,42 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             </div>
 
             {/* Sub-slide 3: Special Advisors */}
-            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-3 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
               <div className="max-w-5xl mx-auto w-full">
-                <div className="text-center mb-6">
-                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
+                <div className="text-center mb-3 sm:mb-6">
+                  <div className={`inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs tracking-[0.2em] uppercase font-medium mb-2 sm:mb-4 ${
                     isDark ? 'bg-violet-900/15 text-violet-400 border border-violet-800/20' : 'bg-violet-50 text-violet-600 border border-violet-100'
                   }`}>
-                    <Crown size={14} />
+                    <Crown size={12} className="sm:w-[14px] sm:h-[14px]" />
                     {t('Special Advisors')}
                   </div>
-                  <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <h2 className={`text-xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {t('Strategic Advisory Board')}
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 sm:gap-4">
                   {SPECIAL_ADVISORS.map((advisor, i) => (
                     <div
                       key={i}
-                      className={`rounded-xl border p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
+                      className={`rounded-xl border p-2.5 sm:p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
                         isDark ? 'bg-gray-900/60 border-gray-800/60 hover:border-gray-700' : 'bg-white border-gray-200/80 hover:border-gray-300'
                       }`}
                     >
-                      <div className="w-16 h-16 rounded-full mx-auto mb-3 overflow-hidden flex items-center justify-center text-white text-lg font-bold" style={{ backgroundColor: advisor.color }}>
+                      <div className="w-11 h-11 sm:w-16 sm:h-16 rounded-full mx-auto mb-2 sm:mb-3 overflow-hidden flex items-center justify-center text-white text-sm sm:text-lg font-bold" style={{ backgroundColor: advisor.color }}>
                         {advisor.photo ? (
                           <img src={advisor.photo} alt={advisor.name} className="w-full h-full object-cover" />
                         ) : (
                           advisor.initials
                         )}
                       </div>
-                      <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <h3 className={`text-[11px] sm:text-sm font-semibold mb-0.5 sm:mb-1 leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {advisor.name}
                       </h3>
-                      <p className="text-xs tracking-[0.05em] uppercase font-medium mb-1" style={{ color: advisor.color }}>
+                      <p className="text-[10px] sm:text-xs tracking-[0.05em] uppercase font-medium mb-0.5 sm:mb-1" style={{ color: advisor.color }}>
                         {advisor.org}
                       </p>
-                      <p className="text-xs tracking-[0.1em] uppercase font-medium mb-3" style={{ color: advisor.color, opacity: 0.7 }}>
+                      <p className="text-[10px] sm:text-xs tracking-[0.05em] sm:tracking-[0.1em] uppercase font-medium sm:mb-3" style={{ color: advisor.color, opacity: 0.7 }}>
                         {t(advisor.roleKey)}
                       </p>
                       <p className={`text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -811,39 +811,39 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             </div>
 
             {/* Sub-slide 4: ELT */}
-            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-3 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
               <div className="max-w-5xl mx-auto w-full">
-                <div className="text-center mb-6">
-                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
+                <div className="text-center mb-3 sm:mb-6">
+                  <div className={`inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs tracking-[0.2em] uppercase font-medium mb-2 sm:mb-4 ${
                     isDark ? 'bg-emerald-900/15 text-emerald-400 border border-emerald-800/20' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                   }`}>
-                    <Star size={14} />
+                    <Star size={12} className="sm:w-[14px] sm:h-[14px]" />
                     {t('Elite Leadership Team')}
                   </div>
-                  <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <h2 className={`text-xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {t('Executive Leadership')}
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
                   {ELT_MEMBERS.map((member, i) => (
                     <div
                       key={i}
-                      className={`rounded-xl border p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
+                      className={`rounded-xl border p-2.5 sm:p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
                         isDark ? 'bg-gray-900/60 border-gray-800/60 hover:border-gray-700' : 'bg-white border-gray-200/80 hover:border-gray-300'
                       }`}
                     >
-                      <div className="w-16 h-16 rounded-full mx-auto mb-3 overflow-hidden flex items-center justify-center text-white text-lg font-bold" style={{ backgroundColor: member.color }}>
+                      <div className="w-11 h-11 sm:w-16 sm:h-16 rounded-full mx-auto mb-2 sm:mb-3 overflow-hidden flex items-center justify-center text-white text-sm sm:text-lg font-bold" style={{ backgroundColor: member.color }}>
                         {member.photo ? (
                           <img src={member.photo} alt={member.name} className="w-full h-full object-cover" />
                         ) : (
                           member.initials
                         )}
                       </div>
-                      <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <h3 className={`text-[11px] sm:text-sm font-semibold mb-0.5 sm:mb-1 leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {member.name}
                       </h3>
-                      <p className="text-xs tracking-[0.1em] uppercase font-medium mb-3" style={{ color: member.color }}>
+                      <p className="text-[10px] sm:text-xs tracking-[0.05em] sm:tracking-[0.1em] uppercase font-medium sm:mb-3" style={{ color: member.color }}>
                         {t(member.roleKey)}
                       </p>
                       <p className={`text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -855,38 +855,38 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               </div>
             </div>
 
-            {/* Sub-slide 4: Departments */}
-            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+            {/* Sub-slide 5: Departments */}
+            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-3 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
               <div className="max-w-6xl mx-auto w-full">
-                <div className="text-center mb-6">
-                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
+                <div className="text-center mb-3 sm:mb-6">
+                  <div className={`inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs tracking-[0.2em] uppercase font-medium mb-2 sm:mb-4 ${
                     isDark ? 'bg-amber-900/15 text-amber-400 border border-amber-800/20' : 'bg-amber-50 text-amber-600 border border-amber-100'
                   }`}>
-                    <Layers size={14} />
+                    <Layers size={12} className="sm:w-[14px] sm:h-[14px]" />
                     {t('Departments')}
                   </div>
-                  <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <h2 className={`text-xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {t('Department Overview')}
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-4 sm:grid-cols-4 gap-1.5 sm:gap-4">
                   {DEPT_MEMBERS.map((member, i) => (
                     <div
                       key={i}
-                      className={`rounded-xl border p-4 sm:p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
+                      className={`rounded-xl border p-2 sm:p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
                         isDark ? 'bg-gray-900/60 border-gray-800/60 hover:border-gray-700' : 'bg-white border-gray-200/80 hover:border-gray-300'
                       }`}
                     >
                       <div
-                        className="w-13 h-13 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-base font-bold" style={{ backgroundColor: member.color, width: '3.25rem', height: '3.25rem' }}
+                        className="rounded-full mx-auto mb-1.5 sm:mb-3 flex items-center justify-center text-white text-xs sm:text-base font-bold w-9 h-9 sm:w-[3.25rem] sm:h-[3.25rem]" style={{ backgroundColor: member.color }}
                       >
                         {member.initials}
                       </div>
-                      <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <h3 className={`text-[10px] sm:text-sm font-semibold mb-0.5 sm:mb-1 leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {member.name}
                       </h3>
-                      <p className="text-xs tracking-[0.05em] uppercase font-medium" style={{ color: member.color }}>
+                      <p className="text-[9px] sm:text-xs tracking-[0.03em] sm:tracking-[0.05em] uppercase font-medium leading-tight" style={{ color: member.color }}>
                         {t(member.roleKey)}
                       </p>
                     </div>
@@ -895,39 +895,39 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               </div>
             </div>
 
-            {/* Sub-slide 5: External Services */}
-            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+            {/* Sub-slide 6: External Services */}
+            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-3 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
               <div className="max-w-5xl mx-auto w-full">
-                <div className="text-center mb-6">
-                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
+                <div className="text-center mb-3 sm:mb-6">
+                  <div className={`inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs tracking-[0.2em] uppercase font-medium mb-2 sm:mb-4 ${
                     isDark ? 'bg-cyan-900/15 text-cyan-400 border border-cyan-800/20' : 'bg-cyan-50 text-cyan-600 border border-cyan-100'
                   }`}>
-                    <Globe size={14} />
+                    <Globe size={12} className="sm:w-[14px] sm:h-[14px]" />
                     {t('External Services')}
                   </div>
-                  <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <h2 className={`text-xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {t('Partner Network')}
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-3 sm:grid-cols-3 gap-2 sm:gap-4">
                   {EXT_SERVICES.map((svc, i) => (
                     <div
                       key={i}
-                      className={`rounded-xl border p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
+                      className={`rounded-xl border p-2.5 sm:p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
                         isDark ? 'bg-gray-900/60 border-gray-800/60 hover:border-gray-700' : 'bg-white border-gray-200/80 hover:border-gray-300'
                       }`}
                     >
                       <div
-                        className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-base font-bold"
+                        className="w-10 h-10 sm:w-14 sm:h-14 rounded-full mx-auto mb-1.5 sm:mb-3 flex items-center justify-center text-white text-xs sm:text-base font-bold"
                         style={{ backgroundColor: svc.color }}
                       >
                         {svc.initials}
                       </div>
-                      <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      <h3 className={`text-[11px] sm:text-sm font-semibold mb-0.5 sm:mb-1 leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {svc.name}
                       </h3>
-                      <p className="text-xs tracking-[0.05em] uppercase font-medium" style={{ color: svc.color }}>
+                      <p className="text-[10px] sm:text-xs tracking-[0.03em] sm:tracking-[0.05em] uppercase font-medium" style={{ color: svc.color }}>
                         {t(svc.roleKey)}
                       </p>
                     </div>
@@ -938,7 +938,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
           </div>
 
           {/* Sub-slide navigation */}
-          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-4 z-10">
+          <div className="absolute bottom-12 sm:bottom-16 left-1/2 -translate-x-1/2 flex items-center gap-2 sm:gap-4 z-10">
             <button
               onClick={() => goToTeamSlide(teamSlide - 1)}
               className={`p-2 rounded-full transition-all duration-300 ${
@@ -986,7 +986,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
           </div>
 
           {/* Progress bar */}
-          <div className={`absolute bottom-10 left-1/2 -translate-x-1/2 w-48 h-0.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
+          <div className={`absolute bottom-7 sm:bottom-10 left-1/2 -translate-x-1/2 w-32 sm:w-48 h-0.5 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
             <div
               className={`h-full rounded-full ${isDark ? 'bg-purple-500' : 'bg-purple-400'}`}
               style={{ width: `${((teamSlide + 1) / TEAM_SLIDES) * 100}%`, transition: 'width 1200ms cubic-bezier(0.16, 1, 0.3, 1)' }}
@@ -1002,28 +1002,28 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               goToSection(3);
             }
           }}
-          className={`absolute bottom-3 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
+          className={`absolute bottom-1 sm:bottom-3 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
         >
           <ChevronDown size={16} />
         </button>
       </div>
 
       {/* Section 4: Departments */}
-      <div className="h-screen flex flex-col items-center justify-center px-6 relative">
+      <div className="h-screen flex flex-col items-center justify-center px-4 sm:px-6 relative">
         <div className={`transition-all duration-[1s] ease-out ${visible[3] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="max-w-3xl mx-auto text-center mb-16">
-            <p className={`text-xs tracking-[0.3em] uppercase font-medium mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+          <div className="max-w-3xl mx-auto text-center mb-8 sm:mb-16">
+            <p className={`text-[10px] sm:text-xs tracking-[0.3em] uppercase font-medium mb-2 sm:mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
               {t('Departments')}
             </p>
-            <h2 className={`text-2xl sm:text-3xl lg:text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            <h2 className={`text-xl sm:text-3xl lg:text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
               {t('Choose your area')}
             </h2>
-            <div className="flex justify-center mt-6">
+            <div className="flex justify-center mt-4 sm:mt-6">
               <div className={`h-px line-grow ${isDark ? 'bg-gray-700' : 'bg-gray-300'}`}></div>
             </div>
           </div>
 
-          <div className={`grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto`}>
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-5xl mx-auto`}>
             <button
               onClick={() => onNavigate('landing')}
               className={`group relative text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl ${
@@ -1031,14 +1031,14 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               }`}
             >
               <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-red-600 to-red-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
-              <div className="p-8 sm:p-10">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${isDark ? 'bg-red-900/20' : 'bg-red-50'}`}>
-                  <Building2 size={26} className="text-red-600" />
+              <div className="p-5 sm:p-10">
+                <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-6 ${isDark ? 'bg-red-900/20' : 'bg-red-50'}`}>
+                  <Building2 size={20} className="text-red-600 sm:w-[26px] sm:h-[26px]" />
                 </div>
-                <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-lg sm:text-xl font-semibold mb-1 sm:mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   Corp
                 </h3>
-                <p className={`text-sm leading-relaxed mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                <p className={`text-xs sm:text-sm leading-relaxed mb-3 sm:mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                   {t('Financial Center — Revenue, Costs & Verticals P&L')}
                 </p>
                 <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-red-500' : 'text-red-600'}`}>
@@ -1053,17 +1053,17 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 isDark ? 'bg-gray-900/50 border-gray-800/50' : 'bg-white/50 border-gray-200/50'
               }`}
             >
-              <div className="p-8 sm:p-10">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${isDark ? 'bg-emerald-900/20' : 'bg-emerald-50'}`}>
-                  <Shield size={26} className="text-emerald-600" />
+              <div className="p-5 sm:p-10">
+                <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-3 sm:mb-6 ${isDark ? 'bg-emerald-900/20' : 'bg-emerald-50'}`}>
+                  <Shield size={20} className="text-emerald-600 sm:w-[26px] sm:h-[26px]" />
                 </div>
-                <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-lg sm:text-xl font-semibold mb-1 sm:mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   BOps
                 </h3>
-                <p className={`text-sm leading-relaxed mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                <p className={`text-xs sm:text-sm leading-relaxed mb-3 sm:mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                   {t('Basketball Operations — Team management, roster & performance')}
                 </p>
-                <div className={`inline-flex items-center gap-2 text-xs tracking-[0.15em] uppercase font-medium ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                <div className={`inline-flex items-center gap-2 text-[10px] sm:text-xs tracking-[0.15em] uppercase font-medium ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
                   <Lock size={10} />
                   {t('Coming Soon')}
                 </div>
@@ -1073,8 +1073,8 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
           </div>
         </div>
 
-        <div className={`absolute bottom-8 left-1/2 -translate-x-1/2`}>
-          <div className={`flex items-center gap-4 text-xs tracking-[0.25em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
+        <div className={`absolute bottom-4 sm:bottom-8 left-1/2 -translate-x-1/2`}>
+          <div className={`flex items-center gap-3 sm:gap-4 text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.25em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
             <span>Pallacanestro Varese</span>
             <span className="w-px h-3 bg-current"></span>
             <span>{t('Season')} 2025/26</span>
