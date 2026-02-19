@@ -49,6 +49,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Wingspan': { en: 'Wingspan', it: 'Apertura Alare' },
   'Body Fat': { en: 'Body Fat', it: 'Massa Grassa' },
   'Projected Height': { en: 'Projected Height', it: 'Altezza Proiettata' },
+  'Projected Reach': { en: 'Projected Reach', it: 'Reach Proiettato' },
   'Anthropometrics': { en: 'Anthropometrics', it: 'Antropometria' },
   'Athletics': { en: 'Athletics', it: 'Atletica' },
   'Shooting': { en: 'Shooting', it: 'Tiro' },

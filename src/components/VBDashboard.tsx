@@ -311,6 +311,28 @@ function getProjectedHeight(player: string, profiles: PlayerProfile[], sessions:
   return Math.round(predictedCm * 10) / 10;
 }
 
+function getProjectedReach(player: string, profiles: PlayerProfile[], sessions: VBSession[]): number | null {
+  const projectedHeight = getProjectedHeight(player, profiles, sessions);
+  if (projectedHeight === null) return null;
+
+  const playerSessions = getPlayerSessions(sessions, player);
+  const latestWithBoth = playerSessions
+    .filter(s => s.height !== null && s.standingReach !== null)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  if (latestWithBoth.length === 0) return null;
+
+  const currentHeight = latestWithBoth[0].height!;
+  const currentReach = latestWithBoth[0].standingReach!;
+  if (currentHeight <= 0) return null;
+
+  const growthRatio = projectedHeight / currentHeight;
+  let projectedReach = currentReach * growthRatio;
+
+  if (projectedReach < currentReach) projectedReach = currentReach;
+
+  return Math.round(projectedReach * 10) / 10;
+}
+
 function getPlayerProfile(player: string, profiles: PlayerProfile[], season?: string): PlayerProfile | null {
   let match: PlayerProfile | null = null;
   for (const p of profiles) {
@@ -937,9 +959,13 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
         <PlayerSelector players={players} selected={selectedPlayer} onChange={setSelectedPlayer} />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatCard label={t('Height')} value={latestAnthro.height} unit=" cm" icon={Ruler} color="#3b82f6" />
         <StatCard label={t('Projected Height') + ' (KR)'} value={getProjectedHeight(selectedPlayer, profiles, sessions)} unit=" cm" icon={Ruler} color="#6366f1" />
+        <StatCard label={t('Reach')} value={latestAnthro.standingReach} unit=" cm" icon={Ruler} color="#8b5cf6" />
+        <StatCard label={t('Projected Reach') + ' (KR)'} value={getProjectedReach(selectedPlayer, profiles, sessions)} unit=" cm" icon={Ruler} color="#a855f7" />
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <StatCard label={t('Weight')} value={latestAnthro.weight} unit=" kg" icon={Weight} color="#10b981" />
         <StatCard label={t('Wingspan')} value={latestAnthro.wingspan} unit=" cm" icon={Ruler} color="#8b5cf6" />
         <StatCard label={t('Body Fat')} value={latestAnthro.bodyFat} unit="%" icon={Heart} color="#ef4444" />
