@@ -187,6 +187,35 @@ function matchesPlayerName(profileName: string, sessionPlayer: string): boolean 
   return a === b || a.includes(b) || b.includes(a);
 }
 
+function excelSerialToDate(serial: number): Date {
+  return new Date(Date.UTC(1899, 11, 30 + serial));
+}
+
+function calcBodyFatPct(skinfoldSum: number, dobSerial: number | null, sessionDate?: string): number | null {
+  if (!dobSerial || skinfoldSum <= 0) return null;
+  const dob = excelSerialToDate(dobSerial);
+  const ref = sessionDate ? new Date(sessionDate) : new Date();
+  let age = ref.getFullYear() - dob.getFullYear();
+  const m = ref.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && ref.getDate() < dob.getDate())) age--;
+  if (age < 5 || age > 60) return null;
+  const S = skinfoldSum;
+  const BD = 1.10938 - (0.0008267 * S) + (0.0000016 * S * S) - (0.0002574 * age);
+  if (BD <= 0) return null;
+  const bfPct = (495 / BD) - 450;
+  return Math.round(bfPct * 10) / 10;
+}
+
+function getPlayerDobSerial(player: string, profiles: PlayerProfile[]): number | null {
+  for (const p of profiles) {
+    if (matchesPlayerName(p.name, player) && p.dob) {
+      const n = Number(p.dob);
+      if (!isNaN(n) && n > 10000) return n;
+    }
+  }
+  return null;
+}
+
 function getPlayerPosition(player: string, profiles: PlayerProfile[]): string {
   for (const p of profiles) {
     if (matchesPlayerName(p.name, player)) {
@@ -244,7 +273,7 @@ function getSeasonDays(selectedSeason: string, player?: string): number {
   return Math.max(1, Math.ceil((end.getTime() - seasonStart.getTime()) / 86400000));
 }
 
-function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selectedSeason }: { filtered: VBSession[]; activePlayers: string[]; onSelectPlayer: (p: string) => void; isDark: boolean; selectedSeason: string }) {
+function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selectedSeason, profiles }: { filtered: VBSession[]; activePlayers: string[]; onSelectPlayer: (p: string) => void; isDark: boolean; selectedSeason: string; profiles: PlayerProfile[] }) {
   const { t } = useLanguage();
   const [sortKey, setSortKey] = useState<SortKey>('player');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -292,7 +321,14 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
       weight: getLatestMetric(filtered, player, 'weight'),
       wingspan: getLatestMetric(filtered, player, 'wingspan'),
       reach: getLatestMetric(filtered, player, 'standingReach'),
-      bodyFat: getLatestMetric(filtered, player, 'bodyFat'),
+      bodyFat: (() => {
+        const rawSF = getLatestMetric(filtered, player, 'bodyFat');
+        if (rawSF === null) return null;
+        const dobSerial = getPlayerDobSerial(player, profiles);
+        const latestSession = getPlayerSessions(filtered, player).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
+        const bf = calcBodyFatPct(rawSF, dobSerial, latestSession?.date);
+        return bf !== null ? bf : rawSF;
+      })(),
       pct: getAvg(shootingSessions.map(s => s.shootingPct)),
       shots: sumOrRate(ps.map(s => s.shootsTaken)),
       vitamins: sumOrRate(ps.map(s => s.vitaminsLoad)),
@@ -303,7 +339,7 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
       nt: ntVal,
       daysOff: daysOffVal,
     };
-  }), [filtered, activePlayers, viewMode, selectedSeason]);
+  }), [filtered, activePlayers, viewMode, selectedSeason, profiles]);
 
   const sorted = useMemo(() => {
     const arr = [...rows];
@@ -724,12 +760,12 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
         </div>
       </div>
 
-      <RosterTable filtered={filtered} activePlayers={activePlayers} onSelectPlayer={onSelectPlayer} isDark={isDark} selectedSeason={selectedSeason} />
+      <RosterTable filtered={filtered} activePlayers={activePlayers} onSelectPlayer={onSelectPlayer} isDark={isDark} selectedSeason={selectedSeason} profiles={profiles} />
     </div>
   );
 }
 
-function PlayerProfileTab({ sessions, players, initialPlayer }: { sessions: VBSession[]; players: string[]; initialPlayer: string }) {
+function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sessions: VBSession[]; players: string[]; initialPlayer: string; profiles: PlayerProfile[] }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
   const [selectedPlayer, setSelectedPlayer] = useState(initialPlayer || players[0]);
@@ -742,7 +778,14 @@ function PlayerProfileTab({ sessions, players, initialPlayer }: { sessions: VBSe
     weight: getLatestMetric(sessions, selectedPlayer, 'weight'),
     wingspan: getLatestMetric(sessions, selectedPlayer, 'wingspan'),
     standingReach: getLatestMetric(sessions, selectedPlayer, 'standingReach'),
-    bodyFat: getLatestMetric(sessions, selectedPlayer, 'bodyFat'),
+    bodyFat: (() => {
+      const rawSF = getLatestMetric(sessions, selectedPlayer, 'bodyFat');
+      if (rawSF === null) return null;
+      const dobSerial = getPlayerDobSerial(selectedPlayer, profiles);
+      const latestBFSession = getPlayerSessions(sessions, selectedPlayer).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
+      const bf = calcBodyFatPct(rawSF, dobSerial, latestBFSession?.date);
+      return bf !== null ? bf : rawSF;
+    })(),
   };
 
   const latestAthletic = {
@@ -766,12 +809,20 @@ function PlayerProfileTab({ sessions, players, initialPlayer }: { sessions: VBSe
       load: ['practiceLoad', 'vitaminsLoad', 'weightsLoad', 'gameLoad'],
     };
     const activeFields = fields[metricGroup];
+    const dobSerial = getPlayerDobSerial(selectedPlayer, profiles);
     return ps.filter(s => activeFields.some(f => s[f] !== null)).map(s => {
       const entry: any = { date: s.date.substring(5) };
-      activeFields.forEach(f => { entry[f] = s[f]; });
+      activeFields.forEach(f => {
+        if (f === 'bodyFat' && s[f] !== null && dobSerial) {
+          const bf = calcBodyFatPct(s[f] as number, dobSerial, s.date);
+          entry[f] = bf !== null ? bf : s[f];
+        } else {
+          entry[f] = s[f];
+        }
+      });
       return entry;
     });
-  }, [ps, metricGroup]);
+  }, [ps, metricGroup, selectedPlayer, profiles]);
 
   const metricLabels: Record<string, string> = {
     weight: t('Weight') + ' (kg)', bodyFat: t('Body Fat') + ' (%)',
@@ -887,7 +938,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer }: { sessions: VBSe
   );
 }
 
-function CompareTab({ sessions, players }: { sessions: VBSession[]; players: string[] }) {
+function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
   const [selected, setSelected] = useState<string[]>(players.slice(0, 2));
@@ -905,6 +956,12 @@ function CompareTab({ sessions, players }: { sessions: VBSession[]; players: str
       const entry: any = { metric: m.label };
       selected.forEach(p => {
         let val = getLatestMetric(sessions, p, m.key as keyof VBSession);
+        if (val !== null && m.key === 'bodyFat') {
+          const dobSerial = getPlayerDobSerial(p, profiles);
+          const bfSession = getPlayerSessions(sessions, p).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
+          const bf = calcBodyFatPct(val, dobSerial, bfSession?.date);
+          if (bf !== null) val = bf;
+        }
         if (val !== null && m.max) {
           if ((m as any).invert) val = m.max - val;
           val = Math.round((val / m.max) * 100);
@@ -913,7 +970,7 @@ function CompareTab({ sessions, players }: { sessions: VBSession[]; players: str
       });
       return entry;
     });
-  }, [sessions, selected, t]);
+  }, [sessions, selected, t, profiles]);
 
   const comparisonData = useMemo(() => {
     const metrics: { key: keyof VBSession; label: string; unit: string }[] = [
@@ -930,9 +987,18 @@ function CompareTab({ sessions, players }: { sessions: VBSession[]; players: str
     ];
     return metrics.map(m => ({
       ...m,
-      values: selected.map(p => getLatestMetric(sessions, p, m.key)),
+      values: selected.map(p => {
+        const raw = getLatestMetric(sessions, p, m.key);
+        if (raw !== null && m.key === 'bodyFat') {
+          const dobSerial = getPlayerDobSerial(p, profiles);
+          const bfSession = getPlayerSessions(sessions, p).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
+          const bf = calcBodyFatPct(raw, dobSerial, bfSession?.date);
+          return bf !== null ? bf : raw;
+        }
+        return raw;
+      }),
     }));
-  }, [sessions, selected, t]);
+  }, [sessions, selected, t, profiles]);
 
   return (
     <div className="space-y-6">
@@ -1001,7 +1067,7 @@ function CompareTab({ sessions, players }: { sessions: VBSession[]; players: str
   );
 }
 
-function ProgressionTab({ sessions, players }: { sessions: VBSession[]; players: string[] }) {
+function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
   const [selected, setSelected] = useState<string[]>(players.slice(0, 3));
@@ -1018,27 +1084,34 @@ function ProgressionTab({ sessions, players }: { sessions: VBSession[]; players:
     { key: 'shootingPct', label: t('3PT %'), unit: '%', group: t('Shooting') },
   ];
 
+  const convertBF = (val: number | null, player: string, date?: string): number | null => {
+    if (val === null || metric !== 'bodyFat') return val;
+    const dobSerial = getPlayerDobSerial(player, profiles);
+    const bf = calcBodyFatPct(val, dobSerial, date);
+    return bf !== null ? bf : val;
+  };
+
   const chartData = useMemo(() => {
     const allDates = [...new Set(sessions.filter(s => selected.includes(s.player) && s[metric] !== null).map(s => s.date))].sort();
     return allDates.map(date => {
       const entry: any = { date: date.substring(5) };
       selected.forEach(p => {
         const session = sessions.find(s => s.player === p && s.date === date);
-        entry[p] = session ? session[metric] : null;
+        entry[p] = session ? convertBF(session[metric] as number | null, p, session.date) : null;
       });
       return entry;
     });
-  }, [sessions, selected, metric]);
+  }, [sessions, selected, metric, profiles]);
 
   const deltaData = useMemo(() => {
     return selected.map(p => {
       const ps = sessions.filter(s => s.player === p && s[metric] !== null).sort((a, b) => a.date.localeCompare(b.date));
       if (ps.length < 2) return { player: p, first: null, last: null, delta: null };
-      const first = ps[0][metric] as number;
-      const last = ps[ps.length - 1][metric] as number;
+      const first = convertBF(ps[0][metric] as number, p, ps[0].date) as number;
+      const last = convertBF(ps[ps.length - 1][metric] as number, p, ps[ps.length - 1].date) as number;
       return { player: p, first, last, delta: Math.round((last - first) * 10) / 10 };
     });
-  }, [sessions, selected, metric]);
+  }, [sessions, selected, metric, profiles]);
 
   const currentMetric = metrics.find(m => m.key === metric);
 
@@ -1244,9 +1317,9 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         ) : (
           <>
             {activeTab === 'overview' && <OverviewTab sessions={sessions} players={players} onSelectPlayer={handleSelectPlayer} profiles={profiles} />}
-            {activeTab === 'player' && <PlayerProfileTab sessions={sessions} players={players} initialPlayer={selectedPlayer} />}
-            {activeTab === 'compare' && <CompareTab sessions={sessions} players={players} />}
-            {activeTab === 'progression' && <ProgressionTab sessions={sessions} players={players} />}
+            {activeTab === 'player' && <PlayerProfileTab sessions={sessions} players={players} initialPlayer={selectedPlayer} profiles={profiles} />}
+            {activeTab === 'compare' && <CompareTab sessions={sessions} players={players} profiles={profiles} />}
+            {activeTab === 'progression' && <ProgressionTab sessions={sessions} players={players} profiles={profiles} />}
           </>
         )}
       </main>

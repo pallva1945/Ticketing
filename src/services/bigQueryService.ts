@@ -162,7 +162,13 @@ function mergeVBRows(rows: any[]): VBMergedSession[] {
       base.weight = coalesce(base.weight, getField(r, 'weight', 'Weight'));
       base.wingspan = coalesce(base.wingspan, getField(r, 'wingspan', 'Wingspan'));
       base.standingReach = coalesce(base.standingReach, getField(r, 'standing_reach', 'Standing_Reach'));
-      base.bodyFat = coalesce(base.bodyFat, getField(r, 'body_fat', 'BodyFat'));
+      const rawSF = getField(r, 'body_fat', 'BodyFat');
+      if (rawSF !== null && rawSF !== undefined) {
+        const S = Number(rawSF);
+        if (!isNaN(S) && S > 0) {
+          base.bodyFat = coalesce(base.bodyFat, S);
+        }
+      }
       base.pureVertical = coalesce(base.pureVertical, getField(r, 'pure_vertical_jump', 'Pure_Vertical_Jump'));
       base.noStepVertical = coalesce(base.noStepVertical, getField(r, 'no_step_vertical_jump', 'No_Step_Vertical_Jump'));
       base.sprint = coalesce(base.sprint, getField(r, 'sprint', 'Sprint'));

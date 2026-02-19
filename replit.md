@@ -101,10 +101,13 @@ The application uses a modern web stack with React 18 and TypeScript for the fro
 ## VB Dashboard (Varese Basketball Youth Development)
 - **Location**: `src/components/VBDashboard.tsx`
 - **Navigation**: InternalHub → BOps · VB card → hash route `#vb`
-- **Data Source**: BigQuery (Google Forms submissions), fetched via `/api/vb-data` endpoint with 10-minute cache
-- **Data Structure**: `VBSession` interface — player, date, practiceLoad, vitaminsLoad, weightsLoad, gameLoad, height, weight, wingspan, standingReach, bodyFat, pureVertical, noStepVertical, sprint, coneDrill, deadlift, shootsTaken, shootsMade, shootingPct, injured
+- **Data Sources**: BigQuery `sg_db` table for session data, `sg_profile` table for player profiles (role, demographics, mug shot URLs)
+- **Profile Data**: Fetched via `/api/vb-profiles` endpoint with 10-minute cache. BigQuery uses generic column names (string_field_0..15) mapped to: Name, Email, Cell_N, Mom_Height, Dad_Height, DOB (Excel serial), Role, Mid_Parental_Height, Mug_Shot, Season (format "25-26" → "2025/26"), Passport, Italian_Formation, SoY_Status, EoY_Status, Year_1_Destination, Revenue_Generated
+- **Position Filter**: Uses Role field from profiles (values: Playmaker, 3nD, Center). Profile name matched to session player via fuzzy matching.
+- **Body Fat Conversion**: Raw column stores 3-skinfold sum (S in mm). Converted to BF% using Jackson-Pollock/Siri formula: BD = 1.10938 - (0.0008267 × S) + (0.0000016 × S²) - (0.0002574 × age), then BF% = (495/BD) - 450. Age calculated from DOB (Excel serial) in player profile relative to session date.
+- **Data Structure**: `VBSession` interface — player, date, practiceLoad, vitaminsLoad, weightsLoad, gameLoad, height, weight, wingspan, standingReach, bodyFat (raw skinfold sum), pureVertical, noStepVertical, sprint, coneDrill, deadlift, shootsTaken, shootsMade, shootingPct, injured
 - **Date Format**: Italian D/M/YYYY parsed to YYYY-MM-DD; seasons run July 1 – June 30
-- **Column Mapping**: BigQuery returns lowercase (player, practice_load, shots_taken) → camelCase via getField() helper
+- **Column Mapping**: BigQuery returns lowercase (player, practice_load, shots_taken) → camelCase via getField() helper; sg_profile uses string_field_0..15
 - **Tabs**:
   - **Overview**: Season filter, KPI cards (players/sessions/avg 3PT%/injury rate), session distribution bar chart, Player Roster table
   - **Player Profile**: Player selector, anthropometric + athletic stat cards, progression chart (4 metric groups), availability log, shooting history
