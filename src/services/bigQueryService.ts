@@ -212,24 +212,46 @@ export async function fetchVBProfilesFromBigQuery(): Promise<{ success: boolean;
     const query = `SELECT * FROM \`${VB_PROFILE_TABLE}\``;
     const [rows] = await client.query({ query });
 
-    const profiles: VBPlayerProfile[] = rows.map((row: any) => ({
-      name: String(getField(row, 'Name', 'name') || '').trim(),
-      email: getField(row, 'Email', 'email') ? String(getField(row, 'Email', 'email')).trim() : null,
-      cellNumber: getField(row, 'Cell_N', 'cell_n') ? String(getField(row, 'Cell_N', 'cell_n')).trim() : null,
-      momHeight: parseFloat(getField(row, 'Mom_Height', 'mom_height')) || null,
-      dadHeight: parseFloat(getField(row, 'Dad_Height', 'dad_height')) || null,
-      dob: getField(row, 'DOB', 'dob') ? String(getField(row, 'DOB', 'dob')).trim() : null,
-      role: getField(row, 'Role', 'role') ? String(getField(row, 'Role', 'role')).trim() : null,
-      midParentalHeight: parseFloat(getField(row, 'Mid_Parental_Height', 'mid_parental_height')) || null,
-      mugShot: getField(row, 'Mug_Shot', 'mug_shot') ? String(getField(row, 'Mug_Shot', 'mug_shot')).trim() : null,
-      season: getField(row, 'Season', 'season') ? String(getField(row, 'Season', 'season')).trim() : null,
-      passport: getField(row, 'Passport', 'passport') ? String(getField(row, 'Passport', 'passport')).trim() : null,
-      italianFormation: getField(row, 'Italian_Formation', 'italian_formation') !== null && getField(row, 'Italian_Formation', 'italian_formation') !== undefined ? parseInt(getField(row, 'Italian_Formation', 'italian_formation')) : null,
-      soyStatus: getField(row, 'SoY_Status', 'soy_status') ? String(getField(row, 'SoY_Status', 'soy_status')).trim() : null,
-      eoyStatus: getField(row, 'EoY_Status', 'eoy_status') ? String(getField(row, 'EoY_Status', 'eoy_status')).trim() : null,
-      year1Destination: getField(row, 'Year_1_Destination', 'year_1_destination') ? String(getField(row, 'Year_1_Destination', 'year_1_destination')).trim() : null,
-      revenueGenerated: parseFloat(getField(row, 'Revenue_Generated', 'revenue_generated')) || null,
-    }));
+    const HEADER_VALUES = new Set(['name', 'email', 'cell_n', 'mom_height', 'dad_height', 'dob', 'role', 'mid_parental_height', 'mug_shot', 'season', 'passport', 'italian_formation', 'soy_status', 'eoy_status', 'year_1_destination', 'revenue_generated']);
+    const validRows = rows.filter((row: any) => {
+      const name = getField(row, 'Name', 'name', 'string_field_0');
+      if (!name || !String(name).trim()) return false;
+      if (HEADER_VALUES.has(String(name).trim().toLowerCase())) return false;
+      return true;
+    });
+
+    const profiles: VBPlayerProfile[] = validRows.map((row: any) => {
+      const rawSeason = getField(row, 'Season', 'season', 'string_field_9');
+      let season: string | null = null;
+      if (rawSeason) {
+        const s = String(rawSeason).trim();
+        if (s.match(/^\d{2}-\d{2}$/)) {
+          const [a, b] = s.split('-');
+          season = `20${a}/${b}`;
+        } else {
+          season = s;
+        }
+      }
+
+      return {
+        name: String(getField(row, 'Name', 'name', 'string_field_0') || '').trim(),
+        email: getField(row, 'Email', 'email', 'string_field_1') ? String(getField(row, 'Email', 'email', 'string_field_1')).trim() : null,
+        cellNumber: getField(row, 'Cell_N', 'cell_n', 'string_field_2') ? String(getField(row, 'Cell_N', 'cell_n', 'string_field_2')).trim() : null,
+        momHeight: parseFloat(getField(row, 'Mom_Height', 'mom_height', 'string_field_3')) || null,
+        dadHeight: parseFloat(getField(row, 'Dad_Height', 'dad_height', 'string_field_4')) || null,
+        dob: getField(row, 'DOB', 'dob', 'string_field_5') ? String(getField(row, 'DOB', 'dob', 'string_field_5')).trim() : null,
+        role: getField(row, 'Role', 'role', 'string_field_6') ? String(getField(row, 'Role', 'role', 'string_field_6')).trim() : null,
+        midParentalHeight: parseFloat(getField(row, 'Mid_Parental_Height', 'mid_parental_height', 'string_field_7')) || null,
+        mugShot: getField(row, 'Mug_Shot', 'mug_shot', 'string_field_8') ? String(getField(row, 'Mug_Shot', 'mug_shot', 'string_field_8')).trim() : null,
+        season,
+        passport: getField(row, 'Passport', 'passport', 'string_field_10') ? String(getField(row, 'Passport', 'passport', 'string_field_10')).trim() : null,
+        italianFormation: getField(row, 'Italian_Formation', 'italian_formation', 'string_field_11') != null ? parseInt(getField(row, 'Italian_Formation', 'italian_formation', 'string_field_11')) : null,
+        soyStatus: getField(row, 'SoY_Status', 'soy_status', 'string_field_12') ? String(getField(row, 'SoY_Status', 'soy_status', 'string_field_12')).trim() : null,
+        eoyStatus: getField(row, 'EoY_Status', 'eoy_status', 'string_field_13') ? String(getField(row, 'EoY_Status', 'eoy_status', 'string_field_13')).trim() : null,
+        year1Destination: getField(row, 'Year_1_Destination', 'year_1_destination', 'string_field_14') ? String(getField(row, 'Year_1_Destination', 'year_1_destination', 'string_field_14')).trim() : null,
+        revenueGenerated: parseFloat(getField(row, 'Revenue_Generated', 'revenue_generated', 'string_field_15')) || null,
+      };
+    });
 
     return { success: true, data: profiles };
   } catch (error: any) {
