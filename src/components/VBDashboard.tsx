@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Calendar, CalendarDays } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, CartesianGrid, Legend } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -128,7 +128,7 @@ function PlayerSelector({ players, selected, onChange, multiple }: { players: st
   );
 }
 
-type SortKey = 'player' | 'height' | 'weight' | 'wingspan' | 'reach' | 'bodyFat' | 'pct' | 'shots' | 'vitamins' | 'weights' | 'practice' | 'game';
+type SortKey = 'player' | 'height' | 'weight' | 'wingspan' | 'reach' | 'bodyFat' | 'pct' | 'shots' | 'vitamins' | 'weights' | 'practice' | 'game' | 'injury' | 'nt' | 'daysOff';
 type SortDir = 'asc' | 'desc';
 
 interface RosterRow {
@@ -144,6 +144,9 @@ interface RosterRow {
   weights: number;
   practice: number;
   game: number;
+  injury: number;
+  nt: number;
+  daysOff: number;
 }
 
 function getSeasonDays(selectedSeason: string): number {
@@ -185,6 +188,15 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
       return isPerDay ? Math.round((total / seasonDays) * 10) / 10 : total;
     };
 
+    const injuryDays = ps.filter(s => s.injured !== null && s.injured > 0).length;
+    const ntDays = ps.filter(s => s.nationalTeam !== null && s.nationalTeam > 0).length;
+    const daysOff = ps.filter(s => {
+      const totalLoad = (s.practiceLoad || 0) + (s.vitaminsLoad || 0) + (s.weightsLoad || 0) + (s.gameLoad || 0);
+      const isInjured = s.injured !== null && s.injured > 0;
+      const isNT = s.nationalTeam !== null && s.nationalTeam > 0;
+      return totalLoad === 0 && !isInjured && !isNT;
+    }).length;
+
     return {
       player,
       height: getLatestMetric(filtered, player, 'height'),
@@ -198,6 +210,9 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
       weights: sumOrAvg(ps.map(s => s.weightsLoad)),
       practice: sumOrAvg(ps.map(s => s.practiceLoad)),
       game: sumOrAvg(ps.map(s => s.gameLoad)),
+      injury: injuryDays,
+      nt: ntDays,
+      daysOff: daysOff,
     };
   }), [filtered, activePlayers, viewMode, seasonDays]);
 
@@ -251,6 +266,9 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
     { key: 'weights', label: t('Weights') },
     { key: 'practice', label: t('Practice') },
     { key: 'game', label: t('Game') },
+    { key: 'injury', label: t('Injury') },
+    { key: 'nt', label: t('NT') },
+    { key: 'daysOff', label: t('Days Off') },
   ];
 
   return (
@@ -300,6 +318,9 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.weights || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.practice || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.game || '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${row.injury > 0 ? 'text-red-500 font-semibold' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.injury || '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${row.nt > 0 ? 'text-blue-500 font-semibold' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.nt || '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.daysOff || '—'}</td>
               </tr>
             ))}
           </tbody>
@@ -309,10 +330,25 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
   );
 }
 
+function getMonthLabel(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+}
+
+function getWeekLabel(dateStr: string): string {
+  const d = new Date(dateStr);
+  const startOfYear = new Date(d.getFullYear(), 0, 1);
+  const weekNum = Math.ceil(((d.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
+  return `W${weekNum} ${d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}`;
+}
+
 function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSession[]; players: string[]; onSelectPlayer: (p: string) => void }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
   const [selectedSeason, setSelectedSeason] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  const [selectedWeek, setSelectedWeek] = useState<string>('all');
+  const [selectedDay, setSelectedDay] = useState<string>('all');
   
   const validSessions = useMemo(() => sessions.filter(s => getSeason(s.date) !== null), [sessions]);
 
@@ -321,10 +357,55 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
     return s;
   }, [validSessions]);
 
-  const filtered = useMemo(() => {
+  const seasonFiltered = useMemo(() => {
     if (selectedSeason === 'all') return validSessions;
     return validSessions.filter(s => getSeason(s.date) === selectedSeason);
   }, [validSessions, selectedSeason]);
+
+  const months = useMemo(() => {
+    const m = [...new Set(seasonFiltered.map(s => s.date.substring(0, 7)))].sort().reverse();
+    return m;
+  }, [seasonFiltered]);
+
+  const monthFiltered = useMemo(() => {
+    if (selectedMonth === 'all') return seasonFiltered;
+    return seasonFiltered.filter(s => s.date.substring(0, 7) === selectedMonth);
+  }, [seasonFiltered, selectedMonth]);
+
+  const weeks = useMemo(() => {
+    const wMap = new Map<string, string>();
+    monthFiltered.forEach(s => {
+      const d = new Date(s.date);
+      const startOfYear = new Date(d.getFullYear(), 0, 1);
+      const weekNum = Math.ceil(((d.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
+      const key = `${d.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+      if (!wMap.has(key)) wMap.set(key, getWeekLabel(s.date));
+    });
+    return [...wMap.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+  }, [monthFiltered]);
+
+  const weekFiltered = useMemo(() => {
+    if (selectedWeek === 'all') return monthFiltered;
+    return monthFiltered.filter(s => {
+      const d = new Date(s.date);
+      const startOfYear = new Date(d.getFullYear(), 0, 1);
+      const weekNum = Math.ceil(((d.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
+      return `${d.getFullYear()}-W${String(weekNum).padStart(2, '0')}` === selectedWeek;
+    });
+  }, [monthFiltered, selectedWeek]);
+
+  const days = useMemo(() => {
+    return [...new Set(weekFiltered.map(s => s.date))].sort().reverse();
+  }, [weekFiltered]);
+
+  const filtered = useMemo(() => {
+    if (selectedDay === 'all') return weekFiltered;
+    return weekFiltered.filter(s => s.date === selectedDay);
+  }, [weekFiltered, selectedDay]);
+
+  useEffect(() => { setSelectedMonth('all'); setSelectedWeek('all'); setSelectedDay('all'); }, [selectedSeason]);
+  useEffect(() => { setSelectedWeek('all'); setSelectedDay('all'); }, [selectedMonth]);
+  useEffect(() => { setSelectedDay('all'); }, [selectedWeek]);
 
   const activePlayers = useMemo(() => {
     return [...new Set(filtered.map(s => s.player))].sort();
@@ -333,20 +414,20 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
   const totalSessions = filtered.length;
   const avgShootingPct = getAvg(filtered.map(s => s.shootingPct));
   const injuredDays = filtered.filter(s => s.injured && s.injured > 0).length;
-  const ntDays = filtered.filter(s => s.nationalTeam === 1).length;
+  const ntDays = filtered.filter(s => s.nationalTeam && s.nationalTeam > 0).length;
 
   const loadData = useMemo(() => {
-    const months = new Map<string, { practice: number[]; vitamins: number[]; weights: number[]; game: number[] }>();
+    const buckets = new Map<string, { practice: number[]; vitamins: number[]; weights: number[]; game: number[] }>();
     filtered.forEach(s => {
       const m = s.date.substring(0, 7);
-      if (!months.has(m)) months.set(m, { practice: [], vitamins: [], weights: [], game: [] });
-      const entry = months.get(m)!;
+      if (!buckets.has(m)) buckets.set(m, { practice: [], vitamins: [], weights: [], game: [] });
+      const entry = buckets.get(m)!;
       if (s.practiceLoad) entry.practice.push(s.practiceLoad);
       if (s.vitaminsLoad) entry.vitamins.push(s.vitaminsLoad);
       if (s.weightsLoad) entry.weights.push(s.weightsLoad);
       if (s.gameLoad) entry.game.push(s.gameLoad);
     });
-    return [...months.entries()].sort().map(([month, data]) => ({
+    return [...buckets.entries()].sort().map(([month, data]) => ({
       month: month.substring(5) + '/' + month.substring(2, 4),
       practice: data.practice.length ? +(data.practice.reduce((a, b) => a + b, 0) / data.practice.length).toFixed(1) : 0,
       vitamins: data.vitamins.length ? +(data.vitamins.reduce((a, b) => a + b, 0) / data.vitamins.length).toFixed(1) : 0,
@@ -355,18 +436,44 @@ function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSessio
     }));
   }, [filtered]);
 
+  const selectClass = `px-3 py-1.5 rounded-lg text-xs font-medium appearance-none pr-7 ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-gray-700 border-gray-200'} border`;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-2">
-          <select
-            value={selectedSeason}
-            onChange={e => setSelectedSeason(e.target.value)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-gray-700 border-gray-200'} border`}
-          >
+      <div className={`flex items-center gap-2 flex-wrap rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+        <div className="relative">
+          <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass}>
             <option value="all">{t('All Seasons')}</option>
             {seasons.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className={selectClass}>
+            <option value="all">{t('All Months')}</option>
+            {months.map(m => {
+              const d = new Date(m + '-01');
+              return <option key={m} value={m}>{d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</option>;
+            })}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={selectedWeek} onChange={e => setSelectedWeek(e.target.value)} className={selectClass}>
+            <option value="all">{t('All Weeks')}</option>
+            {weeks.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={selectedDay} onChange={e => setSelectedDay(e.target.value)} className={selectClass}>
+            <option value="all">{t('All Days')}</option>
+            {days.map(d => {
+              const dt = new Date(d);
+              return <option key={d} value={d}>{dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</option>;
+            })}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
         </div>
       </div>
 
