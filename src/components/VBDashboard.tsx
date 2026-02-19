@@ -209,14 +209,19 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
       return isPerDay ? Math.round((total / seasonDays) * 10) / 10 : total;
     };
 
-    const injuryDays = ps.filter(s => s.injured !== null && s.injured > 0).length;
-    const ntDays = ps.filter(s => s.nationalTeam !== null && s.nationalTeam > 0).length;
+    const injuryDateSet = new Set(ps.filter(s => s.injured !== null && s.injured > 0).map(s => s.date));
+    const injuryDays = injuryDateSet.size;
+    const ntDateSet = new Set(ps.filter(s => s.nationalTeam !== null && s.nationalTeam > 0).map(s => s.date));
+    const ntDays = ntDateSet.size;
     const seasonStartDate = getSeasonStartDate(selectedSeason);
     const psInRange = seasonStartDate ? ps.filter(s => new Date(s.date) >= seasonStartDate) : ps;
-    const activeDays = psInRange.filter(s => {
-      return (s.vitaminsLoad || 0) > 0 || (s.weightsLoad || 0) > 0 || (s.practiceLoad || 0) > 0 || (s.gameLoad || 0) > 0 || (s.injured !== null && s.injured > 0) || (s.nationalTeam !== null && s.nationalTeam > 0);
-    }).length;
-    const daysOff = isPerDay ? 0 : Math.max(0, seasonDays - activeDays);
+    const activeDateSet = new Set<string>();
+    for (const s of psInRange) {
+      if ((s.vitaminsLoad || 0) > 0 || (s.weightsLoad || 0) > 0 || (s.practiceLoad || 0) > 0 || (s.gameLoad || 0) > 0 || (s.injured !== null && s.injured > 0) || (s.nationalTeam !== null && s.nationalTeam > 0)) {
+        activeDateSet.add(s.date);
+      }
+    }
+    const daysOff = isPerDay ? 0 : Math.max(0, seasonDays - activeDateSet.size);
 
     return {
       player,
