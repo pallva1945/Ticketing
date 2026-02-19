@@ -149,6 +149,14 @@ interface RosterRow {
   daysOff: number;
 }
 
+function getCurrentSeason(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  if (month >= 7) return `${year}/${(year + 1).toString().slice(2)}`;
+  return `${year - 1}/${year.toString().slice(2)}`;
+}
+
 function getSeasonDays(selectedSeason: string): number {
   if (selectedSeason === 'all') {
     return 0;
@@ -345,7 +353,7 @@ function getWeekLabel(dateStr: string): string {
 function OverviewTab({ sessions, players, onSelectPlayer }: { sessions: VBSession[]; players: string[]; onSelectPlayer: (p: string) => void }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
-  const [selectedSeason, setSelectedSeason] = useState<string>('all');
+  const [selectedSeason, setSelectedSeason] = useState<string>(() => getCurrentSeason());
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [selectedWeek, setSelectedWeek] = useState<string>('all');
   const [selectedDay, setSelectedDay] = useState<string>('all');
