@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { PV_LOGO_URL } from '../constants';
 
-const TEAM_SLIDES = 5;
+const TEAM_SLIDES = 6;
 
 const OWNERSHIP_DATA = [
   { name: 'Varese Sports & Entertainment', value: 51.5, color: '#E30613' },
@@ -95,6 +95,35 @@ const ELT_MEMBERS = [
   },
 ];
 
+const SPECIAL_ADVISORS = [
+  {
+    name: 'Charles Baker',
+    initials: 'CB',
+    roleKey: 'role_baker',
+    bioKey: 'bio_baker',
+    color: '#1e3a5f',
+    photo: 'https://i.imgur.com/jfiaK5X.png',
+    org: 'Sidley Austin',
+  },
+  {
+    name: 'CAA',
+    initials: 'CAA',
+    roleKey: 'role_caa',
+    bioKey: 'bio_caa',
+    color: '#E30613',
+    org: 'Creative Artists Agency',
+  },
+  {
+    name: 'Stefano Bonfiglio',
+    initials: 'SB',
+    roleKey: 'role_bonfiglio',
+    bioKey: 'bio_bonfiglio',
+    color: '#6366f1',
+    photo: 'https://i.imgur.com/MOma7zU.png',
+    org: 'Stirling Square Capital Partners',
+  },
+];
+
 const DEPT_MEMBERS = [
   { name: 'Mario Oioli', initials: 'MO', roleKey: 'role_oioli', color: '#E30613' },
   { name: 'Maria Grazia Ferrari', initials: 'MF', roleKey: 'role_ferrari', color: '#1e3a5f' },
@@ -112,6 +141,7 @@ const EXT_SERVICES = [
   { name: 'BSN', initials: 'BS', roleKey: 'role_bsn', color: '#10b981' },
   { name: 'Airish Waclin', initials: 'AW', roleKey: 'role_airish', color: '#f59e0b' },
   { name: 'Studio Broggini', initials: 'SB', roleKey: 'role_broggini', color: '#1e3a5f' },
+  { name: 'Studio Terzaghi', initials: 'ST', roleKey: 'role_terzaghi', color: '#8b5cf6' },
 ];
 
 const StatCounter: React.FC<{ target: number; label: string; suffix?: string; active: boolean; isDark: boolean }> = ({ target, label, suffix, active, isDark }) => {
@@ -732,7 +762,55 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               </div>
             </div>
 
-            {/* Sub-slide 3: ELT */}
+            {/* Sub-slide 3: Special Advisors */}
+            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+              <div className="max-w-5xl mx-auto w-full">
+                <div className="text-center mb-6">
+                  <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs tracking-[0.2em] uppercase font-medium mb-4 ${
+                    isDark ? 'bg-violet-900/15 text-violet-400 border border-violet-800/20' : 'bg-violet-50 text-violet-600 border border-violet-100'
+                  }`}>
+                    <Crown size={14} />
+                    {t('Special Advisors')}
+                  </div>
+                  <h2 className={`text-2xl sm:text-3xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {t('Strategic Advisory Board')}
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {SPECIAL_ADVISORS.map((advisor, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-xl border p-5 text-center transition-all duration-500 hover:scale-[1.02] ${
+                        isDark ? 'bg-gray-900/60 border-gray-800/60 hover:border-gray-700' : 'bg-white border-gray-200/80 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="w-16 h-16 rounded-full mx-auto mb-3 overflow-hidden flex items-center justify-center text-white text-lg font-bold" style={{ backgroundColor: advisor.color }}>
+                        {advisor.photo ? (
+                          <img src={advisor.photo} alt={advisor.name} className="w-full h-full object-cover" />
+                        ) : (
+                          advisor.initials
+                        )}
+                      </div>
+                      <h3 className={`text-sm font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {advisor.name}
+                      </h3>
+                      <p className="text-xs tracking-[0.05em] uppercase font-medium mb-1" style={{ color: advisor.color }}>
+                        {advisor.org}
+                      </p>
+                      <p className="text-xs tracking-[0.1em] uppercase font-medium mb-3" style={{ color: advisor.color, opacity: 0.7 }}>
+                        {t(advisor.roleKey)}
+                      </p>
+                      <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {t(advisor.bioKey)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-slide 4: ELT */}
             <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-4 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
               <div className="max-w-5xl mx-auto w-full">
                 <div className="text-center mb-6">
@@ -832,7 +910,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {EXT_SERVICES.map((svc, i) => (
                     <div
                       key={i}
@@ -873,7 +951,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             </button>
 
             <div className="flex items-center gap-2">
-              {[t('Ownership'), t('Board'), t('ELT'), t('Depts'), t('External')].map((label, i) => (
+              {[t('Ownership'), t('Board'), t('Advisors'), t('ELT'), t('Depts'), t('External')].map((label, i) => (
                 <button
                   key={i}
                   onClick={() => goToTeamSlide(i)}

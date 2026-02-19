@@ -567,6 +567,25 @@ const translations: Record<string, Record<Language, string>> = {
   'role_bsn': { en: 'CSR', it: 'CSR' },
   'role_airish': { en: 'Finances', it: 'Finanza' },
   'role_broggini': { en: 'Accounting', it: 'Contabilità' },
+  'role_terzaghi': { en: 'Legal', it: 'Legale' },
+  'Special Advisors': { en: 'Special Advisors', it: 'Consulenti Speciali' },
+  'Strategic Advisory Board': { en: 'Strategic Advisory Board', it: 'Comitato Consultivo Strategico' },
+  'Advisors': { en: 'Advisors', it: 'Consulenti' },
+  'role_baker': { en: 'Sports M&A & Franchise Transactions', it: 'M&A Sportivo & Transazioni Franchise' },
+  'bio_baker': {
+    en: 'Co-Chair, Entertainment, Sports & Media at Sidley Austin. Cornell Law. Former staff associate for U.S. Senator Bill Bradley. Led record-breaking deals including Washington Commanders ($6.05B), Chelsea FC, and Carolina Panthers. Chambers USA Band 3 Sports Law. Founder of Blue Crow Sports Group (Leganés, Cancún FC, Le Havre).',
+    it: 'Co-Presidente Entertainment, Sports & Media presso Sidley Austin. Cornell Law. Ex collaboratore del Senatore USA Bill Bradley. Ha guidato operazioni record tra cui Washington Commanders ($6,05 miliardi), Chelsea FC e Carolina Panthers. Chambers USA Band 3 Sports Law. Fondatore di Blue Crow Sports Group (Leganés, Cancún FC, Le Havre).'
+  },
+  'role_caa': { en: 'Sports & Entertainment Advisory', it: 'Consulenza Sport & Intrattenimento' },
+  'bio_caa': {
+    en: 'World\'s leading entertainment and sports agency. Named Most Valuable Sports Agency by Forbes for 9 consecutive years. Represents 3,000+ athletes across all major leagues. Full-service advisory: corporate consulting, property sales, media rights, sponsorship, and executive search.',
+    it: 'Agenzia leader mondiale nello sport e intrattenimento. Nominata Agenzia Sportiva più preziosa da Forbes per 9 anni consecutivi. Rappresenta oltre 3.000 atleti in tutti i principali campionati. Consulenza completa: corporate, compravendita proprietà, diritti media, sponsorizzazioni e executive search.'
+  },
+  'role_bonfiglio': { en: 'Private Equity & Strategic Investment', it: 'Private Equity & Investimenti Strategici' },
+  'bio_bonfiglio': {
+    en: 'Co-founder & Managing Partner at Stirling Square Capital Partners, managing €1B+ in committed capital. Wharton MBA, Georgetown BSFS cum laude. Former MD at Donaldson, Lufkin & Jenrette leading European and Latin American PE expansion. Previously at Bankers Trust in acquisitions and structured finance.',
+    it: 'Co-fondatore e Managing Partner di Stirling Square Capital Partners, con oltre €1 miliardo di capitale gestito. MBA Wharton, Georgetown BSFS cum laude. Ex MD presso Donaldson, Lufkin & Jenrette guidando l\'espansione PE europea e latinoamericana. Precedentemente in Bankers Trust in acquisizioni e finanza strutturata.'
+  },
   'Revenue, Costs & Business Intelligence': { en: 'Revenue, Costs & Business Intelligence', it: 'Ricavi, Costi & Business Intelligence' },
   'Comprehensive financial intelligence for Pallacanestro Varese': { en: 'Comprehensive financial intelligence for Pallacanestro Varese', it: 'Intelligence finanziaria completa per Pallacanestro Varese' },
   'Back to Financial Center': { en: 'Back to Internal Portal', it: 'Torna al Portale Interno' },
