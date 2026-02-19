@@ -384,7 +384,7 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
     { key: 'weight', label: t('Weight') },
     { key: 'wingspan', label: t('Wingspan') },
     { key: 'reach', label: t('Reach') },
-    { key: 'bodyFat', label: t('Body Fat') },
+    { key: 'bodyFat', label: t('Body Fat') + ' %' },
     { key: 'pct', label: t('3PT %') },
     { key: 'shots', label: t('Shots') },
     { key: 'vitamins', label: t('Vitamins') },
@@ -433,7 +433,7 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.weight ?? '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.wingspan ?? '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.reach ?? '—'}</td>
-                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.bodyFat ?? '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.bodyFat != null ? `${row.bodyFat}%` : '—'}</td>
                 <td className={`text-center py-2.5 px-1 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{row.pct != null ? `${row.pct}%` : '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.shots || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.vitamins || '—'}</td>
