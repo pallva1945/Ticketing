@@ -238,13 +238,14 @@ function getPlayerBirthYear(player: string, profiles: PlayerProfile[]): number |
   return dob.getFullYear();
 }
 
-function getPlayerCategory(player: string, profiles: PlayerProfile[]): string {
+function getPlayerCategory(player: string, profiles: PlayerProfile[], season?: string): string {
   const year = getPlayerBirthYear(player, profiles);
   if (!year) return '';
-  if (year >= 2011 && year <= 2012) return 'U15';
-  if (year >= 2009 && year <= 2010) return 'U17';
-  if (year >= 2007 && year <= 2008) return 'U19';
-  if (year >= 2005 && year <= 2006) return 'DY';
+  const endYear = season ? parseInt(season.split('/')[0]) + 1 : 2026;
+  if (year >= endYear - 16 && year <= endYear - 15) return 'U15';
+  if (year >= endYear - 18 && year <= endYear - 17) return 'U17';
+  if (year >= endYear - 20 && year <= endYear - 19) return 'U19';
+  if (year >= endYear - 22 && year <= endYear - 21) return 'DY';
   return '';
 }
 
@@ -712,14 +713,14 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
   }, [weekFiltered, selectedDay]);
 
   const availableCategories = useMemo(() => {
-    const cats = [...new Set(dayFiltered.map(s => getPlayerCategory(s.player, profiles)).filter(c => c))].sort();
+    const cats = [...new Set(dayFiltered.map(s => getPlayerCategory(s.player, profiles, selectedSeason !== 'all' ? selectedSeason : undefined)).filter(c => c))].sort();
     return cats;
-  }, [dayFiltered, profiles]);
+  }, [dayFiltered, profiles, selectedSeason]);
 
   const categoryFiltered = useMemo(() => {
     if (selectedCategory === 'all') return dayFiltered;
-    return dayFiltered.filter(s => getPlayerCategory(s.player, profiles) === selectedCategory);
-  }, [dayFiltered, selectedCategory, profiles]);
+    return dayFiltered.filter(s => getPlayerCategory(s.player, profiles, selectedSeason !== 'all' ? selectedSeason : undefined) === selectedCategory);
+  }, [dayFiltered, selectedCategory, profiles, selectedSeason]);
 
   const availableRoles = useMemo(() => {
     const roles = [...new Set(categoryFiltered.map(s => getPlayerPosition(s.player, profiles)).filter(r => r))].sort();
@@ -1174,14 +1175,14 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
   }, [validSessions, selectedSeason]);
 
   const availableCategories = useMemo(() => {
-    const cats = [...new Set(seasonFiltered.map(s => getPlayerCategory(s.player, profiles)).filter(c => c))].sort();
+    const cats = [...new Set(seasonFiltered.map(s => getPlayerCategory(s.player, profiles, selectedSeason !== 'all' ? selectedSeason : undefined)).filter(c => c))].sort();
     return cats;
-  }, [seasonFiltered, profiles]);
+  }, [seasonFiltered, profiles, selectedSeason]);
 
   const categoryFiltered = useMemo(() => {
     if (selectedCategory === 'all') return seasonFiltered;
-    return seasonFiltered.filter(s => getPlayerCategory(s.player, profiles) === selectedCategory);
-  }, [seasonFiltered, selectedCategory, profiles]);
+    return seasonFiltered.filter(s => getPlayerCategory(s.player, profiles, selectedSeason !== 'all' ? selectedSeason : undefined) === selectedCategory);
+  }, [seasonFiltered, selectedCategory, profiles, selectedSeason]);
 
   const availableRoles = useMemo(() => {
     const roles = [...new Set(categoryFiltered.map(s => getPlayerPosition(s.player, profiles)).filter(r => r))].sort();
@@ -1693,13 +1694,13 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
   }, [validSessions, selectedSeason]);
 
   const availableCategories = useMemo(() =>
-    [...new Set(seasonFiltered.map(s => getPlayerCategory(s.player, profiles)).filter(c => c))].sort(),
-  [seasonFiltered, profiles]);
+    [...new Set(seasonFiltered.map(s => getPlayerCategory(s.player, profiles, selectedSeason !== 'all' ? selectedSeason : undefined)).filter(c => c))].sort(),
+  [seasonFiltered, profiles, selectedSeason]);
 
   const categoryFiltered = useMemo(() => {
     if (selectedCategory === 'all') return seasonFiltered;
-    return seasonFiltered.filter(s => getPlayerCategory(s.player, profiles) === selectedCategory);
-  }, [seasonFiltered, selectedCategory, profiles]);
+    return seasonFiltered.filter(s => getPlayerCategory(s.player, profiles, selectedSeason !== 'all' ? selectedSeason : undefined) === selectedCategory);
+  }, [seasonFiltered, selectedCategory, profiles, selectedSeason]);
 
   const availableRoles = useMemo(() =>
     [...new Set(categoryFiltered.map(s => getPlayerPosition(s.player, profiles)).filter(r => r))].sort(),
@@ -2064,7 +2065,17 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
   ];
 
   const allSeasons = useMemo(() => [...new Set(sessions.map(s => getSeason(s.date)!).filter(Boolean))].sort().reverse(), [sessions]);
-  const allCategories = useMemo(() => [...new Set(players.map(p => getPlayerCategory(p, profiles)).filter(c => c))].sort(), [players, profiles]);
+  const allCategories = useMemo(() => {
+    const cats = new Set<string>();
+    sessions.forEach(s => {
+      const season = getSeason(s.date);
+      if (season) {
+        const cat = getPlayerCategory(s.player, profiles, season);
+        if (cat) cats.add(cat);
+      }
+    });
+    return [...cats].sort();
+  }, [sessions, players, profiles]);
   const allRoles = useMemo(() => [...new Set(players.map(p => getPlayerPosition(p, profiles)).filter(r => r))].sort(), [players, profiles]);
 
   useEffect(() => {
@@ -2103,7 +2114,10 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
       return selectedCategories.map(cat => ({
         key: cat,
         label: cat,
-        sessions: sessions.filter(s => getPlayerCategory(s.player, profiles) === cat)
+        sessions: sessions.filter(s => {
+          const season = getSeason(s.date);
+          return season ? getPlayerCategory(s.player, profiles, season) === cat : false;
+        })
       }));
     }
     if (compareMode === 'seasons') {
@@ -2190,29 +2204,85 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
       </div>
 
       <div className={`grid ${gridClass} gap-4`}>
-        {Array.from({ length: chartCount }).map((_, idx) => (
-          <div key={idx} className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-            <div className="mb-3">
-              <div className="relative">
-                <select
-                  value={chartMetrics[idx]}
-                  onChange={e => {
-                    const newMetrics = [...chartMetrics];
-                    newMetrics[idx] = e.target.value as keyof VBSession;
-                    setChartMetrics(newMetrics);
-                  }}
-                  className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium appearance-none pr-7 ${isDark ? 'bg-gray-800 text-white border-gray-700' : 'bg-gray-50 text-gray-900 border-gray-200'} border`}
-                >
-                  {metrics.map(m => <option key={m.key} value={m.key}>{m.label} ({m.unit})</option>)}
-                </select>
-                <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        {Array.from({ length: chartCount }).map((_, idx) => {
+          const met = chartMetrics[idx];
+          const currentMetric = metrics.find(m => m.key === met);
+          const showDeltas = chartCount <= 2;
+          const deltaData = showDeltas ? lines.map(line => {
+            const validSessions = line.sessions.filter(s => s[met] !== null).sort((a, b) => a.date.localeCompare(b.date));
+            const vals = validSessions.map(s => convertVal(s, s.player, met)).filter((v): v is number => v !== null && v !== 0);
+            if (vals.length < 2) return { label: line.label, first: null, last: null, delta: null };
+            const monthMap = new Map<string, number[]>();
+            validSessions.forEach(s => {
+              const mk = s.date.substring(0, 7);
+              const v = convertVal(s, s.player, met);
+              if (v !== null && v !== 0) {
+                if (!monthMap.has(mk)) monthMap.set(mk, []);
+                monthMap.get(mk)!.push(v);
+              }
+            });
+            const months = [...monthMap.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+            if (months.length < 2) return { label: line.label, first: null, last: null, delta: null };
+            const firstAvg = Math.round(months[0][1].reduce((a, b) => a + b, 0) / months[0][1].length * 10) / 10;
+            const lastAvg = Math.round(months[months.length - 1][1].reduce((a, b) => a + b, 0) / months[months.length - 1][1].length * 10) / 10;
+            return { label: line.label, first: firstAvg, last: lastAvg, delta: Math.round((lastAvg - firstAvg) * 10) / 10 };
+          }) : [];
+
+          return (
+            <div key={idx}>
+              <div className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+                <div className="mb-3">
+                  <div className="relative">
+                    <select
+                      value={chartMetrics[idx]}
+                      onChange={e => {
+                        const newMetrics = [...chartMetrics];
+                        newMetrics[idx] = e.target.value as keyof VBSession;
+                        setChartMetrics(newMetrics);
+                      }}
+                      className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium appearance-none pr-7 ${isDark ? 'bg-gray-800 text-white border-gray-700' : 'bg-gray-50 text-gray-900 border-gray-200'} border`}
+                    >
+                      {metrics.map(m => <option key={m.key} value={m.key}>{m.label} ({m.unit})</option>)}
+                    </select>
+                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+                  </div>
+                </div>
+                <div className={chartCount <= 2 ? 'h-64' : 'h-48'}>
+                  <ProgressionChart sessions={sessions} lines={lines} metric={chartMetrics[idx]} profiles={profiles} isDark={isDark} convertVal={convertVal} />
+                </div>
               </div>
+              {showDeltas && deltaData.length > 0 && (
+                <div className={`grid ${lines.length <= 2 ? 'grid-cols-2' : lines.length <= 4 ? 'grid-cols-4' : 'grid-cols-4'} gap-2 mt-3`}>
+                  {deltaData.map((d, i) => (
+                    <div key={d.label} className={`rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: METRIC_COLORS[i % METRIC_COLORS.length] }} />
+                        <span className={`text-xs font-medium truncate ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{d.label}</span>
+                      </div>
+                      <div className="flex items-end gap-2">
+                        <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                          {d.last !== null ? d.last : '—'}
+                        </span>
+                        {d.delta !== null && (
+                          <span className={`text-xs font-semibold mb-0.5 ${
+                            (met === 'sprint' || met === 'coneDrill' || met === 'bodyFat')
+                              ? (d.delta < 0 ? 'text-emerald-500' : d.delta > 0 ? 'text-red-500' : 'text-gray-400')
+                              : (d.delta > 0 ? 'text-emerald-500' : d.delta < 0 ? 'text-red-500' : 'text-gray-400')
+                          }`}>
+                            {d.delta > 0 ? '+' : ''}{d.delta} {currentMetric?.unit}
+                          </span>
+                        )}
+                      </div>
+                      <div className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                        {d.first !== null ? `${t('from')} ${d.first}` : t('No data')}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div className={chartCount <= 2 ? 'h-64' : 'h-48'}>
-              <ProgressionChart sessions={sessions} lines={lines} metric={chartMetrics[idx]} profiles={profiles} isDark={isDark} convertVal={convertVal} />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
