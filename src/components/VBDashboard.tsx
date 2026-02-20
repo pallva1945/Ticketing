@@ -1891,49 +1891,96 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<VBSession[]>([]);
   const [searched, setSearched] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const doSearch = () => {
-    if (!query.trim()) { setResults([]); setSearched(false); return; }
+  const allSeasons = useMemo(() => [...new Set(sessions.map(s => getSeason(s.date)).filter(Boolean))].sort().reverse() as string[], [sessions]);
+  const allMonths = useMemo(() => [...new Set(sessions.map(s => s.date.substring(0, 7)))].sort().reverse(), [sessions]);
+  const allDates = useMemo(() => [...new Set(sessions.map(s => s.date))].sort().reverse(), [sessions]);
+
+  const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let filtered = sessions;
+    if (!q) return [];
+    const items: { type: string; label: string; value: string }[] = [];
 
-    const seasonMatch = q.match(/^(\d{4})\/(\d{2,4})$/);
-    if (seasonMatch) {
-      const y1 = seasonMatch[1];
-      const y2 = seasonMatch[2].length === 2 ? `20${seasonMatch[2]}` : seasonMatch[2];
-      filtered = sessions.filter(s => {
-        const season = getSeason(s.date);
-        return season === `${y1}/${y2.slice(2)}`;
-      });
-    } else if (/^\d{4}-\d{2}-\d{2}$/.test(q)) {
-      filtered = sessions.filter(s => s.date === q);
-    } else if (/^\d{4}-\d{2}$/.test(q)) {
-      filtered = sessions.filter(s => s.date.startsWith(q));
-    } else if (/^\d{4}-w\d{1,2}$/i.test(q)) {
-      const [yearStr, weekStr] = q.split(/[-w]/i).filter(Boolean);
-      const year = parseInt(yearStr);
-      const week = parseInt(weekStr);
-      filtered = sessions.filter(s => {
-        const d = new Date(s.date);
-        const jan1 = new Date(d.getFullYear(), 0, 1);
-        const days = Math.floor((d.getTime() - jan1.getTime()) / 86400000);
-        const wk = Math.ceil((days + jan1.getDay() + 1) / 7);
-        return d.getFullYear() === year && wk === week;
-      });
+    players.filter(p => p.toLowerCase().includes(q)).slice(0, 5).forEach(p => {
+      const profile = profiles.find(pr => pr.name === p);
+      items.push({ type: 'player', label: p, value: p });
+    });
+
+    allSeasons.filter(s => s.toLowerCase().includes(q)).slice(0, 3).forEach(s => {
+      items.push({ type: 'season', label: `${t('Season')} ${s}`, value: `season:${s}` });
+    });
+
+    allMonths.filter(m => m.includes(q)).slice(0, 4).forEach(m => {
+      items.push({ type: 'month', label: m, value: `month:${m}` });
+    });
+
+    allDates.filter(d => d.includes(q)).slice(0, 4).forEach(d => {
+      items.push({ type: 'date', label: d, value: `date:${d}` });
+    });
+
+    return items.slice(0, 10);
+  }, [query, players, allSeasons, allMonths, allDates, profiles, t]);
+
+  const executeSearch = (searchValue: string) => {
+    setShowSuggestions(false);
+    let filtered: VBSession[] = [];
+
+    if (searchValue.startsWith('season:')) {
+      const season = searchValue.replace('season:', '');
+      filtered = sessions.filter(s => getSeason(s.date) === season);
+    } else if (searchValue.startsWith('month:')) {
+      const month = searchValue.replace('month:', '');
+      filtered = sessions.filter(s => s.date.startsWith(month));
+    } else if (searchValue.startsWith('date:')) {
+      const date = searchValue.replace('date:', '');
+      filtered = sessions.filter(s => s.date === date);
     } else {
-      const playerMatch = players.filter(p => p.toLowerCase().includes(q));
+      const q = searchValue.toLowerCase();
+      const playerMatch = players.filter(p => p.toLowerCase() === q || p.toLowerCase().includes(q));
       if (playerMatch.length > 0) {
         filtered = sessions.filter(s => playerMatch.some(p => p === s.player));
       } else {
-        filtered = sessions.filter(s =>
-          s.player.toLowerCase().includes(q) ||
-          s.date.includes(q)
-        );
+        const seasonMatch = q.match(/^(\d{4})\/(\d{2,4})$/);
+        if (seasonMatch) {
+          const y1 = seasonMatch[1];
+          const y2 = seasonMatch[2].length === 2 ? seasonMatch[2] : seasonMatch[2].slice(2);
+          filtered = sessions.filter(s => getSeason(s.date) === `${y1}/${y2}`);
+        } else if (/^\d{4}-\d{2}-\d{2}$/.test(q)) {
+          filtered = sessions.filter(s => s.date === q);
+        } else if (/^\d{4}-\d{2}$/.test(q)) {
+          filtered = sessions.filter(s => s.date.startsWith(q));
+        } else {
+          filtered = sessions.filter(s => s.player.toLowerCase().includes(q) || s.date.includes(q));
+        }
       }
     }
 
     setResults(filtered.sort((a, b) => b.date.localeCompare(a.date)));
     setSearched(true);
+  };
+
+  const handleSuggestionClick = (item: { type: string; label: string; value: string }) => {
+    if (item.type === 'player') {
+      setQuery(item.label);
+      executeSearch(item.value);
+    } else {
+      setQuery(item.label);
+      executeSearch(item.value);
+    }
+  };
+
+  const handleInputChange = (val: string) => {
+    setQuery(val);
+    setShowSuggestions(true);
+    if (val.trim().length >= 2) {
+      const q = val.trim().toLowerCase();
+      const playerMatch = players.filter(p => p.toLowerCase().includes(q));
+      if (playerMatch.length === 1) {
+        // don't auto-search, let suggestions show
+      }
+    }
   };
 
   const groupedByPlayer = useMemo(() => {
@@ -1954,28 +2001,60 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
           <Search size={14} className="text-orange-500" />
           <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Search')}</h3>
         </div>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && doSearch()}
-            placeholder={t('Player name, date (2024-11-15), month (2024-11), week (2024-W45), season (2024/25)...')}
-            className={`flex-1 px-4 py-2.5 rounded-lg text-sm border outline-none transition-all ${isDark ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-orange-500' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-orange-500'}`}
-          />
-          <button onClick={doSearch} className="px-4 py-2.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors">
-            {t('Search')}
-          </button>
+        <div className="relative">
+          <div className="flex gap-2">
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={e => handleInputChange(e.target.value)}
+              onFocus={() => setShowSuggestions(true)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') { executeSearch(query); }
+                if (e.key === 'Escape') { setShowSuggestions(false); }
+              }}
+              placeholder={t('Search player, date, month, season...')}
+              className={`flex-1 px-4 py-2.5 rounded-lg text-sm border outline-none transition-all ${isDark ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-orange-500' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-orange-500'}`}
+            />
+            <button onClick={() => executeSearch(query)} className="px-4 py-2.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors">
+              {t('Search')}
+            </button>
+          </div>
+
+          {showSuggestions && suggestions.length > 0 && query.trim().length >= 1 && (
+            <div className={`absolute left-0 right-12 top-full mt-1 rounded-lg border shadow-lg z-50 overflow-hidden ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+              {suggestions.map((item, i) => (
+                <button
+                  key={`${item.value}-${i}`}
+                  onMouseDown={e => { e.preventDefault(); handleSuggestionClick(item); }}
+                  className={`w-full text-left px-4 py-2.5 flex items-center gap-3 text-sm transition-colors ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
+                >
+                  <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${
+                    item.type === 'player' ? 'bg-orange-500/10 text-orange-500' :
+                    item.type === 'season' ? 'bg-blue-500/10 text-blue-500' :
+                    item.type === 'month' ? 'bg-purple-500/10 text-purple-500' :
+                    'bg-emerald-500/10 text-emerald-500'
+                  }`}>
+                    {item.type === 'player' ? '👤' : item.type === 'season' ? '📅' : item.type === 'month' ? '📆' : '📌'}
+                  </span>
+                  <span className={isDark ? 'text-gray-200' : 'text-gray-700'}>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        <p className={`text-[11px] mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-          {t('Examples')}: Marco Rossi, 2024-11-15, 2024-11, 2024-W45, 2024/25
-        </p>
       </div>
 
       {searched && results.length === 0 && (
         <div className={`${cardClass} text-center py-8`}>
           <Search size={32} className={`mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
           <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No results found')}</p>
+        </div>
+      )}
+
+      {searched && results.length > 0 && (
+        <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+          {results.length} {t('sessions')} · {groupedByPlayer.length} {t('players')}
         </div>
       )}
 
