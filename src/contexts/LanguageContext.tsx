@@ -83,6 +83,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Over Time': { en: 'Over Time', it: 'Nel Tempo' },
   'from': { en: 'from', it: 'da' },
   'No data': { en: 'No data', it: 'Nessun dato' },
+  'optional — team avg if none': { en: 'optional — team avg if none', it: 'opzionale — media squadra se vuoto' },
   'Loading VB data...': { en: 'Loading VB data...', it: 'Caricamento dati VB...' },
   'No VB data available': { en: 'No VB data available', it: 'Nessun dato VB disponibile' },
   'Standing Reach': { en: 'Standing Reach', it: 'Elevazione da Fermo' },

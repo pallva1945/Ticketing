@@ -2079,6 +2079,7 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>([]);
+  const [selectedYoYPlayers, setSelectedYoYPlayers] = useState<string[]>([]);
   const [chartCount, setChartCount] = useState(1);
   const [chartMetrics, setChartMetrics] = useState<(keyof VBSession)[]>(['pureVertical', 'weight', 'sprint', 'shootingPct']);
 
@@ -2106,6 +2107,16 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
     return [...cats].sort();
   }, [sessions, players, profiles]);
   const allRoles = useMemo(() => [...new Set(players.map(p => getPlayerPosition(p, profiles)).filter(r => r))].sort(), [players, profiles]);
+
+  const yoyPlayers = useMemo(() => {
+    if (selectedSeasons.length === 0) return [];
+    const playersBySeason = selectedSeasons.map(season =>
+      new Set(sessions.filter(s => getSeason(s.date) === season).map(s => s.player))
+    );
+    const allP = new Set<string>();
+    playersBySeason.forEach(ps => ps.forEach(p => allP.add(p)));
+    return [...allP].sort();
+  }, [sessions, selectedSeasons]);
 
   useEffect(() => {
     if (compareMode === 'roles' && selectedRoles.length === 0 && allRoles.length > 0) setSelectedRoles(allRoles.slice(0, 3));
@@ -2150,6 +2161,20 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
       }));
     }
     if (compareMode === 'seasons') {
+      if (selectedYoYPlayers.length > 0) {
+        const result: { key: string; label: string; sessions: VBSession[] }[] = [];
+        selectedYoYPlayers.forEach(player => {
+          selectedSeasons.forEach(season => {
+            const playerSessions = sessions.filter(s => s.player === player && getSeason(s.date) === season);
+            if (playerSessions.length > 0) {
+              const shortName = player.split(' ').pop() || player;
+              const shortSeason = season.split('/').map(s => s.slice(-2)).join('/');
+              result.push({ key: `${player}_${season}`, label: `${shortName} ${shortSeason}`, sessions: playerSessions });
+            }
+          });
+        });
+        return result;
+      }
       return selectedSeasons.map(season => ({
         key: season,
         label: season,
@@ -2157,7 +2182,7 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
       }));
     }
     return [];
-  }, [compareMode, selected, selectedRoles, selectedCategories, selectedSeasons, sessions, profiles]);
+  }, [compareMode, selected, selectedRoles, selectedCategories, selectedSeasons, selectedYoYPlayers, sessions, profiles]);
 
   const selectClass = `w-full px-3 py-2 rounded-lg text-sm font-medium appearance-none pr-8 ${isDark ? 'bg-gray-800 text-white border-gray-700' : 'bg-white text-gray-900 border-gray-200'} border`;
   const gridClass = chartCount === 1 ? 'grid-cols-1' : chartCount === 2 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2';
@@ -2166,7 +2191,7 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
     { key: 'players', label: t('Players') },
     { key: 'roles', label: t('Role') },
     { key: 'categories', label: t('Category') },
-    { key: 'seasons', label: t('Season') },
+    { key: 'seasons', label: 'YoY' },
   ];
 
   const toggleItem = (list: string[], item: string, setter: (v: string[]) => void) => {
@@ -2213,13 +2238,21 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
             </div>
           )}
           {compareMode === 'seasons' && (
-            <div>
-              <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Season')}</label>
-              <div className="flex flex-wrap gap-1.5">
-                {allSeasons.map(season => (
-                  <button key={season} onClick={() => toggleItem(selectedSeasons, season, setSelectedSeasons)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selectedSeasons.includes(season) ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>{season}</button>
-                ))}
+            <div className="space-y-3">
+              <div>
+                <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Season')}</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {allSeasons.map(season => (
+                    <button key={season} onClick={() => toggleItem(selectedSeasons, season, setSelectedSeasons)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selectedSeasons.includes(season) ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>{season}</button>
+                  ))}
+                </div>
               </div>
+              {selectedSeasons.length > 0 && yoyPlayers.length > 0 && (
+                <div>
+                  <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Players')} <span className={`font-normal ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>({t('optional — team avg if none')})</span></label>
+                  <PlayerSelector players={yoyPlayers} selected={selectedYoYPlayers} onChange={setSelectedYoYPlayers} multiple />
+                </div>
+              )}
             </div>
           )}
         </div>
