@@ -790,6 +790,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
   }, [selectedDay, selectedWeek, selectedMonth]);
 
   const monthlyGoals = { practice: { min: 16, max: 32 }, vitamins: { min: 32, max: 48 }, weights: { min: 32, max: 48 }, game: { min: 24, max: 28 } };
+  const shotsGoal = filterGranularity === 'day' ? 100 : filterGranularity === 'week' ? 700 : filterGranularity === 'month' ? 700 : 3000;
   const goalScale = filterGranularity === 'day' ? 1 / 30 : filterGranularity === 'week' ? 7 / 30 : filterGranularity === 'month' ? 7 / 30 : 1;
   const proratedGoals = {
     practice: { min: +(monthlyGoals.practice.min * goalScale).toFixed(1), max: +(monthlyGoals.practice.max * goalScale).toFixed(1) },
@@ -825,7 +826,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
     };
 
     const sortKeyMap = new Map<string, string>();
-    const bucketPlayerLoads = new Map<string, Map<string, { practice: number; vitamins: number; weights: number; game: number }>>();
+    const bucketPlayerLoads = new Map<string, Map<string, { practice: number; vitamins: number; weights: number; game: number; shotsTaken: number; shotsMade: number }>>();
 
     filtered.forEach(s => {
       const key = getBucketKey(s);
@@ -836,12 +837,14 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
       }
       if (sortKey < (sortKeyMap.get(key) || sortKey)) sortKeyMap.set(key, sortKey);
       const playerMap = bucketPlayerLoads.get(key)!;
-      if (!playerMap.has(s.player)) playerMap.set(s.player, { practice: 0, vitamins: 0, weights: 0, game: 0 });
+      if (!playerMap.has(s.player)) playerMap.set(s.player, { practice: 0, vitamins: 0, weights: 0, game: 0, shotsTaken: 0, shotsMade: 0 });
       const pLoad = playerMap.get(s.player)!;
       if (s.practiceLoad) pLoad.practice += s.practiceLoad;
       if (s.vitaminsLoad) pLoad.vitamins += s.vitaminsLoad;
       if (s.weightsLoad) pLoad.weights += s.weightsLoad;
       if (s.gameLoad) pLoad.game += s.gameLoad;
+      if (s.shootsTaken) pLoad.shotsTaken += s.shootsTaken;
+      if (s.shootsMade) pLoad.shotsMade += s.shootsMade;
     });
 
     return [...bucketPlayerLoads.entries()]
@@ -849,12 +852,16 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
       .map(([label, playerMap]) => {
         const players = [...playerMap.values()];
         const n = players.length || 1;
+        const totalTaken = players.reduce((sum, p) => sum + p.shotsTaken, 0);
+        const totalMade = players.reduce((sum, p) => sum + p.shotsMade, 0);
         return {
           month: label,
           practice: +(players.reduce((sum, p) => sum + p.practice, 0) / n).toFixed(1),
           vitamins: +(players.reduce((sum, p) => sum + p.vitamins, 0) / n).toFixed(1),
           weights: +(players.reduce((sum, p) => sum + p.weights, 0) / n).toFixed(1),
           game: +(players.reduce((sum, p) => sum + p.game, 0) / n).toFixed(1),
+          shotsTaken: +(totalTaken / n).toFixed(0),
+          shootingPct: totalTaken > 0 ? +((totalMade / totalTaken) * 100).toFixed(1) : 0,
         };
       });
   }, [filtered, filterGranularity]);
@@ -964,6 +971,42 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
               </div>
             </div>
           ))}
+        </div>
+        <div className="grid grid-cols-2 gap-4 mt-4">
+          <div>
+            <p className={`text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Shots Taken')} <span className={`${isDark ? 'text-gray-500' : 'text-gray-400'}`}>({t('Goal')}: {shotsGoal})</span></p>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={loadData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                  <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                  <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                  <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                  <ReferenceLine y={shotsGoal} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${shotsGoal}`, position: 'right', fontSize: 9, fill: '#ef4444' }} />
+                  <Bar dataKey="shotsTaken" name={t('Shots Taken')} radius={[2, 2, 0, 0]}>
+                    {loadData.map((entry: any, idx: number) => {
+                      const fill: string = entry.shotsTaken < shotsGoal ? '#3b82f6' : '#22c55e';
+                      return <Cell key={idx} fill={fill} />;
+                    })}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          <div>
+            <p className={`text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('3PT %')}</p>
+            <div className="h-40">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={loadData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                  <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                  <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[0, 100]} />
+                  <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} formatter={(value: any) => `${value}%`} />
+                  <Bar dataKey="shootingPct" name={t('3PT %')} fill="#f59e0b" radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
         <div className={`flex items-center justify-center gap-6 mt-3 pt-3 border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
           <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#3b82f6' }} /><span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Below Range')}</span></div>
