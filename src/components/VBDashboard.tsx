@@ -1966,15 +1966,17 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
 
 type CompareMode = 'players' | 'roles' | 'categories' | 'seasons';
 
-function ProgressionChart({ sessions, lines, metric, profiles, isDark, convertVal }: {
+function ProgressionChart({ sessions, lines, metric, profiles, isDark, convertVal, compareMode }: {
   sessions: VBSession[];
   lines: { key: string; label: string; sessions: VBSession[] }[];
   metric: keyof VBSession;
   profiles: PlayerProfile[];
   isDark: boolean;
   convertVal: (session: VBSession, player: string, met: keyof VBSession) => number | null;
+  compareMode?: string;
 }) {
   const { t } = useLanguage();
+  const seasonMonthOrder = ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
   const allMetrics: { key: keyof VBSession; label: string; unit: string }[] = [
     { key: 'weight', label: t('Weight'), unit: 'kg' },
     { key: 'bodyFat', label: t('Body Fat'), unit: '%' },
@@ -1988,6 +1990,33 @@ function ProgressionChart({ sessions, lines, metric, profiles, isDark, convertVa
   const currentMetric = allMetrics.find(m => m.key === metric);
 
   const chartData = useMemo(() => {
+    if (compareMode === 'seasons') {
+      const monthMap = new Map<string, Map<string, number[]>>();
+      lines.forEach(line => {
+        line.sessions.filter(s => s[metric] !== null).forEach(s => {
+          const d = new Date(s.date);
+          const monthLabel = d.toLocaleDateString('en-US', { month: 'short' });
+          if (!monthMap.has(monthLabel)) monthMap.set(monthLabel, new Map());
+          const val = convertVal(s, s.player, metric);
+          if (val !== null && val !== 0) {
+            const gm = monthMap.get(monthLabel)!;
+            if (!gm.has(line.key)) gm.set(line.key, []);
+            gm.get(line.key)!.push(val);
+          }
+        });
+      });
+      return seasonMonthOrder
+        .filter(m => monthMap.has(m))
+        .map(monthLabel => {
+          const groups = monthMap.get(monthLabel)!;
+          const entry: any = { date: monthLabel };
+          lines.forEach(line => {
+            const vals = groups.get(line.key);
+            entry[line.key] = vals && vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+          });
+          return entry;
+        });
+    }
     const monthMap = new Map<string, { sortKey: string; groups: Map<string, number[]> }>();
     lines.forEach(line => {
       line.sessions.filter(s => s[metric] !== null).forEach(s => {
@@ -2013,7 +2042,7 @@ function ProgressionChart({ sessions, lines, metric, profiles, isDark, convertVa
         });
         return entry;
       });
-  }, [sessions, lines, metric, profiles]);
+  }, [sessions, lines, metric, profiles, compareMode]);
 
   if (lines.length === 0) return <div className={`flex items-center justify-center h-full text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No data')}</div>;
   if (chartData.length === 0) return <div className={`flex items-center justify-center h-full text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No data')}</div>;
@@ -2248,7 +2277,7 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
                   </div>
                 </div>
                 <div className={chartCount <= 2 ? 'h-64' : 'h-48'}>
-                  <ProgressionChart sessions={sessions} lines={lines} metric={chartMetrics[idx]} profiles={profiles} isDark={isDark} convertVal={convertVal} />
+                  <ProgressionChart sessions={sessions} lines={lines} metric={chartMetrics[idx]} profiles={profiles} isDark={isDark} convertVal={convertVal} compareMode={compareMode} />
                 </div>
               </div>
               {showDeltas && deltaData.length > 0 && (
