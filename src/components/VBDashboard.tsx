@@ -53,7 +53,7 @@ interface PlayerProfile {
   revenueGenerated: number | null;
 }
 
-type TabId = 'overview' | 'player' | 'compare' | 'progression';
+type TabId = 'overview' | 'test' | 'player' | 'compare' | 'progression';
 
 const METRIC_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
@@ -1029,6 +1029,20 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
   );
 }
 
+function TestTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
+  const { t } = useLanguage();
+  const isDark = useIsDark();
+
+  return (
+    <div className="space-y-6">
+      <div className={`rounded-xl border p-6 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+        <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Test')}</h3>
+        <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Coming soon')}</p>
+      </div>
+    </div>
+  );
+}
+
 function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sessions: VBSession[]; players: string[]; initialPlayer: string; profiles: PlayerProfile[] }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
@@ -1504,6 +1518,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const tabs: { id: TabId; label: string; icon: any }[] = [
     { id: 'overview', label: t('Overview'), icon: BarChart3 },
+    { id: 'test', label: t('Test'), icon: Crosshair },
     { id: 'player', label: t('Player Profile'), icon: User },
     { id: 'compare', label: t('Compare'), icon: GitCompare },
     { id: 'progression', label: t('Progression'), icon: TrendingUp },
@@ -1582,6 +1597,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         ) : (
           <>
             {activeTab === 'overview' && <OverviewTab sessions={sessions} players={players} onSelectPlayer={handleSelectPlayer} profiles={profiles} />}
+            {activeTab === 'test' && <TestTab sessions={sessions} players={players} profiles={profiles} />}
             {activeTab === 'player' && <PlayerProfileTab sessions={sessions} players={players} initialPlayer={selectedPlayer} profiles={profiles} />}
             {activeTab === 'compare' && <CompareTab sessions={sessions} players={players} profiles={profiles} />}
             {activeTab === 'progression' && <ProgressionTab sessions={sessions} players={players} profiles={profiles} />}
