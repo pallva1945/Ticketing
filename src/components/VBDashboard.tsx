@@ -2080,6 +2080,8 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>([]);
   const [selectedYoYPlayers, setSelectedYoYPlayers] = useState<string[]>([]);
+  const [selectedYoYRole, setSelectedYoYRole] = useState<string>('all');
+  const [selectedYoYCategory, setSelectedYoYCategory] = useState<string>('all');
   const [chartCount, setChartCount] = useState(1);
   const [chartMetrics, setChartMetrics] = useState<(keyof VBSession)[]>(['pureVertical', 'weight', 'sprint', 'shootingPct']);
 
@@ -2108,15 +2110,39 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
   }, [sessions, players, profiles]);
   const allRoles = useMemo(() => [...new Set(players.map(p => getPlayerPosition(p, profiles)).filter(r => r))].sort(), [players, profiles]);
 
+  const yoyRoles = useMemo(() => {
+    if (selectedSeasons.length === 0) return [];
+    const roles = new Set<string>();
+    sessions.filter(s => selectedSeasons.includes(getSeason(s.date) || '')).forEach(s => {
+      const r = getPlayerPosition(s.player, profiles);
+      if (r) roles.add(r);
+    });
+    return [...roles].sort();
+  }, [sessions, selectedSeasons, profiles]);
+
+  const yoyCategories = useMemo(() => {
+    if (selectedSeasons.length === 0) return [];
+    const cats = new Set<string>();
+    sessions.filter(s => selectedSeasons.includes(getSeason(s.date) || '')).forEach(s => {
+      const season = getSeason(s.date);
+      if (season) {
+        const cat = getPlayerCategory(s.player, profiles, season);
+        if (cat) cats.add(cat);
+      }
+    });
+    return [...cats].sort();
+  }, [sessions, selectedSeasons, profiles]);
+
   const yoyPlayers = useMemo(() => {
     if (selectedSeasons.length === 0) return [];
-    const playersBySeason = selectedSeasons.map(season =>
-      new Set(sessions.filter(s => getSeason(s.date) === season).map(s => s.player))
-    );
-    const allP = new Set<string>();
-    playersBySeason.forEach(ps => ps.forEach(p => allP.add(p)));
-    return [...allP].sort();
-  }, [sessions, selectedSeasons]);
+    let filtered = sessions.filter(s => selectedSeasons.includes(getSeason(s.date) || ''));
+    if (selectedYoYRole !== 'all') filtered = filtered.filter(s => getPlayerPosition(s.player, profiles) === selectedYoYRole);
+    if (selectedYoYCategory !== 'all') filtered = filtered.filter(s => {
+      const season = getSeason(s.date);
+      return season ? getPlayerCategory(s.player, profiles, season) === selectedYoYCategory : false;
+    });
+    return [...new Set(filtered.map(s => s.player))].sort();
+  }, [sessions, selectedSeasons, selectedYoYRole, selectedYoYCategory, profiles]);
 
   useEffect(() => {
     if (compareMode === 'roles' && selectedRoles.length === 0 && allRoles.length > 0) setSelectedRoles(allRoles.slice(0, 3));
@@ -2161,11 +2187,19 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
       }));
     }
     if (compareMode === 'seasons') {
+      const filterSession = (s: VBSession) => {
+        if (selectedYoYRole !== 'all' && getPlayerPosition(s.player, profiles) !== selectedYoYRole) return false;
+        if (selectedYoYCategory !== 'all') {
+          const season = getSeason(s.date);
+          if (!season || getPlayerCategory(s.player, profiles, season) !== selectedYoYCategory) return false;
+        }
+        return true;
+      };
       if (selectedYoYPlayers.length > 0) {
         const result: { key: string; label: string; sessions: VBSession[] }[] = [];
         selectedYoYPlayers.forEach(player => {
           selectedSeasons.forEach(season => {
-            const playerSessions = sessions.filter(s => s.player === player && getSeason(s.date) === season);
+            const playerSessions = sessions.filter(s => s.player === player && getSeason(s.date) === season && filterSession(s));
             if (playerSessions.length > 0) {
               const shortName = player.split(' ').pop() || player;
               const shortSeason = season.split('/').map(s => s.slice(-2)).join('/');
@@ -2178,11 +2212,11 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
       return selectedSeasons.map(season => ({
         key: season,
         label: season,
-        sessions: sessions.filter(s => getSeason(s.date) === season)
+        sessions: sessions.filter(s => getSeason(s.date) === season && filterSession(s))
       }));
     }
     return [];
-  }, [compareMode, selected, selectedRoles, selectedCategories, selectedSeasons, selectedYoYPlayers, sessions, profiles]);
+  }, [compareMode, selected, selectedRoles, selectedCategories, selectedSeasons, selectedYoYPlayers, selectedYoYRole, selectedYoYCategory, sessions, profiles]);
 
   const selectClass = `w-full px-3 py-2 rounded-lg text-sm font-medium appearance-none pr-8 ${isDark ? 'bg-gray-800 text-white border-gray-700' : 'bg-white text-gray-900 border-gray-200'} border`;
   const gridClass = chartCount === 1 ? 'grid-cols-1' : chartCount === 2 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2';
@@ -2247,6 +2281,32 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
                   ))}
                 </div>
               </div>
+              {selectedSeasons.length > 0 && (
+                <div className="flex flex-wrap gap-3">
+                  {yoyRoles.length > 0 && (
+                    <div>
+                      <label className={`text-xs font-medium mb-1.5 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Role')} <span className={`font-normal ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>({t('optional')})</span></label>
+                      <div className="flex flex-wrap gap-1">
+                        <button onClick={() => setSelectedYoYRole('all')} className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${selectedYoYRole === 'all' ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>{t('All')}</button>
+                        {yoyRoles.map(role => (
+                          <button key={role} onClick={() => { setSelectedYoYRole(role); setSelectedYoYPlayers([]); }} className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${selectedYoYRole === role ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>{role}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {yoyCategories.length > 0 && (
+                    <div>
+                      <label className={`text-xs font-medium mb-1.5 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Category')} <span className={`font-normal ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>({t('optional')})</span></label>
+                      <div className="flex flex-wrap gap-1">
+                        <button onClick={() => setSelectedYoYCategory('all')} className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${selectedYoYCategory === 'all' ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>{t('All')}</button>
+                        {yoyCategories.map(cat => (
+                          <button key={cat} onClick={() => { setSelectedYoYCategory(cat); setSelectedYoYPlayers([]); }} className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${selectedYoYCategory === cat ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>{cat}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
               {selectedSeasons.length > 0 && yoyPlayers.length > 0 && (
                 <div>
                   <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Players')} <span className={`font-normal ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>({t('optional — team avg if none')})</span></label>
