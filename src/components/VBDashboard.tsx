@@ -1963,22 +1963,19 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
   );
 }
 
-function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
+function ProgressionChart({ sessions, selected, metric, profiles, isDark }: { sessions: VBSession[]; selected: string[]; metric: keyof VBSession; profiles: PlayerProfile[]; isDark: boolean }) {
   const { t } = useLanguage();
-  const isDark = useIsDark();
-  const [selected, setSelected] = useState<string[]>(players.slice(0, 3));
-  const [metric, setMetric] = useState<keyof VBSession>('pureVertical');
-
-  const metrics: { key: keyof VBSession; label: string; unit: string; group: string }[] = [
-    { key: 'weight', label: t('Weight'), unit: 'kg', group: t('Anthropometrics') },
-    { key: 'bodyFat', label: t('Body Fat'), unit: '%', group: t('Anthropometrics') },
-    { key: 'pureVertical', label: t('Pure Vertical'), unit: 'cm', group: t('Athletics') },
-    { key: 'noStepVertical', label: t('No-Step Vertical'), unit: 'cm', group: t('Athletics') },
-    { key: 'sprint', label: t('Sprint'), unit: 'ms', group: t('Athletics') },
-    { key: 'coneDrill', label: t('Cone Drill'), unit: 'ms', group: t('Athletics') },
-    { key: 'deadlift', label: t('Deadlift'), unit: 'kg', group: t('Athletics') },
-    { key: 'shootingPct', label: t('3PT %'), unit: '%', group: t('Shooting') },
+  const allMetrics: { key: keyof VBSession; label: string; unit: string }[] = [
+    { key: 'weight', label: t('Weight'), unit: 'kg' },
+    { key: 'bodyFat', label: t('Body Fat'), unit: '%' },
+    { key: 'pureVertical', label: t('Pure Vertical'), unit: 'cm' },
+    { key: 'noStepVertical', label: t('No-Step Vertical'), unit: 'cm' },
+    { key: 'sprint', label: t('Sprint'), unit: 'ms' },
+    { key: 'coneDrill', label: t('Cone Drill'), unit: 'ms' },
+    { key: 'deadlift', label: t('Deadlift'), unit: 'kg' },
+    { key: 'shootingPct', label: t('3PT %'), unit: '%' },
   ];
+  const currentMetric = allMetrics.find(m => m.key === metric);
 
   const convertVal = (session: VBSession, player: string): number | null => {
     const val = session[metric] as number | null;
@@ -2021,89 +2018,236 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
       });
   }, [sessions, selected, metric, profiles]);
 
-  const deltaData = useMemo(() => {
-    return selected.map(p => {
-      const ps = sessions.filter(s => s.player === p && s[metric] !== null).sort((a, b) => a.date.localeCompare(b.date));
-      const validPs = ps.filter(s => { const v = convertVal(s, p); return v !== null && v !== 0; });
-      if (validPs.length < 2) return { player: p, first: null, last: null, delta: null };
-      const first = convertVal(validPs[0], p);
-      const last = convertVal(validPs[validPs.length - 1], p);
-      if (first === null || last === null) return { player: p, first: null, last: null, delta: null };
-      return { player: p, first, last, delta: Math.round((last - first) * 10) / 10 };
-    });
-  }, [sessions, selected, metric, profiles]);
+  if (selected.length === 0) return <div className={`flex items-center justify-center h-full text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Select players to view')}</div>;
+  if (chartData.length === 0) return <div className={`flex items-center justify-center h-full text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No data')}</div>;
 
-  const currentMetric = metrics.find(m => m.key === metric);
+  return (
+    <div className="h-full">
+      <h3 className={`text-sm font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+        {currentMetric?.label} <span className="text-gray-400 font-normal">({currentMetric?.unit})</span>
+      </h3>
+      <div className="h-[calc(100%-28px)]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+            <XAxis dataKey="date" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+            <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => { if (isNaN(dataMin)) return 0; const pad = Math.max(1, Math.abs(dataMin) * 0.1); return Math.floor(dataMin - pad); }, (dataMax: number) => { if (isNaN(dataMax)) return 100; const pad = Math.max(1, Math.abs(dataMax) * 0.1); return Math.ceil(dataMax + pad); }]} />
+            <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+            <Legend wrapperStyle={{ fontSize: 10 }} />
+            {selected.map((p, i) => (
+              <Line key={p} type="monotone" dataKey={p} name={p.split(' ').pop()} stroke={METRIC_COLORS[i % METRIC_COLORS.length]} strokeWidth={2} dot={{ r: 2 }} connectNulls />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
+  const { t } = useLanguage();
+  const isDark = useIsDark();
+
+  const [selectedSeason, setSelectedSeason] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedRole, setSelectedRole] = useState<string>('all');
+  const [selected, setSelected] = useState<string[]>(players.slice(0, 3));
+  const [chartCount, setChartCount] = useState(1);
+  const [chartMetrics, setChartMetrics] = useState<(keyof VBSession)[]>(['pureVertical', 'weight', 'sprint', 'shootingPct']);
+
+  const metrics: { key: keyof VBSession; label: string; unit: string; group: string }[] = [
+    { key: 'weight', label: t('Weight'), unit: 'kg', group: t('Anthropometrics') },
+    { key: 'bodyFat', label: t('Body Fat'), unit: '%', group: t('Anthropometrics') },
+    { key: 'pureVertical', label: t('Pure Vertical'), unit: 'cm', group: t('Athletics') },
+    { key: 'noStepVertical', label: t('No-Step Vertical'), unit: 'cm', group: t('Athletics') },
+    { key: 'sprint', label: t('Sprint'), unit: 'ms', group: t('Athletics') },
+    { key: 'coneDrill', label: t('Cone Drill'), unit: 'ms', group: t('Athletics') },
+    { key: 'deadlift', label: t('Deadlift'), unit: 'kg', group: t('Athletics') },
+    { key: 'shootingPct', label: t('3PT %'), unit: '%', group: t('Shooting') },
+  ];
+
+  const seasons = useMemo(() => [...new Set(sessions.map(s => getSeason(s.date)!).filter(Boolean))].sort().reverse(), [sessions]);
+
+  const seasonFiltered = useMemo(() => {
+    if (selectedSeason === 'all') return sessions;
+    return sessions.filter(s => getSeason(s.date) === selectedSeason);
+  }, [sessions, selectedSeason]);
+
+  const availableCategories = useMemo(() => {
+    return [...new Set(seasonFiltered.map(s => getPlayerCategory(s.player, profiles)).filter(c => c))].sort();
+  }, [seasonFiltered, profiles]);
+
+  const categoryFiltered = useMemo(() => {
+    if (selectedCategory === 'all') return seasonFiltered;
+    return seasonFiltered.filter(s => getPlayerCategory(s.player, profiles) === selectedCategory);
+  }, [seasonFiltered, selectedCategory, profiles]);
+
+  const availableRoles = useMemo(() => {
+    return [...new Set(categoryFiltered.map(s => getPlayerPosition(s.player, profiles)).filter(r => r))].sort();
+  }, [categoryFiltered, profiles]);
+
+  const roleFiltered = useMemo(() => {
+    if (selectedRole === 'all') return categoryFiltered;
+    return categoryFiltered.filter(s => getPlayerPosition(s.player, profiles) === selectedRole);
+  }, [categoryFiltered, selectedRole, profiles]);
+
+  const filteredPlayers = useMemo(() => {
+    return [...new Set(roleFiltered.map(s => s.player))].sort();
+  }, [roleFiltered]);
+
+  useEffect(() => {
+    setSelected(prev => {
+      const valid = prev.filter(p => filteredPlayers.includes(p));
+      if (valid.length > 0) return valid;
+      return filteredPlayers.slice(0, 3);
+    });
+  }, [filteredPlayers]);
+
+  useEffect(() => {
+    if (selectedCategory !== 'all' && !availableCategories.includes(selectedCategory)) setSelectedCategory('all');
+  }, [availableCategories]);
+
+  useEffect(() => {
+    if (selectedRole !== 'all' && !availableRoles.includes(selectedRole)) setSelectedRole('all');
+  }, [availableRoles]);
+
+  const convertVal = (session: VBSession, player: string, met: keyof VBSession): number | null => {
+    const val = session[met] as number | null;
+    if (val === null) return null;
+    if (met === 'bodyFat') {
+      const dobSerial = getPlayerDobSerial(player, profiles);
+      const bf = calcBodyFatPct(val, dobSerial, session.date);
+      return bf !== null ? bf : val;
+    }
+    if (met === 'pureVertical' || met === 'noStepVertical') {
+      const sr = session.standingReach;
+      return sr !== null ? val - sr : null;
+    }
+    return val;
+  };
+
+  const deltaData = useMemo(() => {
+    const met = chartMetrics[0];
+    const currentMetric = metrics.find(m => m.key === met);
+    return selected.map(p => {
+      const ps = roleFiltered.filter(s => s.player === p && s[met] !== null).sort((a, b) => a.date.localeCompare(b.date));
+      const validPs = ps.filter(s => { const v = convertVal(s, p, met); return v !== null && v !== 0; });
+      if (validPs.length < 2) return { player: p, first: null, last: null, delta: null, unit: currentMetric?.unit || '' };
+      const first = convertVal(validPs[0], p, met);
+      const last = convertVal(validPs[validPs.length - 1], p, met);
+      if (first === null || last === null) return { player: p, first: null, last: null, delta: null, unit: currentMetric?.unit || '' };
+      return { player: p, first, last, delta: Math.round((last - first) * 10) / 10, unit: currentMetric?.unit || '' };
+    });
+  }, [roleFiltered, selected, chartMetrics, profiles]);
+
+  const selectClass = `w-full px-3 py-2 rounded-lg text-sm font-medium appearance-none pr-8 ${isDark ? 'bg-gray-800 text-white border-gray-700' : 'bg-white text-gray-900 border-gray-200'} border`;
+
+  const gridClass = chartCount === 1 ? 'grid-cols-1' : chartCount === 2 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2';
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="flex-1">
-          <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Metric')}</label>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div>
+          <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Season')}</label>
           <div className="relative">
-            <select
-              value={metric}
-              onChange={e => setMetric(e.target.value as keyof VBSession)}
-              className={`w-full px-3 py-2 rounded-lg text-sm font-medium appearance-none pr-8 ${isDark ? 'bg-gray-800 text-white border-gray-700' : 'bg-white text-gray-900 border-gray-200'} border`}
-            >
-              {metrics.map(m => <option key={m.key} value={m.key}>{m.label} ({m.unit})</option>)}
+            <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass}>
+              <option value="all">{t('All Seasons')}</option>
+              {seasons.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
             <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
           </div>
         </div>
-        <div className="flex-1">
+        <div>
+          <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Category')}</label>
+          <div className="relative">
+            <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className={selectClass}>
+              <option value="all">{t('All')}</option>
+              {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+          </div>
+        </div>
+        <div>
+          <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Role')}</label>
+          <div className="relative">
+            <select value={selectedRole} onChange={e => setSelectedRole(e.target.value)} className={selectClass}>
+              <option value="all">{t('All')}</option>
+              {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+          </div>
+        </div>
+        <div className="col-span-2 sm:col-span-1 lg:col-span-2">
           <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Players')}</label>
-          <PlayerSelector players={players} selected={selected} onChange={setSelected} multiple />
+          <PlayerSelector players={filteredPlayers} selected={selected} onChange={setSelected} multiple />
         </div>
       </div>
 
-      <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-        <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          {currentMetric?.label} {t('Over Time')} <span className="text-gray-400 font-normal">({currentMetric?.unit})</span>
-        </h3>
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-              <YAxis tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => { const pad = Math.max(1, Math.abs(dataMin) * 0.1); return Math.floor(dataMin - pad); }, (dataMax: number) => { const pad = Math.max(1, Math.abs(dataMax) * 0.1); return Math.ceil(dataMax + pad); }]} />
-              <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              {selected.map((p, i) => (
-                <Line key={p} type="monotone" dataKey={p} name={p.split(' ').pop()} stroke={METRIC_COLORS[i]} strokeWidth={2} dot={{ r: 3 }} connectNulls />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+      <div className="flex items-center gap-2">
+        <label className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Charts')}:</label>
+        {[1, 2, 3, 4].map(n => (
+          <button key={n} onClick={() => setChartCount(n)} className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${chartCount === n ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{n}</button>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {deltaData.map((d, i) => (
-          <div key={d.player} className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: METRIC_COLORS[i] }} />
-              <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{d.player.split(' ').pop()}</span>
+      <div className={`grid ${gridClass} gap-4`}>
+        {Array.from({ length: chartCount }).map((_, idx) => (
+          <div key={idx} className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+            <div className="mb-3">
+              <div className="relative">
+                <select
+                  value={chartMetrics[idx]}
+                  onChange={e => {
+                    const newMetrics = [...chartMetrics];
+                    newMetrics[idx] = e.target.value as keyof VBSession;
+                    setChartMetrics(newMetrics);
+                  }}
+                  className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-medium appearance-none pr-7 ${isDark ? 'bg-gray-800 text-white border-gray-700' : 'bg-gray-50 text-gray-900 border-gray-200'} border`}
+                >
+                  {metrics.map(m => <option key={m.key} value={m.key}>{m.label} ({m.unit})</option>)}
+                </select>
+                <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+              </div>
             </div>
-            <div className="flex items-end gap-2">
-              <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                {d.last !== null ? d.last : '—'}
-              </span>
-              {d.delta !== null && (
-                <span className={`text-xs font-semibold mb-0.5 ${
-                  (metric === 'sprint' || metric === 'coneDrill' || metric === 'bodyFat')
-                    ? (d.delta < 0 ? 'text-emerald-500' : d.delta > 0 ? 'text-red-500' : 'text-gray-400')
-                    : (d.delta > 0 ? 'text-emerald-500' : d.delta < 0 ? 'text-red-500' : 'text-gray-400')
-                }`}>
-                  {d.delta > 0 ? '+' : ''}{d.delta} {currentMetric?.unit}
-                </span>
-              )}
-            </div>
-            <div className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-              {d.first !== null ? `${t('from')} ${d.first}` : t('No data')}
+            <div className={chartCount <= 2 ? 'h-64' : 'h-48'}>
+              <ProgressionChart sessions={roleFiltered} selected={selected} metric={chartMetrics[idx]} profiles={profiles} isDark={isDark} />
             </div>
           </div>
         ))}
       </div>
+
+      {chartCount === 1 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {deltaData.map((d, i) => {
+            const met = chartMetrics[0];
+            return (
+              <div key={d.player} className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: METRIC_COLORS[i % METRIC_COLORS.length] }} />
+                  <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{d.player.split(' ').pop()}</span>
+                </div>
+                <div className="flex items-end gap-2">
+                  <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {d.last !== null ? d.last : '—'}
+                  </span>
+                  {d.delta !== null && (
+                    <span className={`text-xs font-semibold mb-0.5 ${
+                      (met === 'sprint' || met === 'coneDrill' || met === 'bodyFat')
+                        ? (d.delta < 0 ? 'text-emerald-500' : d.delta > 0 ? 'text-red-500' : 'text-gray-400')
+                        : (d.delta > 0 ? 'text-emerald-500' : d.delta < 0 ? 'text-red-500' : 'text-gray-400')
+                    }`}>
+                      {d.delta > 0 ? '+' : ''}{d.delta} {d.unit}
+                    </span>
+                  )}
+                </div>
+                <div className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {d.first !== null ? `${t('from')} ${d.first}` : t('No data')}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -838,6 +838,8 @@ const translations: Record<string, Record<Language, string>> = {
   'Average cost per game across': { en: 'Average cost per game across', it: 'Costo medio per partita su' },
   'Click to filter table below': { en: 'Click to filter table below', it: 'Clicca per filtrare la tabella sotto' },
   'Show All': { en: 'Show All', it: 'Mostra Tutti' },
+  'Charts': { en: 'Charts', it: 'Grafici' },
+  'Select players to view': { en: 'Select players to view', it: 'Seleziona giocatori' },
   'Games': { en: 'Games', it: 'Partite' },
   'Cost/Game': { en: 'Cost/Game', it: 'Costo/Partita' },
   'Total Cost': { en: 'Total Cost', it: 'Costo Totale' },
