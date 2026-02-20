@@ -1649,6 +1649,14 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               <div className={valueClass}>{profile?.soyStatus || '—'}</div>
             </div>
             <div>
+              <div className={labelClass}>{t("Mom's Height")}</div>
+              <div className={valueClass}>{profile?.momHeight !== null && profile?.momHeight !== undefined ? `${profile.momHeight} cm` : '—'}</div>
+            </div>
+            <div>
+              <div className={labelClass}>{t("Dad's Height")}</div>
+              <div className={valueClass}>{profile?.dadHeight !== null && profile?.dadHeight !== undefined ? `${profile.dadHeight} cm` : '—'}</div>
+            </div>
+            <div>
               <div className={labelClass}>{t('Total Load')}</div>
               <div className={valueClass}>{ps.reduce((a, s) => a + (s.practiceLoad || 0) + (s.vitaminsLoad || 0) + (s.weightsLoad || 0) + (s.gameLoad || 0), 0).toLocaleString()}</div>
             </div>
@@ -1706,14 +1714,6 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-red-50/50'}`}>
             <div className={labelClass}>{t('Body Fat')}</div>
             <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.bodyFat !== null ? `${latestAnthro.bodyFat}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">%</span></div>
-          </div>
-          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-sky-50/50'}`}>
-            <div className={labelClass}>{t("Mom's Height")}</div>
-            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{profile?.momHeight !== null && profile?.momHeight !== undefined ? `${profile.momHeight}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
-          </div>
-          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-sky-50/50'}`}>
-            <div className={labelClass}>{t("Dad's Height")}</div>
-            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{profile?.dadHeight !== null && profile?.dadHeight !== undefined ? `${profile.dadHeight}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
           </div>
         </div>
       </div>
