@@ -429,6 +429,11 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
     const ntVal = isRate ? Math.round((ntDateSet.size / divisor) * 10) / 10 : ntDateSet.size;
     const daysOffVal = isRate ? Math.round((rawDaysOff / divisor) * 10) / 10 : rawDaysOff;
 
+    const vitamins = sumOrRate(ps.map(s => s.vitaminsLoad));
+    const weights = sumOrRate(ps.map(s => s.weightsLoad));
+    const practice = sumOrRate(ps.map(s => s.practiceLoad));
+    const game = sumOrRate(ps.map(s => s.gameLoad));
+
     return {
       player,
       height: getLatestMetric(filtered, player, 'height'),
@@ -450,14 +455,11 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
       })(),
       pct: getAvg(shootingSessions.map(s => s.shootingPct)),
       shots: sumOrRate(ps.map(s => s.shootsTaken)),
-      totalLoad: sumOrRate(ps.map(s => {
-        const total = (s.practiceLoad || 0) + (s.vitaminsLoad || 0) + (s.weightsLoad || 0) + (s.gameLoad || 0);
-        return total > 0 ? total : null;
-      })),
-      vitamins: sumOrRate(ps.map(s => s.vitaminsLoad)),
-      weights: sumOrRate(ps.map(s => s.weightsLoad)),
-      practice: sumOrRate(ps.map(s => s.practiceLoad)),
-      game: sumOrRate(ps.map(s => s.gameLoad)),
+      totalLoad: Math.round((vitamins + weights + practice + game) * 10) / 10,
+      vitamins,
+      weights,
+      practice,
+      game,
       injury: injuryVal,
       nt: ntVal,
       daysOff: daysOffVal,
@@ -713,10 +715,12 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
   }, [filtered, activePlayers]);
   const teamAvgTotalLoad = useMemo(() => {
     const playerTotals = activePlayers.map(p => {
-      const vals = filtered.filter(s => s.player === p).map(s => (s.practiceLoad || 0) + (s.vitaminsLoad || 0) + (s.weightsLoad || 0) + (s.gameLoad || 0));
-      return vals.reduce((a, b) => a + b, 0);
+      const ps = filtered.filter(s => s.player === p);
+      return ps.reduce((sum, s) => sum + (s.practiceLoad || 0) + (s.vitaminsLoad || 0) + (s.weightsLoad || 0) + (s.gameLoad || 0), 0);
     });
-    return playerTotals.length ? Math.round(playerTotals.reduce((a, b) => a + b, 0) / playerTotals.length * 10) / 10 : null;
+    if (!playerTotals.length) return null;
+    const avg = playerTotals.reduce((a, b) => a + b, 0) / playerTotals.length;
+    return avg > 0 ? Math.round(avg * 10) / 10 : null;
   }, [filtered, activePlayers]);
   const teamAvgInjuries = useMemo(() => {
     const playerCounts = activePlayers.map(p => {
