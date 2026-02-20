@@ -231,6 +231,23 @@ function getPlayerPosition(player: string, profiles: PlayerProfile[]): string {
   return '';
 }
 
+function getPlayerBirthYear(player: string, profiles: PlayerProfile[]): number | null {
+  const dobSerial = getPlayerDobSerial(player, profiles);
+  if (!dobSerial) return null;
+  const dob = excelSerialToDate(dobSerial);
+  return dob.getFullYear();
+}
+
+function getPlayerCategory(player: string, profiles: PlayerProfile[]): string {
+  const year = getPlayerBirthYear(player, profiles);
+  if (!year) return '';
+  if (year >= 2011 && year <= 2012) return 'U15';
+  if (year >= 2009 && year <= 2010) return 'U17';
+  if (year >= 2007 && year <= 2008) return 'U19';
+  if (year >= 2005 && year <= 2006) return 'DY';
+  return '';
+}
+
 const KR_TABLE: { age: number; wt: number; ht: number; mph: number; beta: number }[] = [
   { age: 4,    wt: -0.087235, ht: 1.23812, mph: 0.50286, beta: -10.2567 },
   { age: 4.5,  wt: -0.074454, ht: 1.15964, mph: 0.52887, beta: -10.719 },
@@ -598,7 +615,8 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [selectedWeek, setSelectedWeek] = useState<string>('all');
   const [selectedDay, setSelectedDay] = useState<string>('all');
-  const [selectedPosition, setSelectedPosition] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedRole, setSelectedRole] = useState<string>('all');
   const [selectedPlayerFilter, setSelectedPlayerFilter] = useState<string>('all');
   
   const validSessions = useMemo(() => sessions.filter(s => getSeason(s.date) !== null), [sessions]);
@@ -689,29 +707,40 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
     return weekFiltered.filter(s => s.date === selectedDay);
   }, [weekFiltered, selectedDay]);
 
-  const positionFiltered = useMemo(() => {
-    if (selectedPosition === 'all') return dayFiltered;
-    return dayFiltered.filter(s => getPlayerPosition(s.player, profiles) === selectedPosition);
-  }, [dayFiltered, selectedPosition, profiles]);
-
-  const availablePositions = useMemo(() => {
-    const pos = [...new Set(dayFiltered.map(s => getPlayerPosition(s.player, profiles)).filter(p => p))].sort();
-    return pos;
+  const availableCategories = useMemo(() => {
+    const cats = [...new Set(dayFiltered.map(s => getPlayerCategory(s.player, profiles)).filter(c => c))].sort();
+    return cats;
   }, [dayFiltered, profiles]);
 
+  const categoryFiltered = useMemo(() => {
+    if (selectedCategory === 'all') return dayFiltered;
+    return dayFiltered.filter(s => getPlayerCategory(s.player, profiles) === selectedCategory);
+  }, [dayFiltered, selectedCategory, profiles]);
+
+  const availableRoles = useMemo(() => {
+    const roles = [...new Set(categoryFiltered.map(s => getPlayerPosition(s.player, profiles)).filter(r => r))].sort();
+    return roles;
+  }, [categoryFiltered, profiles]);
+
+  const roleFiltered = useMemo(() => {
+    if (selectedRole === 'all') return categoryFiltered;
+    return categoryFiltered.filter(s => getPlayerPosition(s.player, profiles) === selectedRole);
+  }, [categoryFiltered, selectedRole, profiles]);
+
   const playersInFilter = useMemo(() => {
-    return [...new Set(positionFiltered.map(s => s.player))].sort();
-  }, [positionFiltered]);
+    return [...new Set(roleFiltered.map(s => s.player))].sort();
+  }, [roleFiltered]);
 
   const filtered = useMemo(() => {
-    if (selectedPlayerFilter === 'all') return positionFiltered;
-    return positionFiltered.filter(s => s.player === selectedPlayerFilter);
-  }, [positionFiltered, selectedPlayerFilter]);
+    if (selectedPlayerFilter === 'all') return roleFiltered;
+    return roleFiltered.filter(s => s.player === selectedPlayerFilter);
+  }, [roleFiltered, selectedPlayerFilter]);
 
-  useEffect(() => { setSelectedMonth('all'); setSelectedWeek('all'); setSelectedDay('all'); setSelectedPosition('all'); setSelectedPlayerFilter('all'); }, [selectedSeason]);
+  useEffect(() => { setSelectedMonth('all'); setSelectedWeek('all'); setSelectedDay('all'); setSelectedCategory('all'); setSelectedRole('all'); setSelectedPlayerFilter('all'); }, [selectedSeason]);
   useEffect(() => { setSelectedWeek('all'); setSelectedDay('all'); }, [selectedMonth]);
   useEffect(() => { setSelectedDay('all'); }, [selectedWeek]);
-  useEffect(() => { setSelectedPlayerFilter('all'); }, [selectedPosition]);
+  useEffect(() => { setSelectedRole('all'); setSelectedPlayerFilter('all'); }, [selectedCategory]);
+  useEffect(() => { setSelectedPlayerFilter('all'); }, [selectedRole]);
 
   const activePlayers = useMemo(() => {
     return [...new Set(filtered.map(s => s.player))].sort();
@@ -925,7 +954,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
 
   return (
     <div className="space-y-6">
-      <div className={`grid grid-cols-6 gap-3 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+      <div className={`grid grid-cols-8 gap-2 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
         <div className="relative">
           <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass + ' w-full'}>
             <option value="all">{t('All Seasons')}</option>
@@ -961,13 +990,20 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
           <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
         </div>
         <div className="relative">
-          <select value={selectedPosition} onChange={e => setSelectedPosition(e.target.value)} className={selectClass + ' w-full'}>
-            <option value="all">{t('All Positions')}</option>
-            {availablePositions.map(p => <option key={p} value={p}>{p}</option>)}
+          <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className={selectClass + ' w-full'}>
+            <option value="all">{t('All Categories')}</option>
+            {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
           <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
         </div>
         <div className="relative">
+          <select value={selectedRole} onChange={e => setSelectedRole(e.target.value)} className={selectClass + ' w-full'}>
+            <option value="all">{t('All Roles')}</option>
+            {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="relative col-span-2">
           <select value={selectedPlayerFilter} onChange={e => setSelectedPlayerFilter(e.target.value)} className={selectClass + ' w-full'}>
             <option value="all">{t('All Players')}</option>
             {playersInFilter.map(p => <option key={p} value={p}>{p}</option>)}
@@ -1124,12 +1160,34 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
   }, [validSessions]);
 
   const [selectedSeason, setSelectedSeason] = useState(() => getCurrentSeason());
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedRole, setSelectedRole] = useState<string>('all');
   const [selectedPlayer, setSelectedPlayer] = useState<string>('all');
 
-  const filtered = useMemo(() => {
+  const seasonFiltered = useMemo(() => {
     if (selectedSeason === 'all') return validSessions;
     return validSessions.filter(s => getSeason(s.date) === selectedSeason);
   }, [validSessions, selectedSeason]);
+
+  const availableCategories = useMemo(() => {
+    const cats = [...new Set(seasonFiltered.map(s => getPlayerCategory(s.player, profiles)).filter(c => c))].sort();
+    return cats;
+  }, [seasonFiltered, profiles]);
+
+  const categoryFiltered = useMemo(() => {
+    if (selectedCategory === 'all') return seasonFiltered;
+    return seasonFiltered.filter(s => getPlayerCategory(s.player, profiles) === selectedCategory);
+  }, [seasonFiltered, selectedCategory, profiles]);
+
+  const availableRoles = useMemo(() => {
+    const roles = [...new Set(categoryFiltered.map(s => getPlayerPosition(s.player, profiles)).filter(r => r))].sort();
+    return roles;
+  }, [categoryFiltered, profiles]);
+
+  const filtered = useMemo(() => {
+    if (selectedRole === 'all') return categoryFiltered;
+    return categoryFiltered.filter(s => getPlayerPosition(s.player, profiles) === selectedRole);
+  }, [categoryFiltered, selectedRole, profiles]);
 
   const activePlayers = useMemo(() => {
     const pSet = new Set(filtered.map(s => s.player));
@@ -1140,6 +1198,10 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
     if (selectedPlayer !== 'all') return [selectedPlayer];
     return activePlayers;
   }, [activePlayers, selectedPlayer]);
+
+  useEffect(() => { setSelectedCategory('all'); setSelectedRole('all'); setSelectedPlayer('all'); }, [selectedSeason]);
+  useEffect(() => { setSelectedRole('all'); setSelectedPlayer('all'); }, [selectedCategory]);
+  useEffect(() => { setSelectedPlayer('all'); }, [selectedRole]);
 
   const metrics = [
     { key: 'sprint', label: t('Speed'), unit: 'ms', icon: Timer, color: '#10b981', lowerBetter: true },
@@ -1299,11 +1361,25 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
 
   return (
     <div className="space-y-6">
-      <div className={`grid grid-cols-3 gap-3 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+      <div className={`grid grid-cols-5 gap-2 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
         <div className="relative">
           <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass + ' w-full'}>
             <option value="all">{t('All Seasons')}</option>
             {seasons.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className={selectClass + ' w-full'}>
+            <option value="all">{t('All Categories')}</option>
+            {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={selectedRole} onChange={e => setSelectedRole(e.target.value)} className={selectClass + ' w-full'}>
+            <option value="all">{t('All Roles')}</option>
+            {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
           <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
         </div>
