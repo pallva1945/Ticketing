@@ -1811,7 +1811,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           <div className="flex items-center justify-between mb-3 flex-wrap gap-2 print-mb-sm">
             <h4 className={`text-xs font-semibold print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Progression')}</h4>
             <div className="flex gap-1">
-              {groups.map(g => (
+              {groups.filter(g => g.id !== 'load').map(g => (
                 <button key={g.id} onClick={() => setMetricGroup(g.id)}
                   className={`px-2 py-1 rounded-lg text-[10px] font-medium flex items-center gap-1 transition-all ${
                     metricGroup === g.id ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-700 text-gray-400 hover:bg-gray-600' : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'
@@ -1869,6 +1869,104 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
             </div>
           </div>
         </div>
+      </div>
+
+      <div className={`${cardClass} print-page`}>
+        <div className="print-header hidden">
+          <div className="print-header-name">{selectedPlayer}</div>
+          <div className="print-header-meta">{profile?.role || ''} · {category || ''} · {profile?.season || currentSeason || ''}</div>
+        </div>
+        <div className="flex items-center gap-2 mb-4 print-mb-sm">
+          <Activity size={14} className="text-green-500" />
+          <h3 className={`text-sm font-bold print-section-title ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Load')}</h3>
+        </div>
+
+        {(() => {
+          const totalPractice = ps.reduce((a, s) => a + (s.practiceLoad || 0), 0);
+          const totalVitamins = ps.reduce((a, s) => a + (s.vitaminsLoad || 0), 0);
+          const totalWeights = ps.reduce((a, s) => a + (s.weightsLoad || 0), 0);
+          const totalGame = ps.reduce((a, s) => a + (s.gameLoad || 0), 0);
+          const totalLoad = totalPractice + totalVitamins + totalWeights + totalGame;
+          const loadSessions = ps.filter(s => (s.practiceLoad || 0) > 0 || (s.vitaminsLoad || 0) > 0 || (s.weightsLoad || 0) > 0 || (s.gameLoad || 0) > 0);
+          const avgLoad = loadSessions.length > 0 ? Math.round(totalLoad / loadSessions.length) : 0;
+
+          const loadChartData = ps.filter(s => (s.practiceLoad || 0) > 0 || (s.vitaminsLoad || 0) > 0 || (s.weightsLoad || 0) > 0 || (s.gameLoad || 0) > 0).map(s => ({
+            date: s.date.substring(5),
+            [t('Practice')]: s.practiceLoad || 0,
+            [t('Vitamins')]: s.vitaminsLoad || 0,
+            [t('Weights')]: s.weightsLoad || 0,
+            [t('Game')]: s.gameLoad || 0,
+          }));
+
+          return (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5 print-grid-tight print-mb-sm">
+                <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-emerald-50/50'}`}>
+                  <div className={labelClass}>{t('Practice')}</div>
+                  <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalPractice.toLocaleString()}</div>
+                </div>
+                <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-blue-50/50'}`}>
+                  <div className={labelClass}>{t('Vitamins')}</div>
+                  <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalVitamins.toLocaleString()}</div>
+                </div>
+                <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-purple-50/50'}`}>
+                  <div className={labelClass}>{t('Weights')}</div>
+                  <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalWeights.toLocaleString()}</div>
+                </div>
+                <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-orange-50/50'}`}>
+                  <div className={labelClass}>{t('Game')}</div>
+                  <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalGame.toLocaleString()}</div>
+                </div>
+                <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-gray-50'}`}>
+                  <div className={labelClass}>{t('Total Load')}</div>
+                  <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalLoad.toLocaleString()}</div>
+                </div>
+                <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-amber-50/50'}`}>
+                  <div className={labelClass}>{t('Avg/Session')}</div>
+                  <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{avgLoad.toLocaleString()}</div>
+                </div>
+              </div>
+
+              <div className={`rounded-lg border p-4 print-inner mb-5 print-mb-sm ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
+                <h4 className={`text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Load Distribution')}</h4>
+                <div className="h-48 print-chart">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={loadChartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                      <XAxis dataKey="date" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                      <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                      <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                      <Legend wrapperStyle={{ fontSize: 10 }} />
+                      <Bar dataKey={t('Practice')} stackId="load" fill="#10b981" />
+                      <Bar dataKey={t('Vitamins')} stackId="load" fill="#3b82f6" />
+                      <Bar dataKey={t('Weights')} stackId="load" fill="#8b5cf6" />
+                      <Bar dataKey={t('Game')} stackId="load" fill="#f97316" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
+                <h4 className={`text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Load Progression')}</h4>
+                <div className="h-48 print-chart">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={loadChartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                      <XAxis dataKey="date" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                      <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                      <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                      <Legend wrapperStyle={{ fontSize: 10 }} />
+                      <Line type="monotone" dataKey={t('Practice')} stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                      <Line type="monotone" dataKey={t('Vitamins')} stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                      <Line type="monotone" dataKey={t('Weights')} stroke="#8b5cf6" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                      <Line type="monotone" dataKey={t('Game')} stroke="#f97316" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </>
+          );
+        })()}
       </div>
     </div>
   );
