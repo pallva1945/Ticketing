@@ -2003,7 +2003,7 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
       const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
       if (!monthMap.has(label)) monthMap.set(label, { sortKey: monthKey, players: new Map() });
       const val = convertVal(s, s.player);
-      if (val !== null) {
+      if (val !== null && val !== 0) {
         const pm = monthMap.get(label)!.players;
         if (!pm.has(s.player)) pm.set(s.player, []);
         pm.get(s.player)!.push(val);
@@ -2024,9 +2024,10 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
   const deltaData = useMemo(() => {
     return selected.map(p => {
       const ps = sessions.filter(s => s.player === p && s[metric] !== null).sort((a, b) => a.date.localeCompare(b.date));
-      if (ps.length < 2) return { player: p, first: null, last: null, delta: null };
-      const first = convertVal(ps[0], p);
-      const last = convertVal(ps[ps.length - 1], p);
+      const validPs = ps.filter(s => { const v = convertVal(s, p); return v !== null && v !== 0; });
+      if (validPs.length < 2) return { player: p, first: null, last: null, delta: null };
+      const first = convertVal(validPs[0], p);
+      const last = convertVal(validPs[validPs.length - 1], p);
       if (first === null || last === null) return { player: p, first: null, last: null, delta: null };
       return { player: p, first, last, delta: Math.round((last - first) * 10) / 10 };
     });
