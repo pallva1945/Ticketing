@@ -965,6 +965,11 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
             </div>
           ))}
         </div>
+        <div className={`flex items-center justify-center gap-6 mt-3 pt-3 border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+          <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#3b82f6' }} /><span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Below Range')}</span></div>
+          <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#22c55e' }} /><span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('In Range')}</span></div>
+          <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#ef4444' }} /><span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Above Range')}</span></div>
+        </div>
       </div>
 
       <RosterTable filtered={filtered} activePlayers={activePlayers} onSelectPlayer={onSelectPlayer} isDark={isDark} selectedSeason={selectedSeason} profiles={profiles} />
