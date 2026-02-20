@@ -790,8 +790,6 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
   }, [selectedDay, selectedWeek, selectedMonth]);
 
   const loadData = useMemo(() => {
-    const buckets = new Map<string, { practice: number[]; vitamins: number[]; weights: number[]; game: number[] }>();
-
     const getBucketKey = (s: VBSession): string => {
       if (filterGranularity === 'day') return s.player;
       if (filterGranularity === 'week') {
@@ -817,33 +815,39 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
       return s.date.substring(0, 7);
     };
 
-    const sortedEntries: { key: string; sortKey: string; data: { practice: number[]; vitamins: number[]; weights: number[]; game: number[] } }[] = [];
     const sortKeyMap = new Map<string, string>();
+    const bucketPlayerLoads = new Map<string, Map<string, { practice: number; vitamins: number; weights: number; game: number }>>();
 
     filtered.forEach(s => {
       const key = getBucketKey(s);
       const sortKey = getSortKey(s);
-      if (!buckets.has(key)) {
-        buckets.set(key, { practice: [], vitamins: [], weights: [], game: [] });
+      if (!bucketPlayerLoads.has(key)) {
+        bucketPlayerLoads.set(key, new Map());
         sortKeyMap.set(key, sortKey);
       }
       if (sortKey < (sortKeyMap.get(key) || sortKey)) sortKeyMap.set(key, sortKey);
-      const entry = buckets.get(key)!;
-      if (s.practiceLoad) entry.practice.push(s.practiceLoad);
-      if (s.vitaminsLoad) entry.vitamins.push(s.vitaminsLoad);
-      if (s.weightsLoad) entry.weights.push(s.weightsLoad);
-      if (s.gameLoad) entry.game.push(s.gameLoad);
+      const playerMap = bucketPlayerLoads.get(key)!;
+      if (!playerMap.has(s.player)) playerMap.set(s.player, { practice: 0, vitamins: 0, weights: 0, game: 0 });
+      const pLoad = playerMap.get(s.player)!;
+      if (s.practiceLoad) pLoad.practice += s.practiceLoad;
+      if (s.vitaminsLoad) pLoad.vitamins += s.vitaminsLoad;
+      if (s.weightsLoad) pLoad.weights += s.weightsLoad;
+      if (s.gameLoad) pLoad.game += s.gameLoad;
     });
 
-    return [...buckets.entries()]
+    return [...bucketPlayerLoads.entries()]
       .sort((a, b) => (sortKeyMap.get(a[0]) || '').localeCompare(sortKeyMap.get(b[0]) || ''))
-      .map(([label, data]) => ({
-        month: label,
-        practice: data.practice.length ? +(data.practice.reduce((a, b) => a + b, 0) / data.practice.length).toFixed(1) : 0,
-        vitamins: data.vitamins.length ? +(data.vitamins.reduce((a, b) => a + b, 0) / data.vitamins.length).toFixed(1) : 0,
-        weights: data.weights.length ? +(data.weights.reduce((a, b) => a + b, 0) / data.weights.length).toFixed(1) : 0,
-        game: data.game.length ? +(data.game.reduce((a, b) => a + b, 0) / data.game.length).toFixed(1) : 0,
-      }));
+      .map(([label, playerMap]) => {
+        const players = [...playerMap.values()];
+        const n = players.length || 1;
+        return {
+          month: label,
+          practice: +(players.reduce((sum, p) => sum + p.practice, 0) / n).toFixed(1),
+          vitamins: +(players.reduce((sum, p) => sum + p.vitamins, 0) / n).toFixed(1),
+          weights: +(players.reduce((sum, p) => sum + p.weights, 0) / n).toFixed(1),
+          game: +(players.reduce((sum, p) => sum + p.game, 0) / n).toFixed(1),
+        };
+      });
   }, [filtered, filterGranularity]);
 
   const selectClass = `px-3 py-1.5 rounded-lg text-xs font-medium appearance-none pr-7 ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-gray-700 border-gray-200'} border`;
