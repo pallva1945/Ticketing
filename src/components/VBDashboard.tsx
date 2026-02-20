@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Calendar, CalendarDays, Pill, Gamepad2, CalendarOff, ArrowUpFromDot, Gauge } from 'lucide-react';
+import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Calendar, CalendarDays, Pill, Gamepad2, CalendarOff, ArrowUpFromDot, Gauge, Printer } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, CartesianGrid, Legend, ReferenceLine, ReferenceArea, Cell } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -1614,35 +1614,52 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
   ];
 
   const cardClass = `rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`;
-  const labelClass = `text-[11px] font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`;
-  const valueClass = `text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`;
-  const subValueClass = `text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`;
+  const labelClass = `text-[11px] font-medium print-label ${isDark ? 'text-gray-500' : 'text-gray-400'}`;
+  const valueClass = `text-sm font-semibold print-value ${isDark ? 'text-white' : 'text-gray-900'}`;
+  const subValueClass = `text-xs print-sub ${isDark ? 'text-gray-400' : 'text-gray-500'}`;
+
+  const handlePrint = () => {
+    window.print();
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="max-w-xs">
-        <PlayerSelector players={players} selected={selectedPlayer} onChange={setSelectedPlayer} />
+    <div className="space-y-6 print-container">
+      <div className="max-w-xs no-print flex items-center gap-3">
+        <div className="flex-1">
+          <PlayerSelector players={players} selected={selectedPlayer} onChange={setSelectedPlayer} />
+        </div>
+        <button
+          onClick={handlePrint}
+          className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'} shadow-sm`}
+        >
+          <Printer size={14} />
+          <span className="hidden sm:inline">{t('Print')}</span>
+        </button>
       </div>
 
-      <div className={cardClass}>
-        <div className="flex items-center gap-2 mb-4">
-          <User size={14} className="text-orange-500" />
-          <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Info')}</h3>
+      <div className={`${cardClass} print-page`}>
+        <div className="print-header hidden">
+          <div className="print-header-name">{selectedPlayer}</div>
+          <div className="print-header-meta">{profile?.role || ''} · {category || ''} · {profile?.season || currentSeason || ''}</div>
         </div>
-        <div className="flex flex-col sm:flex-row gap-5">
+        <div className="flex items-center gap-2 mb-4 print-mb-sm">
+          <User size={14} className="text-orange-500" />
+          <h3 className={`text-sm font-bold print-section-title ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Info')}</h3>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-5 print-grid">
           <div className="flex-shrink-0 flex flex-col items-center">
             {profile?.mugShot ? (
-              <img src={profile.mugShot} alt={selectedPlayer} className="w-28 h-28 rounded-xl object-cover border-2 border-orange-500/30" />
+              <img src={profile.mugShot} alt={selectedPlayer} className="w-28 h-28 print-photo rounded-xl object-cover border-2 border-orange-500/30" />
             ) : (
-              <div className={`w-28 h-28 rounded-xl flex items-center justify-center text-3xl font-bold ${isDark ? 'bg-gray-800 text-gray-600' : 'bg-gray-100 text-gray-300'}`}>
+              <div className={`w-28 h-28 print-photo rounded-xl flex items-center justify-center text-3xl font-bold ${isDark ? 'bg-gray-800 text-gray-600' : 'bg-gray-100 text-gray-300'}`}>
                 {selectedPlayer.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
               </div>
             )}
-            <span className={`text-lg font-bold mt-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedPlayer.split(' ').pop()}</span>
-            <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{selectedPlayer.split(' ').slice(0, -1).join(' ')}</span>
+            <span className={`text-lg font-bold mt-2 print-value ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedPlayer.split(' ').pop()}</span>
+            <span className={`text-xs print-sub ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{selectedPlayer.split(' ').slice(0, -1).join(' ')}</span>
           </div>
 
-          <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-3">
+          <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-3 print-grid">
             <div>
               <div className={labelClass}>{t('Role')}</div>
               <div className={valueClass}>{profile?.role || '—'}</div>
@@ -1700,91 +1717,99 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
         </div>
       </div>
 
-      <div className={cardClass}>
-        <div className="flex items-center gap-2 mb-4">
-          <Ruler size={14} className="text-blue-500" />
-          <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Anthropometrics')}</h3>
+      <div className={`${cardClass} print-page`}>
+        <div className="print-header hidden">
+          <div className="print-header-name">{selectedPlayer}</div>
+          <div className="print-header-meta">{profile?.role || ''} · {category || ''} · {profile?.season || currentSeason || ''}</div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
-          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-blue-50/50'}`}>
+        <div className="flex items-center gap-2 mb-4 print-mb-sm">
+          <Ruler size={14} className="text-blue-500" />
+          <h3 className={`text-sm font-bold print-section-title ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Anthropometrics')}</h3>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 print-grid">
+          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-blue-50/50'}`}>
             <div className={labelClass}>{t('Height')}</div>
-            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.height !== null ? `${latestAnthro.height}` : '—'}<span className="text-xs font-normal ml-0.5">cm</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.height !== null ? `${latestAnthro.height}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
           </div>
-          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-indigo-50/50'}`}>
+          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-indigo-50/50'}`}>
             <div className={labelClass}>{t('Projected Height')} (KR)</div>
-            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{(() => { const ph = getProjectedHeight(selectedPlayer, profiles, sessions); return ph !== null ? `${ph}` : '—'; })()}<span className="text-xs font-normal ml-0.5">cm</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{(() => { const ph = getProjectedHeight(selectedPlayer, profiles, sessions); return ph !== null ? `${ph}` : '—'; })()}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
             {profile?.midParentalHeight && <div className={subValueClass}>MPH: {profile.midParentalHeight} cm</div>}
           </div>
-          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-green-50/50'}`}>
+          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-green-50/50'}`}>
             <div className={labelClass}>{t('Weight')}</div>
-            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.weight !== null ? `${latestAnthro.weight}` : '—'}<span className="text-xs font-normal ml-0.5">kg</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.weight !== null ? `${latestAnthro.weight}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">kg</span></div>
           </div>
-          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-purple-50/50'}`}>
+          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-purple-50/50'}`}>
             <div className={labelClass}>{t('Wingspan')}</div>
-            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.wingspan !== null ? `${latestAnthro.wingspan}` : '—'}<span className="text-xs font-normal ml-0.5">cm</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.wingspan !== null ? `${latestAnthro.wingspan}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
             {latestAnthro.height && latestAnthro.wingspan && (
               <div className={subValueClass}>+{Math.round((latestAnthro.wingspan - latestAnthro.height) * 10) / 10} vs H</div>
             )}
           </div>
-          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-cyan-50/50'}`}>
+          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-cyan-50/50'}`}>
             <div className={labelClass}>{t('Standing Reach')}</div>
-            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.standingReach !== null ? `${latestAnthro.standingReach}` : '—'}<span className="text-xs font-normal ml-0.5">cm</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.standingReach !== null ? `${latestAnthro.standingReach}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
             {(() => { const pr = getProjectedReach(selectedPlayer, profiles, sessions); return pr ? <div className={subValueClass}>{t('Proj')}: {pr} cm</div> : null; })()}
           </div>
-          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-red-50/50'}`}>
+          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-red-50/50'}`}>
             <div className={labelClass}>{t('Body Fat')}</div>
-            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.bodyFat !== null ? `${latestAnthro.bodyFat}` : '—'}<span className="text-xs font-normal ml-0.5">%</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.bodyFat !== null ? `${latestAnthro.bodyFat}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">%</span></div>
           </div>
-          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-sky-50/50'}`}>
+          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-sky-50/50'}`}>
             <div className={labelClass}>{t("Mom's Height")}</div>
-            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{profile?.momHeight !== null && profile?.momHeight !== undefined ? `${profile.momHeight}` : '—'}<span className="text-xs font-normal ml-0.5">cm</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{profile?.momHeight !== null && profile?.momHeight !== undefined ? `${profile.momHeight}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
           </div>
-          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-sky-50/50'}`}>
+          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-sky-50/50'}`}>
             <div className={labelClass}>{t("Dad's Height")}</div>
-            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{profile?.dadHeight !== null && profile?.dadHeight !== undefined ? `${profile.dadHeight}` : '—'}<span className="text-xs font-normal ml-0.5">cm</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{profile?.dadHeight !== null && profile?.dadHeight !== undefined ? `${profile.dadHeight}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
           </div>
         </div>
       </div>
 
-      <div className={cardClass}>
-        <div className="flex items-center gap-2 mb-4">
+      <div className={`${cardClass} print-page`}>
+        <div className="print-header hidden">
+          <div className="print-header-name">{selectedPlayer}</div>
+          <div className="print-header-meta">{profile?.role || ''} · {category || ''} · {profile?.season || currentSeason || ''}</div>
+        </div>
+        <div className="flex items-center gap-2 mb-4 print-mb-sm">
           <Zap size={14} className="text-amber-500" />
-          <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Performance')}</h3>
+          <h3 className={`text-sm font-bold print-section-title ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Performance')}</h3>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
-          <div className={`rounded-lg p-3 text-center ${isDark ? 'bg-gray-800/60' : 'bg-cyan-50/50'}`}>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5 print-grid-tight print-mb-sm">
+          <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-cyan-50/50'}`}>
             <div className={labelClass}>{t('Pure Vertical')}</div>
-            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.pureVertical !== null ? latestAthletic.pureVertical : '—'}<span className="text-xs font-normal ml-0.5">cm</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.pureVertical !== null ? latestAthletic.pureVertical : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
           </div>
-          <div className={`rounded-lg p-3 text-center ${isDark ? 'bg-gray-800/60' : 'bg-violet-50/50'}`}>
+          <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-violet-50/50'}`}>
             <div className={labelClass}>{t('No-Step Vertical')}</div>
-            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.noStepVertical !== null ? latestAthletic.noStepVertical : '—'}<span className="text-xs font-normal ml-0.5">cm</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.noStepVertical !== null ? latestAthletic.noStepVertical : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
           </div>
-          <div className={`rounded-lg p-3 text-center ${isDark ? 'bg-gray-800/60' : 'bg-orange-50/50'}`}>
+          <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-orange-50/50'}`}>
             <div className={labelClass}>{t('Sprint')}</div>
-            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.sprint !== null ? latestAthletic.sprint : '—'}<span className="text-xs font-normal ml-0.5">ms</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.sprint !== null ? latestAthletic.sprint : '—'}<span className="text-xs font-normal ml-0.5 print-sub">ms</span></div>
           </div>
-          <div className={`rounded-lg p-3 text-center ${isDark ? 'bg-gray-800/60' : 'bg-pink-50/50'}`}>
+          <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-pink-50/50'}`}>
             <div className={labelClass}>{t('Cone Drill')}</div>
-            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.coneDrill !== null ? latestAthletic.coneDrill : '—'}<span className="text-xs font-normal ml-0.5">ms</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.coneDrill !== null ? latestAthletic.coneDrill : '—'}<span className="text-xs font-normal ml-0.5 print-sub">ms</span></div>
           </div>
-          <div className={`rounded-lg p-3 text-center ${isDark ? 'bg-gray-800/60' : 'bg-green-50/50'}`}>
+          <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-green-50/50'}`}>
             <div className={labelClass}>{t('Deadlift')}</div>
-            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.deadlift !== null ? latestAthletic.deadlift : '—'}<span className="text-xs font-normal ml-0.5">kg</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.deadlift !== null ? latestAthletic.deadlift : '—'}<span className="text-xs font-normal ml-0.5 print-sub">kg</span></div>
           </div>
-          <div className={`rounded-lg p-3 text-center ${isDark ? 'bg-gray-800/60' : 'bg-amber-50/50'}`}>
+          <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-amber-50/50'}`}>
             <div className={labelClass}>{t('3PT %')}</div>
-            <div className={`text-xl font-bold ${overallPct !== null && overallPct >= 40 ? 'text-emerald-500' : overallPct !== null && overallPct >= 30 ? 'text-amber-500' : isDark ? 'text-white' : 'text-gray-900'}`}>
-              {overallPct !== null ? overallPct : '—'}<span className="text-xs font-normal ml-0.5">%</span>
+            <div className={`text-xl font-bold print-value-lg ${overallPct !== null && overallPct >= 40 ? 'text-emerald-500' : overallPct !== null && overallPct >= 30 ? 'text-amber-500' : isDark ? 'text-white' : 'text-gray-900'}`}>
+              {overallPct !== null ? overallPct : '—'}<span className="text-xs font-normal ml-0.5 print-sub">%</span>
             </div>
             <div className={subValueClass}>{totalMade}/{totalTaken}</div>
           </div>
         </div>
 
-        <div className={`rounded-lg border p-4 mb-5 ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
-          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-            <h4 className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Progression')}</h4>
+        <div className={`rounded-lg border p-4 print-inner mb-5 print-mb-sm ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2 print-mb-sm">
+            <h4 className={`text-xs font-semibold print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Progression')}</h4>
             <div className="flex gap-1">
               {groups.map(g => (
                 <button key={g.id} onClick={() => setMetricGroup(g.id)}
@@ -1797,7 +1822,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               ))}
             </div>
           </div>
-          <div className="h-48">
+          <div className="h-48 print-chart">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
@@ -1813,13 +1838,13 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className={`rounded-lg border p-4 ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
-            <h4 className={`text-xs font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Availability Log')}</h4>
-            <div className="space-y-1 max-h-40 overflow-y-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 print-grid-tight">
+          <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
+            <h4 className={`text-xs font-semibold mb-2 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Availability Log')}</h4>
+            <div className="space-y-1 max-h-40 overflow-y-auto print-scroll-area">
               {ps.filter(s => s.injured && s.injured > 0).length === 0 ? (
                 <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No injury records')}</p>
-              ) : ps.filter(s => s.injured && s.injured > 0).reverse().slice(0, 20).map((s, i) => (
+              ) : ps.filter(s => s.injured && s.injured > 0).reverse().slice(0, 10).map((s, i) => (
                 <div key={i} className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs ${isDark ? 'bg-red-900/10' : 'bg-red-50'}`}>
                   <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{s.date}</span>
                   <span className="text-red-500 font-medium">{t('Injury Level')} {s.injured}</span>
@@ -1828,12 +1853,12 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
             </div>
           </div>
 
-          <div className={`rounded-lg border p-4 ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
-            <h4 className={`text-xs font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Shooting History')}</h4>
-            <div className="space-y-1 max-h-40 overflow-y-auto">
+          <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
+            <h4 className={`text-xs font-semibold mb-2 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Shooting History')}</h4>
+            <div className="space-y-1 max-h-40 overflow-y-auto print-scroll-area">
               {shootingSessions.length === 0 ? (
                 <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No shooting data')}</p>
-              ) : [...shootingSessions].reverse().slice(0, 20).map((s, i) => (
+              ) : [...shootingSessions].reverse().slice(0, 10).map((s, i) => (
                 <div key={i} className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}>
                   <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{s.date}</span>
                   <span className={`font-semibold ${(s.shootingPct || 0) >= 40 ? 'text-emerald-500' : (s.shootingPct || 0) >= 30 ? 'text-amber-500' : 'text-red-500'}`}>
@@ -2651,7 +2676,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-[#0a0a0a] text-white' : 'bg-gray-50 text-gray-900'}`}>
-      <header className={`sticky top-0 z-40 border-b backdrop-blur-xl ${isDark ? 'bg-[#0a0a0a]/90 border-gray-800' : 'bg-white/90 border-gray-200'}`}>
+      <header className={`sticky top-0 z-40 border-b backdrop-blur-xl no-print ${isDark ? 'bg-[#0a0a0a]/90 border-gray-800' : 'bg-white/90 border-gray-200'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3">

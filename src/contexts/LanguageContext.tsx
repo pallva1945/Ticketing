@@ -46,6 +46,7 @@ const translations: Record<string, Record<Language, string>> = {
   'injury sessions': { en: 'injury sessions', it: 'sessioni infortunio' },
   "Mom's Height": { en: "Mom's Height", it: 'Altezza Madre' },
   "Dad's Height": { en: "Dad's Height", it: 'Altezza Padre' },
+  'Print': { en: 'Print', it: 'Stampa' },
   'Compare': { en: 'Compare', it: 'Confronta' },
   'Progression': { en: 'Progression', it: 'Progressione' },
   'All Seasons': { en: 'All Seasons', it: 'Tutte le Stagioni' },
