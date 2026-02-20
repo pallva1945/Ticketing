@@ -982,7 +982,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
                 <BarChart data={loadData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                   <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                  <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => Math.max(0, Math.floor(Math.min(dataMin, shotsGoal) * 0.8)), (dataMax: number) => Math.ceil(Math.max(dataMax, shotsGoal) * 1.1)]} />
+                  <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => Math.max(0, Math.floor(Math.min(dataMin, shotsGoal) * 0.9)), (dataMax: number) => Math.ceil(Math.max(dataMax, shotsGoal) * 1.05)]} />
                   <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
                   <ReferenceLine y={shotsGoal} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${shotsGoal}`, position: 'right', fontSize: 9, fill: '#ef4444' }} />
                   <Bar dataKey="shotsTaken" name={t('Shots Taken')} radius={[2, 2, 0, 0]}>
@@ -1009,7 +1009,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
                 })()}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                   <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                  <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin - 5)), (dataMax: number) => Math.min(100, Math.ceil(dataMax + 5))]} />
+                  <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin - 2)), (dataMax: number) => Math.min(100, Math.ceil(dataMax + 2))]} />
                   <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} formatter={(value: any) => `${value}%`} />
                   <Line type="monotone" dataKey="cumulativePct" name={t('3PT %')} stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 3 }} />
                 </LineChart>
