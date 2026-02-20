@@ -1898,6 +1898,59 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
   const allMonths = useMemo(() => [...new Set(sessions.map(s => s.date.substring(0, 7)))].sort().reverse(), [sessions]);
   const allDates = useMemo(() => [...new Set(sessions.map(s => s.date))].sort().reverse(), [sessions]);
 
+  const monthNamesEN = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+  const monthNamesIT = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+  const monthShortEN = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  const monthShortIT = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  const monthDisplay = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const parseMonthName = (str: string): number | null => {
+    const s = str.toLowerCase();
+    for (let i = 0; i < 12; i++) {
+      if (monthNamesEN[i].startsWith(s) || monthNamesIT[i].startsWith(s) || monthShortEN[i] === s || monthShortIT[i] === s) return i;
+    }
+    return null;
+  };
+
+  const normalizeQuery = (raw: string): { type: 'date' | 'month' | 'season' | 'text'; iso: string } | null => {
+    const q = raw.trim();
+
+    let m;
+    if ((m = q.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/))) {
+      const [, a, b, year] = m;
+      const day = a.padStart(2, '0'), mon = b.padStart(2, '0');
+      return { type: 'date', iso: `${year}-${mon}-${day}` };
+    }
+    if ((m = q.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/))) {
+      const [, year, mon, day] = m;
+      return { type: 'date', iso: `${year}-${mon.padStart(2, '0')}-${day.padStart(2, '0')}` };
+    }
+    if ((m = q.match(/^(\d{1,2})[\/\-.](\d{4})$/))) {
+      const [, mon, year] = m;
+      return { type: 'month', iso: `${year}-${mon.padStart(2, '0')}` };
+    }
+    if ((m = q.match(/^(\d{4})[\/\-.](\d{1,2})$/))) {
+      const [, year, mon] = m;
+      return { type: 'month', iso: `${year}-${mon.padStart(2, '0')}` };
+    }
+    const monthWordMatch = q.match(/^([a-zA-Zéàòùì]+)\s*(\d{4})?$/);
+    if (monthWordMatch) {
+      const mi = parseMonthName(monthWordMatch[1]);
+      if (mi !== null) {
+        if (monthWordMatch[2]) {
+          return { type: 'month', iso: `${monthWordMatch[2]}-${String(mi + 1).padStart(2, '0')}` };
+        }
+        return { type: 'text', iso: String(mi + 1).padStart(2, '0') };
+      }
+    }
+    const monthWordMatch2 = q.match(/^(\d{4})\s+([a-zA-Zéàòùì]+)$/);
+    if (monthWordMatch2) {
+      const mi = parseMonthName(monthWordMatch2[2]);
+      if (mi !== null) return { type: 'month', iso: `${monthWordMatch2[1]}-${String(mi + 1).padStart(2, '0')}` };
+    }
+    return null;
+  };
+
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
@@ -1911,18 +1964,40 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
       items.push({ type: 'season', label: `${t('Season')} ${s}`, value: `season:${s}`, sortKey: 1 });
     });
 
-    allMonths.filter(m => m.includes(q)).slice(0, 5).forEach(m => {
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const monthNum = parseInt(m.split('-')[1]) - 1;
-      items.push({ type: 'month', label: `${monthNames[monthNum]} ${m.split('-')[0]}`, value: `month:${m}`, sortKey: 2 });
-    });
+    const parsed = normalizeQuery(query);
+    if (parsed) {
+      if (parsed.type === 'date') {
+        if (allDates.includes(parsed.iso)) {
+          items.push({ type: 'date', label: parsed.iso, value: `date:${parsed.iso}`, sortKey: 3 });
+        }
+      } else if (parsed.type === 'month') {
+        if (allMonths.includes(parsed.iso)) {
+          const mi = parseInt(parsed.iso.split('-')[1]) - 1;
+          items.push({ type: 'month', label: `${monthDisplay[mi]} ${parsed.iso.split('-')[0]}`, value: `month:${parsed.iso}`, sortKey: 2 });
+        }
+      } else if (parsed.type === 'text') {
+        allMonths.filter(m => m.endsWith(`-${parsed.iso}`)).slice(0, 4).forEach(m => {
+          const mi = parseInt(m.split('-')[1]) - 1;
+          items.push({ type: 'month', label: `${monthDisplay[mi]} ${m.split('-')[0]}`, value: `month:${m}`, sortKey: 2 });
+        });
+      }
+    }
 
-    allDates.filter(d => d.includes(q)).slice(0, 5).forEach(d => {
-      items.push({ type: 'date', label: d, value: `date:${d}`, sortKey: 3 });
-    });
+    if (!parsed || (parsed.type === 'text')) {
+      allMonths.filter(m => m.includes(q)).slice(0, 5).forEach(m => {
+        if (items.some(i => i.value === `month:${m}`)) return;
+        const mi = parseInt(m.split('-')[1]) - 1;
+        items.push({ type: 'month', label: `${monthDisplay[mi]} ${m.split('-')[0]}`, value: `month:${m}`, sortKey: 2 });
+      });
+
+      allDates.filter(d => d.includes(q)).slice(0, 5).forEach(d => {
+        if (items.some(i => i.value === `date:${d}`)) return;
+        items.push({ type: 'date', label: d, value: `date:${d}`, sortKey: 3 });
+      });
+    }
 
     const hasDigit = /\d/.test(q);
-    if (hasDigit) {
+    if (hasDigit || parsed) {
       items.sort((a, b) => {
         const aIsTime = a.type !== 'player' ? 0 : 1;
         const bIsTime = b.type !== 'player' ? 0 : 1;
@@ -1948,21 +2023,31 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
       filtered = sessions.filter(s => s.date === date);
     } else {
       const q = searchValue.toLowerCase();
-      const playerMatch = players.filter(p => p.toLowerCase() === q || p.toLowerCase().includes(q));
-      if (playerMatch.length > 0) {
-        filtered = sessions.filter(s => playerMatch.some(p => p === s.player));
+
+      const parsed = normalizeQuery(searchValue);
+      if (parsed && parsed.type === 'date') {
+        filtered = sessions.filter(s => s.date === parsed.iso);
+      } else if (parsed && parsed.type === 'month') {
+        filtered = sessions.filter(s => s.date.startsWith(parsed.iso));
+      } else if (parsed && parsed.type === 'text') {
+        filtered = sessions.filter(s => s.date.substring(5, 7) === parsed.iso);
       } else {
-        const seasonMatch = q.match(/^(\d{4})\/(\d{2,4})$/);
-        if (seasonMatch) {
-          const y1 = seasonMatch[1];
-          const y2 = seasonMatch[2].length === 2 ? seasonMatch[2] : seasonMatch[2].slice(2);
-          filtered = sessions.filter(s => getSeason(s.date) === `${y1}/${y2}`);
-        } else if (/^\d{4}-\d{2}-\d{2}$/.test(q)) {
-          filtered = sessions.filter(s => s.date === q);
-        } else if (/^\d{4}-\d{2}$/.test(q)) {
-          filtered = sessions.filter(s => s.date.startsWith(q));
+        const playerMatch = players.filter(p => p.toLowerCase() === q || p.toLowerCase().includes(q));
+        if (playerMatch.length > 0) {
+          filtered = sessions.filter(s => playerMatch.some(p => p === s.player));
         } else {
-          filtered = sessions.filter(s => s.player.toLowerCase().includes(q) || s.date.includes(q));
+          const seasonMatch = q.match(/^(\d{4})\/(\d{2,4})$/);
+          if (seasonMatch) {
+            const y1 = seasonMatch[1];
+            const y2 = seasonMatch[2].length === 2 ? seasonMatch[2] : seasonMatch[2].slice(2);
+            filtered = sessions.filter(s => getSeason(s.date) === `${y1}/${y2}`);
+          } else if (/^\d{4}-\d{2}-\d{2}$/.test(q)) {
+            filtered = sessions.filter(s => s.date === q);
+          } else if (/^\d{4}-\d{2}$/.test(q)) {
+            filtered = sessions.filter(s => s.date.startsWith(q));
+          } else {
+            filtered = sessions.filter(s => s.player.toLowerCase().includes(q) || s.date.includes(q));
+          }
         }
       }
     }
