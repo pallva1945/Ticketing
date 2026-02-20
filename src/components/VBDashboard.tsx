@@ -1502,6 +1502,35 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 
   const ps = useMemo(() => getPlayerSessions(sessions, selectedPlayer), [sessions, selectedPlayer]);
 
+  const playerSeasons = useMemo(() => {
+    return [...new Set(ps.map(s => getSeason(s.date)).filter(Boolean))].sort().reverse() as string[];
+  }, [ps]);
+
+  const currentSeason = playerSeasons[0] || null;
+  const profile = useMemo(() => getPlayerProfile(selectedPlayer, profiles, currentSeason || undefined), [selectedPlayer, profiles, currentSeason]);
+
+  const playerAge = useMemo(() => {
+    const dobSerial = getPlayerDobSerial(selectedPlayer, profiles);
+    if (!dobSerial) return null;
+    const dob = excelSerialToDate(dobSerial);
+    const now = new Date();
+    let age = now.getFullYear() - dob.getFullYear();
+    if (now.getMonth() < dob.getMonth() || (now.getMonth() === dob.getMonth() && now.getDate() < dob.getDate())) age--;
+    return age;
+  }, [selectedPlayer, profiles]);
+
+  const playerDobFormatted = useMemo(() => {
+    const dobSerial = getPlayerDobSerial(selectedPlayer, profiles);
+    if (!dobSerial) return null;
+    const dob = excelSerialToDate(dobSerial);
+    return dob.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }, [selectedPlayer, profiles]);
+
+  const category = currentSeason ? getPlayerCategory(selectedPlayer, profiles, currentSeason) : '';
+  const sessionCount = ps.length;
+  const injuryCount = ps.filter(s => s.injured && s.injured > 0).length;
+  const availabilityPct = sessionCount > 0 ? Math.round(((sessionCount - injuryCount) / sessionCount) * 100) : null;
+
   const latestAnthro = {
     height: getLatestMetric(sessions, selectedPlayer, 'height'),
     weight: getLatestMetric(sessions, selectedPlayer, 'weight'),
@@ -1584,93 +1613,235 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
     { id: 'load' as const, label: t('Load'), icon: Activity },
   ];
 
+  const cardClass = `rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`;
+  const labelClass = `text-[11px] font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`;
+  const valueClass = `text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`;
+  const subValueClass = `text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`;
+
   return (
     <div className="space-y-6">
       <div className="max-w-xs">
         <PlayerSelector players={players} selected={selectedPlayer} onChange={setSelectedPlayer} />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <StatCard label={t('Height')} value={latestAnthro.height} unit=" cm" icon={Ruler} color="#3b82f6" />
-        <StatCard label={t('Projected Height') + ' (KR)'} value={getProjectedHeight(selectedPlayer, profiles, sessions)} unit=" cm" icon={Ruler} color="#6366f1" />
-        <StatCard label={t('Weight')} value={latestAnthro.weight} unit=" kg" icon={Weight} color="#10b981" />
-        <StatCard label={t('Wingspan')} value={latestAnthro.wingspan} unit=" cm" icon={Ruler} color="#8b5cf6" />
-        <StatCard label={t('Body Fat')} value={latestAnthro.bodyFat} unit="%" icon={Heart} color="#ef4444" />
-        <StatCard label={t('3PT %')} value={overallPct} unit="%" icon={Target} color="#f59e0b" subtitle={`${totalMade}/${totalTaken}`} />
-      </div>
+      <div className={cardClass}>
+        <div className="flex items-center gap-2 mb-4">
+          <User size={14} className="text-orange-500" />
+          <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Info')}</h3>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-5">
+          <div className="flex-shrink-0 flex flex-col items-center">
+            {profile?.mugShot ? (
+              <img src={profile.mugShot} alt={selectedPlayer} className="w-28 h-28 rounded-xl object-cover border-2 border-orange-500/30" />
+            ) : (
+              <div className={`w-28 h-28 rounded-xl flex items-center justify-center text-3xl font-bold ${isDark ? 'bg-gray-800 text-gray-600' : 'bg-gray-100 text-gray-300'}`}>
+                {selectedPlayer.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+              </div>
+            )}
+            <span className={`text-lg font-bold mt-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{selectedPlayer.split(' ').pop()}</span>
+            <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{selectedPlayer.split(' ').slice(0, -1).join(' ')}</span>
+          </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <StatCard label={t('Pure Vertical')} value={latestAthletic.pureVertical} unit=" cm" icon={Zap} color="#06b6d4" />
-        <StatCard label={t('No-Step Vertical')} value={latestAthletic.noStepVertical} unit=" cm" icon={Zap} color="#8b5cf6" />
-        <StatCard label={t('Sprint')} value={latestAthletic.sprint} unit=" ms" icon={Timer} color="#f97316" />
-        <StatCard label={t('Cone Drill')} value={latestAthletic.coneDrill} unit=" ms" icon={Timer} color="#ec4899" />
-        <StatCard label={t('Deadlift')} value={latestAthletic.deadlift} unit=" kg" icon={Dumbbell} color="#10b981" />
-      </div>
-
-      <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Progression')}</h3>
-          <div className="flex gap-1">
-            {groups.map(g => (
-              <button
-                key={g.id}
-                onClick={() => setMetricGroup(g.id)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium flex items-center gap-1 transition-all ${
-                  metricGroup === g.id
-                    ? 'bg-orange-500 text-white'
-                    : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                }`}
-              >
-                <g.icon size={11} />
-                <span className="hidden sm:inline">{g.label}</span>
-              </button>
-            ))}
+          <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-3">
+            <div>
+              <div className={labelClass}>{t('Role')}</div>
+              <div className={valueClass}>{profile?.role || '—'}</div>
+            </div>
+            <div>
+              <div className={labelClass}>{t('Category')}</div>
+              <div className={valueClass}>{category || '—'}</div>
+            </div>
+            <div>
+              <div className={labelClass}>{t('DOB')}</div>
+              <div className={valueClass}>{playerDobFormatted || '—'}</div>
+              {playerAge !== null && <div className={subValueClass}>{playerAge} {t('years')}</div>}
+            </div>
+            <div>
+              <div className={labelClass}>{t('Passport')}</div>
+              <div className={valueClass}>{profile?.passport || '—'}</div>
+            </div>
+            <div>
+              <div className={labelClass}>{t('Italian Formation')}</div>
+              <div className={valueClass}>{profile?.italianFormation !== null && profile?.italianFormation !== undefined ? (profile.italianFormation ? t('Yes') : t('No')) : '—'}</div>
+            </div>
+            <div>
+              <div className={labelClass}>{t('Season')}</div>
+              <div className={valueClass}>{profile?.season || currentSeason || '—'}</div>
+            </div>
+            <div>
+              <div className={labelClass}>{t('SoY Status')}</div>
+              <div className={valueClass}>{profile?.soyStatus || '—'}</div>
+            </div>
+            <div>
+              <div className={labelClass}>{t('EoY Status')}</div>
+              <div className={valueClass}>{profile?.eoyStatus || '—'}</div>
+            </div>
+            <div>
+              <div className={labelClass}>{t('Year 1 Destination')}</div>
+              <div className={valueClass}>{profile?.year1Destination || '—'}</div>
+            </div>
+            <div>
+              <div className={labelClass}>{t('Revenue Generated')}</div>
+              <div className={valueClass}>{profile?.revenueGenerated !== null && profile?.revenueGenerated !== undefined ? `€${profile.revenueGenerated.toLocaleString()}` : '—'}</div>
+            </div>
+            <div>
+              <div className={labelClass}>{t('Sessions')}</div>
+              <div className={valueClass}>{sessionCount}</div>
+              <div className={subValueClass}>{playerSeasons.length} {t('seasons')}</div>
+            </div>
+            <div>
+              <div className={labelClass}>{t('Availability')}</div>
+              <div className={`text-sm font-semibold ${availabilityPct !== null && availabilityPct >= 90 ? 'text-emerald-500' : availabilityPct !== null && availabilityPct >= 70 ? 'text-amber-500' : 'text-red-500'}`}>
+                {availabilityPct !== null ? `${availabilityPct}%` : '—'}
+              </div>
+              {injuryCount > 0 && <div className={subValueClass}>{injuryCount} {t('injury sessions')}</div>}
+            </div>
           </div>
         </div>
-        <div className="h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-              <YAxis tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-              <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              {chartFields[metricGroup].map((f, i) => (
-                <Line key={f} type="monotone" dataKey={f} name={metricLabels[f] || f} stroke={METRIC_COLORS[i]} strokeWidth={2} dot={{ r: 3 }} connectNulls />
+      </div>
+
+      <div className={cardClass}>
+        <div className="flex items-center gap-2 mb-4">
+          <Ruler size={14} className="text-blue-500" />
+          <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Anthropometrics')}</h3>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-blue-50/50'}`}>
+            <div className={labelClass}>{t('Height')}</div>
+            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.height !== null ? `${latestAnthro.height}` : '—'}<span className="text-xs font-normal ml-0.5">cm</span></div>
+          </div>
+          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-indigo-50/50'}`}>
+            <div className={labelClass}>{t('Projected Height')} (KR)</div>
+            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{(() => { const ph = getProjectedHeight(selectedPlayer, profiles, sessions); return ph !== null ? `${ph}` : '—'; })()}<span className="text-xs font-normal ml-0.5">cm</span></div>
+            {profile?.midParentalHeight && <div className={subValueClass}>MPH: {profile.midParentalHeight} cm</div>}
+          </div>
+          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-green-50/50'}`}>
+            <div className={labelClass}>{t('Weight')}</div>
+            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.weight !== null ? `${latestAnthro.weight}` : '—'}<span className="text-xs font-normal ml-0.5">kg</span></div>
+          </div>
+          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-purple-50/50'}`}>
+            <div className={labelClass}>{t('Wingspan')}</div>
+            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.wingspan !== null ? `${latestAnthro.wingspan}` : '—'}<span className="text-xs font-normal ml-0.5">cm</span></div>
+            {latestAnthro.height && latestAnthro.wingspan && (
+              <div className={subValueClass}>+{Math.round((latestAnthro.wingspan - latestAnthro.height) * 10) / 10} vs H</div>
+            )}
+          </div>
+          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-cyan-50/50'}`}>
+            <div className={labelClass}>{t('Standing Reach')}</div>
+            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.standingReach !== null ? `${latestAnthro.standingReach}` : '—'}<span className="text-xs font-normal ml-0.5">cm</span></div>
+            {(() => { const pr = getProjectedReach(selectedPlayer, profiles, sessions); return pr ? <div className={subValueClass}>{t('Proj')}: {pr} cm</div> : null; })()}
+          </div>
+          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-red-50/50'}`}>
+            <div className={labelClass}>{t('Body Fat')}</div>
+            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.bodyFat !== null ? `${latestAnthro.bodyFat}` : '—'}<span className="text-xs font-normal ml-0.5">%</span></div>
+          </div>
+          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-sky-50/50'}`}>
+            <div className={labelClass}>{t("Mom's Height")}</div>
+            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{profile?.momHeight !== null && profile?.momHeight !== undefined ? `${profile.momHeight}` : '—'}<span className="text-xs font-normal ml-0.5">cm</span></div>
+          </div>
+          <div className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/60' : 'bg-sky-50/50'}`}>
+            <div className={labelClass}>{t("Dad's Height")}</div>
+            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{profile?.dadHeight !== null && profile?.dadHeight !== undefined ? `${profile.dadHeight}` : '—'}<span className="text-xs font-normal ml-0.5">cm</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div className={cardClass}>
+        <div className="flex items-center gap-2 mb-4">
+          <Zap size={14} className="text-amber-500" />
+          <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Performance')}</h3>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5">
+          <div className={`rounded-lg p-3 text-center ${isDark ? 'bg-gray-800/60' : 'bg-cyan-50/50'}`}>
+            <div className={labelClass}>{t('Pure Vertical')}</div>
+            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.pureVertical !== null ? latestAthletic.pureVertical : '—'}<span className="text-xs font-normal ml-0.5">cm</span></div>
+          </div>
+          <div className={`rounded-lg p-3 text-center ${isDark ? 'bg-gray-800/60' : 'bg-violet-50/50'}`}>
+            <div className={labelClass}>{t('No-Step Vertical')}</div>
+            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.noStepVertical !== null ? latestAthletic.noStepVertical : '—'}<span className="text-xs font-normal ml-0.5">cm</span></div>
+          </div>
+          <div className={`rounded-lg p-3 text-center ${isDark ? 'bg-gray-800/60' : 'bg-orange-50/50'}`}>
+            <div className={labelClass}>{t('Sprint')}</div>
+            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.sprint !== null ? latestAthletic.sprint : '—'}<span className="text-xs font-normal ml-0.5">ms</span></div>
+          </div>
+          <div className={`rounded-lg p-3 text-center ${isDark ? 'bg-gray-800/60' : 'bg-pink-50/50'}`}>
+            <div className={labelClass}>{t('Cone Drill')}</div>
+            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.coneDrill !== null ? latestAthletic.coneDrill : '—'}<span className="text-xs font-normal ml-0.5">ms</span></div>
+          </div>
+          <div className={`rounded-lg p-3 text-center ${isDark ? 'bg-gray-800/60' : 'bg-green-50/50'}`}>
+            <div className={labelClass}>{t('Deadlift')}</div>
+            <div className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.deadlift !== null ? latestAthletic.deadlift : '—'}<span className="text-xs font-normal ml-0.5">kg</span></div>
+          </div>
+          <div className={`rounded-lg p-3 text-center ${isDark ? 'bg-gray-800/60' : 'bg-amber-50/50'}`}>
+            <div className={labelClass}>{t('3PT %')}</div>
+            <div className={`text-xl font-bold ${overallPct !== null && overallPct >= 40 ? 'text-emerald-500' : overallPct !== null && overallPct >= 30 ? 'text-amber-500' : isDark ? 'text-white' : 'text-gray-900'}`}>
+              {overallPct !== null ? overallPct : '—'}<span className="text-xs font-normal ml-0.5">%</span>
+            </div>
+            <div className={subValueClass}>{totalMade}/{totalTaken}</div>
+          </div>
+        </div>
+
+        <div className={`rounded-lg border p-4 mb-5 ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <h4 className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Progression')}</h4>
+            <div className="flex gap-1">
+              {groups.map(g => (
+                <button key={g.id} onClick={() => setMetricGroup(g.id)}
+                  className={`px-2 py-1 rounded-lg text-[10px] font-medium flex items-center gap-1 transition-all ${
+                    metricGroup === g.id ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-700 text-gray-400 hover:bg-gray-600' : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'
+                  }`}>
+                  <g.icon size={10} />
+                  <span className="hidden sm:inline">{g.label}</span>
+                </button>
               ))}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-          <h3 className={`text-sm font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Availability Log')}</h3>
-          <div className="space-y-1 max-h-48 overflow-y-auto">
-            {ps.filter(s => s.injured && s.injured > 0).length === 0 ? (
-              <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No injury records')}</p>
-            ) : ps.filter(s => s.injured && s.injured > 0).reverse().slice(0, 20).map((s, i) => (
-              <div key={i} className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs ${isDark ? 'bg-red-900/10' : 'bg-red-50'}`}>
-                <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{s.date}</span>
-                <span className="text-red-500 font-medium">{t('Injury Level')} {s.injured}</span>
-              </div>
-            ))}
+            </div>
+          </div>
+          <div className="h-48">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                <XAxis dataKey="date" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                <Legend wrapperStyle={{ fontSize: 10 }} />
+                {chartFields[metricGroup].map((f, i) => (
+                  <Line key={f} type="monotone" dataKey={f} name={metricLabels[f] || f} stroke={METRIC_COLORS[i]} strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
-        <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-          <h3 className={`text-sm font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Shooting History')}</h3>
-          <div className="space-y-1 max-h-48 overflow-y-auto">
-            {shootingSessions.length === 0 ? (
-              <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No shooting data')}</p>
-            ) : shootingSessions.reverse().slice(0, 20).map((s, i) => (
-              <div key={i} className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{s.date}</span>
-                <span className={`font-semibold ${(s.shootingPct || 0) >= 40 ? 'text-emerald-500' : (s.shootingPct || 0) >= 30 ? 'text-amber-500' : 'text-red-500'}`}>
-                  {s.shootsMade}/{s.shootsTaken} ({s.shootingPct}%)
-                </span>
-              </div>
-            ))}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className={`rounded-lg border p-4 ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
+            <h4 className={`text-xs font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Availability Log')}</h4>
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {ps.filter(s => s.injured && s.injured > 0).length === 0 ? (
+                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No injury records')}</p>
+              ) : ps.filter(s => s.injured && s.injured > 0).reverse().slice(0, 20).map((s, i) => (
+                <div key={i} className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs ${isDark ? 'bg-red-900/10' : 'bg-red-50'}`}>
+                  <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{s.date}</span>
+                  <span className="text-red-500 font-medium">{t('Injury Level')} {s.injured}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className={`rounded-lg border p-4 ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
+            <h4 className={`text-xs font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Shooting History')}</h4>
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {shootingSessions.length === 0 ? (
+                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No shooting data')}</p>
+              ) : [...shootingSessions].reverse().slice(0, 20).map((s, i) => (
+                <div key={i} className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}>
+                  <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{s.date}</span>
+                  <span className={`font-semibold ${(s.shootingPct || 0) >= 40 ? 'text-emerald-500' : (s.shootingPct || 0) >= 30 ? 'text-amber-500' : 'text-red-500'}`}>
+                    {s.shootsMade}/{s.shootsTaken} ({s.shootingPct}%)
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -2462,7 +2633,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const tabs: { id: TabId; label: string; icon: any }[] = [
     { id: 'overview', label: t('Overview'), icon: BarChart3 },
     { id: 'performance', label: t('Performance'), icon: Zap },
-    { id: 'player', label: t('Player Profile'), icon: User },
+    { id: 'player', label: t('Players Pack'), icon: User },
     { id: 'compare', label: t('Compare'), icon: GitCompare },
     { id: 'progression', label: t('Progression'), icon: TrendingUp },
   ];
