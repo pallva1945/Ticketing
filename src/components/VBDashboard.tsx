@@ -629,27 +629,45 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
     return seasonFiltered.filter(s => s.date.substring(0, 7) === selectedMonth);
   }, [seasonFiltered, selectedMonth]);
 
+  const getMonthWeek = (dateStr: string): number => {
+    const day = new Date(dateStr).getDate();
+    if (day <= 7) return 1;
+    if (day <= 14) return 2;
+    if (day <= 21) return 3;
+    return 4;
+  };
+
   const weeks = useMemo(() => {
-    const wMap = new Map<string, string>();
-    monthFiltered.forEach(s => {
-      const d = new Date(s.date);
-      const startOfYear = new Date(d.getFullYear(), 0, 1);
-      const weekNum = Math.ceil(((d.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
-      const key = `${d.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
-      if (!wMap.has(key)) wMap.set(key, getWeekLabel(s.date));
-    });
-    return [...wMap.entries()].sort((a, b) => b[0].localeCompare(a[0]));
-  }, [monthFiltered]);
+    if (selectedMonth === 'all') {
+      const wMap = new Map<string, string>();
+      monthFiltered.forEach(s => {
+        const d = new Date(s.date);
+        const startOfYear = new Date(d.getFullYear(), 0, 1);
+        const weekNum = Math.ceil(((d.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
+        const key = `${d.getFullYear()}-W${String(weekNum).padStart(2, '0')}`;
+        if (!wMap.has(key)) wMap.set(key, getWeekLabel(s.date));
+      });
+      return [...wMap.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+    }
+    const present = new Set(monthFiltered.map(s => getMonthWeek(s.date)));
+    return [1, 2, 3, 4]
+      .filter(w => present.has(w))
+      .map(w => [`W${w}`, `Week ${w}`] as [string, string]);
+  }, [monthFiltered, selectedMonth]);
 
   const weekFiltered = useMemo(() => {
     if (selectedWeek === 'all') return monthFiltered;
+    if (selectedMonth !== 'all') {
+      const weekNum = parseInt(selectedWeek.replace('W', ''));
+      return monthFiltered.filter(s => getMonthWeek(s.date) === weekNum);
+    }
     return monthFiltered.filter(s => {
       const d = new Date(s.date);
       const startOfYear = new Date(d.getFullYear(), 0, 1);
       const weekNum = Math.ceil(((d.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7);
       return `${d.getFullYear()}-W${String(weekNum).padStart(2, '0')}` === selectedWeek;
     });
-  }, [monthFiltered, selectedWeek]);
+  }, [monthFiltered, selectedWeek, selectedMonth]);
 
   const days = useMemo(() => {
     return [...new Set(weekFiltered.map(s => s.date))].sort().reverse();
