@@ -242,10 +242,10 @@ function getPlayerCategory(player: string, profiles: PlayerProfile[], season?: s
   const year = getPlayerBirthYear(player, profiles);
   if (!year) return '';
   const endYear = season ? parseInt(season.split('/')[0]) + 1 : 2026;
-  if (year >= endYear - 16 && year <= endYear - 15) return 'U15';
-  if (year >= endYear - 18 && year <= endYear - 17) return 'U17';
-  if (year >= endYear - 20 && year <= endYear - 19) return 'U19';
-  if (year >= endYear - 22 && year <= endYear - 21) return 'DY';
+  if (year >= endYear - 15 && year <= endYear - 14) return 'U15';
+  if (year >= endYear - 17 && year <= endYear - 16) return 'U17';
+  if (year >= endYear - 19 && year <= endYear - 18) return 'U19';
+  if (year >= endYear - 21 && year <= endYear - 20) return 'DY';
   return '';
 }
 
