@@ -1641,7 +1641,54 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
+
+  const validSessions = useMemo(() => sessions.filter(s => getSeason(s.date)), [sessions]);
+  const seasons = useMemo(() => [...new Set(validSessions.map(s => getSeason(s.date)!))].sort().reverse(), [validSessions]);
+  const [selectedSeason, setSelectedSeason] = useState(() => getCurrentSeason());
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedRole, setSelectedRole] = useState<string>('all');
+
+  const seasonFiltered = useMemo(() => {
+    if (selectedSeason === 'all') return validSessions;
+    return validSessions.filter(s => getSeason(s.date) === selectedSeason);
+  }, [validSessions, selectedSeason]);
+
+  const availableCategories = useMemo(() =>
+    [...new Set(seasonFiltered.map(s => getPlayerCategory(s.player, profiles)).filter(c => c))].sort(),
+  [seasonFiltered, profiles]);
+
+  const categoryFiltered = useMemo(() => {
+    if (selectedCategory === 'all') return seasonFiltered;
+    return seasonFiltered.filter(s => getPlayerCategory(s.player, profiles) === selectedCategory);
+  }, [seasonFiltered, selectedCategory, profiles]);
+
+  const availableRoles = useMemo(() =>
+    [...new Set(categoryFiltered.map(s => getPlayerPosition(s.player, profiles)).filter(r => r))].sort(),
+  [categoryFiltered, profiles]);
+
+  const roleFiltered = useMemo(() => {
+    if (selectedRole === 'all') return categoryFiltered;
+    return categoryFiltered.filter(s => getPlayerPosition(s.player, profiles) === selectedRole);
+  }, [categoryFiltered, selectedRole, profiles]);
+
+  const filteredPlayers = useMemo(() => {
+    const pSet = new Set(roleFiltered.map(s => s.player));
+    return players.filter(p => pSet.has(p));
+  }, [roleFiltered, players]);
+
+  useEffect(() => { setSelectedCategory('all'); setSelectedRole('all'); }, [selectedSeason]);
+  useEffect(() => { setSelectedRole('all'); }, [selectedCategory]);
+
   const [selected, setSelected] = useState<string[]>(players.slice(0, 2));
+
+  useEffect(() => {
+    setSelected(prev => {
+      const valid = prev.filter(p => filteredPlayers.includes(p));
+      if (valid.length >= 2) return valid;
+      const remaining = filteredPlayers.filter(p => !valid.includes(p));
+      return [...valid, ...remaining].slice(0, 2);
+    });
+  }, [filteredPlayers]);
 
   const radarData = useMemo(() => {
     if (selected.length < 2) return [];
@@ -1657,10 +1704,10 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
     return metrics.map(m => {
       const entry: any = { metric: m.label };
       selected.forEach(p => {
-        let val = getLatestMetric(sessions, p, m.key as keyof VBSession);
+        let val = getLatestMetric(roleFiltered, p, m.key as keyof VBSession);
         if (val !== null && m.key === 'bodyFat') {
           const dobSerial = getPlayerDobSerial(p, profiles);
-          const bfSession = getPlayerSessions(sessions, p).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
+          const bfSession = getPlayerSessions(roleFiltered, p).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
           const bf = calcBodyFatPct(val, dobSerial, bfSession?.date);
           if (bf !== null) val = bf;
         }
@@ -1672,7 +1719,7 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
       });
       return entry;
     });
-  }, [sessions, selected, t, profiles]);
+  }, [roleFiltered, selected, t, profiles]);
 
   const loadRadarData = useMemo(() => {
     if (selected.length < 2) return [];
@@ -1687,7 +1734,7 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
     metrics.forEach(m => {
       let globalMax = 0;
       selected.forEach(p => {
-        const ps = getPlayerSessions(sessions, p);
+        const ps = getPlayerSessions(roleFiltered, p);
         const total = ps.reduce((sum, s) => sum + ((s[m.key as keyof VBSession] as number) || 0), 0);
         if (total > globalMax) globalMax = total;
       });
@@ -1696,13 +1743,13 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
     return metrics.map(m => {
       const entry: any = { metric: m.label };
       selected.forEach(p => {
-        const ps = getPlayerSessions(sessions, p);
+        const ps = getPlayerSessions(roleFiltered, p);
         const total = ps.reduce((sum, s) => sum + ((s[m.key as keyof VBSession] as number) || 0), 0);
         entry[p] = Math.round((total / maxVals[m.key]) * 100);
       });
       return entry;
     });
-  }, [sessions, selected, t]);
+  }, [roleFiltered, selected, t]);
 
   const comparisonData = useMemo(() => {
     const metrics: { key: keyof VBSession; label: string; unit: string }[] = [
@@ -1720,23 +1767,51 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
     return metrics.map(m => ({
       ...m,
       values: selected.map(p => {
-        const raw = getLatestMetric(sessions, p, m.key);
+        const raw = getLatestMetric(roleFiltered, p, m.key);
         if (raw !== null && m.key === 'bodyFat') {
           const dobSerial = getPlayerDobSerial(p, profiles);
-          const bfSession = getPlayerSessions(sessions, p).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
+          const bfSession = getPlayerSessions(roleFiltered, p).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
           const bf = calcBodyFatPct(raw, dobSerial, bfSession?.date);
           return bf !== null ? bf : raw;
         }
         return raw;
       }),
     }));
-  }, [sessions, selected, t, profiles]);
+  }, [roleFiltered, selected, t, profiles]);
+
+  const selectClass = `px-3 py-1.5 rounded-lg text-xs font-medium appearance-none pr-7 ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-gray-700 border-gray-200'} border`;
 
   return (
     <div className="space-y-6">
+      <div className={`grid grid-cols-4 gap-2 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+        <div className="relative">
+          <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass + ' w-full'}>
+            <option value="all">{t('All Seasons')}</option>
+            {seasons.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className={selectClass + ' w-full'}>
+            <option value="all">{t('All Categories')}</option>
+            {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={selectedRole} onChange={e => setSelectedRole(e.target.value)} className={selectClass + ' w-full'}>
+            <option value="all">{t('All Roles')}</option>
+            {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="flex items-center justify-end">
+          <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{filteredPlayers.length} {t('players')}</span>
+        </div>
+      </div>
       <div>
         <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Select players to compare')} ({t('max 4')})</label>
-        <PlayerSelector players={players} selected={selected} onChange={setSelected} multiple />
+        <PlayerSelector players={filteredPlayers} selected={selected} onChange={setSelected} multiple />
       </div>
 
       {selected.length >= 2 && (
