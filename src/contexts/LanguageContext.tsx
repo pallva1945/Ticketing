@@ -878,6 +878,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Shooting Progression': { en: 'Shooting Progression', it: 'Progressione Tiro' },
   'Speed & Agility': { en: 'Speed & Agility', it: 'Velocità e Agilità' },
   'Verticals & Strength': { en: 'Verticals & Strength', it: 'Verticali e Forza' },
+  'Verticals': { en: 'Verticals', it: 'Verticali' },
   'Shooting Volume': { en: 'Shooting Volume', it: 'Volume di Tiro' },
   'Shooting Accuracy': { en: 'Shooting Accuracy', it: 'Precisione di Tiro' },
   'July': { en: 'July', it: 'Luglio' },

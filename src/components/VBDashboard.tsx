@@ -1787,12 +1787,18 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               [t('Cone Drill')]: avg(v.coneDrill),
             }));
 
-          const vertStrengthData = Object.entries(athleticMonthly).sort(([a], [b]) => a.localeCompare(b))
-            .filter(([, v]) => v.pureVert.length > 0 || v.noStepVert.length > 0 || v.deadlift.length > 0)
+          const verticalsData = Object.entries(athleticMonthly).sort(([a], [b]) => a.localeCompare(b))
+            .filter(([, v]) => v.pureVert.length > 0 || v.noStepVert.length > 0)
             .map(([month, v]) => ({
               date: month.substring(2),
               [t('Pure Vertical')]: avg(v.pureVert),
               [t('No-Step Vertical')]: avg(v.noStepVert),
+            }));
+
+          const deadliftData = Object.entries(athleticMonthly).sort(([a], [b]) => a.localeCompare(b))
+            .filter(([, v]) => v.deadlift.length > 0)
+            .map(([month, v]) => ({
+              date: month.substring(2),
               [t('Deadlift')]: avg(v.deadlift),
             }));
 
@@ -1802,12 +1808,6 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               date: month.substring(2),
               [t('Shots Taken')]: v.taken,
               [t('Shots Made')]: v.made,
-            }));
-
-          const shotAccuracyData = Object.entries(shootingMonthly).sort(([a], [b]) => a.localeCompare(b))
-            .filter(([, v]) => v.taken > 0)
-            .map(([month, v]) => ({
-              date: month.substring(2),
               [t('3PT %')]: v.taken > 0 ? Math.round((v.made / v.taken) * 1000) / 10 : 0,
             }));
 
@@ -1838,12 +1838,12 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                 </div>
               )}
 
-              {vertStrengthData.length > 0 && (
+              {verticalsData.length > 0 && (
                 <div className={chartBox}>
-                  <h4 className={chartTitle}>{t('Verticals & Strength')}</h4>
+                  <h4 className={chartTitle}>{t('Verticals')}</h4>
                   <div className="h-44 print-chart">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={vertStrengthData}>
+                      <LineChart data={verticalsData}>
                         <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                         <XAxis dataKey="date" tick={tickStyle} />
                         <YAxis tick={tickStyle} />
@@ -1851,7 +1851,6 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                         <Legend wrapperStyle={{ fontSize: 10 }} />
                         <Line type="monotone" dataKey={t('Pure Vertical')} stroke="#06b6d4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                         <Line type="monotone" dataKey={t('No-Step Vertical')} stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                        <Line type="monotone" dataKey={t('Deadlift')} stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -1863,35 +1862,34 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                   <h4 className={chartTitle}>{t('Shooting Volume')}</h4>
                   <div className="h-44 print-chart">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={shotVolumeData}>
+                      <ComposedChart data={shotVolumeData}>
                         <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                         <XAxis dataKey="date" tick={tickStyle} />
-                        <YAxis tick={tickStyle} />
+                        <YAxis yAxisId="left" tick={tickStyle} />
+                        <YAxis yAxisId="right" orientation="right" tick={tickStyle} domain={[0, 100]} />
                         <Tooltip contentStyle={tipStyle} />
                         <Legend wrapperStyle={{ fontSize: 10 }} />
-                        <Bar dataKey={t('Shots Taken')} fill="#3b82f6" opacity={0.7} />
-                        <Bar dataKey={t('Shots Made')} fill="#10b981" opacity={0.7} />
-                      </BarChart>
+                        <Bar yAxisId="left" dataKey={t('Shots Taken')} fill="#3b82f6" opacity={0.7} />
+                        <Bar yAxisId="left" dataKey={t('Shots Made')} fill="#10b981" opacity={0.7} />
+                        <Line yAxisId="right" type="monotone" dataKey={t('3PT %')} stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
+                      </ComposedChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
               )}
 
-              {shotAccuracyData.length > 0 && (
+              {deadliftData.length > 0 && (
                 <div className={chartBox}>
-                  <h4 className={chartTitle}>{t('Shooting Accuracy')}</h4>
+                  <h4 className={chartTitle}>{t('Deadlift')}</h4>
                   <div className="h-44 print-chart">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={shotAccuracyData}>
+                      <ComposedChart data={deadliftData}>
                         <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                         <XAxis dataKey="date" tick={tickStyle} />
-                        <YAxis tick={tickStyle} domain={[0, 100]} />
-                        <Tooltip contentStyle={tipStyle} formatter={(value: number) => `${value}%`} />
-                        <Legend wrapperStyle={{ fontSize: 10 }} />
-                        <Line type="monotone" dataKey={t('3PT %')} stroke="#f59e0b" strokeWidth={2.5} dot={{ r: 3, fill: '#f59e0b' }} connectNulls />
-                        <ReferenceLine y={40} stroke="#10b981" strokeDasharray="4 4" label={{ value: '40%', position: 'right', fontSize: 9, fill: '#10b981' }} />
-                        <ReferenceLine y={30} stroke="#f97316" strokeDasharray="4 4" label={{ value: '30%', position: 'right', fontSize: 9, fill: '#f97316' }} />
-                      </LineChart>
+                        <YAxis tick={tickStyle} />
+                        <Tooltip contentStyle={tipStyle} />
+                        <Bar dataKey={t('Deadlift')} fill="#10b981" opacity={0.7} radius={[4, 4, 0, 0]} />
+                      </ComposedChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
