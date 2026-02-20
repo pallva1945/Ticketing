@@ -1705,6 +1705,10 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
       const entry: any = { metric: m.label };
       selected.forEach(p => {
         let val = getLatestMetric(roleFiltered, p, m.key as keyof VBSession);
+        if (val !== null && (m.key === 'pureVertical' || m.key === 'noStepVertical')) {
+          const reach = getLatestMetric(roleFiltered, p, 'standingReach');
+          if (reach !== null) val = val - reach;
+        }
         if (val !== null && m.key === 'bodyFat') {
           const dobSerial = getPlayerDobSerial(p, profiles);
           const bfSession = getPlayerSessions(roleFiltered, p).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
