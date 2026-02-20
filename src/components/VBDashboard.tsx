@@ -450,7 +450,10 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
       })(),
       pct: getAvg(shootingSessions.map(s => s.shootingPct)),
       shots: sumOrRate(ps.map(s => s.shootsTaken)),
-      totalLoad: sumOrRate(ps.map(s => (s.practiceLoad || 0) + (s.vitaminsLoad || 0) + (s.weightsLoad || 0) + (s.gameLoad || 0) > 0 ? (s.practiceLoad || 0) + (s.vitaminsLoad || 0) + (s.weightsLoad || 0) + (s.gameLoad || 0) : null)),
+      totalLoad: sumOrRate(ps.map(s => {
+        const total = (s.practiceLoad || 0) + (s.vitaminsLoad || 0) + (s.weightsLoad || 0) + (s.gameLoad || 0);
+        return total > 0 ? total : null;
+      })),
       vitamins: sumOrRate(ps.map(s => s.vitaminsLoad)),
       weights: sumOrRate(ps.map(s => s.weightsLoad)),
       practice: sumOrRate(ps.map(s => s.practiceLoad)),
