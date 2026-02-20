@@ -1674,6 +1674,14 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               {playerAge !== null && <div className={subValueClass}>{playerAge} {t('years')}</div>}
             </div>
             <div>
+              <div className={labelClass}>{t('Email')}</div>
+              <div className={valueClass}>{profile?.email || '—'}</div>
+            </div>
+            <div>
+              <div className={labelClass}>{t('Phone')}</div>
+              <div className={valueClass}>{profile?.cellNumber || '—'}</div>
+            </div>
+            <div>
               <div className={labelClass}>{t('Passport')}</div>
               <div className={valueClass}>{profile?.passport || '—'}</div>
             </div>
@@ -1690,16 +1698,8 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               <div className={valueClass}>{profile?.soyStatus || '—'}</div>
             </div>
             <div>
-              <div className={labelClass}>{t('EoY Status')}</div>
-              <div className={valueClass}>{profile?.eoyStatus || '—'}</div>
-            </div>
-            <div>
-              <div className={labelClass}>{t('Year 1 Destination')}</div>
-              <div className={valueClass}>{profile?.year1Destination || '—'}</div>
-            </div>
-            <div>
-              <div className={labelClass}>{t('Revenue Generated')}</div>
-              <div className={valueClass}>{profile?.revenueGenerated !== null && profile?.revenueGenerated !== undefined ? `€${profile.revenueGenerated.toLocaleString()}` : '—'}</div>
+              <div className={labelClass}>{t('Total Load')}</div>
+              <div className={valueClass}>{ps.reduce((a, s) => a + (s.practiceLoad || 0) + (s.vitaminsLoad || 0) + (s.weightsLoad || 0) + (s.gameLoad || 0), 0).toLocaleString()}</div>
             </div>
             <div>
               <div className={labelClass}>{t('Sessions')}</div>
