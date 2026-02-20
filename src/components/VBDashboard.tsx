@@ -457,7 +457,11 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
       projHeight: getProjectedHeight(player, profiles, filtered),
       reach: getLatestMetric(filtered, player, 'standingReach'),
       projReach: getProjectedReach(player, profiles, filtered),
-      pureVertical: getLatestMetric(filtered, player, 'pureVertical'),
+      pureVertical: (() => {
+        const pv = getLatestMetric(filtered, player, 'pureVertical');
+        const sr = getLatestMetric(filtered, player, 'standingReach');
+        return (pv !== null && sr !== null) ? pv - sr : pv;
+      })(),
       sprint: getLatestMetric(filtered, player, 'sprint'),
       coneDrill: getLatestMetric(filtered, player, 'coneDrill'),
       weight: getLatestMetric(filtered, player, 'weight'),
@@ -1224,6 +1228,13 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
           return calcBodyFatPct(rawSF, dobSerial, latestSession?.date);
         }).filter(v => v !== null) as number[];
         result[m.key] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+      } else if (m.key === 'pureVertical' || m.key === 'noStepVertical') {
+        const vals = displayPlayers.map(p => {
+          const v = getLatestMetric(filtered, p, m.key as keyof VBSession);
+          const sr = getLatestMetric(filtered, p, 'standingReach');
+          return (v !== null && sr !== null) ? v - sr : null;
+        }).filter(v => v !== null) as number[];
+        result[m.key] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
       } else {
         const vals = displayPlayers.map(p => getLatestMetric(filtered, p, m.key as keyof VBSession)).filter(v => v !== null) as number[];
         result[m.key] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
@@ -1253,6 +1264,10 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
             const dobSerial = getPlayerDobSerial(s.player, profiles);
             val = calcBodyFatPct(raw, dobSerial, s.date);
           }
+        } else if (m.key === 'pureVertical' || m.key === 'noStepVertical') {
+          const raw = s[m.key as keyof VBSession] as number | null;
+          const sr = s.standingReach;
+          val = (raw !== null && sr !== null) ? raw - sr : null;
         } else {
           val = s[m.key as keyof VBSession] as number | null;
         }
@@ -1311,10 +1326,24 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
         sprintFirst: getFirstMetric('sprint'),
         coneDrill: getLatestMetric(filtered, player, 'coneDrill'),
         coneDrillFirst: getFirstMetric('coneDrill'),
-        pureVertical: getLatestMetric(filtered, player, 'pureVertical'),
-        pureVerticalFirst: getFirstMetric('pureVertical'),
-        noStepVertical: getLatestMetric(filtered, player, 'noStepVertical'),
-        noStepVerticalFirst: getFirstMetric('noStepVertical'),
+        pureVertical: (() => {
+          const v = getLatestMetric(filtered, player, 'pureVertical');
+          const sr = getLatestMetric(filtered, player, 'standingReach');
+          return (v !== null && sr !== null) ? v - sr : null;
+        })(),
+        pureVerticalFirst: (() => {
+          const ps = getPlayerSessions(filtered, player).filter(s => s.pureVertical !== null && s.standingReach !== null).sort((a, b) => a.date.localeCompare(b.date));
+          return ps.length ? (ps[0].pureVertical as number) - (ps[0].standingReach as number) : null;
+        })(),
+        noStepVertical: (() => {
+          const v = getLatestMetric(filtered, player, 'noStepVertical');
+          const sr = getLatestMetric(filtered, player, 'standingReach');
+          return (v !== null && sr !== null) ? v - sr : null;
+        })(),
+        noStepVerticalFirst: (() => {
+          const ps = getPlayerSessions(filtered, player).filter(s => s.noStepVertical !== null && s.standingReach !== null).sort((a, b) => a.date.localeCompare(b.date));
+          return ps.length ? (ps[0].noStepVertical as number) - (ps[0].standingReach as number) : null;
+        })(),
         bodyFat: bf,
         bodyFatFirst: firstBf,
         deadlift: getLatestMetric(filtered, player, 'deadlift'),
@@ -1488,8 +1517,16 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
   };
 
   const latestAthletic = {
-    pureVertical: getLatestMetric(sessions, selectedPlayer, 'pureVertical'),
-    noStepVertical: getLatestMetric(sessions, selectedPlayer, 'noStepVertical'),
+    pureVertical: (() => {
+      const v = getLatestMetric(sessions, selectedPlayer, 'pureVertical');
+      const sr = getLatestMetric(sessions, selectedPlayer, 'standingReach');
+      return (v !== null && sr !== null) ? v - sr : null;
+    })(),
+    noStepVertical: (() => {
+      const v = getLatestMetric(sessions, selectedPlayer, 'noStepVertical');
+      const sr = getLatestMetric(sessions, selectedPlayer, 'standingReach');
+      return (v !== null && sr !== null) ? v - sr : null;
+    })(),
     sprint: getLatestMetric(sessions, selectedPlayer, 'sprint'),
     coneDrill: getLatestMetric(sessions, selectedPlayer, 'coneDrill'),
     deadlift: getLatestMetric(sessions, selectedPlayer, 'deadlift'),
@@ -1515,6 +1552,8 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
         if (f === 'bodyFat' && s[f] !== null && dobSerial) {
           const bf = calcBodyFatPct(s[f] as number, dobSerial, s.date);
           entry[f] = bf !== null ? bf : s[f];
+        } else if ((f === 'pureVertical' || f === 'noStepVertical') && s[f] !== null && s.standingReach !== null) {
+          entry[f] = (s[f] as number) - (s.standingReach as number);
         } else {
           entry[f] = s[f];
         }
@@ -1778,6 +1817,10 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
           const bf = calcBodyFatPct(raw, dobSerial, bfSession?.date);
           return bf !== null ? bf : raw;
         }
+        if (raw !== null && (m.key === 'pureVertical' || m.key === 'noStepVertical')) {
+          const sr = getLatestMetric(roleFiltered, p, 'standingReach');
+          return sr !== null ? raw - sr : null;
+        }
         return raw;
       }),
     }));
@@ -1914,11 +1957,19 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
     { key: 'shootingPct', label: t('3PT %'), unit: '%', group: t('Shooting') },
   ];
 
-  const convertBF = (val: number | null, player: string, date?: string): number | null => {
-    if (val === null || metric !== 'bodyFat') return val;
-    const dobSerial = getPlayerDobSerial(player, profiles);
-    const bf = calcBodyFatPct(val, dobSerial, date);
-    return bf !== null ? bf : val;
+  const convertVal = (session: VBSession, player: string): number | null => {
+    const val = session[metric] as number | null;
+    if (val === null) return null;
+    if (metric === 'bodyFat') {
+      const dobSerial = getPlayerDobSerial(player, profiles);
+      const bf = calcBodyFatPct(val, dobSerial, session.date);
+      return bf !== null ? bf : val;
+    }
+    if (metric === 'pureVertical' || metric === 'noStepVertical') {
+      const sr = session.standingReach;
+      return sr !== null ? val - sr : null;
+    }
+    return val;
   };
 
   const chartData = useMemo(() => {
@@ -1927,7 +1978,7 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
       const entry: any = { date: date.substring(5) };
       selected.forEach(p => {
         const session = sessions.find(s => s.player === p && s.date === date);
-        entry[p] = session ? convertBF(session[metric] as number | null, p, session.date) : null;
+        entry[p] = session ? convertVal(session, p) : null;
       });
       return entry;
     });
@@ -1937,8 +1988,9 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
     return selected.map(p => {
       const ps = sessions.filter(s => s.player === p && s[metric] !== null).sort((a, b) => a.date.localeCompare(b.date));
       if (ps.length < 2) return { player: p, first: null, last: null, delta: null };
-      const first = convertBF(ps[0][metric] as number, p, ps[0].date) as number;
-      const last = convertBF(ps[ps.length - 1][metric] as number, p, ps[ps.length - 1].date) as number;
+      const first = convertVal(ps[0], p);
+      const last = convertVal(ps[ps.length - 1], p);
+      if (first === null || last === null) return { player: p, first: null, last: null, delta: null };
       return { player: p, first, last, delta: Math.round((last - first) * 10) / 10 };
     });
   }, [sessions, selected, metric, profiles]);
