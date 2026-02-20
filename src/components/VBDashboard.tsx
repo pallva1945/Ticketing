@@ -1912,43 +1912,115 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
     return null;
   };
 
-  const normalizeQuery = (raw: string): { type: 'date' | 'month' | 'season' | 'text'; iso: string } | null => {
-    const q = raw.trim();
+  const expandYear = (y: string): string => {
+    if (y.length === 4) return y;
+    const n = parseInt(y);
+    return n >= 0 && n <= 50 ? `20${y.padStart(2, '0')}` : `19${y.padStart(2, '0')}`;
+  };
 
-    let m;
-    if ((m = q.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/))) {
-      const [, a, b, year] = m;
-      const day = a.padStart(2, '0'), mon = b.padStart(2, '0');
-      return { type: 'date', iso: `${year}-${mon}-${day}` };
-    }
-    if ((m = q.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/))) {
-      const [, year, mon, day] = m;
-      return { type: 'date', iso: `${year}-${mon.padStart(2, '0')}-${day.padStart(2, '0')}` };
-    }
-    if ((m = q.match(/^(\d{1,2})[\/\-.](\d{4})$/))) {
-      const [, mon, year] = m;
-      return { type: 'month', iso: `${year}-${mon.padStart(2, '0')}` };
-    }
-    if ((m = q.match(/^(\d{4})[\/\-.](\d{1,2})$/))) {
-      const [, year, mon] = m;
-      return { type: 'month', iso: `${year}-${mon.padStart(2, '0')}` };
-    }
-    const monthWordMatch = q.match(/^([a-zA-Zéàòùì]+)\s*(\d{4})?$/);
-    if (monthWordMatch) {
-      const mi = parseMonthName(monthWordMatch[1]);
-      if (mi !== null) {
-        if (monthWordMatch[2]) {
-          return { type: 'month', iso: `${monthWordMatch[2]}-${String(mi + 1).padStart(2, '0')}` };
+  const parseCompoundQuery = (raw: string): { nameTokens: string[]; year: number | null; month: number | null; day: number | null } => {
+    const result = { nameTokens: [] as string[], year: null as number | null, month: null as number | null, day: null as number | null };
+    const q = raw.trim();
+    if (!q) return result;
+
+    const datePatterns = [
+      /(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/,
+      /(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/,
+      /(\d{1,2})[\/\-.](\d{4})/,
+      /(\d{4})[\/\-.](\d{1,2})/,
+    ];
+
+    let remaining = q;
+
+    const dp3a = remaining.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+    if (dp3a) {
+      const [full, a, b, c] = dp3a;
+      if (c.length >= 3 || parseInt(c) > 31) {
+        result.day = parseInt(a);
+        result.month = parseInt(b);
+        result.year = parseInt(expandYear(c));
+      } else {
+        result.day = parseInt(a);
+        result.month = parseInt(b);
+        result.year = parseInt(expandYear(c));
+      }
+      remaining = remaining.replace(full, ' ');
+    } else {
+      const dp3b = remaining.match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
+      if (dp3b) {
+        const [full, yr, mo, dy] = dp3b;
+        result.year = parseInt(yr);
+        result.month = parseInt(mo);
+        result.day = parseInt(dy);
+        remaining = remaining.replace(full, ' ');
+      } else {
+        const dp2a = remaining.match(/(\d{1,2})[\/\-.](\d{4})/);
+        if (dp2a) {
+          const [full, mo, yr] = dp2a;
+          result.month = parseInt(mo);
+          result.year = parseInt(yr);
+          remaining = remaining.replace(full, ' ');
+        } else {
+          const dp2b = remaining.match(/(\d{4})[\/\-.](\d{1,2})/);
+          if (dp2b) {
+            const [full, yr, mo] = dp2b;
+            result.year = parseInt(yr);
+            result.month = parseInt(mo);
+            remaining = remaining.replace(full, ' ');
+          }
         }
-        return { type: 'text', iso: String(mi + 1).padStart(2, '0') };
       }
     }
-    const monthWordMatch2 = q.match(/^(\d{4})\s+([a-zA-Zéàòùì]+)$/);
-    if (monthWordMatch2) {
-      const mi = parseMonthName(monthWordMatch2[2]);
-      if (mi !== null) return { type: 'month', iso: `${monthWordMatch2[1]}-${String(mi + 1).padStart(2, '0')}` };
+
+    const tokens = remaining.split(/[\s,;]+/).filter(t => t.length > 0);
+
+    for (const token of tokens) {
+      const mi = parseMonthName(token);
+      if (mi !== null) {
+        result.month = mi + 1;
+        continue;
+      }
+
+      if (/^\d{4}$/.test(token) && result.year === null) {
+        result.year = parseInt(token);
+        continue;
+      }
+
+      if (/^\d{1,2}$/.test(token)) {
+        const n = parseInt(token);
+        if (result.day === null && n >= 1 && n <= 31) {
+          result.day = n;
+          continue;
+        }
+        if (result.month === null && n >= 1 && n <= 12) {
+          result.month = n;
+          continue;
+        }
+      }
+
+      if (/^\d{2}$/.test(token) && result.year === null) {
+        result.year = parseInt(expandYear(token));
+        continue;
+      }
+
+      if (/^[a-zA-Zéàòùì]+$/.test(token)) {
+        result.nameTokens.push(token.toLowerCase());
+      }
     }
-    return null;
+
+    return result;
+  };
+
+  const matchesSession = (s: VBSession, parsed: ReturnType<typeof parseCompoundQuery>): boolean => {
+    if (parsed.nameTokens.length > 0) {
+      const playerLower = s.player.toLowerCase();
+      if (!parsed.nameTokens.every(nt => playerLower.includes(nt))) return false;
+    }
+    const [sy, sm, sd] = s.date.split('-').map(Number);
+    if (parsed.year !== null && sy !== parsed.year) return false;
+    if (parsed.month !== null && sm !== parsed.month) return false;
+    if (parsed.day !== null && sd !== parsed.day) return false;
+    return true;
   };
 
   const suggestions = useMemo(() => {
@@ -1964,26 +2036,35 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
       items.push({ type: 'season', label: `${t('Season')} ${s}`, value: `season:${s}`, sortKey: 1 });
     });
 
-    const parsed = normalizeQuery(query);
-    if (parsed) {
-      if (parsed.type === 'date') {
-        if (allDates.includes(parsed.iso)) {
-          items.push({ type: 'date', label: parsed.iso, value: `date:${parsed.iso}`, sortKey: 3 });
+    const parsed = parseCompoundQuery(query);
+    const hasDate = parsed.year !== null || parsed.month !== null || parsed.day !== null;
+
+    if (hasDate) {
+      if (parsed.year !== null && parsed.month !== null && parsed.day !== null) {
+        const iso = `${parsed.year}-${String(parsed.month).padStart(2, '0')}-${String(parsed.day).padStart(2, '0')}`;
+        if (allDates.includes(iso)) {
+          items.push({ type: 'date', label: iso, value: `date:${iso}`, sortKey: 3 });
         }
-      } else if (parsed.type === 'month') {
-        if (allMonths.includes(parsed.iso)) {
-          const mi = parseInt(parsed.iso.split('-')[1]) - 1;
-          items.push({ type: 'month', label: `${monthDisplay[mi]} ${parsed.iso.split('-')[0]}`, value: `month:${parsed.iso}`, sortKey: 2 });
+      } else if (parsed.year !== null && parsed.month !== null) {
+        const iso = `${parsed.year}-${String(parsed.month).padStart(2, '0')}`;
+        if (allMonths.includes(iso)) {
+          const mi = parsed.month - 1;
+          items.push({ type: 'month', label: `${monthDisplay[mi]} ${parsed.year}`, value: `month:${iso}`, sortKey: 2 });
         }
-      } else if (parsed.type === 'text') {
-        allMonths.filter(m => m.endsWith(`-${parsed.iso}`)).slice(0, 4).forEach(m => {
+      } else if (parsed.month !== null) {
+        allMonths.filter(m => parseInt(m.split('-')[1]) === parsed.month).slice(0, 4).forEach(m => {
           const mi = parseInt(m.split('-')[1]) - 1;
           items.push({ type: 'month', label: `${monthDisplay[mi]} ${m.split('-')[0]}`, value: `month:${m}`, sortKey: 2 });
+        });
+      } else if (parsed.year !== null) {
+        allMonths.filter(m => m.startsWith(`${parsed.year}-`)).slice(0, 6).forEach(m => {
+          const mi = parseInt(m.split('-')[1]) - 1;
+          items.push({ type: 'month', label: `${monthDisplay[mi]} ${parsed.year}`, value: `month:${m}`, sortKey: 2 });
         });
       }
     }
 
-    if (!parsed || (parsed.type === 'text')) {
+    if (!hasDate) {
       allMonths.filter(m => m.includes(q)).slice(0, 5).forEach(m => {
         if (items.some(i => i.value === `month:${m}`)) return;
         const mi = parseInt(m.split('-')[1]) - 1;
@@ -1996,13 +2077,21 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
       });
     }
 
-    const hasDigit = /\d/.test(q);
-    if (hasDigit || parsed) {
-      items.sort((a, b) => {
-        const aIsTime = a.type !== 'player' ? 0 : 1;
-        const bIsTime = b.type !== 'player' ? 0 : 1;
-        return aIsTime - bIsTime || a.sortKey - b.sortKey;
+    if (parsed.nameTokens.length > 0 && hasDate) {
+      const matchedPlayers = players.filter(p => parsed.nameTokens.every(nt => p.toLowerCase().includes(nt)));
+      const dateLabel = parsed.day !== null
+        ? `${parsed.day}/${parsed.month}/${parsed.year}`
+        : parsed.month !== null
+        ? `${monthDisplay[(parsed.month || 1) - 1]}${parsed.year ? ' ' + parsed.year : ''}`
+        : `${parsed.year}`;
+      matchedPlayers.slice(0, 3).forEach(p => {
+        items.unshift({ type: 'player', label: `${p} · ${dateLabel}`, value: `compound:${q}`, sortKey: -1 });
       });
+    }
+
+    const hasDigit = /\d/.test(q);
+    if (hasDigit || hasDate) {
+      items.sort((a, b) => a.sortKey - b.sortKey);
     }
 
     return items.slice(0, 10);
@@ -2022,33 +2111,16 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
       const date = searchValue.replace('date:', '');
       filtered = sessions.filter(s => s.date === date);
     } else {
-      const q = searchValue.toLowerCase();
+      const searchText = searchValue.startsWith('compound:') ? searchValue.replace('compound:', '') : searchValue;
+      const parsed = parseCompoundQuery(searchText);
+      const hasDate = parsed.year !== null || parsed.month !== null || parsed.day !== null;
+      const hasName = parsed.nameTokens.length > 0;
 
-      const parsed = normalizeQuery(searchValue);
-      if (parsed && parsed.type === 'date') {
-        filtered = sessions.filter(s => s.date === parsed.iso);
-      } else if (parsed && parsed.type === 'month') {
-        filtered = sessions.filter(s => s.date.startsWith(parsed.iso));
-      } else if (parsed && parsed.type === 'text') {
-        filtered = sessions.filter(s => s.date.substring(5, 7) === parsed.iso);
+      if (hasDate || hasName) {
+        filtered = sessions.filter(s => matchesSession(s, parsed));
       } else {
-        const playerMatch = players.filter(p => p.toLowerCase() === q || p.toLowerCase().includes(q));
-        if (playerMatch.length > 0) {
-          filtered = sessions.filter(s => playerMatch.some(p => p === s.player));
-        } else {
-          const seasonMatch = q.match(/^(\d{4})\/(\d{2,4})$/);
-          if (seasonMatch) {
-            const y1 = seasonMatch[1];
-            const y2 = seasonMatch[2].length === 2 ? seasonMatch[2] : seasonMatch[2].slice(2);
-            filtered = sessions.filter(s => getSeason(s.date) === `${y1}/${y2}`);
-          } else if (/^\d{4}-\d{2}-\d{2}$/.test(q)) {
-            filtered = sessions.filter(s => s.date === q);
-          } else if (/^\d{4}-\d{2}$/.test(q)) {
-            filtered = sessions.filter(s => s.date.startsWith(q));
-          } else {
-            filtered = sessions.filter(s => s.player.toLowerCase().includes(q) || s.date.includes(q));
-          }
-        }
+        const q = searchText.toLowerCase();
+        filtered = sessions.filter(s => s.player.toLowerCase().includes(q) || s.date.includes(q));
       }
     }
 
