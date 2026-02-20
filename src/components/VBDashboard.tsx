@@ -53,7 +53,7 @@ interface PlayerProfile {
   revenueGenerated: number | null;
 }
 
-type TabId = 'overview' | 'test' | 'player' | 'compare' | 'progression';
+type TabId = 'overview' | 'performance' | 'player' | 'compare' | 'progression';
 
 const METRIC_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
@@ -1077,15 +1077,287 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
   );
 }
 
-function TestTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
+function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
 
+  const seasons = useMemo(() => {
+    const s = new Set(sessions.map(s => {
+      const d = new Date(s.date);
+      const y = d.getFullYear();
+      const m = d.getMonth();
+      return m >= 7 ? `${y}/${(y + 1).toString().slice(2)}` : `${y - 1}/${y.toString().slice(2)}`;
+    }));
+    return [...s].sort();
+  }, [sessions]);
+
+  const [selectedSeason, setSelectedSeason] = useState(() => seasons.length ? seasons[seasons.length - 1] : 'all');
+  const [selectedPlayer, setSelectedPlayer] = useState<string>('all');
+
+  const filtered = useMemo(() => {
+    let f = sessions;
+    if (selectedSeason !== 'all') {
+      const [startYear] = selectedSeason.split('/');
+      const sy = parseInt(startYear);
+      const seasonStart = new Date(sy, 6, 1);
+      const seasonEnd = new Date(sy + 1, 5, 30);
+      f = f.filter(s => { const d = new Date(s.date); return d >= seasonStart && d <= seasonEnd; });
+    }
+    return f;
+  }, [sessions, selectedSeason]);
+
+  const activePlayers = useMemo(() => {
+    const pSet = new Set(filtered.map(s => s.player));
+    return players.filter(p => pSet.has(p));
+  }, [filtered, players]);
+
+  const displayPlayers = useMemo(() => {
+    if (selectedPlayer !== 'all') return [selectedPlayer];
+    return activePlayers;
+  }, [activePlayers, selectedPlayer]);
+
+  const metrics = [
+    { key: 'sprint', label: t('Speed'), unit: 'ms', icon: Timer, color: '#10b981', lowerBetter: true },
+    { key: 'coneDrill', label: t('Agility'), unit: 'ms', icon: Gauge, color: '#f97316', lowerBetter: true },
+    { key: 'pureVertical', label: t('Pure Vertical'), unit: 'cm', icon: Zap, color: '#f59e0b', lowerBetter: false },
+    { key: 'noStepVertical', label: t('No-Step Vertical'), unit: 'cm', icon: Zap, color: '#8b5cf6', lowerBetter: false },
+    { key: 'bodyFat', label: t('BF %'), unit: '%', icon: Heart, color: '#ef4444', lowerBetter: true },
+    { key: 'deadlift', label: t('Strength'), unit: 'kg', icon: Dumbbell, color: '#3b82f6', lowerBetter: false },
+  ] as const;
+
+  const teamAverages = useMemo(() => {
+    const result: Record<string, number | null> = {};
+    for (const m of metrics) {
+      if (m.key === 'bodyFat') {
+        const vals = displayPlayers.map(p => {
+          const rawSF = getLatestMetric(filtered, p, 'bodyFat');
+          if (rawSF === null) return null;
+          const dobSerial = getPlayerDobSerial(p, profiles);
+          const latestSession = getPlayerSessions(filtered, p).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
+          return calcBodyFatPct(rawSF, dobSerial, latestSession?.date);
+        }).filter(v => v !== null) as number[];
+        result[m.key] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+      } else {
+        const vals = displayPlayers.map(p => getLatestMetric(filtered, p, m.key as keyof VBSession)).filter(v => v !== null) as number[];
+        result[m.key] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+      }
+    }
+    return result;
+  }, [filtered, displayPlayers, profiles]);
+
+  const trendData = useMemo(() => {
+    const monthMap = new Map<string, Map<string, { values: number[]; date: string }>>();
+    const sortKeyMap = new Map<string, string>();
+
+    filtered.forEach(s => {
+      const monthKey = s.date.substring(0, 7);
+      const d = new Date(s.date);
+      const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+      if (!monthMap.has(label)) {
+        monthMap.set(label, new Map());
+        sortKeyMap.set(label, monthKey);
+      }
+
+      for (const m of metrics) {
+        let val: number | null = null;
+        if (m.key === 'bodyFat') {
+          const raw = s.bodyFat;
+          if (raw !== null) {
+            const dobSerial = getPlayerDobSerial(s.player, profiles);
+            val = calcBodyFatPct(raw, dobSerial, s.date);
+          }
+        } else {
+          val = s[m.key as keyof VBSession] as number | null;
+        }
+        if (val !== null && displayPlayers.includes(s.player)) {
+          const metricMap = monthMap.get(label)!;
+          if (!metricMap.has(m.key)) metricMap.set(m.key, { values: [], date: monthKey });
+          metricMap.get(m.key)!.values.push(val);
+        }
+      }
+    });
+
+    return [...monthMap.entries()]
+      .sort((a, b) => (sortKeyMap.get(a[0]) || '').localeCompare(sortKeyMap.get(b[0]) || ''))
+      .map(([label, metricMap]) => {
+        const row: any = { month: label };
+        for (const m of metrics) {
+          const data = metricMap.get(m.key);
+          if (data && data.values.length > 0) {
+            row[m.key] = Math.round(data.values.reduce((a, b) => a + b, 0) / data.values.length * 10) / 10;
+          }
+        }
+        return row;
+      });
+  }, [filtered, displayPlayers, profiles]);
+
+  type PerfSortKey = 'player' | 'sprint' | 'coneDrill' | 'pureVertical' | 'noStepVertical' | 'bodyFat' | 'deadlift';
+  const [sortKey, setSortKey] = useState<PerfSortKey>('player');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const tableRows = useMemo(() => {
+    return displayPlayers.map(player => {
+      const bf = (() => {
+        const rawSF = getLatestMetric(filtered, player, 'bodyFat');
+        if (rawSF === null) return null;
+        const dobSerial = getPlayerDobSerial(player, profiles);
+        const latestSession = getPlayerSessions(filtered, player).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
+        return calcBodyFatPct(rawSF, dobSerial, latestSession?.date);
+      })();
+
+      const getFirstMetric = (field: keyof VBSession): number | null => {
+        const ps = getPlayerSessions(filtered, player).filter(s => s[field] !== null).sort((a, b) => a.date.localeCompare(b.date));
+        return ps.length ? ps[0][field] as number : null;
+      };
+
+      const firstBf = (() => {
+        const ps = getPlayerSessions(filtered, player).filter(s => s.bodyFat !== null).sort((a, b) => a.date.localeCompare(b.date));
+        if (!ps.length) return null;
+        const raw = ps[0].bodyFat!;
+        const dobSerial = getPlayerDobSerial(player, profiles);
+        return calcBodyFatPct(raw, dobSerial, ps[0].date);
+      })();
+
+      return {
+        player,
+        sprint: getLatestMetric(filtered, player, 'sprint'),
+        sprintFirst: getFirstMetric('sprint'),
+        coneDrill: getLatestMetric(filtered, player, 'coneDrill'),
+        coneDrillFirst: getFirstMetric('coneDrill'),
+        pureVertical: getLatestMetric(filtered, player, 'pureVertical'),
+        pureVerticalFirst: getFirstMetric('pureVertical'),
+        noStepVertical: getLatestMetric(filtered, player, 'noStepVertical'),
+        noStepVerticalFirst: getFirstMetric('noStepVertical'),
+        bodyFat: bf,
+        bodyFatFirst: firstBf,
+        deadlift: getLatestMetric(filtered, player, 'deadlift'),
+        deadliftFirst: getFirstMetric('deadlift'),
+      };
+    });
+  }, [filtered, displayPlayers, profiles]);
+
+  const sortedRows = useMemo(() => {
+    const arr = [...tableRows];
+    arr.sort((a, b) => {
+      if (sortKey === 'player') {
+        const cmp = a.player.localeCompare(b.player);
+        return sortDir === 'asc' ? cmp : -cmp;
+      }
+      const av = a[sortKey] as number | null;
+      const bv = b[sortKey] as number | null;
+      if (av === null && bv === null) return 0;
+      if (av === null) return 1;
+      if (bv === null) return -1;
+      return sortDir === 'asc' ? av - bv : bv - av;
+    });
+    return arr;
+  }, [tableRows, sortKey, sortDir]);
+
+  const handleSort = (key: PerfSortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir(key === 'player' ? 'asc' : 'desc'); }
+  };
+
+  const SortIcon = ({ col }: { col: PerfSortKey }) => {
+    if (sortKey !== col) return <ArrowUpDown size={10} className="opacity-30 ml-0.5 inline" />;
+    return sortDir === 'asc' ? <ArrowUp size={10} className="text-orange-500 ml-0.5 inline" /> : <ArrowDown size={10} className="text-orange-500 ml-0.5 inline" />;
+  };
+
+  const getDelta = (latest: number | null, first: number | null, lowerBetter: boolean) => {
+    if (latest === null || first === null || latest === first) return null;
+    const diff = Math.round((latest - first) * 10) / 10;
+    const improved = lowerBetter ? diff < 0 : diff > 0;
+    return { diff, improved };
+  };
+
+  const selectClass = `px-3 py-1.5 rounded-lg text-xs font-medium appearance-none pr-7 ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-gray-700 border-gray-200'} border`;
+
   return (
     <div className="space-y-6">
-      <div className={`rounded-xl border p-6 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-        <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Test')}</h3>
-        <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Coming soon')}</p>
+      <div className={`grid grid-cols-3 gap-3 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+        <div className="relative">
+          <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass + ' w-full'}>
+            <option value="all">{t('All Seasons')}</option>
+            {seasons.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)} className={selectClass + ' w-full'}>
+            <option value="all">{t('All Players')}</option>
+            {activePlayers.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="flex items-center justify-end">
+          <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{displayPlayers.length} {t('players')} · {filtered.length} {t('sessions')}</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-6 gap-3">
+        {metrics.map(m => (
+          <StatCard key={m.key} label={m.label} value={teamAverages[m.key]} unit={m.key === 'bodyFat' ? '%' : ` ${m.unit}`} icon={m.icon} color={m.color} subtitle={selectedPlayer === 'all' ? t('Team Average') : t('Latest')} />
+        ))}
+      </div>
+
+      <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+        <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Athletic Trends')} — {t('By Month')}</h3>
+        <div className="grid grid-cols-3 gap-4">
+          {metrics.map(m => (
+            <div key={m.key}>
+              <p className={`text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{m.label} ({m.unit})</p>
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={trendData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                    <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                    <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => { const pad = Math.max(1, Math.abs(dataMin) * 0.05); return Math.floor(dataMin - pad); }, (dataMax: number) => { const pad = Math.max(1, Math.abs(dataMax) * 0.05); return Math.ceil(dataMax + pad); }]} />
+                    <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} formatter={(value: any) => `${value}${m.key === 'bodyFat' ? '%' : ' ' + m.unit}`} />
+                    <Line type="monotone" dataKey={m.key} name={m.label} stroke={m.color} strokeWidth={2} dot={{ fill: m.color, r: 3 }} connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+        <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Performance Table')}</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                <th onClick={() => handleSort('player')} className={`text-left py-2 px-2 font-semibold cursor-pointer select-none hover:text-orange-500 transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Player')}<SortIcon col="player" /></th>
+                {metrics.map(m => (
+                  <th key={m.key} onClick={() => handleSort(m.key as PerfSortKey)} className={`text-center py-2 px-1 font-semibold cursor-pointer select-none hover:text-orange-500 transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{m.label}<SortIcon col={m.key as PerfSortKey} /></th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sortedRows.map(row => (
+                <tr key={row.player} className={`border-b transition-colors ${isDark ? 'border-gray-800/50 hover:bg-gray-800/50' : 'border-gray-50 hover:bg-gray-50'}`}>
+                  <td className={`py-2.5 px-2 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{row.player}</td>
+                  {metrics.map(m => {
+                    const val = row[m.key as keyof typeof row] as number | null;
+                    const firstVal = row[(m.key + 'First') as keyof typeof row] as number | null;
+                    const delta = getDelta(val, firstVal, m.lowerBetter);
+                    return (
+                      <td key={m.key} className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                        <div>{val !== null ? (m.key === 'bodyFat' ? `${val}%` : val) : '—'}</div>
+                        {delta && (
+                          <span className={`text-[10px] ${delta.improved ? 'text-green-500' : 'text-red-500'}`}>
+                            {delta.diff > 0 ? '+' : ''}{delta.diff}
+                          </span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -1566,7 +1838,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const tabs: { id: TabId; label: string; icon: any }[] = [
     { id: 'overview', label: t('Overview'), icon: BarChart3 },
-    { id: 'test', label: t('Test'), icon: Crosshair },
+    { id: 'performance', label: t('Performance'), icon: Zap },
     { id: 'player', label: t('Player Profile'), icon: User },
     { id: 'compare', label: t('Compare'), icon: GitCompare },
     { id: 'progression', label: t('Progression'), icon: TrendingUp },
@@ -1645,7 +1917,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         ) : (
           <>
             {activeTab === 'overview' && <OverviewTab sessions={sessions} players={players} onSelectPlayer={handleSelectPlayer} profiles={profiles} />}
-            {activeTab === 'test' && <TestTab sessions={sessions} players={players} profiles={profiles} />}
+            {activeTab === 'performance' && <PerformanceTab sessions={sessions} players={players} profiles={profiles} />}
             {activeTab === 'player' && <PlayerProfileTab sessions={sessions} players={players} initialPlayer={selectedPlayer} profiles={profiles} />}
             {activeTab === 'compare' && <CompareTab sessions={sessions} players={players} profiles={profiles} />}
             {activeTab === 'progression' && <ProgressionTab sessions={sessions} players={players} profiles={profiles} />}
