@@ -1779,12 +1779,22 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           const loadSessions = ps.filter(s => (s.practiceLoad || 0) > 0 || (s.vitaminsLoad || 0) > 0 || (s.weightsLoad || 0) > 0 || (s.gameLoad || 0) > 0);
           const avgLoad = loadSessions.length > 0 ? Math.round(totalLoad / loadSessions.length) : 0;
 
-          const loadChartData = ps.filter(s => (s.practiceLoad || 0) > 0 || (s.vitaminsLoad || 0) > 0 || (s.weightsLoad || 0) > 0 || (s.gameLoad || 0) > 0).map(s => ({
-            date: s.date.substring(5),
-            [t('Practice')]: s.practiceLoad || 0,
-            [t('Vitamins')]: s.vitaminsLoad || 0,
-            [t('Weights')]: s.weightsLoad || 0,
-            [t('Game')]: s.gameLoad || 0,
+          const monthlyMap: Record<string, { practice: number; vitamins: number; weights: number; game: number }> = {};
+          ps.forEach(s => {
+            if ((s.practiceLoad || 0) === 0 && (s.vitaminsLoad || 0) === 0 && (s.weightsLoad || 0) === 0 && (s.gameLoad || 0) === 0) return;
+            const month = s.date.substring(0, 7);
+            if (!monthlyMap[month]) monthlyMap[month] = { practice: 0, vitamins: 0, weights: 0, game: 0 };
+            monthlyMap[month].practice += s.practiceLoad || 0;
+            monthlyMap[month].vitamins += s.vitaminsLoad || 0;
+            monthlyMap[month].weights += s.weightsLoad || 0;
+            monthlyMap[month].game += s.gameLoad || 0;
+          });
+          const loadChartData = Object.entries(monthlyMap).sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({
+            date: month.substring(2),
+            [t('Practice')]: Math.round(v.practice),
+            [t('Vitamins')]: Math.round(v.vitamins),
+            [t('Weights')]: Math.round(v.weights),
+            [t('Game')]: Math.round(v.game),
           }));
 
           return (
