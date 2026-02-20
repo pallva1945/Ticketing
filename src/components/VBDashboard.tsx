@@ -147,7 +147,7 @@ function PlayerSelector({ players, selected, onChange, multiple }: { players: st
   );
 }
 
-type SortKey = 'player' | 'height' | 'projHeight' | 'reach' | 'projReach' | 'pureVertical' | 'sprint' | 'coneDrill' | 'weight' | 'wingspan' | 'bodyFat' | 'pct' | 'shots' | 'vitamins' | 'weights' | 'practice' | 'game' | 'injury' | 'nt' | 'daysOff';
+type SortKey = 'player' | 'height' | 'projHeight' | 'reach' | 'projReach' | 'pureVertical' | 'sprint' | 'coneDrill' | 'weight' | 'wingspan' | 'bodyFat' | 'pct' | 'shots' | 'totalLoad' | 'vitamins' | 'weights' | 'practice' | 'game' | 'injury' | 'nt' | 'daysOff';
 type SortDir = 'asc' | 'desc';
 
 interface RosterRow {
@@ -164,6 +164,7 @@ interface RosterRow {
   bodyFat: number | null;
   pct: number | null;
   shots: number;
+  totalLoad: number;
   vitamins: number;
   weights: number;
   practice: number;
@@ -449,6 +450,7 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
       })(),
       pct: getAvg(shootingSessions.map(s => s.shootingPct)),
       shots: sumOrRate(ps.map(s => s.shootsTaken)),
+      totalLoad: sumOrRate(ps.map(s => (s.practiceLoad || 0) + (s.vitaminsLoad || 0) + (s.weightsLoad || 0) + (s.gameLoad || 0) > 0 ? (s.practiceLoad || 0) + (s.vitaminsLoad || 0) + (s.weightsLoad || 0) + (s.gameLoad || 0) : null)),
       vitamins: sumOrRate(ps.map(s => s.vitaminsLoad)),
       weights: sumOrRate(ps.map(s => s.weightsLoad)),
       practice: sumOrRate(ps.map(s => s.practiceLoad)),
@@ -508,6 +510,7 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
     { key: 'bodyFat', label: t('Body Fat') + ' %' },
     { key: 'pct', label: t('3PT %') },
     { key: 'shots', label: t('Shots') },
+    { key: 'totalLoad', label: t('Total Load') },
     { key: 'vitamins', label: t('Vitamins') },
     { key: 'weights', label: t('Weights') },
     { key: 'practice', label: t('Practice') },
@@ -705,6 +708,13 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
     });
     return playerTotals.length ? Math.round(playerTotals.reduce((a, b) => a + b, 0) / playerTotals.length * 10) / 10 : null;
   }, [filtered, activePlayers]);
+  const teamAvgTotalLoad = useMemo(() => {
+    const playerTotals = activePlayers.map(p => {
+      const vals = filtered.filter(s => s.player === p).map(s => (s.practiceLoad || 0) + (s.vitaminsLoad || 0) + (s.weightsLoad || 0) + (s.gameLoad || 0));
+      return vals.reduce((a, b) => a + b, 0);
+    });
+    return playerTotals.length ? Math.round(playerTotals.reduce((a, b) => a + b, 0) / playerTotals.length * 10) / 10 : null;
+  }, [filtered, activePlayers]);
   const teamAvgInjuries = useMemo(() => {
     const playerCounts = activePlayers.map(p => {
       return new Set(filtered.filter(s => s.player === p && s.injured && s.injured > 0).map(s => s.date)).size;
@@ -856,6 +866,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
         const totalMade = players.reduce((sum, p) => sum + p.shotsMade, 0);
         return {
           month: label,
+          totalLoad: +(players.reduce((sum, p) => sum + p.practice + p.vitamins + p.weights + p.game, 0) / n).toFixed(1),
           practice: +(players.reduce((sum, p) => sum + p.practice, 0) / n).toFixed(1),
           vitamins: +(players.reduce((sum, p) => sum + p.vitamins, 0) / n).toFixed(1),
           weights: +(players.reduce((sum, p) => sum + p.weights, 0) / n).toFixed(1),
@@ -923,8 +934,9 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
         </div>
       </div>
 
-      <div className="grid grid-cols-6 gap-3">
+      <div className="grid grid-cols-7 gap-3">
         <StatCard label={t('3PT %')} value={avgShootingPct} unit="%" icon={Target} color="#f59e0b" subtitle={t('Team Average')} />
+        <StatCard label={t('Total Load')} value={teamAvgTotalLoad} icon={Activity} color="#0ea5e9" subtitle={t('Avg / Player')} />
         <StatCard label={t('Vitamins')} value={teamAvgVitamins} icon={Pill} color="#8b5cf6" subtitle={t('Avg / Player')} />
         <StatCard label={t('Weights')} value={teamAvgWeights} icon={Dumbbell} color="#10b981" subtitle={t('Avg / Player')} />
         <StatCard label={t('Game')} value={teamAvgGame} icon={Gamepad2} color="#f97316" subtitle={t('Avg / Player')} />
@@ -943,6 +955,20 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
 
       <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
         <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Training Load Trends')} — {filterGranularity === 'day' ? t('By Player') : filterGranularity === 'week' ? t('By Day') : filterGranularity === 'month' ? t('By Week') : t('By Month')}</h3>
+        <div className="mb-4">
+          <p className={`text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Total Load')}</p>
+          <div className="h-40">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={loadData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                <Bar dataKey="totalLoad" name={t('Total Load')} fill="#0ea5e9" radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
         <div className="grid grid-cols-2 gap-4">
           {([
             { key: 'practice', label: t('Practice'), baseColor: '#3b82f6', goals: proratedGoals.practice },
