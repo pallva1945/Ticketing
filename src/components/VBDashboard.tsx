@@ -2065,7 +2065,7 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
               <XAxis dataKey="date" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-              <YAxis tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+              <YAxis tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => { const pad = Math.max(1, Math.abs(dataMin) * 0.1); return Math.floor(dataMin - pad); }, (dataMax: number) => { const pad = Math.max(1, Math.abs(dataMax) * 0.1); return Math.ceil(dataMax + pad); }]} />
               <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
               {selected.map((p, i) => (
