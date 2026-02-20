@@ -1996,15 +1996,29 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
   };
 
   const chartData = useMemo(() => {
-    const allDates = [...new Set(sessions.filter(s => selected.includes(s.player) && s[metric] !== null).map(s => s.date))].sort();
-    return allDates.map(date => {
-      const entry: any = { date: date.substring(5) };
-      selected.forEach(p => {
-        const session = sessions.find(s => s.player === p && s.date === date);
-        entry[p] = session ? convertVal(session, p) : null;
-      });
-      return entry;
+    const monthMap = new Map<string, { sortKey: string; players: Map<string, number[]> }>();
+    sessions.filter(s => selected.includes(s.player) && s[metric] !== null).forEach(s => {
+      const monthKey = s.date.substring(0, 7);
+      const d = new Date(s.date);
+      const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+      if (!monthMap.has(label)) monthMap.set(label, { sortKey: monthKey, players: new Map() });
+      const val = convertVal(s, s.player);
+      if (val !== null) {
+        const pm = monthMap.get(label)!.players;
+        if (!pm.has(s.player)) pm.set(s.player, []);
+        pm.get(s.player)!.push(val);
+      }
     });
+    return [...monthMap.entries()]
+      .sort((a, b) => a[1].sortKey.localeCompare(b[1].sortKey))
+      .map(([label, data]) => {
+        const entry: any = { date: label };
+        selected.forEach(p => {
+          const vals = data.players.get(p);
+          entry[p] = vals && vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+        });
+        return entry;
+      });
   }, [sessions, selected, metric, profiles]);
 
   const deltaData = useMemo(() => {
