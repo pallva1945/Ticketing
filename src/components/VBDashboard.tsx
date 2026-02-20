@@ -618,11 +618,6 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
     return m;
   }, [seasonFiltered]);
 
-  const monthFiltered = useMemo(() => {
-    if (selectedMonth === 'all') return seasonFiltered;
-    return seasonFiltered.filter(s => s.date.substring(0, 7) === selectedMonth);
-  }, [seasonFiltered, selectedMonth]);
-
   const getSeasonWeek = (dateStr: string, season: string): number => {
     const d = new Date(dateStr);
     const startDate = SEASON_START_DATES[season];
@@ -631,22 +626,52 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
     return Math.floor(diffDays / 7) + 1;
   };
 
+  const monthWeekRanges = useMemo(() => {
+    const monthOrder = ['08', '09', '10', '11', '12', '01', '02', '03', '04', '05', '06'];
+    const result = new Map<string, [number, number]>();
+    const season = selectedSeason === 'all' ? getCurrentSeason() : selectedSeason;
+    const startYear = parseInt(season.split('/')[0]);
+    monthOrder.forEach((mm, idx) => {
+      const yyyy = parseInt(mm) >= 8 ? startYear : startYear + 1;
+      const key = `${yyyy}-${mm}`;
+      const w1 = idx * 4 + 1;
+      const w4 = idx * 4 + 4;
+      result.set(key, [w1, w4]);
+    });
+    return result;
+  }, [selectedSeason]);
+
+  const monthFiltered = useMemo(() => {
+    if (selectedMonth === 'all') return seasonFiltered;
+    const season = selectedSeason === 'all' ? getCurrentSeason() : selectedSeason;
+    const range = monthWeekRanges.get(selectedMonth);
+    if (!range) return seasonFiltered.filter(s => s.date.substring(0, 7) === selectedMonth);
+    const [w1, w4] = range;
+    return seasonFiltered.filter(s => {
+      const w = getSeasonWeek(s.date, season);
+      return w >= w1 && w <= w4;
+    });
+  }, [seasonFiltered, selectedMonth, selectedSeason, monthWeekRanges]);
+
   const weeks = useMemo(() => {
     const season = selectedSeason === 'all' ? getCurrentSeason() : selectedSeason;
-    const wSet = new Map<number, boolean>();
+    if (selectedMonth !== 'all') {
+      const range = monthWeekRanges.get(selectedMonth);
+      if (range) {
+        const [w1, w4] = range;
+        const dataWeeks = new Set(monthFiltered.map(s => getSeasonWeek(s.date, season)));
+        return [w1, w1 + 1, w1 + 2, w1 + 3]
+          .filter(w => w <= w4 && dataWeeks.has(w))
+          .map(w => [`W${w}`, `Week ${w}`] as [string, string]);
+      }
+    }
+    const wSet = new Set<number>();
     monthFiltered.forEach(s => {
       const w = getSeasonWeek(s.date, season);
-      if (w > 0) wSet.set(w, true);
+      if (w > 0) wSet.add(w);
     });
-    const sorted = [...wSet.keys()].sort((a, b) => a - b);
-    if (selectedMonth !== 'all' && sorted.length > 4) {
-      const mid = Math.floor((sorted[0] + sorted[sorted.length - 1]) / 2);
-      sorted.sort((a, b) => Math.abs(a - mid) - Math.abs(b - mid));
-      const closest4 = sorted.slice(0, 4).sort((a, b) => a - b);
-      return closest4.map(w => [`W${w}`, `Week ${w}`] as [string, string]);
-    }
-    return sorted.map(w => [`W${w}`, `Week ${w}`] as [string, string]);
-  }, [monthFiltered, selectedMonth, selectedSeason]);
+    return [...wSet].sort((a, b) => a - b).map(w => [`W${w}`, `Week ${w}`] as [string, string]);
+  }, [monthFiltered, selectedMonth, selectedSeason, monthWeekRanges]);
 
   const weekFiltered = useMemo(() => {
     if (selectedWeek === 'all') return monthFiltered;
