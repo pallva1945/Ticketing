@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Calendar, CalendarDays, Pill, Gamepad2, CalendarOff, ArrowUpFromDot, Gauge } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, CartesianGrid, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, CartesianGrid, Legend, ReferenceLine, Cell } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -789,6 +789,15 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
     return 'season';
   }, [selectedDay, selectedWeek, selectedMonth]);
 
+  const monthlyGoals = { practice: { min: 16, max: 32 }, vitamins: { min: 32, max: 48 }, weights: { min: 32, max: 48 }, game: { min: 24, max: 28 } };
+  const goalScale = filterGranularity === 'day' ? 1 / 30 : filterGranularity === 'week' ? 7 / 30 : filterGranularity === 'month' ? 7 / 30 : 1;
+  const proratedGoals = {
+    practice: { min: +(monthlyGoals.practice.min * goalScale).toFixed(1), max: +(monthlyGoals.practice.max * goalScale).toFixed(1) },
+    vitamins: { min: +(monthlyGoals.vitamins.min * goalScale).toFixed(1), max: +(monthlyGoals.vitamins.max * goalScale).toFixed(1) },
+    weights: { min: +(monthlyGoals.weights.min * goalScale).toFixed(1), max: +(monthlyGoals.weights.max * goalScale).toFixed(1) },
+    game: { min: +(monthlyGoals.game.min * goalScale).toFixed(1), max: +(monthlyGoals.game.max * goalScale).toFixed(1) },
+  };
+
   const loadData = useMemo(() => {
     const getBucketKey = (s: VBSession): string => {
       if (filterGranularity === 'day') return s.player;
@@ -925,20 +934,36 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
 
       <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
         <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Training Load Trends')} — {filterGranularity === 'day' ? t('By Player') : filterGranularity === 'week' ? t('By Day') : filterGranularity === 'month' ? t('By Week') : t('By Month')}</h3>
-        <div className="h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={loadData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-              <XAxis dataKey="month" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-              <YAxis tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-              <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="practice" name={t('Practice')} fill="#3b82f6" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="vitamins" name={t('Vitamins')} fill="#8b5cf6" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="weights" name={t('Weights')} fill="#10b981" radius={[2, 2, 0, 0]} />
-              <Bar dataKey="game" name={t('Game')} fill="#f59e0b" radius={[2, 2, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="grid grid-cols-2 gap-4">
+          {([
+            { key: 'practice', label: t('Practice'), baseColor: '#3b82f6', goals: proratedGoals.practice },
+            { key: 'vitamins', label: t('Vitamins'), baseColor: '#8b5cf6', goals: proratedGoals.vitamins },
+            { key: 'weights', label: t('Weights'), baseColor: '#10b981', goals: proratedGoals.weights },
+            { key: 'game', label: t('Game'), baseColor: '#f59e0b', goals: proratedGoals.game },
+          ] as const).map(({ key, label, baseColor, goals }) => (
+            <div key={key}>
+              <p className={`text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{label} <span className={`${isDark ? 'text-gray-500' : 'text-gray-400'}`}>({t('Goal')}: {goals.min}–{goals.max})</span></p>
+              <div className="h-40">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={loadData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                    <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                    <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                    <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                    <ReferenceLine y={goals.min} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${goals.min}`, position: 'right', fontSize: 9, fill: '#ef4444' }} />
+                    <ReferenceLine y={goals.max} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${goals.max}`, position: 'right', fontSize: 9, fill: '#ef4444' }} />
+                    <Bar dataKey={key} name={label} radius={[2, 2, 0, 0]}>
+                      {loadData.map((entry: any, idx: number) => {
+                        const val = entry[key];
+                        const fill: string = val < goals.min ? '#ef4444' : val > goals.max ? '#f97316' : baseColor;
+                        return <Cell key={idx} fill={fill} />;
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
