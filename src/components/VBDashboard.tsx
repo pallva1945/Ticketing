@@ -862,6 +862,8 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
           game: +(players.reduce((sum, p) => sum + p.game, 0) / n).toFixed(1),
           shotsTaken: +(totalTaken / n).toFixed(0),
           shootingPct: totalTaken > 0 ? +((totalMade / totalTaken) * 100).toFixed(1) : 0,
+          _totalTaken: totalTaken,
+          _totalMade: totalMade,
         };
       });
   }, [filtered, filterGranularity]);
@@ -994,16 +996,23 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
             </div>
           </div>
           <div>
-            <p className={`text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('3PT %')}</p>
+            <p className={`text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('3PT %')} ({t('Cumulative')})</p>
             <div className="h-40">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={loadData}>
+                <LineChart data={(() => {
+                  let cumTaken = 0, cumMade = 0;
+                  return loadData.map((d: any) => {
+                    cumTaken += d._totalTaken || 0;
+                    cumMade += d._totalMade || 0;
+                    return { month: d.month, cumulativePct: cumTaken > 0 ? +((cumMade / cumTaken) * 100).toFixed(1) : 0 };
+                  });
+                })()}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                   <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                   <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[0, 100]} />
                   <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} formatter={(value: any) => `${value}%`} />
-                  <Bar dataKey="shootingPct" name={t('3PT %')} fill="#f59e0b" radius={[2, 2, 0, 0]} />
-                </BarChart>
+                  <Line type="monotone" dataKey="cumulativePct" name={t('3PT %')} stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 3 }} />
+                </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
