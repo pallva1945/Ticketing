@@ -1081,30 +1081,22 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
   const { t } = useLanguage();
   const isDark = useIsDark();
 
-  const seasons = useMemo(() => {
-    const s = new Set(sessions.map(s => {
-      const d = new Date(s.date);
-      const y = d.getFullYear();
-      const m = d.getMonth();
-      return m >= 7 ? `${y}/${(y + 1).toString().slice(2)}` : `${y - 1}/${y.toString().slice(2)}`;
-    }));
-    return [...s].sort();
-  }, [sessions]);
+  const validSessions = useMemo(() =>
+    sessions.filter(s => getSeason(s.date) !== null).sort((a, b) => a.date.localeCompare(b.date)),
+    [sessions]);
 
-  const [selectedSeason, setSelectedSeason] = useState(() => seasons.length ? seasons[seasons.length - 1] : 'all');
+  const seasons = useMemo(() => {
+    const s = [...new Set(validSessions.map(s => getSeason(s.date)!))].sort();
+    return s;
+  }, [validSessions]);
+
+  const [selectedSeason, setSelectedSeason] = useState(() => getCurrentSeason());
   const [selectedPlayer, setSelectedPlayer] = useState<string>('all');
 
   const filtered = useMemo(() => {
-    let f = sessions;
-    if (selectedSeason !== 'all') {
-      const [startYear] = selectedSeason.split('/');
-      const sy = parseInt(startYear);
-      const seasonStart = new Date(sy, 6, 1);
-      const seasonEnd = new Date(sy + 1, 5, 30);
-      f = f.filter(s => { const d = new Date(s.date); return d >= seasonStart && d <= seasonEnd; });
-    }
-    return f;
-  }, [sessions, selectedSeason]);
+    if (selectedSeason === 'all') return validSessions;
+    return validSessions.filter(s => getSeason(s.date) === selectedSeason);
+  }, [validSessions, selectedSeason]);
 
   const activePlayers = useMemo(() => {
     const pSet = new Set(filtered.map(s => s.player));
