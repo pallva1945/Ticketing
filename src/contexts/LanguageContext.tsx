@@ -263,6 +263,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Campus Status': { en: 'Campus Status', it: 'Stato Campus' },
   'Fully operational': { en: 'Fully operational', it: 'Pienamente operativo' },
   'Active': { en: 'Active', it: 'Attivo' },
+  'Day Off': { en: 'Day Off', it: 'Giorno Libero' },
   'Financial Note': { en: 'Financial Note', it: 'Nota Finanziaria' },
   'Monthly Arena Usage': { en: 'Monthly Arena Usage', it: 'Utilizzo Arena Mensile' },
   'Event Type Breakdown': { en: 'Event Type Breakdown', it: 'Scomposizione per Tipo Evento' },

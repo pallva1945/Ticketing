@@ -2097,9 +2097,48 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
     return items.slice(0, 10);
   }, [query, players, allSeasons, allMonths, allDates, profiles, t]);
 
+  const makeDayOff = (player: string, date: string): VBSession => ({
+    player, date, practiceLoad: null, vitaminsLoad: null, weightsLoad: null, gameLoad: null,
+    height: null, weight: null, wingspan: null, standingReach: null, bodyFat: null,
+    pureVertical: null, noStepVertical: null, sprint: null, coneDrill: null, deadlift: null,
+    shootsTaken: null, shootsMade: null, shootingPct: null, injured: null, nationalTeam: null, formShooting: null,
+  });
+
+  const isSessionActive = (s: VBSession): boolean => {
+    return (s.vitaminsLoad || 0) > 0 || (s.weightsLoad || 0) > 0 || (s.practiceLoad || 0) > 0 || (s.gameLoad || 0) > 0
+      || (s.injured !== null && s.injured > 0) || (s.nationalTeam !== null && s.nationalTeam > 0)
+      || s.height !== null || s.weight !== null || s.sprint !== null || s.coneDrill !== null
+      || s.pureVertical !== null || s.noStepVertical !== null || s.deadlift !== null
+      || s.shootsTaken !== null;
+  };
+
+  const generateDateRange = (parsed: ReturnType<typeof parseCompoundQuery>): string[] => {
+    if (parsed.year !== null && parsed.month !== null && parsed.day !== null) {
+      return [`${parsed.year}-${String(parsed.month).padStart(2, '0')}-${String(parsed.day).padStart(2, '0')}`];
+    }
+    if (parsed.year !== null && parsed.month !== null) {
+      const daysInMonth = new Date(parsed.year, parsed.month, 0).getDate();
+      const today = new Date();
+      const dates: string[] = [];
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dt = new Date(parsed.year, parsed.month - 1, d);
+        if (dt <= today) {
+          dates.push(`${parsed.year}-${String(parsed.month).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+        }
+      }
+      return dates;
+    }
+    return [];
+  };
+
   const executeSearch = (searchValue: string) => {
     setShowSuggestions(false);
     let filtered: VBSession[] = [];
+    const searchText = searchValue.startsWith('compound:') ? searchValue.replace('compound:', '')
+      : searchValue.startsWith('season:') || searchValue.startsWith('month:') || searchValue.startsWith('date:') ? '' : searchValue;
+    const parsed = parseCompoundQuery(searchText || '');
+    const hasDate = parsed.year !== null || parsed.month !== null || parsed.day !== null;
+    const hasName = parsed.nameTokens.length > 0;
 
     if (searchValue.startsWith('season:')) {
       const season = searchValue.replace('season:', '');
@@ -2110,17 +2149,25 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
     } else if (searchValue.startsWith('date:')) {
       const date = searchValue.replace('date:', '');
       filtered = sessions.filter(s => s.date === date);
+    } else if (hasDate || hasName) {
+      filtered = sessions.filter(s => matchesSession(s, parsed));
     } else {
-      const searchText = searchValue.startsWith('compound:') ? searchValue.replace('compound:', '') : searchValue;
-      const parsed = parseCompoundQuery(searchText);
-      const hasDate = parsed.year !== null || parsed.month !== null || parsed.day !== null;
-      const hasName = parsed.nameTokens.length > 0;
+      const q = searchValue.toLowerCase();
+      filtered = sessions.filter(s => s.player.toLowerCase().includes(q) || s.date.includes(q));
+    }
 
-      if (hasDate || hasName) {
-        filtered = sessions.filter(s => matchesSession(s, parsed));
-      } else {
-        const q = searchText.toLowerCase();
-        filtered = sessions.filter(s => s.player.toLowerCase().includes(q) || s.date.includes(q));
+    if (hasName && hasDate) {
+      const matchedPlayers = players.filter(p => parsed.nameTokens.every(nt => p.toLowerCase().includes(nt)));
+      const dates = generateDateRange(parsed);
+      if (dates.length > 0) {
+        for (const p of matchedPlayers) {
+          const existingDates = new Set(filtered.filter(s => s.player === p).map(s => s.date));
+          for (const date of dates) {
+            if (!existingDates.has(date)) {
+              filtered.push(makeDayOff(p, date));
+            }
+          }
+        }
       }
     }
 
@@ -2261,11 +2308,17 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
                     <th className="text-right py-2 px-2 font-medium">{t('Game')}</th>
                     <th className="text-right py-2 px-2 font-medium">{t('3PT %')}</th>
                     <th className="text-right py-2 px-2 font-medium">{t('Injured')}</th>
+                    <th className="text-right py-2 px-2 font-medium">{t('NT')}</th>
+                    <th className="text-center py-2 px-2 font-medium">{t('Status')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {playerSessions.map((s, i) => (
-                    <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50 hover:bg-gray-800/30' : 'border-gray-50 hover:bg-gray-50'}`}>
+                  {playerSessions.map((s, i) => {
+                    const active = isSessionActive(s);
+                    const isNT = s.nationalTeam !== null && s.nationalTeam > 0;
+                    const isDayOff = !active;
+                    return (
+                    <tr key={i} className={`border-b ${isDayOff ? (isDark ? 'bg-gray-800/20 border-gray-800/50' : 'bg-gray-50/50 border-gray-100') : isDark ? 'border-gray-800/50 hover:bg-gray-800/30' : 'border-gray-50 hover:bg-gray-50'}`}>
                       <td className="py-1.5 px-2 font-medium">{s.date}</td>
                       <td className="py-1.5 px-2 text-right">{s.height ?? '—'}</td>
                       <td className="py-1.5 px-2 text-right">{s.weight ?? '—'}</td>
@@ -2286,8 +2339,21 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
                         ) : '—'}
                       </td>
                       <td className="py-1.5 px-2 text-right">{s.injured && s.injured > 0 ? <span className="text-red-500 font-medium">Lv {s.injured}</span> : '—'}</td>
+                      <td className="py-1.5 px-2 text-right">{isNT ? <span className="text-blue-500 font-semibold">NT</span> : '—'}</td>
+                      <td className="py-1.5 px-2 text-center">
+                        {isDayOff ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400">{t('Day Off')}</span>
+                        ) : isNT ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">{t('NT')}</span>
+                        ) : s.injured && s.injured > 0 ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">{t('Injured')}</span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">{t('Active')}</span>
+                        )}
+                      </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
