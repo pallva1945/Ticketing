@@ -830,10 +830,9 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
         return dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
       }
       if (filterGranularity === 'month') {
-        const dt = new Date(s.date);
-        const dayOfMonth = dt.getDate();
-        const weekNum = Math.ceil(dayOfMonth / 7);
-        return `W${weekNum} (${dt.toLocaleDateString('en-US', { month: 'short' })})`;
+        const season = selectedSeason === 'all' ? getCurrentSeason() : selectedSeason;
+        const w = getSeasonWeek(s.date, season);
+        return `W${w}`;
       }
       return s.date.substring(5, 7) + '/' + s.date.substring(2, 4);
     };
@@ -842,8 +841,8 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
       if (filterGranularity === 'day') return s.player;
       if (filterGranularity === 'week') return s.date;
       if (filterGranularity === 'month') {
-        const dayOfMonth = new Date(s.date).getDate();
-        return String(Math.ceil(dayOfMonth / 7)).padStart(2, '0');
+        const season = selectedSeason === 'all' ? getCurrentSeason() : selectedSeason;
+        return String(getSeasonWeek(s.date, season)).padStart(3, '0');
       }
       return s.date.substring(0, 7);
     };
@@ -870,9 +869,14 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
       if (s.shootsMade) pLoad.shotsMade += s.shootsMade;
     });
 
-    return [...bucketPlayerLoads.entries()]
-      .sort((a, b) => (sortKeyMap.get(a[0]) || '').localeCompare(sortKeyMap.get(b[0]) || ''))
-      .map(([label, playerMap]) => {
+    let sorted = [...bucketPlayerLoads.entries()]
+      .sort((a, b) => (sortKeyMap.get(a[0]) || '').localeCompare(sortKeyMap.get(b[0]) || ''));
+
+    if (filterGranularity === 'month' && sorted.length > 4) {
+      sorted = sorted.slice(0, 4);
+    }
+
+    return sorted.map(([label, playerMap]) => {
         const players = [...playerMap.values()];
         const n = players.length || 1;
         const totalTaken = players.reduce((sum, p) => sum + p.shotsTaken, 0);
@@ -890,7 +894,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
           _totalMade: totalMade,
         };
       });
-  }, [filtered, filterGranularity]);
+  }, [filtered, filterGranularity, selectedSeason]);
 
   const selectClass = `px-3 py-1.5 rounded-lg text-xs font-medium appearance-none pr-7 ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-gray-700 border-gray-200'} border`;
 
