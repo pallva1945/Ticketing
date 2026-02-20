@@ -1638,7 +1638,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
             </div>
             <div>
               <div className={labelClass}>{t('Italian Formation')}</div>
-              <div className={valueClass}>{profile?.italianFormation !== null && profile?.italianFormation !== undefined ? (profile.italianFormation ? t('Yes') : t('No')) : '—'}</div>
+              <div className={valueClass}>{profile?.italianFormation !== null && profile?.italianFormation !== undefined ? (profile.italianFormation === 1 ? t('Yes') : t('No')) : '—'}</div>
             </div>
             <div>
               <div className={labelClass}>{t('Season')}</div>
