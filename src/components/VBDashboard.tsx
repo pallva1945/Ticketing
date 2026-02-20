@@ -1729,6 +1729,31 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
     });
   }, [filteredPlayers]);
 
+  const getPlayerVal = (player: string, key: string): number | null => {
+    let val = getLatestMetric(roleFiltered, player, key as keyof VBSession);
+    if (val !== null && (key === 'pureVertical' || key === 'noStepVertical')) {
+      const reach = getLatestMetric(roleFiltered, player, 'standingReach');
+      if (reach !== null) val = val - reach; else return null;
+    }
+    if (val !== null && key === 'bodyFat') {
+      const dobSerial = getPlayerDobSerial(player, profiles);
+      const bfSession = getPlayerSessions(roleFiltered, player).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
+      const bf = calcBodyFatPct(val, dobSerial, bfSession?.date);
+      if (bf !== null) val = bf;
+    }
+    return val;
+  };
+
+  const teamRanges = useMemo(() => {
+    const metricKeys = ['pureVertical', 'noStepVertical', 'deadlift', 'shootingPct', 'bodyFat', 'sprint', 'coneDrill'];
+    const ranges: Record<string, { min: number; max: number }> = {};
+    metricKeys.forEach(key => {
+      const allVals = filteredPlayers.map(p => getPlayerVal(p, key)).filter(v => v !== null) as number[];
+      ranges[key] = { min: allVals.length ? Math.min(...allVals) : 0, max: allVals.length ? Math.max(...allVals) : 1 };
+    });
+    return ranges;
+  }, [roleFiltered, filteredPlayers, profiles]);
+
   const radarData = useMemo(() => {
     if (selected.length < 2) return [];
     const metricDefs = [
@@ -1740,42 +1765,37 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
       { key: 'sprint', label: t('Sprint'), invert: true },
       { key: 'coneDrill', label: t('Cone Drill'), invert: true },
     ];
-    const rawVals: Record<string, Record<string, number | null>> = {};
-    metricDefs.forEach(m => {
-      rawVals[m.key] = {};
-      selected.forEach(p => {
-        let val = getLatestMetric(roleFiltered, p, m.key as keyof VBSession);
-        if (val !== null && (m.key === 'pureVertical' || m.key === 'noStepVertical')) {
-          const reach = getLatestMetric(roleFiltered, p, 'standingReach');
-          if (reach !== null) val = val - reach;
-        }
-        if (val !== null && m.key === 'bodyFat') {
-          const dobSerial = getPlayerDobSerial(p, profiles);
-          const bfSession = getPlayerSessions(roleFiltered, p).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
-          const bf = calcBodyFatPct(val, dobSerial, bfSession?.date);
-          if (bf !== null) val = bf;
-        }
-        rawVals[m.key][p] = val;
-      });
-    });
     return metricDefs.map(m => {
-      const vals = Object.values(rawVals[m.key]).filter(v => v !== null) as number[];
-      const maxVal = vals.length ? Math.max(...vals) : 1;
-      const minVal = vals.length ? Math.min(...vals) : 0;
+      const { min: teamMin, max: teamMax } = teamRanges[m.key] || { min: 0, max: 1 };
+      const range = teamMax - teamMin || 1;
       const entry: any = { metric: m.label };
       selected.forEach(p => {
-        const val = rawVals[m.key][p];
+        const val = getPlayerVal(p, m.key);
         if (val === null) { entry[p] = 0; return; }
         if (m.invert) {
-          const range = maxVal - minVal || 1;
-          entry[p] = Math.round(((maxVal - val) / range) * 100);
+          entry[p] = Math.round(((teamMax - val) / range) * 80 + 20);
         } else {
-          entry[p] = maxVal > 0 ? Math.round((val / maxVal) * 100) : 0;
+          entry[p] = Math.round(((val - teamMin) / range) * 80 + 20);
         }
       });
       return entry;
     });
-  }, [roleFiltered, selected, t, profiles]);
+  }, [roleFiltered, selected, t, profiles, teamRanges]);
+
+  const teamLoadRanges = useMemo(() => {
+    const loadKeys = ['vitaminsLoad', 'weightsLoad', 'gameLoad', 'practiceLoad', 'shootsTaken'];
+    const ranges: Record<string, number> = {};
+    loadKeys.forEach(key => {
+      let globalMax = 0;
+      filteredPlayers.forEach(p => {
+        const ps = getPlayerSessions(roleFiltered, p);
+        const total = ps.reduce((sum, s) => sum + ((s[key as keyof VBSession] as number) || 0), 0);
+        if (total > globalMax) globalMax = total;
+      });
+      ranges[key] = globalMax || 1;
+    });
+    return ranges;
+  }, [roleFiltered, filteredPlayers]);
 
   const loadRadarData = useMemo(() => {
     if (selected.length < 2) return [];
@@ -1786,26 +1806,16 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
       { key: 'practiceLoad', label: t('Practice') },
       { key: 'shootsTaken', label: t('Shots Taken') },
     ];
-    const maxVals: Record<string, number> = {};
-    metrics.forEach(m => {
-      let globalMax = 0;
-      selected.forEach(p => {
-        const ps = getPlayerSessions(roleFiltered, p);
-        const total = ps.reduce((sum, s) => sum + ((s[m.key as keyof VBSession] as number) || 0), 0);
-        if (total > globalMax) globalMax = total;
-      });
-      maxVals[m.key] = globalMax || 1;
-    });
     return metrics.map(m => {
       const entry: any = { metric: m.label };
       selected.forEach(p => {
         const ps = getPlayerSessions(roleFiltered, p);
         const total = ps.reduce((sum, s) => sum + ((s[m.key as keyof VBSession] as number) || 0), 0);
-        entry[p] = Math.round((total / maxVals[m.key]) * 100);
+        entry[p] = Math.round((total / teamLoadRanges[m.key]) * 100);
       });
       return entry;
     });
-  }, [roleFiltered, selected, t]);
+  }, [roleFiltered, selected, t, teamLoadRanges]);
 
   const comparisonData = useMemo(() => {
     const metrics: { key: keyof VBSession; label: string; unit: string }[] = [
