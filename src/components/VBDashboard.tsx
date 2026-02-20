@@ -3140,6 +3140,70 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   useEffect(() => { fetchData(); }, []);
 
+  const normalizedSessions = useMemo(() => {
+    if (sessions.length === 0) return sessions;
+
+    const playerNonNTSessions: Record<string, VBSession[]> = {};
+    for (const s of sessions) {
+      if (!playerNonNTSessions[s.player]) playerNonNTSessions[s.player] = [];
+      if (!(s.nationalTeam !== null && s.nationalTeam > 0)) {
+        playerNonNTSessions[s.player].push(s);
+      }
+    }
+
+    const playerAvgs: Record<string, { practice: number; vitamins: number; weights: number; game: number; shotsTaken: number; shotsMade: number; shootingPct: number }> = {};
+    for (const [player, pSessions] of Object.entries(playerNonNTSessions)) {
+      const activeSessions = pSessions.filter(s => (s.practiceLoad || 0) > 0 || (s.vitaminsLoad || 0) > 0 || (s.weightsLoad || 0) > 0 || (s.gameLoad || 0) > 0);
+      const shootingSessions = pSessions.filter(s => s.shootsTaken !== null && s.shootsTaken > 0);
+      const count = activeSessions.length || 1;
+      const shootCount = shootingSessions.length || 1;
+      playerAvgs[player] = {
+        practice: Math.round(activeSessions.reduce((sum, s) => sum + (s.practiceLoad || 0), 0) / count),
+        vitamins: Math.round(activeSessions.reduce((sum, s) => sum + (s.vitaminsLoad || 0), 0) / count),
+        weights: Math.round(activeSessions.reduce((sum, s) => sum + (s.weightsLoad || 0), 0) / count),
+        game: Math.round(activeSessions.reduce((sum, s) => sum + (s.gameLoad || 0), 0) / count),
+        shotsTaken: Math.round(shootingSessions.reduce((sum, s) => sum + (s.shootsTaken || 0), 0) / shootCount),
+        shotsMade: Math.round(shootingSessions.reduce((sum, s) => sum + (s.shootsMade || 0), 0) / shootCount),
+        shootingPct: (() => {
+          const totalTaken = shootingSessions.reduce((sum, s) => sum + (s.shootsTaken || 0), 0);
+          const totalMade = shootingSessions.reduce((sum, s) => sum + (s.shootsMade || 0), 0);
+          return totalTaken > 0 ? Math.round((totalMade / totalTaken) * 100) : 0;
+        })(),
+      };
+    }
+
+    return sessions.map(s => {
+      let normalized = { ...s };
+
+      if (s.nationalTeam !== null && s.nationalTeam > 0) {
+        const avg = playerAvgs[s.player];
+        if (avg) {
+          normalized.practiceLoad = normalized.practiceLoad || avg.practice;
+          normalized.vitaminsLoad = normalized.vitaminsLoad || avg.vitamins;
+          normalized.weightsLoad = normalized.weightsLoad || avg.weights;
+          normalized.gameLoad = normalized.gameLoad || avg.game;
+          if (normalized.shootsTaken === null || normalized.shootsTaken === 0) {
+            normalized.shootsTaken = avg.shotsTaken;
+            normalized.shootsMade = avg.shotsMade;
+            normalized.shootingPct = avg.shootingPct;
+          }
+        }
+      }
+
+      if (s.formShooting !== null && s.formShooting === 1) {
+        const extraShots = 100;
+        const avg = playerAvgs[s.player];
+        const pct = avg ? avg.shootingPct : 0;
+        const extraMade = Math.round(extraShots * pct / 100);
+        normalized.shootsTaken = (normalized.shootsTaken || 0) + extraShots;
+        normalized.shootsMade = (normalized.shootsMade || 0) + extraMade;
+        normalized.shootingPct = normalized.shootsTaken > 0 ? Math.round((normalized.shootsMade / normalized.shootsTaken) * 100) : null;
+      }
+
+      return normalized;
+    });
+  }, [sessions]);
+
   const handleSelectPlayer = (p: string) => {
     setSelectedPlayer(p);
     setActiveTab('player');
@@ -3220,20 +3284,20 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         )}
 
-        {sessions.length === 0 && !error ? (
+        {normalizedSessions.length === 0 && !error ? (
           <div className="text-center py-20">
             <Activity size={40} className={`mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
             <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No VB data available')}</p>
           </div>
         ) : (
           <>
-            {activeTab === 'overview' && <OverviewTab sessions={sessions} players={players} onSelectPlayer={handleSelectPlayer} profiles={profiles} />}
-            {activeTab === 'performance' && <PerformanceTab sessions={sessions} players={players} profiles={profiles} />}
-            {activeTab === 'gameperf' && <GamePerformanceTab sessions={sessions} players={players} profiles={profiles} />}
-            {activeTab === 'player' && <PlayerProfileTab sessions={sessions} players={players} initialPlayer={selectedPlayer} profiles={profiles} />}
-            {activeTab === 'compare' && <CompareTab sessions={sessions} players={players} profiles={profiles} />}
-            {activeTab === 'progression' && <ProgressionTab sessions={sessions} players={players} profiles={profiles} />}
-            {activeTab === 'search' && <SearchTab sessions={sessions} players={players} profiles={profiles} />}
+            {activeTab === 'overview' && <OverviewTab sessions={normalizedSessions} players={players} onSelectPlayer={handleSelectPlayer} profiles={profiles} />}
+            {activeTab === 'performance' && <PerformanceTab sessions={normalizedSessions} players={players} profiles={profiles} />}
+            {activeTab === 'gameperf' && <GamePerformanceTab sessions={normalizedSessions} players={players} profiles={profiles} />}
+            {activeTab === 'player' && <PlayerProfileTab sessions={normalizedSessions} players={players} initialPlayer={selectedPlayer} profiles={profiles} />}
+            {activeTab === 'compare' && <CompareTab sessions={normalizedSessions} players={players} profiles={profiles} />}
+            {activeTab === 'progression' && <ProgressionTab sessions={normalizedSessions} players={players} profiles={profiles} />}
+            {activeTab === 'search' && <SearchTab sessions={normalizedSessions} players={players} profiles={profiles} />}
           </>
         )}
       </main>
