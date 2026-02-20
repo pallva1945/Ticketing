@@ -1846,7 +1846,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                       <LineChart data={verticalsData}>
                         <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                         <XAxis dataKey="date" tick={tickStyle} />
-                        <YAxis tick={tickStyle} />
+                        <YAxis tick={tickStyle} domain={['dataMin - 2', 'dataMax + 2']} />
                         <Tooltip contentStyle={tipStyle} />
                         <Legend wrapperStyle={{ fontSize: 10 }} />
                         <Line type="monotone" dataKey={t('Pure Vertical')} stroke="#06b6d4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
@@ -1886,7 +1886,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                       <ComposedChart data={deadliftData}>
                         <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                         <XAxis dataKey="date" tick={tickStyle} />
-                        <YAxis tick={tickStyle} />
+                        <YAxis tick={tickStyle} domain={['dataMin - 5', 'dataMax + 5']} />
                         <Tooltip contentStyle={tipStyle} />
                         <Bar dataKey={t('Deadlift')} fill="#10b981" opacity={0.7} radius={[4, 4, 0, 0]} />
                       </ComposedChart>
