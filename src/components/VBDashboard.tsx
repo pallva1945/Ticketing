@@ -1901,24 +1901,34 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    const items: { type: string; label: string; value: string }[] = [];
+    const items: { type: string; label: string; value: string; sortKey: number }[] = [];
 
     players.filter(p => p.toLowerCase().includes(q)).slice(0, 5).forEach(p => {
-      const profile = profiles.find(pr => pr.name === p);
-      items.push({ type: 'player', label: p, value: p });
+      items.push({ type: 'player', label: p, value: p, sortKey: 0 });
     });
 
-    allSeasons.filter(s => s.toLowerCase().includes(q)).slice(0, 3).forEach(s => {
-      items.push({ type: 'season', label: `${t('Season')} ${s}`, value: `season:${s}` });
+    allSeasons.filter(s => s.includes(q)).slice(0, 3).forEach(s => {
+      items.push({ type: 'season', label: `${t('Season')} ${s}`, value: `season:${s}`, sortKey: 1 });
     });
 
-    allMonths.filter(m => m.includes(q)).slice(0, 4).forEach(m => {
-      items.push({ type: 'month', label: m, value: `month:${m}` });
+    allMonths.filter(m => m.includes(q)).slice(0, 5).forEach(m => {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthNum = parseInt(m.split('-')[1]) - 1;
+      items.push({ type: 'month', label: `${monthNames[monthNum]} ${m.split('-')[0]}`, value: `month:${m}`, sortKey: 2 });
     });
 
-    allDates.filter(d => d.includes(q)).slice(0, 4).forEach(d => {
-      items.push({ type: 'date', label: d, value: `date:${d}` });
+    allDates.filter(d => d.includes(q)).slice(0, 5).forEach(d => {
+      items.push({ type: 'date', label: d, value: `date:${d}`, sortKey: 3 });
     });
+
+    const hasDigit = /\d/.test(q);
+    if (hasDigit) {
+      items.sort((a, b) => {
+        const aIsTime = a.type !== 'player' ? 0 : 1;
+        const bIsTime = b.type !== 'player' ? 0 : 1;
+        return aIsTime - bIsTime || a.sortKey - b.sortKey;
+      });
+    }
 
     return items.slice(0, 10);
   }, [query, players, allSeasons, allMonths, allDates, profiles, t]);
