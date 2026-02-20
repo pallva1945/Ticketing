@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Calendar, CalendarDays, Pill, Gamepad2, CalendarOff, ArrowUpFromDot, Gauge, Printer, Trophy, Search } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, CartesianGrid, Legend, ReferenceLine, ReferenceArea, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, CartesianGrid, Legend, ReferenceLine, ReferenceArea, Cell, ComposedChart } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -1757,6 +1757,95 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
             <div className={subValueClass}>{totalMade}/{totalTaken}</div>
           </div>
         </div>
+
+        {(() => {
+          const athleticMonthly: Record<string, { sprint: number[]; coneDrill: number[]; pureVert: number[]; noStepVert: number[]; deadlift: number[] }> = {};
+          const shootingMonthly: Record<string, { taken: number; made: number }> = {};
+          const sr = getLatestMetric(sessions, selectedPlayer, 'standingReach');
+
+          ps.forEach(s => {
+            const month = s.date.substring(0, 7);
+            if (!athleticMonthly[month]) athleticMonthly[month] = { sprint: [], coneDrill: [], pureVert: [], noStepVert: [], deadlift: [] };
+            if (s.sprint !== null) athleticMonthly[month].sprint.push(s.sprint);
+            if (s.coneDrill !== null) athleticMonthly[month].coneDrill.push(s.coneDrill);
+            if (s.pureVertical !== null && sr !== null) athleticMonthly[month].pureVert.push(s.pureVertical - sr);
+            if (s.noStepVertical !== null && sr !== null) athleticMonthly[month].noStepVert.push(s.noStepVertical - sr);
+            if (s.deadlift !== null) athleticMonthly[month].deadlift.push(s.deadlift);
+
+            if (!shootingMonthly[month]) shootingMonthly[month] = { taken: 0, made: 0 };
+            shootingMonthly[month].taken += s.shootsTaken || 0;
+            shootingMonthly[month].made += s.shootsMade || 0;
+          });
+
+          const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length * 10) / 10 : null;
+
+          const athleticData = Object.entries(athleticMonthly).sort(([a], [b]) => a.localeCompare(b))
+            .filter(([, v]) => v.sprint.length > 0 || v.coneDrill.length > 0 || v.pureVert.length > 0 || v.noStepVert.length > 0 || v.deadlift.length > 0)
+            .map(([month, v]) => ({
+              date: month.substring(2),
+              [t('Sprint')]: avg(v.sprint),
+              [t('Cone Drill')]: avg(v.coneDrill),
+              [t('Pure Vertical')]: avg(v.pureVert),
+              [t('No-Step Vertical')]: avg(v.noStepVert),
+              [t('Deadlift')]: avg(v.deadlift),
+            }));
+
+          const shootingData = Object.entries(shootingMonthly).sort(([a], [b]) => a.localeCompare(b))
+            .filter(([, v]) => v.taken > 0)
+            .map(([month, v]) => ({
+              date: month.substring(2),
+              [t('Shots Taken')]: v.taken,
+              [t('Shots Made')]: v.made,
+              [t('3PT %')]: v.taken > 0 ? Math.round((v.made / v.taken) * 1000) / 10 : 0,
+            }));
+
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
+              {athleticData.length > 0 && (
+                <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
+                  <h4 className={`text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Athletic Tests Progression')}</h4>
+                  <div className="h-48 print-chart">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={athleticData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                        <XAxis dataKey="date" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                        <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                        <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                        <Legend wrapperStyle={{ fontSize: 10 }} />
+                        <Line type="monotone" dataKey={t('Sprint')} stroke="#f97316" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                        <Line type="monotone" dataKey={t('Cone Drill')} stroke="#ec4899" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                        <Line type="monotone" dataKey={t('Pure Vertical')} stroke="#06b6d4" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                        <Line type="monotone" dataKey={t('No-Step Vertical')} stroke="#8b5cf6" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                        <Line type="monotone" dataKey={t('Deadlift')} stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+              {shootingData.length > 0 && (
+                <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
+                  <h4 className={`text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Shooting Progression')}</h4>
+                  <div className="h-48 print-chart">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={shootingData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                        <XAxis dataKey="date" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                        <YAxis yAxisId="left" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[0, 100]} />
+                        <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                        <Legend wrapperStyle={{ fontSize: 10 }} />
+                        <Bar yAxisId="left" dataKey={t('Shots Taken')} fill="#3b82f6" opacity={0.6} />
+                        <Bar yAxisId="left" dataKey={t('Shots Made')} fill="#10b981" opacity={0.6} />
+                        <Line yAxisId="right" type="monotone" dataKey={t('3PT %')} stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
       </div>
 
