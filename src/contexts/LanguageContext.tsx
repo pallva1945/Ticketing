@@ -842,6 +842,8 @@ const translations: Record<string, Record<Language, string>> = {
   'Cost/Game': { en: 'Cost/Game', it: 'Costo/Partita' },
   'Total Cost': { en: 'Total Cost', it: 'Costo Totale' },
   'Game': { en: 'Game', it: 'Partita' },
+  'Load Radar': { en: 'Load Radar', it: 'Radar Carichi' },
+  'Shots Taken': { en: 'Shots Taken', it: 'Tiri Effettuati' },
   'July': { en: 'July', it: 'Luglio' },
   'August': { en: 'August', it: 'Agosto' },
   'September': { en: 'September', it: 'Settembre' },

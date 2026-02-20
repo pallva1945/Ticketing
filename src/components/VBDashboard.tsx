@@ -1651,6 +1651,8 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
       { key: 'deadlift', label: t('Deadlift'), max: 200 },
       { key: 'shootingPct', label: t('3PT %'), max: 60 },
       { key: 'bodyFat', label: t('Body Fat'), max: 25, invert: true },
+      { key: 'sprint', label: t('Sprint'), max: 6000, invert: true },
+      { key: 'coneDrill', label: t('Cone Drill'), max: 15000, invert: true },
     ];
     return metrics.map(m => {
       const entry: any = { metric: m.label };
@@ -1671,6 +1673,36 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
       return entry;
     });
   }, [sessions, selected, t, profiles]);
+
+  const loadRadarData = useMemo(() => {
+    if (selected.length < 2) return [];
+    const metrics = [
+      { key: 'vitaminsLoad', label: t('Vitamins') },
+      { key: 'weightsLoad', label: t('Weights') },
+      { key: 'gameLoad', label: t('Game') },
+      { key: 'practiceLoad', label: t('Practice') },
+      { key: 'shootsTaken', label: t('Shots Taken') },
+    ];
+    const maxVals: Record<string, number> = {};
+    metrics.forEach(m => {
+      let globalMax = 0;
+      selected.forEach(p => {
+        const ps = getPlayerSessions(sessions, p);
+        const total = ps.reduce((sum, s) => sum + ((s[m.key as keyof VBSession] as number) || 0), 0);
+        if (total > globalMax) globalMax = total;
+      });
+      maxVals[m.key] = globalMax || 1;
+    });
+    return metrics.map(m => {
+      const entry: any = { metric: m.label };
+      selected.forEach(p => {
+        const ps = getPlayerSessions(sessions, p);
+        const total = ps.reduce((sum, s) => sum + ((s[m.key as keyof VBSession] as number) || 0), 0);
+        entry[p] = Math.round((total / maxVals[m.key]) * 100);
+      });
+      return entry;
+    });
+  }, [sessions, selected, t]);
 
   const comparisonData = useMemo(() => {
     const metrics: { key: keyof VBSession; label: string; unit: string }[] = [
@@ -1709,21 +1741,40 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
 
       {selected.length >= 2 && (
         <>
-          <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-            <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Performance Radar')}</h3>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={radarData}>
-                  <PolarGrid stroke={isDark ? '#374151' : '#e5e7eb'} />
-                  <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                  <PolarRadiusAxis tick={{ fontSize: 9 }} domain={[0, 100]} />
-                  {selected.map((p, i) => (
-                    <Radar key={p} name={p.split(' ').pop()} dataKey={p} stroke={METRIC_COLORS[i]} fill={METRIC_COLORS[i]} fillOpacity={0.15} strokeWidth={2} />
-                  ))}
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
-                </RadarChart>
-              </ResponsiveContainer>
+          <div className="grid grid-cols-2 gap-4">
+            <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+              <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Performance Radar')}</h3>
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={radarData}>
+                    <PolarGrid stroke={isDark ? '#374151' : '#e5e7eb'} />
+                    <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                    <PolarRadiusAxis tick={{ fontSize: 9 }} domain={[0, 100]} />
+                    {selected.map((p, i) => (
+                      <Radar key={p} name={p.split(' ').pop()} dataKey={p} stroke={METRIC_COLORS[i]} fill={METRIC_COLORS[i]} fillOpacity={0.15} strokeWidth={2} />
+                    ))}
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+              <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Load Radar')}</h3>
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={loadRadarData}>
+                    <PolarGrid stroke={isDark ? '#374151' : '#e5e7eb'} />
+                    <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                    <PolarRadiusAxis tick={{ fontSize: 9 }} domain={[0, 100]} />
+                    {selected.map((p, i) => (
+                      <Radar key={p} name={p.split(' ').pop()} dataKey={p} stroke={METRIC_COLORS[i]} fill={METRIC_COLORS[i]} fillOpacity={0.15} strokeWidth={2} />
+                    ))}
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
 
