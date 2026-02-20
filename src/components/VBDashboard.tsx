@@ -506,16 +506,16 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
   const columns: { key: SortKey; label: string; align?: string }[] = [
     { key: 'player', label: t('Player'), align: 'left' },
     { key: 'height', label: t('Height') },
-    { key: 'projHeight', label: t('Projected Height') },
+    { key: 'projHeight', label: t('P.Height') },
     { key: 'reach', label: t('Reach') },
-    { key: 'projReach', label: t('Projected Reach') },
+    { key: 'projReach', label: t('P.Reach') },
     { key: 'pureVertical', label: t('Pure Vertical') },
     { key: 'sprint', label: t('Sprint') },
     { key: 'coneDrill', label: t('Cone Drill') },
-    { key: 'bodyFat', label: t('Body Fat') + ' %' },
+    { key: 'bodyFat', label: t('BF %') },
     { key: 'pct', label: t('3PT %') },
     { key: 'shots', label: t('Shots') },
-    { key: 'totalLoad', label: t('Total Load') },
+    { key: 'totalLoad', label: t('T.Load') },
     { key: 'vitamins', label: t('Vitamins') },
     { key: 'weights', label: t('Weights') },
     { key: 'practice', label: t('Practice') },
@@ -568,6 +568,7 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.bodyFat != null ? `${row.bodyFat}%` : '—'}</td>
                 <td className={`text-center py-2.5 px-1 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{row.pct != null ? `${row.pct}%` : '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.shots || '—'}</td>
+                <td className={`text-center py-2.5 px-1 font-semibold ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{row.totalLoad || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.vitamins || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.weights || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.practice || '—'}</td>
