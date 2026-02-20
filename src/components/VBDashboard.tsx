@@ -807,6 +807,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
     vitamins: { min: +(monthlyGoals.vitamins.min * goalScale).toFixed(1), max: +(monthlyGoals.vitamins.max * goalScale).toFixed(1) },
     weights: { min: +(monthlyGoals.weights.min * goalScale).toFixed(1), max: +(monthlyGoals.weights.max * goalScale).toFixed(1) },
     game: { min: +(monthlyGoals.game.min * goalScale).toFixed(1), max: +(monthlyGoals.game.max * goalScale).toFixed(1) },
+    totalLoad: { min: +((monthlyGoals.practice.min + monthlyGoals.vitamins.min + monthlyGoals.weights.min + monthlyGoals.game.min) * goalScale).toFixed(1), max: +((monthlyGoals.practice.max + monthlyGoals.vitamins.max + monthlyGoals.weights.max + monthlyGoals.game.max) * goalScale).toFixed(1) },
   };
 
   const loadData = useMemo(() => {
@@ -956,15 +957,23 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
       <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
         <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Training Load Trends')} — {filterGranularity === 'day' ? t('By Player') : filterGranularity === 'week' ? t('By Day') : filterGranularity === 'month' ? t('By Week') : t('By Month')}</h3>
         <div className="mb-4">
-          <p className={`text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Total Load')}</p>
+          <p className={`text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Total Load')} <span className={`${isDark ? 'text-gray-500' : 'text-gray-400'}`}>({t('Goal')}: {proratedGoals.totalLoad.min}–{proratedGoals.totalLoad.max})</span></p>
           <div className="h-40">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={loadData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                 <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => Math.max(0, Math.floor(Math.min(dataMin, proratedGoals.totalLoad.min) * 0.85)), (dataMax: number) => Math.ceil(Math.max(dataMax, proratedGoals.totalLoad.max) * 1.08)]} />
                 <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
-                <Bar dataKey="totalLoad" name={t('Total Load')} fill="#0ea5e9" radius={[2, 2, 0, 0]} />
+                <ReferenceLine y={proratedGoals.totalLoad.min} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${proratedGoals.totalLoad.min}`, position: 'right', fontSize: 9, fill: '#ef4444' }} />
+                <ReferenceLine y={proratedGoals.totalLoad.max} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${proratedGoals.totalLoad.max}`, position: 'right', fontSize: 9, fill: '#ef4444' }} />
+                <Bar dataKey="totalLoad" name={t('Total Load')} radius={[2, 2, 0, 0]}>
+                  {loadData.map((entry: any, idx: number) => {
+                    const val = entry.totalLoad;
+                    const fill: string = val < proratedGoals.totalLoad.min ? '#3b82f6' : val > proratedGoals.totalLoad.max ? '#ef4444' : '#22c55e';
+                    return <Cell key={idx} fill={fill} />;
+                  })}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
