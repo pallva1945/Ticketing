@@ -1779,66 +1779,119 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 
           const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length * 10) / 10 : null;
 
-          const athleticData = Object.entries(athleticMonthly).sort(([a], [b]) => a.localeCompare(b))
-            .filter(([, v]) => v.sprint.length > 0 || v.coneDrill.length > 0 || v.pureVert.length > 0 || v.noStepVert.length > 0 || v.deadlift.length > 0)
+          const speedData = Object.entries(athleticMonthly).sort(([a], [b]) => a.localeCompare(b))
+            .filter(([, v]) => v.sprint.length > 0 || v.coneDrill.length > 0)
             .map(([month, v]) => ({
               date: month.substring(2),
               [t('Sprint')]: avg(v.sprint),
               [t('Cone Drill')]: avg(v.coneDrill),
+            }));
+
+          const vertStrengthData = Object.entries(athleticMonthly).sort(([a], [b]) => a.localeCompare(b))
+            .filter(([, v]) => v.pureVert.length > 0 || v.noStepVert.length > 0 || v.deadlift.length > 0)
+            .map(([month, v]) => ({
+              date: month.substring(2),
               [t('Pure Vertical')]: avg(v.pureVert),
               [t('No-Step Vertical')]: avg(v.noStepVert),
               [t('Deadlift')]: avg(v.deadlift),
             }));
 
-          const shootingData = Object.entries(shootingMonthly).sort(([a], [b]) => a.localeCompare(b))
+          const shotVolumeData = Object.entries(shootingMonthly).sort(([a], [b]) => a.localeCompare(b))
             .filter(([, v]) => v.taken > 0)
             .map(([month, v]) => ({
               date: month.substring(2),
               [t('Shots Taken')]: v.taken,
               [t('Shots Made')]: v.made,
+            }));
+
+          const shotAccuracyData = Object.entries(shootingMonthly).sort(([a], [b]) => a.localeCompare(b))
+            .filter(([, v]) => v.taken > 0)
+            .map(([month, v]) => ({
+              date: month.substring(2),
               [t('3PT %')]: v.taken > 0 ? Math.round((v.made / v.taken) * 1000) / 10 : 0,
             }));
 
+          const chartBox = `rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`;
+          const chartTitle = `text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`;
+          const tipStyle = { borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' };
+          const tickStyle = { fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' };
+          const gridStroke = isDark ? '#374151' : '#e5e7eb';
+
           return (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
-              {athleticData.length > 0 && (
-                <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
-                  <h4 className={`text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Athletic Tests Progression')}</h4>
-                  <div className="h-48 print-chart">
+              {speedData.length > 0 && (
+                <div className={chartBox}>
+                  <h4 className={chartTitle}>{t('Speed & Agility')}</h4>
+                  <div className="h-44 print-chart">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={athleticData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                        <XAxis dataKey="date" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                        <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                        <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                      <LineChart data={speedData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                        <XAxis dataKey="date" tick={tickStyle} />
+                        <YAxis tick={tickStyle} />
+                        <Tooltip contentStyle={tipStyle} />
                         <Legend wrapperStyle={{ fontSize: 10 }} />
-                        <Line type="monotone" dataKey={t('Sprint')} stroke="#f97316" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                        <Line type="monotone" dataKey={t('Cone Drill')} stroke="#ec4899" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                        <Line type="monotone" dataKey={t('Pure Vertical')} stroke="#06b6d4" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                        <Line type="monotone" dataKey={t('No-Step Vertical')} stroke="#8b5cf6" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                        <Line type="monotone" dataKey={t('Deadlift')} stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                        <Line type="monotone" dataKey={t('Sprint')} stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                        <Line type="monotone" dataKey={t('Cone Drill')} stroke="#ec4899" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
               )}
 
-              {shootingData.length > 0 && (
-                <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
-                  <h4 className={`text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Shooting Progression')}</h4>
-                  <div className="h-48 print-chart">
+              {vertStrengthData.length > 0 && (
+                <div className={chartBox}>
+                  <h4 className={chartTitle}>{t('Verticals & Strength')}</h4>
+                  <div className="h-44 print-chart">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={shootingData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                        <XAxis dataKey="date" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                        <YAxis yAxisId="left" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[0, 100]} />
-                        <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                      <LineChart data={vertStrengthData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                        <XAxis dataKey="date" tick={tickStyle} />
+                        <YAxis tick={tickStyle} />
+                        <Tooltip contentStyle={tipStyle} />
                         <Legend wrapperStyle={{ fontSize: 10 }} />
-                        <Bar yAxisId="left" dataKey={t('Shots Taken')} fill="#3b82f6" opacity={0.6} />
-                        <Bar yAxisId="left" dataKey={t('Shots Made')} fill="#10b981" opacity={0.6} />
-                        <Line yAxisId="right" type="monotone" dataKey={t('3PT %')} stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
-                      </ComposedChart>
+                        <Line type="monotone" dataKey={t('Pure Vertical')} stroke="#06b6d4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                        <Line type="monotone" dataKey={t('No-Step Vertical')} stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                        <Line type="monotone" dataKey={t('Deadlift')} stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+              {shotVolumeData.length > 0 && (
+                <div className={chartBox}>
+                  <h4 className={chartTitle}>{t('Shooting Volume')}</h4>
+                  <div className="h-44 print-chart">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={shotVolumeData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                        <XAxis dataKey="date" tick={tickStyle} />
+                        <YAxis tick={tickStyle} />
+                        <Tooltip contentStyle={tipStyle} />
+                        <Legend wrapperStyle={{ fontSize: 10 }} />
+                        <Bar dataKey={t('Shots Taken')} fill="#3b82f6" opacity={0.7} />
+                        <Bar dataKey={t('Shots Made')} fill="#10b981" opacity={0.7} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+              {shotAccuracyData.length > 0 && (
+                <div className={chartBox}>
+                  <h4 className={chartTitle}>{t('Shooting Accuracy')}</h4>
+                  <div className="h-44 print-chart">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={shotAccuracyData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                        <XAxis dataKey="date" tick={tickStyle} />
+                        <YAxis tick={tickStyle} domain={[0, 100]} />
+                        <Tooltip contentStyle={tipStyle} formatter={(value: number) => `${value}%`} />
+                        <Legend wrapperStyle={{ fontSize: 10 }} />
+                        <Line type="monotone" dataKey={t('3PT %')} stroke="#f59e0b" strokeWidth={2.5} dot={{ r: 3, fill: '#f59e0b' }} connectNulls />
+                        <ReferenceLine y={40} stroke="#10b981" strokeDasharray="4 4" label={{ value: '40%', position: 'right', fontSize: 9, fill: '#10b981' }} />
+                        <ReferenceLine y={30} stroke="#f97316" strokeDasharray="4 4" label={{ value: '30%', position: 'right', fontSize: 9, fill: '#f97316' }} />
+                      </LineChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
