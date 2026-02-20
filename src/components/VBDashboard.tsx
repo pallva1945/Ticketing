@@ -1498,8 +1498,6 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
   const { t } = useLanguage();
   const isDark = useIsDark();
   const [selectedPlayer, setSelectedPlayer] = useState(initialPlayer || players[0]);
-  const [metricGroup, setMetricGroup] = useState<'anthro' | 'athletic' | 'shooting' | 'load'>('anthro');
-
   const ps = useMemo(() => getPlayerSessions(sessions, selectedPlayer), [sessions, selectedPlayer]);
 
   const playerSeasons = useMemo(() => {
@@ -1562,56 +1560,9 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
     deadlift: getLatestMetric(sessions, selectedPlayer, 'deadlift'),
   };
 
-  const shootingSessions = ps.filter(s => s.shootingPct !== null);
   const totalTaken = ps.reduce((a, s) => a + (s.shootsTaken || 0), 0);
   const totalMade = ps.reduce((a, s) => a + (s.shootsMade || 0), 0);
   const overallPct = totalTaken > 0 ? Math.round((totalMade / totalTaken) * 1000) / 10 : null;
-
-  const chartData = useMemo(() => {
-    const fields: Record<string, (keyof VBSession)[]> = {
-      anthro: ['weight', 'bodyFat'],
-      athletic: ['pureVertical', 'noStepVertical', 'deadlift'],
-      shooting: ['shootingPct'],
-      load: ['practiceLoad', 'vitaminsLoad', 'weightsLoad', 'gameLoad'],
-    };
-    const activeFields = fields[metricGroup];
-    const dobSerial = getPlayerDobSerial(selectedPlayer, profiles);
-    return ps.filter(s => activeFields.some(f => s[f] !== null)).map(s => {
-      const entry: any = { date: s.date.substring(5) };
-      activeFields.forEach(f => {
-        if (f === 'bodyFat' && s[f] !== null && dobSerial) {
-          const bf = calcBodyFatPct(s[f] as number, dobSerial, s.date);
-          entry[f] = bf !== null ? bf : s[f];
-        } else if ((f === 'pureVertical' || f === 'noStepVertical') && s[f] !== null && s.standingReach !== null) {
-          entry[f] = (s[f] as number) - (s.standingReach as number);
-        } else {
-          entry[f] = s[f];
-        }
-      });
-      return entry;
-    });
-  }, [ps, metricGroup, selectedPlayer, profiles]);
-
-  const metricLabels: Record<string, string> = {
-    weight: t('Weight') + ' (kg)', bodyFat: t('Body Fat') + ' (%)',
-    pureVertical: t('Pure Vertical') + ' (cm)', noStepVertical: t('No-Step Vertical') + ' (cm)', deadlift: t('Deadlift') + ' (kg)',
-    shootingPct: t('3PT %'),
-    practiceLoad: t('Practice'), vitaminsLoad: t('Vitamins'), weightsLoad: t('Weights'), gameLoad: t('Game'),
-  };
-
-  const chartFields: Record<string, string[]> = {
-    anthro: ['weight', 'bodyFat'],
-    athletic: ['pureVertical', 'noStepVertical', 'deadlift'],
-    shooting: ['shootingPct'],
-    load: ['practiceLoad', 'vitaminsLoad', 'weightsLoad', 'gameLoad'],
-  };
-
-  const groups = [
-    { id: 'anthro' as const, label: t('Anthropometrics'), icon: Ruler },
-    { id: 'athletic' as const, label: t('Athletics'), icon: Zap },
-    { id: 'shooting' as const, label: t('Shooting'), icon: Crosshair },
-    { id: 'load' as const, label: t('Load'), icon: Activity },
-  ];
 
   const cardClass = `rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`;
   const labelClass = `text-[11px] font-medium print-label ${isDark ? 'text-gray-500' : 'text-gray-400'}`;
@@ -1807,68 +1758,6 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           </div>
         </div>
 
-        <div className={`rounded-lg border p-4 print-inner mb-5 print-mb-sm ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
-          <div className="flex items-center justify-between mb-3 flex-wrap gap-2 print-mb-sm">
-            <h4 className={`text-xs font-semibold print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Progression')}</h4>
-            <div className="flex gap-1">
-              {groups.filter(g => g.id !== 'load').map(g => (
-                <button key={g.id} onClick={() => setMetricGroup(g.id)}
-                  className={`px-2 py-1 rounded-lg text-[10px] font-medium flex items-center gap-1 transition-all ${
-                    metricGroup === g.id ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-700 text-gray-400 hover:bg-gray-600' : 'bg-white text-gray-500 hover:bg-gray-100 border border-gray-200'
-                  }`}>
-                  <g.icon size={10} />
-                  <span className="hidden sm:inline">{g.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="h-48 print-chart">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                <XAxis dataKey="date" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
-                {chartFields[metricGroup].map((f, i) => (
-                  <Line key={f} type="monotone" dataKey={f} name={metricLabels[f] || f} stroke={METRIC_COLORS[i]} strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 print-grid-tight">
-          <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
-            <h4 className={`text-xs font-semibold mb-2 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Availability Log')}</h4>
-            <div className="space-y-1 max-h-40 overflow-y-auto print-scroll-area">
-              {ps.filter(s => s.injured && s.injured > 0).length === 0 ? (
-                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No injury records')}</p>
-              ) : ps.filter(s => s.injured && s.injured > 0).reverse().slice(0, 10).map((s, i) => (
-                <div key={i} className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs ${isDark ? 'bg-red-900/10' : 'bg-red-50'}`}>
-                  <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{s.date}</span>
-                  <span className="text-red-500 font-medium">{t('Injury Level')} {s.injured}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
-            <h4 className={`text-xs font-semibold mb-2 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Shooting History')}</h4>
-            <div className="space-y-1 max-h-40 overflow-y-auto print-scroll-area">
-              {shootingSessions.length === 0 ? (
-                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No shooting data')}</p>
-              ) : [...shootingSessions].reverse().slice(0, 10).map((s, i) => (
-                <div key={i} className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-xs ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                  <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>{s.date}</span>
-                  <span className={`font-semibold ${(s.shootingPct || 0) >= 40 ? 'text-emerald-500' : (s.shootingPct || 0) >= 30 ? 'text-amber-500' : 'text-red-500'}`}>
-                    {s.shootsMade}/{s.shootsTaken} ({s.shootingPct}%)
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
 
       <div className={`${cardClass} print-page`}>
