@@ -1529,6 +1529,23 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
   const injuryCount = ps.filter(s => s.injured && s.injured > 0).length;
   const availabilityPct = sessionCount > 0 ? Math.round(((sessionCount - injuryCount) / sessionCount) * 100) : null;
 
+  const COMBINE_REF: Record<string, { height: number; wingspan: number; weight: number; standingReach: number; pureVertical: number; noStepVertical: number; sprint: number; coneDrill: number }> = {
+    'Playmaker': { height: 186.7, wingspan: 200.0, weight: 86.2, standingReach: 250.8, pureVertical: 94.5, noStepVertical: 78.2, sprint: 3.05, coneDrill: 11.10 },
+    '3nD': { height: 200.0, wingspan: 212.1, weight: 98.0, standingReach: 267.3, pureVertical: 90.9, noStepVertical: 76.2, sprint: 3.12, coneDrill: 11.40 },
+    'Center': { height: 209.6, wingspan: 224.2, weight: 113.9, standingReach: 281.9, pureVertical: 82.8, noStepVertical: 72.4, sprint: 3.28, coneDrill: 11.70 },
+  };
+  const combineRef = profile?.role ? COMBINE_REF[profile.role] || null : null;
+  const combineLabel = t('Combine Avg');
+  const renderDelta = (val: number | null, ref: number | undefined, unit: string, lowerIsBetter = false) => {
+    if (val === null || ref === undefined) return null;
+    const delta = Math.round((val - ref) * 10) / 10;
+    if (delta === 0) return <div className={subValueClass}>{combineLabel}: {ref}{unit}</div>;
+    const isGood = lowerIsBetter ? delta < 0 : delta > 0;
+    const color = isGood ? 'text-emerald-500' : 'text-red-400';
+    const sign = delta > 0 ? '+' : '';
+    return <div className={`text-[10px] ${color}`}>{sign}{delta}{unit} vs {combineLabel}</div>;
+  };
+
   const latestAnthro = {
     height: getLatestMetric(sessions, selectedPlayer, 'height'),
     weight: getLatestMetric(sessions, selectedPlayer, 'weight'),
@@ -1689,6 +1706,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-blue-50/50'}`}>
             <div className={labelClass}>{t('Height')}</div>
             <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.height !== null ? `${latestAnthro.height}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
+            {renderDelta(latestAnthro.height, combineRef?.height, ' cm')}
           </div>
           <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-indigo-50/50'}`}>
             <div className={labelClass}>{t('Projected Height')} (KR)</div>
@@ -1698,6 +1716,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-green-50/50'}`}>
             <div className={labelClass}>{t('Weight')}</div>
             <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.weight !== null ? `${latestAnthro.weight}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">kg</span></div>
+            {renderDelta(latestAnthro.weight, combineRef?.weight, ' kg')}
           </div>
           <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-purple-50/50'}`}>
             <div className={labelClass}>{t('Wingspan')}</div>
@@ -1705,11 +1724,13 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
             {latestAnthro.height && latestAnthro.wingspan && (
               <div className={subValueClass}>+{Math.round((latestAnthro.wingspan - latestAnthro.height) * 10) / 10} vs H</div>
             )}
+            {renderDelta(latestAnthro.wingspan, combineRef?.wingspan, ' cm')}
           </div>
           <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-cyan-50/50'}`}>
             <div className={labelClass}>{t('Standing Reach')}</div>
             <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.standingReach !== null ? `${latestAnthro.standingReach}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
             {(() => { const pr = getProjectedReach(selectedPlayer, profiles, sessions); return pr ? <div className={subValueClass}>{t('Proj')}: {pr} cm</div> : null; })()}
+            {renderDelta(latestAnthro.standingReach, combineRef?.standingReach, ' cm')}
           </div>
           <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-red-50/50'}`}>
             <div className={labelClass}>{t('Body Fat')}</div>
@@ -1732,18 +1753,22 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-cyan-50/50'}`}>
             <div className={labelClass}>{t('Pure Vertical')}</div>
             <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.pureVertical !== null ? latestAthletic.pureVertical : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
+            {renderDelta(latestAthletic.pureVertical, combineRef?.pureVertical, ' cm')}
           </div>
           <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-violet-50/50'}`}>
             <div className={labelClass}>{t('No-Step Vertical')}</div>
             <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.noStepVertical !== null ? latestAthletic.noStepVertical : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
+            {renderDelta(latestAthletic.noStepVertical, combineRef?.noStepVertical, ' cm')}
           </div>
           <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-orange-50/50'}`}>
             <div className={labelClass}>{t('Sprint')}</div>
             <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.sprint !== null ? latestAthletic.sprint : '—'}<span className="text-xs font-normal ml-0.5 print-sub">ms</span></div>
+            {renderDelta(latestAthletic.sprint, combineRef?.sprint, 's', true)}
           </div>
           <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-pink-50/50'}`}>
             <div className={labelClass}>{t('Cone Drill')}</div>
             <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.coneDrill !== null ? latestAthletic.coneDrill : '—'}<span className="text-xs font-normal ml-0.5 print-sub">ms</span></div>
+            {renderDelta(latestAthletic.coneDrill, combineRef?.coneDrill, 's', true)}
           </div>
           <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-green-50/50'}`}>
             <div className={labelClass}>{t('Deadlift')}</div>

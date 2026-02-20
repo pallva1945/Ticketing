@@ -881,6 +881,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Verticals': { en: 'Verticals', it: 'Verticali' },
   'Shooting Volume': { en: 'Shooting Volume', it: 'Volume di Tiro' },
   'Shooting Accuracy': { en: 'Shooting Accuracy', it: 'Precisione di Tiro' },
+  'Combine Avg': { en: 'Combine Avg', it: 'Media Combine' },
   'July': { en: 'July', it: 'Luglio' },
   'August': { en: 'August', it: 'Agosto' },
   'September': { en: 'September', it: 'Settembre' },
