@@ -955,7 +955,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
                     <Bar dataKey={key} name={label} radius={[2, 2, 0, 0]}>
                       {loadData.map((entry: any, idx: number) => {
                         const val = entry[key];
-                        const fill: string = val < goals.min ? '#ef4444' : val > goals.max ? '#f97316' : baseColor;
+                        const fill: string = val < goals.min ? '#3b82f6' : val > goals.max ? '#ef4444' : '#22c55e';
                         return <Cell key={idx} fill={fill} />;
                       })}
                     </Bar>
