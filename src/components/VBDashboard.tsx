@@ -1731,17 +1731,18 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
 
   const radarData = useMemo(() => {
     if (selected.length < 2) return [];
-    const metrics = [
-      { key: 'pureVertical', label: t('Pure Vertical'), max: 120 },
-      { key: 'noStepVertical', label: t('No-Step V.'), max: 100 },
-      { key: 'deadlift', label: t('Deadlift'), max: 200 },
-      { key: 'shootingPct', label: t('3PT %'), max: 60 },
-      { key: 'bodyFat', label: t('Body Fat'), max: 25, invert: true },
-      { key: 'sprint', label: t('Sprint'), max: 6000, invert: true },
-      { key: 'coneDrill', label: t('Cone Drill'), max: 15000, invert: true },
+    const metricDefs = [
+      { key: 'pureVertical', label: t('Pure Vertical'), invert: false },
+      { key: 'noStepVertical', label: t('No-Step V.'), invert: false },
+      { key: 'deadlift', label: t('Deadlift'), invert: false },
+      { key: 'shootingPct', label: t('3PT %'), invert: false },
+      { key: 'bodyFat', label: t('Body Fat'), invert: true },
+      { key: 'sprint', label: t('Sprint'), invert: true },
+      { key: 'coneDrill', label: t('Cone Drill'), invert: true },
     ];
-    return metrics.map(m => {
-      const entry: any = { metric: m.label };
+    const rawVals: Record<string, Record<string, number | null>> = {};
+    metricDefs.forEach(m => {
+      rawVals[m.key] = {};
       selected.forEach(p => {
         let val = getLatestMetric(roleFiltered, p, m.key as keyof VBSession);
         if (val !== null && (m.key === 'pureVertical' || m.key === 'noStepVertical')) {
@@ -1754,11 +1755,23 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
           const bf = calcBodyFatPct(val, dobSerial, bfSession?.date);
           if (bf !== null) val = bf;
         }
-        if (val !== null && m.max) {
-          if ((m as any).invert) val = m.max - val;
-          val = Math.round((val / m.max) * 100);
+        rawVals[m.key][p] = val;
+      });
+    });
+    return metricDefs.map(m => {
+      const vals = Object.values(rawVals[m.key]).filter(v => v !== null) as number[];
+      const maxVal = vals.length ? Math.max(...vals) : 1;
+      const minVal = vals.length ? Math.min(...vals) : 0;
+      const entry: any = { metric: m.label };
+      selected.forEach(p => {
+        const val = rawVals[m.key][p];
+        if (val === null) { entry[p] = 0; return; }
+        if (m.invert) {
+          const range = maxVal - minVal || 1;
+          entry[p] = Math.round(((maxVal - val) / range) * 100);
+        } else {
+          entry[p] = maxVal > 0 ? Math.round((val / maxVal) * 100) : 0;
         }
-        entry[p] = val || 0;
       });
       return entry;
     });
