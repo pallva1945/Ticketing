@@ -2178,6 +2178,11 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
                     <th className="text-left py-2 px-2 font-medium">{t('Date')}</th>
                     <th className="text-right py-2 px-2 font-medium">{t('Height')}</th>
                     <th className="text-right py-2 px-2 font-medium">{t('Weight')}</th>
+                    <th className="text-right py-2 px-2 font-medium">{t('Sprint')}</th>
+                    <th className="text-right py-2 px-2 font-medium">{t('Cone Drill')}</th>
+                    <th className="text-right py-2 px-2 font-medium">{t('Pure Vertical')}</th>
+                    <th className="text-right py-2 px-2 font-medium">{t('No-Step Vertical')}</th>
+                    <th className="text-right py-2 px-2 font-medium">{t('Deadlift')}</th>
                     <th className="text-right py-2 px-2 font-medium">{t('Practice')}</th>
                     <th className="text-right py-2 px-2 font-medium">{t('Vitamins')}</th>
                     <th className="text-right py-2 px-2 font-medium">{t('Weights')}</th>
@@ -2192,6 +2197,11 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
                       <td className="py-1.5 px-2 font-medium">{s.date}</td>
                       <td className="py-1.5 px-2 text-right">{s.height ?? '—'}</td>
                       <td className="py-1.5 px-2 text-right">{s.weight ?? '—'}</td>
+                      <td className="py-1.5 px-2 text-right">{s.sprint ?? '—'}</td>
+                      <td className="py-1.5 px-2 text-right">{s.coneDrill ?? '—'}</td>
+                      <td className="py-1.5 px-2 text-right">{s.pureVertical !== null && s.standingReach !== null ? (s.pureVertical as number) - (s.standingReach as number) : '—'}</td>
+                      <td className="py-1.5 px-2 text-right">{s.noStepVertical !== null && s.standingReach !== null ? (s.noStepVertical as number) - (s.standingReach as number) : '—'}</td>
+                      <td className="py-1.5 px-2 text-right">{s.deadlift ?? '—'}</td>
                       <td className="py-1.5 px-2 text-right">{s.practiceLoad ?? '—'}</td>
                       <td className="py-1.5 px-2 text-right">{s.vitaminsLoad ?? '—'}</td>
                       <td className="py-1.5 px-2 text-right">{s.weightsLoad ?? '—'}</td>
