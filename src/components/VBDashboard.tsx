@@ -1827,7 +1827,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                       <LineChart data={speedData}>
                         <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                         <XAxis dataKey="date" tick={tickStyle} />
-                        <YAxis tick={tickStyle} />
+                        <YAxis tick={tickStyle} domain={['dataMin - 0.5', 'dataMax + 0.5']} />
                         <Tooltip contentStyle={tipStyle} />
                         <Legend wrapperStyle={{ fontSize: 10 }} />
                         <Line type="monotone" dataKey={t('Sprint')} stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} connectNulls />
