@@ -840,6 +840,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Show All': { en: 'Show All', it: 'Mostra Tutti' },
   'Charts': { en: 'Charts', it: 'Grafici' },
   'Select players to view': { en: 'Select players to view', it: 'Seleziona giocatori' },
+  'Compare': { en: 'Compare', it: 'Confronta' },
   'Games': { en: 'Games', it: 'Partite' },
   'Cost/Game': { en: 'Cost/Game', it: 'Costo/Partita' },
   'Total Cost': { en: 'Total Cost', it: 'Costo Totale' },

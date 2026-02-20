@@ -1963,7 +1963,16 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
   );
 }
 
-function ProgressionChart({ sessions, selected, metric, profiles, isDark }: { sessions: VBSession[]; selected: string[]; metric: keyof VBSession; profiles: PlayerProfile[]; isDark: boolean }) {
+type CompareMode = 'players' | 'roles' | 'categories' | 'seasons';
+
+function ProgressionChart({ sessions, lines, metric, profiles, isDark, convertVal }: {
+  sessions: VBSession[];
+  lines: { key: string; label: string; sessions: VBSession[] }[];
+  metric: keyof VBSession;
+  profiles: PlayerProfile[];
+  isDark: boolean;
+  convertVal: (session: VBSession, player: string, met: keyof VBSession) => number | null;
+}) {
   const { t } = useLanguage();
   const allMetrics: { key: keyof VBSession; label: string; unit: string }[] = [
     { key: 'weight', label: t('Weight'), unit: 'kg' },
@@ -1977,48 +1986,35 @@ function ProgressionChart({ sessions, selected, metric, profiles, isDark }: { se
   ];
   const currentMetric = allMetrics.find(m => m.key === metric);
 
-  const convertVal = (session: VBSession, player: string): number | null => {
-    const val = session[metric] as number | null;
-    if (val === null) return null;
-    if (metric === 'bodyFat') {
-      const dobSerial = getPlayerDobSerial(player, profiles);
-      const bf = calcBodyFatPct(val, dobSerial, session.date);
-      return bf !== null ? bf : val;
-    }
-    if (metric === 'pureVertical' || metric === 'noStepVertical') {
-      const sr = session.standingReach;
-      return sr !== null ? val - sr : null;
-    }
-    return val;
-  };
-
   const chartData = useMemo(() => {
-    const monthMap = new Map<string, { sortKey: string; players: Map<string, number[]> }>();
-    sessions.filter(s => selected.includes(s.player) && s[metric] !== null).forEach(s => {
-      const monthKey = s.date.substring(0, 7);
-      const d = new Date(s.date);
-      const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
-      if (!monthMap.has(label)) monthMap.set(label, { sortKey: monthKey, players: new Map() });
-      const val = convertVal(s, s.player);
-      if (val !== null && val !== 0) {
-        const pm = monthMap.get(label)!.players;
-        if (!pm.has(s.player)) pm.set(s.player, []);
-        pm.get(s.player)!.push(val);
-      }
+    const monthMap = new Map<string, { sortKey: string; groups: Map<string, number[]> }>();
+    lines.forEach(line => {
+      line.sessions.filter(s => s[metric] !== null).forEach(s => {
+        const monthKey = s.date.substring(0, 7);
+        const d = new Date(s.date);
+        const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        if (!monthMap.has(label)) monthMap.set(label, { sortKey: monthKey, groups: new Map() });
+        const val = convertVal(s, s.player, metric);
+        if (val !== null && val !== 0) {
+          const gm = monthMap.get(label)!.groups;
+          if (!gm.has(line.key)) gm.set(line.key, []);
+          gm.get(line.key)!.push(val);
+        }
+      });
     });
     return [...monthMap.entries()]
       .sort((a, b) => a[1].sortKey.localeCompare(b[1].sortKey))
       .map(([label, data]) => {
         const entry: any = { date: label };
-        selected.forEach(p => {
-          const vals = data.players.get(p);
-          entry[p] = vals && vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+        lines.forEach(line => {
+          const vals = data.groups.get(line.key);
+          entry[line.key] = vals && vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
         });
         return entry;
       });
-  }, [sessions, selected, metric, profiles]);
+  }, [sessions, lines, metric, profiles]);
 
-  if (selected.length === 0) return <div className={`flex items-center justify-center h-full text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Select players to view')}</div>;
+  if (lines.length === 0) return <div className={`flex items-center justify-center h-full text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No data')}</div>;
   if (chartData.length === 0) return <div className={`flex items-center justify-center h-full text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No data')}</div>;
 
   return (
@@ -2034,8 +2030,8 @@ function ProgressionChart({ sessions, selected, metric, profiles, isDark }: { se
             <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => { if (isNaN(dataMin)) return 0; const pad = Math.max(1, Math.abs(dataMin) * 0.1); return Math.floor(dataMin - pad); }, (dataMax: number) => { if (isNaN(dataMax)) return 100; const pad = Math.max(1, Math.abs(dataMax) * 0.1); return Math.ceil(dataMax + pad); }]} />
             <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
             <Legend wrapperStyle={{ fontSize: 10 }} />
-            {selected.map((p, i) => (
-              <Line key={p} type="monotone" dataKey={p} name={p.split(' ').pop()} stroke={METRIC_COLORS[i % METRIC_COLORS.length]} strokeWidth={2} dot={{ r: 2 }} connectNulls />
+            {lines.map((line, i) => (
+              <Line key={line.key} type="monotone" dataKey={line.key} name={line.label} stroke={METRIC_COLORS[i % METRIC_COLORS.length]} strokeWidth={2} dot={{ r: 2 }} connectNulls />
             ))}
           </LineChart>
         </ResponsiveContainer>
@@ -2048,10 +2044,11 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
   const { t } = useLanguage();
   const isDark = useIsDark();
 
-  const [selectedSeason, setSelectedSeason] = useState<string>('all');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedRole, setSelectedRole] = useState<string>('all');
+  const [compareMode, setCompareMode] = useState<CompareMode>('players');
   const [selected, setSelected] = useState<string[]>(players.slice(0, 3));
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedSeasons, setSelectedSeasons] = useState<string[]>([]);
   const [chartCount, setChartCount] = useState(1);
   const [chartMetrics, setChartMetrics] = useState<(keyof VBSession)[]>(['pureVertical', 'weight', 'sprint', 'shootingPct']);
 
@@ -2066,50 +2063,15 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
     { key: 'shootingPct', label: t('3PT %'), unit: '%', group: t('Shooting') },
   ];
 
-  const seasons = useMemo(() => [...new Set(sessions.map(s => getSeason(s.date)!).filter(Boolean))].sort().reverse(), [sessions]);
-
-  const seasonFiltered = useMemo(() => {
-    if (selectedSeason === 'all') return sessions;
-    return sessions.filter(s => getSeason(s.date) === selectedSeason);
-  }, [sessions, selectedSeason]);
-
-  const availableCategories = useMemo(() => {
-    return [...new Set(seasonFiltered.map(s => getPlayerCategory(s.player, profiles)).filter(c => c))].sort();
-  }, [seasonFiltered, profiles]);
-
-  const categoryFiltered = useMemo(() => {
-    if (selectedCategory === 'all') return seasonFiltered;
-    return seasonFiltered.filter(s => getPlayerCategory(s.player, profiles) === selectedCategory);
-  }, [seasonFiltered, selectedCategory, profiles]);
-
-  const availableRoles = useMemo(() => {
-    return [...new Set(categoryFiltered.map(s => getPlayerPosition(s.player, profiles)).filter(r => r))].sort();
-  }, [categoryFiltered, profiles]);
-
-  const roleFiltered = useMemo(() => {
-    if (selectedRole === 'all') return categoryFiltered;
-    return categoryFiltered.filter(s => getPlayerPosition(s.player, profiles) === selectedRole);
-  }, [categoryFiltered, selectedRole, profiles]);
-
-  const filteredPlayers = useMemo(() => {
-    return [...new Set(roleFiltered.map(s => s.player))].sort();
-  }, [roleFiltered]);
+  const allSeasons = useMemo(() => [...new Set(sessions.map(s => getSeason(s.date)!).filter(Boolean))].sort().reverse(), [sessions]);
+  const allCategories = useMemo(() => [...new Set(players.map(p => getPlayerCategory(p, profiles)).filter(c => c))].sort(), [players, profiles]);
+  const allRoles = useMemo(() => [...new Set(players.map(p => getPlayerPosition(p, profiles)).filter(r => r))].sort(), [players, profiles]);
 
   useEffect(() => {
-    setSelected(prev => {
-      const valid = prev.filter(p => filteredPlayers.includes(p));
-      if (valid.length > 0) return valid;
-      return filteredPlayers.slice(0, 3);
-    });
-  }, [filteredPlayers]);
-
-  useEffect(() => {
-    if (selectedCategory !== 'all' && !availableCategories.includes(selectedCategory)) setSelectedCategory('all');
-  }, [availableCategories]);
-
-  useEffect(() => {
-    if (selectedRole !== 'all' && !availableRoles.includes(selectedRole)) setSelectedRole('all');
-  }, [availableRoles]);
+    if (compareMode === 'roles' && selectedRoles.length === 0 && allRoles.length > 0) setSelectedRoles(allRoles.slice(0, 3));
+    if (compareMode === 'categories' && selectedCategories.length === 0 && allCategories.length > 0) setSelectedCategories(allCategories.slice(0, 4));
+    if (compareMode === 'seasons' && selectedSeasons.length === 0 && allSeasons.length > 0) setSelectedSeasons(allSeasons.slice(0, 3));
+  }, [compareMode, allRoles, allCategories, allSeasons]);
 
   const convertVal = (session: VBSession, player: string, met: keyof VBSession): number | null => {
     const val = session[met] as number | null;
@@ -2126,60 +2088,97 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
     return val;
   };
 
-  const deltaData = useMemo(() => {
-    const met = chartMetrics[0];
-    const currentMetric = metrics.find(m => m.key === met);
-    return selected.map(p => {
-      const ps = roleFiltered.filter(s => s.player === p && s[met] !== null).sort((a, b) => a.date.localeCompare(b.date));
-      const validPs = ps.filter(s => { const v = convertVal(s, p, met); return v !== null && v !== 0; });
-      if (validPs.length < 2) return { player: p, first: null, last: null, delta: null, unit: currentMetric?.unit || '' };
-      const first = convertVal(validPs[0], p, met);
-      const last = convertVal(validPs[validPs.length - 1], p, met);
-      if (first === null || last === null) return { player: p, first: null, last: null, delta: null, unit: currentMetric?.unit || '' };
-      return { player: p, first, last, delta: Math.round((last - first) * 10) / 10, unit: currentMetric?.unit || '' };
-    });
-  }, [roleFiltered, selected, chartMetrics, profiles]);
+  const lines = useMemo((): { key: string; label: string; sessions: VBSession[] }[] => {
+    if (compareMode === 'players') {
+      return selected.map(p => ({ key: p, label: p.split(' ').pop() || p, sessions: sessions.filter(s => s.player === p) }));
+    }
+    if (compareMode === 'roles') {
+      return selectedRoles.map(role => ({
+        key: role,
+        label: role,
+        sessions: sessions.filter(s => getPlayerPosition(s.player, profiles) === role)
+      }));
+    }
+    if (compareMode === 'categories') {
+      return selectedCategories.map(cat => ({
+        key: cat,
+        label: cat,
+        sessions: sessions.filter(s => getPlayerCategory(s.player, profiles) === cat)
+      }));
+    }
+    if (compareMode === 'seasons') {
+      return selectedSeasons.map(season => ({
+        key: season,
+        label: season,
+        sessions: sessions.filter(s => getSeason(s.date) === season)
+      }));
+    }
+    return [];
+  }, [compareMode, selected, selectedRoles, selectedCategories, selectedSeasons, sessions, profiles]);
 
   const selectClass = `w-full px-3 py-2 rounded-lg text-sm font-medium appearance-none pr-8 ${isDark ? 'bg-gray-800 text-white border-gray-700' : 'bg-white text-gray-900 border-gray-200'} border`;
-
   const gridClass = chartCount === 1 ? 'grid-cols-1' : chartCount === 2 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2';
+
+  const compareModes: { key: CompareMode; label: string }[] = [
+    { key: 'players', label: t('Players') },
+    { key: 'roles', label: t('Role') },
+    { key: 'categories', label: t('Category') },
+    { key: 'seasons', label: t('Season') },
+  ];
+
+  const toggleItem = (list: string[], item: string, setter: (v: string[]) => void) => {
+    setter(list.includes(item) ? list.filter(x => x !== item) : [...list, item]);
+  };
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="flex flex-col sm:flex-row gap-4">
         <div>
-          <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Season')}</label>
-          <div className="relative">
-            <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass}>
-              <option value="all">{t('All Seasons')}</option>
-              {seasons.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+          <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Compare')}</label>
+          <div className="flex gap-1">
+            {compareModes.map(m => (
+              <button key={m.key} onClick={() => setCompareMode(m.key)} className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${compareMode === m.key ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{m.label}</button>
+            ))}
           </div>
         </div>
-        <div>
-          <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Category')}</label>
-          <div className="relative">
-            <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} className={selectClass}>
-              <option value="all">{t('All')}</option>
-              {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
-          </div>
-        </div>
-        <div>
-          <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Role')}</label>
-          <div className="relative">
-            <select value={selectedRole} onChange={e => setSelectedRole(e.target.value)} className={selectClass}>
-              <option value="all">{t('All')}</option>
-              {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-            <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
-          </div>
-        </div>
-        <div className="col-span-2 sm:col-span-1 lg:col-span-2">
-          <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Players')}</label>
-          <PlayerSelector players={filteredPlayers} selected={selected} onChange={setSelected} multiple />
+
+        <div className="flex-1">
+          {compareMode === 'players' && (
+            <div>
+              <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Players')}</label>
+              <PlayerSelector players={players} selected={selected} onChange={setSelected} multiple />
+            </div>
+          )}
+          {compareMode === 'roles' && (
+            <div>
+              <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Role')}</label>
+              <div className="flex flex-wrap gap-1.5">
+                {allRoles.map(role => (
+                  <button key={role} onClick={() => toggleItem(selectedRoles, role, setSelectedRoles)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selectedRoles.includes(role) ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>{role}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          {compareMode === 'categories' && (
+            <div>
+              <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Category')}</label>
+              <div className="flex flex-wrap gap-1.5">
+                {allCategories.map(cat => (
+                  <button key={cat} onClick={() => toggleItem(selectedCategories, cat, setSelectedCategories)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selectedCategories.includes(cat) ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>{cat}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          {compareMode === 'seasons' && (
+            <div>
+              <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Season')}</label>
+              <div className="flex flex-wrap gap-1.5">
+                {allSeasons.map(season => (
+                  <button key={season} onClick={() => toggleItem(selectedSeasons, season, setSelectedSeasons)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selectedSeasons.includes(season) ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>{season}</button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -2210,44 +2209,11 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
               </div>
             </div>
             <div className={chartCount <= 2 ? 'h-64' : 'h-48'}>
-              <ProgressionChart sessions={roleFiltered} selected={selected} metric={chartMetrics[idx]} profiles={profiles} isDark={isDark} />
+              <ProgressionChart sessions={sessions} lines={lines} metric={chartMetrics[idx]} profiles={profiles} isDark={isDark} convertVal={convertVal} />
             </div>
           </div>
         ))}
       </div>
-
-      {chartCount === 1 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {deltaData.map((d, i) => {
-            const met = chartMetrics[0];
-            return (
-              <div key={d.player} className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: METRIC_COLORS[i % METRIC_COLORS.length] }} />
-                  <span className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{d.player.split(' ').pop()}</span>
-                </div>
-                <div className="flex items-end gap-2">
-                  <span className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {d.last !== null ? d.last : '—'}
-                  </span>
-                  {d.delta !== null && (
-                    <span className={`text-xs font-semibold mb-0.5 ${
-                      (met === 'sprint' || met === 'coneDrill' || met === 'bodyFat')
-                        ? (d.delta < 0 ? 'text-emerald-500' : d.delta > 0 ? 'text-red-500' : 'text-gray-400')
-                        : (d.delta > 0 ? 'text-emerald-500' : d.delta < 0 ? 'text-red-500' : 'text-gray-400')
-                    }`}>
-                      {d.delta > 0 ? '+' : ''}{d.delta} {d.unit}
-                    </span>
-                  )}
-                </div>
-                <div className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                  {d.first !== null ? `${t('from')} ${d.first}` : t('No data')}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }
