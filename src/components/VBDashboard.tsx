@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Calendar, CalendarDays, Pill, Gamepad2, CalendarOff, ArrowUpFromDot, Gauge, Printer } from 'lucide-react';
+import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Calendar, CalendarDays, Pill, Gamepad2, CalendarOff, ArrowUpFromDot, Gauge, Printer, Trophy, Search } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, CartesianGrid, Legend, ReferenceLine, ReferenceArea, Cell } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -53,7 +53,7 @@ interface PlayerProfile {
   revenueGenerated: number | null;
 }
 
-type TabId = 'overview' | 'performance' | 'player' | 'compare' | 'progression';
+type TabId = 'overview' | 'performance' | 'gameperf' | 'player' | 'compare' | 'progression' | 'search';
 
 const METRIC_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
@@ -1871,6 +1871,177 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
   );
 }
 
+function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
+  const { t } = useLanguage();
+  const isDark = useIsDark();
+  return (
+    <div className="space-y-6">
+      <div className={`rounded-xl border p-8 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+        <Trophy size={40} className={`mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
+        <h3 className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Game Performance')}</h3>
+        <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Coming Soon')}</p>
+      </div>
+    </div>
+  );
+}
+
+function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
+  const { t } = useLanguage();
+  const isDark = useIsDark();
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<VBSession[]>([]);
+  const [searched, setSearched] = useState(false);
+
+  const doSearch = () => {
+    if (!query.trim()) { setResults([]); setSearched(false); return; }
+    const q = query.trim().toLowerCase();
+    let filtered = sessions;
+
+    const seasonMatch = q.match(/^(\d{4})\/(\d{2,4})$/);
+    if (seasonMatch) {
+      const y1 = seasonMatch[1];
+      const y2 = seasonMatch[2].length === 2 ? `20${seasonMatch[2]}` : seasonMatch[2];
+      filtered = sessions.filter(s => {
+        const season = getSeason(s.date);
+        return season === `${y1}/${y2.slice(2)}`;
+      });
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(q)) {
+      filtered = sessions.filter(s => s.date === q);
+    } else if (/^\d{4}-\d{2}$/.test(q)) {
+      filtered = sessions.filter(s => s.date.startsWith(q));
+    } else if (/^\d{4}-w\d{1,2}$/i.test(q)) {
+      const [yearStr, weekStr] = q.split(/[-w]/i).filter(Boolean);
+      const year = parseInt(yearStr);
+      const week = parseInt(weekStr);
+      filtered = sessions.filter(s => {
+        const d = new Date(s.date);
+        const jan1 = new Date(d.getFullYear(), 0, 1);
+        const days = Math.floor((d.getTime() - jan1.getTime()) / 86400000);
+        const wk = Math.ceil((days + jan1.getDay() + 1) / 7);
+        return d.getFullYear() === year && wk === week;
+      });
+    } else {
+      const playerMatch = players.filter(p => p.toLowerCase().includes(q));
+      if (playerMatch.length > 0) {
+        filtered = sessions.filter(s => playerMatch.some(p => p === s.player));
+      } else {
+        filtered = sessions.filter(s =>
+          s.player.toLowerCase().includes(q) ||
+          s.date.includes(q)
+        );
+      }
+    }
+
+    setResults(filtered.sort((a, b) => b.date.localeCompare(a.date)));
+    setSearched(true);
+  };
+
+  const groupedByPlayer = useMemo(() => {
+    const map: Record<string, VBSession[]> = {};
+    results.forEach(s => {
+      if (!map[s.player]) map[s.player] = [];
+      map[s.player].push(s);
+    });
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+  }, [results]);
+
+  const cardClass = `rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`;
+
+  return (
+    <div className="space-y-6">
+      <div className={cardClass}>
+        <div className="flex items-center gap-2 mb-4">
+          <Search size={14} className="text-orange-500" />
+          <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Search')}</h3>
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && doSearch()}
+            placeholder={t('Player name, date (2024-11-15), month (2024-11), week (2024-W45), season (2024/25)...')}
+            className={`flex-1 px-4 py-2.5 rounded-lg text-sm border outline-none transition-all ${isDark ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-orange-500' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-orange-500'}`}
+          />
+          <button onClick={doSearch} className="px-4 py-2.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors">
+            {t('Search')}
+          </button>
+        </div>
+        <p className={`text-[11px] mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+          {t('Examples')}: Marco Rossi, 2024-11-15, 2024-11, 2024-W45, 2024/25
+        </p>
+      </div>
+
+      {searched && results.length === 0 && (
+        <div className={`${cardClass} text-center py-8`}>
+          <Search size={32} className={`mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
+          <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No results found')}</p>
+        </div>
+      )}
+
+      {groupedByPlayer.map(([player, playerSessions]) => {
+        const profile = profiles.find(p => p.name === player);
+        return (
+          <div key={player} className={cardClass}>
+            <div className="flex items-center gap-3 mb-4">
+              {profile?.mugShot ? (
+                <img src={profile.mugShot} alt={player} className="w-10 h-10 rounded-lg object-cover border border-orange-500/30" />
+              ) : (
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold ${isDark ? 'bg-gray-800 text-gray-600' : 'bg-gray-100 text-gray-300'}`}>
+                  {player.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                </div>
+              )}
+              <div>
+                <div className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{player}</div>
+                <div className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{profile?.role || '—'} · {playerSessions.length} {t('sessions')}</div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className={`w-full text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                <thead>
+                  <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                    <th className="text-left py-2 px-2 font-medium">{t('Date')}</th>
+                    <th className="text-right py-2 px-2 font-medium">{t('Height')}</th>
+                    <th className="text-right py-2 px-2 font-medium">{t('Weight')}</th>
+                    <th className="text-right py-2 px-2 font-medium">{t('Practice')}</th>
+                    <th className="text-right py-2 px-2 font-medium">{t('Vitamins')}</th>
+                    <th className="text-right py-2 px-2 font-medium">{t('Weights')}</th>
+                    <th className="text-right py-2 px-2 font-medium">{t('Game')}</th>
+                    <th className="text-right py-2 px-2 font-medium">{t('3PT %')}</th>
+                    <th className="text-right py-2 px-2 font-medium">{t('Injured')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {playerSessions.map((s, i) => (
+                    <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50 hover:bg-gray-800/30' : 'border-gray-50 hover:bg-gray-50'}`}>
+                      <td className="py-1.5 px-2 font-medium">{s.date}</td>
+                      <td className="py-1.5 px-2 text-right">{s.height ?? '—'}</td>
+                      <td className="py-1.5 px-2 text-right">{s.weight ?? '—'}</td>
+                      <td className="py-1.5 px-2 text-right">{s.practiceLoad ?? '—'}</td>
+                      <td className="py-1.5 px-2 text-right">{s.vitaminsLoad ?? '—'}</td>
+                      <td className="py-1.5 px-2 text-right">{s.weightsLoad ?? '—'}</td>
+                      <td className="py-1.5 px-2 text-right">{s.gameLoad ?? '—'}</td>
+                      <td className="py-1.5 px-2 text-right">
+                        {s.shootingPct !== null ? (
+                          <span className={`font-semibold ${(s.shootingPct || 0) >= 40 ? 'text-emerald-500' : (s.shootingPct || 0) >= 30 ? 'text-amber-500' : 'text-red-500'}`}>
+                            {s.shootsMade}/{s.shootsTaken} ({s.shootingPct}%)
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="py-1.5 px-2 text-right">{s.injured && s.injured > 0 ? <span className="text-red-500 font-medium">Lv {s.injured}</span> : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
@@ -2655,9 +2826,11 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const tabs: { id: TabId; label: string; icon: any }[] = [
     { id: 'overview', label: t('Overview'), icon: BarChart3 },
     { id: 'performance', label: t('Performance'), icon: Zap },
+    { id: 'gameperf', label: t('Game Performance'), icon: Trophy },
     { id: 'player', label: t('Players Pack'), icon: User },
     { id: 'compare', label: t('Compare'), icon: GitCompare },
     { id: 'progression', label: t('Progression'), icon: TrendingUp },
+    { id: 'search', label: t('Search'), icon: Search },
   ];
 
   if (loading) {
@@ -2734,9 +2907,11 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <>
             {activeTab === 'overview' && <OverviewTab sessions={sessions} players={players} onSelectPlayer={handleSelectPlayer} profiles={profiles} />}
             {activeTab === 'performance' && <PerformanceTab sessions={sessions} players={players} profiles={profiles} />}
+            {activeTab === 'gameperf' && <GamePerformanceTab sessions={sessions} players={players} profiles={profiles} />}
             {activeTab === 'player' && <PlayerProfileTab sessions={sessions} players={players} initialPlayer={selectedPlayer} profiles={profiles} />}
             {activeTab === 'compare' && <CompareTab sessions={sessions} players={players} profiles={profiles} />}
             {activeTab === 'progression' && <ProgressionTab sessions={sessions} players={players} profiles={profiles} />}
+            {activeTab === 'search' && <SearchTab sessions={sessions} players={players} profiles={profiles} />}
           </>
         )}
       </main>
