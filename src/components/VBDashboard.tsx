@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Calendar, CalendarDays, Pill, Gamepad2, CalendarOff, ArrowUpFromDot, Gauge } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, CartesianGrid, Legend, ReferenceLine, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, CartesianGrid, Legend, ReferenceLine, ReferenceArea, Cell } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -973,8 +973,9 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
                 <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                 <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(() => { const mid = (proratedGoals.totalLoad.min + proratedGoals.totalLoad.max) / 2; const range = proratedGoals.totalLoad.max - proratedGoals.totalLoad.min; return (dataMin: number) => { const maxDist = Math.max(mid - dataMin, 0, range / 2); return Math.max(0, Math.floor(mid - maxDist * 1.3)); }; })(), (() => { const mid = (proratedGoals.totalLoad.min + proratedGoals.totalLoad.max) / 2; const range = proratedGoals.totalLoad.max - proratedGoals.totalLoad.min; return (dataMax: number) => { const maxDist = Math.max(dataMax - mid, 0, range / 2); return Math.ceil(mid + maxDist * 1.3); }; })()]} />
                 <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
-                <ReferenceLine y={proratedGoals.totalLoad.min} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${proratedGoals.totalLoad.min}`, position: 'right', fontSize: 9, fill: '#ef4444' }} />
-                <ReferenceLine y={proratedGoals.totalLoad.max} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${proratedGoals.totalLoad.max}`, position: 'right', fontSize: 9, fill: '#ef4444' }} />
+                <ReferenceArea y1={proratedGoals.totalLoad.min} y2={proratedGoals.totalLoad.max} fill="#22c55e" fillOpacity={isDark ? 0.08 : 0.1} />
+                <ReferenceLine y={proratedGoals.totalLoad.min} stroke="#22c55e" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${proratedGoals.totalLoad.min}`, position: 'right', fontSize: 9, fill: '#22c55e' }} />
+                <ReferenceLine y={proratedGoals.totalLoad.max} stroke="#22c55e" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${proratedGoals.totalLoad.max}`, position: 'right', fontSize: 9, fill: '#22c55e' }} />
                 <Bar dataKey="totalLoad" name={t('Total Load')} radius={[2, 2, 0, 0]}>
                   {loadData.map((entry: any, idx: number) => {
                     const val = entry.totalLoad;
@@ -1002,8 +1003,9 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
                     <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                     <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(() => { const mid = (goals.min + goals.max) / 2; const halfRange = (goals.max - goals.min) / 2; return (dataMin: number) => { const dist = Math.max(mid - dataMin, 0, halfRange); return Math.max(0, Math.floor(mid - dist * 1.3)); }; })(), (() => { const mid = (goals.min + goals.max) / 2; const halfRange = (goals.max - goals.min) / 2; return (dataMax: number) => { const dist = Math.max(dataMax - mid, 0, halfRange); return Math.ceil(mid + dist * 1.3); }; })()]} />
                     <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
-                    <ReferenceLine y={goals.min} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${goals.min}`, position: 'right', fontSize: 9, fill: '#ef4444' }} />
-                    <ReferenceLine y={goals.max} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${goals.max}`, position: 'right', fontSize: 9, fill: '#ef4444' }} />
+                    <ReferenceArea y1={goals.min} y2={goals.max} fill="#22c55e" fillOpacity={isDark ? 0.08 : 0.1} />
+                    <ReferenceLine y={goals.min} stroke="#22c55e" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${goals.min}`, position: 'right', fontSize: 9, fill: '#22c55e' }} />
+                    <ReferenceLine y={goals.max} stroke="#22c55e" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${goals.max}`, position: 'right', fontSize: 9, fill: '#22c55e' }} />
                     <Bar dataKey={key} name={label} radius={[2, 2, 0, 0]}>
                       {loadData.map((entry: any, idx: number) => {
                         const val = entry[key];
@@ -1027,7 +1029,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
                   <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                   <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => Math.max(0, Math.floor(Math.min(dataMin, shotsGoal) * 0.9)), (dataMax: number) => Math.ceil(Math.max(dataMax, shotsGoal) * 1.05)]} />
                   <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
-                  <ReferenceLine y={shotsGoal} stroke="#ef4444" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${shotsGoal}`, position: 'right', fontSize: 9, fill: '#ef4444' }} />
+                  <ReferenceLine y={shotsGoal} stroke="#22c55e" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${shotsGoal}`, position: 'right', fontSize: 9, fill: '#22c55e' }} />
                   <Bar dataKey="shotsTaken" name={t('Shots Taken')} radius={[2, 2, 0, 0]}>
                     {loadData.map((entry: any, idx: number) => {
                       const fill: string = entry.shotsTaken < shotsGoal ? '#3b82f6' : '#22c55e';
@@ -1039,7 +1041,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
             </div>
           </div>
           <div>
-            <p className={`text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('3PT %')} ({t('Cumulative')})</p>
+            <p className={`text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('3PT %')} ({t('Cumulative')}) <span className={`${isDark ? 'text-gray-500' : 'text-gray-400'}`}>({t('Goal')}: 65%–85%)</span></p>
             <div className="h-40">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={(() => {
@@ -1052,8 +1054,11 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
                 })()}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                   <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                  <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => Math.max(0, Math.floor(dataMin - 2)), (dataMax: number) => Math.min(100, Math.ceil(dataMax + 2))]} />
+                  <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => { const mid = 75; const dist = Math.max(mid - dataMin, 0, 10); return Math.max(0, Math.floor(mid - dist * 1.3)); }, (dataMax: number) => { const mid = 75; const dist = Math.max(dataMax - mid, 0, 10); return Math.min(100, Math.ceil(mid + dist * 1.3)); }]} />
                   <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} formatter={(value: any) => `${value}%`} />
+                  <ReferenceArea y1={65} y2={85} fill="#22c55e" fillOpacity={isDark ? 0.08 : 0.1} />
+                  <ReferenceLine y={65} stroke="#22c55e" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: '65%', position: 'right', fontSize: 9, fill: '#22c55e' }} />
+                  <ReferenceLine y={85} stroke="#22c55e" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: '85%', position: 'right', fontSize: 9, fill: '#22c55e' }} />
                   <Line type="monotone" dataKey="cumulativePct" name={t('3PT %')} stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 3 }} />
                 </LineChart>
               </ResponsiveContainer>
