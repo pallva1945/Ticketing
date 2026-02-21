@@ -341,7 +341,7 @@ export async function fetchVBProspectsFromBigQuery(): Promise<{ success: boolean
         passport: row.Passport || null,
         teamSchool: row.Team_School ? String(row.Team_School).trim() : null,
         language: row.Language ? String(row.Language).trim() : null,
-        headshot: row.Headshot || null,
+        headshot: row.Headshot ? String(row.Headshot).replace(/^\[img\]/i, '').replace(/\[\/img\]$/i, '').trim() || null : null,
         video: row.Video || null,
         handlerName: row.Handler_s_Name ? String(row.Handler_s_Name).trim() : null,
         strength: row.Strength != null ? Number(row.Strength) : null,

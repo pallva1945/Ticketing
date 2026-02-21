@@ -2432,11 +2432,9 @@ function ProspectsTab({ prospects }: { prospects: VBProspect[] }) {
     );
   }
 
-  const getGDriveThumb = (url: string | null) => {
+  const getHeadshotUrl = (url: string | null) => {
     if (!url) return null;
-    const match = url.match(/id=([a-zA-Z0-9_-]+)/);
-    if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w200`;
-    return null;
+    return url;
   };
 
   return (
@@ -2477,7 +2475,7 @@ function ProspectsTab({ prospects }: { prospects: VBProspect[] }) {
       <div className="grid gap-4">
         {sorted.map((p, idx) => {
           const isExpanded = expandedId === idx;
-          const thumb = getGDriveThumb(p.headshot);
+          const thumb = getHeadshotUrl(p.headshot);
           const athleticRatings = [
             { label: t('Strength'), value: p.strength },
             { label: t('Speed'), value: p.speed },
