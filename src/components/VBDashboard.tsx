@@ -2465,7 +2465,7 @@ function ProspectsTab({ prospects }: { prospects: VBProspect[] }) {
         >
           <option value="likeliness">{t('Sort by Likeliness')}</option>
           <option value="name">{t('Sort by Name')}</option>
-          <option value="age">{t('Sort by Age')}</option>
+          <option value="age">{t('Sort by Year of Birth')}</option>
           <option value="height">{t('Sort by Height')}</option>
         </select>
       </div>
@@ -2525,7 +2525,7 @@ function ProspectsTab({ prospects }: { prospects: VBProspect[] }) {
                     </div>
                     <div className={`flex items-center gap-3 text-xs mt-1 ${subtext}`}>
                       {p.position && <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium">{p.position}</span>}
-                      {p.age != null && <span>{p.age} {t('yrs')}</span>}
+                      {p.dob && <span>{p.dob.substring(0, 4)}</span>}
                       {p.height != null && <span>{p.height} cm</span>}
                       {p.nationality && <span className="flex items-center gap-1"><Globe size={10} />{p.nationality}</span>}
                     </div>
@@ -2637,7 +2637,7 @@ function ProspectsTab({ prospects }: { prospects: VBProspect[] }) {
               <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
                 <th className={`text-left py-2 pr-3 font-semibold ${subtext}`}>{t('Name')}</th>
                 <th className={`text-center py-2 px-1 font-semibold ${subtext}`}>{t('Pos')}</th>
-                <th className={`text-center py-2 px-1 font-semibold ${subtext}`}>{t('Age')}</th>
+                <th className={`text-center py-2 px-1 font-semibold ${subtext}`}>{t('YoB')}</th>
                 <th className={`text-center py-2 px-1 font-semibold ${subtext}`}>{t('Ht')}</th>
                 <th className={`text-center py-2 px-1 font-semibold text-orange-500`}>STR</th>
                 <th className={`text-center py-2 px-1 font-semibold text-orange-500`}>SPD</th>
@@ -2662,7 +2662,7 @@ function ProspectsTab({ prospects }: { prospects: VBProspect[] }) {
                   <tr key={idx} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-50'} hover:${isDark ? 'bg-gray-800/30' : 'bg-gray-50'}`}>
                     <td className={`py-1.5 pr-3 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.name}</td>
                     <td className="text-center py-1.5 px-1">{p.position || '—'}</td>
-                    <td className="text-center py-1.5 px-1">{p.age ?? '—'}</td>
+                    <td className="text-center py-1.5 px-1">{p.dob ? p.dob.substring(0, 4) : '—'}</td>
                     <td className="text-center py-1.5 px-1">{p.height ?? '—'}</td>
                     {ratingCell(p.strength, 'orange')}
                     {ratingCell(p.speed, 'orange')}

@@ -55,6 +55,8 @@ const translations: Record<string, Record<Language, string>> = {
   'Sort by Likeliness': { en: 'Sort by Likeliness', it: 'Ordina per Probabilità' },
   'Sort by Name': { en: 'Sort by Name', it: 'Ordina per Nome' },
   'Sort by Age': { en: 'Sort by Age', it: 'Ordina per Età' },
+  'Sort by Year of Birth': { en: 'Sort by Year of Birth', it: 'Ordina per Anno di Nascita' },
+  'YoB': { en: 'YoB', it: 'Anno' },
   'Sort by Height': { en: 'Sort by Height', it: 'Ordina per Altezza' },
   'prospects': { en: 'prospects', it: 'prospetti' },
   'yrs': { en: 'yrs', it: 'anni' },
