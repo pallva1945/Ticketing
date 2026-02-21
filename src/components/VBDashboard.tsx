@@ -1691,6 +1691,39 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
             </div>
           </div>
         </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 print-grid">
+          <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-emerald-900/20 border border-emerald-800/30' : 'bg-emerald-50/50 border border-emerald-100'}`}>
+            <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+              <span>✦</span> {t('Strengths')}
+            </div>
+            <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 1')}</li>
+              <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 2')}</li>
+              <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 3')}</li>
+            </ul>
+          </div>
+          <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-red-900/20 border border-red-800/30' : 'bg-red-50/50 border border-red-100'}`}>
+            <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+              <span>✦</span> {t('Weaknesses')}
+            </div>
+            <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 1')}</li>
+              <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 2')}</li>
+              <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 3')}</li>
+            </ul>
+          </div>
+          <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-amber-900/20 border border-amber-800/30' : 'bg-amber-50/50 border border-amber-100'}`}>
+            <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+              <span>✦</span> {t('Points of Emphasis')}
+            </div>
+            <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 1')}</li>
+              <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 2')}</li>
+              <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 3')}</li>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <div className={`${cardClass} print-page`}>
