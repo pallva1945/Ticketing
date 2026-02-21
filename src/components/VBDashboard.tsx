@@ -2114,22 +2114,32 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
             [t('Game')]: Math.round(loadGroupMap[k].game),
           }));
 
-          const isDayOff = (s: typeof ps[0]) => (s.practiceLoad || 0) === 0 && (s.vitaminsLoad || 0) === 0 && (s.weightsLoad || 0) === 0 && (s.gameLoad || 0) === 0 && (!s.injured || s.injured === 0) && (!s.nationalTeam || s.nationalTeam === 0);
+          const isActive = (s: typeof ps[0]) => (s.practiceLoad || 0) > 0 || (s.vitaminsLoad || 0) > 0 || (s.weightsLoad || 0) > 0 || (s.gameLoad || 0) > 0 || (s.injured !== null && s.injured > 0) || (s.nationalTeam !== null && s.nationalTeam > 0);
+          const countDaysOffAndInjury = (sessionList: typeof ps) => {
+            const byDate: Record<string, typeof ps> = {};
+            sessionList.forEach(s => {
+              if (!byDate[s.date]) byDate[s.date] = [];
+              byDate[s.date].push(s);
+            });
+            let daysOff = 0;
+            let injuryDays = 0;
+            Object.values(byDate).forEach(daySessions => {
+              const anyActive = daySessions.some(isActive);
+              if (!anyActive) daysOff++;
+              if (daySessions.some(s => s.injured !== null && s.injured > 0)) injuryDays++;
+            });
+            return { daysOff, injuryDays };
+          };
+
           const availabilityMap: Record<string, { daysOff: number; injuryDays: number }> = {};
           if (loadWeeklyBuckets) {
             loadWeeklyBuckets.forEach(({ week, sessions: ws }) => {
-              const key = `W${week}`;
-              const daysOffDates = new Set(ws.filter(isDayOff).map(s => s.date));
-              const injuryDates = new Set(ws.filter(s => s.injured && s.injured > 0).map(s => s.date));
-              availabilityMap[key] = { daysOff: daysOffDates.size, injuryDays: injuryDates.size };
+              availabilityMap[`W${week}`] = countDaysOffAndInjury(ws);
             });
           } else {
             const playerMonths = [...new Set(ps.map(s => s.date.substring(0, 7)))].sort();
             playerMonths.forEach(month => {
-              const monthSessions = ps.filter(s => s.date.substring(0, 7) === month);
-              const daysOffDates = new Set(monthSessions.filter(isDayOff).map(s => s.date));
-              const injuryDates = new Set(monthSessions.filter(s => s.injured && s.injured > 0).map(s => s.date));
-              availabilityMap[month] = { daysOff: daysOffDates.size, injuryDays: injuryDates.size };
+              availabilityMap[month] = countDaysOffAndInjury(ps.filter(s => s.date.substring(0, 7) === month));
             });
           }
           const availSortedKeys = Object.keys(availabilityMap).sort((a, b) => a.localeCompare(b));
