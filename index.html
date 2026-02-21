@@ -143,7 +143,9 @@
         .print-page .print-anthro-section .print-section-title {
           font-size: 11px !important;
         }
-        .print-page .print-anthro-cards {
+        .print-page .print-anthro-cards,
+        .print-page .print-perf-cards,
+        .print-page .print-load-cards {
           grid-template-columns: repeat(3, 1fr) !important;
           gap: 4px !important;
         }
@@ -151,6 +153,13 @@
           grid-template-columns: 1fr 1fr !important;
           gap: 5px !important;
           margin-top: 5px !important;
+        }
+        .print-page .print-load-charts {
+          grid-template-columns: repeat(3, 1fr) !important;
+          gap: 4px !important;
+        }
+        .print-page .print-load-charts .print-chart {
+          height: 120px !important;
         }
         .print-page .print-charts-grid {
           grid-template-columns: 1fr 1fr !important;

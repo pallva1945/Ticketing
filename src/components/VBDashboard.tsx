@@ -1498,11 +1498,51 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
   const { t } = useLanguage();
   const isDark = useIsDark();
   const [selectedPlayer, setSelectedPlayer] = useState(initialPlayer || players[0]);
-  const ps = useMemo(() => getPlayerSessions(sessions, selectedPlayer), [sessions, selectedPlayer]);
+  const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const allPs = useMemo(() => getPlayerSessions(sessions, selectedPlayer), [sessions, selectedPlayer]);
+  const ps = useMemo(() => selectedMonth ? allPs.filter(s => s.date.substring(0, 7) === selectedMonth) : allPs, [allPs, selectedMonth]);
+  const availableMonths = useMemo(() => {
+    const months = [...new Set(allPs.map(s => s.date.substring(0, 7)))].sort();
+    return months;
+  }, [allPs]);
+
+  const getWeekOfMonth = (dateStr: string) => {
+    const day = parseInt(dateStr.substring(8, 10));
+    if (day <= 7) return 1;
+    if (day <= 14) return 2;
+    if (day <= 21) return 3;
+    return 4;
+  };
+
+  const getWeeklyBuckets = (filteredSessions: typeof ps) => {
+    if (!selectedMonth) return null;
+    const weekMap: Record<number, typeof ps> = { 1: [], 2: [], 3: [], 4: [] };
+    filteredSessions.forEach(s => {
+      const wk = getWeekOfMonth(s.date);
+      weekMap[wk].push(s);
+    });
+    return [1, 2, 3, 4].map(wk => ({ week: wk, sessions: weekMap[wk] }));
+  };
+
+  const getWeekDays = (weekNum: number) => {
+    if (!selectedMonth) return 7;
+    const [y, m] = selectedMonth.split('-').map(Number);
+    const daysInMonth = new Date(y, m, 0).getDate();
+    if (weekNum === 1) return 7;
+    if (weekNum === 2) return 7;
+    if (weekNum === 3) return 7;
+    return daysInMonth - 21;
+  };
+
+  const monthLabel = selectedMonth ? (() => {
+    const [y, m] = selectedMonth.split('-');
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return `${t(monthNames[parseInt(m) - 1])} ${y}`;
+  })() : null;
 
   const playerSeasons = useMemo(() => {
-    return [...new Set(ps.map(s => getSeason(s.date)).filter(Boolean))].sort().reverse() as string[];
-  }, [ps]);
+    return [...new Set(allPs.map(s => getSeason(s.date)).filter(Boolean))].sort().reverse() as string[];
+  }, [allPs]);
 
   const currentSeason = playerSeasons[0] || null;
   const profile = useMemo(() => getPlayerProfile(selectedPlayer, profiles, currentSeason || undefined), [selectedPlayer, profiles, currentSeason]);
@@ -1592,10 +1632,22 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 
   return (
     <div className="space-y-6 print-container">
-      <div className="max-w-xs no-print flex items-center gap-3">
-        <div className="flex-1">
+      <div className="no-print flex items-center gap-3 flex-wrap">
+        <div className="w-48">
           <PlayerSelector players={players} selected={selectedPlayer} onChange={setSelectedPlayer} />
         </div>
+        <select
+          value={selectedMonth || ''}
+          onChange={e => setSelectedMonth(e.target.value || null)}
+          className={`px-3 py-2 rounded-lg text-xs font-medium border ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-gray-600 border-gray-200'} shadow-sm`}
+        >
+          <option value="">{t('Full Season')}</option>
+          {availableMonths.map(m => {
+            const [y, mo] = m.split('-');
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            return <option key={m} value={m}>{monthNames[parseInt(mo) - 1]} {y}</option>;
+          })}
+        </select>
         <button
           onClick={handlePrint}
           className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all ${isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'} shadow-sm`}
@@ -1605,9 +1657,15 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
         </button>
       </div>
 
+      {monthLabel && (
+        <div className={`text-center py-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <h2 className="text-lg font-bold">{monthLabel}</h2>
+        </div>
+      )}
+
       <div className={`${cardClass} print-page`}>
         <div className="print-header hidden">
-          <div className="print-header-name">{selectedPlayer}</div>
+          <div className="print-header-name">{selectedPlayer}{monthLabel ? ` — ${monthLabel}` : ''}</div>
           <div className="print-header-meta">{profile?.role || ''} · {category || ''} · {profile?.season || currentSeason || ''}</div>
         </div>
         <div className="flex items-center gap-2 mb-4 print-mb-sm">
@@ -1780,7 +1838,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 
       <div className={`${cardClass} print-page`}>
         <div className="print-header hidden">
-          <div className="print-header-name">{selectedPlayer}</div>
+          <div className="print-header-name">{selectedPlayer}{monthLabel ? ` — ${monthLabel}` : ''}</div>
           <div className="print-header-meta">{profile?.role || ''} · {category || ''} · {profile?.season || currentSeason || ''}</div>
         </div>
         <div className="flex items-center gap-2 mb-4 print-mb-sm">
@@ -1788,7 +1846,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           <h3 className={`text-sm font-bold print-section-title ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Performance')}</h3>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5 print-grid-tight print-mb-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5 print-perf-cards print-mb-sm">
           <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-cyan-50/50'}`}>
             <div className={labelClass}>{t('Pure Vertical')}</div>
             <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.pureVertical !== null ? latestAthletic.pureVertical : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
@@ -1823,56 +1881,83 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
         </div>
 
         {(() => {
-          const athleticMonthly: Record<string, { sprint: number[]; coneDrill: number[]; pureVert: number[]; noStepVert: number[]; deadlift: number[] }> = {};
-          const shootingMonthly: Record<string, { taken: number; made: number }> = {};
           const sr = getLatestMetric(sessions, selectedPlayer, 'standingReach');
-
-          ps.forEach(s => {
-            const month = s.date.substring(0, 7);
-            if (!athleticMonthly[month]) athleticMonthly[month] = { sprint: [], coneDrill: [], pureVert: [], noStepVert: [], deadlift: [] };
-            if (s.sprint !== null) athleticMonthly[month].sprint.push(s.sprint);
-            if (s.coneDrill !== null) athleticMonthly[month].coneDrill.push(s.coneDrill);
-            if (s.pureVertical !== null && sr !== null) athleticMonthly[month].pureVert.push(s.pureVertical - sr);
-            if (s.noStepVertical !== null && sr !== null) athleticMonthly[month].noStepVert.push(s.noStepVertical - sr);
-            if (s.deadlift !== null) athleticMonthly[month].deadlift.push(s.deadlift);
-
-            if (!shootingMonthly[month]) shootingMonthly[month] = { taken: 0, made: 0 };
-            shootingMonthly[month].taken += s.shootsTaken || 0;
-            shootingMonthly[month].made += s.shootsMade || 0;
-          });
-
           const avg = (arr: number[]) => arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length * 10) / 10 : null;
+          const weeklyBuckets = getWeeklyBuckets(ps);
 
-          const speedData = Object.entries(athleticMonthly).sort(([a], [b]) => a.localeCompare(b))
-            .filter(([, v]) => v.sprint.length > 0 || v.coneDrill.length > 0)
-            .map(([month, v]) => ({
-              date: month.substring(2),
-              [t('Sprint')]: avg(v.sprint),
-              [t('Cone Drill')]: avg(v.coneDrill),
+          const buildGroupedData = () => {
+            type AthGroup = { sprint: number[]; coneDrill: number[]; pureVert: number[]; noStepVert: number[]; deadlift: number[] };
+            type ShotGroup = { taken: number; made: number };
+            const athleticMap: Record<string, AthGroup> = {};
+            const shootingMap: Record<string, ShotGroup> = {};
+
+            if (weeklyBuckets) {
+              weeklyBuckets.forEach(({ week, sessions: ws }) => {
+                const key = `W${week}`;
+                athleticMap[key] = { sprint: [], coneDrill: [], pureVert: [], noStepVert: [], deadlift: [] };
+                shootingMap[key] = { taken: 0, made: 0 };
+                ws.forEach(s => {
+                  if (s.sprint !== null) athleticMap[key].sprint.push(s.sprint);
+                  if (s.coneDrill !== null) athleticMap[key].coneDrill.push(s.coneDrill);
+                  if (s.pureVertical !== null && sr !== null) athleticMap[key].pureVert.push(s.pureVertical - sr);
+                  if (s.noStepVertical !== null && sr !== null) athleticMap[key].noStepVert.push(s.noStepVertical - sr);
+                  if (s.deadlift !== null) athleticMap[key].deadlift.push(s.deadlift);
+                  shootingMap[key].taken += s.shootsTaken || 0;
+                  shootingMap[key].made += s.shootsMade || 0;
+                });
+              });
+            } else {
+              ps.forEach(s => {
+                const key = s.date.substring(0, 7);
+                if (!athleticMap[key]) athleticMap[key] = { sprint: [], coneDrill: [], pureVert: [], noStepVert: [], deadlift: [] };
+                if (s.sprint !== null) athleticMap[key].sprint.push(s.sprint);
+                if (s.coneDrill !== null) athleticMap[key].coneDrill.push(s.coneDrill);
+                if (s.pureVertical !== null && sr !== null) athleticMap[key].pureVert.push(s.pureVertical - sr);
+                if (s.noStepVertical !== null && sr !== null) athleticMap[key].noStepVert.push(s.noStepVertical - sr);
+                if (s.deadlift !== null) athleticMap[key].deadlift.push(s.deadlift);
+                if (!shootingMap[key]) shootingMap[key] = { taken: 0, made: 0 };
+                shootingMap[key].taken += s.shootsTaken || 0;
+                shootingMap[key].made += s.shootsMade || 0;
+              });
+            }
+            return { athleticMap, shootingMap };
+          };
+
+          const { athleticMap, shootingMap } = buildGroupedData();
+          const sortedKeys = Object.keys(athleticMap).sort((a, b) => a.localeCompare(b));
+          const dateLabel = (k: string) => weeklyBuckets ? k : k.substring(2);
+
+          const speedData = sortedKeys
+            .filter(k => athleticMap[k].sprint.length > 0 || athleticMap[k].coneDrill.length > 0)
+            .map(k => ({
+              date: dateLabel(k),
+              [t('Sprint')]: avg(athleticMap[k].sprint),
+              [t('Cone Drill')]: avg(athleticMap[k].coneDrill),
             }));
 
-          const verticalsData = Object.entries(athleticMonthly).sort(([a], [b]) => a.localeCompare(b))
-            .filter(([, v]) => v.pureVert.length > 0 || v.noStepVert.length > 0)
-            .map(([month, v]) => ({
-              date: month.substring(2),
-              [t('Pure Vertical')]: avg(v.pureVert),
-              [t('No-Step Vertical')]: avg(v.noStepVert),
+          const verticalsData = sortedKeys
+            .filter(k => athleticMap[k].pureVert.length > 0 || athleticMap[k].noStepVert.length > 0)
+            .map(k => ({
+              date: dateLabel(k),
+              [t('Pure Vertical')]: avg(athleticMap[k].pureVert),
+              [t('No-Step Vertical')]: avg(athleticMap[k].noStepVert),
             }));
 
-          const deadliftData = Object.entries(athleticMonthly).sort(([a], [b]) => a.localeCompare(b))
-            .filter(([, v]) => v.deadlift.length > 0)
-            .map(([month, v]) => ({
-              date: month.substring(2),
-              [t('Deadlift')]: avg(v.deadlift),
+          const deadliftData = sortedKeys
+            .filter(k => athleticMap[k].deadlift.length > 0)
+            .map(k => ({
+              date: dateLabel(k),
+              [t('Deadlift')]: avg(athleticMap[k].deadlift),
             }));
 
-          const shotVolumeData = Object.entries(shootingMonthly).sort(([a], [b]) => a.localeCompare(b))
-            .filter(([, v]) => v.taken > 0)
-            .map(([month, v]) => ({
-              date: month.substring(2),
-              [t('Shots Taken')]: v.taken,
-              [t('Shots Made')]: v.made,
-              [t('3PT %')]: v.taken > 0 ? Math.round((v.made / v.taken) * 1000) / 10 : 0,
+          const shotSortedKeys = Object.keys(shootingMap).sort((a, b) => a.localeCompare(b));
+          const shotVolumeData = shotSortedKeys
+            .filter(k => shootingMap[k].taken > 0)
+            .map(k => ({
+              date: dateLabel(k),
+              [t('Shots Taken')]: shootingMap[k].taken,
+              [t('Shots Made')]: shootingMap[k].made,
+              [t('3PT %')]: shootingMap[k].taken > 0 ? Math.round((shootingMap[k].made / shootingMap[k].taken) * 1000) / 10 : 0,
             }));
 
           const chartBox = `rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`;
@@ -1958,7 +2043,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 
       <div className={`${cardClass} print-page`}>
         <div className="print-header hidden">
-          <div className="print-header-name">{selectedPlayer}</div>
+          <div className="print-header-name">{selectedPlayer}{monthLabel ? ` — ${monthLabel}` : ''}</div>
           <div className="print-header-meta">{profile?.role || ''} · {category || ''} · {profile?.season || currentSeason || ''}</div>
         </div>
         <div className="flex items-center gap-2 mb-4 print-mb-sm">
@@ -1975,27 +2060,78 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           const loadSessions = ps.filter(s => (s.practiceLoad || 0) > 0 || (s.vitaminsLoad || 0) > 0 || (s.weightsLoad || 0) > 0 || (s.gameLoad || 0) > 0);
           const avgLoad = loadSessions.length > 0 ? Math.round(totalLoad / loadSessions.length) : 0;
 
-          const monthlyMap: Record<string, { practice: number; vitamins: number; weights: number; game: number }> = {};
-          ps.forEach(s => {
-            if ((s.practiceLoad || 0) === 0 && (s.vitaminsLoad || 0) === 0 && (s.weightsLoad || 0) === 0 && (s.gameLoad || 0) === 0) return;
-            const month = s.date.substring(0, 7);
-            if (!monthlyMap[month]) monthlyMap[month] = { practice: 0, vitamins: 0, weights: 0, game: 0 };
-            monthlyMap[month].practice += s.practiceLoad || 0;
-            monthlyMap[month].vitamins += s.vitaminsLoad || 0;
-            monthlyMap[month].weights += s.weightsLoad || 0;
-            monthlyMap[month].game += s.gameLoad || 0;
-          });
-          const loadChartData = Object.entries(monthlyMap).sort(([a], [b]) => a.localeCompare(b)).map(([month, v]) => ({
-            date: month.substring(2),
-            [t('Practice')]: Math.round(v.practice),
-            [t('Vitamins')]: Math.round(v.vitamins),
-            [t('Weights')]: Math.round(v.weights),
-            [t('Game')]: Math.round(v.game),
+          const loadWeeklyBuckets = getWeeklyBuckets(ps);
+          const loadGroupMap: Record<string, { practice: number; vitamins: number; weights: number; game: number }> = {};
+
+          if (loadWeeklyBuckets) {
+            loadWeeklyBuckets.forEach(({ week, sessions: ws }) => {
+              const key = `W${week}`;
+              loadGroupMap[key] = { practice: 0, vitamins: 0, weights: 0, game: 0 };
+              ws.forEach(s => {
+                loadGroupMap[key].practice += s.practiceLoad || 0;
+                loadGroupMap[key].vitamins += s.vitaminsLoad || 0;
+                loadGroupMap[key].weights += s.weightsLoad || 0;
+                loadGroupMap[key].game += s.gameLoad || 0;
+              });
+            });
+          } else {
+            ps.forEach(s => {
+              if ((s.practiceLoad || 0) === 0 && (s.vitaminsLoad || 0) === 0 && (s.weightsLoad || 0) === 0 && (s.gameLoad || 0) === 0) return;
+              const key = s.date.substring(0, 7);
+              if (!loadGroupMap[key]) loadGroupMap[key] = { practice: 0, vitamins: 0, weights: 0, game: 0 };
+              loadGroupMap[key].practice += s.practiceLoad || 0;
+              loadGroupMap[key].vitamins += s.vitaminsLoad || 0;
+              loadGroupMap[key].weights += s.weightsLoad || 0;
+              loadGroupMap[key].game += s.gameLoad || 0;
+            });
+          }
+
+          const loadSortedKeys = Object.keys(loadGroupMap).sort((a, b) => a.localeCompare(b));
+          const loadDateLabel = (k: string) => loadWeeklyBuckets ? k : k.substring(2);
+          const loadChartData = loadSortedKeys.map(k => ({
+            date: loadDateLabel(k),
+            [t('Practice')]: Math.round(loadGroupMap[k].practice),
+            [t('Vitamins')]: Math.round(loadGroupMap[k].vitamins),
+            [t('Weights')]: Math.round(loadGroupMap[k].weights),
+            [t('Game')]: Math.round(loadGroupMap[k].game),
           }));
+
+          const availabilityMap: Record<string, { daysOff: number; injuryDays: number }> = {};
+          if (loadWeeklyBuckets) {
+            loadWeeklyBuckets.forEach(({ week, sessions: ws }) => {
+              const key = `W${week}`;
+              const totalDays = getWeekDays(week);
+              const uniqueDates = new Set(ws.map(s => s.date));
+              const activeDays = uniqueDates.size;
+              const injuryDates = new Set(ws.filter(s => s.injured && s.injured > 0).map(s => s.date));
+              availabilityMap[key] = { daysOff: Math.max(0, totalDays - activeDays), injuryDays: injuryDates.size };
+            });
+          } else {
+            const playerMonths = [...new Set(ps.map(s => s.date.substring(0, 7)))].sort();
+            playerMonths.forEach(month => {
+              const monthSessions = ps.filter(s => s.date.substring(0, 7) === month);
+              const [y, m] = month.split('-').map(Number);
+              const daysInMonth = new Date(y, m, 0).getDate();
+              const uniqueDates = new Set(monthSessions.map(s => s.date));
+              const activeDays = uniqueDates.size;
+              const injuryDates = new Set(monthSessions.filter(s => s.injured && s.injured > 0).map(s => s.date));
+              availabilityMap[month] = { daysOff: Math.max(0, daysInMonth - activeDays), injuryDays: injuryDates.size };
+            });
+          }
+          const availSortedKeys = Object.keys(availabilityMap).sort((a, b) => a.localeCompare(b));
+          const availChartData = availSortedKeys.map(k => ({
+            date: loadWeeklyBuckets ? k : k.substring(2),
+            [t('Days Off')]: availabilityMap[k].daysOff,
+            [t('Injury Days')]: availabilityMap[k].injuryDays,
+          }));
+
+          const tipStyle = { borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' };
+          const tickStyle = { fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' };
+          const gridStroke = isDark ? '#374151' : '#e5e7eb';
 
           return (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5 print-grid-tight print-mb-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5 print-load-cards print-mb-sm">
                 <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-emerald-50/50'}`}>
                   <div className={labelClass}>{t('Practice')}</div>
                   <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{totalPractice.toLocaleString()}</div>
@@ -2022,41 +2158,60 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                 </div>
               </div>
 
-              <div className={`rounded-lg border p-4 print-inner mb-5 print-mb-sm ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
-                <h4 className={`text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Load Distribution')}</h4>
-                <div className="h-48 print-chart">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={loadChartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                      <XAxis dataKey="date" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                      <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                      <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
-                      <Legend wrapperStyle={{ fontSize: 10 }} />
-                      <Bar dataKey={t('Practice')} stackId="load" fill="#10b981" />
-                      <Bar dataKey={t('Vitamins')} stackId="load" fill="#3b82f6" />
-                      <Bar dataKey={t('Weights')} stackId="load" fill="#8b5cf6" />
-                      <Bar dataKey={t('Game')} stackId="load" fill="#f97316" />
-                    </BarChart>
-                  </ResponsiveContainer>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 print-load-charts">
+                <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
+                  <h4 className={`text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Load Distribution')}</h4>
+                  <div className="h-48 print-chart">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={loadChartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                        <XAxis dataKey="date" tick={tickStyle} />
+                        <YAxis tick={tickStyle} />
+                        <Tooltip contentStyle={tipStyle} />
+                        <Legend wrapperStyle={{ fontSize: 10 }} />
+                        <Bar dataKey={t('Practice')} stackId="load" fill="#10b981" />
+                        <Bar dataKey={t('Vitamins')} stackId="load" fill="#3b82f6" />
+                        <Bar dataKey={t('Weights')} stackId="load" fill="#8b5cf6" />
+                        <Bar dataKey={t('Game')} stackId="load" fill="#f97316" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-              </div>
 
-              <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
-                <h4 className={`text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Load Progression')}</h4>
-                <div className="h-48 print-chart">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={loadChartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                      <XAxis dataKey="date" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                      <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                      <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
-                      <Legend wrapperStyle={{ fontSize: 10 }} />
-                      <Line type="monotone" dataKey={t('Practice')} stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                      <Line type="monotone" dataKey={t('Vitamins')} stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                      <Line type="monotone" dataKey={t('Weights')} stroke="#8b5cf6" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                      <Line type="monotone" dataKey={t('Game')} stroke="#f97316" strokeWidth={2} dot={{ r: 2 }} connectNulls />
-                    </LineChart>
-                  </ResponsiveContainer>
+                <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
+                  <h4 className={`text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Load Progression')}</h4>
+                  <div className="h-48 print-chart">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={loadChartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                        <XAxis dataKey="date" tick={tickStyle} />
+                        <YAxis tick={tickStyle} />
+                        <Tooltip contentStyle={tipStyle} />
+                        <Legend wrapperStyle={{ fontSize: 10 }} />
+                        <Line type="monotone" dataKey={t('Practice')} stroke="#10b981" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                        <Line type="monotone" dataKey={t('Vitamins')} stroke="#3b82f6" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                        <Line type="monotone" dataKey={t('Weights')} stroke="#8b5cf6" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                        <Line type="monotone" dataKey={t('Game')} stroke="#f97316" strokeWidth={2} dot={{ r: 2 }} connectNulls />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
+                  <h4 className={`text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Days Off & Injury')}</h4>
+                  <div className="h-48 print-chart">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={availChartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                        <XAxis dataKey="date" tick={tickStyle} />
+                        <YAxis tick={tickStyle} />
+                        <Tooltip contentStyle={tipStyle} />
+                        <Legend wrapperStyle={{ fontSize: 10 }} />
+                        <Bar dataKey={t('Days Off')} fill="#94a3b8" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey={t('Injury Days')} fill="#ef4444" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
             </>
