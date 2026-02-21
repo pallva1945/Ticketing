@@ -3203,7 +3203,7 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
                     const isDayOff = !active && !isVacation;
                     return (
                     <tr key={i} className={`border-b ${isVacation ? (isDark ? 'bg-amber-900/10 border-gray-800/50' : 'bg-amber-50/50 border-amber-100') : isDayOff ? (isDark ? 'bg-gray-800/20 border-gray-800/50' : 'bg-gray-50/50 border-gray-100') : isDark ? 'border-gray-800/50 hover:bg-gray-800/30' : 'border-gray-50 hover:bg-gray-50'}`}>
-                      <td className="py-1.5 px-2 font-medium">{s.date}</td>
+                      <td className="py-1.5 px-2 font-medium">{s.date.split('-').reverse().join('-')}</td>
                       <td className="py-1.5 px-2 text-right">{s.height ?? '—'}</td>
                       <td className="py-1.5 px-2 text-right">{s.weight ?? '—'}</td>
                       <td className="py-1.5 px-2 text-right">{s.sprint ?? '—'}</td>
