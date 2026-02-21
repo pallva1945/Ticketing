@@ -2727,7 +2727,18 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
   };
 
   const categoryKeywords: Record<string, string> = { u15: 'U15', u17: 'U17', u19: 'U19', dy: 'DY' };
-  const roleAliases: Record<string, string> = { '3nd': '3nD', '3&d': '3nD', '3d': '3nD', playmaker: 'Playmaker', pm: 'Playmaker', center: 'Center', c: 'Center' };
+  const roleAliases: Record<string, string> = { '3nd': '3nD', '3&d': '3nD', '3d': '3nD', playmaker: 'Playmaker', pm: 'Playmaker', center: 'Center' };
+
+  const isRoleToken = (lower: string): string | null => {
+    if (roleAliases[lower]) return roleAliases[lower];
+    const match = allRoles.find(r => r.toLowerCase() === lower);
+    if (match) return match;
+    return null;
+  };
+
+  const isCategoryToken = (lower: string): string | null => {
+    return categoryKeywords[lower] || null;
+  };
 
   const parseCompoundQuery = (raw: string): { nameTokens: string[]; year: number | null; month: number | null; day: number | null; role: string | null; category: string | null } => {
     const result = { nameTokens: [] as string[], year: null as number | null, month: null as number | null, day: null as number | null, role: null as string | null, category: null as string | null };
@@ -2771,69 +2782,62 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
     }
 
     const tokens = remaining.split(/[\s,;]+/).filter(t => t.length > 0);
+    const pending: { token: string; lower: string }[] = [];
 
     for (const token of tokens) {
       const lower = token.toLowerCase();
 
-      const catMatch = categoryKeywords[lower];
-      if (catMatch) {
-        result.category = catMatch;
-        continue;
-      }
+      const cat = isCategoryToken(lower);
+      if (cat) { result.category = cat; continue; }
 
-      const aliasMatch = roleAliases[lower];
-      if (aliasMatch) {
-        result.role = aliasMatch;
-        continue;
-      }
-
-      const roleMatch = allRoles.find(r => r.toLowerCase() === lower);
-      if (roleMatch) {
-        result.role = roleMatch;
-        continue;
-      }
+      const role = isRoleToken(lower);
+      if (role) { result.role = role; continue; }
 
       const mi = parseMonthName(token);
-      if (mi !== null) {
-        result.month = mi + 1;
-        continue;
-      }
+      if (mi !== null) { result.month = mi + 1; continue; }
 
-      if (/^\d{4}$/.test(token) && result.year === null) {
-        result.year = parseInt(token);
-        continue;
-      }
+      if (/^\d{4}$/.test(token)) { result.year = parseInt(token); continue; }
 
+      pending.push({ token, lower });
+    }
+
+    for (const { token, lower } of pending) {
       if (/^\d{1,2}$/.test(token)) {
         const n = parseInt(token);
-        if (result.day === null && n >= 1 && n <= 31) {
-          result.day = n;
-          continue;
-        }
-        if (result.month === null && n >= 1 && n <= 12) {
-          result.month = n;
-          continue;
-        }
+        if (result.day === null && n >= 1 && n <= 31) { result.day = n; continue; }
+        if (result.month === null && n >= 1 && n <= 12) { result.month = n; continue; }
       }
-
-      if (/^\d{2}$/.test(token) && result.year === null) {
-        result.year = parseInt(expandYear(token));
-        continue;
-      }
-
-      if (/^[a-zA-Zéàòùì0-9&]+$/.test(token)) {
-        result.nameTokens.push(lower);
-      }
+      if (/^\d{2}$/.test(token) && result.year === null) { result.year = parseInt(expandYear(token)); continue; }
+      if (/^[a-zA-Zéàòùì0-9&]+$/.test(token)) { result.nameTokens.push(lower); }
     }
 
     return result;
   };
 
+  const getPlayerSeasons = useMemo(() => {
+    const map: Record<string, Set<string>> = {};
+    sessions.forEach(s => {
+      const season = getSeason(s.date);
+      if (season) {
+        if (!map[s.player]) map[s.player] = new Set();
+        map[s.player].add(season);
+      }
+    });
+    return map;
+  }, [sessions]);
+
   const getMatchingPlayers = (parsed: ReturnType<typeof parseCompoundQuery>): string[] => {
+    const searchSeason = parsed.year !== null && parsed.month !== null
+      ? getSeason(`${parsed.year}-${String(parsed.month).padStart(2, '0')}-15`)
+      : parsed.year !== null
+      ? getSeason(`${parsed.year}-01-15`) || getSeason(`${parsed.year}-09-15`)
+      : null;
+
     return players.filter(p => {
       if (parsed.role && getPlayerPosition(p, profiles).toLowerCase() !== parsed.role.toLowerCase()) return false;
       if (parsed.category && getPlayerCategory(p, profiles) !== parsed.category) return false;
       if (parsed.nameTokens.length > 0 && !parsed.nameTokens.every(nt => p.toLowerCase().includes(nt))) return false;
+      if (searchSeason && (!getPlayerSeasons[p] || !getPlayerSeasons[p].has(searchSeason))) return false;
       return true;
     });
   };
@@ -2862,12 +2866,12 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
       items.push({ type: 'category', label: categoryKeywords[k], value: categoryKeywords[k], sortKey: -2 });
     });
 
-    const matchedRoleFromAlias = roleAliases[q];
-    if (matchedRoleFromAlias) {
-      items.push({ type: 'role', label: matchedRoleFromAlias, value: matchedRoleFromAlias, sortKey: -1 });
+    const matchedRole = isRoleToken(q);
+    if (matchedRole) {
+      items.push({ type: 'role', label: matchedRole, value: matchedRole, sortKey: -1 });
     } else {
       allRoles.filter(r => r.toLowerCase().includes(q)).forEach(r => {
-        items.push({ type: 'role', label: r, value: r, sortKey: -1 });
+        if (!items.some(i => i.label === r)) items.push({ type: 'role', label: r, value: r, sortKey: -1 });
       });
     }
 
