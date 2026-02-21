@@ -106,7 +106,8 @@ The application uses a modern web stack with React 18 and TypeScript for the fro
 - **Position Filter**: Uses Role field from profiles (values: Playmaker, 3nD, Center). Profile name matched to session player via fuzzy matching.
 - **Body Fat Conversion**: Raw column stores 3-skinfold sum (S in mm). Converted to BF% using Jackson-Pollock/Siri formula: BD = 1.10938 - (0.0008267 × S) + (0.0000016 × S²) - (0.0002574 × age), then BF% = (495/BD) - 450. Age calculated from DOB (Excel serial) in player profile relative to session date.
 - **Data Structure**: `VBSession` interface — player, date, practiceLoad, vitaminsLoad, weightsLoad, gameLoad, height, weight, wingspan, standingReach, bodyFat (raw skinfold sum), pureVertical, noStepVertical, sprint, coneDrill, deadlift, shootsTaken, shootsMade, shootingPct, injured
-- **Date Format**: Italian D/M/YYYY parsed to YYYY-MM-DD; seasons run July 1 – June 30
+- **Date Format**: Italian D/M/YYYY parsed to YYYY-MM-DD
+- **Season Dates**: 2024/25: Aug 23 → Jun 28; 2025/26: Aug 11 → Jun 26; 2026/27: Aug 3 → TBD. Days outside these bounds are vacation and excluded from all calculations (days off, season days, getSeason filter)
 - **Column Mapping**: BigQuery returns lowercase (player, practice_load, shots_taken) → camelCase via getField() helper; sg_profile uses string_field_0..15
 - **Tabs**:
   - **Overview**: Season filter, KPI cards (players/sessions/avg 3PT%/injury rate), session distribution bar chart, Player Roster table

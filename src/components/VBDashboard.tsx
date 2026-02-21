@@ -77,6 +77,17 @@ function getAvg(values: (number | null)[]): number | null {
   return isNaN(avg) ? null : avg;
 }
 
+const SEASON_START_DATES: Record<string, Date> = {
+  '2024/25': new Date(2024, 7, 23),
+  '2025/26': new Date(2025, 7, 11),
+  '2026/27': new Date(2026, 7, 3),
+};
+
+const SEASON_END_DATES: Record<string, Date> = {
+  '2024/25': new Date(2025, 5, 28),
+  '2025/26': new Date(2026, 5, 26),
+};
+
 function getSeason(dateStr: string): string | null {
   if (!dateStr || dateStr === 'unknown') return null;
   const d = new Date(dateStr);
@@ -84,8 +95,12 @@ function getSeason(dateStr: string): string | null {
   const year = d.getFullYear();
   const month = d.getMonth() + 1;
   if (year < 2000) return null;
-  if (month >= 7) return `${year}/${(year + 1).toString().slice(2)}`;
-  return `${year - 1}/${year.toString().slice(2)}`;
+  const candidateSeason = month >= 7 ? `${year}/${(year + 1).toString().slice(2)}` : `${year - 1}/${year.toString().slice(2)}`;
+  const start = SEASON_START_DATES[candidateSeason];
+  const end = SEASON_END_DATES[candidateSeason];
+  if (start && d < start) return null;
+  if (end && d > end) return null;
+  return candidateSeason;
 }
 
 function StatCard({ label, value, unit, icon: Icon, color, subtitle }: { label: string; value: string | number | null; unit?: string; icon: any; color: string; subtitle?: string }) {
@@ -181,11 +196,6 @@ function getCurrentSeason(): string {
   if (month >= 7) return `${year}/${(year + 1).toString().slice(2)}`;
   return `${year - 1}/${year.toString().slice(2)}`;
 }
-
-const SEASON_START_DATES: Record<string, Date> = {
-  '2024/25': new Date(2024, 7, 23),
-  '2025/26': new Date(2025, 7, 11),
-};
 
 function matchesPlayerName(profileName: string, sessionPlayer: string): boolean {
   const a = profileName.toLowerCase().trim();
@@ -397,11 +407,11 @@ function getSeasonDays(selectedSeason: string, player?: string): number {
   }
   const seasonStart = getSeasonStartDate(selectedSeason, player);
   if (!seasonStart) return 1;
-  const parts = selectedSeason.match(/^(\d{4})\//);
-  const startYear = parts ? parseInt(parts[1], 10) : new Date().getFullYear();
-  const seasonEnd = new Date(startYear + 1, 5, 30);
+  const seasonEnd = SEASON_END_DATES[selectedSeason];
+  const fallbackEnd = (() => { const parts = selectedSeason.match(/^(\d{4})\//); const sy = parts ? parseInt(parts[1], 10) : new Date().getFullYear(); return new Date(sy + 1, 5, 30); })();
+  const endDate = seasonEnd || fallbackEnd;
   const now = new Date();
-  const end = now < seasonEnd ? now : seasonEnd;
+  const end = now < endDate ? now : endDate;
   return Math.max(1, Math.ceil((end.getTime() - seasonStart.getTime()) / 86400000));
 }
 
@@ -2130,17 +2140,40 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
             return { activeDays, injuryDays };
           };
 
+          const seasonForMonth = (ym: string) => {
+            const d = new Date(ym + '-15');
+            return getSeason(d.toISOString().substring(0, 10));
+          };
+          const getSeasonBoundsForMonth = (y: number, m: number) => {
+            const monthStart = new Date(y, m - 1, 1);
+            const daysInMonth = new Date(y, m, 0).getDate();
+            const monthEnd = new Date(y, m - 1, daysInMonth);
+            const season = seasonForMonth(`${y}-${String(m).padStart(2, '0')}`);
+            let firstDay = 1;
+            let lastDay = daysInMonth;
+            if (season) {
+              const sStart = SEASON_START_DATES[season];
+              const sEnd = SEASON_END_DATES[season];
+              if (sStart && sStart > monthStart) firstDay = sStart.getDate();
+              if (sEnd && sEnd < monthEnd) lastDay = sEnd.getDate();
+            }
+            const today = new Date();
+            if (today.getFullYear() === y && (today.getMonth() + 1) === m && today.getDate() < lastDay) {
+              lastDay = today.getDate();
+            }
+            return { firstDay, lastDay };
+          };
+
           const availabilityMap: Record<string, { daysOff: number; injuryDays: number }> = {};
           if (loadWeeklyBuckets && selectedMonth) {
             const [y, m] = selectedMonth.split('-').map(Number);
-            const daysInMonth = new Date(y, m, 0).getDate();
-            const today = new Date();
-            const isCurrentMonth = today.getFullYear() === y && (today.getMonth() + 1) === m;
-            const currentDay = isCurrentMonth ? today.getDate() : daysInMonth;
+            const { firstDay, lastDay } = getSeasonBoundsForMonth(y, m);
             loadWeeklyBuckets.forEach(({ week, sessions: ws }) => {
-              const weekStart = (week - 1) * 7 + 1;
-              const weekEnd = week === 4 ? Math.min(daysInMonth, currentDay) : Math.min(week * 7, currentDay);
-              const calendarDays = Math.max(0, weekEnd - weekStart + 1);
+              const weekStartRaw = (week - 1) * 7 + 1;
+              const weekEndRaw = week === 4 ? new Date(y, m, 0).getDate() : week * 7;
+              const wStart = Math.max(weekStartRaw, firstDay);
+              const wEnd = Math.min(weekEndRaw, lastDay);
+              const calendarDays = Math.max(0, wEnd - wStart + 1);
               const { activeDays, injuryDays } = countActiveDaysAndInjury(ws);
               availabilityMap[`W${week}`] = { daysOff: Math.max(0, calendarDays - activeDays), injuryDays };
             });
@@ -2148,10 +2181,8 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
             const playerMonths = [...new Set(ps.map(s => s.date.substring(0, 7)))].sort();
             playerMonths.forEach(month => {
               const [y, m] = month.split('-').map(Number);
-              const daysInMonth = new Date(y, m, 0).getDate();
-              const today = new Date();
-              const isCurrentMonth = today.getFullYear() === y && (today.getMonth() + 1) === m;
-              const calendarDays = isCurrentMonth ? today.getDate() : daysInMonth;
+              const { firstDay, lastDay } = getSeasonBoundsForMonth(y, m);
+              const calendarDays = Math.max(0, lastDay - firstDay + 1);
               const { activeDays, injuryDays } = countActiveDaysAndInjury(ps.filter(s => s.date.substring(0, 7) === month));
               availabilityMap[month] = { daysOff: Math.max(0, calendarDays - activeDays), injuryDays };
             });
