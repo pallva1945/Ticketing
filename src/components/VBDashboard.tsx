@@ -2692,7 +2692,25 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
   const [results, setResults] = useState<VBSession[]>([]);
   const [searched, setSearched] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filterRole, setFilterRole] = useState<string>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
   const inputRef = React.useRef<HTMLInputElement>(null);
+
+  const availableRoles = useMemo(() =>
+    [...new Set(players.map(p => getPlayerPosition(p, profiles)).filter(r => r))].sort(),
+  [players, profiles]);
+
+  const availableCategories = useMemo(() =>
+    [...new Set(players.map(p => getPlayerCategory(p, profiles)).filter(c => c))].sort(),
+  [players, profiles]);
+
+  const filteredPlayers = useMemo(() => {
+    return players.filter(p => {
+      if (filterRole !== 'all' && getPlayerPosition(p, profiles) !== filterRole) return false;
+      if (filterCategory !== 'all' && getPlayerCategory(p, profiles) !== filterCategory) return false;
+      return true;
+    });
+  }, [players, profiles, filterRole, filterCategory]);
 
   const allSeasons = useMemo(() => [...new Set(sessions.map(s => getSeason(s.date)).filter(Boolean))].sort().reverse() as string[], [sessions]);
   const allMonths = useMemo(() => [...new Set(sessions.map(s => s.date.substring(0, 7)))].sort(), [sessions]);
@@ -2943,29 +2961,55 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
 
     if (searchValue.startsWith('season:')) {
       const season = searchValue.replace('season:', '');
-      filtered = sessions.filter(s => getSeason(s.date) === season);
+      filtered = sessions.filter(s => getSeason(s.date) === season && filteredPlayers.includes(s.player));
     } else if (searchValue.startsWith('month:')) {
       const month = searchValue.replace('month:', '');
-      filtered = sessions.filter(s => s.date.startsWith(month));
+      filtered = sessions.filter(s => s.date.startsWith(month) && filteredPlayers.includes(s.player));
     } else if (searchValue.startsWith('date:')) {
       const date = searchValue.replace('date:', '');
-      filtered = sessions.filter(s => s.date === date);
+      filtered = sessions.filter(s => s.date === date && filteredPlayers.includes(s.player));
     } else if (hasDate || hasName) {
-      filtered = sessions.filter(s => matchesSession(s, parsed));
+      filtered = sessions.filter(s => matchesSession(s, parsed) && filteredPlayers.includes(s.player));
     } else {
       const q = searchValue.toLowerCase();
-      filtered = sessions.filter(s => s.player.toLowerCase().includes(q) || s.date.includes(q));
+      filtered = sessions.filter(s => filteredPlayers.includes(s.player) && (s.player.toLowerCase().includes(q) || s.date.includes(q)));
     }
 
-    if (hasName && hasDate) {
-      const matchedPlayers = players.filter(p => parsed.nameTokens.every(nt => p.toLowerCase().includes(nt)));
-      const dates = generateDateRange(parsed);
-      if (dates.length > 0) {
-        for (const p of matchedPlayers) {
-          const existingDates = new Set(filtered.filter(s => s.player === p).map(s => s.date));
-          for (const date of dates) {
-            if (!existingDates.has(date)) {
-              filtered.push(makeDayOff(p, date));
+    const dates = hasDate ? generateDateRange(parsed) : [];
+    const targetPlayers = hasName
+      ? filteredPlayers.filter(p => parsed.nameTokens.every(nt => p.toLowerCase().includes(nt)))
+      : filteredPlayers;
+
+    if (dates.length > 0) {
+      for (const p of targetPlayers) {
+        const existingDates = new Set(filtered.filter(s => s.player === p).map(s => s.date));
+        for (const date of dates) {
+          if (!existingDates.has(date)) {
+            filtered.push(makeDayOff(p, date));
+          }
+        }
+      }
+    } else if (searchValue.startsWith('date:')) {
+      const date = searchValue.replace('date:', '');
+      for (const p of targetPlayers) {
+        if (!filtered.some(s => s.player === p && s.date === date)) {
+          filtered.push(makeDayOff(p, date));
+        }
+      }
+    } else if (searchValue.startsWith('month:')) {
+      const month = searchValue.replace('month:', '');
+      const year = parseInt(month.split('-')[0]);
+      const mo = parseInt(month.split('-')[1]);
+      const daysInMonth = new Date(year, mo, 0).getDate();
+      const today = new Date();
+      for (const p of targetPlayers) {
+        const existingDates = new Set(filtered.filter(s => s.player === p).map(s => s.date));
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dt = new Date(year, mo - 1, d);
+          if (dt <= today) {
+            const dateStr = `${year}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            if (!existingDates.has(dateStr)) {
+              filtered.push(makeDayOff(p, dateStr));
             }
           }
         }
@@ -3015,6 +3059,24 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
         <div className="flex items-center gap-2 mb-4">
           <Search size={14} className="text-orange-500" />
           <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Search')}</h3>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <select
+            value={filterRole}
+            onChange={e => setFilterRole(e.target.value)}
+            className={`px-3 py-2 rounded-lg text-xs border ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
+          >
+            <option value="all">{t('All Roles')}</option>
+            {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+          <select
+            value={filterCategory}
+            onChange={e => setFilterCategory(e.target.value)}
+            className={`px-3 py-2 rounded-lg text-xs border ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
+          >
+            <option value="all">{t('All Categories')}</option>
+            {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
         </div>
         <div className="relative">
           <div className="flex gap-2">
