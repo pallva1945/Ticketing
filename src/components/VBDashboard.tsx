@@ -2124,6 +2124,8 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           const tipStyle = { borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' };
           const tickStyle = { fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' };
           const gridStroke = isDark ? '#374151' : '#e5e7eb';
+          const chartBox = `rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`;
+          const chartTitle = `text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`;
 
           return (
             <>
@@ -2154,10 +2156,10 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 print-load-charts">
-                <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
-                  <h4 className={`text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Load Distribution')}</h4>
-                  <div className="h-48 print-chart">
+              <div className="grid grid-cols-2 gap-4 print-charts-grid flex-1">
+                <div className={`${chartBox} flex flex-col`}>
+                  <h4 className={chartTitle}>{t('Load Distribution')}</h4>
+                  <div className="flex-1 min-h-[160px] print-chart-fill">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={loadChartData}>
                         <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
@@ -2174,9 +2176,9 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                   </div>
                 </div>
 
-                <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
-                  <h4 className={`text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Load Progression')}</h4>
-                  <div className="h-48 print-chart">
+                <div className={`${chartBox} flex flex-col`}>
+                  <h4 className={chartTitle}>{t('Load Progression')}</h4>
+                  <div className="flex-1 min-h-[160px] print-chart-fill">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={loadChartData}>
                         <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
@@ -2193,17 +2195,30 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                   </div>
                 </div>
 
-                <div className={`rounded-lg border p-4 print-inner ${isDark ? 'bg-gray-800/40 border-gray-700' : 'bg-gray-50/50 border-gray-200'}`}>
-                  <h4 className={`text-xs font-semibold mb-3 print-value ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Days Off & Injury')}</h4>
-                  <div className="h-48 print-chart">
+                <div className={`${chartBox} flex flex-col`}>
+                  <h4 className={chartTitle}>{t('Days Off')}</h4>
+                  <div className="flex-1 min-h-[160px] print-chart-fill">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={availChartData}>
                         <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                         <XAxis dataKey="date" tick={tickStyle} />
-                        <YAxis tick={tickStyle} />
+                        <YAxis tick={tickStyle} allowDecimals={false} />
                         <Tooltip contentStyle={tipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 10 }} />
                         <Bar dataKey={t('Days Off')} fill="#94a3b8" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className={`${chartBox} flex flex-col`}>
+                  <h4 className={chartTitle}>{t('Injury Days')}</h4>
+                  <div className="flex-1 min-h-[160px] print-chart-fill">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={availChartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                        <XAxis dataKey="date" tick={tickStyle} />
+                        <YAxis tick={tickStyle} allowDecimals={false} />
+                        <Tooltip contentStyle={tipStyle} />
                         <Bar dataKey={t('Injury Days')} fill="#ef4444" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
