@@ -21,7 +21,7 @@
       @media print {
         @page {
           size: A4 landscape;
-          margin: 8mm 8mm;
+          margin: 6mm 7mm;
         }
         * {
           -webkit-print-color-adjust: exact !important;
@@ -30,7 +30,7 @@
         body, html, #root {
           background: white !important;
           color: #111827 !important;
-          font-size: 10px !important;
+          font-size: 9px !important;
         }
         .no-print {
           display: none !important;
@@ -40,16 +40,18 @@
           break-after: page;
           page-break-inside: avoid;
           break-inside: avoid;
-          padding: 10px !important;
+          padding: 8px !important;
           margin: 0 !important;
           border: none !important;
           box-shadow: none !important;
           background: white !important;
           color: #111827 !important;
-          width: 281mm !important;
-          max-height: 190mm !important;
-          min-height: auto !important;
+          width: 283mm !important;
+          min-height: 194mm !important;
+          max-height: 194mm !important;
           overflow: hidden !important;
+          display: flex !important;
+          flex-direction: column !important;
         }
         .print-page:last-child {
           page-break-after: auto;
@@ -78,24 +80,24 @@
           overflow: visible !important;
         }
         .print-page .print-chart {
-          height: 130px !important;
+          height: 140px !important;
         }
         .print-page .print-photo {
-          width: 70px !important;
-          height: 70px !important;
+          width: 64px !important;
+          height: 64px !important;
         }
         .print-page .print-section-title {
-          font-size: 13px !important;
+          font-size: 12px !important;
           font-weight: 700 !important;
         }
         .print-page .print-label {
-          font-size: 8px !important;
+          font-size: 7px !important;
         }
         .print-page .print-value {
-          font-size: 11px !important;
+          font-size: 10px !important;
         }
         .print-page .print-value-lg {
-          font-size: 14px !important;
+          font-size: 13px !important;
         }
         .print-page .print-sub {
           font-size: 7px !important;
@@ -103,33 +105,43 @@
         .print-header {
           display: block !important;
           text-align: center;
-          margin-bottom: 6px;
-          padding-bottom: 4px;
+          margin-bottom: 4px;
+          padding-bottom: 3px;
           border-bottom: 2px solid #f97316 !important;
+          flex-shrink: 0;
         }
         .print-header-name {
-          font-size: 16px !important;
+          font-size: 15px !important;
           font-weight: 700 !important;
           color: #111827 !important;
         }
         .print-header-meta {
-          font-size: 9px !important;
+          font-size: 8px !important;
           color: #6b7280 !important;
         }
         .print-page .print-grid {
-          gap: 6px !important;
+          gap: 5px !important;
         }
         .print-page .print-grid-tight {
-          gap: 4px !important;
+          gap: 3px !important;
         }
         .print-page .print-inner {
-          padding: 6px !important;
+          padding: 5px !important;
         }
         .print-page .print-inner-sm {
-          padding: 4px !important;
+          padding: 3px !important;
         }
         .print-page .print-mb-sm {
-          margin-bottom: 6px !important;
+          margin-bottom: 4px !important;
+        }
+        .print-page .print-assessment-row {
+          margin-top: 6px !important;
+        }
+        .print-page .print-anthro-section {
+          margin-top: 6px !important;
+        }
+        .print-page .print-anthro-section .print-section-title {
+          font-size: 11px !important;
         }
       }
     </style>

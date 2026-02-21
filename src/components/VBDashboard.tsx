@@ -1692,82 +1692,80 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 print-grid">
-          <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-emerald-900/20 border border-emerald-800/30' : 'bg-emerald-50/50 border border-emerald-100'}`}>
-            <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-              <span>✦</span> {t('Strengths')}
+        <div className="flex flex-col lg:flex-row gap-4 mt-4 print-assessment-row">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
+            <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-emerald-900/20 border border-emerald-800/30' : 'bg-emerald-50/50 border border-emerald-100'}`}>
+              <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                <span>✦</span> {t('Strengths')}
+              </div>
+              <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 1')}</li>
+                <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 2')}</li>
+                <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 3')}</li>
+              </ul>
             </div>
-            <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-              <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 1')}</li>
-              <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 2')}</li>
-              <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 3')}</li>
-            </ul>
-          </div>
-          <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-red-900/20 border border-red-800/30' : 'bg-red-50/50 border border-red-100'}`}>
-            <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-red-400' : 'text-red-600'}`}>
-              <span>✦</span> {t('Weaknesses')}
+            <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-red-900/20 border border-red-800/30' : 'bg-red-50/50 border border-red-100'}`}>
+              <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+                <span>✦</span> {t('Weaknesses')}
+              </div>
+              <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 1')}</li>
+                <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 2')}</li>
+                <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 3')}</li>
+              </ul>
             </div>
-            <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-              <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 1')}</li>
-              <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 2')}</li>
-              <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 3')}</li>
-            </ul>
-          </div>
-          <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-amber-900/20 border border-amber-800/30' : 'bg-amber-50/50 border border-amber-100'}`}>
-            <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
-              <span>✦</span> {t('Points of Emphasis')}
+            <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-amber-900/20 border border-amber-800/30' : 'bg-amber-50/50 border border-amber-100'}`}>
+              <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                <span>✦</span> {t('Points of Emphasis')}
+              </div>
+              <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 1')}</li>
+                <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 2')}</li>
+                <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 3')}</li>
+              </ul>
             </div>
-            <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-              <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 1')}</li>
-              <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 2')}</li>
-              <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 3')}</li>
-            </ul>
           </div>
         </div>
-      </div>
 
-      <div className={`${cardClass} print-page`}>
-        <div className="print-header hidden">
-          <div className="print-header-name">{selectedPlayer}</div>
-          <div className="print-header-meta">{profile?.role || ''} · {category || ''} · {profile?.season || currentSeason || ''}</div>
-        </div>
-        <div className="flex items-center gap-2 mb-4 print-mb-sm">
-          <Ruler size={14} className="text-blue-500" />
-          <h3 className={`text-sm font-bold print-section-title ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Anthropometrics')}</h3>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 print-grid">
-          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-blue-50/50'}`}>
-            <div className={labelClass}>{t('Height')}</div>
-            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.height !== null ? `${latestAnthro.height}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
-            {renderDelta(latestAnthro.height, combineRef?.height, ' cm')}
+        <div className="mt-5 print-anthro-section">
+          <div className="flex items-center gap-2 mb-3 print-mb-sm">
+            <Ruler size={14} className="text-blue-500" />
+            <h3 className={`text-sm font-bold print-section-title ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Anthropometrics')}</h3>
           </div>
-          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-indigo-50/50'}`}>
-            <div className={labelClass}>{t('Projected Height')} (KR)</div>
-            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{(() => { const ph = getProjectedHeight(selectedPlayer, profiles, sessions); return ph !== null ? `${ph}` : '—'; })()}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
-            {profile?.midParentalHeight && <div className={subValueClass}>MPH: {profile.midParentalHeight} cm</div>}
-          </div>
-          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-green-50/50'}`}>
-            <div className={labelClass}>{t('Weight')}</div>
-            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.weight !== null ? `${latestAnthro.weight}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">kg</span></div>
-            {renderDelta(latestAnthro.weight, combineRef?.weight, ' kg')}
-          </div>
-          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-purple-50/50'}`}>
-            <div className={labelClass}>{t('Wingspan')}</div>
-            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.wingspan !== null ? `${latestAnthro.wingspan}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
-            {latestAnthro.height && latestAnthro.wingspan && (
-              <div className={subValueClass}>+{Math.round((latestAnthro.wingspan - latestAnthro.height) * 10) / 10} vs H</div>
-            )}
-            {renderDelta(latestAnthro.wingspan, combineRef?.wingspan, ' cm')}
-          </div>
-          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-cyan-50/50'}`}>
-            <div className={labelClass}>{t('Standing Reach')}</div>
-            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.standingReach !== null ? `${latestAnthro.standingReach}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
-            {(() => { const pr = getProjectedReach(selectedPlayer, profiles, sessions); return pr ? <div className={subValueClass}>{t('Proj')}: {pr} cm</div> : null; })()}
-            {renderDelta(latestAnthro.standingReach, combineRef?.standingReach, ' cm')}
-          </div>
-          <div className={`rounded-lg p-3 print-inner print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-red-50/50'}`}>
-            <div className={labelClass}>{t('Body Fat')}</div>
-            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.bodyFat !== null ? `${latestAnthro.bodyFat}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">%</span></div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 print-grid-tight">
+            <div className={`rounded-lg p-3 print-inner-sm print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-blue-50/50'}`}>
+              <div className={labelClass}>{t('Height')}</div>
+              <div className={`text-lg font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.height !== null ? `${latestAnthro.height}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
+              {renderDelta(latestAnthro.height, combineRef?.height, ' cm')}
+            </div>
+            <div className={`rounded-lg p-3 print-inner-sm print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-indigo-50/50'}`}>
+              <div className={labelClass}>{t('Projected Height')} (KR)</div>
+              <div className={`text-lg font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{(() => { const ph = getProjectedHeight(selectedPlayer, profiles, sessions); return ph !== null ? `${ph}` : '—'; })()}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
+              {profile?.midParentalHeight && <div className={subValueClass}>MPH: {profile.midParentalHeight} cm</div>}
+            </div>
+            <div className={`rounded-lg p-3 print-inner-sm print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-green-50/50'}`}>
+              <div className={labelClass}>{t('Weight')}</div>
+              <div className={`text-lg font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.weight !== null ? `${latestAnthro.weight}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">kg</span></div>
+              {renderDelta(latestAnthro.weight, combineRef?.weight, ' kg')}
+            </div>
+            <div className={`rounded-lg p-3 print-inner-sm print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-purple-50/50'}`}>
+              <div className={labelClass}>{t('Wingspan')}</div>
+              <div className={`text-lg font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.wingspan !== null ? `${latestAnthro.wingspan}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
+              {latestAnthro.height && latestAnthro.wingspan && (
+                <div className={subValueClass}>+{Math.round((latestAnthro.wingspan - latestAnthro.height) * 10) / 10} vs H</div>
+              )}
+              {renderDelta(latestAnthro.wingspan, combineRef?.wingspan, ' cm')}
+            </div>
+            <div className={`rounded-lg p-3 print-inner-sm print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-cyan-50/50'}`}>
+              <div className={labelClass}>{t('Standing Reach')}</div>
+              <div className={`text-lg font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.standingReach !== null ? `${latestAnthro.standingReach}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
+              {(() => { const pr = getProjectedReach(selectedPlayer, profiles, sessions); return pr ? <div className={subValueClass}>{t('Proj')}: {pr} cm</div> : null; })()}
+              {renderDelta(latestAnthro.standingReach, combineRef?.standingReach, ' cm')}
+            </div>
+            <div className={`rounded-lg p-3 print-inner-sm print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-red-50/50'}`}>
+              <div className={labelClass}>{t('Body Fat')}</div>
+              <div className={`text-lg font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.bodyFat !== null ? `${latestAnthro.bodyFat}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">%</span></div>
+            </div>
           </div>
         </div>
       </div>
