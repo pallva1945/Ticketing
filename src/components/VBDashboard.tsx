@@ -2727,6 +2727,7 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
   };
 
   const categoryKeywords: Record<string, string> = { u15: 'U15', u17: 'U17', u19: 'U19', dy: 'DY' };
+  const roleAliases: Record<string, string> = { '3nd': '3nD', '3&d': '3nD', '3d': '3nD', playmaker: 'Playmaker', pm: 'Playmaker', center: 'Center', c: 'Center' };
 
   const parseCompoundQuery = (raw: string): { nameTokens: string[]; year: number | null; month: number | null; day: number | null; role: string | null; category: string | null } => {
     const result = { nameTokens: [] as string[], year: null as number | null, month: null as number | null, day: null as number | null, role: null as string | null, category: null as string | null };
@@ -2775,8 +2776,14 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
       const lower = token.toLowerCase();
 
       const catMatch = categoryKeywords[lower];
-      if (catMatch && allCategories.includes(catMatch)) {
+      if (catMatch) {
         result.category = catMatch;
+        continue;
+      }
+
+      const aliasMatch = roleAliases[lower];
+      if (aliasMatch) {
+        result.role = aliasMatch;
         continue;
       }
 
@@ -2855,9 +2862,14 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
       items.push({ type: 'category', label: categoryKeywords[k], value: categoryKeywords[k], sortKey: -2 });
     });
 
-    allRoles.filter(r => r.toLowerCase().includes(q)).forEach(r => {
-      items.push({ type: 'role', label: r, value: r, sortKey: -1 });
-    });
+    const matchedRoleFromAlias = roleAliases[q];
+    if (matchedRoleFromAlias) {
+      items.push({ type: 'role', label: matchedRoleFromAlias, value: matchedRoleFromAlias, sortKey: -1 });
+    } else {
+      allRoles.filter(r => r.toLowerCase().includes(q)).forEach(r => {
+        items.push({ type: 'role', label: r, value: r, sortKey: -1 });
+      });
+    }
 
     players.filter(p => p.toLowerCase().includes(q)).slice(0, 5).forEach(p => {
       items.push({ type: 'player', label: p, value: p, sortKey: 0 });
