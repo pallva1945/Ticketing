@@ -58,10 +58,14 @@
           break-after: auto;
         }
         .print-page,
-        .print-page * {
+        .print-page *:not(img) {
           background-color: white !important;
           color: #111827 !important;
           border-color: #d1d5db !important;
+        }
+        .print-page img.print-logo {
+          display: inline-block !important;
+          visibility: visible !important;
         }
         .print-page .print-stat-card {
           background-color: #f9fafb !important;
