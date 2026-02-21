@@ -2096,26 +2096,22 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
             [t('Game')]: Math.round(loadGroupMap[k].game),
           }));
 
+          const isDayOff = (s: typeof ps[0]) => (s.practiceLoad || 0) === 0 && (s.vitaminsLoad || 0) === 0 && (s.weightsLoad || 0) === 0 && (s.gameLoad || 0) === 0 && (!s.injured || s.injured === 0) && (!s.nationalTeam || s.nationalTeam === 0);
           const availabilityMap: Record<string, { daysOff: number; injuryDays: number }> = {};
           if (loadWeeklyBuckets) {
             loadWeeklyBuckets.forEach(({ week, sessions: ws }) => {
               const key = `W${week}`;
-              const totalDays = getWeekDays(week);
-              const uniqueDates = new Set(ws.map(s => s.date));
-              const activeDays = uniqueDates.size;
+              const daysOffDates = new Set(ws.filter(isDayOff).map(s => s.date));
               const injuryDates = new Set(ws.filter(s => s.injured && s.injured > 0).map(s => s.date));
-              availabilityMap[key] = { daysOff: Math.max(0, totalDays - activeDays), injuryDays: injuryDates.size };
+              availabilityMap[key] = { daysOff: daysOffDates.size, injuryDays: injuryDates.size };
             });
           } else {
             const playerMonths = [...new Set(ps.map(s => s.date.substring(0, 7)))].sort();
             playerMonths.forEach(month => {
               const monthSessions = ps.filter(s => s.date.substring(0, 7) === month);
-              const [y, m] = month.split('-').map(Number);
-              const daysInMonth = new Date(y, m, 0).getDate();
-              const uniqueDates = new Set(monthSessions.map(s => s.date));
-              const activeDays = uniqueDates.size;
+              const daysOffDates = new Set(monthSessions.filter(isDayOff).map(s => s.date));
               const injuryDates = new Set(monthSessions.filter(s => s.injured && s.injured > 0).map(s => s.date));
-              availabilityMap[month] = { daysOff: Math.max(0, daysInMonth - activeDays), injuryDays: injuryDates.size };
+              availabilityMap[month] = { daysOff: daysOffDates.size, injuryDays: injuryDates.size };
             });
           }
           const availSortedKeys = Object.keys(availabilityMap).sort((a, b) => a.localeCompare(b));
