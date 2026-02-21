@@ -2826,18 +2826,40 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
     return map;
   }, [sessions]);
 
+  const findSeasonsForPeriod = (year: number | null, month: number | null, day: number | null): Set<string> => {
+    const result = new Set<string>();
+    if (year === null) return result;
+    if (month !== null && day !== null) {
+      const s = getSeason(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
+      if (s) result.add(s);
+    } else if (month !== null) {
+      const daysInMonth = new Date(year, month, 0).getDate();
+      for (let d = 1; d <= daysInMonth; d += 5) {
+        const s = getSeason(`${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+        if (s) result.add(s);
+      }
+      const s = getSeason(`${year}-${String(month).padStart(2, '0')}-${String(daysInMonth).padStart(2, '0')}`);
+      if (s) result.add(s);
+    } else {
+      for (let m = 1; m <= 12; m++) {
+        const s = getSeason(`${year}-${String(m).padStart(2, '0')}-15`);
+        if (s) result.add(s);
+      }
+    }
+    return result;
+  };
+
   const getMatchingPlayers = (parsed: ReturnType<typeof parseCompoundQuery>): string[] => {
-    const searchSeason = parsed.year !== null && parsed.month !== null
-      ? getSeason(`${parsed.year}-${String(parsed.month).padStart(2, '0')}-15`)
-      : parsed.year !== null
-      ? getSeason(`${parsed.year}-01-15`) || getSeason(`${parsed.year}-09-15`)
-      : null;
+    const searchSeasons = findSeasonsForPeriod(parsed.year, parsed.month, parsed.day);
 
     return players.filter(p => {
       if (parsed.role && getPlayerPosition(p, profiles).toLowerCase() !== parsed.role.toLowerCase()) return false;
       if (parsed.category && getPlayerCategory(p, profiles) !== parsed.category) return false;
       if (parsed.nameTokens.length > 0 && !parsed.nameTokens.every(nt => p.toLowerCase().includes(nt))) return false;
-      if (searchSeason && (!getPlayerSeasons[p] || !getPlayerSeasons[p].has(searchSeason))) return false;
+      if (searchSeasons.size > 0) {
+        const playerS = getPlayerSeasons[p];
+        if (!playerS || ![...searchSeasons].some(s => playerS.has(s))) return false;
+      }
       return true;
     });
   };
