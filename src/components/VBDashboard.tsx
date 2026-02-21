@@ -1539,18 +1539,11 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
   const renderDelta = (val: number | null, ref: number | undefined, unit: string, lowerIsBetter = false) => {
     if (val === null || ref === undefined) return null;
     const delta = Math.round((val - ref) * 10) / 10;
-    const isGood = delta === 0 ? true : lowerIsBetter ? delta < 0 : delta > 0;
-    const color = delta === 0 ? (isDark ? 'text-gray-400' : 'text-gray-500') : isGood ? 'text-emerald-500' : 'text-red-400';
+    if (delta === 0) return <div className={subValueClass}>{combineLabel}: {ref}{unit}</div>;
+    const isGood = lowerIsBetter ? delta < 0 : delta > 0;
+    const color = isGood ? 'text-emerald-500' : 'text-red-400';
     const sign = delta > 0 ? '+' : '';
-    const arrow = delta === 0 ? '=' : isGood ? '▲' : '▼';
-    return (
-      <div className={`mt-1.5 pt-1.5 border-t ${isDark ? 'border-gray-700/50' : 'border-gray-200/60'}`}>
-        <div className={`text-[9px] font-medium ${color} flex items-center justify-center gap-1`}>
-          <span>{arrow} {sign}{delta}{unit}</span>
-        </div>
-        <div className={`text-[8px] ${isDark ? 'text-gray-500' : 'text-gray-400'} text-center`}>{combineLabel}: {ref}{unit}</div>
-      </div>
-    );
+    return <div className={`text-[10px] ${color}`}>{sign}{delta}{unit} vs {combineLabel}</div>;
   };
 
   const latestAnthro = {
