@@ -1692,38 +1692,46 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-4 mt-4 print-assessment-row">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 flex-1">
-            <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-emerald-900/20 border border-emerald-800/30' : 'bg-emerald-50/50 border border-emerald-100'}`}>
-              <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                <span>✦</span> {t('Strengths')}
-              </div>
-              <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 1')}</li>
-                <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 2')}</li>
-                <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 3')}</li>
-              </ul>
+        <div className="grid grid-cols-2 gap-3 mt-4 print-assessment-grid">
+          <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-emerald-900/20 border border-emerald-800/30' : 'bg-emerald-50/50 border border-emerald-100'}`}>
+            <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+              <span>✦</span> {t('Strengths')}
             </div>
-            <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-red-900/20 border border-red-800/30' : 'bg-red-50/50 border border-red-100'}`}>
-              <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-red-400' : 'text-red-600'}`}>
-                <span>✦</span> {t('Weaknesses')}
-              </div>
-              <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 1')}</li>
-                <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 2')}</li>
-                <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 3')}</li>
-              </ul>
+            <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 1')}</li>
+              <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 2')}</li>
+              <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 3')}</li>
+            </ul>
+          </div>
+          <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-red-900/20 border border-red-800/30' : 'bg-red-50/50 border border-red-100'}`}>
+            <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+              <span>✦</span> {t('Weaknesses')}
             </div>
-            <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-amber-900/20 border border-amber-800/30' : 'bg-amber-50/50 border border-amber-100'}`}>
-              <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
-                <span>✦</span> {t('Points of Emphasis')}
-              </div>
-              <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 1')}</li>
-                <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 2')}</li>
-                <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 3')}</li>
-              </ul>
+            <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 1')}</li>
+              <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 2')}</li>
+              <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 3')}</li>
+            </ul>
+          </div>
+          <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-amber-900/20 border border-amber-800/30' : 'bg-amber-50/50 border border-amber-100'}`}>
+            <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+              <span>✦</span> {t('Points of Emphasis')}
             </div>
+            <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 1')}</li>
+              <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 2')}</li>
+              <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 3')}</li>
+            </ul>
+          </div>
+          <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-sky-900/20 border border-sky-800/30' : 'bg-sky-50/50 border border-sky-100'}`}>
+            <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
+              <span>✦</span> {t('Health Report')}
+            </div>
+            <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              <li className="flex items-start gap-1.5"><span className="text-sky-500 mt-0.5">•</span>{t('Health placeholder 1')}</li>
+              <li className="flex items-start gap-1.5"><span className="text-sky-500 mt-0.5">•</span>{t('Health placeholder 2')}</li>
+              <li className="flex items-start gap-1.5"><span className="text-sky-500 mt-0.5">•</span>{t('Health placeholder 3')}</li>
+            </ul>
           </div>
         </div>
 
@@ -1874,82 +1882,74 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           const gridStroke = isDark ? '#374151' : '#e5e7eb';
 
           return (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-5">
-              {speedData.length > 0 && (
-                <div className={chartBox}>
-                  <h4 className={chartTitle}>{t('Speed & Agility')}</h4>
-                  <div className="h-44 print-chart">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={speedData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                        <XAxis dataKey="date" tick={tickStyle} />
-                        <YAxis tick={tickStyle} domain={['dataMin - 0.5', 'dataMax + 0.5']} />
-                        <Tooltip contentStyle={tipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 10 }} />
-                        <Line type="monotone" dataKey={t('Sprint')} stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                        <Line type="monotone" dataKey={t('Cone Drill')} stroke="#ec4899" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
+            <div className="grid grid-cols-2 gap-4 mt-4 print-charts-grid flex-1">
+              <div className={`${chartBox} flex flex-col`}>
+                <h4 className={chartTitle}>{t('Speed & Agility')}</h4>
+                <div className="flex-1 min-h-[160px] print-chart-fill">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={speedData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                      <XAxis dataKey="date" tick={tickStyle} />
+                      <YAxis tick={tickStyle} domain={['dataMin - 0.5', 'dataMax + 0.5']} />
+                      <Tooltip contentStyle={tipStyle} />
+                      <Legend wrapperStyle={{ fontSize: 10 }} />
+                      <Line type="monotone" dataKey={t('Sprint')} stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                      <Line type="monotone" dataKey={t('Cone Drill')} stroke="#ec4899" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
-              )}
+              </div>
 
-              {verticalsData.length > 0 && (
-                <div className={chartBox}>
-                  <h4 className={chartTitle}>{t('Verticals')}</h4>
-                  <div className="h-44 print-chart">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={verticalsData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                        <XAxis dataKey="date" tick={tickStyle} />
-                        <YAxis tick={tickStyle} domain={['dataMin - 2', 'dataMax + 2']} />
-                        <Tooltip contentStyle={tipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 10 }} />
-                        <Line type="monotone" dataKey={t('Pure Vertical')} stroke="#06b6d4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                        <Line type="monotone" dataKey={t('No-Step Vertical')} stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} connectNulls />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
+              <div className={`${chartBox} flex flex-col`}>
+                <h4 className={chartTitle}>{t('Verticals')}</h4>
+                <div className="flex-1 min-h-[160px] print-chart-fill">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={verticalsData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                      <XAxis dataKey="date" tick={tickStyle} />
+                      <YAxis tick={tickStyle} domain={['dataMin - 2', 'dataMax + 2']} />
+                      <Tooltip contentStyle={tipStyle} />
+                      <Legend wrapperStyle={{ fontSize: 10 }} />
+                      <Line type="monotone" dataKey={t('Pure Vertical')} stroke="#06b6d4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                      <Line type="monotone" dataKey={t('No-Step Vertical')} stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
-              )}
+              </div>
 
-              {shotVolumeData.length > 0 && (
-                <div className={chartBox}>
-                  <h4 className={chartTitle}>{t('Shooting Volume')}</h4>
-                  <div className="h-44 print-chart">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={shotVolumeData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                        <XAxis dataKey="date" tick={tickStyle} />
-                        <YAxis yAxisId="left" tick={tickStyle} />
-                        <YAxis yAxisId="right" orientation="right" tick={tickStyle} domain={[0, 100]} />
-                        <Tooltip contentStyle={tipStyle} />
-                        <Legend wrapperStyle={{ fontSize: 10 }} />
-                        <Bar yAxisId="left" dataKey={t('Shots Taken')} fill="#3b82f6" opacity={0.7} />
-                        <Bar yAxisId="left" dataKey={t('Shots Made')} fill="#10b981" opacity={0.7} />
-                        <Line yAxisId="right" type="monotone" dataKey={t('3PT %')} stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  </div>
+              <div className={`${chartBox} flex flex-col`}>
+                <h4 className={chartTitle}>{t('Shooting Volume')}</h4>
+                <div className="flex-1 min-h-[160px] print-chart-fill">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={shotVolumeData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                      <XAxis dataKey="date" tick={tickStyle} />
+                      <YAxis yAxisId="left" tick={tickStyle} />
+                      <YAxis yAxisId="right" orientation="right" tick={tickStyle} domain={[0, 100]} />
+                      <Tooltip contentStyle={tipStyle} />
+                      <Legend wrapperStyle={{ fontSize: 10 }} />
+                      <Bar yAxisId="left" dataKey={t('Shots Taken')} fill="#3b82f6" opacity={0.7} />
+                      <Bar yAxisId="left" dataKey={t('Shots Made')} fill="#10b981" opacity={0.7} />
+                      <Line yAxisId="right" type="monotone" dataKey={t('3PT %')} stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
                 </div>
-              )}
+              </div>
 
-              {deadliftData.length > 0 && (
-                <div className={chartBox}>
-                  <h4 className={chartTitle}>{t('Deadlift')}</h4>
-                  <div className="h-44 print-chart">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={deadliftData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
-                        <XAxis dataKey="date" tick={tickStyle} />
-                        <YAxis tick={tickStyle} domain={['dataMin - 5', 'dataMax + 5']} />
-                        <Tooltip contentStyle={tipStyle} />
-                        <Bar dataKey={t('Deadlift')} fill="#10b981" opacity={0.7} radius={[4, 4, 0, 0]} />
-                      </ComposedChart>
-                    </ResponsiveContainer>
-                  </div>
+              <div className={`${chartBox} flex flex-col`}>
+                <h4 className={chartTitle}>{t('Deadlift')}</h4>
+                <div className="flex-1 min-h-[160px] print-chart-fill">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={deadliftData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                      <XAxis dataKey="date" tick={tickStyle} />
+                      <YAxis tick={tickStyle} domain={['dataMin - 5', 'dataMax + 5']} />
+                      <Tooltip contentStyle={tipStyle} />
+                      <Bar dataKey={t('Deadlift')} fill="#10b981" opacity={0.7} radius={[4, 4, 0, 0]} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
                 </div>
-              )}
+              </div>
             </div>
           );
         })()}

@@ -143,6 +143,27 @@
         .print-page .print-anthro-section .print-section-title {
           font-size: 11px !important;
         }
+        .print-page .print-assessment-grid {
+          grid-template-columns: 1fr 1fr !important;
+          gap: 5px !important;
+          margin-top: 5px !important;
+        }
+        .print-page .print-charts-grid {
+          grid-template-columns: 1fr 1fr !important;
+          grid-template-rows: 1fr 1fr !important;
+          gap: 5px !important;
+          margin-top: 4px !important;
+          flex: 1 !important;
+        }
+        .print-page .print-charts-grid > div {
+          display: flex !important;
+          flex-direction: column !important;
+        }
+        .print-page .print-chart-fill {
+          flex: 1 !important;
+          min-height: 0 !important;
+          height: auto !important;
+        }
       }
     </style>
   </head>
