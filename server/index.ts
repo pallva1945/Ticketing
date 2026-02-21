@@ -8,7 +8,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV, fetchVBDataFromBigQuery, fetchVBProfilesFromBigQuery } from "../src/services/bigQueryService";
+import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV, fetchVBDataFromBigQuery, fetchVBProfilesFromBigQuery, fetchVBProspectsFromBigQuery } from "../src/services/bigQueryService";
 import { initDatabase, upsertUser, getUserByEmail, getUserPermissions, createAccessRequest, getAccessRequestByEmail } from "./db.js";
 import { registerAdminRoutes } from "./adminRoutes.js";
 import crypto from "crypto";
@@ -996,6 +996,29 @@ app.get("/api/vb-profiles", async (req, res) => {
     const result = await fetchVBProfilesFromBigQuery();
     if (result.success) {
       vbProfileCache = { data: result.data, timestamp: now };
+      res.json({ success: true, data: result.data, cached: false });
+    } else {
+      res.json(result);
+    }
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+let vbProspectsCache: { data: any; timestamp: number } | null = null;
+
+app.get("/api/vb-prospects", async (req, res) => {
+  try {
+    const forceRefresh = req.query.refresh === 'true';
+    const now = Date.now();
+
+    if (vbProspectsCache && !forceRefresh && (now - vbProspectsCache.timestamp) < VB_CACHE_TTL) {
+      return res.json({ success: true, data: vbProspectsCache.data, cached: true });
+    }
+
+    const result = await fetchVBProspectsFromBigQuery();
+    if (result.success) {
+      vbProspectsCache = { data: result.data, timestamp: now };
       res.json({ success: true, data: result.data, cached: false });
     } else {
       res.json(result);

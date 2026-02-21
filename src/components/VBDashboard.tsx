@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Calendar, CalendarDays, Pill, Gamepad2, CalendarOff, ArrowUpFromDot, Gauge, Printer, Trophy, Search } from 'lucide-react';
+import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Calendar, CalendarDays, Pill, Gamepad2, CalendarOff, ArrowUpFromDot, Gauge, Printer, Trophy, Search, Star, Eye, ExternalLink, MapPin, Globe, Video, ChevronUp } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, CartesianGrid, Legend, ReferenceLine, ReferenceArea, Cell, ComposedChart } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -54,7 +54,46 @@ interface PlayerProfile {
   revenueGenerated: number | null;
 }
 
-type TabId = 'overview' | 'performance' | 'gameperf' | 'player' | 'compare' | 'progression' | 'search';
+interface VBProspect {
+  name: string;
+  dob: string | null;
+  age: number | null;
+  height: number | null;
+  weight: number | null;
+  wingspan: number | null;
+  position: string | null;
+  secondaryPosition: string | null;
+  nationality: string | null;
+  secondNationality: string | null;
+  passport: string | null;
+  teamSchool: string | null;
+  language: string | null;
+  headshot: string | null;
+  video: string | null;
+  handlerName: string | null;
+  strength: number | null;
+  speed: number | null;
+  quickness: number | null;
+  motor: number | null;
+  stamina: number | null;
+  athleticismNotes: string | null;
+  dribbling: number | null;
+  passing: number | null;
+  finishing: number | null;
+  shooting: number | null;
+  defense: number | null;
+  basketballIQ: number | null;
+  skillsNotes: string | null;
+  likeliness: number | null;
+  workEthic: number | null;
+  coachable: number | null;
+  teammate: number | null;
+  lifePersonality: number | null;
+  generalNotes: string | null;
+  timestamp: string | null;
+}
+
+type TabId = 'overview' | 'performance' | 'gameperf' | 'player' | 'compare' | 'progression' | 'search' | 'prospects';
 
 const METRIC_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
@@ -2321,6 +2360,333 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
   );
 }
 
+function RatingDots({ value, max = 5, color = 'orange' }: { value: number | null; max?: number; color?: string }) {
+  if (value == null) return <span className="text-gray-400 text-xs">—</span>;
+  const colorMap: Record<string, string> = {
+    orange: 'bg-orange-500',
+    blue: 'bg-blue-500',
+    green: 'bg-green-500',
+    purple: 'bg-purple-500',
+  };
+  const fillClass = colorMap[color] || 'bg-orange-500';
+  return (
+    <div className="flex gap-0.5">
+      {Array.from({ length: max }, (_, i) => (
+        <div key={i} className={`w-2.5 h-2.5 rounded-full ${i < value ? fillClass : 'bg-gray-300 dark:bg-gray-600'}`} />
+      ))}
+    </div>
+  );
+}
+
+function ProspectsTab({ prospects }: { prospects: VBProspect[] }) {
+  const { t } = useLanguage();
+  const isDark = useIsDark();
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<'name' | 'age' | 'height' | 'likeliness'>('likeliness');
+  const [filterPosition, setFilterPosition] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const positions = useMemo(() => {
+    const pos = new Set<string>();
+    prospects.forEach(p => { if (p.position) pos.add(p.position); });
+    return Array.from(pos).sort();
+  }, [prospects]);
+
+  const sorted = useMemo(() => {
+    let filtered = [...prospects];
+    if (filterPosition !== 'all') filtered = filtered.filter(p => p.position === filterPosition);
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(q) ||
+        (p.nationality && p.nationality.toLowerCase().includes(q)) ||
+        (p.teamSchool && p.teamSchool.toLowerCase().includes(q)) ||
+        (p.handlerName && p.handlerName.toLowerCase().includes(q))
+      );
+    }
+    filtered.sort((a, b) => {
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'age') return (a.age ?? 99) - (b.age ?? 99);
+      if (sortBy === 'height') return (b.height ?? 0) - (a.height ?? 0);
+      if (sortBy === 'likeliness') return (b.likeliness ?? 0) - (a.likeliness ?? 0);
+      return 0;
+    });
+    return filtered;
+  }, [prospects, sortBy, filterPosition, searchQuery]);
+
+  const avgRating = (p: VBProspect) => {
+    const vals = [p.strength, p.speed, p.quickness, p.motor, p.stamina, p.dribbling, p.passing, p.finishing, p.shooting, p.defense, p.basketballIQ].filter(v => v != null) as number[];
+    return vals.length > 0 ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : '—';
+  };
+
+  const card = `rounded-xl border ${isDark ? 'bg-[#111] border-gray-800' : 'bg-white border-gray-100'} shadow-sm`;
+  const subtext = isDark ? 'text-gray-400' : 'text-gray-500';
+  const label = `text-[10px] uppercase tracking-wide font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`;
+
+  if (prospects.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <Star size={40} className={`mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
+        <p className={`text-sm ${subtext}`}>{t('No prospects data available')}</p>
+      </div>
+    );
+  }
+
+  const getGDriveThumb = (url: string | null) => {
+    if (!url) return null;
+    const match = url.match(/id=([a-zA-Z0-9_-]+)/);
+    if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w200`;
+    return null;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search size={14} className={`absolute left-3 top-1/2 -translate-y-1/2 ${subtext}`} />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder={t('Search prospects...')}
+            className={`w-full pl-9 pr-3 py-2 rounded-lg text-sm border ${isDark ? 'bg-[#1a1a1a] border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'}`}
+          />
+        </div>
+        <select
+          value={filterPosition}
+          onChange={e => setFilterPosition(e.target.value)}
+          className={`px-3 py-2 rounded-lg text-sm border ${isDark ? 'bg-[#1a1a1a] border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+        >
+          <option value="all">{t('All Positions')}</option>
+          {positions.map(p => <option key={p} value={p}>{p}</option>)}
+        </select>
+        <select
+          value={sortBy}
+          onChange={e => setSortBy(e.target.value as any)}
+          className={`px-3 py-2 rounded-lg text-sm border ${isDark ? 'bg-[#1a1a1a] border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-900'}`}
+        >
+          <option value="likeliness">{t('Sort by Likeliness')}</option>
+          <option value="name">{t('Sort by Name')}</option>
+          <option value="age">{t('Sort by Age')}</option>
+          <option value="height">{t('Sort by Height')}</option>
+        </select>
+      </div>
+
+      <div className={`text-xs ${subtext}`}>{sorted.length} {t('prospects')}</div>
+
+      <div className="grid gap-4">
+        {sorted.map((p, idx) => {
+          const isExpanded = expandedId === idx;
+          const thumb = getGDriveThumb(p.headshot);
+          const athleticRatings = [
+            { label: t('Strength'), value: p.strength },
+            { label: t('Speed'), value: p.speed },
+            { label: t('Quickness'), value: p.quickness },
+            { label: t('Motor'), value: p.motor },
+            { label: t('Stamina'), value: p.stamina },
+          ];
+          const skillRatings = [
+            { label: t('Dribbling'), value: p.dribbling },
+            { label: t('Passing'), value: p.passing },
+            { label: t('Finishing'), value: p.finishing },
+            { label: t('Shooting'), value: p.shooting },
+            { label: t('Defense'), value: p.defense },
+            { label: t('Basketball IQ'), value: p.basketballIQ },
+          ];
+          const characterRatings = [
+            { label: t('Work Ethic'), value: p.workEthic },
+            { label: t('Coachable'), value: p.coachable },
+            { label: t('Teammate'), value: p.teammate },
+            { label: t('Life/Personality'), value: p.lifePersonality },
+          ];
+
+          return (
+            <div key={idx} className={card}>
+              <div
+                className="p-4 cursor-pointer"
+                onClick={() => setExpandedId(isExpanded ? null : idx)}
+              >
+                <div className="flex items-start gap-4">
+                  {thumb ? (
+                    <img src={thumb} alt={p.name} className="w-14 h-14 rounded-full object-cover border-2 border-orange-500/30 flex-shrink-0" />
+                  ) : (
+                    <div className={`w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0 ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-gray-100 text-gray-500'}`}>
+                      {p.name.charAt(0)}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className={`font-bold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{p.name}</h3>
+                      {p.likeliness != null && (
+                        <div className="flex items-center gap-0.5">
+                          {Array.from({ length: 5 }, (_, i) => (
+                            <Star key={i} size={11} className={i < p.likeliness! ? 'text-orange-500 fill-orange-500' : `${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className={`flex items-center gap-3 text-xs mt-1 ${subtext}`}>
+                      {p.position && <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-600 dark:text-orange-400 font-medium">{p.position}</span>}
+                      {p.age != null && <span>{p.age} {t('yrs')}</span>}
+                      {p.height != null && <span>{p.height} cm</span>}
+                      {p.nationality && <span className="flex items-center gap-1"><Globe size={10} />{p.nationality}</span>}
+                    </div>
+                    <div className={`flex items-center gap-4 text-xs mt-1.5 ${subtext}`}>
+                      {p.teamSchool && <span className="flex items-center gap-1"><MapPin size={10} />{p.teamSchool}</span>}
+                      {p.handlerName && <span>{t('Handler')}: {p.handlerName}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="text-center">
+                      <div className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{avgRating(p)}</div>
+                      <div className={`text-[9px] ${subtext}`}>{t('AVG')}</div>
+                    </div>
+                    {isExpanded ? <ChevronUp size={16} className={subtext} /> : <ChevronDown size={16} className={subtext} />}
+                  </div>
+                </div>
+              </div>
+
+              {isExpanded && (
+                <div className={`border-t px-4 py-4 space-y-5 ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    {p.dob && <div><span className={label}>{t('DOB')}</span><div className={`mt-0.5 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.dob.split('-').reverse().join('/')}</div></div>}
+                    {p.weight != null && <div><span className={label}>{t('Weight')}</span><div className={`mt-0.5 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.weight} lbs</div></div>}
+                    {p.wingspan != null && <div><span className={label}>{t('Wingspan')}</span><div className={`mt-0.5 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.wingspan} cm</div></div>}
+                    {p.secondNationality && <div><span className={label}>{t('2nd Nationality')}</span><div className={`mt-0.5 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.secondNationality}</div></div>}
+                    {p.language && <div><span className={label}>{t('Language')}</span><div className={`mt-0.5 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.language}</div></div>}
+                    {p.secondaryPosition && <div><span className={label}>{t('2nd Position')}</span><div className={`mt-0.5 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.secondaryPosition}</div></div>}
+                  </div>
+
+                  <div>
+                    <h4 className={`text-xs font-bold mb-2 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{t('Athleticism')}</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {athleticRatings.map(r => (
+                        <div key={r.label} className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg ${isDark ? 'bg-[#1a1a1a]' : 'bg-gray-50'}`}>
+                          <span className={`text-xs ${subtext}`}>{r.label}</span>
+                          <RatingDots value={r.value} color="orange" />
+                        </div>
+                      ))}
+                    </div>
+                    {p.athleticismNotes && (
+                      <p className={`text-xs mt-2 leading-relaxed ${subtext}`}>{p.athleticismNotes}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <h4 className={`text-xs font-bold mb-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{t('Skills')}</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {skillRatings.map(r => (
+                        <div key={r.label} className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg ${isDark ? 'bg-[#1a1a1a]' : 'bg-gray-50'}`}>
+                          <span className={`text-xs ${subtext}`}>{r.label}</span>
+                          <RatingDots value={r.value} color="blue" />
+                        </div>
+                      ))}
+                    </div>
+                    {p.skillsNotes && (
+                      <p className={`text-xs mt-2 leading-relaxed ${subtext}`}>{p.skillsNotes}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <h4 className={`text-xs font-bold mb-2 ${isDark ? 'text-green-400' : 'text-green-600'}`}>{t('Character')}</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {characterRatings.map(r => (
+                        <div key={r.label} className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg ${isDark ? 'bg-[#1a1a1a]' : 'bg-gray-50'}`}>
+                          <span className={`text-xs ${subtext}`}>{r.label}</span>
+                          <RatingDots value={r.value} color="green" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {p.generalNotes && (
+                    <div>
+                      <h4 className={`text-xs font-bold mb-1 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>{t('General Notes')}</h4>
+                      <p className={`text-xs leading-relaxed ${subtext}`}>{p.generalNotes}</p>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-1">
+                    {p.video && (
+                      <a href={p.video} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 hover:bg-orange-500/20 transition-colors">
+                        <Video size={12} /> {t('Video')}
+                        <ExternalLink size={10} />
+                      </a>
+                    )}
+                    {p.passport && (
+                      <a href={p.passport} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 transition-colors">
+                        <Flag size={12} /> {t('Passport')}
+                        <ExternalLink size={10} />
+                      </a>
+                    )}
+                  </div>
+
+                  {p.timestamp && (
+                    <div className={`text-[10px] ${subtext} text-right`}>{t('Scouted')}: {p.timestamp.split('-').reverse().join('/')}</div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className={`${card} p-4`}>
+        <h3 className={`text-xs font-bold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Prospect Ratings Overview')}</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                <th className={`text-left py-2 pr-3 font-semibold ${subtext}`}>{t('Name')}</th>
+                <th className={`text-center py-2 px-1 font-semibold ${subtext}`}>{t('Pos')}</th>
+                <th className={`text-center py-2 px-1 font-semibold ${subtext}`}>{t('Age')}</th>
+                <th className={`text-center py-2 px-1 font-semibold ${subtext}`}>{t('Ht')}</th>
+                <th className={`text-center py-2 px-1 font-semibold text-orange-500`}>STR</th>
+                <th className={`text-center py-2 px-1 font-semibold text-orange-500`}>SPD</th>
+                <th className={`text-center py-2 px-1 font-semibold text-blue-500`}>DRB</th>
+                <th className={`text-center py-2 px-1 font-semibold text-blue-500`}>PAS</th>
+                <th className={`text-center py-2 px-1 font-semibold text-blue-500`}>FIN</th>
+                <th className={`text-center py-2 px-1 font-semibold text-blue-500`}>SHT</th>
+                <th className={`text-center py-2 px-1 font-semibold text-blue-500`}>DEF</th>
+                <th className={`text-center py-2 px-1 font-semibold text-blue-500`}>IQ</th>
+                <th className={`text-center py-2 px-1 font-semibold text-green-500`}>WE</th>
+                <th className={`text-center py-2 px-1 font-semibold text-purple-500`}><Star size={10} className="inline" /></th>
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map((p, idx) => {
+                const ratingCell = (val: number | null, color: string) => {
+                  if (val == null) return <td className="text-center py-1.5 px-1 text-gray-400">—</td>;
+                  const bg = val >= 4 ? (color === 'orange' ? 'bg-orange-500/20 text-orange-600 dark:text-orange-400' : color === 'blue' ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400' : color === 'green' ? 'bg-green-500/20 text-green-600 dark:text-green-400' : 'bg-purple-500/20 text-purple-600 dark:text-purple-400') : val <= 2 ? 'bg-red-500/10 text-red-500' : '';
+                  return <td className={`text-center py-1.5 px-1 ${bg} rounded`}>{val}</td>;
+                };
+                return (
+                  <tr key={idx} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-50'} hover:${isDark ? 'bg-gray-800/30' : 'bg-gray-50'}`}>
+                    <td className={`py-1.5 pr-3 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.name}</td>
+                    <td className="text-center py-1.5 px-1">{p.position || '—'}</td>
+                    <td className="text-center py-1.5 px-1">{p.age ?? '—'}</td>
+                    <td className="text-center py-1.5 px-1">{p.height ?? '—'}</td>
+                    {ratingCell(p.strength, 'orange')}
+                    {ratingCell(p.speed, 'orange')}
+                    {ratingCell(p.dribbling, 'blue')}
+                    {ratingCell(p.passing, 'blue')}
+                    {ratingCell(p.finishing, 'blue')}
+                    {ratingCell(p.shooting, 'blue')}
+                    {ratingCell(p.defense, 'blue')}
+                    {ratingCell(p.basketballIQ, 'blue')}
+                    {ratingCell(p.workEthic, 'green')}
+                    {ratingCell(p.likeliness, 'purple')}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
@@ -3542,6 +3908,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [sessions, setSessions] = useState<VBSession[]>([]);
   const [players, setPlayers] = useState<string[]>([]);
   const [profiles, setProfiles] = useState<PlayerProfile[]>([]);
+  const [prospects, setProspects] = useState<VBProspect[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
@@ -3553,12 +3920,14 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       if (refresh) setRefreshing(true);
       else setLoading(true);
       
-      const [dataRes, profileRes] = await Promise.all([
+      const [dataRes, profileRes, prospectsRes] = await Promise.all([
         fetch(`/api/vb-data${refresh ? '?refresh=true' : ''}`),
-        fetch(`/api/vb-profiles${refresh ? '?refresh=true' : ''}`)
+        fetch(`/api/vb-profiles${refresh ? '?refresh=true' : ''}`),
+        fetch(`/api/vb-prospects${refresh ? '?refresh=true' : ''}`)
       ]);
       const json = await dataRes.json();
       const profileJson = await profileRes.json();
+      const prospectsJson = await prospectsRes.json();
       
       if (json.success) {
         setSessions(json.data);
@@ -3569,6 +3938,9 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       }
       if (profileJson.success) {
         setProfiles(profileJson.data);
+      }
+      if (prospectsJson.success) {
+        setProspects(prospectsJson.data);
       }
     } catch (e: any) {
       setError(e.message);
@@ -3657,6 +4029,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     { id: 'compare', label: t('Compare'), icon: GitCompare },
     { id: 'progression', label: t('Progression'), icon: TrendingUp },
     { id: 'search', label: t('Search'), icon: Search },
+    { id: 'prospects', label: t('Prospects'), icon: Star },
   ];
 
   if (loading) {
@@ -3738,6 +4111,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             {activeTab === 'compare' && <CompareTab sessions={normalizedSessions} players={players} profiles={profiles} />}
             {activeTab === 'progression' && <ProgressionTab sessions={normalizedSessions} players={players} profiles={profiles} />}
             {activeTab === 'search' && <SearchTab sessions={normalizedSessions} players={players} profiles={profiles} />}
+            {activeTab === 'prospects' && <ProspectsTab prospects={prospects} />}
           </>
         )}
       </main>

@@ -266,6 +266,114 @@ export async function fetchVBProfilesFromBigQuery(): Promise<{ success: boolean;
   }
 }
 
+const VB_PROSPECTS_TABLE = 'ticketing-migration.ticketing_migration.sg_prospects';
+
+export interface VBProspect {
+  name: string;
+  dob: string | null;
+  age: number | null;
+  height: number | null;
+  weight: number | null;
+  wingspan: number | null;
+  position: string | null;
+  secondaryPosition: string | null;
+  nationality: string | null;
+  secondNationality: string | null;
+  passport: string | null;
+  teamSchool: string | null;
+  language: string | null;
+  headshot: string | null;
+  video: string | null;
+  handlerName: string | null;
+  strength: number | null;
+  speed: number | null;
+  quickness: number | null;
+  motor: number | null;
+  stamina: number | null;
+  athleticismNotes: string | null;
+  dribbling: number | null;
+  passing: number | null;
+  finishing: number | null;
+  shooting: number | null;
+  defense: number | null;
+  basketballIQ: number | null;
+  skillsNotes: string | null;
+  likeliness: number | null;
+  workEthic: number | null;
+  coachable: number | null;
+  teammate: number | null;
+  lifePersonality: number | null;
+  generalNotes: string | null;
+  timestamp: string | null;
+}
+
+export async function fetchVBProspectsFromBigQuery(): Promise<{ success: boolean; data: VBProspect[] }> {
+  try {
+    const client = getBigQueryClient();
+    const query = `SELECT * FROM \`${VB_PROSPECTS_TABLE}\``;
+    const [rows] = await client.query({ query });
+
+    const prospects: VBProspect[] = rows.map((row: any) => {
+      const dobRaw = row.DOB?.value || row.DOB;
+      let dob: string | null = null;
+      let age: number | null = null;
+      if (dobRaw) {
+        const d = new Date(dobRaw);
+        if (!isNaN(d.getTime())) {
+          dob = d.toISOString().substring(0, 10);
+          const now = new Date();
+          age = Math.floor((now.getTime() - d.getTime()) / (365.25 * 86400000));
+        }
+      }
+      const tsRaw = row.Marca_temporal?.value || row.Marca_temporal;
+
+      return {
+        name: (row.Name || '').trim(),
+        dob,
+        age,
+        height: row.Height != null ? Number(row.Height) : null,
+        weight: row.Weight != null ? Number(row.Weight) : null,
+        wingspan: row.Wingspan != null ? Number(row.Wingspan) : null,
+        position: row.Position ? String(row.Position).trim() : null,
+        secondaryPosition: row.Secondary_Position && row.Secondary_Position !== 'NA' ? String(row.Secondary_Position).trim() : null,
+        nationality: row.Nationality ? String(row.Nationality).trim() : null,
+        secondNationality: row.Second_Nationalty && row.Second_Nationalty !== 'NA' ? String(row.Second_Nationalty).trim() : null,
+        passport: row.Passport || null,
+        teamSchool: row.Team_School ? String(row.Team_School).trim() : null,
+        language: row.Language ? String(row.Language).trim() : null,
+        headshot: row.Headshot || null,
+        video: row.Video || null,
+        handlerName: row.Handler_s_Name ? String(row.Handler_s_Name).trim() : null,
+        strength: row.Strength != null ? Number(row.Strength) : null,
+        speed: row.Speed != null ? Number(row.Speed) : null,
+        quickness: row.Quickness != null ? Number(row.Quickness) : null,
+        motor: row.Motor != null ? Number(row.Motor) : null,
+        stamina: row.Stamina != null ? Number(row.Stamina) : null,
+        athleticismNotes: row.Athleticism_notes || null,
+        dribbling: row.Dribbling != null ? Number(row.Dribbling) : null,
+        passing: row.Passing != null ? Number(row.Passing) : null,
+        finishing: row.Finishing != null ? Number(row.Finishing) : null,
+        shooting: row.Shooting != null ? Number(row.Shooting) : null,
+        defense: row.Defense != null ? Number(row.Defense) : null,
+        basketballIQ: row.Basketball_IQ != null ? Number(row.Basketball_IQ) : null,
+        skillsNotes: row.Skills_Notes || null,
+        likeliness: row.Likeliness != null ? Number(row.Likeliness) : null,
+        workEthic: row.Work_Ethic != null ? Number(row.Work_Ethic) : null,
+        coachable: row.Coachable != null ? Number(row.Coachable) : null,
+        teammate: row.Teammate != null ? Number(row.Teammate) : null,
+        lifePersonality: row.Life_Personality != null ? Number(row.Life_Personality) : null,
+        generalNotes: row.General_Notes || null,
+        timestamp: tsRaw ? new Date(tsRaw).toISOString().substring(0, 10) : null,
+      };
+    });
+
+    return { success: true, data: prospects };
+  } catch (error: any) {
+    console.error('VB Prospects BigQuery fetch error:', error.message);
+    return { success: false, data: [] };
+  }
+}
+
 export async function fetchVBDataFromBigQuery(): Promise<{ success: boolean; data: VBMergedSession[]; rawCount: number; mergedCount: number; players: string[] }> {
   try {
     const client = getBigQueryClient();
