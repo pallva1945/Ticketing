@@ -2692,25 +2692,15 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
   const [results, setResults] = useState<VBSession[]>([]);
   const [searched, setSearched] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [filterRole, setFilterRole] = useState<string>('all');
-  const [filterCategory, setFilterCategory] = useState<string>('all');
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const availableRoles = useMemo(() =>
-    [...new Set(players.map(p => getPlayerPosition(p, profiles)).filter(r => r))].sort(),
+  const allRoles = useMemo(() =>
+    [...new Set(players.map(p => getPlayerPosition(p, profiles)).filter(r => r))],
   [players, profiles]);
 
-  const availableCategories = useMemo(() =>
-    [...new Set(players.map(p => getPlayerCategory(p, profiles)).filter(c => c))].sort(),
+  const allCategories = useMemo(() =>
+    [...new Set(players.map(p => getPlayerCategory(p, profiles)).filter(c => c))],
   [players, profiles]);
-
-  const filteredPlayers = useMemo(() => {
-    return players.filter(p => {
-      if (filterRole !== 'all' && getPlayerPosition(p, profiles) !== filterRole) return false;
-      if (filterCategory !== 'all' && getPlayerCategory(p, profiles) !== filterCategory) return false;
-      return true;
-    });
-  }, [players, profiles, filterRole, filterCategory]);
 
   const allSeasons = useMemo(() => [...new Set(sessions.map(s => getSeason(s.date)).filter(Boolean))].sort().reverse() as string[], [sessions]);
   const allMonths = useMemo(() => [...new Set(sessions.map(s => s.date.substring(0, 7)))].sort(), [sessions]);
@@ -2736,32 +2726,21 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
     return n >= 0 && n <= 50 ? `20${y.padStart(2, '0')}` : `19${y.padStart(2, '0')}`;
   };
 
-  const parseCompoundQuery = (raw: string): { nameTokens: string[]; year: number | null; month: number | null; day: number | null } => {
-    const result = { nameTokens: [] as string[], year: null as number | null, month: null as number | null, day: null as number | null };
+  const categoryKeywords: Record<string, string> = { u15: 'U15', u17: 'U17', u19: 'U19', dy: 'DY' };
+
+  const parseCompoundQuery = (raw: string): { nameTokens: string[]; year: number | null; month: number | null; day: number | null; role: string | null; category: string | null } => {
+    const result = { nameTokens: [] as string[], year: null as number | null, month: null as number | null, day: null as number | null, role: null as string | null, category: null as string | null };
     const q = raw.trim();
     if (!q) return result;
-
-    const datePatterns = [
-      /(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/,
-      /(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/,
-      /(\d{1,2})[\/\-.](\d{4})/,
-      /(\d{4})[\/\-.](\d{1,2})/,
-    ];
 
     let remaining = q;
 
     const dp3a = remaining.match(/(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
     if (dp3a) {
       const [full, a, b, c] = dp3a;
-      if (c.length >= 3 || parseInt(c) > 31) {
-        result.day = parseInt(a);
-        result.month = parseInt(b);
-        result.year = parseInt(expandYear(c));
-      } else {
-        result.day = parseInt(a);
-        result.month = parseInt(b);
-        result.year = parseInt(expandYear(c));
-      }
+      result.day = parseInt(a);
+      result.month = parseInt(b);
+      result.year = parseInt(expandYear(c));
       remaining = remaining.replace(full, ' ');
     } else {
       const dp3b = remaining.match(/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/);
@@ -2793,6 +2772,20 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
     const tokens = remaining.split(/[\s,;]+/).filter(t => t.length > 0);
 
     for (const token of tokens) {
+      const lower = token.toLowerCase();
+
+      const catMatch = categoryKeywords[lower];
+      if (catMatch && allCategories.includes(catMatch)) {
+        result.category = catMatch;
+        continue;
+      }
+
+      const roleMatch = allRoles.find(r => r.toLowerCase() === lower);
+      if (roleMatch) {
+        result.role = roleMatch;
+        continue;
+      }
+
       const mi = parseMonthName(token);
       if (mi !== null) {
         result.month = mi + 1;
@@ -2821,12 +2814,21 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
         continue;
       }
 
-      if (/^[a-zA-Zéàòùì]+$/.test(token)) {
-        result.nameTokens.push(token.toLowerCase());
+      if (/^[a-zA-Zéàòùì0-9&]+$/.test(token)) {
+        result.nameTokens.push(lower);
       }
     }
 
     return result;
+  };
+
+  const getMatchingPlayers = (parsed: ReturnType<typeof parseCompoundQuery>): string[] => {
+    return players.filter(p => {
+      if (parsed.role && getPlayerPosition(p, profiles).toLowerCase() !== parsed.role.toLowerCase()) return false;
+      if (parsed.category && getPlayerCategory(p, profiles) !== parsed.category) return false;
+      if (parsed.nameTokens.length > 0 && !parsed.nameTokens.every(nt => p.toLowerCase().includes(nt))) return false;
+      return true;
+    });
   };
 
   const matchesSession = (s: VBSession, parsed: ReturnType<typeof parseCompoundQuery>): boolean => {
@@ -2834,6 +2836,8 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
       const playerLower = s.player.toLowerCase();
       if (!parsed.nameTokens.every(nt => playerLower.includes(nt))) return false;
     }
+    if (parsed.role && getPlayerPosition(s.player, profiles).toLowerCase() !== parsed.role.toLowerCase()) return false;
+    if (parsed.category && getPlayerCategory(s.player, profiles) !== parsed.category) return false;
     const [sy, sm, sd] = s.date.split('-').map(Number);
     if (parsed.year !== null && sy !== parsed.year) return false;
     if (parsed.month !== null && sm !== parsed.month) return false;
@@ -2845,6 +2849,15 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
     const q = query.trim().toLowerCase();
     if (!q) return [];
     const items: { type: string; label: string; value: string; sortKey: number }[] = [];
+
+    const catKeys = Object.keys(categoryKeywords);
+    catKeys.filter(k => k.includes(q) || categoryKeywords[k].toLowerCase().includes(q)).forEach(k => {
+      items.push({ type: 'category', label: categoryKeywords[k], value: categoryKeywords[k], sortKey: -2 });
+    });
+
+    allRoles.filter(r => r.toLowerCase().includes(q)).forEach(r => {
+      items.push({ type: 'role', label: r, value: r, sortKey: -1 });
+    });
 
     players.filter(p => p.toLowerCase().includes(q)).slice(0, 5).forEach(p => {
       items.push({ type: 'player', label: p, value: p, sortKey: 0 });
@@ -2955,32 +2968,35 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
     let filtered: VBSession[] = [];
     const searchText = searchValue.startsWith('compound:') ? searchValue.replace('compound:', '')
       : searchValue.startsWith('season:') || searchValue.startsWith('month:') || searchValue.startsWith('date:') ? '' : searchValue;
-    const parsed = parseCompoundQuery(searchText || '');
+    const parsed = parseCompoundQuery(searchText || searchValue);
     const hasDate = parsed.year !== null || parsed.month !== null || parsed.day !== null;
     const hasName = parsed.nameTokens.length > 0;
+    const hasRoleOrCat = parsed.role !== null || parsed.category !== null;
+    const targetPlayers = getMatchingPlayers(parsed);
 
     if (searchValue.startsWith('season:')) {
       const season = searchValue.replace('season:', '');
-      filtered = sessions.filter(s => getSeason(s.date) === season && filteredPlayers.includes(s.player));
+      filtered = sessions.filter(s => getSeason(s.date) === season);
     } else if (searchValue.startsWith('month:')) {
       const month = searchValue.replace('month:', '');
-      filtered = sessions.filter(s => s.date.startsWith(month) && filteredPlayers.includes(s.player));
+      filtered = sessions.filter(s => s.date.startsWith(month));
     } else if (searchValue.startsWith('date:')) {
       const date = searchValue.replace('date:', '');
-      filtered = sessions.filter(s => s.date === date && filteredPlayers.includes(s.player));
-    } else if (hasDate || hasName) {
-      filtered = sessions.filter(s => matchesSession(s, parsed) && filteredPlayers.includes(s.player));
+      filtered = sessions.filter(s => s.date === date);
+    } else if (hasDate || hasName || hasRoleOrCat) {
+      filtered = sessions.filter(s => matchesSession(s, parsed));
     } else {
       const q = searchValue.toLowerCase();
-      filtered = sessions.filter(s => filteredPlayers.includes(s.player) && (s.player.toLowerCase().includes(q) || s.date.includes(q)));
+      filtered = sessions.filter(s => s.player.toLowerCase().includes(q) || s.date.includes(q));
+    }
+
+    if (hasRoleOrCat) {
+      filtered = filtered.filter(s => targetPlayers.includes(s.player));
     }
 
     const dates = hasDate ? generateDateRange(parsed) : [];
-    const targetPlayers = hasName
-      ? filteredPlayers.filter(p => parsed.nameTokens.every(nt => p.toLowerCase().includes(nt)))
-      : filteredPlayers;
 
-    if (dates.length > 0) {
+    if (dates.length > 0 && (hasName || hasRoleOrCat)) {
       for (const p of targetPlayers) {
         const existingDates = new Set(filtered.filter(s => s.player === p).map(s => s.date));
         for (const date of dates) {
@@ -2989,29 +3005,11 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
           }
         }
       }
-    } else if (searchValue.startsWith('date:')) {
+    } else if (searchValue.startsWith('date:') && hasRoleOrCat) {
       const date = searchValue.replace('date:', '');
       for (const p of targetPlayers) {
         if (!filtered.some(s => s.player === p && s.date === date)) {
           filtered.push(makeDayOff(p, date));
-        }
-      }
-    } else if (searchValue.startsWith('month:')) {
-      const month = searchValue.replace('month:', '');
-      const year = parseInt(month.split('-')[0]);
-      const mo = parseInt(month.split('-')[1]);
-      const daysInMonth = new Date(year, mo, 0).getDate();
-      const today = new Date();
-      for (const p of targetPlayers) {
-        const existingDates = new Set(filtered.filter(s => s.player === p).map(s => s.date));
-        for (let d = 1; d <= daysInMonth; d++) {
-          const dt = new Date(year, mo - 1, d);
-          if (dt <= today) {
-            const dateStr = `${year}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-            if (!existingDates.has(dateStr)) {
-              filtered.push(makeDayOff(p, dateStr));
-            }
-          }
         }
       }
     }
@@ -3060,24 +3058,6 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
           <Search size={14} className="text-orange-500" />
           <h3 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Search')}</h3>
         </div>
-        <div className="flex flex-wrap items-center gap-2 mb-3">
-          <select
-            value={filterRole}
-            onChange={e => setFilterRole(e.target.value)}
-            className={`px-3 py-2 rounded-lg text-xs border ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
-          >
-            <option value="all">{t('All Roles')}</option>
-            {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
-          </select>
-          <select
-            value={filterCategory}
-            onChange={e => setFilterCategory(e.target.value)}
-            className={`px-3 py-2 rounded-lg text-xs border ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-gray-50 border-gray-200 text-gray-900'}`}
-          >
-            <option value="all">{t('All Categories')}</option>
-            {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
         <div className="relative">
           <div className="flex gap-2">
             <input
@@ -3107,12 +3087,14 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
                   className={`w-full text-left px-4 py-2.5 flex items-center gap-3 text-sm transition-colors ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}
                 >
                   <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${
+                    item.type === 'category' ? 'bg-cyan-500/10 text-cyan-500' :
+                    item.type === 'role' ? 'bg-pink-500/10 text-pink-500' :
                     item.type === 'player' ? 'bg-orange-500/10 text-orange-500' :
                     item.type === 'season' ? 'bg-blue-500/10 text-blue-500' :
                     item.type === 'month' ? 'bg-purple-500/10 text-purple-500' :
                     'bg-emerald-500/10 text-emerald-500'
                   }`}>
-                    {item.type === 'player' ? '👤' : item.type === 'season' ? '📅' : item.type === 'month' ? '📆' : '📌'}
+                    {item.type === 'category' ? '🏷️' : item.type === 'role' ? '🏀' : item.type === 'player' ? '👤' : item.type === 'season' ? '📅' : item.type === 'month' ? '📆' : '📌'}
                   </span>
                   <span className={isDark ? 'text-gray-200' : 'text-gray-700'}>{item.label}</span>
                 </button>
