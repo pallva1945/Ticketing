@@ -2751,9 +2751,10 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
                   {playerSessions.map((s, i) => {
                     const active = isSessionActive(s);
                     const isNT = s.nationalTeam !== null && s.nationalTeam > 0;
-                    const isDayOff = !active;
+                    const isVacation = getSeason(s.date) === null;
+                    const isDayOff = !active && !isVacation;
                     return (
-                    <tr key={i} className={`border-b ${isDayOff ? (isDark ? 'bg-gray-800/20 border-gray-800/50' : 'bg-gray-50/50 border-gray-100') : isDark ? 'border-gray-800/50 hover:bg-gray-800/30' : 'border-gray-50 hover:bg-gray-50'}`}>
+                    <tr key={i} className={`border-b ${isVacation ? (isDark ? 'bg-amber-900/10 border-gray-800/50' : 'bg-amber-50/50 border-amber-100') : isDayOff ? (isDark ? 'bg-gray-800/20 border-gray-800/50' : 'bg-gray-50/50 border-gray-100') : isDark ? 'border-gray-800/50 hover:bg-gray-800/30' : 'border-gray-50 hover:bg-gray-50'}`}>
                       <td className="py-1.5 px-2 font-medium">{s.date}</td>
                       <td className="py-1.5 px-2 text-right">{s.height ?? '—'}</td>
                       <td className="py-1.5 px-2 text-right">{s.weight ?? '—'}</td>
@@ -2776,7 +2777,9 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
                       <td className="py-1.5 px-2 text-right">{s.injured && s.injured > 0 ? <span className="text-red-500 font-medium">Lv {s.injured}</span> : '—'}</td>
                       <td className="py-1.5 px-2 text-right">{isNT ? <span className="text-blue-500 font-semibold">NT</span> : '—'}</td>
                       <td className="py-1.5 px-2 text-center">
-                        {isDayOff ? (
+                        {isVacation ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">{t('Vacation')}</span>
+                        ) : isDayOff ? (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-400">{t('Day Off')}</span>
                         ) : isNT ? (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">{t('NT')}</span>
