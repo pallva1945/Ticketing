@@ -2115,31 +2115,45 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           }));
 
           const isActive = (s: typeof ps[0]) => (s.practiceLoad || 0) > 0 || (s.vitaminsLoad || 0) > 0 || (s.weightsLoad || 0) > 0 || (s.gameLoad || 0) > 0 || (s.injured !== null && s.injured > 0) || (s.nationalTeam !== null && s.nationalTeam > 0);
-          const countDaysOffAndInjury = (sessionList: typeof ps) => {
+          const countActiveDaysAndInjury = (sessionList: typeof ps) => {
             const byDate: Record<string, typeof ps> = {};
             sessionList.forEach(s => {
               if (!byDate[s.date]) byDate[s.date] = [];
               byDate[s.date].push(s);
             });
-            let daysOff = 0;
+            let activeDays = 0;
             let injuryDays = 0;
             Object.values(byDate).forEach(daySessions => {
-              const anyActive = daySessions.some(isActive);
-              if (!anyActive) daysOff++;
+              if (daySessions.some(isActive)) activeDays++;
               if (daySessions.some(s => s.injured !== null && s.injured > 0)) injuryDays++;
             });
-            return { daysOff, injuryDays };
+            return { activeDays, injuryDays };
           };
 
           const availabilityMap: Record<string, { daysOff: number; injuryDays: number }> = {};
-          if (loadWeeklyBuckets) {
+          if (loadWeeklyBuckets && selectedMonth) {
+            const [y, m] = selectedMonth.split('-').map(Number);
+            const daysInMonth = new Date(y, m, 0).getDate();
+            const today = new Date();
+            const isCurrentMonth = today.getFullYear() === y && (today.getMonth() + 1) === m;
+            const currentDay = isCurrentMonth ? today.getDate() : daysInMonth;
             loadWeeklyBuckets.forEach(({ week, sessions: ws }) => {
-              availabilityMap[`W${week}`] = countDaysOffAndInjury(ws);
+              const weekStart = (week - 1) * 7 + 1;
+              const weekEnd = week === 4 ? Math.min(daysInMonth, currentDay) : Math.min(week * 7, currentDay);
+              const calendarDays = Math.max(0, weekEnd - weekStart + 1);
+              const { activeDays, injuryDays } = countActiveDaysAndInjury(ws);
+              availabilityMap[`W${week}`] = { daysOff: Math.max(0, calendarDays - activeDays), injuryDays };
             });
           } else {
             const playerMonths = [...new Set(ps.map(s => s.date.substring(0, 7)))].sort();
             playerMonths.forEach(month => {
-              availabilityMap[month] = countDaysOffAndInjury(ps.filter(s => s.date.substring(0, 7) === month));
+              const [y, m] = month.split('-').map(Number);
+              const daysInMonth = new Date(y, m, 0).getDate();
+              const today = new Date();
+              const isCurrentMonth = today.getFullYear() === y && (today.getMonth() + 1) === m;
+              const calendarDays = isCurrentMonth ? today.getDate() : daysInMonth;
+              const { activeDays, injuryDays } = countActiveDaysAndInjury(ps.filter(s => s.date.substring(0, 7) === month));
+              availabilityMap[month] = { daysOff: Math.max(0, calendarDays - activeDays), injuryDays };
             });
           }
           const availSortedKeys = Object.keys(availabilityMap).sort((a, b) => a.localeCompare(b));
