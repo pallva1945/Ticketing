@@ -3,6 +3,7 @@ import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, CartesianGrid, Legend, ReferenceLine, ReferenceArea, Cell, ComposedChart } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { PV_LOGO_URL } from '../constants';
 
 function useIsDark() {
   const { theme } = useTheme();
@@ -3674,8 +3675,8 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3">
-              <button onClick={onBack} className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
-                <ArrowLeft size={18} />
+              <button onClick={onBack} className="w-8 h-8 flex-shrink-0 hover:opacity-70 transition-opacity" title="Back to Hub">
+                <img src={PV_LOGO_URL} alt="PV" className="w-full h-full object-contain" />
               </button>
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center">
