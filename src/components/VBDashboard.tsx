@@ -4026,8 +4026,8 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     { id: 'player', label: t('Players Pack'), icon: User },
     { id: 'compare', label: t('Compare'), icon: GitCompare },
     { id: 'progression', label: t('Progression'), icon: TrendingUp },
-    { id: 'search', label: t('Search'), icon: Search },
     { id: 'prospects', label: t('Prospects'), icon: Star },
+    { id: 'search', label: t('Search'), icon: Search },
   ];
 
   if (loading) {
