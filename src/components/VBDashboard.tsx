@@ -2299,8 +2299,8 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const allSeasons = useMemo(() => [...new Set(sessions.map(s => getSeason(s.date)).filter(Boolean))].sort().reverse() as string[], [sessions]);
-  const allMonths = useMemo(() => [...new Set(sessions.map(s => s.date.substring(0, 7)))].sort().reverse(), [sessions]);
-  const allDates = useMemo(() => [...new Set(sessions.map(s => s.date))].sort().reverse(), [sessions]);
+  const allMonths = useMemo(() => [...new Set(sessions.map(s => s.date.substring(0, 7)))].sort(), [sessions]);
+  const allDates = useMemo(() => [...new Set(sessions.map(s => s.date))].sort(), [sessions]);
 
   const monthNamesEN = ['january','february','march','april','may','june','july','august','september','october','november','december'];
   const monthNamesIT = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
@@ -2575,7 +2575,7 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
       }
     }
 
-    setResults(filtered.sort((a, b) => b.date.localeCompare(a.date)));
+    setResults(filtered.sort((a, b) => a.date.localeCompare(b.date)));
     setSearched(true);
   };
 
