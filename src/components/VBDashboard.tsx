@@ -2479,7 +2479,7 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
       if (parsed.year !== null && parsed.month !== null && parsed.day !== null) {
         const iso = `${parsed.year}-${String(parsed.month).padStart(2, '0')}-${String(parsed.day).padStart(2, '0')}`;
         if (allDates.includes(iso)) {
-          items.push({ type: 'date', label: iso, value: `date:${iso}`, sortKey: 3 });
+          items.push({ type: 'date', label: `${String(parsed.day).padStart(2, '0')}/${String(parsed.month).padStart(2, '0')}/${parsed.year}`, value: `date:${iso}`, sortKey: 3 });
         }
       } else if (parsed.year !== null && parsed.month !== null) {
         const iso = `${parsed.year}-${String(parsed.month).padStart(2, '0')}`;
@@ -2509,7 +2509,8 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
 
       allDates.filter(d => d.includes(q)).slice(0, 5).forEach(d => {
         if (items.some(i => i.value === `date:${d}`)) return;
-        items.push({ type: 'date', label: d, value: `date:${d}`, sortKey: 3 });
+        const [dy, dm, dd] = d.split('-');
+        items.push({ type: 'date', label: `${dd}/${dm}/${dy}`, value: `date:${d}`, sortKey: 3 });
       });
     }
 
