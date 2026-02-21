@@ -1665,8 +1665,14 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 
       <div className={`${cardClass} print-page`}>
         <div className="print-header hidden">
-          <div className="print-header-name">{selectedPlayer}{monthLabel ? ` — ${monthLabel}` : ''}</div>
-          <div className="print-header-meta">{profile?.role || ''} · {category || ''} · {profile?.season || currentSeason || ''}</div>
+          <div className="print-header-logos">
+            <img src="https://i.imgur.com/e7khORs.png" alt="PV" className="print-logo" />
+            <div className="print-header-center">
+              <div className="print-header-name">{selectedPlayer}{monthLabel ? ` — ${monthLabel}` : ''}</div>
+              <div className="print-header-meta">{profile?.role || ''} · {category || ''} · {profile?.season || currentSeason || ''}</div>
+            </div>
+            <img src="https://i.imgur.com/r1fWDF1.png" alt="VB" className="print-logo" />
+          </div>
         </div>
         <div className="flex items-center gap-2 mb-4 print-mb-sm">
           <User size={14} className="text-orange-500" />
@@ -1838,8 +1844,14 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 
       <div className={`${cardClass} print-page`}>
         <div className="print-header hidden">
-          <div className="print-header-name">{selectedPlayer}{monthLabel ? ` — ${monthLabel}` : ''}</div>
-          <div className="print-header-meta">{profile?.role || ''} · {category || ''} · {profile?.season || currentSeason || ''}</div>
+          <div className="print-header-logos">
+            <img src="https://i.imgur.com/e7khORs.png" alt="PV" className="print-logo" />
+            <div className="print-header-center">
+              <div className="print-header-name">{selectedPlayer}{monthLabel ? ` — ${monthLabel}` : ''}</div>
+              <div className="print-header-meta">{profile?.role || ''} · {category || ''} · {profile?.season || currentSeason || ''}</div>
+            </div>
+            <img src="https://i.imgur.com/r1fWDF1.png" alt="VB" className="print-logo" />
+          </div>
         </div>
         <div className="flex items-center gap-2 mb-4 print-mb-sm">
           <Zap size={14} className="text-amber-500" />
@@ -2043,8 +2055,14 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 
       <div className={`${cardClass} print-page`}>
         <div className="print-header hidden">
-          <div className="print-header-name">{selectedPlayer}{monthLabel ? ` — ${monthLabel}` : ''}</div>
-          <div className="print-header-meta">{profile?.role || ''} · {category || ''} · {profile?.season || currentSeason || ''}</div>
+          <div className="print-header-logos">
+            <img src="https://i.imgur.com/e7khORs.png" alt="PV" className="print-logo" />
+            <div className="print-header-center">
+              <div className="print-header-name">{selectedPlayer}{monthLabel ? ` — ${monthLabel}` : ''}</div>
+              <div className="print-header-meta">{profile?.role || ''} · {category || ''} · {profile?.season || currentSeason || ''}</div>
+            </div>
+            <img src="https://i.imgur.com/r1fWDF1.png" alt="VB" className="print-logo" />
+          </div>
         </div>
         <div className="flex items-center gap-2 mb-4 print-mb-sm">
           <Activity size={14} className="text-green-500" />

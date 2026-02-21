@@ -104,11 +104,25 @@
         }
         .print-header {
           display: block !important;
-          text-align: center;
           margin-bottom: 4px;
           padding-bottom: 3px;
           border-bottom: 2px solid #f97316 !important;
           flex-shrink: 0;
+        }
+        .print-header-logos {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: space-between !important;
+          gap: 8px !important;
+        }
+        .print-header-center {
+          flex: 1 !important;
+          text-align: center !important;
+        }
+        .print-logo {
+          width: 36px !important;
+          height: 36px !important;
+          object-fit: contain !important;
         }
         .print-header-name {
           font-size: 15px !important;
@@ -151,8 +165,22 @@
         }
         .print-page .print-assessment-grid {
           grid-template-columns: 1fr 1fr !important;
+          grid-template-rows: 1fr 1fr !important;
           gap: 5px !important;
           margin-top: 5px !important;
+          flex: 1 !important;
+        }
+        .print-page .print-assessment-grid > div {
+          display: flex !important;
+          flex-direction: column !important;
+          padding: 8px !important;
+        }
+        .print-page .print-assessment-grid ul {
+          flex: 1 !important;
+          font-size: 9px !important;
+        }
+        .print-page .print-assessment-grid li {
+          margin-bottom: 2px !important;
         }
         .print-page .print-charts-grid {
           grid-template-columns: 1fr 1fr !important;
