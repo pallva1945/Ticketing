@@ -2023,6 +2023,17 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               </div>
               {injuryCount > 0 && <div className={subValueClass}>{injuryCount} {t('injury sessions')}</div>}
             </div>
+            <div>
+              <div className={labelClass}>{t('Body Fat')}</div>
+              <div className={valueClass}>{latestAnthro.bodyFat !== null ? `${latestAnthro.bodyFat}%` : '—'}</div>
+            </div>
+            <div>
+              <div className={labelClass}>{t('3PT %')}</div>
+              <div className={`text-sm font-semibold ${overallPct !== null && overallPct >= 40 ? 'text-emerald-500' : overallPct !== null && overallPct >= 30 ? 'text-amber-500' : isDark ? 'text-white' : 'text-gray-900'}`}>
+                {overallPct !== null ? `${overallPct}%` : '—'}
+              </div>
+              <div className={subValueClass}>{totalMade}/{totalTaken}</div>
+            </div>
           </div>
         </div>
 
@@ -2074,7 +2085,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
             <Ruler size={14} className="text-blue-500" />
             <h3 className={`text-sm font-bold print-section-title ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Anthropometrics')}</h3>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 print-anthro-cards">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 print-anthro-cards">
             <div className={`rounded-lg p-3 print-inner-sm print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-blue-50/50'}`}>
               <div className={labelClass}>{t('Height')}</div>
               <div className={`text-lg font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.height !== null ? `${latestAnthro.height}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
@@ -2103,10 +2114,6 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               <div className={`text-lg font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.standingReach !== null ? `${latestAnthro.standingReach}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
               {(() => { const pr = getProjectedReach(selectedPlayer, profiles, sessions); return pr ? <div className={subValueClass}>{t('Proj')}: {pr} cm</div> : null; })()}
               {renderDelta(latestAnthro.standingReach, combineRef?.standingReach, ' cm')}
-            </div>
-            <div className={`rounded-lg p-3 print-inner-sm print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-red-50/50'}`}>
-              <div className={labelClass}>{t('Body Fat')}</div>
-              <div className={`text-lg font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.bodyFat !== null ? `${latestAnthro.bodyFat}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">%</span></div>
             </div>
           </div>
 
@@ -2282,7 +2289,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           <h3 className={`text-sm font-bold print-section-title ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Performance')}</h3>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-5 print-perf-cards print-mb-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-5 print-perf-cards print-mb-sm">
           <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-cyan-50/50'}`}>
             <div className={labelClass}>{t('Pure Vertical')}</div>
             <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.pureVertical !== null ? latestAthletic.pureVertical : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
@@ -2306,13 +2313,6 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-green-50/50'}`}>
             <div className={labelClass}>{t('Deadlift')}</div>
             <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.deadlift !== null ? latestAthletic.deadlift : '—'}<span className="text-xs font-normal ml-0.5 print-sub">kg</span></div>
-          </div>
-          <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-amber-50/50'}`}>
-            <div className={labelClass}>{t('3PT %')}</div>
-            <div className={`text-xl font-bold print-value-lg ${overallPct !== null && overallPct >= 40 ? 'text-emerald-500' : overallPct !== null && overallPct >= 30 ? 'text-amber-500' : isDark ? 'text-white' : 'text-gray-900'}`}>
-              {overallPct !== null ? overallPct : '—'}<span className="text-xs font-normal ml-0.5 print-sub">%</span>
-            </div>
-            <div className={subValueClass}>{totalMade}/{totalTaken}</div>
           </div>
         </div>
 
