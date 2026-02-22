@@ -1601,6 +1601,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
   const isDark = useIsDark();
   const [selectedPlayer, setSelectedPlayer] = useState(initialPlayer || players[0]);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const [showCasInfo, setShowCasInfo] = useState(false);
   const allPs = useMemo(() => getPlayerSessions(sessions, selectedPlayer), [sessions, selectedPlayer]);
   const ps = useMemo(() => selectedMonth ? allPs.filter(s => s.date.substring(0, 7) === selectedMonth) : allPs, [allPs, selectedMonth]);
   const availableMonths = useMemo(() => {
@@ -2092,9 +2093,12 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           <div className={`rounded-xl border p-4 mb-5 print-cas ${isDark ? 'bg-gradient-to-r from-orange-500/5 to-gray-900 border-orange-500/20' : 'bg-gradient-to-r from-orange-50 to-white border-orange-200'}`}>
             <div className="flex flex-col sm:flex-row gap-4 items-start">
               <div className="flex-shrink-0 text-center sm:text-left">
-                <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+                <button
+                  onClick={() => setShowCasInfo(true)}
+                  className={`text-[10px] font-bold uppercase tracking-wider mb-1 underline decoration-dotted underline-offset-2 cursor-pointer transition-colors ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`}
+                >
                   CAS
-                </div>
+                </button>
                 <div className={`text-4xl font-black ${casData.cas >= 55 ? 'text-emerald-500' : casData.cas >= 45 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
                   {casData.cas}
                 </div>
@@ -2154,6 +2158,94 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {showCasInfo && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowCasInfo(false)}>
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+            <div
+              className={`relative max-w-lg w-full max-h-[80vh] overflow-y-auto rounded-2xl border shadow-2xl p-6 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}
+              onClick={e => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowCasInfo(false)}
+                className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
+              >
+                ✕
+              </button>
+
+              <h3 className={`text-lg font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Composite Athleticism Score (CAS)
+              </h3>
+              <p className={`text-xs mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                A single score designed to quantify a player's overall basketball-specific athleticism, derived from a five-test battery measuring explosive power, speed, agility, and functional strength.
+              </p>
+
+              <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+                Core Components & On-Court Relevance
+              </h4>
+              <div className="space-y-2 mb-4">
+                {[
+                  { name: 'Shuttle Run', desc: 'Measures agility, body control, and the ability to change direction efficiently — crucial for perimeter defense and offensive cutting.' },
+                  { name: '¾ Court Sprint', desc: 'A pure test of linear speed and acceleration over 22.86m, directly translating to transition offense and defense.' },
+                  { name: 'Standing Vertical Leap', desc: 'Measures static, concentric lower-body power — important for rebounding in traffic and contesting shots without a running start.' },
+                  { name: 'Max Vertical Leap', desc: 'Measures dynamic, elastic power with a running start — the "highlight reel" jump for dunks and chase-down blocks.' },
+                  { name: 'Hex Bar Deadlift 1RM (Relative)', desc: 'Quantifies foundational total-body strength relative to bodyweight — the bedrock for all other athletic qualities and injury resilience.' },
+                ].map((c, i) => (
+                  <div key={i} className={`rounded-lg p-2.5 ${isDark ? 'bg-gray-800/60' : 'bg-gray-50'}`}>
+                    <div className={`text-xs font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{c.name}</div>
+                    <div className={`text-[11px] mt-0.5 leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{c.desc}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className={`rounded-lg p-3 mb-4 border-l-4 ${isDark ? 'bg-orange-500/5 border-orange-500/40' : 'bg-orange-50 border-orange-400'}`}>
+                <div className={`text-xs font-semibold mb-0.5 ${isDark ? 'text-orange-400' : 'text-orange-700'}`}>Jump Delta</div>
+                <div className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  The difference between Max and Standing Vertical Leaps. This reveals whether an athlete is "strong but not springy" or "springy but not strong," guiding targeted training interventions.
+                </div>
+              </div>
+
+              <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+                CAS Calculation
+              </h4>
+              <p className={`text-[11px] leading-relaxed mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Calculated as a weighted sum of normalized Z-scores for each test. Z-scores standardize results by measuring how many standard deviations a player is from the group average. Scores for timed events (sprint, shuttle) are inverted so that a faster time results in a higher score.
+              </p>
+
+              <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+                Baseline Weightings
+              </h4>
+              <div className={`rounded-lg overflow-hidden border mb-3 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
+                      <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Test Component</th>
+                      <th className={`text-right py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Weight</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ['Max Vertical Leap', '30%'],
+                      ['Shuttle Run', '25%'],
+                      ['Three-Quarter Sprint', '15%'],
+                      ['Standing Vertical Leap', '15%'],
+                      ['Hex Bar Deadlift (Relative)', '15%'],
+                    ].map(([name, w], i) => (
+                      <tr key={i} className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                        <td className={`py-1.5 px-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{name}</td>
+                        <td className={`py-1.5 px-3 text-right font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{w}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                Weights are adjusted for three archetypes — <span className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Guards</span> (Shuttle 35%), <span className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Wings</span> (baseline), and <span className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Bigs</span> (Deadlift & Standing Vertical 25% each) — to reflect the athletic demands of each position.
+              </p>
+            </div>
           </div>
         )}
 
