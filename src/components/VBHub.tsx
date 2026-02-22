@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { ArrowRight, Sun, Moon, ChevronLeft, Eye, Heart, Target, Users, GraduationCap, Activity, Shield, Construction, Layers, BookOpen, ExternalLink, Globe } from 'lucide-react';
+import { ArrowRight, Sun, Moon, ChevronLeft, Eye, Heart, Target, Users, GraduationCap, Activity, Shield, Construction, Layers, BookOpen, ExternalLink, Globe, Rocket, Star, Compass } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -190,49 +190,90 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
       {/* Section 1: Vision, Mission & Values */}
       <div className="h-screen flex flex-col items-center justify-center px-4 sm:px-6 relative">
         <div className={`transition-all duration-[1s] ease-out ${visible[0] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="mb-8 sm:mb-12">
-              <img src={VB_LOGO_URL} alt="Varese Basketball" className="w-16 h-16 sm:w-20 sm:h-20 object-contain mx-auto mb-6" />
-              <p className={`text-[10px] sm:text-xs tracking-[0.3em] uppercase font-medium mb-3 sm:mb-4 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
-                Varese Basketball
+          <div className="max-w-6xl mx-auto w-full">
+            <div className="text-center mb-3 sm:mb-6">
+              <div className="flex items-center justify-center gap-3 mb-2 sm:mb-4">
+                <img src={VB_LOGO_URL} alt="VB" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+                <div className={`inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs tracking-[0.2em] uppercase font-medium ${
+                  isDark ? 'bg-orange-900/15 text-orange-400 border border-orange-800/20' : 'bg-orange-50 text-orange-600 border border-orange-100'
+                }`}>
+                  <Compass size={12} className="sm:w-[14px] sm:h-[14px]" />
+                  {t('Vision, Mission & Values')}
+                </div>
+              </div>
+              <p className={`text-sm sm:text-lg italic max-w-lg mx-auto ${isDark ? 'text-orange-400/80' : 'text-orange-600/80'}`}>
+                {t('vb_brand_promise')}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 max-w-4xl mx-auto">
-              <div className={`rounded-2xl border p-6 sm:p-8 transition-all duration-500 ${isDark ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'}`}>
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
-                  <Eye size={22} className="text-orange-500" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-4">
+              <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
+                  <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-orange-900/25' : 'bg-orange-50'}`}>
+                    <Rocket size={14} className="text-orange-500 sm:w-[18px] sm:h-[18px]" />
+                  </div>
+                  <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {t('Mission')}
+                  </h3>
                 </div>
-                <h3 className={`text-sm sm:text-base font-semibold tracking-[0.1em] uppercase mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {t('Vision')}
-                </h3>
-                <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {t('vb_vision_text')}
+                <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {t('vb_mission_statement')}
                 </p>
+                <div className="hidden sm:block space-y-2">
+                  {['vb_mission_1', 'vb_mission_2', 'vb_mission_3', 'vb_mission_4'].map((key) => (
+                    <div key={key} className="flex items-start gap-2.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-orange-500 mt-[7px] flex-shrink-0" />
+                      <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t(key)}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className={`rounded-2xl border p-6 sm:p-8 transition-all duration-500 ${isDark ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'}`}>
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
-                  <Target size={22} className="text-orange-500" />
+              <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
+                  <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
+                    <Eye size={14} className="text-blue-500 sm:w-[18px] sm:h-[18px]" />
+                  </div>
+                  <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {t('Vision')}
+                  </h3>
                 </div>
-                <h3 className={`text-sm sm:text-base font-semibold tracking-[0.1em] uppercase mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {t('Mission')}
-                </h3>
-                <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {t('vb_mission_text')}
+                <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {t('vb_vision_statement')}
                 </p>
+                <div className="hidden sm:block space-y-2">
+                  {['vb_vision_1', 'vb_vision_2', 'vb_vision_3', 'vb_vision_4'].map((key) => (
+                    <div key={key} className="flex items-start gap-2.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-[7px] flex-shrink-0" />
+                      <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t(key)}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className={`rounded-2xl border p-6 sm:p-8 transition-all duration-500 ${isDark ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'}`}>
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4 ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
-                  <Heart size={22} className="text-orange-500" />
+              <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
+                  <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
+                    <Star size={14} className="text-amber-500 sm:w-[18px] sm:h-[18px]" />
+                  </div>
+                  <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {t('Core Values')}
+                  </h3>
                 </div>
-                <h3 className={`text-sm sm:text-base font-semibold tracking-[0.1em] uppercase mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {t('Values')}
-                </h3>
-                <p className={`text-xs sm:text-sm leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {t('vb_values_text')}
-                </p>
+                <div className="space-y-1.5 sm:space-y-3.5">
+                  <div>
+                    <p className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-0.5 sm:mb-1.5 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{t('vb_values_player_title')}</p>
+                    <p className={`text-[10px] sm:text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('vb_values_player_desc')}</p>
+                  </div>
+                  <div>
+                    <p className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-0.5 sm:mb-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{t('vb_values_method_title')}</p>
+                    <p className={`text-[10px] sm:text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('vb_values_method_desc')}</p>
+                  </div>
+                  <div>
+                    <p className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-0.5 sm:mb-1.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{t('vb_values_culture_title')}</p>
+                    <p className={`text-[10px] sm:text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('vb_values_culture_desc')}</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

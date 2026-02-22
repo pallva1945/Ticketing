@@ -25,9 +25,74 @@ const translations: Record<string, Record<Language, string>> = {
   'Youth Development': { en: 'Youth Development', it: 'Sviluppo Giovanile' },
   'Staff & Coaching': { en: 'Staff & Coaching', it: 'Staff & Allenatori' },
   'Player profiles, session tracking, progression analytics & scouting database': { en: 'Player profiles, session tracking, progression analytics & scouting database', it: 'Profili giocatori, sessioni, progressione e database scouting' },
-  'vb_vision_text': { en: 'To be the leading youth basketball development program in Italy, nurturing talent, character, and competitive excellence from grassroots to elite level.', it: 'Essere il programma di sviluppo cestistico giovanile di riferimento in Italia, coltivando talento, carattere ed eccellenza competitiva dalla base al livello élite.' },
-  'vb_mission_text': { en: 'We develop young athletes through structured training, personalized coaching, and data-driven player progression — building the next generation of basketball professionals on and off the court.', it: 'Sviluppiamo giovani atleti attraverso allenamenti strutturati, coaching personalizzato e progressione basata sui dati — formando la prossima generazione di professionisti del basket dentro e fuori dal campo.' },
-  'vb_values_text': { en: 'Discipline, teamwork, continuous improvement, and respect. We believe in hard work, accountability, and creating an environment where young players can grow into their full potential.', it: 'Disciplina, lavoro di squadra, miglioramento continuo e rispetto. Crediamo nel duro lavoro, nella responsabilità e nella creazione di un ambiente dove i giovani possano esprimere tutto il loro potenziale.' },
+  'vb_brand_promise': {
+    en: '"The Dream Factory — Turning passion into profession, dreams into reality."',
+    it: '"La Fabbrica dei Sogni — Trasformare la passione in professione, i sogni in realtà."'
+  },
+  'vb_mission_statement': {
+    en: 'To identify, develop, and launch the next generation of elite basketball talent through a world-class, data-driven youth program rooted in the legacy of Pallacanestro Varese.',
+    it: 'Identificare, sviluppare e lanciare la prossima generazione di talenti cestistici d\'élite attraverso un programma giovanile di livello mondiale, basato sui dati e radicato nell\'eredità di Pallacanestro Varese.'
+  },
+  'vb_mission_1': {
+    en: 'Win the Day — instill a relentless daily commitment to excellence in every aspect of a player\'s development.',
+    it: 'Vincere la Giornata — instillare un impegno quotidiano instancabile verso l\'eccellenza in ogni aspetto dello sviluppo del giocatore.'
+  },
+  'vb_mission_2': {
+    en: 'Develop the Complete Player — from fundamentals and strength to leadership and basketball IQ through our 360° program.',
+    it: 'Sviluppare il Giocatore Completo — dai fondamentali e la preparazione fisica alla leadership e al QI cestistico attraverso il nostro programma a 360°.'
+  },
+  'vb_mission_3': {
+    en: 'Measure Everything — leverage advanced stats, video analysis, and daily tracking to personalize every player\'s path to the pros.',
+    it: 'Misurare Tutto — sfruttare statistiche avanzate, analisi video e monitoraggio quotidiano per personalizzare il percorso di ogni giocatore verso il professionismo.'
+  },
+  'vb_mission_4': {
+    en: 'Bridge to Professional Basketball — provide competitive platforms (6 Eccellenza teams + Serie B) to test and implement skills at the highest youth level.',
+    it: 'Ponte verso il Basket Professionistico — fornire piattaforme competitive (6 squadre Eccellenza + Serie B) per testare e applicare le abilità al massimo livello giovanile.'
+  },
+  'vb_vision_statement': {
+    en: 'To become the best youth basketball program in Italy — a Dream Factory where world-class infrastructure, NBA-caliber methodology, and Italian basketball heritage converge.',
+    it: 'Diventare il miglior programma cestistico giovanile d\'Italia — una Fabbrica dei Sogni dove infrastrutture di livello mondiale, metodologia di calibro NBA ed eredità cestistica italiana convergono.'
+  },
+  'vb_vision_1': {
+    en: 'Set the Standard — establish an NBA-caliber development environment with cutting-edge sports science and biomechanics.',
+    it: 'Stabilire lo Standard — creare un ambiente di sviluppo di calibro NBA con scienza dello sport e biomeccanica all\'avanguardia.'
+  },
+  'vb_vision_2': {
+    en: 'Build a Pipeline — create a continuous pathway from grassroots (450+ kids) to Serie A and international basketball.',
+    it: 'Costruire un Vivaio — creare un percorso continuo dalla base (450+ ragazzi) alla Serie A e al basket internazionale.'
+  },
+  'vb_vision_3': {
+    en: 'Invest in Infrastructure — a €3M+ facility vision with state-of-the-art training center, elite residence, and the Ivolution Lab.',
+    it: 'Investire nelle Infrastrutture — una visione di strutture da €3M+ con centro di allenamento all\'avanguardia, residenza élite e il Laboratorio Ivolution.'
+  },
+  'vb_vision_4': {
+    en: 'Produce Professionals — deliver players to the top leagues, as proven by Librizzi, Asui, Villa, and more.',
+    it: 'Produrre Professionisti — portare giocatori ai massimi campionati, come dimostrato da Librizzi, Asui, Villa e altri.'
+  },
+  'vb_values_player_title': {
+    en: 'The Player — Daily Excellence',
+    it: 'Il Giocatore — Eccellenza Quotidiana'
+  },
+  'vb_values_player_desc': {
+    en: 'Show up, improve, compete, recover, track. Every day is an opportunity to get better. Hard work, discipline, and consistency are non-negotiable.',
+    it: 'Presentarsi, migliorare, competere, recuperare, monitorare. Ogni giorno è un\'opportunità per crescere. Duro lavoro, disciplina e costanza sono imprescindibili.'
+  },
+  'vb_values_method_title': {
+    en: 'The Method — Data-Driven Development',
+    it: 'Il Metodo — Sviluppo Basato sui Dati'
+  },
+  'vb_values_method_desc': {
+    en: 'If it can be measured, it can be improved. We track load, shots, performance, and growth with precision — personalizing every player\'s journey.',
+    it: 'Se si può misurare, si può migliorare. Monitoriamo carico, tiri, prestazioni e crescita con precisione — personalizzando il percorso di ogni giocatore.'
+  },
+  'vb_values_culture_title': {
+    en: 'The Culture — Legacy & Community',
+    it: 'La Cultura — Eredità e Comunità'
+  },
+  'vb_values_culture_desc': {
+    en: 'Built on 10 Scudetti and 5 EuroLeague titles. We honor our storied history while innovating for the future, uniting players, families, and the city of Varese.',
+    it: 'Costruita su 10 Scudetti e 5 titoli di EuroLega. Onoriamo la nostra storia leggendaria innovando per il futuro, unendo giocatori, famiglie e la città di Varese.'
+  },
   'vb_about_placeholder': { en: 'The Varese Basketball youth development section is being built. This section will feature the history, philosophy, and structure of the academy program.', it: 'La sezione sullo sviluppo giovanile di Varese Basketball è in costruzione. Questa sezione presenterà la storia, la filosofia e la struttura del programma accademico.' },
   'vb_team_placeholder': { en: 'Team profiles for coaches, staff, and athletic trainers are being compiled. This section will showcase the people behind Varese Basketball\'s development programs.', it: 'I profili del team di allenatori, staff e preparatori atletici sono in fase di compilazione. Questa sezione presenterà le persone dietro i programmi di sviluppo di Varese Basketball.' },
   'Progress': { en: 'Progress', it: 'Progresso' },
