@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { BookOpen, ChevronRight, Target, Crosshair, TrendingUp, ArrowLeft, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { BookOpen, ChevronRight, Target, Crosshair, TrendingUp, ArrowLeft, CheckCircle2, AlertTriangle, Info, CircleDot } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -326,6 +327,203 @@ function ShootingGuidelinesArticle() {
   );
 }
 
+const SHOT_LOCATIONS = [
+  { id: 'right_corner_3', label: 'Right Corner 3', x: 22, y: -2.25, rebounds: [{ x: -5.3, y: 4.9 }, { x: -4.2, y: 6.1 }, { x: -6.9, y: 4.8 }, { x: -5.9, y: 5.1 }] },
+  { id: 'right_wing_3', label: 'Right Wing 3', x: 16.8, y: 16.8, rebounds: [{ x: -4.9, y: 10.1 }, { x: 3.8, y: 9.5 }, { x: -5.5, y: 8.8 }, { x: -4.3, y: 9.3 }] },
+  { id: 'top_of_key_3', label: 'Top of the Key 3', x: 0, y: 23.75, rebounds: [{ x: 0.1, y: 11.2 }, { x: -0.4, y: 10.8 }, { x: -0.1, y: 11.0 }, { x: -0.2, y: 11.4 }] },
+  { id: 'left_wing_3', label: 'Left Wing 3', x: -16.8, y: 16.8, rebounds: [{ x: 3.8, y: 9.5 }, { x: 5.1, y: 9.1 }, { x: 4.5, y: 9.2 }, { x: 5.3, y: 8.9 }] },
+  { id: 'left_corner_3', label: 'Left Corner 3', x: -22, y: -2.25, rebounds: [{ x: 5.3, y: 4.9 }, { x: 6.1, y: 5.5 }, { x: 5.8, y: 5.8 }, { x: 7.1, y: 7.2 }] },
+  { id: 'right_baseline_mid', label: 'Right Baseline Mid', x: 15, y: -3, rebounds: [{ x: -4.2, y: 6.1 }, { x: -6.2, y: 7.8 }, { x: -6.0, y: 7.3 }, { x: -5.7, y: 6.4 }] },
+  { id: 'right_elbow', label: 'Right Elbow', x: 6, y: 13.75, rebounds: [{ x: -1.5, y: 7.9 }, { x: -0.8, y: 8.2 }, { x: -2.2, y: 8.5 }, { x: -1.9, y: 8.3 }] },
+  { id: 'free_throw_line', label: 'Free Throw Line', x: 0, y: 13.75, rebounds: [{ x: 0.8, y: 8.2 }, { x: -0.4, y: 10.8 }, { x: 0, y: 9.5 }, { x: -0.2, y: 11.3 }] },
+  { id: 'left_elbow', label: 'Left Elbow', x: -6, y: 13.75, rebounds: [{ x: 1.5, y: 7.9 }, { x: 2.2, y: 8.5 }, { x: 1.9, y: 8.3 }, { x: 1.7, y: 8.2 }] },
+  { id: 'left_baseline_mid', label: 'Left Baseline Mid', x: -15, y: -3, rebounds: [{ x: 4.2, y: 6.1 }, { x: 6.5, y: 7.5 }, { x: 6.0, y: 6.9 }, { x: 6.3, y: 6.6 }] },
+];
+
+function CourtSVG({ shotId, isDark }: { shotId: string; isDark: boolean }) {
+  const shot = SHOT_LOCATIONS.find(s => s.id === shotId) || SHOT_LOCATIONS[0];
+  const viewBox = "-25 -6 50 35";
+  const courtBg = isDark ? '#1a1a1a' : '#fde9d1';
+  const lineColor = isDark ? '#555' : '#6b7280';
+  const rimColor = '#ef4444';
+
+  const toSvg = (x: number, y: number) => ({ cx: x, cy: -y + 28 });
+  const yIntersect = Math.sqrt(Math.pow(23.75, 2) - Math.pow(22, 2));
+
+  const shotSvg = toSvg(shot.x, shot.y);
+
+  return (
+    <svg viewBox={viewBox} className="w-full rounded-xl overflow-hidden" style={{ maxHeight: 340 }}>
+      <rect x="-25" y="-6" width="50" height="35" fill={courtBg} />
+      <rect x="-6" y={-(-5.25) + 28 - 19} width="12" height="19" fill="none" stroke={lineColor} strokeWidth="0.15" />
+      <rect x="-8" y={-(-5.25) + 28 - 19} width="16" height="19" fill="none" stroke={lineColor} strokeWidth="0.15" />
+      <circle cx="0" cy={-(13.75) + 28} r="6" fill="none" stroke={lineColor} strokeWidth="0.15" />
+      <path
+        d={`M 22,${-(yIntersect) + 28} A 23.75,23.75 0 0 0 -22,${-(yIntersect) + 28}`}
+        fill="none" stroke={lineColor} strokeWidth="0.15"
+      />
+      <line x1="-22" y1={-(-5.25) + 28} x2="-22" y2={-(yIntersect) + 28} stroke={lineColor} strokeWidth="0.15" />
+      <line x1="22" y1={-(-5.25) + 28} x2="22" y2={-(yIntersect) + 28} stroke={lineColor} strokeWidth="0.15" />
+      <line x1="-25" y1={-(-5.25) + 28} x2="25" y2={-(-5.25) + 28} stroke={lineColor} strokeWidth="0.2" />
+      <line x1="-3" y1={-(-1.25) + 28} x2="3" y2={-(-1.25) + 28} stroke={isDark ? '#888' : '#1f2937'} strokeWidth="0.25" />
+      <circle cx="0" cy={28} r="0.75" fill="none" stroke={rimColor} strokeWidth="0.15" />
+
+      {shot.rebounds.map((r, i) => {
+        const rSvg = toSvg(r.x, r.y);
+        return (
+          <circle
+            key={i}
+            cx={rSvg.cx}
+            cy={rSvg.cy}
+            r={4 + Math.random()}
+            fill={`rgba(249, 115, 22, ${isDark ? 0.25 : 0.2})`}
+            stroke="none"
+          />
+        );
+      })}
+      {shot.rebounds.map((r, i) => {
+        const rSvg = toSvg(r.x, r.y);
+        return (
+          <circle
+            key={`dot-${i}`}
+            cx={rSvg.cx}
+            cy={rSvg.cy}
+            r={0.4}
+            fill="#f97316"
+            stroke={isDark ? '#222' : 'white'}
+            strokeWidth="0.1"
+          />
+        );
+      })}
+
+      <circle cx={shotSvg.cx} cy={shotSvg.cy} r={0.6} fill="#ef4444" stroke={isDark ? '#333' : 'white'} strokeWidth="0.12" />
+      <line
+        x1={shotSvg.cx} y1={shotSvg.cy}
+        x2={toSvg(shot.rebounds[0].x, shot.rebounds[0].y).cx}
+        y2={toSvg(shot.rebounds[0].x, shot.rebounds[0].y).cy}
+        stroke={isDark ? 'rgba(249,115,22,0.3)' : 'rgba(249,115,22,0.25)'}
+        strokeWidth="0.1"
+        strokeDasharray="0.4 0.3"
+      />
+    </svg>
+  );
+}
+
+function ReboundAnalyticsArticle() {
+  const isDark = useIsDark();
+  const [selectedShot, setSelectedShot] = useState('right_corner_3');
+
+  const sectionHeaderClass = `text-lg font-bold mt-8 mb-4 pb-2 border-b-2 ${isDark ? 'text-orange-400 border-orange-500/30' : 'text-orange-700 border-orange-200'}`;
+  const subHeaderClass = `text-base font-semibold mt-6 mb-3 pb-1.5 border-b ${isDark ? 'text-gray-200 border-gray-700/50' : 'text-gray-800 border-gray-200'}`;
+  const textClass = `text-sm leading-relaxed mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`;
+  const strongClass = isDark ? 'text-orange-400 font-semibold' : 'text-orange-700 font-semibold';
+  const noteClass = `rounded-xl p-4 my-5 border-l-4 ${isDark ? 'bg-orange-500/5 border-orange-500/40 text-gray-300' : 'bg-orange-50 border-orange-400 text-gray-700'}`;
+
+  const reboundDistData = [
+    { name: 'Under the Basket', dist: 0.8 },
+    { name: 'Mid-Range Jumper', dist: 1.8 },
+    { name: 'Top of Key 3pt', dist: 2.9 },
+    { name: 'Corner 3-Pointer', dist: 3.4 },
+  ];
+  const barColors = ['#ef4444', '#9ca3af', '#6b7280', '#f97316'];
+
+  const takeaways = [
+    { title: 'Find the Weak Side', desc: 'As soon as a shot goes up from an angle, immediately locate the opposite side of the floor. This is your prime real estate.' },
+    { title: 'Guards, Crash for Threes', desc: "Long shots mean long rebounds. Guards shouldn't leak out immediately; anticipate rebounds bouncing out towards the perimeter." },
+    { title: 'Anticipate the Angle', desc: 'A shot from the right will most likely rebound towards the left block or wing. A shot from the left wing will carom right. Move before the ball hits the rim.' },
+    { title: 'Top-of-Key is a Wildcard', desc: "Misses from straight on are less predictable. Be ready for a bounce straight back or a scrum in the paint." },
+  ];
+
+  return (
+    <div>
+      <div className={`rounded-2xl p-6 sm:p-8 text-center border mb-8 ${isDark ? 'bg-gradient-to-b from-orange-500/10 to-transparent border-gray-800' : 'bg-gradient-to-b from-orange-50 to-white border-orange-100'}`}>
+        <p className={`text-base font-semibold mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>The Golden Rule of Rebounding</p>
+        <p className={`text-6xl sm:text-8xl font-black my-3 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>~75%</p>
+        <p className={textClass}>
+          Of all missed shots from the wing or corner bounce to the <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>opposite side</span> of the court, also known as the "weak side". Mastering this position is key to grabbing more boards.
+        </p>
+      </div>
+
+      <div className={`h-px my-6 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+
+      <h2 className={sectionHeaderClass}>Interactive Rebound Heatmap</h2>
+      <p className={textClass}>Select a shot location to see where rebounds typically land. The red dot marks the shooter position, orange zones show rebound density.</p>
+
+      <div className="flex flex-col sm:flex-row gap-4 my-5">
+        <div className={`w-full sm:w-56 flex-shrink-0 rounded-xl p-4 border ${isDark ? 'bg-gray-800/40 border-gray-700/50' : 'bg-gray-50 border-gray-200'}`}>
+          <p className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Shot Position</p>
+          <div className="space-y-1">
+            {SHOT_LOCATIONS.map(loc => (
+              <button
+                key={loc.id}
+                onClick={() => setSelectedShot(loc.id)}
+                className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-colors ${
+                  selectedShot === loc.id
+                    ? isDark ? 'bg-orange-500/20 text-orange-400 font-medium' : 'bg-orange-100 text-orange-700 font-medium'
+                    : isDark ? 'text-gray-400 hover:bg-gray-700/50' : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                {loc.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <CourtSVG shotId={selectedShot} isDark={isDark} />
+        </div>
+      </div>
+
+      <div className={`h-px my-6 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <h3 className={subHeaderClass}>Rebound Distance by Shot Type</h3>
+          <p className={textClass}>As shots move further from the basket, the average rebound distance increases, pulling bigs out of the paint and giving guards a better chance. All units are in meters.</p>
+          <div className="h-52 mt-3">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={reboundDistData} layout="vertical" margin={{ left: 10, right: 20, top: 5, bottom: 5 }}>
+                <XAxis type="number" domain={[0, 4]} tick={{ fontSize: 11, fill: isDark ? '#9ca3af' : '#374151' }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#374151' }} width={110} axisLine={false} tickLine={false} />
+                <Tooltip
+                  contentStyle={{ background: isDark ? '#1a1a1a' : '#fff', border: `1px solid ${isDark ? '#333' : '#e5e7eb'}`, borderRadius: 8, fontSize: 12 }}
+                  labelStyle={{ color: isDark ? '#fff' : '#111', fontWeight: 600 }}
+                  formatter={(v: number) => [`${v}m`, 'Avg Distance']}
+                />
+                <Bar dataKey="dist" radius={[0, 6, 6, 0]} barSize={18}>
+                  {reboundDistData.map((_, i) => (
+                    <Cell key={i} fill={barColors[i]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div>
+          <h3 className={subHeaderClass}>Strategic Takeaways</h3>
+          <div className="space-y-3 mt-3">
+            {takeaways.map((t, i) => (
+              <div key={i} className={`flex items-start gap-3 rounded-xl p-3 border ${isDark ? 'bg-gray-800/30 border-gray-700/50' : 'bg-white border-gray-200 shadow-sm'}`}>
+                <div className={`w-6 h-6 rounded-lg flex-shrink-0 flex items-center justify-center mt-0.5 ${isDark ? 'bg-orange-500/15' : 'bg-orange-100'}`}>
+                  <CheckCircle2 size={13} className={isDark ? 'text-orange-400' : 'text-orange-700'} />
+                </div>
+                <div className="min-w-0">
+                  <p className={`text-xs font-semibold mb-0.5 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{t.title}</p>
+                  <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{t.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className={`mt-6 text-center text-xs ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+        Data synthesized from basketball analytics studies and physics-based models.
+      </div>
+    </div>
+  );
+}
+
 interface Article {
   id: string;
   title: string;
@@ -341,6 +539,13 @@ const articles: Article[] = [
     subtitle: 'Philosophy and methodology for developing effective shooting skills across all age groups',
     icon: Target,
     component: ShootingGuidelinesArticle,
+  },
+  {
+    id: 'rebound-analytics',
+    title: 'Where Do the Balls Bounce',
+    subtitle: 'Decoding rebound patterns for a strategic advantage — the anatomy of a miss',
+    icon: CircleDot,
+    component: ReboundAnalyticsArticle,
   },
 ];
 

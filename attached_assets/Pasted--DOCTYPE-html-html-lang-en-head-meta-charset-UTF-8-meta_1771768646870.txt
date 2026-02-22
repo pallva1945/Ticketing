@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pallacanestro Varese - Rebound Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F3F4F6;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        /* Styles for new D3 Court */
+        .court-line {
+            stroke: #6b7280;
+            stroke-width: 0.1;
+            fill: none;
+        }
+        .backboard {
+            stroke: #1f2937;
+            stroke-width: 0.2;
+        }
+        .rim {
+            stroke: #ef4444;
+            stroke-width: 0.1;
+            fill: none;
+        }
+        #visualization {
+            background-color: #fde9d1; /* A light wood color for the court */
+            overflow: hidden; /* Clips any overflowing SVG content */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+
+        <header class="text-center mb-12 flex flex-col items-center">
+            <img src="https://www.pallacanestrovarese.it/wp-content/uploads/2022/06/logo-varese-red-box.png" alt="Pallacanestro Varese Logo" class="h-24 md:h-32 mb-4" onerror="this.onerror=null;this.src='https://placehold.co/128x128/d6001c/ffffff?text=PV'">
+            <h1 class="text-4xl md:text-6xl font-black text-gray-900 uppercase tracking-wide">The Anatomy of a Miss</h1>
+            <p class="text-lg md:text-xl text-gray-600 mt-2">Decoding Rebound Patterns for a Strategic Advantage</p>
+        </header>
+
+        <main class="space-y-12">
+            
+            <section class="text-center bg-white rounded-xl shadow-lg p-8">
+                <p class="text-2xl font-semibold text-gray-800">The Golden Rule of Rebounding</p>
+                <p class="text-7xl md:text-9xl font-black text-[#D6001C] my-4">~75%</p>
+                <p class="text-xl text-gray-700">Of all missed shots from the wing or corner bounce to the <span class="font-bold text-gray-900">opposite side</span> of the court, also known as the "weak side". Mastering this position is key to grabbing more boards.</p>
+            </section>
+
+            <section class="bg-white rounded-xl shadow-lg p-6 md:p-8">
+                <h2 class="text-3xl font-bold text-center mb-2 text-gray-900">Interactive Rebound Heatmap</h2>
+                <p class="text-gray-600 mb-6 text-center max-w-3xl mx-auto">Select a shot location from the dropdown to see the corresponding rebound heatmap.</p>
+                
+                <div class="flex flex-col md:flex-row gap-8 mt-4">
+                    <!-- Side Panel -->
+                    <div class="w-full md:w-80 bg-gray-50 p-6 shadow-inner rounded-lg self-start">
+                         <h3 class="text-xl font-bold mb-4 text-gray-900">Shot Position</h3>
+                         <p class="text-sm text-gray-600 mb-6">Select a shot location to see the corresponding rebound heatmap.</p>
+                         <div class="space-y-4">
+                             <div>
+                                 <label for="shot-location" class="block text-sm font-medium text-gray-700 mb-2">Select Location:</label>
+                                 <select id="shot-location" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500">
+                                     <option value="right_corner_3">Right Corner 3</option>
+                                     <option value="right_wing_3">Right Wing 3</option>
+                                     <option value="top_of_key_3">Top of the Key 3</option>
+                                     <option value="left_wing_3">Left Wing 3</option>
+                                     <option value="left_corner_3">Left Corner 3</option>
+                                     <option value="right_baseline_mid">Right Baseline Mid-Range</option>
+                                     <option value="right_elbow">Right Elbow</option>
+                                     <option value="free_throw_line">Free Throw Line</option>
+                                     <option value="left_elbow">Left Elbow</option>
+                                     <option value="left_baseline_mid">Left Baseline Mid-Range</option>
+                                 </select>
+                             </div>
+                         </div>
+                         <div id="legend" class="mt-8" style="display: none;">
+                             <h3 class="text-lg font-semibold mb-2">Rebound Density</h3>
+                             <div id="legend-svg-container"></div>
+                         </div>
+                    </div>
+             
+                    <!-- Main Content: Visualization -->
+                    <div class="flex-1 flex items-center justify-center p-4 min-w-0">
+                         <div id="visualization" class="w-full h-full max-w-4xl aspect-[50/47] rounded-lg shadow-md"></div>
+                    </div>
+                </div>
+            </section>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold text-center mb-4 text-gray-900">Rebound Distance by Shot Type</h2>
+                    <p class="text-gray-600 mb-2 text-center">As shots move further from the basket, the average rebound distance increases, pulling bigs out of the paint and giving guards a better chance. All units are in meters.</p>
+                    <div class="chart-container">
+                        <canvas id="reboundDistanceChart"></canvas>
+                    </div>
+                </div>
+                 <div class="bg-white rounded-xl shadow-lg p-6 flex flex-col justify-center">
+                    <h2 class="text-2xl font-bold text-center mb-4 text-gray-900">Strategic Takeaways</h2>
+                    <ul class="space-y-4 text-gray-700">
+                        <li class="flex items-start">
+                            <span class="text-[#D6001C] font-bold text-2xl mr-3">✓</span>
+                            <div><strong class="text-gray-900">Find the Weak Side:</strong> As soon as a shot goes up from an angle, immediately locate the opposite side of the floor. This is your prime real estate.</div>
+                        </li>
+                        <li class="flex items-start">
+                             <span class="text-[#D6001C] font-bold text-2xl mr-3">✓</span>
+                            <div><strong class="text-gray-900">Guards, Crash for Threes:</strong> Long shots mean long rebounds. Guards shouldn't leak out immediately; anticipate rebounds bouncing out towards the perimeter.</div>
+                        </li>
+                        <li class="flex items-start">
+                            <span class="text-[#D6001C] font-bold text-2xl mr-3">✓</span>
+                             <div><strong class="text-gray-900">Anticipate the Angle:</strong> A shot from the right will most likely rebound towards the left block or wing. A shot from the left wing will carom right. Move before the ball hits the rim.</div>
+                        </li>
+                         <li class="flex items-start">
+                            <span class="text-[#D6001C] font-bold text-2xl mr-3">✓</span>
+                            <div><strong class="text-gray-900">Top-of-Key is a Wildcard:</strong> Misses from straight on are less predictable. Be ready for a bounce straight back or a scrum in the paint.</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </main>
+
+        <footer class="text-center mt-12 text-gray-500 text-sm">
+            <p>Data synthesized for Pallacanestro Varese from basketball analytics studies and physics-based models.</p>
+        </footer>
+
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            // Chart.js: Rebound Distance Bar Chart
+            const reboundDistanceCtx = document.getElementById('reboundDistanceChart')?.getContext('2d');
+            if (reboundDistanceCtx) {
+                 new Chart(reboundDistanceCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Under the Basket', 'Mid-Range Jumper', 'Corner 3-Pointer', 'Top of Key 3-Pointer'],
+                        datasets: [{
+                            label: 'Avg. Rebound Distance from Basket (meters)',
+                            data: [0.8, 1.8, 3.4, 2.9],
+                            backgroundColor: [ '#D6001C', '#9CA3AF', '#6B7280', '#374151' ],
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        scales: {
+                            x: { beginAtZero: true, grid: { display: false }, ticks: { color: '#1F2937', font: { weight: '600' } } },
+                            y: { grid: { display: false }, ticks: { color: '#1F2937', font: { weight: '600' } } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+            
+            // D3.js Court & Heatmap Logic
+            const shotData = {
+                "right_corner_3":     { "shot_x": 22,   "shot_y": -2.25, "rebound_data": [{ "rebound_x": -5.3, "rebound_y": 4.9 }, { "rebound_x": -4.2, "rebound_y": 6.1 }, { "rebound_x": -6.9, "rebound_y": 4.8 }, { "rebound_x": -5.9, "rebound_y": 5.1 }] },
+                "right_wing_3":       { "shot_x": 16.8, "shot_y": 16.8,  "rebound_data": [{ "rebound_x": -4.9, "rebound_y": 10.1 }, { "rebound_x": 3.8, "rebound_y": 9.5 }, { "rebound_x": -5.5, "rebound_y": 8.8 }, { "rebound_x": -4.3, "rebound_y": 9.3 }] },
+                "top_of_key_3":       { "shot_x": 0,    "shot_y": 23.75, "rebound_data": [{ "rebound_x": 0.1, "rebound_y": 11.2 }, { "rebound_x": -0.4, "rebound_y": 10.8 }, { "rebound_x": -0.1, "rebound_y": 11.0 }, { "rebound_x": -0.2, "rebound_y": 11.4 }] },
+                "left_wing_3":        { "shot_x": -16.8,"shot_y": 16.8,  "rebound_data": [{ "rebound_x": 3.8, "rebound_y": 9.5 }, { "rebound_x": 5.1, "rebound_y": 9.1 }, { "rebound_x": 4.5, "rebound_y": 9.2 }, { "rebound_x": 5.3, "rebound_y": 8.9 }] },
+                "left_corner_3":      { "shot_x": -22,  "shot_y": -2.25, "rebound_data": [{ "rebound_x": 5.3, "rebound_y": 4.9 }, { "rebound_x": 6.1, "rebound_y": 5.5 }, { "rebound_x": 5.8, "rebound_y": 5.8 }, { "rebound_x": 7.1, "rebound_y": 7.2 }] },
+                "right_baseline_mid": { "shot_x": 15,   "shot_y": -3,    "rebound_data": [{ "rebound_x": -4.2, "rebound_y": 6.1 }, { "rebound_x": -6.2, "rebound_y": 7.8 }, { "rebound_x": -6.0, "rebound_y": 7.3 }, { "rebound_x": -5.7, "rebound_y": 6.4 }] },
+                "right_elbow":        { "shot_x": 6,    "shot_y": 13.75, "rebound_data": [{ "rebound_x": -1.5, "rebound_y": 7.9 }, { "rebound_x": -0.8, "rebound_y": 8.2 }, { "rebound_x": -2.2, "rebound_y": 8.5 }, { "rebound_x": -1.9, "rebound_y": 8.3 }] },
+                "free_throw_line":    { "shot_x": 0,    "shot_y": 13.75, "rebound_data": [{ "rebound_x": 0.8, "rebound_y": 8.2 }, { "rebound_x": -0.4, "rebound_y": 10.8 }, { "rebound_x": 0, "rebound_y": 9.5 }, { "rebound_x": -0.2, "rebound_y": 11.3 }] },
+                "left_elbow":         { "shot_x": -6,   "shot_y": 13.75, "rebound_data": [{ "rebound_x": 1.5, "rebound_y": 7.9 }, { "rebound_x": 2.2, "rebound_y": 8.5 }, { "rebound_x": 1.9, "rebound_y": 8.3 }, { "rebound_x": 1.7, "rebound_y": 8.2 }] },
+                "left_baseline_mid":  { "shot_x": -15,  "shot_y": -3,    "rebound_data": [{ "rebound_x": 4.2, "rebound_y": 6.1 }, { "rebound_x": 6.5, "rebound_y": 7.5 }, { "rebound_x": 6.0, "rebound_y": 6.9 }, { "rebound_x": 6.3, "rebound_y": 6.6 }] }
+            };
+
+            const visContainer = document.getElementById('visualization');
+            let svg, court, width, height;
+
+            function setupSVG() {
+                if (svg) svg.remove(); // Clear previous SVG if resizing
+                const containerRect = visContainer.getBoundingClientRect();
+                width = containerRect.width;
+                height = containerRect.height;
+
+                svg = d3.select("#visualization").append("svg")
+                    .attr("width", width)
+                    .attr("height", height);
+
+                // Add defs for gradients, etc.
+                const defs = svg.append("defs");
+
+                const radialGradient = defs.append("radialGradient")
+                    .attr("id", "shadow-gradient");
+                
+                radialGradient.append("stop")
+                    .attr("offset", "0%")
+                    .attr("stop-color", "black")
+                    .attr("stop-opacity", 0.35); // Darker in the center
+                
+                radialGradient.append("stop")
+                    .attr("offset", "100%")
+                    .attr("stop-color", "black")
+                    .attr("stop-opacity", 0); // Fades to transparent
+
+                court = svg.append("g");
+                
+                // The court is 50ft wide and we're showing up to 30ft long from baseline
+                // Center is at (0,0) which is the hoop.
+                const scaleX = width / 50;
+                const scaleY = height / 30;
+                const scale = Math.min(scaleX, scaleY) * 0.9;
+
+                // Center the court and flip Y axis so positive Y is up
+                court.attr("transform", `translate(${width / 2}, ${height * 0.8}) scale(${scale}, ${-scale})`);
+            }
+
+            function drawCourt() {
+                if (!court) return;
+                court.selectAll("*").remove(); // Clear previous court drawing
+                
+                // Key
+                court.append("rect").attr("x", -6).attr("y", -5.25).attr("width", 12).attr("height", 19).attr("class", "court-line");
+                court.append("circle").attr("cx", 0).attr("cy", 13.75).attr("r", 6).attr("class", "court-line");
+                court.append("rect").attr("x", -8).attr("y", -5.25).attr("width", 16).attr("height", 19).attr("class", "court-line");
+
+                // 3-Point Line (arc)
+                const yIntersect = Math.sqrt(Math.pow(23.75, 2) - Math.pow(22, 2));
+                const threePointPath = `M 22,${yIntersect} A 23.75,23.75 0 0 1 -22,${yIntersect}`;
+                
+                court.append("path")
+                    .attr("d", threePointPath)
+                    .attr("class", "court-line")
+                    .style("fill", "none");
+                court.append("line").attr("x1", -22).attr("y1", -5.25).attr("x2", -22).attr("y2", yIntersect).attr("class", "court-line");
+                court.append("line").attr("x1", 22).attr("y1", -5.25).attr("x2", 22).attr("y2", yIntersect).attr("class", "court-line");
+
+                // Backboard and Rim
+                court.append("line").attr("x1", -3).attr("y1", -1.25).attr("x2", 3).attr("y2", -1.25).attr("class", "backboard");
+                court.append("circle").attr("cx", 0).attr("cy", 0).attr("r", 0.75).attr("class", "rim");
+            }
+            
+            function drawHeatmap(data, shot_pos) {
+                 if (!court) return;
+
+                // Clear previous heatmap elements but not the court
+                court.selectAll('.rebound-shadow, .shot-marker').remove();
+
+                court.append("g")
+                    .attr("class", "rebound-shadow")
+                    .selectAll("ellipse")
+                    .data(data)
+                    .enter().append("ellipse")
+                    .attr("cx", d => d.rebound_x)
+                    .attr("cy", d => d.rebound_y)
+                    .attr("rx", () => 8 + (Math.random() * 2 - 1)) // Randomize x-radius
+                    .attr("ry", () => 8 + (Math.random() * 2 - 1)) // Randomize y-radius
+                    .attr("transform", d => `rotate(${Math.random() * 180}, ${d.rebound_x}, ${d.rebound_y})`) // Random rotation
+                    .style("fill", "url(#shadow-gradient)");
+                
+                // Draw shot marker
+                court.append("circle")
+                    .attr("class", "shot-marker")
+                    .attr("cx", shot_pos.x)
+                    .attr("cy", shot_pos.y)
+                    .attr("r", 0.5)
+                    .attr("fill", "#D6001C")
+                    .attr("stroke", "black")
+                    .attr("stroke-width", 0.1);
+            }
+
+            function updateVisualization() {
+                const selectedLocation = document.getElementById('shot-location').value;
+                const data = shotData[selectedLocation];
+                if (data) {
+                     setupSVG();
+                     drawCourt();
+                     drawHeatmap(data.rebound_data, {x: data.shot_x, y: data.shot_y});
+                }
+            }
+            
+            document.getElementById('shot-location').addEventListener('change', updateVisualization);
+            window.addEventListener('resize', updateVisualization);
+
+            // Initial draw
+            updateVisualization();
+        });
+    </script>
+
+</body>
+</html>
+
+
