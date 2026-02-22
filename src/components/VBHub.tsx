@@ -193,7 +193,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
           <div className="max-w-6xl mx-auto w-full">
             <div className="text-center mb-3 sm:mb-6">
               <div className="flex items-center justify-center gap-3 mb-2 sm:mb-4">
-                <img src={VB_LOGO_URL} alt="VB" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
+                <img src={VB_LOGO_URL} alt="VB" className="w-12 h-12 sm:w-14 sm:h-14 object-contain" />
                 <div className={`inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs tracking-[0.2em] uppercase font-medium ${
                   isDark ? 'bg-orange-900/15 text-orange-400 border border-orange-800/20' : 'bg-orange-50 text-orange-600 border border-orange-100'
                 }`}>
