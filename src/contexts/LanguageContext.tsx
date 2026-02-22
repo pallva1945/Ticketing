@@ -34,48 +34,48 @@ const translations: Record<string, Record<Language, string>> = {
     it: 'Identificare, sviluppare e lanciare la prossima generazione di talenti cestistici d\'élite attraverso un programma giovanile di livello mondiale, basato sui dati e radicato nell\'eredità di Pallacanestro Varese.'
   },
   'vb_mission_1': {
-    en: 'Win the Day — instill a relentless daily commitment to excellence in every aspect of a player\'s development.',
-    it: 'Vincere la Giornata — instillare un impegno quotidiano instancabile verso l\'eccellenza in ogni aspetto dello sviluppo del giocatore.'
+    en: 'Win the Day — Instill a relentless daily commitment to excellence in every aspect of a player\'s development.',
+    it: 'Vincere la Giornata — Instillare un impegno quotidiano instancabile verso l\'eccellenza in ogni aspetto dello sviluppo del giocatore.'
   },
   'vb_mission_2': {
-    en: 'Develop the Complete Player — from fundamentals and strength to leadership and basketball IQ through our 360° program.',
-    it: 'Sviluppare il Giocatore Completo — dai fondamentali e la preparazione fisica alla leadership e al QI cestistico attraverso il nostro programma a 360°.'
+    en: 'Develop the Complete Player — Master fundamentals, strength, leadership, and basketball IQ through our 360° program.',
+    it: 'Sviluppare il Giocatore Completo — Padroneggiare fondamentali, preparazione fisica, leadership e QI cestistico attraverso il nostro programma a 360°.'
   },
   'vb_mission_3': {
-    en: 'Measure Everything — leverage advanced stats, video analysis, and daily tracking to personalize every player\'s path to the pros.',
-    it: 'Misurare Tutto — sfruttare statistiche avanzate, analisi video e monitoraggio quotidiano per personalizzare il percorso di ogni giocatore verso il professionismo.'
+    en: 'Measure Everything — Leverage advanced analytics, video analysis, and daily tracking to personalize every player\'s path to the pros.',
+    it: 'Misurare Tutto — Sfruttare analisi avanzate, analisi video e monitoraggio quotidiano per personalizzare il percorso di ogni giocatore verso il professionismo.'
   },
   'vb_mission_4': {
-    en: 'Bridge to Professional Basketball — provide competitive platforms (6 Eccellenza teams + Serie B) to test and implement skills at the highest youth level.',
-    it: 'Ponte verso il Basket Professionistico — fornire piattaforme competitive (6 squadre Eccellenza + Serie B) per testare e applicare le abilità al massimo livello giovanile.'
+    en: 'Bridge to Professional Basketball — Provide competitive platforms (6 Eccellenza teams + Serie B) to test and refine skills at the highest youth level.',
+    it: 'Ponte verso il Basket Professionistico — Fornire piattaforme competitive (6 squadre Eccellenza + Serie B) per testare e perfezionare le abilità al massimo livello giovanile.'
   },
   'vb_vision_statement': {
-    en: 'To become the best youth basketball program in Italy — a Dream Factory where world-class infrastructure, NBA-caliber methodology, and Italian basketball heritage converge.',
-    it: 'Diventare il miglior programma cestistico giovanile d\'Italia — una Fabbrica dei Sogni dove infrastrutture di livello mondiale, metodologia di calibro NBA ed eredità cestistica italiana convergono.'
+    en: 'To become the premier youth basketball program in Italy — a Dream Factory where world-class infrastructure, NBA-caliber methodology, and Italian basketball heritage converge.',
+    it: 'Diventare il principale programma cestistico giovanile d\'Italia — una Fabbrica dei Sogni dove infrastrutture di livello mondiale, metodologia di calibro NBA ed eredità cestistica italiana convergono.'
   },
   'vb_vision_1': {
-    en: 'Set the Standard — establish an NBA-caliber development environment with cutting-edge sports science and biomechanics.',
-    it: 'Stabilire lo Standard — creare un ambiente di sviluppo di calibro NBA con scienza dello sport e biomeccanica all\'avanguardia.'
+    en: 'Set the Standard — Establish an NBA-caliber development environment with cutting-edge sports science and biomechanics.',
+    it: 'Stabilire lo Standard — Creare un ambiente di sviluppo di calibro NBA con scienza dello sport e biomeccanica all\'avanguardia.'
   },
   'vb_vision_2': {
-    en: 'Build a Pipeline — create a continuous pathway from grassroots (450+ kids) to Serie A and international basketball.',
-    it: 'Costruire un Vivaio — creare un percorso continuo dalla base (450+ ragazzi) alla Serie A e al basket internazionale.'
+    en: 'Build a Pipeline — Create a continuous pathway from grassroots (450+ youth) to Serie A and international basketball.',
+    it: 'Costruire un Vivaio — Creare un percorso continuo dalla base (450+ giovani) alla Serie A e al basket internazionale.'
   },
   'vb_vision_3': {
-    en: 'Invest in Infrastructure — a €3M+ facility vision with state-of-the-art training center, elite residence, and the Ivolution Lab.',
-    it: 'Investire nelle Infrastrutture — una visione di strutture da €3M+ con centro di allenamento all\'avanguardia, residenza élite e il Laboratorio Ivolution.'
+    en: 'Invest in Infrastructure — Deliver a €3M+ facility vision including a state-of-the-art training center, elite residence, and the Ivolution Lab.',
+    it: 'Investire nelle Infrastrutture — Realizzare una visione di strutture da €3M+ che include un centro di allenamento all\'avanguardia, residenza élite e il Laboratorio Ivolution.'
   },
   'vb_vision_4': {
-    en: 'Produce Professionals — deliver players to the top leagues, as proven by Librizzi, Asui, Villa, and more.',
-    it: 'Produrre Professionisti — portare giocatori ai massimi campionati, come dimostrato da Librizzi, Asui, Villa e altri.'
+    en: 'Produce Professionals — Consistently deliver players to top leagues, as proven by talents like Librizzi, Asui, and Villa.',
+    it: 'Produrre Professionisti — Portare costantemente giocatori ai massimi campionati, come dimostrato da talenti come Librizzi, Asui e Villa.'
   },
   'vb_values_player_title': {
     en: 'The Player — Daily Excellence',
     it: 'Il Giocatore — Eccellenza Quotidiana'
   },
   'vb_values_player_desc': {
-    en: 'Show up, improve, compete, recover, track. Every day is an opportunity to get better. Hard work, discipline, and consistency are non-negotiable.',
-    it: 'Presentarsi, migliorare, competere, recuperare, monitorare. Ogni giorno è un\'opportunità per crescere. Duro lavoro, disciplina e costanza sono imprescindibili.'
+    en: 'Show up. Improve. Compete. Recover. Track. Every day is an opportunity to get better. Hard work, discipline, and consistency are non-negotiable.',
+    it: 'Presentarsi. Migliorare. Competere. Recuperare. Monitorare. Ogni giorno è un\'opportunità per crescere. Duro lavoro, disciplina e costanza sono imprescindibili.'
   },
   'vb_values_method_title': {
     en: 'The Method — Data-Driven Development',
@@ -91,7 +91,7 @@ const translations: Record<string, Record<Language, string>> = {
   },
   'vb_values_culture_desc': {
     en: 'Built on 10 Scudetti and 5 EuroLeague titles. We honor our storied history while innovating for the future, uniting players, families, and the city of Varese.',
-    it: 'Costruita su 10 Scudetti e 5 titoli di EuroLega. Onoriamo la nostra storia leggendaria innovando per il futuro, unendo giocatori, famiglie e la città di Varese.'
+    it: 'Costruita su 10 Scudetti e 5 titoli di EuroLega. Onoriamo la nostra storia gloriosa innovando per il futuro, unendo giocatori, famiglie e la città di Varese.'
   },
   'vb_about_placeholder': { en: 'The Varese Basketball youth development section is being built. This section will feature the history, philosophy, and structure of the academy program.', it: 'La sezione sullo sviluppo giovanile di Varese Basketball è in costruzione. Questa sezione presenterà la storia, la filosofia e la struttura del programma accademico.' },
   'vb_team_placeholder': { en: 'Team profiles for coaches, staff, and athletic trainers are being compiled. This section will showcase the people behind Varese Basketball\'s development programs.', it: 'I profili del team di allenatori, staff e preparatori atletici sono in fase di compilazione. Questa sezione presenterà le persone dietro i programmi di sviluppo di Varese Basketball.' },
