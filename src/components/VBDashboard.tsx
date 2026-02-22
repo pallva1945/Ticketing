@@ -1862,9 +1862,9 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
     const baseWeights = { projReach: 0.40, wingspan: 0.30, projHeight: 0.15, weight: 0.15 };
 
     const rawComps = [
-      { key: 'projReach', label: 'Proj. Standing Reach', z: zProjR, baseW: baseWeights.projReach, val: pd.projReach, unit: 'cm' },
+      { key: 'projReach', label: 'P. Standing Reach', z: zProjR, baseW: baseWeights.projReach, val: pd.projReach, unit: 'cm' },
       { key: 'wingspan', label: 'Wingspan', z: zWingspan, baseW: baseWeights.wingspan, val: pd.wingspan, unit: 'cm' },
-      { key: 'projHeight', label: 'Proj. Height', z: zProjH, baseW: baseWeights.projHeight, val: pd.projHeight, unit: 'cm' },
+      { key: 'projHeight', label: 'P. Height', z: zProjH, baseW: baseWeights.projHeight, val: pd.projHeight, unit: 'cm' },
       { key: 'weight', label: 'Weight', z: zWeight, baseW: baseWeights.weight, val: pd.weight, unit: 'kg' },
     ];
 
@@ -2239,9 +2239,9 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                     </thead>
                     <tbody>
                       {[
-                        ['Proj. Standing Reach', '40%', 'Most direct measure of effective size and vertical space control'],
+                        ['P. Standing Reach', '40%', 'Most direct measure of effective size and vertical space control'],
                         ['Wingspan', '30%', 'Primary determinant of defensive versatility and disruption'],
-                        ['Proj. Height', '15%', 'Baseline measure of overall scale'],
+                        ['P. Height', '15%', 'Baseline measure of overall scale'],
                         ['Weight', '15%', 'Essential for physicality and durability'],
                       ].map(([name, w, why], i) => (
                         <tr key={i} className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
