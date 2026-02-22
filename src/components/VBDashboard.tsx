@@ -3829,88 +3829,122 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
     if (!q) return [];
     const items: { type: string; label: string; value: string; sortKey: number }[] = [];
 
-    const catKeys = Object.keys(categoryKeywords);
-    catKeys.filter(k => k.includes(q) || categoryKeywords[k].toLowerCase().includes(q)).forEach(k => {
-      items.push({ type: 'category', label: categoryKeywords[k], value: categoryKeywords[k], sortKey: -2 });
-    });
+    const parsed = parseCompoundQuery(query);
+    const hasDate = parsed.year !== null || parsed.month !== null || parsed.day !== null;
+    const hasName = parsed.nameTokens.length > 0;
+    const hasRole = parsed.role !== null;
+    const hasCategory = parsed.category !== null;
+    const hasContext = hasDate || hasName || hasRole || hasCategory;
 
-    const matchedRole = isRoleToken(q);
-    if (matchedRole) {
-      items.push({ type: 'role', label: matchedRole, value: matchedRole, sortKey: -1 });
-    } else {
-      allRoles.filter(r => r.toLowerCase().includes(q)).forEach(r => {
-        if (!items.some(i => i.label === r)) items.push({ type: 'role', label: r, value: r, sortKey: -1 });
+    const buildLabel = (parts: string[]) => parts.filter(Boolean).join(' · ');
+    const roleLabel = parsed.role || '';
+    const catLabel = parsed.category || '';
+    const nameLabel = hasName ? players.find(p => parsed.nameTokens.every(nt => p.toLowerCase().includes(nt))) || parsed.nameTokens.join(' ') : '';
+
+    const dateLabel = hasDate
+      ? (parsed.day !== null && parsed.month !== null && parsed.year !== null
+        ? `${String(parsed.day).padStart(2, '0')}/${String(parsed.month).padStart(2, '0')}/${parsed.year}`
+        : parsed.month !== null && parsed.year !== null
+        ? `${monthDisplay[(parsed.month) - 1]} ${parsed.year}`
+        : parsed.month !== null
+        ? monthDisplay[(parsed.month) - 1]
+        : `${parsed.year}`)
+      : '';
+
+    const tokens = q.split(/[\s,;]+/).filter(t => t.length > 0);
+    const lastToken = tokens[tokens.length - 1] || '';
+
+    if (!hasRole) {
+      const matchedRole = isRoleToken(lastToken);
+      if (matchedRole) {
+        const label = buildLabel([matchedRole, catLabel, nameLabel, dateLabel].filter(Boolean));
+        items.push({ type: 'role', label, value: `compound:${[matchedRole, catLabel, nameLabel, dateLabel].filter(Boolean).join(' ')}`, sortKey: -1 });
+      } else {
+        allRoles.filter(r => r.toLowerCase().includes(lastToken)).forEach(r => {
+          if (!items.some(i => i.label.includes(r))) {
+            const label = buildLabel([r, catLabel, nameLabel, dateLabel].filter(Boolean));
+            items.push({ type: 'role', label, value: `compound:${[r, catLabel, nameLabel, dateLabel].filter(Boolean).join(' ')}`, sortKey: -1 });
+          }
+        });
+      }
+    }
+
+    if (!hasCategory) {
+      const catKeys = Object.keys(categoryKeywords);
+      catKeys.filter(k => k.includes(lastToken) || categoryKeywords[k].toLowerCase().includes(lastToken)).forEach(k => {
+        const label = buildLabel([roleLabel, categoryKeywords[k], nameLabel, dateLabel].filter(Boolean));
+        items.push({ type: 'category', label, value: `compound:${[roleLabel, categoryKeywords[k], nameLabel, dateLabel].filter(Boolean).join(' ')}`, sortKey: -2 });
       });
     }
 
-    players.filter(p => p.toLowerCase().includes(q)).slice(0, 5).forEach(p => {
-      items.push({ type: 'player', label: p, value: p, sortKey: 0 });
-    });
-
-    allSeasons.filter(s => s.includes(q)).slice(0, 3).forEach(s => {
-      items.push({ type: 'season', label: `${t('Season')} ${s}`, value: `season:${s}`, sortKey: 1 });
-    });
-
-    const parsed = parseCompoundQuery(query);
-    const hasDate = parsed.year !== null || parsed.month !== null || parsed.day !== null;
-
-    if (hasDate) {
-      if (parsed.year !== null && parsed.month !== null && parsed.day !== null) {
-        const iso = `${parsed.year}-${String(parsed.month).padStart(2, '0')}-${String(parsed.day).padStart(2, '0')}`;
-        if (allDates.includes(iso)) {
-          items.push({ type: 'date', label: `${String(parsed.day).padStart(2, '0')}/${String(parsed.month).padStart(2, '0')}/${parsed.year}`, value: `date:${iso}`, sortKey: 3 });
-        }
-      } else if (parsed.year !== null && parsed.month !== null) {
-        const iso = `${parsed.year}-${String(parsed.month).padStart(2, '0')}`;
-        if (allMonths.includes(iso)) {
-          const mi = parsed.month - 1;
-          items.push({ type: 'month', label: `${monthDisplay[mi]} ${parsed.year}`, value: `month:${iso}`, sortKey: 2 });
-        }
-      } else if (parsed.month !== null) {
-        allMonths.filter(m => parseInt(m.split('-')[1]) === parsed.month).slice(0, 4).forEach(m => {
-          const mi = parseInt(m.split('-')[1]) - 1;
-          items.push({ type: 'month', label: `${monthDisplay[mi]} ${m.split('-')[0]}`, value: `month:${m}`, sortKey: 2 });
-        });
-      } else if (parsed.year !== null) {
-        allMonths.filter(m => m.startsWith(`${parsed.year}-`)).slice(0, 6).forEach(m => {
-          const mi = parseInt(m.split('-')[1]) - 1;
-          items.push({ type: 'month', label: `${monthDisplay[mi]} ${parsed.year}`, value: `month:${m}`, sortKey: 2 });
+    if (!hasName) {
+      players.filter(p => p.toLowerCase().includes(lastToken)).slice(0, 5).forEach(p => {
+        const label = buildLabel([roleLabel, catLabel, p, dateLabel].filter(Boolean));
+        items.push({ type: 'player', label, value: `compound:${[roleLabel, catLabel, p, dateLabel].filter(Boolean).join(' ')}`, sortKey: 0 });
+      });
+    } else {
+      const matchedPlayers = players.filter(p => parsed.nameTokens.every(nt => p.toLowerCase().includes(nt)));
+      if (matchedPlayers.length > 0 && (hasDate || hasRole || hasCategory)) {
+        matchedPlayers.slice(0, 3).forEach(p => {
+          const label = buildLabel([roleLabel, catLabel, p, dateLabel].filter(Boolean));
+          items.push({ type: 'player', label, value: `compound:${q}`, sortKey: -1 });
         });
       }
     }
 
     if (!hasDate) {
-      allMonths.filter(m => m.includes(q)).slice(0, 5).forEach(m => {
-        if (items.some(i => i.value === `month:${m}`)) return;
-        const mi = parseInt(m.split('-')[1]) - 1;
-        items.push({ type: 'month', label: `${monthDisplay[mi]} ${m.split('-')[0]}`, value: `month:${m}`, sortKey: 2 });
+      const mi = parseMonthName(lastToken);
+      if (mi !== null) {
+        allMonths.filter(m => parseInt(m.split('-')[1]) === mi + 1).slice(0, 4).forEach(m => {
+          const mIdx = parseInt(m.split('-')[1]) - 1;
+          const dLabel = `${monthDisplay[mIdx]} ${m.split('-')[0]}`;
+          const label = buildLabel([roleLabel, catLabel, nameLabel, dLabel].filter(Boolean));
+          items.push({ type: 'month', label, value: `compound:${[roleLabel, catLabel, nameLabel, dLabel].filter(Boolean).join(' ')}`, sortKey: 2 });
+        });
+      }
+      allSeasons.filter(s => s.includes(lastToken)).slice(0, 3).forEach(s => {
+        const label = buildLabel([roleLabel, catLabel, nameLabel, `${t('Season')} ${s}`].filter(Boolean));
+        items.push({ type: 'season', label, value: `season:${s}`, sortKey: 1 });
       });
-
-      allDates.filter(d => d.includes(q)).slice(0, 5).forEach(d => {
-        if (items.some(i => i.value === `date:${d}`)) return;
-        const [dy, dm, dd] = d.split('-');
-        items.push({ type: 'date', label: `${dd}/${dm}/${dy}`, value: `date:${d}`, sortKey: 3 });
-      });
+    } else {
+      if (parsed.year !== null && parsed.month !== null && parsed.day !== null) {
+        const iso = `${parsed.year}-${String(parsed.month).padStart(2, '0')}-${String(parsed.day).padStart(2, '0')}`;
+        if (allDates.includes(iso)) {
+          const label = buildLabel([roleLabel, catLabel, nameLabel, dateLabel].filter(Boolean));
+          items.push({ type: 'date', label, value: `compound:${q}`, sortKey: 3 });
+        }
+      } else if (parsed.year !== null && parsed.month !== null) {
+        const iso = `${parsed.year}-${String(parsed.month).padStart(2, '0')}`;
+        if (allMonths.includes(iso)) {
+          const label = buildLabel([roleLabel, catLabel, nameLabel, dateLabel].filter(Boolean));
+          items.push({ type: 'month', label, value: `compound:${q}`, sortKey: 2 });
+        }
+      } else if (parsed.month !== null) {
+        allMonths.filter(m => parseInt(m.split('-')[1]) === parsed.month).slice(0, 4).forEach(m => {
+          const mIdx = parseInt(m.split('-')[1]) - 1;
+          const dLabel = `${monthDisplay[mIdx]} ${m.split('-')[0]}`;
+          const label = buildLabel([roleLabel, catLabel, nameLabel, dLabel].filter(Boolean));
+          items.push({ type: 'month', label, value: `compound:${[roleLabel, catLabel, nameLabel, dLabel].filter(Boolean).join(' ')}`, sortKey: 2 });
+        });
+      } else if (parsed.year !== null) {
+        allMonths.filter(m => m.startsWith(`${parsed.year}-`)).slice(0, 6).forEach(m => {
+          const mIdx = parseInt(m.split('-')[1]) - 1;
+          const dLabel = `${monthDisplay[mIdx]} ${parsed.year}`;
+          const label = buildLabel([roleLabel, catLabel, nameLabel, dLabel].filter(Boolean));
+          items.push({ type: 'month', label, value: `compound:${[roleLabel, catLabel, nameLabel, dLabel].filter(Boolean).join(' ')}`, sortKey: 2 });
+        });
+      }
     }
 
-    if (parsed.nameTokens.length > 0 && hasDate) {
-      const matchedPlayers = players.filter(p => parsed.nameTokens.every(nt => p.toLowerCase().includes(nt)));
-      const dateLabel = parsed.day !== null
-        ? `${parsed.day}/${parsed.month}/${parsed.year}`
-        : parsed.month !== null
-        ? `${monthDisplay[(parsed.month || 1) - 1]}${parsed.year ? ' ' + parsed.year : ''}`
-        : `${parsed.year}`;
-      matchedPlayers.slice(0, 3).forEach(p => {
-        items.unshift({ type: 'player', label: `${p} · ${dateLabel}`, value: `compound:${q}`, sortKey: -1 });
-      });
-    }
+    const seen = new Set<string>();
+    const deduped = items.filter(i => {
+      if (seen.has(i.label)) return false;
+      seen.add(i.label);
+      return true;
+    });
 
-    const hasDigit = /\d/.test(q);
-    if (hasDigit || hasDate) {
-      items.sort((a, b) => a.sortKey - b.sortKey);
-    }
-
-    return items.slice(0, 10);
+    deduped.sort((a, b) => a.sortKey - b.sortKey);
+    return deduped.slice(0, 10);
   }, [query, players, allSeasons, allMonths, allDates, profiles, t]);
 
   const makeDayOff = (player: string, date: string): VBSession => ({
@@ -4003,13 +4037,9 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
   };
 
   const handleSuggestionClick = (item: { type: string; label: string; value: string }) => {
-    if (item.type === 'player') {
-      setQuery(item.label);
-      executeSearch(item.value);
-    } else {
-      setQuery(item.label);
-      executeSearch(item.value);
-    }
+    const searchVal = item.value.startsWith('compound:') ? item.value.replace('compound:', '') : item.value;
+    setQuery(item.label);
+    executeSearch(item.value.startsWith('compound:') ? `compound:${searchVal}` : item.value);
   };
 
   const handleInputChange = (val: string) => {
