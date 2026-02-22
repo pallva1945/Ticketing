@@ -5048,7 +5048,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const tabs: { id: TabId; label: string; icon: any }[] = [
-    { id: 'overview', label: t('Overview'), icon: BarChart3 },
+    { id: 'overview', label: t('Load & Shooting'), icon: BarChart3 },
     { id: 'anthropometrics', label: t('Anthropometrics'), icon: Ruler },
     { id: 'performance', label: t('Performance'), icon: Zap },
     { id: 'gameperf', label: t('Game Performance'), icon: Trophy },

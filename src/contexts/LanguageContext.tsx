@@ -104,6 +104,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Recognized': { en: 'Recognized', it: 'Riconosciuto' },
   'Signed': { en: 'Signed', it: 'Firmato' },
   'Overview': { en: 'Overview', it: 'Panoramica' },
+  'Load & Shooting': { en: 'Load & Shooting', it: 'Carico & Tiro' },
   'Player Profile': { en: 'Player Profile', it: 'Profilo Giocatore' },
   'Players Pack': { en: 'Players Pack', it: 'Scheda Giocatori' },
   'Info': { en: 'Info', it: 'Info' },
