@@ -921,14 +921,65 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
   }, [selectedDay, selectedWeek, selectedMonth]);
 
   const monthlyGoals = { practice: { min: 16, max: 32 }, vitamins: { min: 32, max: 48 }, weights: { min: 32, max: 48 }, game: { min: 24, max: 28 } };
-  const shotsGoal = filterGranularity === 'day' ? 100 : filterGranularity === 'week' ? 700 : filterGranularity === 'month' ? 700 : 3000;
-  const goalScale = filterGranularity === 'day' ? 1 / 30 : filterGranularity === 'week' ? 7 / 30 : filterGranularity === 'month' ? 7 / 30 : 1;
+  const shotsGoal = filterGranularity === 'day' ? 100 : filterGranularity === 'week' ? 100 : filterGranularity === 'month' ? 700 : 3000;
+  const goalScale = filterGranularity === 'day' ? 1 / 30 : filterGranularity === 'week' ? 1 / 30 : filterGranularity === 'month' ? 7 / 30 : 1;
   const proratedGoals = {
     practice: { min: +(monthlyGoals.practice.min * goalScale).toFixed(1), max: +(monthlyGoals.practice.max * goalScale).toFixed(1) },
     vitamins: { min: +(monthlyGoals.vitamins.min * goalScale).toFixed(1), max: +(monthlyGoals.vitamins.max * goalScale).toFixed(1) },
     weights: { min: +(monthlyGoals.weights.min * goalScale).toFixed(1), max: +(monthlyGoals.weights.max * goalScale).toFixed(1) },
     game: { min: +(monthlyGoals.game.min * goalScale).toFixed(1), max: +(monthlyGoals.game.max * goalScale).toFixed(1) },
     totalLoad: { min: +((monthlyGoals.practice.min + monthlyGoals.vitamins.min + monthlyGoals.weights.min + monthlyGoals.game.min) * goalScale).toFixed(1), max: +((monthlyGoals.practice.max + monthlyGoals.vitamins.max + monthlyGoals.weights.max + monthlyGoals.game.max) * goalScale).toFixed(1) },
+  };
+
+  const LoadTooltip = ({ active, payload, label, goalMin, goalMax, unit, goalLabel }: any) => {
+    if (!active || !payload || !payload.length) return null;
+    const val = payload[0]?.value;
+    const status = val < goalMin ? 'Below' : val > goalMax ? 'Above' : 'In Range';
+    const statusColor = val < goalMin ? '#3b82f6' : val > goalMax ? '#ef4444' : '#22c55e';
+    return (
+      <div style={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827', padding: '8px 12px', minWidth: 140 }}>
+        <p style={{ fontWeight: 700, marginBottom: 4 }}>{label}</p>
+        <p style={{ color: statusColor, fontWeight: 600 }}>{payload[0]?.name}: {val}{unit || ''}</p>
+        <div style={{ borderTop: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, marginTop: 4, paddingTop: 4 }}>
+          <p style={{ color: '#22c55e', fontSize: 10 }}>{goalLabel || t('Goal')}: {goalMin}–{goalMax}{unit || ''}</p>
+          <p style={{ color: statusColor, fontSize: 10, fontWeight: 600 }}>{status}</p>
+        </div>
+      </div>
+    );
+  };
+
+  const ShotTooltip = ({ active, payload, label, goal }: any) => {
+    if (!active || !payload || !payload.length) return null;
+    const val = payload[0]?.value;
+    const status = val < goal ? 'Below' : 'On Target';
+    const statusColor = val < goal ? '#3b82f6' : '#22c55e';
+    return (
+      <div style={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827', padding: '8px 12px', minWidth: 140 }}>
+        <p style={{ fontWeight: 700, marginBottom: 4 }}>{label}</p>
+        <p style={{ color: statusColor, fontWeight: 600 }}>{payload[0]?.name}: {val}</p>
+        <div style={{ borderTop: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, marginTop: 4, paddingTop: 4 }}>
+          <p style={{ color: '#22c55e', fontSize: 10 }}>{t('Goal')}: {goal}</p>
+          <p style={{ color: statusColor, fontSize: 10, fontWeight: 600 }}>{status}</p>
+        </div>
+      </div>
+    );
+  };
+
+  const PctTooltip = ({ active, payload, label, goalMin, goalMax }: any) => {
+    if (!active || !payload || !payload.length) return null;
+    const val = payload[0]?.value;
+    const status = val < goalMin ? 'Below' : val > goalMax ? 'Above' : 'In Range';
+    const statusColor = val < goalMin ? '#3b82f6' : val > goalMax ? '#ef4444' : '#22c55e';
+    return (
+      <div style={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827', padding: '8px 12px', minWidth: 140 }}>
+        <p style={{ fontWeight: 700, marginBottom: 4 }}>{label}</p>
+        <p style={{ color: statusColor, fontWeight: 600 }}>{payload[0]?.name}: {val}%</p>
+        <div style={{ borderTop: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, marginTop: 4, paddingTop: 4 }}>
+          <p style={{ color: '#22c55e', fontSize: 10 }}>{t('Goal')}: {goalMin}%–{goalMax}%</p>
+          <p style={{ color: statusColor, fontSize: 10, fontWeight: 600 }}>{status}</p>
+        </div>
+      </div>
+    );
   };
 
   const loadData = useMemo(() => {
@@ -1096,7 +1147,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                 <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                 <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(() => { const mid = (proratedGoals.totalLoad.min + proratedGoals.totalLoad.max) / 2; const range = proratedGoals.totalLoad.max - proratedGoals.totalLoad.min; return (dataMin: number) => { const maxDist = Math.max(mid - dataMin, 0, range / 2); return Math.max(0, Math.floor(mid - maxDist * 1.3)); }; })(), (() => { const mid = (proratedGoals.totalLoad.min + proratedGoals.totalLoad.max) / 2; const range = proratedGoals.totalLoad.max - proratedGoals.totalLoad.min; return (dataMax: number) => { const maxDist = Math.max(dataMax - mid, 0, range / 2); return Math.ceil(mid + maxDist * 1.3); }; })()]} />
-                <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                <Tooltip content={<LoadTooltip goalMin={proratedGoals.totalLoad.min} goalMax={proratedGoals.totalLoad.max} />} />
                 <ReferenceArea y1={proratedGoals.totalLoad.min} y2={proratedGoals.totalLoad.max} fill="#22c55e" fillOpacity={isDark ? 0.08 : 0.1} />
                 <ReferenceLine y={proratedGoals.totalLoad.min} stroke="#22c55e" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${proratedGoals.totalLoad.min}`, position: 'right', fontSize: 9, fill: '#22c55e' }} />
                 <ReferenceLine y={proratedGoals.totalLoad.max} stroke="#22c55e" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${proratedGoals.totalLoad.max}`, position: 'right', fontSize: 9, fill: '#22c55e' }} />
@@ -1126,7 +1177,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
                     <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                     <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                     <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(() => { const mid = (goals.min + goals.max) / 2; const halfRange = (goals.max - goals.min) / 2; return (dataMin: number) => { const dist = Math.max(mid - dataMin, 0, halfRange); return Math.max(0, Math.floor(mid - dist * 1.3)); }; })(), (() => { const mid = (goals.min + goals.max) / 2; const halfRange = (goals.max - goals.min) / 2; return (dataMax: number) => { const dist = Math.max(dataMax - mid, 0, halfRange); return Math.ceil(mid + dist * 1.3); }; })()]} />
-                    <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                    <Tooltip content={<LoadTooltip goalMin={goals.min} goalMax={goals.max} />} />
                     <ReferenceArea y1={goals.min} y2={goals.max} fill="#22c55e" fillOpacity={isDark ? 0.08 : 0.1} />
                     <ReferenceLine y={goals.min} stroke="#22c55e" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${goals.min}`, position: 'right', fontSize: 9, fill: '#22c55e' }} />
                     <ReferenceLine y={goals.max} stroke="#22c55e" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${goals.max}`, position: 'right', fontSize: 9, fill: '#22c55e' }} />
@@ -1152,7 +1203,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                   <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                   <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => Math.max(0, Math.floor(Math.min(dataMin, shotsGoal) * 0.9)), (dataMax: number) => Math.ceil(Math.max(dataMax, shotsGoal) * 1.05)]} />
-                  <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+                  <Tooltip content={<ShotTooltip goal={shotsGoal} />} />
                   <ReferenceLine y={shotsGoal} stroke="#22c55e" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `${shotsGoal}`, position: 'right', fontSize: 9, fill: '#22c55e' }} />
                   <Bar dataKey="shotsTaken" name={t('Shots Taken')} radius={[2, 2, 0, 0]}>
                     {loadData.map((entry: any, idx: number) => {
@@ -1179,7 +1230,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                   <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                   <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => { const mid = 75; const dist = Math.max(mid - dataMin, 0, 10); return Math.max(0, Math.floor(mid - dist * 1.3)); }, (dataMax: number) => { const mid = 75; const dist = Math.max(dataMax - mid, 0, 10); return Math.min(100, Math.ceil(mid + dist * 1.3)); }]} />
-                  <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} formatter={(value: any) => `${value}%`} />
+                  <Tooltip content={<PctTooltip goalMin={65} goalMax={85} />} />
                   <ReferenceArea y1={65} y2={85} fill="#22c55e" fillOpacity={isDark ? 0.08 : 0.1} />
                   <ReferenceLine y={65} stroke="#22c55e" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: '65%', position: 'right', fontSize: 9, fill: '#22c55e' }} />
                   <ReferenceLine y={85} stroke="#22c55e" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: '85%', position: 'right', fontSize: 9, fill: '#22c55e' }} />

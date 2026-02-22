@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Varese Basketball | The Official Club Manual</title>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4QRW81QXW5"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-4QRW81QXW5');
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.0/dist/chartjs-plugin-annotation.min.js"></script>
+    <style>
+        /* --- General Styles & Resets --- */
+        :root {
+            --primary-red: #E21E26;
+            --dark-gray: #1a1a1a;
+            --medium-gray: #2c2c2c;
+            --light-gray: #f4f4f4;
+            --text-color: #333;
+            --white: #ffffff;
+            --header-font: 'Roboto', sans-serif;
+            --body-font: 'Roboto', sans-serif;
+            --success-green: #28a745;
+            --warning-orange: #fd7e14;
+        }
+
+        /* --- Google Font Import --- */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap');
+
+        /* --- Basic Reset --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* --- Body Styles --- */
+        body {
+            font-family: var(--body-font);
+            line-height: 1.7;
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            padding-top: 80px; /* Space for the fixed header */
+        }
+
+        /* --- Header & Navigation --- */
+        header {
+            background-color: var(--white);
+            color: var(--primary-red);
+            padding: 1rem 2rem;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-container img {
+            height: 50px; /* Control logo size */
+            width: auto;
+            box-shadow: none; /* Remove shadow from logo */
+            border-radius: 0; /* Remove radius from logo */
+            margin: 0;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        nav a {
+            color: var(--dark-gray);
+            text-decoration: none;
+            font-weight: 700;
+            transition: color 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--primary-red);
+        }
+
+        /* --- Main Content Area --- */
+        main {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        section {
+            margin-bottom: 3rem;
+            padding-top: 80px; /* Offset for anchor links */
+            margin-top: -80px; /* Negative margin to compensate for padding */
+            page-break-inside: avoid;
+        }
+
+        /* --- Typography --- */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: var(--header-font);
+            color: var(--dark-gray);
+            margin-bottom: 1rem;
+            line-height: 1.3;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--primary-red);
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            text-align: center;
+            color: var(--medium-gray);
+            margin-bottom: 3rem;
+            border-bottom: 3px solid var(--primary-red);
+            padding-bottom: 1rem;
+        }
+        
+        h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-red);
+            margin-top: 2rem;
+        }
+
+        h4 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--medium-gray);
+            margin-top: 1.5rem;
+        }
+
+        h5 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--dark-gray);
+            margin-top: 1.5rem;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 0.5rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        ul, ol {
+            padding-left: 1.5rem; /* Adjusted for better alignment */
+            margin-bottom: 1rem;
+        }
+
+        li {
+            margin-bottom: 0.75rem; /* Increased spacing for readability */
+        }
+
+        strong, b {
+            font-weight: 700;
+            color: var(--dark-gray);
+        }
+
+        em, i {
+            font-style: italic;
+            color: var(--primary-red);
+        }
+        
+        .code-style {
+            font-family: 'Roboto Mono', monospace;
+            background-color: #e9ecef;
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: var(--primary-red);
+        }
+        
+        /* --- Table of Contents --- */
+        .toc-container {
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-left: 5px solid var(--primary-red);
+            border-radius: 8px;
+            padding: 1.5rem 2rem;
+            margin-top: 1rem;
+        }
+        .toc-list {
+            list-style: none;
+            padding-left: 0;
+            counter-reset: toc-counter;
+        }
+        .toc-list li {
+            counter-increment: toc-counter;
+            margin-bottom: 1rem;
+        }
+        .toc-list li:last-child {
+            margin-bottom: 0;
+        }
+        .toc-list a {
+            text-decoration: none;
+            color: var(--medium-gray);
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: color 0.3s ease, padding-left 0.3s ease;
+            display: block;
+        }
+        .toc-list a:before {
+            content: counter(toc-counter) ". ";
+            color: var(--primary-red);
+            font-weight: 900;
+            margin-right: 0.5rem;
+        }
+        .toc-list a:hover {
+            color: var(--primary-red);
+            padding-left: 5px;
+        }
+        
+        /* --- Tables --- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            font-size: 0.95rem; /* Slightly smaller font for tables */
+        }
+
+        th, td {
+            padding: 0.8rem 1rem; /* Adjusted padding */
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: var(--dark-gray);
+            color: var(--white);
+            font-weight: 700;
+            text-transform: uppercase; /* Professional look for headers */
+        }
+
+        tr:nth-child(even) {
+            background-color: var(--light-gray);
+        }
+        
+        tr:hover {
+            background-color: #e9e9e9;
+        }
+        
+        .high-value { color: var(--success-green); font-weight: 700; }
+        .low-value { color: var(--primary-red); font-weight: 700; }
+
+        /* --- Images --- */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 2rem auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        /* --- Infographic & Note Styles --- */
+        .info-box {
+            background-color: rgba(226, 30, 38, 0.05); /* Light red background */
+            border-left: 4px solid var(--primary-red);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .infographic-container {
+            margin-top: 2.5rem;
+            padding: 1.5rem;
+            background-color: var(--light-gray);
+            border-radius: 8px;
+        }
+        .infographic-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        .chart-card {
+            padding: 1rem;
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 300px; /* Default height */
+            margin-top: 1rem;
+        }
+        .infographic-container h5 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--dark-gray);
+            text-align: center;
+            margin-bottom: 0.5rem;
+            border: none;
+        }
+        .infographic-container .description {
+            font-size: 0.95rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            color: var(--medium-gray);
+        }
+        
+        /* --- Player Pack Slider Styles --- */
+        .player-pack-slider-outer-container {
+            margin-top: 2rem;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+            background-color: #f9f9f9;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+        .slider-container {
+            position: relative;
+            width: 100%;
+            margin: auto;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        .slider-wrapper {
+            display: flex;
+            transition: transform 0.5s ease-in-out;
+        }
+        .slide {
+            min-width: 100%;
+            box-sizing: border-box;
+            background-color: var(--white);
+            padding: 1.5rem;
+        }
+        .slide-logo {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 50px;
+            opacity: 0.5;
+            margin: 0;
+            box-shadow: none;
+            border-radius: 0;
+        }
+        .slider-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.3);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        .slider-arrow:hover {
+            background-color: var(--primary-red);
+        }
+        .slider-arrow.prev { left: 10px; }
+        .slider-arrow.next { right: 10px; }
+
+        /* --- Player Pack Content Styles --- */
+        .player-profile-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; align-items: center; }
+        .player-photo { width: 120px; height: 120px; object-fit: cover; border-radius: 50%; border: 4px solid var(--primary-red); margin: 0 auto; box-shadow: none; }
+        .player-name { font-size: 2rem; font-weight: 900; color: var(--dark-gray); margin-bottom: 0.25rem; }
+        .player-details { font-size: 1.1rem; color: var(--medium-gray); margin-bottom: 0.5rem; }
+        .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .stat-value { font-size: 1.8rem; font-weight: 900; color: var(--primary-red); line-height: 1; }
+        .stat-label { font-size: 0.8rem; color: var(--medium-gray); margin-top: 2px; text-transform: uppercase; }
+        .slide-title { font-size: 1.5rem; font-weight: 700; text-align: center; margin-bottom: 1.5rem; color: var(--dark-gray); border: none; }
+        .stat-table { width: 100%; }
+        .stat-table td { padding: 0.5rem; font-size: 0.9rem; border-bottom: 1px solid #eee; }
+        .stat-table td:last-child { font-weight: 700; text-align: right; }
+        .stat-good { color: var(--success-green); }
+        .stat-bad { color: var(--primary-red); }
+        .poe-grid { font-size: 0.9rem; }
+        .poe-grid p { margin-bottom: 0.5rem; }
+        .player-evaluation-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem; }
+        .evaluation-item { background-color: var(--light-gray); padding: 0.75rem; border-radius: 6px; }
+        .evaluation-item-title { font-weight: 700; color: var(--medium-gray); font-size: 0.9rem; margin-bottom: 0.25rem; }
+        .evaluation-item-value { font-weight: 900; font-size: 1.1rem; color: var(--dark-gray); }
+
+        /* --- Utility & Responsive Styles --- */
+        .final-word {
+            text-align: center;
+            font-style: italic;
+            font-size: 1.2rem;
+            margin: 3rem 0;
+            padding: 1.5rem;
+            background-color: var(--light-gray);
+            border-left: 5px solid var(--primary-red);
+        }
+        
+        .win-the-day {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: var(--primary-red);
+            margin-top: 2rem;
+        }
+
+        .download-container {
+            text-align: center;
+            margin: 3rem auto 1rem;
+            max-width: 900px;
+        }
+        
+        #download-pdf {
+            background-color: var(--primary-red);
+            color: var(--white);
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        #download-pdf:hover {
+            background-color: #b5171d;
+            transform: translateY(-2px);
+        }
+
+        #download-pdf:disabled {
+            background-color: var(--medium-gray);
+            cursor: not-allowed;
+        }
+
+
+        /* --- Responsive Design --- */
+        @media (min-width: 640px) {
+            .player-profile-grid { grid-template-columns: auto 1fr; text-align: left; }
+            .player-photo { margin: 0; }
+            .stat-grid { grid-template-columns: repeat(4, 1fr); }
+            .player-evaluation-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (min-width: 768px) {
+            .infographic-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding-top: 0; /* Remove padding for mobile */
+            }
+            
+            header {
+                flex-direction: column;
+                padding: 1rem;
+                position: static; /* Header will scroll with content */
+            }
+
+            .logo-container {
+                margin-bottom: 1rem;
+            }
+
+            nav ul {
+                gap: 1rem;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            main {
+                margin: 1rem;
+                padding: 1rem;
+            }
+
+            h1 { font-size: 2.5rem; }
+            h2 { font-size: 1.8rem; }
+            h3 { font-size: 1.5rem; }
+            
+            section {
+                padding-top: 20px;
+                margin-top: 0; /* Reset margin for mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header with Navigation -->
+    <header>
+        <div class="logo-container">
+            <img src="https://i.imgur.com/jComki8.png" alt="Pallacanestro Varese Logo" onerror="this.onerror=null;this.src='https://placehold.co/200x50/FFFFFF/E21E26?text=Pallacanestro';">
+            <img src="https://i.imgur.com/e7khORs.png" alt="Varese Basketball Logo" onerror="this.onerror=null;this.src='https://placehold.co/200x50/FFFFFF/E21E26?text=Varese';">
+        </div>
+        <nav>
+            <ul>
+                <li><a href="#philosophy">Philosophy</a></li>
+                <li><a href="#development">Development</a></li>
+                <li><a href="#system">System</a></li>
+                <li><a href="#rules">Rules</a></li>
+                <li><a href="#recruiting">Recruiting</a></li>
+                <li><a href="#residence">Residence</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main id="manual-content">
+        <section id="title-section">
+            <h1>Varese Basketball: The Official Club Manual</h1>
+            <h2>"Win the Day"</h2>
+        </section>
+
+        <!-- Table of Contents -->
+        <section id="toc">
+            <h4>Table of Contents</h4>
+            <div class="toc-container">
+                <ol class="toc-list">
+                    <li><a href="#philosophy">The PVB Philosophy: Our DNA</a></li>
+                    <li><a href="#development">The Player Development Framework</a></li>
+                    <li><a href="#system">The PVB System: Our On-Court Identity</a></li>
+                    <li><a href="#rules">Professional Standards & Club Rules</a></li>
+                    <li><a href="#recruiting">Contract & Recruiting Concepts</a></li>
+                    <li><a href="#residence">Player Residence: Rules & Regulations</a></li>
+                </ol>
+            </div>
+        </section>
+
+        <section id="philosophy">
+            <h3>1. The PVB Philosophy: Our DNA</h3>
+            <p>Welcome to Varese Basketball.</p>
+            <p>Before you read another word, you must understand our purpose. If you believe our goal is to win the next game, to make the national finals, or to collect youth championships, you are mistaken. Those are small ambitions, and we are not in the business of small ambitions.</p>
+            <p>Our ultimate, all-consuming goal is to become the <strong>best basketball development program in Europe.</strong></p>
+            <p>This is the standard that fuels us. This is the vision that guides every practice, every drill, and every decision we make. We are not building teams to win temporary trophies; we are forging elite athletes and exceptional young men who are prepared to dominate at the highest levels.</p>
+            <p>Everything else—the championships, the professional contracts, the national team selections, the players who reach the NBA—is a consequence. They are the natural results of our relentless pursuit of being the best. This manual is our covenant. It is the blueprint for that pursuit. It sets the tone for our program, and it demands a commitment not just to the work, but to the vision. Read it, understand it, and live it. Because here, we don't just play basketball. We build the future of it.</p>
+            
+            <h4>Our Core Values</h4>
+            <p>These five values are the bedrock of our club. They guide every decision, every practice, and every interaction.</p>
+            <ol>
+                <li><strong>Work Ethic:</strong> We are defined by our effort. We embrace hard work when no one is watching.</li>
+                <li><strong>Respect the Game:</strong> We honor the sport by playing it the right way, with intelligence and passion.</li>
+                <li><strong>Respect for Others:</strong> We treat teammates, opponents, coaches, officials, and staff with the highest level of respect.</li>
+                <li><strong>Ambition:</strong> We are obsessed with improvement. We have a relentless desire to be the best version of ourselves.</li>
+                <li><strong>Have Fun:</strong> We cultivate a deep love for the game, fueled by the joy of competition and shared success.</li>
+            </ol>
+            
+            <h4>Our Definition of Success</h4>
+            <p>Winning is not our primary goal; it is the <strong>consequence</strong> of our work. We measure our success by our ability to achieve three key objectives:</p>
+            <ul>
+                <li><strong>Talent Identification:</strong> Finding players with the potential and character to thrive in our system.</li>
+                <li><strong>Talent Development:</strong> Maximizing the potential of every player through our structured program.</li>
+                <li><strong>Talent Creation:</strong> Producing skilled, intelligent, and resilient basketball players who are prepared for the next level.</li>
+            </ul>
+            <p>The ultimate metric of our success is how much our players improve over the course of the year.</p>
+        </section>
+
+        <section id="development">
+            <h3>2. The Player Development Framework</h3>
+            <p>Player development is our number one priority. In VB, we believe in an integrated approach, developing the <strong>Technical</strong>, <strong>Physical</strong>, and <strong>Basketball IQ</strong> components of each player. <strong>Individual practices and skill development are always more important than team practices, games, and results.</strong></p>
+            
+            <h4>2.1 The Physical Pillar: Building Elite Athletes</h4>
+            <p>Our approach to physical development is built on a deep, analytical understanding of what makes a basketball player elite. We evaluate players across two proprietary, data-driven models: the <strong>Anthropometric Potential Score (APS)</strong>, which assesses a player's physical frame, and the <strong>Composite Athleticism Score (CAS)</strong>, which measures their functional, on-court athleticism.</p>
+            
+            <p><strong>The Anthropometric Potential Score (APS): A Player's Physical Blueprint</strong></p>
+            <p>A player's physical structure is the architectural blueprint that defines their potential. The APS is a position-adjusted composite score that quantifies this foundation. It moves beyond simple height to prioritize functional length and size, which are far more predictive of on-court success.</p>
+            <ul>
+                <li><strong>Standing Reach (40% Weight):</strong> The most critical metric. It measures a player's ability to control the vertical space around the rim, impacting rim protection, rebounding, and finishing efficiency.</li>
+                <li><strong>Wingspan (30% Weight):</strong> The primary determinant of defensive versatility and the ability to disrupt passing lanes. A long wingspan allows a player to "play bigger" than their height.</li>
+                <li><strong>Height (15% Weight):</strong> A foundational trait that provides a baseline measure of a player's overall scale.</li>
+                <li><strong>Weight (15% Weight):</strong> Essential for physicality and durability, providing a measure of a player's substance and presence.</li>
+            </ul>
+            <p>Each player's measurements are converted to a position-specific z-score (comparing them to elite NBA prospect benchmarks) and then combined using the weights above. A positive APS indicates an advantageous physical frame for their position, while a negative score highlights a potential physical limitation.</p>
+
+            <p><strong>The Composite Athleticism Score (CAS): Measuring On-Court Dynamism</strong></p>
+            <p>The CAS is a five-test battery designed to measure the core athletic qualities that translate directly to game situations: explosive power, speed, agility, and functional strength. This score tells us how effectively a player can use their physical frame.</p>
+            <table>
+                <thead>
+                    <tr><th>Test Component</th><th>Primary Quality Measured</th><th>On-Court Relevance</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Max Vertical Leap</strong></td><td>Dynamic Explosive Power</td><td>Finishing dunks, chase-down blocks, catching lobs. The ultimate measure of "in-game" leaping.</td></tr>
+                    <tr><td><strong>Shuttle Run</strong></td><td>Agility / Change of Direction</td><td>Perimeter defense, making sharp offensive cuts, navigating screens. Crucial for defensive versatility.</td></tr>
+                    <tr><td><strong>Three-Quarter Sprint</strong></td><td>Linear Speed / Acceleration</td><td>Transition offense and defense. Measures a player's end-to-end speed.</td></tr>
+                    <tr><td><strong>Standing Vertical Leap</strong></td><td>Static Explosive Power</td><td>Rebounding in a crowd, contesting shots under the basket, rising for a jump shot in a tight space.</td></tr>
+                    <tr><td><strong>Hex Bar Deadlift (Relative)</strong></td><td>Foundational Strength</td><td>The bedrock of all athletic actions. Higher strength improves power, speed, and injury resilience.</td></tr>
+                </tbody>
+            </table>
+            <p>Like the APS, all CAS test results are converted into a single, position-adjusted score. This allows us to create a detailed athletic profile for each player, identifying their specific strengths (e.g., "Power Jumper," "Defensive Specialist") and guiding their individual training programs.</p>
+
+            <h4>2.2 The Technical & IQ Pillar: Mastering the Game</h4>
+            <p>We split our on-court skill development into four interconnected areas.</p>
+            
+            <!-- CONTENT FROM SHOOTING PRINCIPLES STARTS HERE -->
+            <h5>Shooting: The Modern Prerequisite</h5>
+            <p><em>"If you can't shoot, you can't play."</em> This is the most critical part of modern player development. Our goal is to foster consistent, efficient, and adaptable shooters across all age groups. We use a leveled system to provide personalized training based on a deep understanding of shooting mechanics.</p>
+
+            <h5>The Four Phases of the Shot</h5>
+            <p>Every consistent shot can be broken down into four fundamental phases:</p>
+            <ol>
+                <li><strong>The Catch:</strong> Establishing initial body and hand position.</li>
+                <li><strong>The Dip:</strong> Transitioning into the power generation phase.</li>
+                <li><strong>The Flow:</strong> Generating upward momentum and shot trajectory.</li>
+                <li><strong>The Follow-Through:</strong> Ensuring accuracy and ball rotation.</li>
+            </ol>
+
+            <p><strong>A. The Catch</strong><br>
+            This phase focuses on preparing the body and hands to initiate the shot. Proper footwork is essential:</p>
+            <ul>
+                <li><strong>The 3-Step Gather ("Walk Up the Shot"):</strong> For developing shooters, we emphasize a "right-left-right" gather (for a right-handed shooter). This sequence involves a forward momentum from approximately 1.5 to 2 meters outside the three-point line, allowing players to generate significant power.</li>
+                <li><strong>Body Positioning:</strong> The body should be square to the basket, with the shooting-side foot positioned approximately half a foot ahead of the non-shooting foot. Knees should be shoulder-width apart. The ball is ideally caught as the non-shooting foot lands.</li>
+                <li><strong>Hand Position:</strong> The shooting wrist must be loaded (flexed back) upon receiving the ball, ready to propel the shot.</li>
+                <li><strong>Avoid Jumping into the Shot:</strong> Jumping <em>into</em> the catch can dissipate energy and hinder the creation of upward and forward momentum.</li>
+            </ul>
+
+            <p><strong>B. The Dip</strong><br>
+            Following the catch, the shooter transitions into the "Starting Position."</p>
+            <ul>
+                <li><strong>Action:</strong> After catching the ball on the non-shooting foot (e.g., left step), the shooter should dip the ball while simultaneously stepping onto the shooting-side foot (e.g., right step). This combined movement defines the "Dip."</li>
+                <li><strong>Starting Position:</strong> This is a relaxed, athletic stance: face up, eyes on the target, shoulders square, ball at hip height with wrist loaded, and a slight bend in the knees and hips.</li>
+                <li><strong>Avoid:</strong> Holding the ball too high or not dipping, holding it too close to the body, or being overly squatted. These common errors restrict natural power transfer.</li>
+            </ul>
+
+            <p><strong>C. The Flow</strong><br>
+            The "Flow" is the continuous, upward motion that generates the shot.</p>
+            <ul>
+                <li><strong>Initiation:</strong> From the "Starting Position," the body initiates a quick, controlled "down and up" movement. This leverages the stretch reflex for maximum power generation.</li>
+                <li><strong>Ball Path:</strong> The ball moves seamlessly with the <em>upward</em> momentum in a straight line, passing in front of the face and extending to the shooting point above the head.</li>
+                <li><strong>Execution:</strong> The movement must be fluid and coordinated, with the ball released at the absolute peak of the upward extension.</li>
+            </ul>
+
+            <p><strong>D. The Follow-Through</strong><br>
+            The "Follow-Through" ensures precision and imparts crucial spin on the ball.</p>
+            <ul>
+                <li><strong>Action:</strong> The shooting wrist "snaps through" the ball, with the fingertips (especially index and middle) being the last contact point. This creates backspin for a softer touch.</li>
+                <li><strong>Visual:</strong> The hand should finish in a "swan neck" or "reaching into the cookie jar" position, pointing directly at the basket.</li>
+            </ul>
+
+            <h5>Assessment and Player Development Levels</h5>
+            <p>Our program employs a structured assessment to guide individual player development. Good form is crucial, but our priority is to optimize performance.</p>
+            <div class="info-box">
+                <strong>Practice vs. Game Performance:</strong> All percentages and levels are based on controlled, high-repetition practice sessions. A player's in-game shooting percentage is typically about half of their practice percentage (e.g., 60% in drills equals ~30% in a game).
+            </div>
+            <table>
+                <thead>
+                    <tr><th>Level</th><th>Title</th><th>Threshold (Spot-Up 3s)</th><th>Training Focus</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>1</td><td><strong>Bad Shooter</strong></td><td>&lt;50%</td><td>Work <strong>only on form</strong> until a respectable mechanic is achieved. Avoid shooting in games.</td></tr>
+                    <tr><td>2</td><td><strong>Incapable</strong></td><td>50-60%</td><td>Focus on improving form and consistency from spot-up positions. High volume in games should be avoided.</td></tr>
+                    <tr><td>3</td><td><strong>Capable</strong></td><td>60-65%</td><td>Balance spot-up shots (~60%) with basic movement shots (~40%). Can shoot effectively in games.</td></tr>
+                    <tr><td>4</td><td><strong>Volume Shooter</strong></td><td>65-70%</td><td>Actively sought for scoring. Training is 40-50% spot-ups and 50-60% intermediate movement shots.</td></tr>
+                    <tr><td>5</td><td><strong>Elite Shooter</strong></td><td>70%+</td><td>High volume in games. Training is ~25% spot-ups and 75% advanced movement shots and playmaking.</td></tr>
+                </tbody>
+            </table>
+
+            <h5>Practice Shooting Principles & Methodology</h5>
+            <p>Our practice methodology breaks down shooting into progressive stages, building skills layer by layer.</p>
+            <div class="info-box">
+                <strong>Core Concept (The "Golf Analogy"):</strong> The legs are the "clubs," and the upper body is the "swing." The swing should remain identical regardless of distance, while the club (leg drive) adjusts for power.
+            </div>
+            <p><strong>A. Form Shooting (Progressive Steps):</strong></p>
+            <ol>
+                <li><strong>Step 1 (Restricted Circle):</strong> Upper body mechanics only (Starting Position, Flow, Follow-Through).</li>
+                <li><strong>Step 2 (Mid-Range):</strong> Add ankle extension for power.</li>
+                <li><strong>Step 3 (Free-Throw Line):</strong> Add the "Down and Up" body movement.</li>
+                <li><strong>Step 4 (Long Two-Point):</strong> Add the "Walk Up the Shot" gather and a small jump.</li>
+                <li><strong>Step 5 (Three-Point Line):</strong> Combine all elements for a full, powerful shot.</li>
+            </ol>
+            <p><strong>B. Spot-Up Shots:</strong> Focus on high pace and rhythm. Players should move actively between shots. "Train like a pro."</p>
+            <p><strong>C. Basic Movement Shots (Relocation):</strong> Drills focus on fundamental movements to get open (e.g., Mash Out, Slide to Corner, Replace).</p>
+            <p><strong>D. Intermediate Movement Shots (On-Ball Actions):</strong> More complex movements, often with the ball or off screens (e.g., DHO series, Korver Cut, Spain PnR).</p>
+            <p><strong>E. Advanced Movement Shots (Playmaking):</strong> Self-created shots, often off the dribble (e.g., PnR Handler, Step Back, Doncic Gather).</p>
+
+            <h5>Expectations and Development Standards (15-year-old prospect)</h5>
+            <ul>
+                <li><strong>Form Development:</strong> Achieve 50% spot-up proficiency within ~2 months of daily form work.</li>
+                <li><strong>Level 2 to 3:</strong> Progress from 50% to 60% within 4 months.</li>
+                <li><strong>Level 3 to 4:</strong> Progress from 60% to 65% within 4 months.</li>
+                <li><strong>Level 4 to 5:</strong> Progress from 65% to 70%+ within one year.</li>
+            </ul>
+            <div class="info-box">
+                <strong>Accountability:</strong> These standards ensure all aspiring elite players reach at least Level 3 proficiency within one year. Failure to meet these benchmarks requires a review of coaching methods and player plans.
+            </div>
+            <!-- CONTENT FROM SHOOTING PRINCIPLES ENDS HERE -->
+
+            <h5>Playmaking: Creating Advantages</h5>
+            <p>The ability to get by a defender and create for the team.</p>
+            <ul>
+                <li><strong>Ball Handling:</strong> Vitamin sessions begin with focused ball handling. Coaches must plan tailor-made routines with high attention to detail.</li>
+                <li><strong>Passing:</strong> Putting the ball on target. We work daily on specific passes: open step, pocket pass, high pocket, side kick, hook to the corner, baseline hook, and late dump-off.</li>
+            </ul>
+
+            <h5>Finishing: Scoring at the Rim</h5>
+            <p>To be a pro, you must be able to finish. We work on a variety of finishes in different game situations (Rip & Go, DHO, PnR, Transition).</p>
+            <ul>
+                <li><strong>Finishes include:</strong> Euro step, other side of the rim, spins, finishing through contact, big shoulder, between 1-2 defenders, jump stops, and various combinations.</li>
+            </ul>
+
+            <h5>Basketball IQ: The Deciding Factor</h5>
+            <p>Achieved primarily through individual film study.</p>
+            <ul>
+                <li><strong>Game Sense:</strong> Identifying a good play versus a bad play.</li>
+                <li><strong>Shooting Spectrum:</strong> Understanding a good shot versus a bad shot for you and the team.</li>
+                <li><strong>Defense:</strong> Reading offenses, understanding rotations.</li>
+                <li><strong>Court Vision:</strong> Finding the open man.</li>
+                <li><strong>Balance:</strong> Knowing when to expand your game and when to play to your strengths.</li>
+            </ul>
+
+            <h4>2.3 Workload Management & Tracking</h4>
+            <p><strong>Technical Workload Tracking (Vitamins)</strong>: Coaches are responsible for tracking load daily and customizing workouts.</p>
+            <table>
+                <thead>
+                    <tr><th>Load Level</th><th>Description</th><th>Target</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Vitamins 1</strong></td><td>Light spot-up or movement shooting (20-25 min). Ideal for game day or off day.</td><td rowspan="3" style="vertical-align: middle;">Elite players are expected to complete a weekly load between <strong>8 and 12</strong>.<br>This equals a monthly load between <strong>32 and 48</strong>.</td></tr>
+                    <tr><td><strong>Vitamins 2</strong></td><td>Regular vitamin (approx. 30 min). Player breaks a good sweat, finishes tired but ready for team practice.</td></tr>
+                    <tr><td><strong>Vitamins 3</strong></td><td>"Day Off Vitamin." Longer, more intense version of Vitamin 2. Player should finish very tired.</td></tr>
+                </tbody>
+            </table>
+            <p><strong>Vitamins Keys:</strong></p>
+            <ul>
+                <li><strong>Intensity:</strong> Push players. Train like a pro.</li>
+                <li><strong>Reps:</strong> Rebound for players. Keep the flow up and get reps in.</li>
+                <li><strong>Quality:</strong> Teach high-level execution. Use defense to present realistic situations. Do things that work in the game.</li>
+            </ul>
+            <p><strong>Game Load Tracking</strong>: The game is a crucial part of development. We track game load to ensure our players get the right amount of experience.</p>
+            <table>
+                <thead>
+                    <tr><th>Load</th><th>Minutes Played</th><th>Points</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Game 1</td><td>0-10 minutes</td><td>1</td></tr>
+                    <tr><td>Game 2</td><td>11-20 minutes</td><td>2</td></tr>
+                    <tr><td>Game 3</td><td>21-30 minutes</td><td>3</td></tr>
+                    <tr><td>Game 4</td><td>&gt;30 minutes</td><td>4</td></tr>
+                </tbody>
+            </table>
+            <p><strong>Practice Load Tracking</strong>: Team practices are tracked to monitor collective work.</p>
+            <table>
+                <thead>
+                    <tr><th>Load</th><th>Description</th><th>Points</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Practice 1</td><td>Light shootaround practice.</td><td>1</td></tr>
+                    <tr><td>Practice 2</td><td>Regular team practice.</td><td>2</td></tr>
+                    <tr><td>Practice 3</td><td>Hard, longer pre-season practice.</td><td>3</td></tr>
+                </tbody>
+            </table>
+            <p><strong>Monthly Load Goals & Overall Balance</strong>: We track workload across four key areas to ensure a balanced development plan.</p>
+            <table>
+                <thead>
+                    <tr><th>Category</th><th>Monthly Load Goal</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Weights Load</td><td>32 - 48 points</td></tr>
+                    <tr><td>Vitamins Load</td><td>32 - 48 points</td></tr>
+                    <tr><td>Practice Load</td><td>16 - 32 points</td></tr>
+                    <tr><td>Game Load</td><td>24 - 28 points</td></tr>
+                    <tr><td><strong>TOTAL LOAD</strong></td><td><strong>104 - 146 points</strong></td></tr>
+                </tbody>
+            </table>
+            <p><em>A special note on load:</em> While it is sometimes impossible to be perfectly in range in all areas due to game schedules, travel, or recovery needs, we aim for the <strong>overall balance</strong>. Coaches must manage the total load to keep players within the target range of 104-146 points per month, adjusting practice and vitamin intensity as needed.</p>
+
+            <h4>2.4 The Player Pack: A Tailor-Made Path to Success</h4>
+            <p>Tailoring our programs is fundamental to our success. To do this, we create a clear and unique path for each player based on their specific needs. This is achieved through the <strong>Player Pack</strong>.</p>
+            <p>The Player Pack is a comprehensive report that consists of three areas:</p>
+            <ol>
+                <li><strong>Physical Profile:</strong> All anthropometric and performance testing data, including the APS and CAS.</li>
+                <li><strong>Player Development Tracking:</strong> All "Vitamin" and "Weights" data, including shooting percentages, drills completed, and loads managed.</li>
+                <li><strong>Game Stats:</strong> Traditional and advanced statistics from all official games.</li>
+            </ol>
+            <p><strong>Process and Accountability:</strong></p>
+            <ul>
+                <li><strong>Points of Emphasis (POEs):</strong> Based on the Player Pack data, each player will be assigned <strong>3 or 4 key points of emphasis</strong> for the month. These are the specific areas coaches must aim to improve.</li>
+                <li><strong>KPIs:</strong> For each POE, a measurable Key Performance Indicator (KPI) will be created to track progress objectively.</li>
+                <li><strong>Coach Rotation:</strong> To provide fresh perspectives and prevent players from becoming accustomed to one style, the designated "Vitamin" coach for each player will <strong>rotate monthly</strong>.</li>
+                <li><strong>Monthly Evaluation:</strong> Upon rotation, the incoming and outgoing coaches will meet to evaluate the player's evolution based on their KPIs. This meeting will determine the new POEs and any necessary adjustments for the upcoming month.</li>
+            </ul>
+            <p>Below is an example of a Player Pack report:</p>
+            
+            <!-- Player Pack Example -->
+            <div class="player-pack-slider-outer-container">
+                <div class="slider-container">
+                    <div class="slider-wrapper">
+                        <!-- Slide 1: Profile & POE -->
+                        <div class="slide" id="profile">
+                            <img src="https://i.imgur.com/jComki8.png" alt="Varese Logo" class="slide-logo" onerror="this.onerror=null;this.src='https://placehold.co/50x50/FFFFFF/E21E26?text=V';">
+                            <div class="player-profile-grid">
+                                <img src="https://i.imgur.com/n0T2e1Y.jpg" alt="Ivan Prato" class="player-photo" onerror="this.onerror=null;this.src='https://placehold.co/120x120/CCCCCC/FFFFFF?text=Player';">
+                                <div class="text-center">
+                                    <h5 class="player-name">Ivan Prato</h5>
+                                    <p class="player-details">Center / Power Forward | Age: 19</p>
+                                    <div class="stat-grid">
+                                        <div class="text-center"><p class="stat-value">209<span class="text-sm">cm</span></p><p class="stat-label">Height</p></div>
+                                        <div class="text-center"><p class="stat-value">105<span class="text-sm">kg</span></p><p class="stat-label">Weight</p></div>
+                                        <div class="text-center"><p class="stat-value">215<span class="text-sm">cm</span></p><p class="stat-label">Wingspan</p></div>
+                                        <div class="text-center"><p class="stat-value">277<span class="text-sm">cm</span></p><p class="stat-label">Reach</p></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="player-evaluation-grid">
+                               <div class="evaluation-item">
+                                   <div class="evaluation-item-title">Player Mirror</div>
+                                   <div class="evaluation-item-value">Nicola Mirotic</div>
+                               </div>
+                               <div class="evaluation-item">
+                                   <div class="evaluation-item-title">Projection</div>
+                                   <div class="evaluation-item-value">Euroleague</div>
+                               </div>
+                               <div class="evaluation-item">
+                                   <div class="evaluation-item-title">Shooting Level</div>
+                                   <div class="evaluation-item-value">4 / 5</div>
+                               </div>
+                               <div class="evaluation-item">
+                                   <div class="evaluation-item-title">Athleticism</div>
+                                   <div class="evaluation-item-value">4 / 5</div>
+                               </div>
+                               <div class="evaluation-item">
+                                   <div class="evaluation-item-title">Game IQ</div>
+                                   <div class="evaluation-item-value">2 / 5</div>
+                               </div>
+                            </div>
+                            <hr style="margin: 1.5rem 0; border-color: #eee;">
+                            <div>
+                                <h5 class="slide-title" style="text-align: left; font-size: 1.2rem; margin-bottom: 1rem; border: none;">Points of Emphasis</h5>
+                                <div class="poe-grid">
+                                    <div>
+                                        <p><strong>1. Lateral Quickness:</strong> Crucial for defending PnR coverages. <span class="stat-bad">KPI: Reduce Cone Drill time by 5%.</span></p>
+                                        <p><strong>2. Explosive Power:</strong> Enhance finishing in traffic and rebounding. <span class="stat-good">KPI: Increase No Step Vertical by 10%.</span></p>
+                                    </div>
+                                    <div>
+                                         <p><strong>3. Shooting Range:</strong> Extending range is non-negotiable. <span class="stat-bad">KPI: >35% 3PT & >70% FT in games.</span></p>
+                                         <p><strong>4. Decision Making:</strong> Improve passing vision from post/elbow. <span class="stat-bad">KPI: Improve A/TO Ratio to >1.25.</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Slide 2: Performance & Load -->
+                        <div class="slide" id="performance">
+                            <img src="https://i.imgur.com/jComki8.png" alt="Varese Logo" class="slide-logo" onerror="this.onerror=null;this.src='https://placehold.co/50x50/FFFFFF/E21E26?text=V';">
+                            <h5 class="slide-title">Performance & Load Tracking</h5>
+                            <div class="infographic-grid">
+                                <div class="chart-card"><div class="chart-container" style="height: 220px;"><canvas id="speedAgilityChart"></canvas></div></div>
+                                <div class="chart-card"><div class="chart-container" style="height: 220px;"><canvas id="jumpChart"></canvas></div></div>
+                                <div class="chart-card"><div class="chart-container" style="height: 220px;"><canvas id="playerStrengthChart"></canvas></div></div>
+                                <div class="chart-card"><div class="chart-container" style="height: 220px;"><canvas id="loadChart"></canvas></div></div>
+                            </div>
+                        </div>
+
+                        <!-- Slide 3: Game Stats -->
+                        <div class="slide" id="stats">
+                             <img src="https://i.imgur.com/jComki8.png" alt="Varese Logo" class="slide-logo" onerror="this.onerror=null;this.src='https://placehold.co/50x50/FFFFFF/E21E26?text=V';">
+                             <h5 class="slide-title">Advanced Game Statistics</h5>
+                             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: center;">
+                                 <div>
+                                     <div class="chart-container" style="height: 300px;"><canvas id="spiderChart"></canvas></div>
+                                 </div>
+                                 <div>
+                                     <table class="stat-table">
+                                         <tr><td>True Shooting %</td><td class="stat-good">68%</td></tr>
+                                         <tr><td>Effective FG %</td><td class="stat-good">73%</td></tr>
+                                         <tr><td>Def. Reb %</td><td class="stat-good">12%</td></tr>
+                                         <tr><td>Block %</td><td class="stat-good">4.4%</td></tr>
+                                         <tr><td>Assist %</td><td class="stat-bad">4%</td></tr>
+                                         <tr><td>Turnover %</td><td class="stat-bad">17%</td></tr>
+                                         <tr><td>3PT %</td><td class="stat-bad">22%</td></tr>
+                                         <tr><td>FT %</td><td class="stat-bad">51%</td></tr>
+                                     </table>
+                                 </div>
+                             </div>
+                             <div class="chart-card" style="margin-top: 1.5rem;">
+                                  <div class="chart-container" style="height: 250px;"><canvas id="scatterChart"></canvas></div>
+                             </div>
+                        </div>
+                    </div>
+                    <button class="slider-arrow prev">&#10094;</button>
+                    <button class="slider-arrow next">&#10095;</button>
+                </div>
+            </div>
+
+        </section>
+
+        <section id="system">
+            <h3>3. The PVB System: Our On-Court Identity</h3>
+            <p>This section defines our unified approach to the game. It is the tactical blueprint for every team that represents Varese Basketball.</p>
+            
+            <h4>3.1 The Core Principle: "Speak the Same Language"</h4>
+            <p>As an organization, we play with one identity. This means every team—from our youth groups to Serie A—utilizes the same style, concepts, terminology, and core drills. While all coaches contribute to this system, the Head Coach of the Serie A team ultimately shows the way.</p>
+            <p>This unified approach is our strategic advantage. It allows us to move a player from U17 to Serie A, and he will be able to practice and play immediately without any further tactical preparation. He already speaks our language.</p>
+            
+            <h4>3.2 Our General Style: Pace Produces Efficiency</h4>
+            <p>We want to play <strong>fast</strong>. A high pace is not about chaos; it is about creating tactical advantages. Pushing the ball relentlessly forces defenses into uncomfortable situations, which leads to higher-quality shots for us. Data shows a clear correlation between a faster pace and a more efficient offense. Our goal is to be the fastest-thinking, fastest-playing team on the court.</p>
+            <img src="https://i.imgur.com/DT5IyQe.png" alt="Pace vs Offensive Rating Graph" onerror="this.onerror=null;this.src='https://placehold.co/800x450/E21E26/FFFFFF?text=Pace+vs+ORtg';">
+            
+            <h4>3.3 Our Analytical Framework: Playing Smarter</h4>
+            <p>We are a data-driven club. We play in a way that is analytically correct. This means understanding and optimizing the statistics that have the biggest impact on winning.</p>
+            <p><strong>Primary Metrics</strong>: Our initial evaluation of performance will be based on ratings that adjust for pace, giving us a true measure of efficiency:</p>
+            <ul>
+                <li><strong>Offensive Rating (ORtg):</strong> Points scored per 100 possessions.</li>
+                <li><strong>Defensive Rating (DRtg):</strong> Points allowed per 100 possessions.</li>
+                <li><strong>Net Rating (NetRtg):</strong> The difference between our ORtg and DRtg. A positive NetRtg is our goal.</li>
+            </ul>
+            <p><strong>The Four Factors: The Keys to Winning</strong> - Pioneered by Dean Oliver, these four areas are the most crucial to a team's success. Mastering them is our clearest statistical path to victory.</p>
+            <ol>
+                <li>
+                    <strong>eFG% (40% Impact): The Most Important Factor</strong>
+                    <ul>
+                        <li><strong>What it is:</strong> Scoring efficiency from the field, measured by <strong>Effective Field Goal Percentage (eFG%)</strong>. This formula correctly weighs a 3-pointer as being more valuable than a 2-pointer.</li>
+                        <li><strong>Formula:</strong> <span class="code-style">eFG% = (FG Made + 0.5 * 3PT Made) / FG Attempted</span></li>
+                        <li><strong>Why it matters:</strong> A high eFG% means we are getting more points per shot. This is the most direct way to win.</li>
+                    </ul>
+                    <img src="https://i.imgur.com/CmgkW60.png" alt="eFG% vs Net Rating Graph" onerror="this.onerror=null;this.src='https://placehold.co/800x450/E21E26/FFFFFF?text=eFG%25+vs+NetRtg';">
+                </li>
+                <li>
+                    <strong>TOV% (25% Impact): Protecting Possessions</strong>
+                    <ul>
+                        <li><strong>What it is:</strong> How well we take care of the ball, measured by <strong>Turnover Percentage (TOV%)</strong>, the number of turnovers per 100 possessions.</li>
+                        <li><strong>Why it matters:</strong> Every possession is a chance to score. Turnovers waste that chance and often lead to easy points for the opponent.</li>
+                    </ul>
+                    <img src="https://i.imgur.com/MTTYdgT.png" alt="TOV% vs Net Rating Graph" onerror="this.onerror=null;this.src='https://placehold.co/800x450/E21E26/FFFFFF?text=TOV%25+vs+NetRtg';">
+                </li>
+                <li>
+                    <strong>DREB% (20% Impact): Creating Extra Chances</strong>
+                    <ul>
+                        <li><strong>What it is:</strong> Dominating the boards, measured by <strong>Offensive Rebounding % (OREB%)</strong> and <strong>Defensive Rebounding % (DREB%)</strong>.</li>
+                        <li><strong>Why it matters:</strong> Offensive rebounds give us second-chance opportunities. Defensive rebounds finish a defensive stop.</li>
+                    </ul>
+                    <img src="https://i.imgur.com/b9dVKh2.png" alt="Rebound% vs Net Rating Graph" onerror="this.onerror=null;this.src='https://placehold.co/800x450/E21E26/FFFFFF?text=Rebound%25+vs+NetRtg';">
+                </li>
+                <li>
+                    <strong>FTr (15% Impact): Earning Easy Points</strong>
+                    <ul>
+                        <li><strong>What it is:</strong> How often we get to the free-throw line, measured by <strong>Free Throw Rate (FTR)</strong>.</li>
+                        <li><strong>Formula:</strong> <span class="code-style">FTR = FT Made / FG Attempted</span></li>
+                        <li><strong>Why it matters:</strong> Free throws are highly efficient shots that stop the clock and get opponents in foul trouble. They often decide close games.</li>
+                    </ul>
+                    <img src="https://i.imgur.com/L8T3Ijz.png" alt="FTR vs Net Rating Graph" onerror="this.onerror=null;this.src='https://placehold.co/800x450/E21E26/FFFFFF?text=FTR+vs+NetRtg';">
+                </li>
+            </ol>
+            
+            <p><strong>The PVB Shooting Spectrum</strong>: We always talk about taking "good shots." This is not a matter of opinion; it is a matter of mathematics. The "Shooting Spectrum" is our guide to shot selection, based on the average Points Per Shot (PPS) for each type of attempt. We hunt for the highest value shots.</p>
+            <table>
+                <thead>
+                    <tr><th>Shot Type</th><th>Typical PPS</th><th>PVB Value</th><th>Why?</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>At the Rim (Layups/Dunks)</td><td>1.2 - 1.5</td><td class="high-value">✔ HIGH</td><td>The most efficient shots in basketball. We attack the paint relentlessly.</td></tr>
+                    <tr><td>Catch & Shoot 3-Pointers</td><td>1.0 - 1.2</td><td class="high-value">✔ HIGH</td><td>The cornerstone of modern offense. Spacing the floor creates driving lanes.</td></tr>
+                    <tr><td>Free Throws</td><td>1.4 - 1.6 (per 2)</td><td class="high-value">✔ HIGH</td><td>The most efficient way to score points. We are aggressive to draw fouls.</td></tr>
+                    <tr><td>Mid-Range Pull-Ups</td><td>0.7 - 0.9</td><td class="low-value">❌ LOW</td><td>A difficult, contested 2-point shot. Analytically, the worst shot in basketball.</td></tr>
+                    <tr><td>Post-Up, ISO (Traditional)</td><td>0.8 - 1.0</td><td class="low-value">❌ LOW</td><td>Tends to slow the offense, invite double-teams, and result in a contested 2-point shot.</td></tr>
+                </tbody>
+            </table>
+            <p>Our offense is designed to generate shots at the rim and open 3-pointers. We eliminate low-value shots from our game.</p>
+            <img src="https://i.imgur.com/IGLTSu9.png" alt="Shot Chart - High vs Low Value Shots" onerror="this.onerror=null;this.src='https://placehold.co/800x450/E21E26/FFFFFF?text=Shot+Chart';">
+            <img src="https://i.imgur.com/CQTHiVJ.png" alt="Shot Type vs Points Per Shot Graph" onerror="this.onerror=null;this.src='https://placehold.co/800x450/E21E26/FFFFFF?text=Shot+Type+vs+PPS';">
+
+            <h4>3.4 A Glimpse of the European Evolution</h4>
+            <p>European basketball has embraced the global analytics movement, leading to a profound transformation. The game is now defined by a relentless hunt for efficiency, fundamentally changing shot selection and strategy, all while retaining its signature tactical discipline. This data illustrates why our system is built for the modern game.</p>
+            <div class="infographic-container">
+                <div class="chart-card">
+                    <h5>The Three-Point Revolution</h5>
+                    <p class="description">The most significant shift is the explosion in three-point volume, without a drop in efficiency.</p>
+                    <div class="chart-container">
+                        <canvas id="threePointTrendChart"></canvas>
+                    </div>
+                </div>
+                <div class="infographic-grid">
+                    <div class="chart-card">
+                        <h5>Pace Over the Seasons</h5>
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas id="paceTrendChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h5>Efficiency: Transition vs. Half-Court</h5>
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas id="efficiencyComparisonChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h5>Decline of the Post-Up</h5>
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas id="postUpChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h5>Decline of the Long-Two</h5>
+                        <div class="chart-container" style="height: 250px;">
+                            <canvas id="longTwoChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <h4>3.5 Practice Structure</h4>
+            <p>Every practice follows a mandatory, four-part structure designed for maximum efficiency and development.</p>
+            <ol>
+                <li><strong>Prevention (15 min):</strong> A standardized pre-workout routine focused on activation and injury prevention.</li>
+                <li><strong>"Vitamins" (60 min):</strong> The most critical part of our day. This is <strong>individual work</strong>, split between technical skill development (30 min) and physical development (30 min).</li>
+                <li><strong>Team Practice (45 min):</strong> Focused on implementing our team concepts, strategy, and style.</li>
+                <li><strong>Recovery (15 min):</strong> A mandatory cool-down and recovery protocol.</li>
+            </ol>
+            
+            <h4>3.6 On-Court Demands: PVB vs. Non-PVB</h4>
+            <p>We have a clear language for what aligns with our philosophy. Coaches must teach and demand <strong>PVB</strong> actions.</p>
+            <table>
+                <thead>
+                    <tr><th><span class="high-value">✔ PVB (Pallacanestro Varese Basketball)</span></th><th><span class="low-value">❌ Non-PVB</span></th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>Playing Fast (Transition & Pace)</td><td>Playing Slow</td></tr>
+                    <tr><td>Taking Good Shots (Shooting Spectrum)</td><td>Bad Shots</td></tr>
+                    <tr><td>Ball Movement ("Flow," 0.5 seconds)</td><td>Pump Fakes, Jab (unless necessary)</td></tr>
+                    <tr><td>Playing Hard (Crash, Deflections, Intangibles)</td><td>Isolation, Kill the Flow ("ISO")</td></tr>
+                    <tr><td>Constant Effort (Running back on D)</td><td>No Effort (Not running back, no crash)</td></tr>
+                </tbody>
+            </table>
+            
+            <h4>3.7 Coach's Philosophy & Evaluation</h4>
+            <p><strong>Guiding Principles</strong>: Every coach at Varese Basketball is expected to embody these principles in every interaction:</p>
+            <ul>
+                <li><strong>Be Transparent:</strong> Communicate openly with players about what we are doing and why we are doing it.</li>
+                <li><strong>Be Honest:</strong> Never lie to players. Build trust through truthfulness, even when the truth is difficult.</li>
+                <li><strong>Be Fair:</strong> Treat every player with equity. Decisions should be based on merit and adherence to our program's values, not favoritism.</li>
+            </ul>
+            <p><strong>Focus & Priority</strong>: It is important to understand that Varese Basketball (VB) coaches collaborate with Pallacanestro Varese (PV), helping in vitamins, scouting, or team meetings. However, their primary focus is <strong>VB</strong>. The majority of a coach's energy, preparation, and thought process must be spent on the development of VB players and teams.</p>
+            <p><strong>Meetings & Accountability</strong></p>
+            <ul>
+                <li><strong>Regular Meetings:</strong> The coaching staff will meet regularly to ensure alignment and monitor progress.</li>
+                <li><strong>Meeting Agenda:</strong> Discussions will focus on two key areas:
+                    <ol>
+                        <li>The evolution of players according to their individual "Player Packs."</li>
+                        <li>An analysis of how well each team is playing "PVB" basketball, based on our established style and metrics.</li>
+                    </ol>
+                </li>
+                <li><strong>KPIs and Adjustments:</strong> Key Performance Indicators (KPIs) will be established for both individual player development and team style of play. If these KPIs are not being met, coaches are expected to make the necessary adjustments to their training plans and strategies.</li>
+            </ul>
+            <p><strong>How We Judge Success</strong>: At the end of the day, coaches are judged on their ability to <strong>develop players</strong> and <strong>follow this manual</strong>.</p>
+            <p>Wins and losses are not the main focus but the consequence of the work done. A coach may be developing players and executing the program perfectly but not have positive results on the court. For us, that is not a failure. We do not care about youth championships; we care about giving our players the best opportunity to succeed at the next level.</p>
+            <p>Conversely, if a coach wins many games but does not develop players or align with our rules and philosophy, the wins will not matter.</p>
+            <p>At the end of the year, you will be judged on how well you followed the PVB plan. Ask yourself these questions daily:</p>
+            <ul>
+                <li><strong>Do you coach like PVB?</strong></li>
+                <li><strong>Do you train like PVB?</strong></li>
+                <li><strong>Do you think like PVB?</strong></li>
+            </ul>
+        </section>
+
+        <section id="rules">
+            <h3>4. Professional Standards & Club Rules</h3>
+            <p>At Varese Basketball, everything is earned. We operate with the highest level of professionalism.</p>
+            
+            <h4>Communication Policy</h4>
+            <ul>
+                <li><strong>To Players:</strong> Coaches explain what is necessary to the players. We do not promise playing time or roles EVER.</li>
+                <li><strong>To Parents:</strong> We do not explain coaching decisions or playing time to parents. Management will hold official meetings with all parents to explain our program philosophy and what we do.</li>
+                <li><strong>To Media:</strong> Staff and players do not speak with the media, either on the record or off the record.</li>
+                <li><strong>Internal/External:</strong> All communication must be sharp, efficient, and professional.</li>
+            </ul>
+            
+            <h4>Player Rules & Expectations: "Be a Pro"</h4>
+            <ol>
+                <li><strong>Be On Time, Always.</strong> If you are on time, you are late. Arrive <em>before</em> the scheduled practice time. In case of a true emergency, you must inform the staff with as much advance notice as possible.</li>
+                <li><strong>Live Like a Pro.</strong> This extends beyond the court. It means prioritizing sleep, nutrition, film study, recovery, and pre-practice preparation.</li>
+                <li><strong>Wear Varese Basketball Gear.</strong> The official club gear must be worn at ALL times during club events (practices, games, travel, team events). No exceptions.</li>
+                <li><strong>Injury Protocol.</strong> If you are sick or injured, you must still report to practice to be evaluated by the club's medical staff. They will determine if you should go home or remain for treatment. If you are injured, a physical workout or rehab session will be scheduled for you during practice time.</li>
+                <li><strong>No Cell Phones in Work Areas.</strong> To maintain focus and professionalism, cell phones are not permitted in any work area, including the court, weight room, and film room. Keep your phone in your locker or bag.</li>
+            </ol>
+            
+            <h4>Scheduling & Player Management</h4>
+            <ul>
+                <li><strong>Season:</strong> We operate from the first Monday of August until the last Friday of June.</li>
+                <li><strong>Weekly Workload (Elite Players):</strong>
+                    <ul>
+                        <li>Minimum of <strong>4 "Vitamins"</strong> skill sessions per week.</li>
+                        <li>Minimum of <strong>4 weights sessions</strong> per week.</li>
+                        <li>Players will have <strong>one day off</strong> per week when the schedule allows.</li>
+                    </ul>
+                </li>
+                <li><strong>Playing Time & Progression:</strong>
+                    <ul>
+                        <li>Elite players are expected to play between <strong>25-35 minutes</strong> in their primary category and <strong>15-25 minutes</strong> in the category above them.</li>
+                        <li><strong>Players will not play more than 2 games per week.</strong> This means a player cannot be active for 3 different categories.</li>
+                        <li>If a player improves so rapidly that he earns a permanent spot at a higher level, he will be moved up and will no longer play in the previous category.</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section id="recruiting">
+            <h3>5. Contract & Recruiting Concepts</h3>
+            <p>This section outlines our strategic approach to identifying and acquiring talent. Understanding these concepts is crucial to the long-term health and success of our program.</p>
+            
+            <h4>5.1 Recruiting Philosophy: The Two Approaches</h4>
+            <p>We recognize that recruiting a 15-year-old is fundamentally different from recruiting an 18-year-old. Our approach must adapt accordingly.</p>
+            <ul>
+                <li>
+                    <strong>Recruiting Younger Players (14-16): The Program Pitch</strong>
+                    <ul>
+                        <li><strong>Focus:</strong> At this age, we are recruiting the family as much as the player. The conversation centers on our environment and development pathway.</li>
+                        <li><strong>Key Selling Points:</strong> The quality of our program, the dedication of our coaches, the structure of the residence, off-court activities, and our commitment to their overall well-being.</li>
+                        <li><strong>Audience:</strong> Parents are the primary decision-makers. Schooling, safety, and social issues are paramount. Contract clauses are secondary to the quality of the experience.</li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Recruiting Older Players (17-18): The Professional Pitch</strong>
+                    <ul>
+                        <li><strong>Focus:</strong> As players mature, the conversation shifts towards their professional future.</li>
+                        <li><strong>Key Selling Points:</strong> Contract details, team options, and the player's specific role become much more relevant.</li>
+                        <li><strong>Audience:</strong> We are more likely to be dealing with agents. The approach is more transactional and focused on the contractual and financial aspects of the offer.</li>
+                    </ul>
+                </li>
+            </ul>
+            <p>Understanding which conversation to have is crucial for bringing the right talent to Varese.</p>
+            
+            <h4>5.2 What We Look For: The PVB Potential Matrix</h4>
+            <p>When recruiting, especially at younger ages, we prioritize <strong>potential</strong> over current production. It is very difficult to know what a 15-year-old will become, so we focus on key indicators to maximize our chances of success.</p>
+            <ol>
+                <li><strong>Size (The Non-Negotiable):</strong> This is basketball. To be a great player, you need to be tall and long. Height, wingspan, and standing reach—adjusted for age and the size of the player's parents—are the most important physical values.</li>
+                <li><strong>Athleticism:</strong> The ability to move. We look for explosive potential in jumping, lateral quickness, and open-court speed.</li>
+                <li><strong>Work Ethic:</strong> "Work beats talent when talent doesn't work." We look for players who demonstrate a love for the gym and a desire to improve.</li>
+                <li><strong>Talent:</strong> This includes technical skill (shooting, dribbling, passing) but, more importantly, a player's <strong>ability to learn fast</strong>. A quick learner has the highest ceiling.</li>
+                <li><strong>Personality:</strong> Character matters. Is the player fun to be around? Are they a good teammate? Are they coachable and respectful?</li>
+            </ol>
+            
+            <h4>5.3 Strategic Framework: Rules, Regulations & Roster Management</h4>
+            <p><strong>Navigating the Rules</strong>: The rules of Italian basketball are complex and change often. This is a dynamic topic, but the following are key limitations we must always consider:</p>
+            <ul>
+                <li><strong>4-Year Formation:</strong> To be considered a "homegrown" player, a player must complete four years of formation. A year counts if the player plays in at least 14 official games (a maximum of 4 can be in a secondary category).</li>
+                <li><strong>Import Limit:</strong> Only one non-formation player is allowed per team.</li>
+                <li><strong>Passports & Paperwork:</strong> Visas can be complicated. European passports are extremely valuable.</li>
+                <li><strong>U19 Third Year:</strong> This year has limited value for both the club and the player under current regulations.</li>
+                <li><strong>U23/U26 Benefits:</strong> Only players with Italian passports qualify for certain age-based benefits.</li>
+            </ul>
+            <p><strong>Ages & Nationalities Criteria</strong></p>
+            <ul>
+                <li><strong>Imports:</strong> Must either be young enough to complete the 4-year formation period OR be a "no-brainer" talent whose impact transcends age and passport status.</li>
+                <li><strong>Italians/Formatted Players:</strong> Can be older, as they do not face the same formation restrictions.</li>
+            </ul>
+            <p><strong>Investment Strategy & Local Talent</strong>: Developing a player in our residence costs approximately €30,000 per year. This is a significant investment that must be made strategically.</p>
+            <ul>
+                <li><strong>Residence players must make a real difference.</strong> If a foreign player does not add noticeable value beyond our local talent, we will prioritize our local players.</li>
+                <li>Local players and their families are a vital part of our community. We will not damage these relationships by sidelining a local player for an import of similar ability.</li>
+            </ul>
+
+            <h4>5.4 Maximizing Roster Configuration</h4>
+            <p>Our goal is to develop as many players as possible. This philosophy dictates how we build our teams.</p>
+            <ul>
+                <li><strong>More Teams, More Opportunities:</strong> Our goal is to expand from 6 teams to 9. We value creating more roles (best player, starter, role player) across more teams over consolidating talent to win a youth championship.</li>
+                <li><strong>Short Rosters:</strong> We aim to keep our team rosters short (8-9 players). This guarantees more playing time and creates opportunities to move players up from the category below to challenge them against older competition.</li>
+                <li><strong>Strategic Roster Building:</strong> We must avoid turnover as much as possible. This means spreading our import players strategically across different teams to avoid having to rest players due to the 1-import rule.</li>
+            </ul>
+            <p><strong>Tournament Policy</strong></p>
+            <ul>
+                <li>We <strong>NEVER</strong> bring in players from other programs to reinforce our teams for tournaments. Do not attempt this.</li>
+                <li>We <strong>NEVER</strong> allow our players to reinforce other teams in tournaments. Do not attempt this.</li>
+                <li><strong>National Team and other global selections are an exception.</strong> We are proud to support our players who earn these prestigious opportunities.</li>
+            </ul>
+
+            <h4>5.5 Standard Contract Templates & Commitment</h4>
+            <p>We offer structured, long-term pathways for our players. One-year deals and uncommitted players should be avoided. Our goal is to build lasting relationships.</p>
+            <p><strong>The Standard Development Contract</strong>: This is our typical offer for promising young players. It is a 4-year commitment that provides a complete support system.</p>
+            <ul>
+                <li><strong>Includes:</strong> Housing, food, schooling, and shoes, plus "walkaround" money for personal expenses.</li>
+                <li><strong>The Goal:</strong> The contract includes a team option for a professional contract with our Serie A first team upon completion of the development period.</li>
+            </ul>
+            <p><strong>The NCAA Pathway</strong>: As an alternative to the direct professional path, we provide comprehensive support for players wishing to pursue opportunities in the NCAA.</p>
+            <ul>
+                <li><strong>Our Support Includes:</strong> Organizing trips to camps, facilitating contact with agents and coaches, and assisting with communication.</li>
+                <li><strong>The Agreement:</strong> In exchange for this support, the club receives a percentage of any NIL (Name, Image, Likeness) earnings and a "first refusal" option for the player's professional contract if they choose to return to Europe.</li>
+            </ul>
+            <p><strong>The "Mauro Villa" Concept</strong>: This is a specific strategy for pursuing players who are at the end of their development path (either Italian or foreign players who have already completed the necessary formation years).</p>
+            <ul>
+                <li><strong>The Structure:</strong> We offer a multi-year plan:
+                    <ol>
+                        <li>One final season in our Under-19 program.</li>
+                        <li>A follow-up year playing with our affiliated Serie B team.</li>
+                        <li>A team option for a professional contract with our Serie A team after the Serie B season.</li>
+                    </ol>
+                </li>
+            </ul>
+            <p><strong>The Double Commitment</strong>: For a player to succeed at this age, a dual commitment is required.</p>
+            <ol>
+                <li><strong>Commitment to Basketball:</strong> The player must be dedicated to maximizing their potential.</li>
+                <li><strong>Commitment to Us:</strong> The player must be fully invested in our program, our philosophy, and our culture.</li>
+            </ol>
+            <p>Having a player who is not invested in our program is a waste of time and money, even if they provide temporary wins. We are building a culture, not just a team.</p>
+        </section>
+
+        <section id="residence">
+            <h3>6. Player Residence: Rules & Regulations</h3>
+            <p>Living together as a team is a privilege that requires maturity and respect. The residence is an extension of our club, and the standards of behavior are the same as on the court. These rules are in place to ensure a clean, safe, and peaceful environment for everyone.</p>
+            
+            <h4>6.1 Cleanliness and Tidiness</h4>
+            <ul>
+                <li>Keep your personal room and all common areas clean at all times.</li>
+                <li><strong>Kitchen Duty:</strong>
+                    <ul>
+                        <li>Load your dishes into the dishwasher in the evening. If the dishwasher is full, you must empty it.</li>
+                        <li>Messy kitchen in the morning: <strong>€5 fine</strong>.</li>
+                        <li>Failure to clean the stovetop after use: <strong>€10 fine</strong>.</li>
+                        <li>Food left out after dinner: <strong>€5 fine</strong>.</li>
+                    </ul>
+                </li>
+                <li><strong>Waste Separation:</strong> Respect the rules for waste separation. Trash in the wrong bin: <strong>€5 fine</strong>.</li>
+                <li><strong>Personal Space:</strong> Avoid using bathrooms or rooms that have not been assigned to you.</li>
+            </ul>
+            
+            <h4>6.2 Hours and Respect</h4>
+            <ul>
+                <li>Respect all established hours for meals, study, and curfew.</li>
+                <li><strong>Quiet Hours:</strong> Maintain silence from <strong>11:00 PM to 7:00 AM</strong>. Violation of quiet hours: <strong>€5 fine</strong>.</li>
+                <li>Respect all other guests and residence staff. Your conduct reflects on the entire club.</li>
+            </ul>
+            
+            <h4>6.3 Energy and Resources</h4>
+            <ul>
+                <li>Turn off lights and devices (heating, TV) when you leave a room. Failure to do so: <strong>€5 fine</strong>.</li>
+                <li>Do not leave the heating on with the windows open. Failure to do so: <strong>€5 fine</strong>.</li>
+                <li>Turn off all lights in common areas before going to bed. Failure to do so: <strong>€5 fine</strong>.</li>
+            </ul>
+            
+            <h4>6.4 Damages and Guests</h4>
+            <ul>
+                <li><strong>Damages:</strong> Any damages caused to the property will be evaluated on a case-by-case basis and you will be held financially responsible.</li>
+                <li><strong>Guests:</strong> Guests are only allowed with prior permission from the residence staff.</li>
+            </ul>
+            
+            <h4>6.5 Penalties and Enforcement</h4>
+            <ul>
+                <li><strong>Fines:</strong> All fines will be deducted from player accounts at the end of the month. Fines are applied only to those who break the rules, not to the entire group.</li>
+                <li><strong>Repeated Infractions:</strong> Repeated violations of these rules may lead to more serious measures, which will be evaluated individually by club management.</li>
+            </ul>
+            <p><strong>A Final Note:</strong> Everyone’s cooperation is essential for creating a positive and professional living environment. Treat the residence and your teammates with the same respect you show on the basketball court.</p>
+        </section>
+
+        <section id="final-word">
+            <h3>A Final Word: The 1% Rule</h3>
+            <div class="final-word">
+                <p>We don't want you to be perfect. We don't want you to be great. We don't even want you to be good.</p>
+                <p><strong>All we want is for you to be 1% better than you were yesterday.</strong></p>
+            </div>
+            <p class="win-the-day">WIN THE DAY!</p>
+        </section>
+    </main>
+
+    <div class="download-container">
+        <button id="download-pdf">Download Club Manual (PDF)</button>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // This script block contains all the Chart.js initialization logic.
+    // It is unchanged from the previous version and is included here for completeness.
+    // ... (All Chart.js code from previous versions goes here) ...
+
+    const chartTextColor = '#333';
+    const chartGridColor = 'rgba(0, 0, 0, 0.1)';
+    const primaryChartColor = '#E21E26'; // Varese Red
+    const secondaryChartColor = '#2c2c2c'; // Medium Gray
+    const successColor = '#28a745';
+    const warningColor = '#fd7e14';
+
+    // Data for Three-Point Trend Chart
+    if (document.getElementById('threePointTrendChart')) {
+        new Chart(document.getElementById('threePointTrendChart'), {
+            type: 'line',
+            data: {
+                labels: ['2014-15', '2016-17', '2018-19', '2020-21', '2022-23', '2024-25'],
+                datasets: [
+                    { label: '3-Pointers Attempted', data: [22.6, 22.6, 23.1, 23.9, 25.1, 27.5], borderColor: primaryChartColor, backgroundColor: 'rgba(226, 30, 38, 0.1)', fill: true, tension: 0.4, yAxisID: 'y-axis-attempts' },
+                    { label: '3-Point %', data: [36.1, 36.5, 36.3, 36.8, 36.6, 36.7], borderColor: secondaryChartColor, backgroundColor: 'transparent', type: 'line', tension: 0.4, yAxisID: 'y-axis-percentage', borderDash: [5, 5] }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } }, 'y-axis-attempts': { type: 'linear', position: 'left', ticks: { color: chartTextColor }, grid: { color: chartGridColor }, min: 22, max: 28, title: { display: true, text: 'Attempts Per Game', color: primaryChartColor } }, 'y-axis-percentage': { type: 'linear', position: 'right', ticks: { color: chartTextColor, callback: value => value + '%' }, grid: { drawOnChartArea: false }, min: 34, max: 38, title: { display: true, text: '3-Point %', color: secondaryChartColor } } }, plugins: { legend: { labels: { color: chartTextColor } } } }
+        });
+    }
+    if (document.getElementById('postUpChart')) {
+        new Chart(document.getElementById('postUpChart'), {
+            type: 'bar',
+            data: { labels: ['2014-15', '2019-20', '2024-25'], datasets: [{ label: 'Post-Up Play Frequency (%)', data: [15, 11, 8], backgroundColor: ['rgba(44, 44, 44, 0.7)', 'rgba(44, 44, 44, 0.5)', 'rgba(44, 44, 44, 0.3)'], borderColor: secondaryChartColor, borderWidth: 1 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: chartTextColor }, grid: { color: chartGridColor }, title: { display: true, text: '% of Offensive Plays', color: chartTextColor } }, y: { ticks: { color: chartTextColor }, grid: { display: false }, beginAtZero: true } }, plugins: { legend: { display: false } } }
+        });
+    }
+    if (document.getElementById('longTwoChart')) {
+         new Chart(document.getElementById('longTwoChart'), {
+            type: 'bar',
+            data: { labels: ['2014-15', '2019-20', '2024-25'], datasets: [{ label: 'Long-Two Frequency (%)', data: [25, 18, 10], backgroundColor: ['rgba(44, 44, 44, 0.7)', 'rgba(44, 44, 44, 0.5)', 'rgba(44, 44, 44, 0.3)'], borderColor: secondaryChartColor, borderWidth: 1 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: chartTextColor }, grid: { color: chartGridColor }, title: { display: true, text: '% of Offensive Plays', color: chartTextColor } }, y: { ticks: { color: chartTextColor }, grid: { display: false }, beginAtZero: true } }, plugins: { legend: { display: false } } }
+        });
+    }
+    if (document.getElementById('paceTrendChart')) {
+        new Chart(document.getElementById('paceTrendChart'), {
+            type: 'line',
+            data: { labels: ['2010-12', '2013-15', '2016-18', '2019-21', '2022-24'], datasets: [{ label: 'Pace (Possessions per 40 min)', data: [71.5, 71.2, 72.0, 72.8, 73.5], borderColor: primaryChartColor, backgroundColor: 'rgba(226, 30, 38, 0.1)', fill: true, tension: 0.3 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: chartTextColor }, grid: { color: chartGridColor } }, y: { ticks: { color: chartTextColor }, grid: { color: chartGridColor }, min: 71, title: { display: true, text: 'Possessions', color: chartTextColor } } }, plugins: { legend: { display: false } } }
+        });
+    }
+    if (document.getElementById('efficiencyComparisonChart')) {
+        new Chart(document.getElementById('efficiencyComparisonChart'), {
+            type: 'bar',
+            data: { labels: ['Half-Court Offense', 'Transition Offense'], datasets: [{ label: 'Points Per Possession (PPP)', data: [0.92, 1.15], backgroundColor: [secondaryChartColor, primaryChartColor], borderWidth: 1 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { ticks: { color: chartTextColor, font: { size: 14 } }, grid: { display: false } }, y: { ticks: { color: chartTextColor }, grid: { color: chartGridColor }, min: 0.9, title: { display: true, text: 'PPP', color: chartTextColor } } }, plugins: { legend: { display: false } } }
+        });
+    }
+    const sliderWrapper = document.querySelector('.slider-wrapper');
+    if (sliderWrapper) {
+        let currentSlide = 0; const slides = document.querySelectorAll('.slide'); const totalSlides = slides.length;
+        function updateSliderPosition() { sliderWrapper.style.transform = `translateX(-${currentSlide * 100}%)`; }
+        document.querySelector('.slider-arrow.next').addEventListener('click', () => { currentSlide = (currentSlide + 1) % totalSlides; updateSliderPosition(); });
+        document.querySelector('.slider-arrow.prev').addEventListener('click', () => { currentSlide = (currentSlide - 1 + totalSlides) % totalSlides; updateSliderPosition(); });
+    }
+    const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+    const chartOptions = (title) => ({ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: chartTextColor } }, title: { display: true, text: title, color: chartTextColor } }, scales: { y: { beginAtZero: false, ticks: { color: chartTextColor } }, x: { ticks: { color: chartTextColor } } } });
+    if (document.getElementById('speedAgilityChart')) {
+        new Chart(document.getElementById('speedAgilityChart'), { type: 'line', data: { labels: months, datasets: [{ label: '3/4 Sprint (ms)', data: [450, 438, 435, 430, 435, 434, 428, 432, 430, 425], borderColor: primaryChartColor, tension: 0.1 }, { label: 'Cone Drill (ms)', data: [399, 380, 375, 370, 372, 370, 365, 368, 366, 362], borderColor: secondaryChartColor, tension: 0.1 }] }, options: chartOptions('Speed & Agility') });
+    }
+    if (document.getElementById('jumpChart')) {
+        new Chart(document.getElementById('jumpChart'), { type: 'bar', data: { labels: months, datasets: [{ label: 'No Step (cm)', data: [56, 58, 57, 60, 61, 60, 62, 63, 62, 64], backgroundColor: 'rgba(44, 44, 44, 0.7)' }, { label: 'Max Leap (cm)', data: [73, 75, 74, 77, 78, 77, 79, 80, 79, 81], backgroundColor: 'rgba(226, 30, 38, 0.7)' }] }, options: chartOptions('Vertical Leap') });
+    }
+    if (document.getElementById('playerStrengthChart')) {
+        new Chart(document.getElementById('playerStrengthChart'), { type: 'line', data: { labels: months, datasets: [{ label: 'Deadlift (kg)', data: [155, 165, 175, 180, 178, 175, 185, 175, 185, 184], borderColor: primaryChartColor, fill: true, backgroundColor: 'rgba(226, 30, 38, 0.1)', tension: 0.1 }] }, options: chartOptions('Strength: Deadlift Max') });
+    }
+    if (document.getElementById('loadChart')) {
+        new Chart(document.getElementById('loadChart'), { type: 'bar', data: { labels: months, datasets: [{ label: 'Vitamins', data: [3, 4, 5, 6, 4, 5, 6, 5, 6, 7], backgroundColor: '#a78bfa' }, { label: 'Weights', data: [2, 3, 4, 4, 3, 4, 5, 4, 5, 5], backgroundColor: '#f87171' }, { label: 'Practice', data: [5, 6, 7, 8, 7, 8, 9, 8, 9, 8], backgroundColor: '#4ade80' }, { label: 'Game', data: [2, 3, 3, 4, 4, 5, 5, 6, 5, 6], backgroundColor: '#60a5fa' }] }, options: { ...chartOptions('Monthly Training Load'), scales: { x: { stacked: true, ticks: { color: chartTextColor } }, y: { stacked: true, title: { display: false }, ticks: { color: chartTextColor } } } } });
+    }
+    if (document.getElementById('spiderChart')) {
+        new Chart(document.getElementById('spiderChart'), { type: 'radar', data: { labels: ['Inside Scoring', 'Rebounding', 'Rim Protection', 'Playmaking', 'Outside Shooting'], datasets: [{ label: 'Ivan Prato', data: [85, 80, 90, 35, 30], fill: true, backgroundColor: 'rgba(226, 30, 38, 0.2)', borderColor: primaryChartColor, pointBackgroundColor: primaryChartColor, pointBorderColor: '#fff', }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { r: { suggestedMin: 0, suggestedMax: 100, pointLabels: { font: { size: 11 } }, ticks: { backdropColor: 'rgba(255,255,255,0.5)' } } } } });
+    }
+    if (document.getElementById('scatterChart')) {
+        new Chart(document.getElementById('scatterChart'), { type: 'scatter', data: { datasets: [{ label: 'Ivan Prato', data: [{ x: 23, y: 68 }], backgroundColor: primaryChartColor, pointRadius: 8, pointHoverRadius: 10 }, { label: 'League Avg Big', data: [{ x: 20, y: 58 }], backgroundColor: secondaryChartColor, pointRadius: 6 }, { label: 'Elite Stretch Big', data: [{ x: 25, y: 65 }], backgroundColor: successColor, pointRadius: 6 }, { label: 'Low-Usage Rim Runner', data: [{ x: 15, y: 70 }], backgroundColor: '#a78bfa', pointRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: chartTextColor } }, title: { display: true, text: 'Efficiency vs. Offensive Load', color: chartTextColor } }, scales: { x: { title: { display: true, text: 'Usage Rate (%)', color: chartTextColor }, ticks: { color: chartTextColor } }, y: { title: { display: true, text: 'True Shooting (%)', color: chartTextColor }, ticks: { color: chartTextColor } } } } });
+    }
+
+    // --- PDF Download Logic ---
+    const downloadButton = document.getElementById('download-pdf');
+    if (downloadButton) {
+        downloadButton.addEventListener('click', async () => {
+            const { jsPDF } = window.jspdf;
+            const content = document.getElementById('manual-content');
+            
+            downloadButton.textContent = 'Generating PDF...';
+            downloadButton.disabled = true;
+
+            try {
+                // Temporarily make the main content wide enough for high-res capture
+                content.style.width = '900px';
+
+                const canvas = await html2canvas(content, {
+                    scale: 1.5, // Reduced scale for smaller file size
+                    useCORS: true,
+                    logging: false,
+                    windowWidth: content.scrollWidth,
+                    windowHeight: content.scrollHeight,
+                });
+                
+                // Restore original width
+                content.style.width = '';
+
+                const imgData = canvas.toDataURL('image/jpeg', 0.9); // Use JPEG for compression
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4'
+                });
+
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                
+                const canvasWidth = canvas.width;
+                const canvasHeight = canvas.height;
+                const canvasAspectRatio = canvasHeight / canvasWidth;
+
+                const topMargin = 12.5;
+                const bottomMargin = 12.5;
+                const sideMargin = 10;
+                
+                const usableWidth = pdfWidth - (sideMargin * 2);
+                const usableHeight = pdfHeight - topMargin - bottomMargin;
+                
+                const totalImageHeightInPDF = usableWidth * canvasAspectRatio;
+                const numPages = Math.ceil(totalImageHeightInPDF / usableHeight);
+                
+                let yPosOnCanvas = 0;
+                const sliceHeightOnCanvas = usableHeight * (canvasWidth / usableWidth);
+
+                for (let i = 1; i <= numPages; i++) {
+                    if (i > 1) {
+                        pdf.addPage();
+                    }
+
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = canvasWidth;
+                    // For the last page, the slice might be shorter
+                    const currentSliceHeight = Math.min(sliceHeightOnCanvas, canvasHeight - yPosOnCanvas);
+                    tempCanvas.height = currentSliceHeight;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    
+                    // Draw the slice from the master canvas
+                    tempCtx.drawImage(canvas, 0, yPosOnCanvas, canvasWidth, currentSliceHeight, 0, 0, canvasWidth, currentSliceHeight);
+                    
+                    const pageImgData = tempCanvas.toDataURL('image/jpeg', 0.9); // Use JPEG for compression
+                    const pageImgHeight = usableWidth * (currentSliceHeight / canvasWidth);
+
+                    pdf.addImage(pageImgData, 'JPEG', sideMargin, topMargin, usableWidth, pageImgHeight);
+                    
+                    yPosOnCanvas += currentSliceHeight;
+                }
+
+                // Add Headers and Footers to all pages
+                for (let i = 1; i <= numPages; i++) {
+                    pdf.setPage(i);
+                    
+                    // Header
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(100); // Gray color
+                    pdf.text('Varese Basketball | Official Club Manual', pdfWidth / 2, topMargin - 5, { align: 'center' });
+
+                    // Footer
+                    pdf.text(`Page ${i} of ${numPages}`, pdfWidth / 2, pdfHeight - bottomMargin + 5, { align: 'center' });
+                }
+
+                pdf.save('Varese_Basketball_Club_Manual.pdf');
+
+            } catch (error) {
+                console.error("Error generating PDF:", error);
+                downloadButton.textContent = 'Download Failed. Please Try Again.';
+            } finally {
+                downloadButton.textContent = 'Download Club Manual (PDF)';
+                downloadButton.disabled = false;
+            }
+        });
+    }
+});
+</script>
+</body>
+</html>
+
+

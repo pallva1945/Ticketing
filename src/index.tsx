@@ -13,6 +13,7 @@ import { InviteAcceptPage } from './components/InviteAcceptPage';
 import { ApprovalPage } from './components/ApprovalPage';
 import { AccessPendingPage } from './components/AccessPendingPage';
 import { VBDashboard } from './components/VBDashboard';
+import { VBManualPage } from './components/VBManualPage';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LanguageProvider } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -98,6 +99,10 @@ const Root: React.FC = () => {
 
   if (currentView === 'admin' && isAdmin) {
     return <AdminPanel onBack={() => handleNavigate('hub')} />;
+  }
+
+  if (currentView === 'vb-manual' && canAccessPage('hub')) {
+    return <VBManualPage onBack={handleBackToVBHub} />;
   }
 
   if (currentView === 'vb' && canAccessPage('hub')) {

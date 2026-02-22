@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { ArrowRight, Sun, Moon, ChevronLeft, Eye, Heart, Target, Users, GraduationCap, Activity, Shield, Construction, Layers } from 'lucide-react';
+import { ArrowRight, Sun, Moon, ChevronLeft, Eye, Heart, Target, Users, GraduationCap, Activity, Shield, Construction, Layers, BookOpen } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -116,7 +116,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
 
   const navItems = [
     t('Vision, Mission & Values'),
-    t('About Us'),
+    t('Our Method'),
     t('Our Team'),
     'BOps',
   ];
@@ -238,27 +238,37 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
         </div>
       </div>
 
-      {/* Section 2: About Us */}
+      {/* Section 2: Our Method */}
       <div className="h-screen flex flex-col items-center justify-center px-4 sm:px-6 relative">
         <div className={`transition-all duration-[1s] ease-out ${visible[1] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <div className="max-w-3xl mx-auto text-center">
             <p className={`text-[10px] sm:text-xs tracking-[0.3em] uppercase font-medium mb-3 sm:mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-              {t('About Us')}
+              {t('Our Method')}
             </p>
             <h2 className={`text-2xl sm:text-3xl lg:text-4xl font-light tracking-tight mb-6 sm:mb-8 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Varese Basketball
+              {t('The Official Club Manual')}
             </h2>
             <div className="flex justify-center mb-8 sm:mb-12">
               <div className={`h-px line-grow ${isDark ? 'bg-orange-700' : 'bg-orange-300'}`}></div>
             </div>
             <div className={`rounded-2xl border p-8 sm:p-12 ${isDark ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'}`}>
-              <div className={`flex items-center justify-center gap-2 mb-6 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
-                <Construction size={16} />
-                <span className="text-xs tracking-[0.2em] uppercase font-medium">{t('Coming Soon')}</span>
+              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
+                <BookOpen size={28} className="text-orange-500" />
               </div>
-              <p className={`text-sm sm:text-base leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                {t('vb_about_placeholder')}
+              <p className={`text-sm sm:text-base leading-relaxed mb-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                {t('vb_method_description')}
               </p>
+              <button
+                onClick={() => onNavigate('vb-manual')}
+                className={`group inline-flex items-center gap-3 px-8 py-3 rounded-xl text-sm font-medium tracking-wider uppercase transition-all duration-300 ${
+                  isDark
+                    ? 'bg-orange-900/30 text-orange-400 border border-orange-800/50 hover:bg-orange-900/50 hover:border-orange-700'
+                    : 'bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-100 hover:border-orange-300'
+                }`}
+              >
+                {t('Read the Manual')}
+                <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              </button>
             </div>
           </div>
         </div>
