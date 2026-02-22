@@ -195,6 +195,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Injury': { en: 'Injury', it: 'Infortunio' },
   'Injury Level': { en: 'Injury Level', it: 'Livello Infortunio' },
   'NT': { en: 'NT', it: 'NT' },
+  'Min Late': { en: 'Min Late', it: 'Min Ritardo' },
   'Days Off': { en: 'Days Off', it: 'Giorni Liberi' },
   'Injury Days': { en: 'Injury Days', it: 'Giorni Infortunio' },
   'Days Off & Injury': { en: 'Days Off & Injury', it: 'Giorni Liberi & Infortunio' },

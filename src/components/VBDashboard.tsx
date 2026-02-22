@@ -94,7 +94,7 @@ interface VBProspect {
   timestamp: string | null;
 }
 
-type TabId = 'overview' | 'performance' | 'gameperf' | 'player' | 'compare' | 'progression' | 'search' | 'prospects' | 'resources';
+type TabId = 'overview' | 'anthropometrics' | 'performance' | 'gameperf' | 'player' | 'compare' | 'progression' | 'search' | 'prospects' | 'resources';
 
 const METRIC_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
@@ -203,7 +203,7 @@ function PlayerSelector({ players, selected, onChange, multiple }: { players: st
   );
 }
 
-type SortKey = 'player' | 'height' | 'projHeight' | 'reach' | 'projReach' | 'pureVertical' | 'sprint' | 'coneDrill' | 'weight' | 'wingspan' | 'bodyFat' | 'pct' | 'shots' | 'shotsMade' | 'totalLoad' | 'vitamins' | 'weights' | 'practice' | 'game' | 'injury' | 'nt' | 'daysOff' | 'vacation' | 'cas' | 'aps' | 'apeIndex';
+type SortKey = 'player' | 'height' | 'projHeight' | 'reach' | 'projReach' | 'pureVertical' | 'sprint' | 'coneDrill' | 'weight' | 'wingspan' | 'bodyFat' | 'pct' | 'shots' | 'shotsMade' | 'totalLoad' | 'vitamins' | 'weights' | 'practice' | 'game' | 'injury' | 'nt' | 'minLate' | 'daysOff' | 'vacation' | 'cas' | 'aps' | 'apeIndex';
 type SortDir = 'asc' | 'desc';
 
 interface RosterRow {
@@ -229,6 +229,7 @@ interface RosterRow {
   nt: number;
   daysOff: number;
   vacation: number;
+  minLate: number | null;
   shotsMade: number;
   cas: number | null;
   aps: number | null;
@@ -629,6 +630,7 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isD
       injury: injuryVal,
       nt: ntVal,
       daysOff: daysOffVal,
+      minLate: null,
       vacation: (() => {
         const allPlayerSessions = getPlayerSessions(allSessions, player);
         const vacDates = new Set(allPlayerSessions.filter(s => getSeason(s.date) === null).map(s => s.date));
@@ -689,6 +691,7 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isD
     { key: 'totalLoad', label: t('T.Load') },
     { key: 'injury', label: t('Injury') },
     { key: 'nt', label: t('NT') },
+    { key: 'minLate', label: t('Min Late') },
     { key: 'daysOff', label: t('Days Off') },
     { key: 'vacation', label: t('Vacation') },
   ];
@@ -736,6 +739,7 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isD
                 <td className={`text-center py-2.5 px-1 font-semibold ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{row.totalLoad || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${row.injury > 0 ? 'text-red-500 font-semibold' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.injury || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${row.nt > 0 ? 'text-blue-500 font-semibold' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.nt || '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${row.minLate !== null && row.minLate > 0 ? 'text-red-500 font-semibold' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.minLate ?? '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.daysOff || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${row.vacation > 0 ? 'text-amber-500 font-semibold' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.vacation || '—'}</td>
               </tr>
@@ -1208,14 +1212,17 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <StatCard label={t('3PT %')} value={avgShootingPct} unit="%" icon={Target} color="#f59e0b" subtitle={t('Team Average')} />
         <StatCard label={t('Total Load')} value={teamAvgTotalLoad} icon={Activity} color="#0ea5e9" subtitle={t('Avg / Player')} />
         <StatCard label={t('Vitamins')} value={teamAvgVitamins} icon={Pill} color="#8b5cf6" subtitle={t('Avg / Player')} />
         <StatCard label={t('Weights')} value={teamAvgWeights} icon={Dumbbell} color="#10b981" subtitle={t('Avg / Player')} />
+      </div>
+      <div className="grid grid-cols-4 gap-3">
         <StatCard label={t('Game')} value={teamAvgGame} icon={Gamepad2} color="#f97316" subtitle={t('Avg / Player')} />
         <StatCard label={t('Injuries')} value={teamAvgInjuries} icon={Heart} color="#ef4444" subtitle={t('Avg / Player')} />
         <StatCard label={t('Days Off')} value={teamDaysOff} icon={CalendarOff} color="#6b7280" subtitle={t('Avg / Player')} />
+        <StatCard label={t('Min Late')} value={null} icon={Timer} color="#ef4444" subtitle={t('Avg / Player')} />
       </div>
 
       <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
@@ -1329,6 +1336,198 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
       </div>
 
       <RosterTable filtered={filtered} allSessions={sessions} activePlayers={activePlayers} onSelectPlayer={onSelectPlayer} isDark={isDark} selectedSeason={selectedSeason} profiles={profiles} />
+    </div>
+  );
+}
+
+function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
+  const { t } = useLanguage();
+  const isDark = useIsDark();
+
+  const validSessions = useMemo(() =>
+    sessions.filter(s => getSeason(s.date) !== null).sort((a, b) => a.date.localeCompare(b.date)),
+    [sessions]);
+
+  const seasons = useMemo(() => {
+    const s = [...new Set(validSessions.map(s => getSeason(s.date)!))].sort();
+    return s;
+  }, [validSessions]);
+
+  const [selectedSeason, setSelectedSeason] = useState(() => getCurrentSeason());
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedRole, setSelectedRole] = useState<string>('all');
+
+  const seasonFiltered = useMemo(() => {
+    if (selectedSeason === 'all') return validSessions;
+    return validSessions.filter(s => getSeason(s.date) === selectedSeason);
+  }, [validSessions, selectedSeason]);
+
+  const availableCategories = useMemo(() => {
+    const cats = [...new Set(seasonFiltered.map(s => getPlayerCategory(s.player, profiles, selectedSeason !== 'all' ? selectedSeason : undefined)).filter(c => c))].sort();
+    return cats;
+  }, [seasonFiltered, profiles, selectedSeason]);
+
+  const categoryFiltered = useMemo(() => {
+    if (selectedCategory === 'all') return seasonFiltered;
+    return seasonFiltered.filter(s => getPlayerCategory(s.player, profiles, selectedSeason !== 'all' ? selectedSeason : undefined) === selectedCategory);
+  }, [seasonFiltered, selectedCategory, profiles, selectedSeason]);
+
+  const availableRoles = useMemo(() => {
+    const roles = [...new Set(categoryFiltered.map(s => getPlayerPosition(s.player, profiles)).filter(r => r))].sort();
+    return roles;
+  }, [categoryFiltered, profiles]);
+
+  const filtered = useMemo(() => {
+    if (selectedRole === 'all') return categoryFiltered;
+    return categoryFiltered.filter(s => getPlayerPosition(s.player, profiles) === selectedRole);
+  }, [categoryFiltered, selectedRole, profiles]);
+
+  const activePlayers = useMemo(() => {
+    const pSet = new Set(filtered.map(s => s.player));
+    return players.filter(p => pSet.has(p));
+  }, [filtered, players]);
+
+  useEffect(() => { setSelectedCategory('all'); setSelectedRole('all'); }, [selectedSeason]);
+  useEffect(() => { setSelectedRole('all'); }, [selectedCategory]);
+
+  type AnthroSortKey = 'player' | 'height' | 'projHeight' | 'reach' | 'projReach' | 'wingspan' | 'apeIndex' | 'weight' | 'bodyFat';
+  const [sortKey, setSortKey] = useState<AnthroSortKey>('player');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  const rows = useMemo(() => {
+    return activePlayers.map(player => {
+      const height = getLatestMetric(filtered, player, 'height');
+      const projHeight = getProjectedHeight(player, profiles, filtered);
+      const reach = getLatestMetric(filtered, player, 'standingReach');
+      const projReach = getProjectedReach(player, profiles, filtered);
+      const wingspan = getLatestMetric(filtered, player, 'wingspan');
+      const weight = getLatestMetric(filtered, player, 'weight');
+      const rawBF = getLatestMetric(filtered, player, 'bodyFat');
+      const dobSerial = getPlayerDobSerial(player, profiles);
+      const latestBFSession = getPlayerSessions(filtered, player).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
+      const bodyFat = rawBF !== null ? calcBodyFatPct(rawBF, dobSerial, latestBFSession?.date) : null;
+      const apeIndex = (wingspan !== null && projHeight !== null && projHeight > 0) ? Math.round((wingspan / projHeight) * 1000) / 1000 : null;
+
+      return { player, height, projHeight, reach, projReach, wingspan, apeIndex, weight, bodyFat };
+    });
+  }, [activePlayers, filtered, profiles]);
+
+  const sorted = useMemo(() => {
+    return [...rows].sort((a, b) => {
+      if (sortKey === 'player') return sortDir === 'asc' ? a.player.localeCompare(b.player) : b.player.localeCompare(a.player);
+      const av = a[sortKey]; const bv = b[sortKey];
+      if (av === null && bv === null) return 0;
+      if (av === null) return 1; if (bv === null) return -1;
+      return sortDir === 'asc' ? (av as number) - (bv as number) : (bv as number) - (av as number);
+    });
+  }, [rows, sortKey, sortDir]);
+
+  const teamAvgs = useMemo(() => {
+    const avg = (key: keyof typeof rows[0]) => {
+      const vals = rows.map(r => r[key]).filter((v): v is number => v !== null);
+      return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+    };
+    return { height: avg('height'), projHeight: avg('projHeight'), reach: avg('reach'), projReach: avg('projReach'), wingspan: avg('wingspan'), apeIndex: avg('apeIndex'), weight: avg('weight'), bodyFat: avg('bodyFat') };
+  }, [rows]);
+
+  const handleSort = (key: AnthroSortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir(key === 'player' ? 'asc' : 'desc'); }
+  };
+
+  const columns: { key: AnthroSortKey; label: string; unit?: string }[] = [
+    { key: 'player', label: t('Player') },
+    { key: 'height', label: t('Height'), unit: 'cm' },
+    { key: 'projHeight', label: t('P. Height'), unit: 'cm' },
+    { key: 'reach', label: t('Reach'), unit: 'cm' },
+    { key: 'projReach', label: t('P. Reach'), unit: 'cm' },
+    { key: 'wingspan', label: t('Wingspan'), unit: 'cm' },
+    { key: 'apeIndex', label: t('Ape Index') },
+    { key: 'weight', label: t('Weight'), unit: 'kg' },
+    { key: 'bodyFat', label: t('BF %'), unit: '%' },
+  ];
+
+  const formatVal = (v: number | null, unit?: string) => {
+    if (v === null) return '—';
+    return unit === '%' ? `${v}%` : `${v}`;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        <div className="relative">
+          <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)}
+            className={`text-xs py-1.5 pl-2 pr-7 rounded-lg border appearance-none cursor-pointer ${isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-white border-gray-200 text-gray-700'}`}>
+            <option value="all">{t('All Seasons')}</option>
+            {seasons.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)}
+            className={`text-xs py-1.5 pl-2 pr-7 rounded-lg border appearance-none cursor-pointer ${isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-white border-gray-200 text-gray-700'}`}>
+            <option value="all">{t('All Categories')}</option>
+            {availableCategories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+        <div className="relative">
+          <select value={selectedRole} onChange={e => setSelectedRole(e.target.value)}
+            className={`text-xs py-1.5 pl-2 pr-7 rounded-lg border appearance-none cursor-pointer ${isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-white border-gray-200 text-gray-700'}`}>
+            <option value="all">{t('All Roles')}</option>
+            {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-4 gap-3">
+        <StatCard label={t('Height')} value={teamAvgs.height} unit="cm" icon={Ruler} color="#3b82f6" subtitle={t('Team Average')} />
+        <StatCard label={t('P. Height')} value={teamAvgs.projHeight} unit="cm" icon={Ruler} color="#8b5cf6" subtitle={t('Team Average')} />
+        <StatCard label={t('Reach')} value={teamAvgs.reach} unit="cm" icon={Hand} color="#10b981" subtitle={t('Team Average')} />
+        <StatCard label={t('P. Reach')} value={teamAvgs.projReach} unit="cm" icon={Hand} color="#06b6d4" subtitle={t('Team Average')} />
+      </div>
+      <div className="grid grid-cols-4 gap-3">
+        <StatCard label={t('Wingspan')} value={teamAvgs.wingspan} unit="cm" icon={Move} color="#f59e0b" subtitle={t('Team Average')} />
+        <StatCard label={t('Ape Index')} value={teamAvgs.apeIndex} icon={Gauge} color="#f97316" subtitle={t('Team Average')} />
+        <StatCard label={t('Weight')} value={teamAvgs.weight} unit="kg" icon={Weight} color="#ef4444" subtitle={t('Team Average')} />
+        <StatCard label={t('BF %')} value={teamAvgs.bodyFat} unit="%" icon={Heart} color="#ec4899" subtitle={t('Team Average')} />
+      </div>
+
+      <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                {columns.map(col => (
+                  <th key={col.key} onClick={() => handleSort(col.key)}
+                    className={`py-2.5 px-2 font-semibold cursor-pointer select-none whitespace-nowrap ${col.key === 'player' ? 'text-left' : 'text-center'} ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}>
+                    <div className={`flex items-center gap-1 ${col.key === 'player' ? '' : 'justify-center'}`}>
+                      {col.label}{col.unit ? ` (${col.unit})` : ''}
+                      {sortKey === col.key ? (sortDir === 'asc' ? <ArrowUp size={10} /> : <ArrowDown size={10} />) : <ArrowUpDown size={10} className="opacity-30" />}
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sorted.map(row => (
+                <tr key={row.player} className={`border-b transition-colors ${isDark ? 'border-gray-800/50 hover:bg-gray-800/30' : 'border-gray-50 hover:bg-gray-50'}`}>
+                  <td className={`py-2.5 px-2 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{row.player}</td>
+                  <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.height)}</td>
+                  <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.projHeight)}</td>
+                  <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.reach)}</td>
+                  <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.projReach)}</td>
+                  <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.wingspan)}</td>
+                  <td className={`text-center py-2.5 px-2 font-semibold ${row.apeIndex !== null && row.apeIndex >= 1.06 ? 'text-green-500' : row.apeIndex !== null && row.apeIndex >= 1.03 ? 'text-blue-500' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.apeIndex)}</td>
+                  <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.weight)}</td>
+                  <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.bodyFat, '%')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
@@ -4843,6 +5042,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
   const tabs: { id: TabId; label: string; icon: any }[] = [
     { id: 'overview', label: t('Overview'), icon: BarChart3 },
+    { id: 'anthropometrics', label: t('Anthropometrics'), icon: Ruler },
     { id: 'performance', label: t('Performance'), icon: Zap },
     { id: 'gameperf', label: t('Game Performance'), icon: Trophy },
     { id: 'player', label: t('Players Pack'), icon: User },
@@ -4928,6 +5128,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         ) : (
           <>
             {activeTab === 'overview' && <OverviewTab sessions={normalizedSessions} players={players} onSelectPlayer={handleSelectPlayer} profiles={profiles} />}
+            {activeTab === 'anthropometrics' && <AnthropometricsTab sessions={normalizedSessions} players={players} profiles={profiles} />}
             {activeTab === 'performance' && <PerformanceTab sessions={normalizedSessions} players={players} profiles={profiles} />}
             {activeTab === 'gameperf' && <GamePerformanceTab sessions={normalizedSessions} players={players} profiles={profiles} />}
             {activeTab === 'player' && <PlayerProfileTab sessions={normalizedSessions} players={players} initialPlayer={selectedPlayer} profiles={profiles} />}
