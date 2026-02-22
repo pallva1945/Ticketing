@@ -4181,15 +4181,15 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3">
               <button onClick={onBack} className="w-8 h-8 flex-shrink-0 hover:opacity-70 transition-opacity" title="Back to Hub">
-                <img src={PV_LOGO_URL} alt="PV" className="w-full h-full object-contain" />
+                <img src="https://i.imgur.com/e7khORs.png" alt="VB" className="w-full h-full object-contain" />
               </button>
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-lg bg-orange-500/10 flex items-center justify-center">
                   <Activity size={15} className="text-orange-500" />
                 </div>
                 <div>
-                  <h1 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>BOps · VB</h1>
-                  <p className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Varese Basketball</p>
+                  <h1 className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>BOps</h1>
+                  <p className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Basketball Operations</p>
                 </div>
               </div>
             </div>
