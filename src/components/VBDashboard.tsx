@@ -1496,7 +1496,7 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
       </div>
       <div className="grid grid-cols-4 gap-3">
         <StatCard label={t('Wingspan')} value={teamAvgs.wingspan} unit="cm" icon={Move} color="#f59e0b" subtitle={t('Team Average')} />
-        <StatCard label={t('Ape Index')} value={teamAvgs.apeIndex} icon={Gauge} color="#f97316" subtitle={t('Team Average')} />
+        <StatCard label={t('Ape Index')} value={teamAvgs.apeIndex !== null ? teamAvgs.apeIndex.toFixed(3) : null} icon={Gauge} color="#f97316" subtitle={t('Team Average')} />
         <StatCard label={t('Weight')} value={teamAvgs.weight} unit="kg" icon={Weight} color="#ef4444" subtitle={t('Team Average')} />
         <StatCard label={t('BF %')} value={teamAvgs.bodyFat} unit="%" icon={Heart} color="#ec4899" subtitle={t('Team Average')} />
       </div>
@@ -1526,7 +1526,7 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.reach)}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.projReach)}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.wingspan)}</td>
-                  <td className={`text-center py-2.5 px-2 font-semibold ${row.apeIndex !== null && row.apeIndex >= 1.06 ? 'text-green-500' : row.apeIndex !== null && row.apeIndex >= 1.03 ? 'text-blue-500' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.apeIndex)}</td>
+                  <td className={`text-center py-2.5 px-2 font-semibold ${row.apeIndex !== null && row.apeIndex >= 1.06 ? 'text-green-500' : row.apeIndex !== null && row.apeIndex >= 1.03 ? 'text-blue-500' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.apeIndex !== null ? row.apeIndex.toFixed(3) : '—'}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.weight)}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.bodyFat, '%')}</td>
                 </tr>
@@ -2589,7 +2589,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               {apsData.apeIndex !== null && (
                 <div className={`mt-3 pt-3 border-t flex items-center gap-2 ${isDark ? 'border-gray-800' : 'border-blue-100'}`}>
                   <div className={`text-[10px] font-bold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                    {t('Ape Index')}: <span className={isDark ? 'text-white' : 'text-gray-900'}>{apsData.apeIndex}</span>
+                    {t('Ape Index')}: <span className={isDark ? 'text-white' : 'text-gray-900'}>{apsData.apeIndex.toFixed(3)}</span>
                   </div>
                   <div className={`text-[10px] px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-blue-50 text-gray-500'}`}>
                     {apsData.apeIndex >= 1.06 ? t('Elite functional length') : apsData.apeIndex >= 1.03 ? t('Above-average length') : t('Average proportions')}
