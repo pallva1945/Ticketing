@@ -340,6 +340,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                   {[
                     { name: 'Federico Bellotto', role: 'CEO · Head of Business Opportunities' },
                     { name: 'Luis Scola', role: 'Elite Development Leader' },
+                    { name: 'Massimo Ferrariuolo', role: 'Senior Advisor' },
                     { name: 'Giovanni Todisco', role: 'RSG' },
                     { name: 'Francisco Zambelli', role: 'Head of Operations' },
                   ].map((p) => (
