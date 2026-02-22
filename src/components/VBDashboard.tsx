@@ -632,9 +632,16 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isD
       daysOff: daysOffVal,
       minLate: null,
       vacation: (() => {
-        const allPlayerSessions = getPlayerSessions(allSessions, player);
-        const vacDates = new Set(allPlayerSessions.filter(s => getSeason(s.date) === null).map(s => s.date));
-        return isRate ? Math.round((vacDates.size / divisor) * 10) / 10 : vacDates.size;
+        if (selectedSeason === 'all') return 0;
+        const parts = selectedSeason.match(/^(\d{4})\//);
+        if (!parts) return 0;
+        const startYear = parseInt(parts[1], 10);
+        const prevSeason = `${startYear - 1}/${startYear.toString().slice(2)}`;
+        const prevEnd = SEASON_END_DATES[prevSeason];
+        const curStart = getSeasonStartDate(selectedSeason, player);
+        if (!prevEnd || !curStart) return 0;
+        const days = Math.max(0, Math.ceil((curStart.getTime() - prevEnd.getTime()) / 86400000));
+        return isRate ? Math.round((days / divisor) * 10) / 10 : days;
       })(),
       cas: rosterComposites[player]?.cas ?? null,
       aps: rosterComposites[player]?.aps ?? null,
