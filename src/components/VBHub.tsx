@@ -326,17 +326,76 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
             <div className="flex justify-center mb-8 sm:mb-12">
               <div className={`h-px line-grow ${isDark ? 'bg-orange-700' : 'bg-orange-300'}`}></div>
             </div>
-            <div className={`rounded-2xl border p-8 sm:p-12 ${isDark ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'}`}>
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-                <Users size={28} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+              <div className={`rounded-2xl border p-5 sm:p-6 text-left ${isDark ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'}`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
+                    <Shield size={16} className="text-orange-500" />
+                  </div>
+                  <h3 className={`text-xs font-semibold tracking-[0.15em] uppercase ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+                    {t('Executive Leadership')}
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    { name: 'Federico Bellotto', role: 'CEO · Head of Business Opportunities' },
+                    { name: 'Luis Scola', role: 'Elite Development Leader' },
+                    { name: 'Giovanni Todisco', role: 'RSG' },
+                    { name: 'Francisco Zambelli', role: 'Head of Operations' },
+                  ].map((p) => (
+                    <div key={p.name} className={`py-2 border-b last:border-b-0 ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                      <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{p.name}</p>
+                      <p className={`text-[11px] leading-snug ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{p.role}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className={`flex items-center justify-center gap-2 mb-4 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
-                <Construction size={16} />
-                <span className="text-xs tracking-[0.2em] uppercase font-medium">{t('Coming Soon')}</span>
+
+              <div className={`rounded-2xl border p-5 sm:p-6 text-left ${isDark ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'}`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
+                    <Users size={16} className="text-orange-500" />
+                  </div>
+                  <h3 className={`text-xs font-semibold tracking-[0.15em] uppercase ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+                    {t('Coaching Staff')}
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    { name: 'Tommaso Sacchetti', role: 'HC Serie B · U19' },
+                    { name: 'Stefano Bianchi', role: 'HC U19 · U17' },
+                    { name: 'Giovanni Todisco', role: 'HC U17 · U15' },
+                    { name: 'Andrea Longoni', role: 'HC U15' },
+                    { name: 'Federico Besio', role: 'AC U15 · U17' },
+                  ].map((p) => (
+                    <div key={p.name} className={`py-2 border-b last:border-b-0 ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                      <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{p.name}</p>
+                      <p className={`text-[11px] leading-snug ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{p.role}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <p className={`text-sm sm:text-base leading-relaxed max-w-lg mx-auto ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                {t('vb_team_placeholder')}
-              </p>
+
+              <div className={`rounded-2xl border p-5 sm:p-6 text-left ${isDark ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'}`}>
+                <div className="flex items-center gap-2 mb-4">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
+                    <Activity size={16} className="text-orange-500" />
+                  </div>
+                  <h3 className={`text-xs font-semibold tracking-[0.15em] uppercase ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+                    {t('Strength & Conditioning')}
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    { name: 'Marcelo Lopez', role: 'Head of S&C' },
+                  ].map((p) => (
+                    <div key={p.name} className={`py-2 border-b last:border-b-0 ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                      <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{p.name}</p>
+                      <p className={`text-[11px] leading-snug ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{p.role}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>

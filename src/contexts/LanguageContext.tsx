@@ -680,6 +680,8 @@ const translations: Record<string, Record<Language, string>> = {
   'CSO': { en: 'Chief Sales Officer', it: 'Direttore Commerciale' },
   'COO': { en: 'Chief Operating Officer', it: 'Direttore Operativo' },
   'Executive Leadership': { en: 'Executive Leadership', it: 'Leadership Esecutiva' },
+  'Coaching Staff': { en: 'Coaching Staff', it: 'Staff Tecnico' },
+  'Strength & Conditioning': { en: 'Strength & Conditioning', it: 'Preparazione Atletica' },
   'bio_sogolow': {
     en: 'Harvard alumnus. Former Director of Basketball Operations at the Philadelphia 76ers (2017–2023). Previously at the NBA League Office. Brings NBA-level analytics, scouting, and roster management to PV.',
     it: 'Laureato ad Harvard. Ex Direttore delle Operazioni Sportive ai Philadelphia 76ers (2017–2023). Precedentemente alla NBA League Office. Porta analisi, scouting e gestione del roster di livello NBA alla PV.'
