@@ -1600,15 +1600,22 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
   const { t } = useLanguage();
   const isDark = useIsDark();
   const [selectedPlayer, setSelectedPlayer] = useState(initialPlayer || players[0]);
+  const [selectedPackSeason, setSelectedPackSeason] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [showCasInfo, setShowCasInfo] = useState(false);
   const [showApsInfo, setShowApsInfo] = useState(false);
   const allPs = useMemo(() => getPlayerSessions(sessions, selectedPlayer), [sessions, selectedPlayer]);
-  const ps = useMemo(() => selectedMonth ? allPs.filter(s => s.date.substring(0, 7) === selectedMonth) : allPs, [allPs, selectedMonth]);
-  const availableMonths = useMemo(() => {
-    const months = [...new Set(allPs.map(s => s.date.substring(0, 7)))].sort();
-    return months;
+  const availableSeasons = useMemo(() => {
+    return [...new Set(allPs.map(s => getSeason(s.date)).filter(Boolean))].sort().reverse() as string[];
   }, [allPs]);
+  useEffect(() => { setSelectedPackSeason('all'); setSelectedMonth(null); }, [selectedPlayer]);
+  const seasonPs = useMemo(() => selectedPackSeason === 'all' ? allPs : allPs.filter(s => getSeason(s.date) === selectedPackSeason), [allPs, selectedPackSeason]);
+  const ps = useMemo(() => selectedMonth ? seasonPs.filter(s => s.date.substring(0, 7) === selectedMonth) : seasonPs, [seasonPs, selectedMonth]);
+  const availableMonths = useMemo(() => {
+    const months = [...new Set(seasonPs.map(s => s.date.substring(0, 7)))].sort();
+    return months;
+  }, [seasonPs]);
+  useEffect(() => { setSelectedMonth(null); }, [selectedPackSeason]);
 
   const getWeekOfMonth = (dateStr: string) => {
     const day = parseInt(dateStr.substring(8, 10));
@@ -1644,11 +1651,9 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
     return `${t(monthNames[parseInt(m) - 1])} ${y}`;
   })() : null;
 
-  const playerSeasons = useMemo(() => {
-    return [...new Set(allPs.map(s => getSeason(s.date)).filter(Boolean))].sort().reverse() as string[];
-  }, [allPs]);
+  const playerSeasons = availableSeasons;
 
-  const currentSeason = playerSeasons[0] || null;
+  const currentSeason = selectedPackSeason !== 'all' ? selectedPackSeason : (playerSeasons[0] || null);
   const profile = useMemo(() => getPlayerProfile(selectedPlayer, profiles, currentSeason || undefined), [selectedPlayer, profiles, currentSeason]);
 
   const playerAge = useMemo(() => {
@@ -1907,11 +1912,21 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           <PlayerSelector players={players} selected={selectedPlayer} onChange={setSelectedPlayer} />
         </div>
         <select
+          value={selectedPackSeason}
+          onChange={e => setSelectedPackSeason(e.target.value)}
+          className={`px-3 py-2 rounded-lg text-xs font-medium border ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-gray-600 border-gray-200'} shadow-sm`}
+        >
+          <option value="all">{t('All Seasons')}</option>
+          {availableSeasons.map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
+        <select
           value={selectedMonth || ''}
           onChange={e => setSelectedMonth(e.target.value || null)}
           className={`px-3 py-2 rounded-lg text-xs font-medium border ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-gray-600 border-gray-200'} shadow-sm`}
         >
-          <option value="">{t('Full Season')}</option>
+          <option value="">{t('All Months')}</option>
           {availableMonths.map(m => {
             const [y, mo] = m.split('-');
             const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
