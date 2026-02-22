@@ -94,7 +94,7 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onEnterPV, onEnterVB }
             >
               <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-red-600 to-red-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-2xl`}></div>
               <img src={PV_LOGO_URL} alt="Pallacanestro Varese" className="w-20 h-20 sm:w-24 sm:h-24 object-contain mb-6 group-hover:scale-105 transition-transform duration-500" />
-              <h2 className={`text-lg sm:text-xl font-semibold tracking-[0.05em] mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <h2 className={`text-lg sm:text-xl font-semibold tracking-[0.05em] mb-2 whitespace-nowrap ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 Pallacanestro Varese
               </h2>
               <p className={`text-xs sm:text-sm mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
