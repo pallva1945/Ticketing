@@ -1023,7 +1023,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             </div>
           </div>
 
-          <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto`}>
             <button
               onClick={() => onNavigate('landing')}
               className={`group relative text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl ${
@@ -1061,14 +1061,9 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center mb-3 sm:mb-5 ${isDark ? 'bg-emerald-900/20' : 'bg-emerald-50'}`}>
                   <Shield size={20} className="text-emerald-600 sm:w-[22px] sm:h-[22px]" />
                 </div>
-                <div className="flex items-center gap-2 mb-1 sm:mb-2">
-                  <h3 className={`text-lg sm:text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    BOps · PV
-                  </h3>
-                </div>
-                <p className={`text-[10px] sm:text-xs tracking-[0.1em] uppercase font-medium mb-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                  Pallacanestro Varese
-                </p>
+                <h3 className={`text-lg sm:text-xl font-semibold mb-1 sm:mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  BOps
+                </h3>
                 <p className={`text-xs sm:text-sm leading-relaxed mb-3 sm:mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                   {t('Basketball Operations — Team management, roster & performance')}
                 </p>
@@ -1078,35 +1073,6 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 </div>
               </div>
             </a>
-
-            <button
-              onClick={() => onNavigate('vb')}
-              className={`group relative text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl ${
-                isDark ? 'bg-gray-900 border-gray-800 hover:border-orange-800/60' : 'bg-white border-gray-200 hover:border-orange-300'
-              }`}
-            >
-              <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-orange-500 to-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
-              <div className="p-5 sm:p-8">
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center mb-3 sm:mb-5 ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
-                  <Activity size={20} className="text-orange-500 sm:w-[22px] sm:h-[22px]" />
-                </div>
-                <div className="flex items-center gap-2 mb-1 sm:mb-2">
-                  <h3 className={`text-lg sm:text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    BOps · VB
-                  </h3>
-                </div>
-                <p className={`text-[10px] sm:text-xs tracking-[0.1em] uppercase font-medium mb-1 ${isDark ? 'text-orange-400' : 'text-orange-500'}`}>
-                  Varese Basketball
-                </p>
-                <p className={`text-xs sm:text-sm leading-relaxed mb-3 sm:mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                  {t('Youth development, academy & grassroots programs')}
-                </p>
-                <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-orange-500' : 'text-orange-600'}`}>
-                  {t('Enter')}
-                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                </div>
-              </div>
-            </button>
 
           </div>
         </div>

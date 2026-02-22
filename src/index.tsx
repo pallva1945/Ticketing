@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { WelcomePage } from './components/WelcomePage';
 import { InternalHub } from './components/InternalHub';
+import { VBHub } from './components/VBHub';
 import { FinancialCenter } from './components/FinancialCenter';
 import { CostCenter } from './components/CostCenter';
 import { VerticalsPnL } from './components/VerticalsPnL';
@@ -40,6 +41,11 @@ const Root: React.FC = () => {
   const handleBackToHub = () => {
     setCurrentView('hub');
     window.location.hash = 'hub';
+  };
+
+  const handleBackToVBHub = () => {
+    setCurrentView('vb-hub');
+    window.location.hash = 'vb-hub';
   };
 
   const handleBackToFinancial = () => {
@@ -95,7 +101,7 @@ const Root: React.FC = () => {
   }
 
   if (currentView === 'vb' && canAccessPage('hub')) {
-    return <VBDashboard onBack={handleBackToHub} />;
+    return <VBDashboard onBack={handleBackToVBHub} />;
   }
 
   if (currentView === 'revenue' && canAccessPage('revenue')) {
@@ -116,11 +122,15 @@ const Root: React.FC = () => {
     }} />;
   }
 
+  if (currentView === 'vb-hub' && canAccessPage('hub')) {
+    return <VBHub onNavigate={handleNavigate} onBackToWelcome={handleBackToWelcome} />;
+  }
+
   if (currentView === 'hub' && canAccessPage('hub')) {
     return <InternalHub onNavigate={handleNavigate} onBackToWelcome={handleBackToWelcome} />;
   }
 
-  return <WelcomePage onEnter={() => handleNavigate('hub')} />;
+  return <WelcomePage onEnterPV={() => handleNavigate('hub')} onEnterVB={() => handleNavigate('vb-hub')} />;
 };
 
 const rootElement = document.getElementById('root');

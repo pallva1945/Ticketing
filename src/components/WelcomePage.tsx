@@ -4,11 +4,14 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
 
+const VB_LOGO_URL = "https://i.imgur.com/e7khORs.png";
+
 interface WelcomePageProps {
-  onEnter: () => void;
+  onEnterPV: () => void;
+  onEnterVB: () => void;
 }
 
-export const WelcomePage: React.FC<WelcomePageProps> = ({ onEnter }) => {
+export const WelcomePage: React.FC<WelcomePageProps> = ({ onEnterPV, onEnterVB }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
   const isDark = theme === 'dark';
@@ -65,33 +68,64 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onEnter }) => {
 
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6">
         <div className="flex flex-col items-center text-center">
-          <div className={`transition-all duration-[1.5s] ease-out ${phase >= 1 ? 'opacity-100 scale-100' : 'opacity-0 scale-90'}`}>
-            <img src={PV_LOGO_URL} alt="Pallacanestro Varese" className="w-24 h-24 sm:w-28 sm:h-28 object-contain mb-10" />
-          </div>
-
-          <div className={`transition-all duration-[1.2s] ease-out ${phase >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-            <h1 className={`text-3xl sm:text-4xl lg:text-5xl font-light tracking-[0.15em] uppercase mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Pallacanestro Varese
-            </h1>
-            <div className="flex justify-center mb-6">
+          <div className={`transition-all duration-[1.2s] ease-out ${phase >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <p className={`text-sm sm:text-base tracking-[0.3em] uppercase font-light mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              {t('Operations & Business Intelligence')}
+            </p>
+            <div className="flex justify-center mb-10">
               <div className={`h-px animate-line ${isDark ? 'bg-red-700' : 'bg-red-400'}`}></div>
             </div>
-            <p className={`text-sm sm:text-base tracking-[0.3em] uppercase font-light ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-              {t('Operations & Business Intelligence')}
+          </div>
+
+          <div className={`transition-all duration-[1.2s] ease-out delay-500 ${phase >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+            <p className={`text-xs tracking-[0.25em] uppercase font-medium mb-8 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+              {t('Choose your area')}
             </p>
           </div>
 
-          <div className={`mt-16 transition-all duration-1000 ease-out ${phase >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10 max-w-2xl transition-all duration-1000 ease-out ${phase >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <button
-              onClick={onEnter}
-              className={`group relative flex items-center gap-3 px-10 py-4 rounded-full transition-all duration-500 tracking-[0.2em] uppercase text-xs font-medium ${
+              onClick={onEnterPV}
+              className={`group relative flex flex-col items-center text-center px-10 py-10 sm:px-12 sm:py-14 rounded-2xl border transition-all duration-500 hover:shadow-2xl ${
                 isDark
-                  ? 'border border-gray-700 text-gray-300 hover:border-red-800 hover:text-white hover:shadow-lg hover:shadow-red-950/20'
-                  : 'border border-gray-300 text-gray-600 hover:border-red-400 hover:text-gray-900 hover:shadow-lg hover:shadow-red-100/50'
+                  ? 'bg-gray-900/50 border-gray-800 hover:border-red-800/60 hover:shadow-red-950/10'
+                  : 'bg-white border-gray-200 hover:border-red-300 hover:shadow-red-100/30'
               }`}
             >
-              {t('Enter')}
-              <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform duration-300" />
+              <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-red-600 to-red-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-2xl`}></div>
+              <img src={PV_LOGO_URL} alt="Pallacanestro Varese" className="w-20 h-20 sm:w-24 sm:h-24 object-contain mb-6 group-hover:scale-105 transition-transform duration-500" />
+              <h2 className={`text-lg sm:text-xl font-semibold tracking-[0.05em] mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Pallacanestro Varese
+              </h2>
+              <p className={`text-xs sm:text-sm mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                Corp · BOps
+              </p>
+              <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-red-500' : 'text-red-600'}`}>
+                {t('Enter')}
+                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              </div>
+            </button>
+
+            <button
+              onClick={onEnterVB}
+              className={`group relative flex flex-col items-center text-center px-10 py-10 sm:px-12 sm:py-14 rounded-2xl border transition-all duration-500 hover:shadow-2xl ${
+                isDark
+                  ? 'bg-gray-900/50 border-gray-800 hover:border-orange-800/60 hover:shadow-orange-950/10'
+                  : 'bg-white border-gray-200 hover:border-orange-300 hover:shadow-orange-100/30'
+              }`}
+            >
+              <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-orange-500 to-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-2xl`}></div>
+              <img src={VB_LOGO_URL} alt="Varese Basketball" className="w-20 h-20 sm:w-24 sm:h-24 object-contain mb-6 group-hover:scale-105 transition-transform duration-500" />
+              <h2 className={`text-lg sm:text-xl font-semibold tracking-[0.05em] mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Varese Basketball
+              </h2>
+              <p className={`text-xs sm:text-sm mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                {t('Youth Development')}
+              </p>
+              <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-orange-500' : 'text-orange-600'}`}>
+                {t('Enter')}
+                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              </div>
             </button>
           </div>
         </div>
