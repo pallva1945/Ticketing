@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { BookOpen, ChevronRight, Target, Crosshair, TrendingUp, ArrowLeft, CheckCircle2, AlertTriangle, Info, CircleDot } from 'lucide-react';
+import { BookOpen, ChevronRight, Target, Crosshair, TrendingUp, ArrowLeft, CheckCircle2, AlertTriangle, Info, CircleDot, Timer, Zap, Clock, Shield } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -524,6 +524,219 @@ function ReboundAnalyticsArticle() {
   );
 }
 
+function PossessionBattleArticle() {
+  const isDark = useIsDark();
+
+  const sectionHeaderClass = `text-lg font-bold mt-8 mb-4 pb-2 border-b-2 ${isDark ? 'text-orange-400 border-orange-500/30' : 'text-orange-700 border-orange-200'}`;
+  const subHeaderClass = `text-base font-semibold mt-6 mb-3 pb-1.5 border-b ${isDark ? 'text-gray-200 border-gray-700/50' : 'text-gray-800 border-gray-200'}`;
+  const textClass = `text-sm leading-relaxed mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`;
+  const strongClass = isDark ? 'text-orange-400 font-semibold' : 'text-orange-700 font-semibold';
+  const noteClass = `rounded-xl p-4 my-5 border-l-4 ${isDark ? 'bg-orange-500/5 border-orange-500/40 text-gray-300' : 'bg-orange-50 border-orange-400 text-gray-700'}`;
+  const listClass = `list-disc ml-5 mb-4 space-y-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`;
+
+  const mechanics = [
+    {
+      title: 'The Jump Ball & Alternance Rule',
+      icon: Zap,
+      desc: 'Winning the opening tip dictates the alternating possession arrow. Careful management of jump-ball situations, quarter starts, and overtime periods allows a team to potentially finish with a +1 possession advantage.',
+    },
+    {
+      title: 'Technical & Unsportsmanlike Fouls',
+      icon: Shield,
+      desc: 'These events are unique opportunities to break the standard exchange of possessions. They grant free throws while allowing the team to retain the ball, creating a "free" offensive cycle.',
+    },
+    {
+      title: '2-for-1 Clock Management',
+      icon: Clock,
+      desc: 'This is arguably the most controllable tactical variable. By shooting early enough in the final minute of a quarter, we can ensure the final possession belongs to our team, effectively turning one possession into two.',
+    },
+  ];
+
+  const strategies = [
+    {
+      num: 'I',
+      title: 'Active Pursuit (The Shot Window)',
+      desc: 'A 2-for-1 is typically secured by taking the first shot between 48 and 35 seconds remaining.',
+      detail: 'Analytics suggests a "perfect window" of 40–43 seconds. This timing generally ensures that regardless of the opponent\'s response, there will be enough time remaining for the final shot of the quarter.',
+      window: '40–43s',
+    },
+    {
+      num: 'II',
+      title: 'Passive Pursuit (Clock Management)',
+      desc: 'When an opponent scores with roughly 35 seconds remaining, we have the chance to "bleed" the clock.',
+      detail: 'Utilizing the running clock in European play — allowing the ball to bounce briefly before the inbound, using the full 5-second count, or rolling the ball — can shrink the remaining time to 24 seconds or less, guaranteeing the last shot.',
+      window: '≤24s',
+    },
+    {
+      num: 'III',
+      title: 'Possession Discipline',
+      desc: 'Unless a high-percentage layup is available, the optimal choice is often to hold for the absolute last shot.',
+      detail: 'Shooting early on the final possession risks giving the opponent a chance for a transition score or a full-court heave. The goal is to leave the opponent with zero time on the clock.',
+      window: '0.0s',
+    },
+  ];
+
+  return (
+    <div>
+      <h2 className={sectionHeaderClass}>1. The Concept of the Possession Battle</h2>
+      <p className={textClass}>
+        Winning games usually comes down to two things: how well a team shoots and how many shots it actually gets. While significant time is spent on shooting development and offensive sets, there is another huge advantage to be found simply by ensuring more shots are taken than the opponent. This is what we call the <span className={strongClass}>"Possession Battle."</span>
+      </p>
+      <p className={textClass}>
+        By focusing on getting more possessions, a team creates a cushion. Even on nights when the ball doesn't want to go in, having those extra 1 or 2 chances every game — simply by being smarter with the clock — can really add up and win a few extra games by the end of the year.
+      </p>
+
+      <div className={noteClass}>
+        <div className="flex items-start gap-2">
+          <Info size={16} className={`flex-shrink-0 mt-0.5 ${isDark ? 'text-orange-400' : 'text-orange-600'}`} />
+          <div>
+            <p className={`text-sm font-semibold mb-1 ${isDark ? 'text-orange-400' : 'text-orange-700'}`}>Why It Matters</p>
+            <p className="text-sm">A consistent +1 possession per game advantage translates to roughly +0.73 points per game — enough to flip the outcome of close games and add nearly half a win to a season record over time.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className={`h-px my-6 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+
+      <h2 className={sectionHeaderClass}>2. Mechanics of Possession Differentials</h2>
+      <p className={textClass}>A possession surplus is typically generated by a few key game-management factors:</p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 my-5">
+        {mechanics.map((m, i) => (
+          <div key={i} className={`rounded-xl p-4 border ${isDark ? 'bg-gray-800/30 border-gray-700/50' : 'bg-white border-gray-200 shadow-sm'}`}>
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${isDark ? 'bg-orange-500/15' : 'bg-orange-100'}`}>
+              <m.icon size={18} className={isDark ? 'text-orange-400' : 'text-orange-700'} />
+            </div>
+            <h4 className={`text-xs font-bold mb-1.5 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{m.title}</h4>
+            <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{m.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className={`h-px my-6 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+
+      <h2 className={sectionHeaderClass}>3. 2x1 Approaches and Strategies</h2>
+      <p className={textClass}>To maximize possession volume, the following strategies apply to the final minute of the first three quarters:</p>
+
+      <div className="space-y-3 my-5">
+        {strategies.map((s) => (
+          <div key={s.num} className={`rounded-xl border overflow-hidden ${isDark ? 'bg-gray-800/20 border-gray-700/50' : 'bg-white border-gray-200 shadow-sm'}`}>
+            <div className={`flex items-center gap-3 px-4 py-3 border-b ${isDark ? 'border-gray-700/50' : 'border-gray-100'}`}>
+              <span className={`inline-flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold ${isDark ? 'bg-orange-500/20 text-orange-400' : 'bg-orange-100 text-orange-700'}`}>{s.num}</span>
+              <div className="flex-1 min-w-0">
+                <h4 className={`text-sm font-bold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{s.title}</h4>
+              </div>
+              <div className={`px-2.5 py-1 rounded-lg text-xs font-bold ${isDark ? 'bg-orange-500/15 text-orange-400' : 'bg-orange-50 text-orange-700 border border-orange-200'}`}>
+                {s.window}
+              </div>
+            </div>
+            <div className="px-4 py-3">
+              <p className={`text-xs font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{s.desc}</p>
+              <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>{s.detail}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className={`h-px my-6 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+
+      <h2 className={sectionHeaderClass}>4. The 2-for-1 Shot Window</h2>
+      <p className={textClass}>Understanding the optimal timing is critical. Here's a visual breakdown of the final 60 seconds of any quarter:</p>
+
+      <div className={`rounded-xl p-5 border my-5 ${isDark ? 'bg-gray-800/30 border-gray-700/50' : 'bg-white border-gray-200 shadow-sm'}`}>
+        <div className="relative">
+          <div className={`h-3 rounded-full w-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
+            <div className="h-3 rounded-l-full bg-gradient-to-r from-orange-500/30 to-orange-500/10" style={{ width: '80%' }} />
+            <div className="absolute h-3 rounded-none bg-orange-500/40" style={{ left: '28.3%', width: '13.3%', top: 0 }} />
+          </div>
+          <div className="flex justify-between mt-2">
+            <span className={`text-[10px] font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>60s</span>
+            <span className={`text-[10px] font-bold ${isDark ? 'text-orange-400' : 'text-orange-700'}`}>48s</span>
+            <span className={`text-[10px] font-bold ${isDark ? 'text-orange-300' : 'text-orange-600'}`}>40–43s</span>
+            <span className={`text-[10px] font-bold ${isDark ? 'text-orange-400' : 'text-orange-700'}`}>35s</span>
+            <span className={`text-[10px] font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>24s</span>
+            <span className={`text-[10px] font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>0s</span>
+          </div>
+          <div className="flex justify-between mt-1">
+            <span className={`text-[9px] ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>Quarter clock</span>
+            <span className={`text-[9px] ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>2x1 window opens</span>
+            <span className={`text-[9px] font-semibold ${isDark ? 'text-orange-400' : 'text-orange-700'}`}>Perfect window</span>
+            <span className={`text-[9px] ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>Window closes</span>
+            <span className={`text-[9px] ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>Shot clock</span>
+            <span className={`text-[9px] ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>Buzzer</span>
+          </div>
+        </div>
+      </div>
+
+      <div className={noteClass}>
+        <div className="flex items-start gap-2">
+          <Timer size={16} className={`flex-shrink-0 mt-0.5 ${isDark ? 'text-orange-400' : 'text-orange-600'}`} />
+          <div>
+            <p className={`text-sm font-semibold mb-1 ${isDark ? 'text-orange-400' : 'text-orange-700'}`}>The Perfect Window: 40–43 Seconds</p>
+            <p className="text-sm">Taking the first shot in this window maximizes the probability of securing a second possession while still allowing enough time for a quality shot attempt.</p>
+          </div>
+        </div>
+      </div>
+
+      <div className={`h-px my-6 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+
+      <h2 className={sectionHeaderClass}>5. Impact on Winning</h2>
+      <p className={textClass}>The possession battle isn't just a theory — it has measurable impact on wins and losses across a full season.</p>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 my-5">
+        {[
+          { label: '+1 Poss/Game', value: '+0.73', unit: 'pts/game', desc: 'Extra points generated' },
+          { label: 'Season Impact', value: '~0.5', unit: 'wins', desc: 'Additional wins per season' },
+          { label: 'Perfect Window', value: '40–43', unit: 'seconds', desc: 'Optimal shot timing' },
+          { label: 'Quarters Applied', value: '3', unit: 'of 4', desc: 'First three quarters' },
+        ].map((stat, i) => (
+          <div key={i} className={`rounded-xl p-3 text-center border ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-white border-gray-200 shadow-sm'}`}>
+            <p className={`text-xl sm:text-2xl font-black ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{stat.value}</p>
+            <p className={`text-[10px] font-medium uppercase tracking-wider mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{stat.unit}</p>
+            <p className={`text-xs font-semibold mt-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{stat.label}</p>
+            <p className={`text-[10px] mt-0.5 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{stat.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className={`h-px my-6 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+
+      <h2 className={sectionHeaderClass}>6. Key Principles Summary</h2>
+
+      <div className="space-y-2 my-4">
+        {[
+          { title: 'Track Every Possession', desc: 'Awareness is the first step. Chart possession differentials game-by-game and identify patterns in where possessions are being lost or gained.' },
+          { title: 'Own the Clock in Final Minutes', desc: 'The last minute of each quarter is where the battle is won. Shoot in the 40–43 second window to guarantee a second possession before the buzzer.' },
+          { title: 'Bleed the Clock When Behind', desc: 'When an opponent scores with ~35 seconds left, use every legal delay (bounce inbound, 5-second count, rolling the ball) to shrink available time to ≤24 seconds.' },
+          { title: 'Hold for the Last Shot', desc: 'On the final possession, unless a high-percentage layup is available, hold the ball. Leaving the opponent with 0.0 seconds eliminates transition and heave opportunities.' },
+          { title: 'Win the Tip, Win the Arrow', desc: 'The opening jump ball sets the alternating possession arrow. Winning it creates a structural advantage that compounds across quarters and overtime.' },
+          { title: 'Capitalize on Fouls', desc: 'Technical and unsportsmanlike fouls create "free" possessions. These are rare but high-value moments that should be maximized every time they occur.' },
+        ].map((p, i) => (
+          <div key={i} className={`flex gap-3 rounded-xl p-3 border ${isDark ? 'bg-gray-800/30 border-gray-700/50' : 'bg-white border-gray-200 shadow-sm'}`}>
+            <div className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center ${isDark ? 'bg-orange-500/15' : 'bg-orange-100'}`}>
+              <CheckCircle2 size={14} className={isDark ? 'text-orange-400' : 'text-orange-700'} />
+            </div>
+            <div className="min-w-0">
+              <p className={`text-xs font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.title}</p>
+              <p className={`text-xs mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{p.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className={noteClass}>
+        <div className="flex items-start gap-2">
+          <AlertTriangle size={16} className={`flex-shrink-0 mt-0.5 ${isDark ? 'text-orange-400' : 'text-orange-600'}`} />
+          <div>
+            <p className={`text-sm font-semibold mb-1 ${isDark ? 'text-orange-400' : 'text-orange-700'}`}>Bottom Line</p>
+            <p className="text-sm">The possession battle is one of the most controllable variables in basketball. It requires no extra talent, no special plays — just disciplined clock awareness and intentional decision-making in the final minute of each quarter. Teams that consistently win this battle gain a measurable edge that compounds over a full season.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface Article {
   id: string;
   title: string;
@@ -546,6 +759,13 @@ const articles: Article[] = [
     subtitle: 'Decoding rebound patterns for a strategic advantage — the anatomy of a miss',
     icon: CircleDot,
     component: ReboundAnalyticsArticle,
+  },
+  {
+    id: 'possession-battle',
+    title: '2x1',
+    subtitle: 'The Possession Battle — how clock management and 2-for-1 strategies create extra scoring opportunities',
+    icon: Timer,
+    component: PossessionBattleArticle,
   },
 ];
 
