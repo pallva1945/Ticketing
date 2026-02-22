@@ -2120,7 +2120,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                   >
                     APS
                   </button>
-                  <div className={`text-6xl sm:text-7xl font-black leading-none ${apsData.aps >= 55 ? 'text-emerald-500' : apsData.aps >= 45 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
+                  <div className={`text-4xl font-black leading-none ${apsData.aps >= 55 ? 'text-emerald-500' : apsData.aps >= 45 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
                     {apsData.aps}
                   </div>
                   {apsData.partial && <div className={`text-[10px] mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>*</div>}
