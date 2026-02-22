@@ -1719,6 +1719,100 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
     deadlift: getLatestMetric(sessions, selectedPlayer, 'deadlift'),
   };
 
+  const casData = useMemo(() => {
+    const getPlayerAthData = (p: string) => {
+      const sr = getLatestMetric(sessions, p, 'standingReach');
+      const pv = getLatestMetric(sessions, p, 'pureVertical');
+      const nsv = getLatestMetric(sessions, p, 'noStepVertical');
+      const maxVert = (pv !== null && sr !== null) ? pv - sr : null;
+      const standVert = (nsv !== null && sr !== null) ? nsv - sr : null;
+      const sp = getLatestMetric(sessions, p, 'sprint');
+      const cd = getLatestMetric(sessions, p, 'coneDrill');
+      const dl = getLatestMetric(sessions, p, 'deadlift');
+      const wt = getLatestMetric(sessions, p, 'weight');
+      const relDL = (dl !== null && wt !== null && wt > 0) ? Math.round((dl / wt) * 100) / 100 : null;
+      return { maxVert, standVert, sprint: sp, shuttle: cd, relDeadlift: relDL };
+    };
+
+    const allData = players.map(p => ({ player: p, ...getPlayerAthData(p) }));
+
+    const calcStats = (vals: number[]) => {
+      if (vals.length < 2) return { mean: vals[0] || 0, std: 1 };
+      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const std = Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / vals.length);
+      return { mean, std: std || 1 };
+    };
+
+    const maxVertVals = allData.map(d => d.maxVert).filter((v): v is number => v !== null);
+    const standVertVals = allData.map(d => d.standVert).filter((v): v is number => v !== null);
+    const sprintVals = allData.map(d => d.sprint).filter((v): v is number => v !== null);
+    const shuttleVals = allData.map(d => d.shuttle).filter((v): v is number => v !== null);
+    const relDLVals = allData.map(d => d.relDeadlift).filter((v): v is number => v !== null);
+
+    const stats = {
+      maxVert: calcStats(maxVertVals),
+      standVert: calcStats(standVertVals),
+      sprint: calcStats(sprintVals),
+      shuttle: calcStats(shuttleVals),
+      relDL: calcStats(relDLVals),
+    };
+
+    const pd = getPlayerAthData(selectedPlayer);
+    const availCount = [pd.maxVert, pd.standVert, pd.sprint, pd.shuttle, pd.relDeadlift].filter(v => v !== null).length;
+    if (availCount < 4) return null;
+
+    const zScore = (val: number | null, s: { mean: number; std: number }, invert = false): number | null => {
+      if (val === null) return null;
+      const z = (val - s.mean) / s.std;
+      return invert ? -z : z;
+    };
+
+    const zMaxVert = zScore(pd.maxVert, stats.maxVert);
+    const zStandVert = zScore(pd.standVert, stats.standVert);
+    const zSprint = zScore(pd.sprint, stats.sprint, true);
+    const zShuttle = zScore(pd.shuttle, stats.shuttle, true);
+    const zRelDL = zScore(pd.relDeadlift, stats.relDL);
+
+    const role = profile?.role || '';
+    let baseWeights = { maxVert: 0.30, shuttle: 0.25, sprint: 0.15, standVert: 0.15, relDL: 0.15 };
+    if (role === 'Playmaker') {
+      baseWeights = { maxVert: 0.25, shuttle: 0.35, sprint: 0.15, standVert: 0.10, relDL: 0.15 };
+    } else if (role === 'Center') {
+      baseWeights = { maxVert: 0.20, shuttle: 0.15, sprint: 0.15, standVert: 0.25, relDL: 0.25 };
+    }
+
+    const rawComps = [
+      { key: 'maxVert' as const, label: 'Max Vertical', z: zMaxVert, baseW: baseWeights.maxVert, val: pd.maxVert, unit: 'cm' },
+      { key: 'shuttle' as const, label: 'Shuttle Run', z: zShuttle, baseW: baseWeights.shuttle, val: pd.shuttle, unit: 's' },
+      { key: 'sprint' as const, label: '¾ Sprint', z: zSprint, baseW: baseWeights.sprint, val: pd.sprint, unit: 's' },
+      { key: 'standVert' as const, label: 'Standing Vertical', z: zStandVert, baseW: baseWeights.standVert, val: pd.standVert, unit: 'cm' },
+      { key: 'relDL' as const, label: 'Rel. Deadlift', z: zRelDL, baseW: baseWeights.relDL, val: pd.relDeadlift, unit: 'x BW' },
+    ];
+
+    const availComps = rawComps.filter(c => c.z !== null);
+    const totalAvailW = availComps.reduce((a, c) => a + c.baseW, 0);
+    const components = rawComps.map(c => ({
+      label: c.label,
+      z: c.z ?? 0,
+      w: c.z !== null ? c.baseW / totalAvailW : 0,
+      val: c.val,
+      unit: c.unit,
+      missing: c.z === null,
+    }));
+
+    const cas = availComps.reduce((sum, c) => sum + (c.z as number) * (c.baseW / totalAvailW), 0);
+    const casNorm = Math.round((50 + cas * 10) * 10) / 10;
+    const jumpDelta = (pd.maxVert !== null && pd.standVert !== null) ? Math.round((pd.maxVert - pd.standVert) * 10) / 10 : null;
+    let jumpInsight = '';
+    if (jumpDelta !== null) {
+      if (jumpDelta < 5) jumpInsight = 'Strong but not springy — focus on plyometrics';
+      else if (jumpDelta > 12) jumpInsight = 'Springy but not strong — focus on strength training';
+      else jumpInsight = 'Balanced elastic-strength profile';
+    }
+
+    return { cas: casNorm, components, jumpDelta, jumpInsight, archetype: role || 'Baseline', partial: availCount < 5 };
+  }, [sessions, players, selectedPlayer, profile?.role]);
+
   const totalTaken = ps.reduce((a, s) => a + (s.shootsTaken || 0), 0);
   const totalMade = ps.reduce((a, s) => a + (s.shootsMade || 0), 0);
   const overallPct = totalTaken > 0 ? Math.round((totalMade / totalTaken) * 1000) / 10 : null;
@@ -1993,6 +2087,75 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
             <div className={subValueClass}>{totalMade}/{totalTaken}</div>
           </div>
         </div>
+
+        {casData && (
+          <div className={`rounded-xl border p-4 mb-5 print-cas ${isDark ? 'bg-gradient-to-r from-orange-500/5 to-gray-900 border-orange-500/20' : 'bg-gradient-to-r from-orange-50 to-white border-orange-200'}`}>
+            <div className="flex flex-col sm:flex-row gap-4 items-start">
+              <div className="flex-shrink-0 text-center sm:text-left">
+                <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+                  CAS
+                </div>
+                <div className={`text-4xl font-black ${casData.cas >= 55 ? 'text-emerald-500' : casData.cas >= 45 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
+                  {casData.cas}
+                </div>
+                <div className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {casData.archetype} {t('weights')}{casData.partial ? ' *' : ''}
+                </div>
+              </div>
+
+              <div className="flex-1 min-w-0 w-full">
+                <div className="space-y-1.5">
+                  {casData.components.map((c, i) => {
+                    if (c.missing) {
+                      return (
+                        <div key={i} className="flex items-center gap-2 opacity-40">
+                          <div className={`w-24 sm:w-28 text-[10px] font-medium text-right flex-shrink-0 line-through ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                            {t(c.label)}
+                          </div>
+                          <div className={`flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`} />
+                          <div className={`w-14 text-[10px] font-mono text-right flex-shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>N/A</div>
+                          <div className={`w-16 text-[10px] text-right flex-shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>—</div>
+                        </div>
+                      );
+                    }
+                    const barWidth = Math.min(Math.max((c.z + 3) / 6 * 100, 2), 100);
+                    const isPositive = c.z >= 0;
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        <div className={`w-24 sm:w-28 text-[10px] font-medium text-right flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {t(c.label)} <span className={`${isDark ? 'text-gray-600' : 'text-gray-300'}`}>({Math.round(c.w * 100)}%)</span>
+                        </div>
+                        <div className={`flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                          <div
+                            className={`h-full rounded-full transition-all ${isPositive ? 'bg-gradient-to-r from-orange-500 to-orange-400' : 'bg-gradient-to-r from-red-500/60 to-red-400/60'}`}
+                            style={{ width: `${barWidth}%` }}
+                          />
+                        </div>
+                        <div className={`w-14 text-[10px] font-mono text-right flex-shrink-0 ${isPositive ? (isDark ? 'text-orange-400' : 'text-orange-600') : 'text-red-400'}`}>
+                          {c.z > 0 ? '+' : ''}{Math.round(c.z * 100) / 100}
+                        </div>
+                        <div className={`w-16 text-[10px] text-right flex-shrink-0 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {c.val !== null ? `${c.val} ${c.unit}` : '—'}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {casData.jumpDelta !== null && (
+              <div className={`mt-3 pt-3 border-t flex items-center gap-2 ${isDark ? 'border-gray-800' : 'border-orange-100'}`}>
+                <div className={`text-[10px] font-bold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {t('Jump Delta')}: <span className={isDark ? 'text-white' : 'text-gray-900'}>{casData.jumpDelta} cm</span>
+                </div>
+                <div className={`text-[10px] px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-orange-50 text-gray-500'}`}>
+                  {t(casData.jumpInsight)}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {(() => {
           const sr = getLatestMetric(sessions, selectedPlayer, 'standingReach');

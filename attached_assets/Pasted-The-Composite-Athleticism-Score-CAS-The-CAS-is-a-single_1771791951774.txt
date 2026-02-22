@@ -1,0 +1,22 @@
+The Composite Athleticism Score (CAS)
+The CAS is a single score designed to quantify a player's overall basketball-specific athleticism. It is derived from a five-test battery that measures the core physical qualities essential for success in the modern game: explosive power, speed, agility, and functional strength.
+
+Core Components & On-Court Relevance
+Shuttle Run: Measures agility, body control, and the ability to change direction efficiently, which is crucial for perimeter defense and offensive cutting.
+Three-Quarter Court Sprint: A pure test of linear speed and acceleration over 22.86 meters, directly translating to transition offense and defense.
+Standing Vertical Leap: Measures static, concentric lower-body power, important for rebounding in a crowd and contesting shots without a running start.
+Max Vertical Leap: Measures dynamic, elastic power by allowing a running start. This is the "highlight reel" jump for dunks and chase-down blocks.
+Hex Bar Deadlift 1RM (Relative): Quantifies foundational, total-body strength relative to bodyweight, which is the bedrock for all other athletic qualities and injury resilience.
+A key diagnostic tool is the "Jump Delta"—the difference between the Max and Standing Vertical Leaps. This reveals whether an athlete is "strong but not springy" or "springy but not strong," guiding targeted training interventions.
+
+CAS Calculation
+The CAS is calculated as a weighted sum of normalized Z-scores for each test. Z-scores standardize results by measuring how many standard deviations a player is from the group average. Scores for timed events (sprint, shuttle) are inverted so that a faster time results in a higher score.
+
+Baseline Weightings
+Test Component	Weighting
+Max Vertical Leap	30%
+Shuttle Run	25%
+Three-Quarter Sprint	15%
+Standing Vertical Leap	15%
+Hex Bar Deadlift (Relative)	15%
+These weights are adjusted for three player archetypes (Guards, Wings, Bigs) to reflect the different athletic demands of each position. For example, the Shuttle Run is weighted more heavily for Guards (35%), while the Hex Bar Deadlift and Standing Vertical Leap are weighted more heavily for Bigs (25% each).
