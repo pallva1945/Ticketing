@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Calendar, CalendarDays, Pill, Gamepad2, CalendarOff, ArrowUpFromDot, Gauge, Printer, Trophy, Search, Star, Eye, ExternalLink, MapPin, Globe, Video, ChevronUp } from 'lucide-react';
+import { Activity, Users, User, GitCompare, TrendingUp, RefreshCw, Ruler, Weight, Target, Zap, Timer, Dumbbell, ChevronDown, ArrowLeft, Crosshair, Heart, Flag, BarChart3, Loader2, ArrowUpDown, ArrowUp, ArrowDown, Calendar, CalendarDays, Pill, Gamepad2, CalendarOff, ArrowUpFromDot, Gauge, Printer, Trophy, Search, Star, Eye, ExternalLink, MapPin, Globe, Video, ChevronUp, BookOpen, CircleDot, Footprints, Hand, Move, CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, CartesianGrid, Legend, ReferenceLine, ReferenceArea, Cell, ComposedChart } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { PV_LOGO_URL } from '../constants';
+import { CoachesResourcesTab } from './VBCoachesResources';
 
 function useIsDark() {
   const { theme } = useTheme();
@@ -93,7 +94,7 @@ interface VBProspect {
   timestamp: string | null;
 }
 
-type TabId = 'overview' | 'performance' | 'gameperf' | 'player' | 'compare' | 'progression' | 'search' | 'prospects';
+type TabId = 'overview' | 'performance' | 'gameperf' | 'player' | 'compare' | 'progression' | 'search' | 'prospects' | 'resources';
 
 const METRIC_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
 
@@ -4160,6 +4161,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     { id: 'compare', label: t('Compare'), icon: GitCompare },
     { id: 'progression', label: t('Progression'), icon: TrendingUp },
     { id: 'prospects', label: t('Prospects'), icon: Star },
+    { id: 'resources', label: t('Coaches Resources'), icon: BookOpen },
     { id: 'search', label: t('Search'), icon: Search },
   ];
 
@@ -4228,7 +4230,9 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         )}
 
-        {normalizedSessions.length === 0 && !error ? (
+        {activeTab === 'resources' ? (
+          <CoachesResourcesTab />
+        ) : normalizedSessions.length === 0 && !error ? (
           <div className="text-center py-20">
             <Activity size={40} className={`mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
             <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('No VB data available')}</p>

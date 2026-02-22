@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pallacanestro Varese - Shooting Guidelines</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --varese-red: #E4002B; /* Or a similar vibrant red from their branding */
+            --varese-white: #FFFFFF;
+            --varese-dark: #222222; /* A dark grey/black for text */
+            --varese-light-grey: #f8f8f8;
+            --varese-blue-accent: #0056B3; /* A potential accent blue */
+        }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: var(--varese-light-grey);
+            color: var(--varese-dark);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background-color: var(--varese-white);
+            padding: 30px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        header {
+            background-color: var(--varese-red);
+            color: var(--varese-white);
+            padding: 25px 30px;
+            text-align: center;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            margin: -30px -30px 30px -30px; /* Adjust to sit flush with container */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .logo {
+            width: 80px;
+            height: auto;
+            margin-bottom: 15px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 2.2em;
+            letter-spacing: 1px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+
+        h2, h3, h4 {
+            font-family: 'Montserrat', sans-serif;
+            color: var(--varese-red);
+            margin-top: 25px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--varese-red);
+            padding-bottom: 5px;
+        }
+
+        h2 {
+            font-size: 1.8em;
+            font-weight: 700;
+        }
+
+        h3 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: var(--varese-dark); /* Sub-sections can be darker */
+            border-bottom: 1px solid var(--varese-light-grey);
+        }
+        
+        h4 {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--varese-dark);
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        p {
+            margin-bottom: 1em;
+        }
+
+        ul {
+            list-style-type: disc;
+            margin-left: 25px;
+            margin-bottom: 1em;
+        }
+        
+        ol {
+            list-style-type: decimal;
+            margin-left: 25px;
+            margin-bottom: 1em;
+        }
+
+        li {
+            margin-bottom: 0.5em;
+        }
+
+        strong {
+            font-weight: 600;
+            color: var(--varese-red);
+        }
+
+        .note {
+            background-color: rgba(228, 0, 43, 0.05); /* Light red background */
+            border-left: 4px solid var(--varese-red);
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .highlight {
+            color: var(--varese-blue-accent);
+            font-weight: 600;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 20px;
+            }
+            header {
+                padding: 20px;
+                margin: -20px -20px 20px -20px;
+            }
+            header h1 {
+                font-size: 1.8em;
+            }
+            h2 {
+                font-size: 1.5em;
+            }
+            h3 {
+                font-size: 1.3em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="https://i.imgur.com/r1fWDF1.png" alt="Pallacanestro Varese Logo" class="logo">
+            <h1>Pallacanestro Varese Youth Program</h1>
+            <p>Shooting Teaching and Training Guidelines</p>
+        </header>
+
+        <p>Welcome, Coaches! This guide outlines our philosophy and methodology for teaching and developing effective shooting skills within the Pallacanestro Varese youth program. Our goal is to foster consistent, efficient, and adaptable shooters across all age groups.</p>
+
+        <hr>
+
+        <h2>I. Shooting Principles: The Four Phases of the Shot</h2>
+        <p>Every consistent shot can be broken down into four fundamental phases:</p>
+        <ol>
+            <li><strong>The Catch:</strong> Establishing initial body and hand position.</li>
+            <li><strong>The Dip:</strong> Transitioning into the power generation phase.</li>
+            <li><strong>The Flow:</strong> Generating upward momentum and shot trajectory.</li>
+            <li><strong>The Follow-Through:</strong> Ensuring accuracy and ball rotation.</li>
+        </ol>
+
+        <h3>A. The Catch</h3>
+        <p>This phase focuses on preparing the body and hands to initiate the shot.</p>
+        <h4>Footwork:</h4>
+        <ul>
+            <li><strong>The 3-Step Gather ("Walk Up the Shot"):</strong> For developing shooters, we emphasize a "right-left-right" gather (for a right-handed shooter). This sequence involves a forward momentum from approximately 1.5 to 2 meters outside the three-point line, allowing players to generate significant power, making the shot feel more effortless.</li>
+            <li><strong>Corner Exceptions:</strong> In corner situations, where sideline space is limited, the "right-left-right" sequence adapts. The initial "right" step is minimal, with the "left" and subsequent "right" steps occurring more laterally, maintaining the gather's intent.</li>
+            <li><strong>Avoid Jumping into the Shot:</strong> Jumping <em>into</em> the catch can dissipate energy and hinder the creation of upward and forward momentum, leading to an over-reliance on upper body strength.</li>
+            <li><strong>Body Positioning:</strong> The body should be square to the basket, with the shooting-side foot (e.g., right foot for a right-handed shooter) positioned approximately half a foot ahead of the non-shooting foot. Knees should be shoulder-width apart.</li>
+            <li><strong>Catch Point:</strong> The ball is ideally caught as the non-shooting foot (e.g., left foot) lands.</li>
+        </ul>
+        <h4>Hand Position:</h4>
+        <ul>
+            <li><strong>Loaded Wrist:</strong> The shooting wrist must be loaded (flexed back) upon receiving the ball, ready to propel the shot.</li>
+        </ul>
+
+        <h3>B. The Dip</h3>
+        <p>Following the catch, the shooter transitions into the "Starting Position."</p>
+        <ul>
+            <li><strong>Action:</strong> After catching the ball on the non-shooting foot (e.g., left step), the shooter should dip the ball while simultaneously stepping onto the shooting-side foot (e.g., right step). This combined movement defines the "Dip."</li>
+            <li><strong>Starting Position:</strong> This is a relaxed, athletic stance:
+                <ul>
+                    <li>Face up, eyes on the target.</li>
+                    <li>Shoulders square to the basket.</li>
+                    <li>Ball positioned at hip height, slightly away from the body.</li>
+                    <li>Wrist loaded.</li>
+                    <li>Elbows comfortably extended at approximately a 115-degree angle (almost straight).</li>
+                    <li>Slight bend in the knees and hips (butt barely back), almost imperceptible, indicating readiness to explode upward.</li>
+                </ul>
+            </li>
+            <li><strong>Avoid:</strong> Holding the ball too high or not dipping, holding the ball too close to the body, dipping the ball excessively low, or being overly squatted. These common errors restrict natural power transfer.</li>
+        </ul>
+
+        <h3>C. The Flow</h3>
+        <p>The "Flow" is the continuous, upward motion that generates the shot.</p>
+        <ul>
+            <li><strong>Initiation:</strong> From the "Starting Position" (established on the shooting-side step/dip), the body initiates a quick, controlled "down and up" movement. This leverages the stretch reflex for maximum power generation.</li>
+            <li><strong>Ball Path:</strong> Initially, as the body dips slightly <em>down</em>, the ball momentarily maintains its position. It then seamlessly joins the <em>upward</em> momentum, moving in a straight line, passing in front of the face, and extending all the way up to the shooting point above the head.</li>
+            <li><strong>Execution:</strong> This movement must be fluid and coordinated. The ball should be released at the absolute peak of the upward extension of all contributing body components (legs, torso, arm).</li>
+        </ul>
+
+        <h3>D. The Follow-Through</h3>
+        <p>The "Follow-Through" ensures precision and imparts crucial spin on the ball.</p>
+        <ul>
+            <li><strong>Action:</strong> The shooting wrist "snaps through" the ball, with the fingertips (especially the index and middle fingers) being the last contact point. This action provides extra control and precision, creating the desirable backspin effect that enhances trajectory and soft bounces.</li>
+            <li><strong>Visual:</strong> The hand should finish in a "swan neck" or "reaching into the cookie jar" position, pointing directly at the basket.</li>
+        </ul>
+
+        <hr>
+
+        <h2>II. Assessment and Player Development Levels</h2>
+        <p>Our program employs a structured assessment to guide individual player development. While good form is crucial, we recognize that sometimes effective shooters may have unconventional mechanics. Our priority is to optimize performance.</p>
+
+        <div class="note">
+            <strong>Practice vs. Game Performance:</strong> All percentages and levels discussed in this assessment are based on controlled, high-repetition practice sessions, not in-game statistics. Research and experience show that a player's in-game shooting percentage is typically about half of their practice percentage. For example, a player who shoots 60% in spot-up drills is expected to shoot around 30% in a live game scenario.
+        </div>
+
+        <h3>Assessment Philosophy:</h3>
+        <ul>
+            <li><strong>Effectiveness First:</strong> If a player demonstrates high shooting percentages despite non-traditional form, we carefully consider whether extensive changes are beneficial. "If it's not broken, don't fix it."</li>
+            <li><strong>Player Comfort vs. Performance:</strong> While player comfort is important, for developing shooters who are not yet highly effective (e.g., shooting below 60% in spot-up situations), form adjustments are often necessary. Elite shooters (e.g., 70%+ from spot-ups) are less likely to benefit from radical changes based solely on their subjective comfort.</li>
+            <li><strong>Age Considerations:</strong> Changing established habits in older players can be more challenging. For them, sometimes prioritizing shot volume and confidence over radical form changes may be more appropriate, especially if they are already effective.</li>
+        </ul>
+
+        <h3>Five-Level Shooting Assessment Scale:</h3>
+        <p>We utilize a simple five-level scale, measured by spot-up shooting percentage from the top of the key:</p>
+        <ul>
+            <li><strong>Level 1: Bad Shooter (<50%)</strong>
+                <ul>
+                    <li><strong>Description:</strong> Players who consistently shoot below 50% from the top of the key in spot-up situations.</li>
+                    <li><strong>Focus:</strong> Solely on fundamental form development. These players should avoid shooting in games until significant improvement is shown.</li>
+                </ul>
+            </li>
+            <li><strong>Level 2: Incapable (50-60%)</strong>
+                <ul>
+                    <li><strong>Description:</strong> Players consistently shooting between 50% and 60% from the top of the key in spot-up situations.</li>
+                    <li><strong>Focus:</strong> While capable of occasional game shots, high volume should be avoided. Primary focus remains on improving form and consistency from spot-up positions.</li>
+                </ul>
+            </li>
+            <li><strong>Level 3: Capable (60-65%)</strong>
+                <ul>
+                    <li><strong>Description:</strong> Players consistently shooting between 60% and 65%.</li>
+                    <li><strong>Focus:</strong> These players can shoot effectively in games. Training should balance spot-up shots (approx. 60%) with basic movement shots (approx. 40%).</li>
+                </ul>
+            </li>
+            <li><strong>Level 4: Volume (65-70%)</strong>
+                <ul>
+                    <li><strong>Description:</strong> Players consistently shooting between 65% and 70%.</li>
+                    <li><strong>Focus:</strong> These are volume shooters who should be actively sought out for scoring opportunities in games. Training evolves to 40-50% spot-ups and 50-60% intermediate movement shots (including on-ball shots) and basic movement shots (e.g., replacements).</li>
+                </ul>
+            </li>
+            <li><strong>Level 5: Elite Shooter (70%+)</strong>
+                <ul>
+                    <li><strong>Description:</strong> Players consistently shooting 70% or higher.</li>
+                    <li><strong>Focus:</strong> Elite shooters should be encouraged to take high volumes of shots in games. Training emphasizes advanced movement shots (playmaking) and very little spot-up work (approx. 25%), with the majority (75%) dedicated to various movement scenarios.</li>
+                </ul>
+            </li>
+        </ul>
+
+        <hr>
+
+        <h2>III. Practice Shooting Principles: Methodology</h2>
+        <p>Our practice methodology breaks down shooting into progressive stages, building skills layer by layer.</p>
+
+        <h3>A. Form Shooting</h3>
+        <p>The objective of Form Shooting is to deconstruct the shot, allowing players to understand and internalize each mechanical component. We progressively increase distance and complexity, starting from the restricted area and moving towards the three-point line.</p>
+        <div class="note">
+            <strong>Core Concept:</strong> Think of the "golf analogy" – the legs are the "clubs," and the upper body is the "swing." The upper body mechanics (the swing) should remain largely identical, regardless of distance, while the leg drive (the club) adjusts for power.
+        </div>
+        <h4>Progressive Steps:</h4>
+        <ol>
+            <li><strong>Step 1 (Restricted Circle):</strong>
+                <ul>
+                    <li><strong>Focus:</strong> Upper body mechanics only. No leg involvement.</li>
+                    <li><strong>Emphasis:</strong> Starting Position, loaded wrist, fluid "Flow" (upward motion), and proper Follow-Through.</li>
+                </ul>
+            </li>
+            <li><strong>Step 2 (Between Restricted Circle and Free-Throw Line):</strong>
+                <ul>
+                    <li><strong>Adds:</strong> Ankle extension.</li>
+                    <li><strong>Emphasis:</strong> Maintain the initial concepts from Step 1 while smoothly integrating ankle drive.</li>
+                </ul>
+            </li>
+            <li><strong>Step 3 (Free-Throw Line):</strong>
+                <ul>
+                    <li><strong>Adds:</strong> The "Down and Up" body movement (the dip and initial flow).</li>
+                    <li><strong>Emphasis:</strong> Ensure the full body rhythm (down and up) enhances shot power without compromising the established upper body and ankle mechanics.</li>
+                </ul>
+            </li>
+            <li><strong>Step 4 (Long Two-Point Range):</strong>
+                <ul>
+                    <li><strong>Adds:</strong> The "Walk Up the Shot" (right-left-right gather) and a small jump.</li>
+                    <li><strong>Emphasis:</strong> Integrate the dynamic footwork and minimal jump for increased distance, always ensuring the core principles from previous steps remain intact.</li>
+                </ul>
+            </li>
+            <li><strong>Step 5 (Three-Point Line):</strong>
+                <ul>
+                    <li><strong>Adds:</strong> Full leg power for a complete shot.</li>
+                    <li><strong>Emphasis:</strong> Combine all previously learned elements into a cohesive, powerful, and fluid full shot.</li>
+                </ul>
+            </li>
+            <li><strong>Adaptation:</strong> If a player struggles to reach the rim from the three-point line, we adjust the progression, focusing on building leg power gradually rather than forcing extreme distance prematurely.</li>
+        </ol>
+
+        <h3>B. Spot-Up Shots</h3>
+        <ul>
+            <li><strong>Principle:</strong> Whether using one or two balls, the focus is on high pace and rhythm.</li>
+            <li><strong>Execution:</strong> Players should move actively and purposefully between shots and spots, simulating game intensity. "Train like a pro."</li>
+        </ul>
+
+        <h3>C. Basic Movement Shots (Relocation)</h3>
+        <p>These drills focus on fundamental movements to get open for a shot.</p>
+        <ul>
+            <li>Mash Out</li>
+            <li>Slide to the Corner</li>
+            <li>Replace</li>
+            <li>Replace from Top</li>
+            <li>Trailer</li>
+        </ul>
+
+        <h3>D. Intermediate Movement Shots (On-Ball Actions)</h3>
+        <p>These involve more complex movements, often with the ball in hand or coming off screens.</p>
+        <h4>DHO (Dribble Hand-Off) Series:</h4>
+        <ul>
+            <li>Come Off</li>
+            <li>Come Off One Dribble</li>
+            <li>Snatch</li>
+            <li>Snatch One Dribble</li>
+        </ul>
+        <h4>Off-Screen Actions:</h4>
+        <ul>
+            <li>Korver Cut</li>
+            <li>Baseline Multiple</li>
+            <li>Ferrero Action</li>
+            <li>Spain Pick & Roll</li>
+        </ul>
+        <h4>Random Actions:</h4>
+        <ul>
+            <li>Fly By</li>
+            <li>Pump Fake (Alviti)</li>
+        </ul>
+
+        <h3>E. Advanced Movement Shots (Playmaking)</h3>
+        <p>These are self-created shots, often off the dribble or from complex offensive actions.</p>
+        <h4>Pick & Roll (PnR) Actions:</h4>
+        <ul>
+            <li>Pick & Roll Handler</li>
+            <li>Pick & Pop</li>
+            <li>Pick & Roll Reject</li>
+        </ul>
+        <h4>Isolation (ISO) Actions:</h4>
+        <ul>
+            <li>Dribble Up</li>
+            <li>Step Back</li>
+            <li>Doncic Gather Back</li>
+            <li>Doncic Crossover</li>
+            <li>Iverson Crossover</li>
+            <li>LeBron Side Step</li>
+            <li>Punch Dribble</li>
+        </ul>
+
+        <hr>
+
+        <h2>IV. Expectations and Development Standards</h2>
+        <p>Consistent, daily shooting practice is paramount for significant progress. Our program sets clear benchmarks for player development:</p>
+        <ul>
+            <li><strong>Form Development (15-year-old prospect):</strong> A player starting with significant form issues should achieve 50% spot-up shooting proficiency within approximately two months of daily form work (e.g., during a summer program).</li>
+            <li><strong>Level 2 to Level 3 Progression (15-year-old prospect):</strong> A player starting the season at Level 2 (50% spot-up) should progress to Level 3 (60% spot-up) within four months.</li>
+            <li><strong>Level 3 to Level 4 Progression (15-year-old prospect):</strong> A player starting at Level 3 (60% spot-up) should reach Level 4 (65% spot-up) within four months.</li>
+            <li><strong>Level 4 to Level 5 Progression (15-year-old prospect):</strong> A player starting at Level 4 (65% spot-up) should achieve Level 5 (70%+ spot-up) within one year.</li>
+        </ul>
+        <div class="note">
+            <strong>Accountability:</strong> These pace and standards are designed to ensure all aspiring elite players reach at least Level 3 proficiency within one year. If these benchmarks are not met, it warrants a deeper discussion and review of our coaching methodologies and individual player plans.
+        </div>
+    </div>
+</body>
+</html>
+
