@@ -224,6 +224,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Loading VB data...': { en: 'Loading VB data...', it: 'Caricamento dati VB...' },
   'No VB data available': { en: 'No VB data available', it: 'Nessun dato VB disponibile' },
   'Standing Reach': { en: 'Standing Reach', it: 'Elevazione da Fermo' },
+  'Ape Index': { en: 'Ape Index', it: 'Indice Ape' },
   'Reach': { en: 'Reach', it: 'Reach' },
   'Shots': { en: 'Shots', it: 'Tiri' },
   'Per Day': { en: 'Per Day', it: 'Per Giorno' },

@@ -1396,7 +1396,109 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
       });
   }, [filtered, displayPlayers, profiles]);
 
-  type PerfSortKey = 'player' | 'sprint' | 'coneDrill' | 'pureVertical' | 'noStepVertical' | 'bodyFat' | 'deadlift';
+  const compositeScores = useMemo(() => {
+    const getPlayerAthData = (p: string) => {
+      const sr = getLatestMetric(filtered, p, 'standingReach');
+      const pv = getLatestMetric(filtered, p, 'pureVertical');
+      const nsv = getLatestMetric(filtered, p, 'noStepVertical');
+      const maxVert = (pv !== null && sr !== null) ? pv - sr : null;
+      const standVert = (nsv !== null && sr !== null) ? nsv - sr : null;
+      const sp = getLatestMetric(filtered, p, 'sprint');
+      const cd = getLatestMetric(filtered, p, 'coneDrill');
+      const dl = getLatestMetric(filtered, p, 'deadlift');
+      const wt = getLatestMetric(filtered, p, 'weight');
+      const relDL = (dl !== null && wt !== null && wt > 0) ? Math.round((dl / wt) * 100) / 100 : null;
+      return { maxVert, standVert, sprint: sp, shuttle: cd, relDeadlift: relDL };
+    };
+    const getPlayerAnthroData = (p: string) => {
+      const projH = getProjectedHeight(p, profiles, filtered);
+      const weight = getLatestMetric(filtered, p, 'weight');
+      const wingspan = getLatestMetric(filtered, p, 'wingspan');
+      const projR = getProjectedReach(p, profiles, filtered);
+      return { projHeight: projH, weight, wingspan, projReach: projR };
+    };
+    const calcStats = (vals: number[]) => {
+      if (vals.length < 2) return { mean: vals[0] || 0, std: 1 };
+      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const std = Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / vals.length);
+      return { mean, std: std || 1 };
+    };
+
+    const allAth = activePlayers.map(p => ({ player: p, ...getPlayerAthData(p) }));
+    const allAnthro = activePlayers.map(p => ({ player: p, ...getPlayerAnthroData(p) }));
+
+    const athStats = {
+      maxVert: calcStats(allAth.map(d => d.maxVert).filter((v): v is number => v !== null)),
+      standVert: calcStats(allAth.map(d => d.standVert).filter((v): v is number => v !== null)),
+      sprint: calcStats(allAth.map(d => d.sprint).filter((v): v is number => v !== null)),
+      shuttle: calcStats(allAth.map(d => d.shuttle).filter((v): v is number => v !== null)),
+      relDL: calcStats(allAth.map(d => d.relDeadlift).filter((v): v is number => v !== null)),
+    };
+    const anthStats = {
+      projHeight: calcStats(allAnthro.map(d => d.projHeight).filter((v): v is number => v !== null)),
+      weight: calcStats(allAnthro.map(d => d.weight).filter((v): v is number => v !== null)),
+      wingspan: calcStats(allAnthro.map(d => d.wingspan).filter((v): v is number => v !== null)),
+      projReach: calcStats(allAnthro.map(d => d.projReach).filter((v): v is number => v !== null)),
+    };
+
+    const results: Record<string, { cas: number | null; aps: number | null; apeIndex: number | null }> = {};
+    for (const p of activePlayers) {
+      const ath = getPlayerAthData(p);
+      const anth = getPlayerAnthroData(p);
+      const role = getPlayerPosition(p, profiles) || '';
+
+      const zScore = (val: number | null, s: { mean: number; std: number }, invert = false): number | null => {
+        if (val === null) return null;
+        const z = (val - s.mean) / s.std;
+        return invert ? -z : z;
+      };
+
+      let casVal: number | null = null;
+      const athAvail = [ath.maxVert, ath.standVert, ath.sprint, ath.shuttle, ath.relDeadlift].filter(v => v !== null).length;
+      if (athAvail >= 4) {
+        const zMV = zScore(ath.maxVert, athStats.maxVert);
+        const zSV = zScore(ath.standVert, athStats.standVert);
+        const zSp = zScore(ath.sprint, athStats.sprint, true);
+        const zSh = zScore(ath.shuttle, athStats.shuttle, true);
+        const zDL = zScore(ath.relDeadlift, athStats.relDL);
+        let bw = { maxVert: 0.30, shuttle: 0.25, sprint: 0.15, standVert: 0.15, relDL: 0.15 };
+        if (role === 'Playmaker') bw = { maxVert: 0.25, shuttle: 0.35, sprint: 0.15, standVert: 0.10, relDL: 0.15 };
+        else if (role === 'Center') bw = { maxVert: 0.20, shuttle: 0.15, sprint: 0.15, standVert: 0.25, relDL: 0.25 };
+        const comps = [
+          { z: zMV, w: bw.maxVert }, { z: zSh, w: bw.shuttle }, { z: zSp, w: bw.sprint },
+          { z: zSV, w: bw.standVert }, { z: zDL, w: bw.relDL },
+        ];
+        const avail = comps.filter(c => c.z !== null);
+        const totalW = avail.reduce((a, c) => a + c.w, 0);
+        const cas = avail.reduce((sum, c) => sum + (c.z as number) * (c.w / totalW), 0);
+        casVal = Math.round((50 + cas * 10) * 10) / 10;
+      }
+
+      let apsVal: number | null = null;
+      const anthAvail = [anth.projHeight, anth.weight, anth.wingspan, anth.projReach].filter(v => v !== null).length;
+      if (anthAvail >= 3) {
+        const zPH = zScore(anth.projHeight, anthStats.projHeight);
+        const zW = zScore(anth.weight, anthStats.weight);
+        const zWS = zScore(anth.wingspan, anthStats.wingspan);
+        const zPR = zScore(anth.projReach, anthStats.projReach);
+        const bw2 = { projReach: 0.40, wingspan: 0.30, projHeight: 0.15, weight: 0.15 };
+        const comps2 = [
+          { z: zPR, w: bw2.projReach }, { z: zWS, w: bw2.wingspan },
+          { z: zPH, w: bw2.projHeight }, { z: zW, w: bw2.weight },
+        ];
+        const avail2 = comps2.filter(c => c.z !== null);
+        const totalW2 = avail2.reduce((a, c) => a + c.w, 0);
+        const aps = avail2.reduce((sum, c) => sum + (c.z as number) * (c.w / totalW2), 0);
+        apsVal = Math.round((50 + aps * 10) * 10) / 10;
+      }
+
+      const apeIndex = (anth.wingspan !== null && anth.projHeight !== null && anth.projHeight > 0) ? Math.round((anth.wingspan / anth.projHeight) * 1000) / 1000 : null;
+      results[p] = { cas: casVal, aps: apsVal, apeIndex };
+    }
+    return results;
+  }, [filtered, activePlayers, profiles]);
+
+  type PerfSortKey = 'player' | 'sprint' | 'coneDrill' | 'pureVertical' | 'noStepVertical' | 'bodyFat' | 'deadlift' | 'cas' | 'aps' | 'apeIndex';
   const [sortKey, setSortKey] = useState<PerfSortKey>('player');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -1422,6 +1524,8 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
         const dobSerial = getPlayerDobSerial(player, profiles);
         return calcBodyFatPct(raw, dobSerial, ps[0].date);
       })();
+
+      const comp = compositeScores[player] || { cas: null, aps: null, apeIndex: null };
 
       return {
         player,
@@ -1451,9 +1555,12 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
         bodyFatFirst: firstBf,
         deadlift: getLatestMetric(filtered, player, 'deadlift'),
         deadliftFirst: getFirstMetric('deadlift'),
+        cas: comp.cas,
+        aps: comp.aps,
+        apeIndex: comp.apeIndex,
       };
     });
-  }, [filtered, displayPlayers, profiles]);
+  }, [filtered, displayPlayers, profiles, compositeScores]);
 
   const sortedRows = useMemo(() => {
     const arr = [...tableRows];
@@ -1527,10 +1634,25 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
         </div>
       </div>
 
-      <div className="grid grid-cols-6 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-6 lg:grid-cols-9 gap-3">
         {metrics.map(m => (
           <StatCard key={m.key} label={m.label} value={teamAverages[m.key]} unit={m.key === 'bodyFat' ? '%' : ` ${m.unit}`} icon={m.icon} color={m.color} subtitle={selectedPlayer === 'all' ? t('Team Average') : t('Latest')} />
         ))}
+        {(() => {
+          const casVals = displayPlayers.map(p => compositeScores[p]?.cas).filter((v): v is number => v !== null);
+          const avgCas = casVals.length ? Math.round(casVals.reduce((a, b) => a + b, 0) / casVals.length * 10) / 10 : null;
+          return <StatCard label="CAS" value={avgCas} unit="" icon={Zap} color="#f59e0b" subtitle={selectedPlayer === 'all' ? t('Team Average') : t('Latest')} />;
+        })()}
+        {(() => {
+          const apsVals = displayPlayers.map(p => compositeScores[p]?.aps).filter((v): v is number => v !== null);
+          const avgAps = apsVals.length ? Math.round(apsVals.reduce((a, b) => a + b, 0) / apsVals.length * 10) / 10 : null;
+          return <StatCard label="APS" value={avgAps} unit="" icon={Ruler} color="#3b82f6" subtitle={selectedPlayer === 'all' ? t('Team Average') : t('Latest')} />;
+        })()}
+        {(() => {
+          const apeVals = displayPlayers.map(p => compositeScores[p]?.apeIndex).filter((v): v is number => v !== null);
+          const avgApe = apeVals.length ? Math.round(apeVals.reduce((a, b) => a + b, 0) / apeVals.length * 1000) / 1000 : null;
+          return <StatCard label={t('Ape Index')} value={avgApe} unit="" icon={Ruler} color="#8b5cf6" subtitle={selectedPlayer === 'all' ? t('Team Average') : t('Latest')} />;
+        })()}
       </div>
 
       <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
@@ -1565,6 +1687,9 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
                 {metrics.map(m => (
                   <th key={m.key} onClick={() => handleSort(m.key as PerfSortKey)} className={`text-center py-2 px-1 font-semibold cursor-pointer select-none hover:text-orange-500 transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{m.label}<SortIcon col={m.key as PerfSortKey} /></th>
                 ))}
+                <th onClick={() => handleSort('cas')} className={`text-center py-2 px-1 font-semibold cursor-pointer select-none hover:text-orange-500 transition-colors text-amber-500`}>CAS<SortIcon col="cas" /></th>
+                <th onClick={() => handleSort('aps')} className={`text-center py-2 px-1 font-semibold cursor-pointer select-none hover:text-orange-500 transition-colors text-blue-500`}>APS<SortIcon col="aps" /></th>
+                <th onClick={() => handleSort('apeIndex')} className={`text-center py-2 px-1 font-semibold cursor-pointer select-none hover:text-orange-500 transition-colors text-purple-500`}>{t('Ape Index')}<SortIcon col="apeIndex" /></th>
               </tr>
             </thead>
             <tbody>
@@ -1586,6 +1711,9 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
                       </td>
                     );
                   })}
+                  <td className={`text-center py-2.5 px-1 font-semibold ${row.cas !== null ? (row.cas >= 55 ? 'text-amber-500' : row.cas < 45 ? 'text-red-400' : (isDark ? 'text-gray-300' : 'text-gray-700')) : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{row.cas !== null ? row.cas : '—'}</td>
+                  <td className={`text-center py-2.5 px-1 font-semibold ${row.aps !== null ? (row.aps >= 55 ? 'text-blue-500' : row.aps < 45 ? 'text-red-400' : (isDark ? 'text-gray-300' : 'text-gray-700')) : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{row.aps !== null ? row.aps : '—'}</td>
+                  <td className={`text-center py-2.5 px-1 font-semibold ${row.apeIndex !== null ? (row.apeIndex >= 1.06 ? 'text-purple-500' : row.apeIndex >= 1.03 ? 'text-blue-400' : (isDark ? 'text-gray-300' : 'text-gray-700')) : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{row.apeIndex !== null ? row.apeIndex : '—'}</td>
                 </tr>
               ))}
             </tbody>
