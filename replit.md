@@ -23,8 +23,8 @@ The application leverages a modern web stack, utilizing React 18 and TypeScript 
 -   **Deal Quality Metric**: Sponsorship analytics feature a "Deal Quality" metric based on `Delta` (Revenue Received - Value Given).
 -   **Authentication**: Dual authentication system supporting Google OAuth for internal users (@pallacanestrovarese.it domain) and password-based login for external invited users. JWT sessions with httpOnly cookies are used for security.
 -   **Access Management**: Role-based access control with different user types (Internal, External) and access levels (full, partial). An admin panel allows managing users, approving access requests, and generating invitation links. PostgreSQL is used for user, permission, and invitation data.
--   **Navigation**: Hash-based routing facilitates navigation through Login, Welcome, Internal Hub, Financial Center, and specific dashboards (Revenue, Cost, P&L).
--   **UI/UX**: Full-page snap-scroll experience for the Internal Hub with quintic ease animation, sticky navigation, and section indicators.
+-   **Navigation**: Hash-based routing with split landing page. After login, users choose between Pallacanestro Varese (PV) or Varese Basketball (VB). PV leads to InternalHub (Vision/Mission/Values, About Us, Our Team, Departments with Corp + BOps). VB leads to VBHub (Vision/Mission/Values, About Us, Our Team, BOps → VBDashboard). Routes: welcome → hub/vb-hub → landing/vb → revenue/cost/pnl.
+-   **UI/UX**: Full-page snap-scroll experience for both Internal Hub and VB Hub with quintic ease animation, sticky navigation, and section indicators.
 -   **Community Intelligence Hub**: Integrates Shopify order history for behavioral insights, including RFM segmentation, gateway analysis (top entry products), bundle analysis, and cohort retention heatmaps.
 -   **VB Dashboard (Varese Basketball Youth Development)**: Features player profiles, session data, progression tracking, and a scouting database. Utilizes BigQuery for data, with server-side endpoints for profile and prospect data, and includes anthropometric calculations (e.g., body fat conversion).
 
