@@ -2129,11 +2129,12 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                         <div className={`w-24 sm:w-28 text-[10px] font-medium text-right flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                           {t(c.label)} <span className={`${isDark ? 'text-gray-600' : 'text-gray-300'}`}>({Math.round(c.w * 100)}%)</span>
                         </div>
-                        <div className={`flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                        <div className={`relative flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
                           <div
                             className={`h-full rounded-full transition-all ${isPositive ? 'bg-gradient-to-r from-orange-500 to-orange-400' : 'bg-gradient-to-r from-red-500/60 to-red-400/60'}`}
                             style={{ width: `${barWidth}%` }}
                           />
+                          <div className={`absolute top-0 left-1/2 w-px h-full ${isDark ? 'bg-gray-500/60' : 'bg-gray-400/50'}`} />
                         </div>
                         <div className={`w-14 text-[10px] font-mono text-right flex-shrink-0 ${isPositive ? (isDark ? 'text-orange-400' : 'text-orange-600') : 'text-red-400'}`}>
                           {c.z > 0 ? '+' : ''}{Math.round(c.z * 100) / 100}
