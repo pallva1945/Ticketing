@@ -2326,7 +2326,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                 >
                   CAS
                 </button>
-                <div className={`text-6xl sm:text-7xl font-black leading-none ${casData.cas >= 55 ? 'text-emerald-500' : casData.cas >= 45 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
+                <div className={`text-4xl font-black leading-none ${casData.cas >= 55 ? 'text-emerald-500' : casData.cas >= 45 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
                   {casData.cas}
                 </div>
                 <div className={`text-[10px] mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
