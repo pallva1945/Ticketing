@@ -203,7 +203,7 @@ function PlayerSelector({ players, selected, onChange, multiple }: { players: st
   );
 }
 
-type SortKey = 'player' | 'height' | 'projHeight' | 'reach' | 'projReach' | 'pureVertical' | 'sprint' | 'coneDrill' | 'weight' | 'wingspan' | 'bodyFat' | 'pct' | 'shots' | 'totalLoad' | 'vitamins' | 'weights' | 'practice' | 'game' | 'injury' | 'nt' | 'daysOff' | 'cas' | 'aps' | 'apeIndex';
+type SortKey = 'player' | 'height' | 'projHeight' | 'reach' | 'projReach' | 'pureVertical' | 'sprint' | 'coneDrill' | 'weight' | 'wingspan' | 'bodyFat' | 'pct' | 'shots' | 'shotsMade' | 'totalLoad' | 'vitamins' | 'weights' | 'practice' | 'game' | 'injury' | 'nt' | 'daysOff' | 'vacation' | 'cas' | 'aps' | 'apeIndex';
 type SortDir = 'asc' | 'desc';
 
 interface RosterRow {
@@ -228,6 +228,8 @@ interface RosterRow {
   injury: number;
   nt: number;
   daysOff: number;
+  vacation: number;
+  shotsMade: number;
   cas: number | null;
   aps: number | null;
   apeIndex: number | null;
@@ -459,7 +461,7 @@ function getSeasonDays(selectedSeason: string, player?: string): number {
   return Math.max(1, Math.ceil((end.getTime() - seasonStart.getTime()) / 86400000));
 }
 
-function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selectedSeason, profiles }: { filtered: VBSession[]; activePlayers: string[]; onSelectPlayer: (p: string) => void; isDark: boolean; selectedSeason: string; profiles: PlayerProfile[] }) {
+function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isDark, selectedSeason, profiles }: { filtered: VBSession[]; allSessions: VBSession[]; activePlayers: string[]; onSelectPlayer: (p: string) => void; isDark: boolean; selectedSeason: string; profiles: PlayerProfile[] }) {
   const { t } = useLanguage();
   const [sortKey, setSortKey] = useState<SortKey>('player');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -618,6 +620,7 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
       })(),
       pct: getAvg(shootingSessions.map(s => s.shootingPct)),
       shots: sumOrRate(ps.map(s => s.shootsTaken)),
+      shotsMade: sumOrRate(ps.map(s => s.shootsMade)),
       totalLoad: Math.round((vitamins + weights + practice + game) * 10) / 10,
       vitamins,
       weights,
@@ -626,6 +629,11 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
       injury: injuryVal,
       nt: ntVal,
       daysOff: daysOffVal,
+      vacation: (() => {
+        const allPlayerSessions = getPlayerSessions(allSessions, player);
+        const vacDates = new Set(allPlayerSessions.filter(s => getSeason(s.date) === null).map(s => s.date));
+        return isRate ? Math.round((vacDates.size / divisor) * 10) / 10 : vacDates.size;
+      })(),
       cas: rosterComposites[player]?.cas ?? null,
       aps: rosterComposites[player]?.aps ?? null,
       apeIndex: rosterComposites[player]?.apeIndex ?? null,
@@ -671,27 +679,18 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
 
   const columns: { key: SortKey; label: string; align?: string }[] = [
     { key: 'player', label: t('Player'), align: 'left' },
-    { key: 'height', label: t('Height') },
-    { key: 'projHeight', label: t('P.Height') },
-    { key: 'reach', label: t('Reach') },
-    { key: 'projReach', label: t('P.Reach') },
-    { key: 'pureVertical', label: t('Pure Vertical') },
-    { key: 'sprint', label: t('Sprint') },
-    { key: 'coneDrill', label: t('Cone Drill') },
-    { key: 'bodyFat', label: t('BF %') },
+    { key: 'shots', label: t('Shots Taken') },
+    { key: 'shotsMade', label: t('Shots Made') },
     { key: 'pct', label: t('3PT %') },
-    { key: 'shots', label: t('Shots') },
-    { key: 'totalLoad', label: t('T.Load') },
     { key: 'vitamins', label: t('Vitamins') },
     { key: 'weights', label: t('Weights') },
     { key: 'practice', label: t('Practice') },
     { key: 'game', label: t('Game') },
+    { key: 'totalLoad', label: t('T.Load') },
     { key: 'injury', label: t('Injury') },
     { key: 'nt', label: t('NT') },
     { key: 'daysOff', label: t('Days Off') },
-    { key: 'cas', label: 'CAS' },
-    { key: 'aps', label: 'APS' },
-    { key: 'apeIndex', label: t('Ape Index') },
+    { key: 'vacation', label: t('Vacation') },
   ];
 
   return (
@@ -727,27 +726,18 @@ function RosterTable({ filtered, activePlayers, onSelectPlayer, isDark, selected
             {sorted.map(row => (
               <tr key={row.player} onClick={() => onSelectPlayer(row.player)} className={`border-b cursor-pointer transition-colors ${isDark ? 'border-gray-800/50 hover:bg-gray-800/50' : 'border-gray-50 hover:bg-gray-50'}`}>
                 <td className={`py-2.5 px-2 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{row.player}</td>
-                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.height ?? '—'}</td>
-                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.projHeight ?? '—'}</td>
-                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.reach ?? '—'}</td>
-                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.projReach ?? '—'}</td>
-                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.pureVertical ?? '—'}</td>
-                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.sprint ?? '—'}</td>
-                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.coneDrill ?? '—'}</td>
-                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.bodyFat != null ? `${row.bodyFat}%` : '—'}</td>
-                <td className={`text-center py-2.5 px-1 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{row.pct != null ? `${row.pct}%` : '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.shots || '—'}</td>
-                <td className={`text-center py-2.5 px-1 font-semibold ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{row.totalLoad || '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.shotsMade || '—'}</td>
+                <td className={`text-center py-2.5 px-1 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{row.pct != null ? `${row.pct}%` : '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.vitamins || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.weights || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.practice || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.game || '—'}</td>
+                <td className={`text-center py-2.5 px-1 font-semibold ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{row.totalLoad || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${row.injury > 0 ? 'text-red-500 font-semibold' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.injury || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${row.nt > 0 ? 'text-blue-500 font-semibold' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.nt || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.daysOff || '—'}</td>
-                <td className={`text-center py-2.5 px-1 font-semibold ${row.cas !== null ? (row.cas >= 55 ? 'text-amber-500' : row.cas < 45 ? 'text-red-400' : (isDark ? 'text-gray-300' : 'text-gray-700')) : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{row.cas ?? '—'}</td>
-                <td className={`text-center py-2.5 px-1 font-semibold ${row.aps !== null ? (row.aps >= 55 ? 'text-blue-500' : row.aps < 45 ? 'text-red-400' : (isDark ? 'text-gray-300' : 'text-gray-700')) : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{row.aps ?? '—'}</td>
-                <td className={`text-center py-2.5 px-1 font-semibold ${row.apeIndex !== null ? (row.apeIndex >= 1.06 ? 'text-purple-500' : row.apeIndex >= 1.03 ? 'text-blue-400' : (isDark ? 'text-gray-300' : 'text-gray-700')) : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{row.apeIndex ?? '—'}</td>
+                <td className={`text-center py-2.5 px-1 ${row.vacation > 0 ? 'text-amber-500 font-semibold' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.vacation || '—'}</td>
               </tr>
             ))}
           </tbody>
@@ -1227,15 +1217,6 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
         <StatCard label={t('Injuries')} value={teamAvgInjuries} icon={Heart} color="#ef4444" subtitle={t('Avg / Player')} />
         <StatCard label={t('Days Off')} value={teamDaysOff} icon={CalendarOff} color="#6b7280" subtitle={t('Avg / Player')} />
       </div>
-      <div className="grid grid-cols-7 gap-3">
-        <StatCard label={t('Height')} value={teamAvgHeight} unit=" cm" icon={Ruler} color="#3b82f6" subtitle={t('Team Average')} />
-        <StatCard label={t('Projected Height')} value={teamAvgProjHeight} unit=" cm" icon={Ruler} color="#6366f1" subtitle={t('Team Average')} />
-        <StatCard label={t('Reach')} value={teamAvgReach} unit=" cm" icon={ArrowUpFromDot} color="#8b5cf6" subtitle={t('Team Average')} />
-        <StatCard label={t('Projected Reach')} value={teamAvgProjReach} unit=" cm" icon={ArrowUpFromDot} color="#a855f7" subtitle={t('Team Average')} />
-        <StatCard label={t('Vertical')} value={teamAvgVertical} unit=" cm" icon={Zap} color="#f59e0b" subtitle={t('Team Average')} />
-        <StatCard label={t('Speed')} value={teamAvgSprint} unit=" ms" icon={Timer} color="#10b981" subtitle={t('Team Average')} />
-        <StatCard label={t('Agility')} value={teamAvgCone} unit=" ms" icon={Gauge} color="#f97316" subtitle={t('Team Average')} />
-      </div>
 
       <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
         <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Training Load Trends')} — {filterGranularity === 'day' ? t('By Player') : filterGranularity === 'week' ? t('By Day') : filterGranularity === 'month' ? t('By Week') : t('By Month')}</h3>
@@ -1347,7 +1328,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
         </div>
       </div>
 
-      <RosterTable filtered={filtered} activePlayers={activePlayers} onSelectPlayer={onSelectPlayer} isDark={isDark} selectedSeason={selectedSeason} profiles={profiles} />
+      <RosterTable filtered={filtered} allSessions={sessions} activePlayers={activePlayers} onSelectPlayer={onSelectPlayer} isDark={isDark} selectedSeason={selectedSeason} profiles={profiles} />
     </div>
   );
 }
