@@ -1602,6 +1602,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
   const [selectedPlayer, setSelectedPlayer] = useState(initialPlayer || players[0]);
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [showCasInfo, setShowCasInfo] = useState(false);
+  const [showApsInfo, setShowApsInfo] = useState(false);
   const allPs = useMemo(() => getPlayerSessions(sessions, selectedPlayer), [sessions, selectedPlayer]);
   const ps = useMemo(() => selectedMonth ? allPs.filter(s => s.date.substring(0, 7) === selectedMonth) : allPs, [allPs, selectedMonth]);
   const availableMonths = useMemo(() => {
@@ -1813,6 +1814,78 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 
     return { cas: casNorm, components, jumpDelta, jumpInsight, archetype: role || 'Baseline', partial: availCount < 5 };
   }, [sessions, players, selectedPlayer, profile?.role]);
+
+  const apsData = useMemo(() => {
+    const getPlayerAnthroData = (p: string) => {
+      const projH = getProjectedHeight(p, profiles, sessions);
+      const weight = getLatestMetric(sessions, p, 'weight');
+      const wingspan = getLatestMetric(sessions, p, 'wingspan');
+      const projR = getProjectedReach(p, profiles, sessions);
+      return { projHeight: projH, weight, wingspan, projReach: projR };
+    };
+
+    const allData = players.map(p => ({ player: p, ...getPlayerAnthroData(p) }));
+
+    const calcStats = (vals: number[]) => {
+      if (vals.length < 2) return { mean: vals[0] || 0, std: 1 };
+      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const std = Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / vals.length);
+      return { mean, std: std || 1 };
+    };
+
+    const projHVals = allData.map(d => d.projHeight).filter((v): v is number => v !== null);
+    const weightVals = allData.map(d => d.weight).filter((v): v is number => v !== null);
+    const wingVals = allData.map(d => d.wingspan).filter((v): v is number => v !== null);
+    const projRVals = allData.map(d => d.projReach).filter((v): v is number => v !== null);
+
+    const stats = {
+      projHeight: calcStats(projHVals),
+      weight: calcStats(weightVals),
+      wingspan: calcStats(wingVals),
+      projReach: calcStats(projRVals),
+    };
+
+    const pd = getPlayerAnthroData(selectedPlayer);
+    const availCount = [pd.projHeight, pd.weight, pd.wingspan, pd.projReach].filter(v => v !== null).length;
+    if (availCount < 3) return null;
+
+    const zScore = (val: number | null, s: { mean: number; std: number }): number | null => {
+      if (val === null) return null;
+      return (val - s.mean) / s.std;
+    };
+
+    const zProjH = zScore(pd.projHeight, stats.projHeight);
+    const zWeight = zScore(pd.weight, stats.weight);
+    const zWingspan = zScore(pd.wingspan, stats.wingspan);
+    const zProjR = zScore(pd.projReach, stats.projReach);
+
+    const baseWeights = { projReach: 0.40, wingspan: 0.30, projHeight: 0.15, weight: 0.15 };
+
+    const rawComps = [
+      { key: 'projReach', label: 'Proj. Standing Reach', z: zProjR, baseW: baseWeights.projReach, val: pd.projReach, unit: 'cm' },
+      { key: 'wingspan', label: 'Wingspan', z: zWingspan, baseW: baseWeights.wingspan, val: pd.wingspan, unit: 'cm' },
+      { key: 'projHeight', label: 'Proj. Height', z: zProjH, baseW: baseWeights.projHeight, val: pd.projHeight, unit: 'cm' },
+      { key: 'weight', label: 'Weight', z: zWeight, baseW: baseWeights.weight, val: pd.weight, unit: 'kg' },
+    ];
+
+    const availComps = rawComps.filter(c => c.z !== null);
+    const totalAvailW = availComps.reduce((a, c) => a + c.baseW, 0);
+    const components = rawComps.map(c => ({
+      label: c.label,
+      z: c.z ?? 0,
+      w: c.z !== null ? c.baseW / totalAvailW : 0,
+      val: c.val,
+      unit: c.unit,
+      missing: c.z === null,
+    }));
+
+    const aps = availComps.reduce((sum, c) => sum + (c.z as number) * (c.baseW / totalAvailW), 0);
+    const apsNorm = Math.round((50 + aps * 10) * 10) / 10;
+
+    const apeIndex = (pd.wingspan !== null && pd.projHeight !== null && pd.projHeight > 0) ? Math.round((pd.wingspan / pd.projHeight) * 1000) / 1000 : null;
+
+    return { aps: apsNorm, components, apeIndex, partial: availCount < 4 };
+  }, [sessions, players, selectedPlayer, profiles]);
 
   const totalTaken = ps.reduce((a, s) => a + (s.shootsTaken || 0), 0);
   const totalMade = ps.reduce((a, s) => a + (s.shootsMade || 0), 0);
@@ -2036,6 +2109,160 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               <div className={`text-lg font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.bodyFat !== null ? `${latestAnthro.bodyFat}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">%</span></div>
             </div>
           </div>
+
+          {apsData && (
+            <div className={`rounded-xl border p-4 mt-4 print-aps ${isDark ? 'bg-gradient-to-r from-blue-500/5 to-gray-900 border-blue-500/20' : 'bg-gradient-to-r from-blue-50 to-white border-blue-200'}`}>
+              <div className="flex flex-col sm:flex-row gap-4 items-start">
+                <div className="flex-shrink-0 text-center sm:text-left sm:min-w-[120px]">
+                  <button
+                    onClick={() => setShowApsInfo(true)}
+                    className={`text-4xl sm:text-5xl font-black uppercase tracking-widest mb-2 cursor-pointer transition-colors ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`}
+                  >
+                    APS
+                  </button>
+                  <div className={`text-6xl sm:text-7xl font-black leading-none ${apsData.aps >= 55 ? 'text-emerald-500' : apsData.aps >= 45 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
+                    {apsData.aps}
+                  </div>
+                  {apsData.partial && <div className={`text-[10px] mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>*</div>}
+                </div>
+
+                <div className="flex-1 min-w-0 w-full">
+                  <div className="space-y-1.5">
+                    {apsData.components.map((c, i) => {
+                      if (c.missing) {
+                        return (
+                          <div key={i} className="flex items-center gap-2 opacity-40">
+                            <div className={`w-24 sm:w-28 text-[10px] font-medium text-right flex-shrink-0 line-through ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                              {t(c.label)}
+                            </div>
+                            <div className={`flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`} />
+                            <div className={`w-14 text-[10px] font-mono text-right flex-shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>N/A</div>
+                            <div className={`w-16 text-[10px] text-right flex-shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>—</div>
+                          </div>
+                        );
+                      }
+                      const barWidth = Math.min(Math.max((c.z + 3) / 6 * 100, 2), 100);
+                      const isPositive = c.z >= 0;
+                      return (
+                        <div key={i} className="flex items-center gap-2">
+                          <div className={`w-24 sm:w-28 text-[10px] font-medium text-right flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                            {t(c.label)} <span className={`${isDark ? 'text-gray-600' : 'text-gray-300'}`}>({Math.round(c.w * 100)}%)</span>
+                          </div>
+                          <div className={`relative flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                            <div
+                              className={`h-full rounded-full transition-all ${isPositive ? 'bg-gradient-to-r from-blue-500 to-blue-400' : 'bg-gradient-to-r from-red-500/60 to-red-400/60'}`}
+                              style={{ width: `${barWidth}%` }}
+                            />
+                            <div className={`absolute top-0 left-1/2 w-px h-full ${isDark ? 'bg-gray-500/60' : 'bg-gray-400/50'}`} />
+                          </div>
+                          <div className={`w-14 text-[10px] font-mono text-right flex-shrink-0 ${isPositive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-red-400'}`}>
+                            {c.z > 0 ? '+' : ''}{Math.round(c.z * 100) / 100}
+                          </div>
+                          <div className={`w-16 text-[10px] text-right flex-shrink-0 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                            {c.val !== null ? `${c.val} ${c.unit}` : '—'}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {apsData.apeIndex !== null && (
+                <div className={`mt-3 pt-3 border-t flex items-center gap-2 ${isDark ? 'border-gray-800' : 'border-blue-100'}`}>
+                  <div className={`text-[10px] font-bold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {t('Ape Index')}: <span className={isDark ? 'text-white' : 'text-gray-900'}>{apsData.apeIndex}</span>
+                  </div>
+                  <div className={`text-[10px] px-2 py-0.5 rounded-full ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-blue-50 text-gray-500'}`}>
+                    {apsData.apeIndex >= 1.06 ? t('Elite functional length') : apsData.apeIndex >= 1.03 ? t('Above-average length') : t('Average proportions')}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {showApsInfo && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowApsInfo(false)}>
+              <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+              <div
+                className={`relative max-w-lg w-full max-h-[80vh] overflow-y-auto rounded-2xl border shadow-2xl p-6 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}
+                onClick={e => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setShowApsInfo(false)}
+                  className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
+                >
+                  ✕
+                </button>
+
+                <h3 className={`text-lg font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Anthropometric Potential Score (APS)
+                </h3>
+                <p className={`text-xs mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  A position-adjusted composite score that quantifies a player's physical foundation, moving beyond raw height to emphasize "functional length." It assesses how a player's physical frame enables or constrains their on-court potential by comparing them to elite NBA Combine benchmarks.
+                </p>
+
+                <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                  The Four Pillars of Physical Structure
+                </h4>
+                <div className="space-y-2 mb-4">
+                  {[
+                    { name: 'Height & Weight', desc: 'Foundational measures of a player\'s mass and scale.' },
+                    { name: 'Wingspan', desc: 'A premier metric for defensive potential, allowing players to contest more shots and disrupt passing lanes. The ratio of wingspan to height (the "Ape Index") is a key indicator of disproportionate length.' },
+                    { name: 'Standing Reach', desc: 'Arguably the most important single measurement — it synthesizes height and length to define a player\'s ability to control vertical space around the basket, directly impacting rim protection, rebounding, and finishing.' },
+                  ].map((c, i) => (
+                    <div key={i} className={`rounded-lg p-2.5 ${isDark ? 'bg-gray-800/60' : 'bg-gray-50'}`}>
+                      <div className={`text-xs font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{c.name}</div>
+                      <div className={`text-[11px] mt-0.5 leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{c.desc}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                  APS Calculation
+                </h4>
+                <p className={`text-[11px] leading-relaxed mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Calculated as a weighted sum of Z-scores for the four pillars. Each player is measured against the mean and standard deviation for their group. Projected height and projected standing reach are used to account for growth potential in developing players.
+                </p>
+
+                <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                  Component Weightings
+                </h4>
+                <div className={`rounded-lg overflow-hidden border mb-3 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
+                        <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Metric</th>
+                        <th className={`text-right py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Weight</th>
+                        <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Rationale</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        ['Proj. Standing Reach', '40%', 'Most direct measure of effective size and vertical space control'],
+                        ['Wingspan', '30%', 'Primary determinant of defensive versatility and disruption'],
+                        ['Proj. Height', '15%', 'Baseline measure of overall scale'],
+                        ['Weight', '15%', 'Essential for physicality and durability'],
+                      ].map(([name, w, why], i) => (
+                        <tr key={i} className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                          <td className={`py-1.5 px-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{name}</td>
+                          <td className={`py-1.5 px-3 text-right font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{w}</td>
+                          <td className={`py-1.5 px-3 text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{why}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className={`rounded-lg p-3 border-l-4 ${isDark ? 'bg-blue-500/5 border-blue-500/40' : 'bg-blue-50 border-blue-400'}`}>
+                  <div className={`text-xs font-semibold mb-0.5 ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>Ape Index</div>
+                  <div className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                    The ratio of wingspan to height. Values above 1.05 indicate disproportionate length — a key physical advantage for defense, rebounding, and finishing at the rim.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
