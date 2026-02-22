@@ -2092,17 +2092,17 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
         {casData && (
           <div className={`rounded-xl border p-4 mb-5 print-cas ${isDark ? 'bg-gradient-to-r from-orange-500/5 to-gray-900 border-orange-500/20' : 'bg-gradient-to-r from-orange-50 to-white border-orange-200'}`}>
             <div className="flex flex-col sm:flex-row gap-4 items-start">
-              <div className="flex-shrink-0 text-center sm:text-left">
+              <div className="flex-shrink-0 text-center sm:text-left sm:min-w-[120px]">
                 <button
                   onClick={() => setShowCasInfo(true)}
-                  className={`text-[10px] font-bold uppercase tracking-wider mb-1 underline decoration-dotted underline-offset-2 cursor-pointer transition-colors ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`}
+                  className={`text-sm font-black uppercase tracking-widest mb-1 underline decoration-dotted underline-offset-4 cursor-pointer transition-colors ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`}
                 >
                   CAS
                 </button>
-                <div className={`text-4xl font-black ${casData.cas >= 55 ? 'text-emerald-500' : casData.cas >= 45 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
+                <div className={`text-6xl sm:text-7xl font-black leading-none ${casData.cas >= 55 ? 'text-emerald-500' : casData.cas >= 45 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
                   {casData.cas}
                 </div>
-                <div className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                <div className={`text-[10px] mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                   {casData.archetype} {t('weights')}{casData.partial ? ' *' : ''}
                 </div>
               </div>
