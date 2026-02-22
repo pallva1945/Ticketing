@@ -46,8 +46,8 @@ const translations: Record<string, Record<Language, string>> = {
     it: 'Misurare Tutto — Sfruttare analisi avanzate, analisi video e monitoraggio quotidiano per personalizzare il percorso di ogni giocatore verso il professionismo.'
   },
   'vb_mission_4': {
-    en: 'Bridge to Professional Basketball — Provide competitive platforms (6 Eccellenza teams + Serie B) to test and refine skills at the highest youth level.',
-    it: 'Ponte verso il Basket Professionistico — Fornire piattaforme competitive (6 squadre Eccellenza + Serie B) per testare e perfezionare le abilità al massimo livello giovanile.'
+    en: 'Bridge to Professional Basketball — Provide competitive platforms across multiple divisions to test and refine skills at the highest youth level.',
+    it: 'Ponte verso il Basket Professionistico — Fornire piattaforme competitive su più divisioni per testare e perfezionare le abilità al massimo livello giovanile.'
   },
   'vb_vision_statement': {
     en: 'To become the premier youth basketball program in Italy — a Dream Factory where world-class infrastructure, NBA-caliber methodology, and Italian basketball heritage converge.',
@@ -58,24 +58,24 @@ const translations: Record<string, Record<Language, string>> = {
     it: 'Stabilire lo Standard — Creare un ambiente di sviluppo di calibro NBA con scienza dello sport e biomeccanica all\'avanguardia.'
   },
   'vb_vision_2': {
-    en: 'Build a Pipeline — Create a continuous pathway from grassroots (450+ youth) to Serie A and international basketball.',
-    it: 'Costruire un Vivaio — Creare un percorso continuo dalla base (450+ giovani) alla Serie A e al basket internazionale.'
+    en: 'Build a Pipeline — Create a continuous pathway from grassroots to Serie A and international basketball.',
+    it: 'Costruire un Vivaio — Creare un percorso continuo dalla base alla Serie A e al basket internazionale.'
   },
   'vb_vision_3': {
-    en: 'Invest in Infrastructure — Deliver a €3M+ facility vision including a state-of-the-art training center, elite residence, and the Ivolution Lab.',
-    it: 'Investire nelle Infrastrutture — Realizzare una visione di strutture da €3M+ che include un centro di allenamento all\'avanguardia, residenza élite e il Laboratorio Ivolution.'
+    en: 'Invest in Infrastructure — Continuously evolve our facilities into a state-of-the-art training center, elite residence, and innovation lab.',
+    it: 'Investire nelle Infrastrutture — Evolvere continuamente le nostre strutture in un centro di allenamento all\'avanguardia, residenza élite e laboratorio di innovazione.'
   },
   'vb_vision_4': {
-    en: 'Produce Professionals — Consistently deliver players to top leagues, as proven by talents like Librizzi, Asui, and Villa.',
-    it: 'Produrre Professionisti — Portare costantemente giocatori ai massimi campionati, come dimostrato da talenti come Librizzi, Asui e Villa.'
+    en: 'Produce Professionals — Consistently deliver homegrown players to the top leagues in Italy and Europe.',
+    it: 'Produrre Professionisti — Portare costantemente giocatori cresciuti in casa ai massimi campionati in Italia e in Europa.'
   },
   'vb_values_player_title': {
-    en: 'The Player — Daily Excellence',
-    it: 'Il Giocatore — Eccellenza Quotidiana'
+    en: 'The Player — Win the Day',
+    it: 'Il Giocatore — Vinci la Giornata'
   },
   'vb_values_player_desc': {
-    en: 'Show up. Improve. Compete. Recover. Track. Every day is an opportunity to get better. Hard work, discipline, and consistency are non-negotiable.',
-    it: 'Presentarsi. Migliorare. Competere. Recuperare. Monitorare. Ogni giorno è un\'opportunità per crescere. Duro lavoro, disciplina e costanza sono imprescindibili.'
+    en: 'Show up. Improve. Compete. Recover. Track. Every day is an opportunity to get better. Hard work, discipline, and consistency are non-negotiable. One day at a time, every time.',
+    it: 'Presentarsi. Migliorare. Competere. Recuperare. Monitorare. Ogni giorno è un\'opportunità per crescere. Duro lavoro, disciplina e costanza sono imprescindibili. Un giorno alla volta, ogni volta.'
   },
   'vb_values_method_title': {
     en: 'The Method — Data-Driven Development',
