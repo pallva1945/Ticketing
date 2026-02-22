@@ -2095,7 +2095,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               <div className="flex-shrink-0 text-center sm:text-left sm:min-w-[120px]">
                 <button
                   onClick={() => setShowCasInfo(true)}
-                  className={`text-2xl font-black uppercase tracking-widest mb-2 underline decoration-dotted underline-offset-4 cursor-pointer transition-colors ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`}
+                  className={`text-4xl sm:text-5xl font-black uppercase tracking-widest mb-2 underline decoration-dotted underline-offset-4 cursor-pointer transition-colors ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-500'}`}
                 >
                   CAS
                 </button>
