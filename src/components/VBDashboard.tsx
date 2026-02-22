@@ -2104,15 +2104,11 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
             <div className={`rounded-lg p-3 print-inner-sm print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-purple-50/50'}`}>
               <div className={labelClass}>{t('Wingspan')}</div>
               <div className={`text-lg font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.wingspan !== null ? `${latestAnthro.wingspan}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
-              {latestAnthro.height && latestAnthro.wingspan && (
-                <div className={subValueClass}>+{Math.round((latestAnthro.wingspan - latestAnthro.height) * 10) / 10} vs H</div>
-              )}
               {renderDelta(latestAnthro.wingspan, combineRef?.wingspan, ' cm')}
             </div>
             <div className={`rounded-lg p-3 print-inner-sm print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-cyan-50/50'}`}>
-              <div className={labelClass}>{t('Standing Reach')}</div>
-              <div className={`text-lg font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAnthro.standingReach !== null ? `${latestAnthro.standingReach}` : '—'}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
-              {(() => { const pr = getProjectedReach(selectedPlayer, profiles, sessions); return pr ? <div className={subValueClass}>{t('Proj')}: {pr} cm</div> : null; })()}
+              <div className={labelClass}>{t('P. Reach')}</div>
+              <div className={`text-lg font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{(() => { const pr = getProjectedReach(selectedPlayer, profiles, sessions); return pr !== null ? `${pr}` : (latestAnthro.standingReach !== null ? `${latestAnthro.standingReach}` : '—'); })()}<span className="text-xs font-normal ml-0.5 print-sub">cm</span></div>
               {renderDelta(latestAnthro.standingReach, combineRef?.standingReach, ' cm')}
             </div>
           </div>
