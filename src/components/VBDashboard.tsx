@@ -306,10 +306,11 @@ function getPlayerAge(player: string, profiles: PlayerProfile[]): number | null 
   return age;
 }
 
+const HEX_BAR_CONVERSION = 0.90;
 const NBA_COMBINE_BASELINES: Record<string, { maxVert: number; standVert: number; sprint: number; shuttle: number; relDL: number }> = {
-  'Playmaker': { maxVert: 94.5, standVert: 78.2, sprint: 3.05, shuttle: 3.00, relDL: 1.80 },
-  '3nD':       { maxVert: 90.9, standVert: 76.2, sprint: 3.12, shuttle: 3.08, relDL: 1.85 },
-  'Center':    { maxVert: 82.8, standVert: 72.4, sprint: 3.28, shuttle: 3.20, relDL: 1.90 },
+  'Playmaker': { maxVert: 94.5, standVert: 78.2, sprint: 3.05, shuttle: 3.00, relDL: Math.round(1.80 * HEX_BAR_CONVERSION * 100) / 100 },
+  '3nD':       { maxVert: 90.9, standVert: 76.2, sprint: 3.12, shuttle: 3.08, relDL: Math.round(1.85 * HEX_BAR_CONVERSION * 100) / 100 },
+  'Center':    { maxVert: 82.8, standVert: 72.4, sprint: 3.28, shuttle: 3.20, relDL: Math.round(1.90 * HEX_BAR_CONVERSION * 100) / 100 },
 };
 
 const CAS_ARCHETYPE_WEIGHTS: Record<string, { maxVert: number; shuttle: number; sprint: number; standVert: number; relDL: number }> = {
