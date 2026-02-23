@@ -414,6 +414,28 @@ function getProjectedReach(player: string, profiles: PlayerProfile[], sessions: 
   return Math.round(projectedReach * 10) / 10;
 }
 
+function getProjectedWingspan(player: string, profiles: PlayerProfile[], sessions: VBSession[]): number | null {
+  const projectedHeight = getProjectedHeight(player, profiles, sessions);
+  if (projectedHeight === null) return null;
+
+  const playerSessions = getPlayerSessions(sessions, player);
+  const latestWithBoth = playerSessions
+    .filter(s => s.height !== null && s.wingspan !== null)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  if (latestWithBoth.length === 0) return null;
+
+  const currentHeight = latestWithBoth[0].height!;
+  const currentWingspan = latestWithBoth[0].wingspan!;
+  if (currentHeight <= 0) return null;
+
+  const growthRatio = projectedHeight / currentHeight;
+  let projectedWingspan = currentWingspan * growthRatio;
+
+  if (projectedWingspan < currentWingspan) projectedWingspan = currentWingspan;
+
+  return Math.round(projectedWingspan * 10) / 10;
+}
+
 function getPlayerProfile(player: string, profiles: PlayerProfile[], season?: string): PlayerProfile | null {
   let match: PlayerProfile | null = null;
   for (const p of profiles) {
@@ -489,8 +511,9 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isD
       const projH = getProjectedHeight(p, profiles, filtered);
       const weight = getLatestMetric(filtered, p, 'weight');
       const wingspan = getLatestMetric(filtered, p, 'wingspan');
+      const projWingspan = getProjectedWingspan(p, profiles, filtered);
       const projR = getProjectedReach(p, profiles, filtered);
-      return { projHeight: projH, weight, wingspan, projReach: projR };
+      return { projHeight: projH, weight, wingspan, projWingspan, projReach: projR };
     };
     const calcStats = (vals: number[]) => {
       if (vals.length < 2) return { mean: vals[0] || 0, std: 1 };
@@ -510,7 +533,7 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isD
     const anthStats = {
       projHeight: calcStats(allAnthro.map(d => d.projHeight).filter((v): v is number => v !== null)),
       weight: calcStats(allAnthro.map(d => d.weight).filter((v): v is number => v !== null)),
-      wingspan: calcStats(allAnthro.map(d => d.wingspan).filter((v): v is number => v !== null)),
+      projWingspan: calcStats(allAnthro.map(d => d.projWingspan).filter((v): v is number => v !== null)),
       projReach: calcStats(allAnthro.map(d => d.projReach).filter((v): v is number => v !== null)),
     };
     const results: Record<string, { cas: number | null; aps: number | null; apeIndex: number | null }> = {};
@@ -540,14 +563,14 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isD
         casVal = Math.round((50 + avail.reduce((sum, c) => sum + (c.z as number) * (c.w / totalW), 0) * 10) * 10) / 10;
       }
       let apsVal: number | null = null;
-      const anthAvail = [anth.projHeight, anth.weight, anth.wingspan, anth.projReach].filter(v => v !== null).length;
+      const anthAvail = [anth.projHeight, anth.weight, anth.projWingspan, anth.projReach].filter(v => v !== null).length;
       if (anthAvail >= 3) {
         const zPH = zScore(anth.projHeight, anthStats.projHeight);
         const zW = zScore(anth.weight, anthStats.weight);
-        const zWS = zScore(anth.wingspan, anthStats.wingspan);
+        const zWS = zScore(anth.projWingspan, anthStats.projWingspan);
         const zPR = zScore(anth.projReach, anthStats.projReach);
-        const bw2 = { projReach: 0.40, wingspan: 0.30, projHeight: 0.15, weight: 0.15 };
-        const comps2 = [{ z: zPR, w: bw2.projReach }, { z: zWS, w: bw2.wingspan }, { z: zPH, w: bw2.projHeight }, { z: zW, w: bw2.weight }];
+        const bw2 = { projReach: 0.40, projWingspan: 0.30, projHeight: 0.15, weight: 0.15 };
+        const comps2 = [{ z: zPR, w: bw2.projReach }, { z: zWS, w: bw2.projWingspan }, { z: zPH, w: bw2.projHeight }, { z: zW, w: bw2.weight }];
         const avail2 = comps2.filter(c => c.z !== null);
         const totalW2 = avail2.reduce((a, c) => a + c.w, 0);
         apsVal = Math.round((50 + avail2.reduce((sum, c) => sum + (c.z as number) * (c.w / totalW2), 0) * 10) * 10) / 10;
@@ -1406,7 +1429,7 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
   useEffect(() => { setSelectedRole('all'); setSelectedPlayer('all'); }, [selectedCategory]);
   useEffect(() => { setSelectedPlayer('all'); }, [selectedRole]);
 
-  type AnthroSortKey = 'player' | 'height' | 'projHeight' | 'reach' | 'projReach' | 'wingspan' | 'apeIndex' | 'aps' | 'bodyFat';
+  type AnthroSortKey = 'player' | 'height' | 'projHeight' | 'reach' | 'projReach' | 'wingspan' | 'projWingspan' | 'weight' | 'apeIndex' | 'aps' | 'bodyFat';
   const [sortKey, setSortKey] = useState<AnthroSortKey>('player');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
@@ -1414,9 +1437,9 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
     const getPlayerAnthroData = (p: string) => {
       const projH = getProjectedHeight(p, profiles, filtered);
       const weight = getLatestMetric(filtered, p, 'weight');
-      const wingspan = getLatestMetric(filtered, p, 'wingspan');
+      const projWingspan = getProjectedWingspan(p, profiles, filtered);
       const projR = getProjectedReach(p, profiles, filtered);
-      return { projHeight: projH, weight, wingspan, projReach: projR };
+      return { projHeight: projH, weight, projWingspan, projReach: projR };
     };
     const calcStats = (vals: number[]) => {
       if (vals.length < 2) return { mean: vals[0] || 0, std: 1 };
@@ -1428,7 +1451,7 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
     const anthStats = {
       projHeight: calcStats(allAnthro.map(d => d.projHeight).filter((v): v is number => v !== null)),
       weight: calcStats(allAnthro.map(d => d.weight).filter((v): v is number => v !== null)),
-      wingspan: calcStats(allAnthro.map(d => d.wingspan).filter((v): v is number => v !== null)),
+      projWingspan: calcStats(allAnthro.map(d => d.projWingspan).filter((v): v is number => v !== null)),
       projReach: calcStats(allAnthro.map(d => d.projReach).filter((v): v is number => v !== null)),
     };
     const results: Record<string, number | null> = {};
@@ -1438,14 +1461,14 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
         if (val === null) return null;
         return (val - s.mean) / s.std;
       };
-      const anthAvail = [anth.projHeight, anth.weight, anth.wingspan, anth.projReach].filter(v => v !== null).length;
+      const anthAvail = [anth.projHeight, anth.weight, anth.projWingspan, anth.projReach].filter(v => v !== null).length;
       if (anthAvail >= 3) {
         const zPH = zScore(anth.projHeight, anthStats.projHeight);
         const zW = zScore(anth.weight, anthStats.weight);
-        const zWS = zScore(anth.wingspan, anthStats.wingspan);
+        const zWS = zScore(anth.projWingspan, anthStats.projWingspan);
         const zPR = zScore(anth.projReach, anthStats.projReach);
-        const bw = { projReach: 0.40, wingspan: 0.30, projHeight: 0.15, weight: 0.15 };
-        const comps = [{ z: zPR, w: bw.projReach }, { z: zWS, w: bw.wingspan }, { z: zPH, w: bw.projHeight }, { z: zW, w: bw.weight }];
+        const bw = { projReach: 0.40, projWingspan: 0.30, projHeight: 0.15, weight: 0.15 };
+        const comps = [{ z: zPR, w: bw.projReach }, { z: zWS, w: bw.projWingspan }, { z: zPH, w: bw.projHeight }, { z: zW, w: bw.weight }];
         const avail = comps.filter(c => c.z !== null);
         const totalW = avail.reduce((a, c) => a + c.w, 0);
         results[p] = Math.round((50 + avail.reduce((sum, c) => sum + (c.z as number) * (c.w / totalW), 0) * 10) * 10) / 10;
@@ -1463,6 +1486,8 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
       const reach = getLatestMetric(filtered, player, 'standingReach');
       const projReach = getProjectedReach(player, profiles, filtered);
       const wingspan = getLatestMetric(filtered, player, 'wingspan');
+      const projWingspan = getProjectedWingspan(player, profiles, filtered);
+      const weight = getLatestMetric(filtered, player, 'weight');
       const rawBF = getLatestMetric(filtered, player, 'bodyFat');
       const dobSerial = getPlayerDobSerial(player, profiles);
       const latestBFSession = getPlayerSessions(filtered, player).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
@@ -1470,7 +1495,7 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
       const apeIndex = (wingspan !== null && projHeight !== null && projHeight > 0) ? Math.round((wingspan / projHeight) * 1000) / 1000 : null;
       const aps = compositeScores[player] ?? null;
 
-      return { player, height, projHeight, reach, projReach, wingspan, apeIndex, aps, bodyFat };
+      return { player, height, projHeight, reach, projReach, wingspan, projWingspan, weight, apeIndex, aps, bodyFat };
     });
   }, [displayPlayers, filtered, profiles, compositeScores]);
 
@@ -1489,7 +1514,7 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
       const vals = rows.map(r => r[key]).filter((v): v is number => v !== null);
       return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
     };
-    return { height: avg('height'), projHeight: avg('projHeight'), reach: avg('reach'), projReach: avg('projReach'), wingspan: avg('wingspan'), apeIndex: avg('apeIndex'), aps: avg('aps'), bodyFat: avg('bodyFat') };
+    return { height: avg('height'), projHeight: avg('projHeight'), reach: avg('reach'), projReach: avg('projReach'), wingspan: avg('wingspan'), projWingspan: avg('projWingspan'), weight: avg('weight'), apeIndex: avg('apeIndex'), aps: avg('aps'), bodyFat: avg('bodyFat') };
   }, [rows]);
 
   const handleSort = (key: AnthroSortKey) => {
@@ -1504,6 +1529,8 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
     { key: 'reach', label: t('Reach'), unit: 'cm' },
     { key: 'projReach', label: t('P. Reach'), unit: 'cm' },
     { key: 'wingspan', label: t('Wingspan'), unit: 'cm' },
+    { key: 'projWingspan', label: t('P. Wingspan'), unit: 'cm' },
+    { key: 'weight', label: t('Weight'), unit: 'kg' },
     { key: 'apeIndex', label: t('Ape Index') },
     { key: 'aps', label: t('APS') },
     { key: 'bodyFat', label: t('BF %'), unit: '%' },
@@ -1551,15 +1578,17 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-5 gap-3">
         <StatCard label={t('Height')} value={teamAvgs.height} unit="cm" icon={Ruler} color="#3b82f6" subtitle={t('Team Average')} />
         <StatCard label={t('P. Height')} value={teamAvgs.projHeight} unit="cm" icon={Ruler} color="#8b5cf6" subtitle={t('Team Average')} />
         <StatCard label={t('Reach')} value={teamAvgs.reach} unit="cm" icon={Hand} color="#10b981" subtitle={t('Team Average')} />
         <StatCard label={t('P. Reach')} value={teamAvgs.projReach} unit="cm" icon={Hand} color="#06b6d4" subtitle={t('Team Average')} />
-      </div>
-      <div className="grid grid-cols-4 gap-3">
         <StatCard label={t('Wingspan')} value={teamAvgs.wingspan} unit="cm" icon={Move} color="#f59e0b" subtitle={t('Team Average')} />
-        <StatCard label={t('Ape Index')} value={teamAvgs.apeIndex !== null ? teamAvgs.apeIndex.toFixed(3) : null} icon={Gauge} color="#f97316" subtitle={t('Team Average')} />
+      </div>
+      <div className="grid grid-cols-5 gap-3">
+        <StatCard label={t('P. Wingspan')} value={teamAvgs.projWingspan} unit="cm" icon={Move} color="#f97316" subtitle={t('Team Average')} />
+        <StatCard label={t('Weight')} value={teamAvgs.weight} unit="kg" icon={Weight} color="#ef4444" subtitle={t('Team Average')} />
+        <StatCard label={t('Ape Index')} value={teamAvgs.apeIndex !== null ? teamAvgs.apeIndex.toFixed(3) : null} icon={Gauge} color="#f59e0b" subtitle={t('Team Average')} />
         <StatCard label={t('APS')} value={teamAvgs.aps} icon={Zap} color="#8b5cf6" subtitle={t('Team Average')} />
         <StatCard label={t('BF %')} value={teamAvgs.bodyFat} unit="%" icon={Heart} color="#ec4899" subtitle={t('Team Average')} />
       </div>
@@ -1589,6 +1618,8 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.reach)}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.projReach)}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.wingspan)}</td>
+                  <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.projWingspan)}</td>
+                  <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.weight)}</td>
                   <td className={`text-center py-2.5 px-2 font-semibold ${row.apeIndex !== null && row.apeIndex >= 1.06 ? 'text-green-500' : row.apeIndex !== null && row.apeIndex >= 1.03 ? 'text-blue-500' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.apeIndex !== null ? row.apeIndex.toFixed(3) : '—'}</td>
                   <td className={`text-center py-2.5 px-2 font-semibold ${row.aps !== null && row.aps >= 55 ? 'text-green-500' : row.aps !== null && row.aps >= 45 ? (isDark ? 'text-gray-300' : 'text-gray-700') : row.aps !== null ? 'text-red-500' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.aps)}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.bodyFat, '%')}</td>
@@ -1763,8 +1794,9 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
       const projH = getProjectedHeight(p, profiles, filtered);
       const weight = getLatestMetric(filtered, p, 'weight');
       const wingspan = getLatestMetric(filtered, p, 'wingspan');
+      const projWingspan = getProjectedWingspan(p, profiles, filtered);
       const projR = getProjectedReach(p, profiles, filtered);
-      return { projHeight: projH, weight, wingspan, projReach: projR };
+      return { projHeight: projH, weight, wingspan, projWingspan, projReach: projR };
     };
     const calcStats = (vals: number[]) => {
       if (vals.length < 2) return { mean: vals[0] || 0, std: 1 };
@@ -1786,7 +1818,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
     const anthStats = {
       projHeight: calcStats(allAnthro.map(d => d.projHeight).filter((v): v is number => v !== null)),
       weight: calcStats(allAnthro.map(d => d.weight).filter((v): v is number => v !== null)),
-      wingspan: calcStats(allAnthro.map(d => d.wingspan).filter((v): v is number => v !== null)),
+      projWingspan: calcStats(allAnthro.map(d => d.projWingspan).filter((v): v is number => v !== null)),
       projReach: calcStats(allAnthro.map(d => d.projReach).filter((v): v is number => v !== null)),
     };
 
@@ -1824,15 +1856,15 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
       }
 
       let apsVal: number | null = null;
-      const anthAvail = [anth.projHeight, anth.weight, anth.wingspan, anth.projReach].filter(v => v !== null).length;
+      const anthAvail = [anth.projHeight, anth.weight, anth.projWingspan, anth.projReach].filter(v => v !== null).length;
       if (anthAvail >= 3) {
         const zPH = zScore(anth.projHeight, anthStats.projHeight);
         const zW = zScore(anth.weight, anthStats.weight);
-        const zWS = zScore(anth.wingspan, anthStats.wingspan);
+        const zWS = zScore(anth.projWingspan, anthStats.projWingspan);
         const zPR = zScore(anth.projReach, anthStats.projReach);
-        const bw2 = { projReach: 0.40, wingspan: 0.30, projHeight: 0.15, weight: 0.15 };
+        const bw2 = { projReach: 0.40, projWingspan: 0.30, projHeight: 0.15, weight: 0.15 };
         const comps2 = [
-          { z: zPR, w: bw2.projReach }, { z: zWS, w: bw2.wingspan },
+          { z: zPR, w: bw2.projReach }, { z: zWS, w: bw2.projWingspan },
           { z: zPH, w: bw2.projHeight }, { z: zW, w: bw2.weight },
         ];
         const avail2 = comps2.filter(c => c.z !== null);
@@ -2288,8 +2320,9 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
       const projH = getProjectedHeight(p, profiles, sessions);
       const weight = getLatestMetric(sessions, p, 'weight');
       const wingspan = getLatestMetric(sessions, p, 'wingspan');
+      const projWingspan = getProjectedWingspan(p, profiles, sessions);
       const projR = getProjectedReach(p, profiles, sessions);
-      return { projHeight: projH, weight, wingspan, projReach: projR };
+      return { projHeight: projH, weight, wingspan, projWingspan, projReach: projR };
     };
 
     const allData = players.map(p => ({ player: p, ...getPlayerAnthroData(p) }));
@@ -2303,18 +2336,18 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 
     const projHVals = allData.map(d => d.projHeight).filter((v): v is number => v !== null);
     const weightVals = allData.map(d => d.weight).filter((v): v is number => v !== null);
-    const wingVals = allData.map(d => d.wingspan).filter((v): v is number => v !== null);
+    const projWingVals = allData.map(d => d.projWingspan).filter((v): v is number => v !== null);
     const projRVals = allData.map(d => d.projReach).filter((v): v is number => v !== null);
 
     const stats = {
       projHeight: calcStats(projHVals),
       weight: calcStats(weightVals),
-      wingspan: calcStats(wingVals),
+      projWingspan: calcStats(projWingVals),
       projReach: calcStats(projRVals),
     };
 
     const pd = getPlayerAnthroData(selectedPlayer);
-    const availCount = [pd.projHeight, pd.weight, pd.wingspan, pd.projReach].filter(v => v !== null).length;
+    const availCount = [pd.projHeight, pd.weight, pd.projWingspan, pd.projReach].filter(v => v !== null).length;
     if (availCount < 3) return null;
 
     const zScore = (val: number | null, s: { mean: number; std: number }): number | null => {
@@ -2324,14 +2357,14 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 
     const zProjH = zScore(pd.projHeight, stats.projHeight);
     const zWeight = zScore(pd.weight, stats.weight);
-    const zWingspan = zScore(pd.wingspan, stats.wingspan);
+    const zProjWS = zScore(pd.projWingspan, stats.projWingspan);
     const zProjR = zScore(pd.projReach, stats.projReach);
 
-    const baseWeights = { projReach: 0.40, wingspan: 0.30, projHeight: 0.15, weight: 0.15 };
+    const baseWeights = { projReach: 0.40, projWingspan: 0.30, projHeight: 0.15, weight: 0.15 };
 
     const rawComps = [
       { key: 'projReach', label: 'P. Reach', z: zProjR, baseW: baseWeights.projReach, val: pd.projReach, unit: 'cm' },
-      { key: 'wingspan', label: 'Wingspan', z: zWingspan, baseW: baseWeights.wingspan, val: pd.wingspan, unit: 'cm' },
+      { key: 'projWingspan', label: 'P. Wingspan', z: zProjWS, baseW: baseWeights.projWingspan, val: pd.projWingspan, unit: 'cm' },
       { key: 'projHeight', label: 'P. Height', z: zProjH, baseW: baseWeights.projHeight, val: pd.projHeight, unit: 'cm' },
       { key: 'weight', label: 'Weight', z: zWeight, baseW: baseWeights.weight, val: pd.weight, unit: 'kg' },
     ];
