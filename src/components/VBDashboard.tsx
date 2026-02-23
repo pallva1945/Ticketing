@@ -1363,6 +1363,7 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
   const [selectedSeason, setSelectedSeason] = useState(() => getCurrentSeason());
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedRole, setSelectedRole] = useState<string>('all');
+  const [selectedPlayer, setSelectedPlayer] = useState<string>('all');
 
   const seasonFiltered = useMemo(() => {
     if (selectedSeason === 'all') return validSessions;
@@ -1384,40 +1385,94 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
     return roles;
   }, [categoryFiltered, profiles]);
 
-  const filtered = useMemo(() => {
+  const roleFiltered = useMemo(() => {
     if (selectedRole === 'all') return categoryFiltered;
     return categoryFiltered.filter(s => getPlayerPosition(s.player, profiles) === selectedRole);
   }, [categoryFiltered, selectedRole, profiles]);
 
   const activePlayers = useMemo(() => {
-    const pSet = new Set(filtered.map(s => s.player));
+    const pSet = new Set(roleFiltered.map(s => s.player));
     return players.filter(p => pSet.has(p));
-  }, [filtered, players]);
+  }, [roleFiltered, players]);
 
-  useEffect(() => { setSelectedCategory('all'); setSelectedRole('all'); }, [selectedSeason]);
-  useEffect(() => { setSelectedRole('all'); }, [selectedCategory]);
+  const displayPlayers = useMemo(() => {
+    if (selectedPlayer !== 'all') return [selectedPlayer];
+    return activePlayers;
+  }, [activePlayers, selectedPlayer]);
 
-  type AnthroSortKey = 'player' | 'height' | 'projHeight' | 'reach' | 'projReach' | 'wingspan' | 'apeIndex' | 'weight' | 'bodyFat';
+  const filtered = roleFiltered;
+
+  useEffect(() => { setSelectedCategory('all'); setSelectedRole('all'); setSelectedPlayer('all'); }, [selectedSeason]);
+  useEffect(() => { setSelectedRole('all'); setSelectedPlayer('all'); }, [selectedCategory]);
+  useEffect(() => { setSelectedPlayer('all'); }, [selectedRole]);
+
+  type AnthroSortKey = 'player' | 'height' | 'projHeight' | 'reach' | 'projReach' | 'wingspan' | 'apeIndex' | 'aps' | 'bodyFat';
   const [sortKey, setSortKey] = useState<AnthroSortKey>('player');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
+  const compositeScores = useMemo(() => {
+    const getPlayerAnthroData = (p: string) => {
+      const projH = getProjectedHeight(p, profiles, filtered);
+      const weight = getLatestMetric(filtered, p, 'weight');
+      const wingspan = getLatestMetric(filtered, p, 'wingspan');
+      const projR = getProjectedReach(p, profiles, filtered);
+      return { projHeight: projH, weight, wingspan, projReach: projR };
+    };
+    const calcStats = (vals: number[]) => {
+      if (vals.length < 2) return { mean: vals[0] || 0, std: 1 };
+      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+      const std = Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / vals.length);
+      return { mean, std: std || 1 };
+    };
+    const allAnthro = activePlayers.map(p => ({ player: p, ...getPlayerAnthroData(p) }));
+    const anthStats = {
+      projHeight: calcStats(allAnthro.map(d => d.projHeight).filter((v): v is number => v !== null)),
+      weight: calcStats(allAnthro.map(d => d.weight).filter((v): v is number => v !== null)),
+      wingspan: calcStats(allAnthro.map(d => d.wingspan).filter((v): v is number => v !== null)),
+      projReach: calcStats(allAnthro.map(d => d.projReach).filter((v): v is number => v !== null)),
+    };
+    const results: Record<string, number | null> = {};
+    for (const p of activePlayers) {
+      const anth = getPlayerAnthroData(p);
+      const zScore = (val: number | null, s: { mean: number; std: number }): number | null => {
+        if (val === null) return null;
+        return (val - s.mean) / s.std;
+      };
+      const anthAvail = [anth.projHeight, anth.weight, anth.wingspan, anth.projReach].filter(v => v !== null).length;
+      if (anthAvail >= 3) {
+        const zPH = zScore(anth.projHeight, anthStats.projHeight);
+        const zW = zScore(anth.weight, anthStats.weight);
+        const zWS = zScore(anth.wingspan, anthStats.wingspan);
+        const zPR = zScore(anth.projReach, anthStats.projReach);
+        const bw = { projReach: 0.40, wingspan: 0.30, projHeight: 0.15, weight: 0.15 };
+        const comps = [{ z: zPR, w: bw.projReach }, { z: zWS, w: bw.wingspan }, { z: zPH, w: bw.projHeight }, { z: zW, w: bw.weight }];
+        const avail = comps.filter(c => c.z !== null);
+        const totalW = avail.reduce((a, c) => a + c.w, 0);
+        results[p] = Math.round((50 + avail.reduce((sum, c) => sum + (c.z as number) * (c.w / totalW), 0) * 10) * 10) / 10;
+      } else {
+        results[p] = null;
+      }
+    }
+    return results;
+  }, [filtered, activePlayers, profiles]);
+
   const rows = useMemo(() => {
-    return activePlayers.map(player => {
+    return displayPlayers.map(player => {
       const height = getLatestMetric(filtered, player, 'height');
       const projHeight = getProjectedHeight(player, profiles, filtered);
       const reach = getLatestMetric(filtered, player, 'standingReach');
       const projReach = getProjectedReach(player, profiles, filtered);
       const wingspan = getLatestMetric(filtered, player, 'wingspan');
-      const weight = getLatestMetric(filtered, player, 'weight');
       const rawBF = getLatestMetric(filtered, player, 'bodyFat');
       const dobSerial = getPlayerDobSerial(player, profiles);
       const latestBFSession = getPlayerSessions(filtered, player).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
       const bodyFat = rawBF !== null ? calcBodyFatPct(rawBF, dobSerial, latestBFSession?.date) : null;
       const apeIndex = (wingspan !== null && projHeight !== null && projHeight > 0) ? Math.round((wingspan / projHeight) * 1000) / 1000 : null;
+      const aps = compositeScores[player] ?? null;
 
-      return { player, height, projHeight, reach, projReach, wingspan, apeIndex, weight, bodyFat };
+      return { player, height, projHeight, reach, projReach, wingspan, apeIndex, aps, bodyFat };
     });
-  }, [activePlayers, filtered, profiles]);
+  }, [displayPlayers, filtered, profiles, compositeScores]);
 
   const sorted = useMemo(() => {
     return [...rows].sort((a, b) => {
@@ -1434,7 +1489,7 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
       const vals = rows.map(r => r[key]).filter((v): v is number => v !== null);
       return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
     };
-    return { height: avg('height'), projHeight: avg('projHeight'), reach: avg('reach'), projReach: avg('projReach'), wingspan: avg('wingspan'), apeIndex: avg('apeIndex'), weight: avg('weight'), bodyFat: avg('bodyFat') };
+    return { height: avg('height'), projHeight: avg('projHeight'), reach: avg('reach'), projReach: avg('projReach'), wingspan: avg('wingspan'), apeIndex: avg('apeIndex'), aps: avg('aps'), bodyFat: avg('bodyFat') };
   }, [rows]);
 
   const handleSort = (key: AnthroSortKey) => {
@@ -1450,7 +1505,7 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
     { key: 'projReach', label: t('P. Reach'), unit: 'cm' },
     { key: 'wingspan', label: t('Wingspan'), unit: 'cm' },
     { key: 'apeIndex', label: t('Ape Index') },
-    { key: 'weight', label: t('Weight'), unit: 'kg' },
+    { key: 'aps', label: t('APS') },
     { key: 'bodyFat', label: t('BF %'), unit: '%' },
   ];
 
@@ -1486,6 +1541,14 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
           </select>
           <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
         </div>
+        <div className="relative">
+          <select value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)}
+            className={`text-xs py-1.5 pl-2 pr-7 rounded-lg border appearance-none cursor-pointer ${isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-white border-gray-200 text-gray-700'}`}>
+            <option value="all">{t('All Players')}</option>
+            {activePlayers.map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-3">
@@ -1497,7 +1560,7 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
       <div className="grid grid-cols-4 gap-3">
         <StatCard label={t('Wingspan')} value={teamAvgs.wingspan} unit="cm" icon={Move} color="#f59e0b" subtitle={t('Team Average')} />
         <StatCard label={t('Ape Index')} value={teamAvgs.apeIndex !== null ? teamAvgs.apeIndex.toFixed(3) : null} icon={Gauge} color="#f97316" subtitle={t('Team Average')} />
-        <StatCard label={t('Weight')} value={teamAvgs.weight} unit="kg" icon={Weight} color="#ef4444" subtitle={t('Team Average')} />
+        <StatCard label={t('APS')} value={teamAvgs.aps} icon={Zap} color="#8b5cf6" subtitle={t('Team Average')} />
         <StatCard label={t('BF %')} value={teamAvgs.bodyFat} unit="%" icon={Heart} color="#ec4899" subtitle={t('Team Average')} />
       </div>
 
@@ -1527,7 +1590,7 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.projReach)}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.wingspan)}</td>
                   <td className={`text-center py-2.5 px-2 font-semibold ${row.apeIndex !== null && row.apeIndex >= 1.06 ? 'text-green-500' : row.apeIndex !== null && row.apeIndex >= 1.03 ? 'text-blue-500' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.apeIndex !== null ? row.apeIndex.toFixed(3) : '—'}</td>
-                  <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.weight)}</td>
+                  <td className={`text-center py-2.5 px-2 font-semibold ${row.aps !== null && row.aps >= 55 ? 'text-green-500' : row.aps !== null && row.aps >= 45 ? (isDark ? 'text-gray-300' : 'text-gray-700') : row.aps !== null ? 'text-red-500' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.aps)}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.bodyFat, '%')}</td>
                 </tr>
               ))}
