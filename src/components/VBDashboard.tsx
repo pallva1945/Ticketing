@@ -307,9 +307,9 @@ function getPlayerAge(player: string, profiles: PlayerProfile[]): number | null 
 }
 
 const NBA_COMBINE_BASELINES: Record<string, { maxVert: number; standVert: number; sprint: number; shuttle: number; relDL: number }> = {
-  'Playmaker': { maxVert: 96.5, standVert: 78.7, sprint: 3.20, shuttle: 10.90, relDL: 1.80 },
-  '3nD':       { maxVert: 91.4, standVert: 81.3, sprint: 3.25, shuttle: 11.10, relDL: 1.85 },
-  'Center':    { maxVert: 86.4, standVert: 78.7, sprint: 3.35, shuttle: 11.50, relDL: 1.90 },
+  'Playmaker': { maxVert: 94.5, standVert: 78.2, sprint: 3.05, shuttle: 3.00, relDL: 1.80 },
+  '3nD':       { maxVert: 90.9, standVert: 76.2, sprint: 3.12, shuttle: 3.08, relDL: 1.85 },
+  'Center':    { maxVert: 82.8, standVert: 72.4, sprint: 3.28, shuttle: 3.20, relDL: 1.90 },
 };
 
 const CAS_ARCHETYPE_WEIGHTS: Record<string, { maxVert: number; shuttle: number; sprint: number; standVert: number; relDL: number }> = {
