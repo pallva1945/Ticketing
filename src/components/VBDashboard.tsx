@@ -319,6 +319,43 @@ const CAS_ARCHETYPE_WEIGHTS: Record<string, { maxVert: number; shuttle: number; 
   'Center':    { relDL: 0.25, standVert: 0.25, maxVert: 0.20, shuttle: 0.15, sprint: 0.15 },
 };
 
+const NBA_ANTHRO_BASELINES: Record<string, { projReach: number; projWingspan: number; projHeight: number; weight: number }> = {
+  'Playmaker': { projReach: 250.8, projWingspan: 200.0, projHeight: 186.7, weight: 86.2 },
+  '3nD':       { projReach: 267.3, projWingspan: 212.1, projHeight: 200.0, weight: 98.0 },
+  'Center':    { projReach: 281.9, projWingspan: 224.2, projHeight: 209.6, weight: 113.9 },
+};
+
+const APS_WEIGHTS = { projReach: 0.40, projWingspan: 0.30, projHeight: 0.15, weight: 0.15 };
+
+function calcNbaBenchmarkedAps(
+  anth: { projHeight: number | null; weight: number | null; projWingspan: number | null; projReach: number | null },
+  role: string,
+  age: number | null
+): number | null {
+  const archetype = getCasArchetype(role);
+  const baseline = NBA_ANTHRO_BASELINES[archetype];
+
+  const pctOf = (val: number | null, base: number): number | null => {
+    if (val === null) return null;
+    return (val / base) * 100;
+  };
+
+  const comps = [
+    { pct: pctOf(anth.projReach, baseline.projReach), w: APS_WEIGHTS.projReach },
+    { pct: pctOf(anth.projWingspan, baseline.projWingspan), w: APS_WEIGHTS.projWingspan },
+    { pct: pctOf(anth.projHeight, baseline.projHeight), w: APS_WEIGHTS.projHeight },
+    { pct: pctOf(anth.weight, baseline.weight), w: APS_WEIGHTS.weight },
+  ];
+
+  const avail = comps.filter(c => c.pct !== null);
+  if (avail.length < 3) return null;
+
+  const totalW = avail.reduce((a, c) => a + c.w, 0);
+  const weightedPct = avail.reduce((sum, c) => sum + c.pct! * (c.w / totalW), 0);
+  const af = getCasAgeFactor(age);
+  return Math.round(weightedPct * af * 100) / 100;
+}
+
 function getCasAgeFactor(age: number | null): number {
   if (age === null) return 1.0;
   if (age <= 14) return 1.20;
@@ -585,44 +622,14 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isD
       const projR = getProjectedReach(p, profiles, filtered);
       return { projHeight: projH, weight, wingspan, projWingspan, projReach: projR };
     };
-    const calcStats = (vals: number[]) => {
-      if (vals.length < 2) return { mean: vals[0] || 0, std: 1 };
-      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
-      const std = Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / vals.length);
-      return { mean, std: std || 1 };
-    };
-    const allAnthro = activePlayers.map(p => ({ player: p, ...getPlayerAnthroData(p) }));
-    const anthStats = {
-      projHeight: calcStats(allAnthro.map(d => d.projHeight).filter((v): v is number => v !== null)),
-      weight: calcStats(allAnthro.map(d => d.weight).filter((v): v is number => v !== null)),
-      projWingspan: calcStats(allAnthro.map(d => d.projWingspan).filter((v): v is number => v !== null)),
-      projReach: calcStats(allAnthro.map(d => d.projReach).filter((v): v is number => v !== null)),
-    };
     const results: Record<string, { cas: number | null; aps: number | null; apeIndex: number | null }> = {};
     for (const p of activePlayers) {
       const ath = getPlayerAthData(p);
       const anth = getPlayerAnthroData(p);
       const role = getPlayerPosition(p, profiles) || '';
-      const zScore = (val: number | null, s: { mean: number; std: number }, invert = false): number | null => {
-        if (val === null) return null;
-        const z = (val - s.mean) / s.std;
-        return invert ? -z : z;
-      };
       const age = getPlayerAge(p, profiles);
       const casVal = calcNbaBenchmarkedCas(ath, role, age);
-      let apsVal: number | null = null;
-      const anthAvail = [anth.projHeight, anth.weight, anth.projWingspan, anth.projReach].filter(v => v !== null).length;
-      if (anthAvail >= 3) {
-        const zPH = zScore(anth.projHeight, anthStats.projHeight);
-        const zW = zScore(anth.weight, anthStats.weight);
-        const zWS = zScore(anth.projWingspan, anthStats.projWingspan);
-        const zPR = zScore(anth.projReach, anthStats.projReach);
-        const bw2 = { projReach: 0.40, projWingspan: 0.30, projHeight: 0.15, weight: 0.15 };
-        const comps2 = [{ z: zPR, w: bw2.projReach }, { z: zWS, w: bw2.projWingspan }, { z: zPH, w: bw2.projHeight }, { z: zW, w: bw2.weight }];
-        const avail2 = comps2.filter(c => c.z !== null);
-        const totalW2 = avail2.reduce((a, c) => a + c.w, 0);
-        apsVal = Math.round((50 + avail2.reduce((sum, c) => sum + (c.z as number) * (c.w / totalW2), 0) * 10) * 10) / 10;
-      }
+      const apsVal = calcNbaBenchmarkedAps(anth, role, age);
       const apeIndex = (anth.wingspan !== null && anth.projHeight !== null && anth.projHeight > 0) ? Math.round((anth.wingspan / anth.projHeight) * 1000) / 1000 : null;
       results[p] = { cas: casVal, aps: apsVal, apeIndex };
     }
@@ -1482,47 +1489,15 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
   const compositeScores = useMemo(() => {
-    const getPlayerAnthroData = (p: string) => {
+    const results: Record<string, number | null> = {};
+    for (const p of activePlayers) {
       const projH = getProjectedHeight(p, profiles, filtered);
       const weight = getLatestMetric(filtered, p, 'weight');
       const projWingspan = getProjectedWingspan(p, profiles, filtered);
       const projR = getProjectedReach(p, profiles, filtered);
-      return { projHeight: projH, weight, projWingspan, projReach: projR };
-    };
-    const calcStats = (vals: number[]) => {
-      if (vals.length < 2) return { mean: vals[0] || 0, std: 1 };
-      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
-      const std = Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / vals.length);
-      return { mean, std: std || 1 };
-    };
-    const allAnthro = activePlayers.map(p => ({ player: p, ...getPlayerAnthroData(p) }));
-    const anthStats = {
-      projHeight: calcStats(allAnthro.map(d => d.projHeight).filter((v): v is number => v !== null)),
-      weight: calcStats(allAnthro.map(d => d.weight).filter((v): v is number => v !== null)),
-      projWingspan: calcStats(allAnthro.map(d => d.projWingspan).filter((v): v is number => v !== null)),
-      projReach: calcStats(allAnthro.map(d => d.projReach).filter((v): v is number => v !== null)),
-    };
-    const results: Record<string, number | null> = {};
-    for (const p of activePlayers) {
-      const anth = getPlayerAnthroData(p);
-      const zScore = (val: number | null, s: { mean: number; std: number }): number | null => {
-        if (val === null) return null;
-        return (val - s.mean) / s.std;
-      };
-      const anthAvail = [anth.projHeight, anth.weight, anth.projWingspan, anth.projReach].filter(v => v !== null).length;
-      if (anthAvail >= 3) {
-        const zPH = zScore(anth.projHeight, anthStats.projHeight);
-        const zW = zScore(anth.weight, anthStats.weight);
-        const zWS = zScore(anth.projWingspan, anthStats.projWingspan);
-        const zPR = zScore(anth.projReach, anthStats.projReach);
-        const bw = { projReach: 0.40, projWingspan: 0.30, projHeight: 0.15, weight: 0.15 };
-        const comps = [{ z: zPR, w: bw.projReach }, { z: zWS, w: bw.projWingspan }, { z: zPH, w: bw.projHeight }, { z: zW, w: bw.weight }];
-        const avail = comps.filter(c => c.z !== null);
-        const totalW = avail.reduce((a, c) => a + c.w, 0);
-        results[p] = Math.round((50 + avail.reduce((sum, c) => sum + (c.z as number) * (c.w / totalW), 0) * 10) * 10) / 10;
-      } else {
-        results[p] = null;
-      }
+      const role = getPlayerPosition(p, profiles) || '';
+      const age = getPlayerAge(p, profiles);
+      results[p] = calcNbaBenchmarkedAps({ projHeight: projH, weight, projWingspan, projReach: projR }, role, age);
     }
     return results;
   }, [filtered, activePlayers, profiles]);
@@ -1670,7 +1645,7 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.weight)}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.bodyFat, '%')}</td>
                   <td className={`text-center py-2.5 px-2 font-semibold ${row.apeIndex !== null && row.apeIndex >= 1.06 ? 'text-green-500' : row.apeIndex !== null && row.apeIndex >= 1.03 ? 'text-blue-500' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.apeIndex !== null ? row.apeIndex.toFixed(3) : '—'}</td>
-                  <td className={`text-center py-2.5 px-2 font-semibold ${row.aps !== null && row.aps >= 55 ? 'text-green-500' : row.aps !== null && row.aps >= 45 ? (isDark ? 'text-gray-300' : 'text-gray-700') : row.aps !== null ? 'text-red-500' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.aps)}</td>
+                  <td className={`text-center py-2.5 px-2 font-semibold ${row.aps !== null && row.aps >= 105 ? 'text-green-500' : row.aps !== null && row.aps >= 95 ? (isDark ? 'text-gray-300' : 'text-gray-700') : row.aps !== null ? 'text-red-500' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.aps)}</td>
                 </tr>
               ))}
             </tbody>
@@ -1853,48 +1828,14 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
       return { mean, std: std || 1 };
     };
 
-    const allAnthro = activePlayers.map(p => ({ player: p, ...getPlayerAnthroData(p) }));
-
-    const anthStats = {
-      projHeight: calcStats(allAnthro.map(d => d.projHeight).filter((v): v is number => v !== null)),
-      weight: calcStats(allAnthro.map(d => d.weight).filter((v): v is number => v !== null)),
-      projWingspan: calcStats(allAnthro.map(d => d.projWingspan).filter((v): v is number => v !== null)),
-      projReach: calcStats(allAnthro.map(d => d.projReach).filter((v): v is number => v !== null)),
-    };
-
     const results: Record<string, { cas: number | null; aps: number | null; apeIndex: number | null }> = {};
     for (const p of activePlayers) {
       const ath = getPlayerAthData(p);
       const anth = getPlayerAnthroData(p);
       const role = getPlayerPosition(p, profiles) || '';
-
-      const zScore = (val: number | null, s: { mean: number; std: number }, invert = false): number | null => {
-        if (val === null) return null;
-        const z = (val - s.mean) / s.std;
-        return invert ? -z : z;
-      };
-
       const age = getPlayerAge(p, profiles);
       const casVal = calcNbaBenchmarkedCas(ath, role, age);
-
-      let apsVal: number | null = null;
-      const anthAvail = [anth.projHeight, anth.weight, anth.projWingspan, anth.projReach].filter(v => v !== null).length;
-      if (anthAvail >= 3) {
-        const zPH = zScore(anth.projHeight, anthStats.projHeight);
-        const zW = zScore(anth.weight, anthStats.weight);
-        const zWS = zScore(anth.projWingspan, anthStats.projWingspan);
-        const zPR = zScore(anth.projReach, anthStats.projReach);
-        const bw2 = { projReach: 0.40, projWingspan: 0.30, projHeight: 0.15, weight: 0.15 };
-        const comps2 = [
-          { z: zPR, w: bw2.projReach }, { z: zWS, w: bw2.projWingspan },
-          { z: zPH, w: bw2.projHeight }, { z: zW, w: bw2.weight },
-        ];
-        const avail2 = comps2.filter(c => c.z !== null);
-        const totalW2 = avail2.reduce((a, c) => a + c.w, 0);
-        const aps = avail2.reduce((sum, c) => sum + (c.z as number) * (c.w / totalW2), 0);
-        apsVal = Math.round((50 + aps * 10) * 10) / 10;
-      }
-
+      const apsVal = calcNbaBenchmarkedAps(anth, role, age);
       const apeIndex = (anth.wingspan !== null && anth.projHeight !== null && anth.projHeight > 0) ? Math.round((anth.wingspan / anth.projHeight) * 1000) / 1000 : null;
       results[p] = { cas: casVal, aps: apsVal, apeIndex };
     }
@@ -2308,76 +2249,54 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
   }, [sessions, players, selectedPlayer, profile?.role, profiles]);
 
   const apsData = useMemo(() => {
-    const getPlayerAnthroData = (p: string) => {
-      const projH = getProjectedHeight(p, profiles, sessions);
-      const weight = getLatestMetric(sessions, p, 'weight');
-      const wingspan = getLatestMetric(sessions, p, 'wingspan');
-      const projWingspan = getProjectedWingspan(p, profiles, sessions);
-      const projR = getProjectedReach(p, profiles, sessions);
+    const pd = (() => {
+      const projH = getProjectedHeight(selectedPlayer, profiles, sessions);
+      const weight = getLatestMetric(sessions, selectedPlayer, 'weight');
+      const wingspan = getLatestMetric(sessions, selectedPlayer, 'wingspan');
+      const projWingspan = getProjectedWingspan(selectedPlayer, profiles, sessions);
+      const projR = getProjectedReach(selectedPlayer, profiles, sessions);
       return { projHeight: projH, weight, wingspan, projWingspan, projReach: projR };
-    };
+    })();
 
-    const allData = players.map(p => ({ player: p, ...getPlayerAnthroData(p) }));
-
-    const calcStats = (vals: number[]) => {
-      if (vals.length < 2) return { mean: vals[0] || 0, std: 1 };
-      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
-      const std = Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / vals.length);
-      return { mean, std: std || 1 };
-    };
-
-    const projHVals = allData.map(d => d.projHeight).filter((v): v is number => v !== null);
-    const weightVals = allData.map(d => d.weight).filter((v): v is number => v !== null);
-    const projWingVals = allData.map(d => d.projWingspan).filter((v): v is number => v !== null);
-    const projRVals = allData.map(d => d.projReach).filter((v): v is number => v !== null);
-
-    const stats = {
-      projHeight: calcStats(projHVals),
-      weight: calcStats(weightVals),
-      projWingspan: calcStats(projWingVals),
-      projReach: calcStats(projRVals),
-    };
-
-    const pd = getPlayerAnthroData(selectedPlayer);
     const availCount = [pd.projHeight, pd.weight, pd.projWingspan, pd.projReach].filter(v => v !== null).length;
     if (availCount < 3) return null;
 
-    const zScore = (val: number | null, s: { mean: number; std: number }): number | null => {
+    const role = getPlayerPosition(selectedPlayer, profiles) || '';
+    const age = getPlayerAge(selectedPlayer, profiles);
+    const archetype = getCasArchetype(role);
+    const baseline = NBA_ANTHRO_BASELINES[archetype];
+    const af = getCasAgeFactor(age);
+
+    const pctOf = (val: number | null, base: number): number | null => {
       if (val === null) return null;
-      return (val - s.mean) / s.std;
+      return (val / base) * 100;
     };
 
-    const zProjH = zScore(pd.projHeight, stats.projHeight);
-    const zWeight = zScore(pd.weight, stats.weight);
-    const zProjWS = zScore(pd.projWingspan, stats.projWingspan);
-    const zProjR = zScore(pd.projReach, stats.projReach);
-
-    const baseWeights = { projReach: 0.40, projWingspan: 0.30, projHeight: 0.15, weight: 0.15 };
-
     const rawComps = [
-      { key: 'projReach', label: 'P. Reach', z: zProjR, baseW: baseWeights.projReach, val: pd.projReach, unit: 'cm' },
-      { key: 'projWingspan', label: 'P. Wingspan', z: zProjWS, baseW: baseWeights.projWingspan, val: pd.projWingspan, unit: 'cm' },
-      { key: 'projHeight', label: 'P. Height', z: zProjH, baseW: baseWeights.projHeight, val: pd.projHeight, unit: 'cm' },
-      { key: 'weight', label: 'Weight', z: zWeight, baseW: baseWeights.weight, val: pd.weight, unit: 'kg' },
+      { key: 'projReach', label: 'P. Reach', pct: pctOf(pd.projReach, baseline.projReach), baseW: APS_WEIGHTS.projReach, val: pd.projReach, unit: 'cm', nba: baseline.projReach },
+      { key: 'projWingspan', label: 'P. Wingspan', pct: pctOf(pd.projWingspan, baseline.projWingspan), baseW: APS_WEIGHTS.projWingspan, val: pd.projWingspan, unit: 'cm', nba: baseline.projWingspan },
+      { key: 'projHeight', label: 'P. Height', pct: pctOf(pd.projHeight, baseline.projHeight), baseW: APS_WEIGHTS.projHeight, val: pd.projHeight, unit: 'cm', nba: baseline.projHeight },
+      { key: 'weight', label: 'Weight', pct: pctOf(pd.weight, baseline.weight), baseW: APS_WEIGHTS.weight, val: pd.weight, unit: 'kg', nba: baseline.weight },
     ];
 
-    const availComps = rawComps.filter(c => c.z !== null);
+    const availComps = rawComps.filter(c => c.pct !== null);
     const totalAvailW = availComps.reduce((a, c) => a + c.baseW, 0);
     const components = rawComps.map(c => ({
       label: c.label,
-      z: c.z ?? 0,
-      w: c.z !== null ? c.baseW / totalAvailW : 0,
+      pct: c.pct ?? 0,
+      w: c.pct !== null ? c.baseW / totalAvailW : 0,
       val: c.val,
       unit: c.unit,
-      missing: c.z === null,
+      missing: c.pct === null,
+      nba: c.nba,
     }));
 
-    const aps = availComps.reduce((sum, c) => sum + (c.z as number) * (c.baseW / totalAvailW), 0);
-    const apsNorm = Math.round((50 + aps * 10) * 10) / 10;
+    const weightedPct = availComps.reduce((sum, c) => sum + c.pct! * (c.baseW / totalAvailW), 0);
+    const apsNorm = Math.round(weightedPct * af * 100) / 100;
 
     const apeIndex = (pd.wingspan !== null && pd.projHeight !== null && pd.projHeight > 0) ? Math.round((pd.wingspan / pd.projHeight) * 1000) / 1000 : null;
 
-    return { aps: apsNorm, components, apeIndex, partial: availCount < 4 };
+    return { aps: apsNorm, components, apeIndex, partial: availCount < 4, archetype, ageFactor: af, age };
   }, [sessions, players, selectedPlayer, profiles]);
 
   const totalTaken = ps.reduce((a, s) => a + (s.shootsTaken || 0), 0);
@@ -2626,10 +2545,13 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                   >
                     APS
                   </button>
-                  <div className={`text-4xl font-black leading-none ${apsData.aps >= 55 ? 'text-emerald-500' : apsData.aps >= 45 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
+                  <div className={`text-4xl font-black leading-none ${apsData.aps >= 105 ? 'text-emerald-500' : apsData.aps >= 95 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
                     {apsData.aps}
                   </div>
-                  {apsData.partial && <div className={`text-[10px] mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>*</div>}
+                  <div className={`text-[10px] mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {apsData.archetype} {t('weights')}{apsData.partial ? ' *' : ''}
+                    {apsData.ageFactor > 1 ? ` · Af ${apsData.ageFactor}x` : ''}
+                  </div>
                 </div>
 
                 <div className="flex-1 min-w-0 w-full">
@@ -2643,12 +2565,12 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                             </div>
                             <div className={`flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`} />
                             <div className={`w-14 text-[10px] font-mono text-right flex-shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>N/A</div>
-                            <div className={`w-16 text-[10px] text-right flex-shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>—</div>
+                            <div className={`w-20 text-[10px] text-right flex-shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>—</div>
                           </div>
                         );
                       }
-                      const barWidth = Math.min(Math.max((c.z + 3) / 6 * 100, 2), 100);
-                      const isPositive = c.z >= 0;
+                      const barWidth = Math.min(Math.max(c.pct / 1.5, 2), 100);
+                      const isAboveAvg = c.pct >= 100;
                       return (
                         <div key={i} className="flex items-center gap-2">
                           <div className={`w-24 sm:w-28 text-[10px] font-medium text-right flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -2656,16 +2578,16 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                           </div>
                           <div className={`relative flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
                             <div
-                              className={`h-full rounded-full transition-all ${isPositive ? 'bg-gradient-to-r from-blue-500 to-blue-400' : 'bg-gradient-to-r from-red-500/60 to-red-400/60'}`}
+                              className={`h-full rounded-full transition-all ${isAboveAvg ? 'bg-gradient-to-r from-blue-500 to-blue-400' : 'bg-gradient-to-r from-red-500/60 to-red-400/60'}`}
                               style={{ width: `${barWidth}%` }}
                             />
-                            <div className={`absolute top-0 left-1/2 w-px h-full ${isDark ? 'bg-gray-500/60' : 'bg-gray-400/50'}`} />
+                            <div className={`absolute top-0 h-full w-px ${isDark ? 'bg-gray-500/60' : 'bg-gray-400/50'}`} style={{ left: `${100 / 1.5}%` }} />
                           </div>
-                          <div className={`w-14 text-[10px] font-mono text-right flex-shrink-0 ${isPositive ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-red-400'}`}>
-                            {c.z > 0 ? '+' : ''}{Math.round(c.z * 100) / 100}
+                          <div className={`w-14 text-[10px] font-mono text-right flex-shrink-0 ${isAboveAvg ? (isDark ? 'text-blue-400' : 'text-blue-600') : 'text-red-400'}`}>
+                            {Math.round(c.pct * 10) / 10}%
                           </div>
-                          <div className={`w-16 text-[10px] text-right flex-shrink-0 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                            {c.val !== null ? `${c.val} ${c.unit}` : '—'}
+                          <div className={`w-20 text-[10px] text-right flex-shrink-0 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                            {c.val !== null ? `${c.val}` : '—'}<span className={`ml-0.5 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>/ {c.nba}</span>
                           </div>
                         </div>
                       );
@@ -2705,7 +2627,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                   Anthropometric Potential Score (APS)
                 </h3>
                 <p className={`text-xs mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  A position-adjusted composite score that quantifies a player's physical foundation, moving beyond raw height to emphasize "functional length." It assesses how a player's physical frame enables or constrains their on-court potential by comparing them to elite NBA Combine benchmarks.
+                  A position-adjusted composite score that quantifies a player's physical foundation against NBA Draft Combine averages. 100 = NBA average for the player's archetype. It assesses how a player's physical frame enables or constrains their on-court potential by benchmarking against elite-level measurements.
                 </p>
 
                 <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
@@ -2727,9 +2649,65 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                 <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
                   APS Calculation
                 </h4>
-                <p className={`text-[11px] leading-relaxed mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Calculated as a weighted sum of Z-scores for the four pillars. Each player is measured against the mean and standard deviation for their group. Projected height and projected standing reach are used to account for growth potential in developing players.
+                <p className={`text-[11px] leading-relaxed mb-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Each metric is expressed as a percentage of the NBA Draft Combine average for the player's archetype. These percentages are combined using weighted averages, then multiplied by an Age Factor for youth players.
                 </p>
+                <div className={`rounded-lg p-2 mb-3 font-mono text-[11px] ${isDark ? 'bg-gray-800 text-blue-300' : 'bg-gray-50 text-blue-700'}`}>
+                  APS = (Σ Metric% of NBA Baseline × Weight) × Age Factor
+                </div>
+
+                <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                  NBA Anthro Baselines by Archetype
+                </h4>
+                <div className={`rounded-lg overflow-hidden border mb-3 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
+                        <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Metric</th>
+                        <th className={`text-right py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Playmaker</th>
+                        <th className={`text-right py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>3&D</th>
+                        <th className={`text-right py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Center</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        ['P. Height', '186.7 cm', '200.0 cm', '209.6 cm'],
+                        ['P. Wingspan', '200.0 cm', '212.1 cm', '224.2 cm'],
+                        ['Weight', '86.2 kg', '98.0 kg', '113.9 kg'],
+                        ['P. Reach', '250.8 cm', '267.3 cm', '281.9 cm'],
+                      ].map(([name, pm, td, ct], i) => (
+                        <tr key={i} className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                          <td className={`py-1.5 px-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{name}</td>
+                          <td className={`py-1.5 px-3 text-right font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{pm}</td>
+                          <td className={`py-1.5 px-3 text-right font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{td}</td>
+                          <td className={`py-1.5 px-3 text-right font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{ct}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                  Age Factor
+                </h4>
+                <div className={`rounded-lg overflow-hidden border mb-3 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
+                        <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Age</th>
+                        <th className={`text-right py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Multiplier</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[['≤ 14', '1.20x'], ['15', '1.15x'], ['16', '1.10x'], ['17', '1.05x'], ['18+', '1.00x']].map(([age, mult], i) => (
+                        <tr key={i} className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                          <td className={`py-1.5 px-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{age}</td>
+                          <td className={`py-1.5 px-3 text-right font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{mult}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
 
                 <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
                   Component Weightings
