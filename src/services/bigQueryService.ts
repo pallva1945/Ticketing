@@ -81,7 +81,11 @@ export interface VBMergedSession {
 
 function getField(row: any, ...keys: string[]): any {
   for (const k of keys) {
-    if (row[k] !== undefined && row[k] !== null) return row[k];
+    if (row[k] !== undefined && row[k] !== null) {
+      const val = row[k];
+      if (typeof val === 'object' && val !== null && val.value !== undefined) return val.value;
+      return val;
+    }
   }
   return null;
 }
@@ -101,18 +105,24 @@ function parseSlashDate(s: string): string | null {
   return `${y}-${bNum.toString().padStart(2, '0')}-${aNum.toString().padStart(2, '0')}`;
 }
 
+function unwrapBQValue(val: any): string | null {
+  if (val === null || val === undefined) return null;
+  if (typeof val === 'object' && val.value !== undefined) return String(val.value);
+  return String(val);
+}
+
 function parseVBDate(row: any): string {
-  const dos = getField(row, 'date_of_session', 'Date_of_Session');
-  if (dos && String(dos).trim()) {
-    const s = String(dos).trim();
+  const dos = unwrapBQValue(getField(row, 'date_of_session', 'Date_of_Session'));
+  if (dos && dos.trim()) {
+    const s = dos.trim();
     const parsed = parseSlashDate(s);
     if (parsed) return parsed;
     const dt = new Date(s);
     if (!isNaN(dt.getTime()) && dt.getFullYear() >= 2000) return dt.toISOString().split('T')[0];
   }
-  const ts = row.timestamp;
+  const ts = unwrapBQValue(row.timestamp);
   if (ts) {
-    const s = String(ts).trim();
+    const s = ts.trim();
     const parsed = parseSlashDate(s);
     if (parsed) return parsed;
     const dt = new Date(s);
@@ -212,6 +222,18 @@ export interface VBPlayerProfile {
   eoyStatus: string | null;
   year1Destination: string | null;
   revenueGenerated: number | null;
+  minLate: number | null;
+  strength1: string | null;
+  strength2: string | null;
+  strength3: string | null;
+  weakness1: string | null;
+  weakness2: string | null;
+  weakness3: string | null;
+  poe1: string | null;
+  poe2: string | null;
+  poe3: string | null;
+  workEthic: number | null;
+  personality: number | null;
 }
 
 export async function fetchVBProfilesFromBigQuery(): Promise<{ success: boolean; data: VBPlayerProfile[] }> {
@@ -258,6 +280,18 @@ export async function fetchVBProfilesFromBigQuery(): Promise<{ success: boolean;
         eoyStatus: getField(row, 'EoY_Status', 'eoy_status', 'string_field_13') ? String(getField(row, 'EoY_Status', 'eoy_status', 'string_field_13')).trim() : null,
         year1Destination: getField(row, 'Year_1_Destination', 'year_1_destination', 'string_field_14') ? String(getField(row, 'Year_1_Destination', 'year_1_destination', 'string_field_14')).trim() : null,
         revenueGenerated: parseFloat(getField(row, 'Revenue_Generated', 'revenue_generated', 'string_field_15')) || null,
+        minLate: parseFloat(getField(row, 'Min_Late', 'min_late')) || null,
+        strength1: getField(row, 'Strenght_1', 'strenght_1', 'Strength_1', 'strength_1') ? String(getField(row, 'Strenght_1', 'strenght_1', 'Strength_1', 'strength_1')).trim() : null,
+        strength2: getField(row, 'Strenght_2', 'strenght_2', 'Strength_2', 'strength_2') ? String(getField(row, 'Strenght_2', 'strenght_2', 'Strength_2', 'strength_2')).trim() : null,
+        strength3: getField(row, 'Strenght_3', 'strenght_3', 'Strength_3', 'strength_3') ? String(getField(row, 'Strenght_3', 'strenght_3', 'Strength_3', 'strength_3')).trim() : null,
+        weakness1: getField(row, 'Weaknesess_1', 'weaknesess_1', 'Weakness_1', 'weakness_1') ? String(getField(row, 'Weaknesess_1', 'weaknesess_1', 'Weakness_1', 'weakness_1')).trim() : null,
+        weakness2: getField(row, 'Weaknesess_2', 'weaknesess_2', 'Weakness_2', 'weakness_2') ? String(getField(row, 'Weaknesess_2', 'weaknesess_2', 'Weakness_2', 'weakness_2')).trim() : null,
+        weakness3: getField(row, 'Weaknesess_3', 'weaknesess_3', 'Weakness_3', 'weakness_3') ? String(getField(row, 'Weaknesess_3', 'weaknesess_3', 'Weakness_3', 'weakness_3')).trim() : null,
+        poe1: getField(row, 'POE_1', 'poe_1') ? String(getField(row, 'POE_1', 'poe_1')).trim() : null,
+        poe2: getField(row, 'POE_2', 'poe_2') ? String(getField(row, 'POE_2', 'poe_2')).trim() : null,
+        poe3: getField(row, 'POE_3', 'poe_3') ? String(getField(row, 'POE_3', 'poe_3')).trim() : null,
+        workEthic: parseFloat(getField(row, 'Work_Ethic', 'work_ethic')) || null,
+        personality: parseFloat(getField(row, 'Personality', 'personality')) || null,
       };
     });
 

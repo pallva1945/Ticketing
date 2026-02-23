@@ -53,6 +53,18 @@ interface PlayerProfile {
   eoyStatus: string | null;
   year1Destination: string | null;
   revenueGenerated: number | null;
+  minLate: number | null;
+  strength1: string | null;
+  strength2: string | null;
+  strength3: string | null;
+  weakness1: string | null;
+  weakness2: string | null;
+  weakness3: string | null;
+  poe1: string | null;
+  poe2: string | null;
+  poe3: string | null;
+  workEthic: number | null;
+  personality: number | null;
 }
 
 interface VBProspect {
@@ -708,7 +720,7 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isD
       injury: injuryVal,
       nt: ntVal,
       daysOff: daysOffVal,
-      minLate: null,
+      minLate: getPlayerProfile(player, profiles)?.minLate ?? null,
       vacation: (() => {
         if (selectedSeason === 'all') return 0;
         const parts = selectedSeason.match(/^(\d{4})\//);
@@ -2465,9 +2477,12 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               <span>✦</span> {t('Strengths')}
             </div>
             <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-              <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 1')}</li>
-              <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 2')}</li>
-              <li className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{t('Strength placeholder 3')}</li>
+              {[profile?.strength1, profile?.strength2, profile?.strength3].filter(Boolean).length > 0
+                ? [profile?.strength1, profile?.strength2, profile?.strength3].filter(Boolean).map((s, i) => (
+                    <li key={i} className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{s}</li>
+                  ))
+                : <li className={`italic ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{t('Not yet assessed')}</li>
+              }
             </ul>
           </div>
           <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-red-900/20 border border-red-800/30' : 'bg-red-50/50 border border-red-100'}`}>
@@ -2475,9 +2490,12 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               <span>✦</span> {t('Weaknesses')}
             </div>
             <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-              <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 1')}</li>
-              <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 2')}</li>
-              <li className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{t('Weakness placeholder 3')}</li>
+              {[profile?.weakness1, profile?.weakness2, profile?.weakness3].filter(Boolean).length > 0
+                ? [profile?.weakness1, profile?.weakness2, profile?.weakness3].filter(Boolean).map((s, i) => (
+                    <li key={i} className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{s}</li>
+                  ))
+                : <li className={`italic ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{t('Not yet assessed')}</li>
+              }
             </ul>
           </div>
           <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-amber-900/20 border border-amber-800/30' : 'bg-amber-50/50 border border-amber-100'}`}>
@@ -2485,9 +2503,12 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               <span>✦</span> {t('Points of Emphasis')}
             </div>
             <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-              <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 1')}</li>
-              <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 2')}</li>
-              <li className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{t('Emphasis placeholder 3')}</li>
+              {[profile?.poe1, profile?.poe2, profile?.poe3].filter(Boolean).length > 0
+                ? [profile?.poe1, profile?.poe2, profile?.poe3].filter(Boolean).map((s, i) => (
+                    <li key={i} className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{s}</li>
+                  ))
+                : <li className={`italic ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{t('Not yet assessed')}</li>
+              }
             </ul>
           </div>
           <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-sky-900/20 border border-sky-800/30' : 'bg-sky-50/50 border border-sky-100'}`}>
