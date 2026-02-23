@@ -1657,7 +1657,7 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.weight)}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.bodyFat, '%')}</td>
                   <td className={`text-center py-2.5 px-2 font-semibold ${row.apeIndex !== null && row.apeIndex >= 1.06 ? 'text-green-500' : row.apeIndex !== null && row.apeIndex >= 1.03 ? 'text-blue-500' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.apeIndex !== null ? row.apeIndex.toFixed(3) : '—'}</td>
-                  <td className={`text-center py-2.5 px-2 font-semibold ${row.aps !== null && row.aps >= 105 ? 'text-green-500' : row.aps !== null && row.aps >= 95 ? (isDark ? 'text-gray-300' : 'text-gray-700') : row.aps !== null ? 'text-red-500' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.aps)}</td>
+                  <td className={`text-center py-2.5 px-2 font-semibold ${row.aps !== null && row.aps >= 105 ? 'text-emerald-500' : row.aps !== null && row.aps >= 95 ? (isDark ? 'text-gray-300' : 'text-gray-700') : row.aps !== null ? 'text-red-400' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.aps)}</td>
                 </tr>
               ))}
             </tbody>
@@ -2055,7 +2055,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
                       </td>
                     );
                   })}
-                  <td className={`text-center py-2.5 px-1 font-semibold ${row.cas !== null ? (row.cas >= 100 ? 'text-amber-500' : row.cas < 75 ? 'text-red-400' : (isDark ? 'text-gray-300' : 'text-gray-700')) : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{row.cas !== null ? row.cas : '—'}</td>
+                  <td className={`text-center py-2.5 px-1 font-semibold ${row.cas !== null ? (row.cas >= 105 ? 'text-emerald-500' : row.cas >= 95 ? (isDark ? 'text-gray-300' : 'text-gray-700') : 'text-red-400') : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{row.cas !== null ? row.cas : '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -2841,7 +2841,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                 >
                   CAS
                 </button>
-                <div className={`text-4xl font-black leading-none ${casData.cas >= 100 ? 'text-emerald-500' : casData.cas >= 75 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
+                <div className={`text-4xl font-black leading-none ${casData.cas >= 105 ? 'text-emerald-500' : casData.cas >= 95 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
                   {casData.cas}
                 </div>
                 <div className={`text-[10px] mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
