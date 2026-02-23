@@ -171,8 +171,10 @@ function mergeVBRows(rows: any[]): VBMergedSession[] {
       }
       base.pureVertical = coalesce(base.pureVertical, getField(r, 'pure_vertical_jump', 'Pure_Vertical_Jump'));
       base.noStepVertical = coalesce(base.noStepVertical, getField(r, 'no_step_vertical_jump', 'No_Step_Vertical_Jump'));
-      base.sprint = coalesce(base.sprint, getField(r, 'sprint', 'Sprint'));
-      base.coneDrill = coalesce(base.coneDrill, getField(r, 'cone_drill', 'Cone_Drill'));
+      const rawSprint = getField(r, 'sprint', 'Sprint');
+      base.sprint = coalesce(base.sprint, rawSprint !== null && rawSprint > 50 ? Math.round(rawSprint) / 100 : rawSprint);
+      const rawConeDrill = getField(r, 'cone_drill', 'Cone_Drill');
+      base.coneDrill = coalesce(base.coneDrill, rawConeDrill !== null && rawConeDrill > 50 ? Math.round(rawConeDrill) / 100 : rawConeDrill);
       base.deadlift = coalesce(base.deadlift, getField(r, 'deadlift', 'Deadlift'));
       base.shootsTaken = coalesce(base.shootsTaken, getField(r, 'shots_taken', 'Shoots_Taken'));
       base.shootsMade = coalesce(base.shootsMade, getField(r, 'shots_made', 'Shoots_Made'));
