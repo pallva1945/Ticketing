@@ -295,6 +295,75 @@ function getPlayerBirthYear(player: string, profiles: PlayerProfile[]): number |
   return dob.getFullYear();
 }
 
+function getPlayerAge(player: string, profiles: PlayerProfile[]): number | null {
+  const dobSerial = getPlayerDobSerial(player, profiles);
+  if (!dobSerial) return null;
+  const dob = excelSerialToDate(dobSerial);
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const m = now.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
+  return age;
+}
+
+const NBA_COMBINE_BASELINES: Record<string, { maxVert: number; standVert: number; sprint: number; shuttle: number; relDL: number }> = {
+  'Playmaker': { maxVert: 96.5, standVert: 78.7, sprint: 3.20, shuttle: 10.90, relDL: 1.80 },
+  '3nD':       { maxVert: 91.4, standVert: 81.3, sprint: 3.25, shuttle: 11.10, relDL: 1.85 },
+  'Center':    { maxVert: 86.4, standVert: 78.7, sprint: 3.35, shuttle: 11.50, relDL: 1.90 },
+};
+
+const CAS_ARCHETYPE_WEIGHTS: Record<string, { maxVert: number; shuttle: number; sprint: number; standVert: number; relDL: number }> = {
+  'Playmaker': { shuttle: 0.35, sprint: 0.20, maxVert: 0.20, standVert: 0.15, relDL: 0.10 },
+  '3nD':       { maxVert: 0.30, shuttle: 0.25, sprint: 0.15, standVert: 0.15, relDL: 0.15 },
+  'Center':    { relDL: 0.25, standVert: 0.25, maxVert: 0.20, shuttle: 0.15, sprint: 0.15 },
+};
+
+function getCasAgeFactor(age: number | null): number {
+  if (age === null) return 1.0;
+  if (age <= 14) return 1.20;
+  if (age === 15) return 1.15;
+  if (age === 16) return 1.10;
+  if (age === 17) return 1.05;
+  return 1.0;
+}
+
+function getCasArchetype(role: string): string {
+  if (role === 'Playmaker') return 'Playmaker';
+  if (role === 'Center') return 'Center';
+  return '3nD';
+}
+
+function calcNbaBenchmarkedCas(
+  ath: { maxVert: number | null; standVert: number | null; sprint: number | null; shuttle: number | null; relDeadlift: number | null },
+  role: string,
+  age: number | null
+): number | null {
+  const archetype = getCasArchetype(role);
+  const baseline = NBA_COMBINE_BASELINES[archetype];
+  const weights = CAS_ARCHETYPE_WEIGHTS[archetype];
+
+  const pctOf = (val: number | null, base: number, invert: boolean): { pct: number; w: number; key: string } | null => {
+    if (val === null) return null;
+    return { pct: invert ? (base / val) * 100 : (val / base) * 100, w: 0, key: '' };
+  };
+
+  const comps = [
+    { result: pctOf(ath.maxVert, baseline.maxVert, false), w: weights.maxVert, key: 'maxVert' },
+    { result: pctOf(ath.standVert, baseline.standVert, false), w: weights.standVert, key: 'standVert' },
+    { result: pctOf(ath.sprint, baseline.sprint, true), w: weights.sprint, key: 'sprint' },
+    { result: pctOf(ath.shuttle, baseline.shuttle, true), w: weights.shuttle, key: 'shuttle' },
+    { result: pctOf(ath.relDeadlift, baseline.relDL, false), w: weights.relDL, key: 'relDL' },
+  ];
+
+  const avail = comps.filter(c => c.result !== null);
+  if (avail.length < 4) return null;
+
+  const totalW = avail.reduce((a, c) => a + c.w, 0);
+  const weightedPct = avail.reduce((sum, c) => sum + c.result!.pct * (c.w / totalW), 0);
+  const af = getCasAgeFactor(age);
+  return Math.round(weightedPct * af * 100) / 100;
+}
+
 function getPlayerCategory(player: string, profiles: PlayerProfile[], season?: string): string {
   const year = getPlayerBirthYear(player, profiles);
   if (!year) return '';
@@ -521,15 +590,7 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isD
       const std = Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / vals.length);
       return { mean, std: std || 1 };
     };
-    const allAth = activePlayers.map(p => ({ player: p, ...getPlayerAthData(p) }));
     const allAnthro = activePlayers.map(p => ({ player: p, ...getPlayerAnthroData(p) }));
-    const athStats = {
-      maxVert: calcStats(allAth.map(d => d.maxVert).filter((v): v is number => v !== null)),
-      standVert: calcStats(allAth.map(d => d.standVert).filter((v): v is number => v !== null)),
-      sprint: calcStats(allAth.map(d => d.sprint).filter((v): v is number => v !== null)),
-      shuttle: calcStats(allAth.map(d => d.shuttle).filter((v): v is number => v !== null)),
-      relDL: calcStats(allAth.map(d => d.relDeadlift).filter((v): v is number => v !== null)),
-    };
     const anthStats = {
       projHeight: calcStats(allAnthro.map(d => d.projHeight).filter((v): v is number => v !== null)),
       weight: calcStats(allAnthro.map(d => d.weight).filter((v): v is number => v !== null)),
@@ -546,22 +607,8 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isD
         const z = (val - s.mean) / s.std;
         return invert ? -z : z;
       };
-      let casVal: number | null = null;
-      const athAvail = [ath.maxVert, ath.standVert, ath.sprint, ath.shuttle, ath.relDeadlift].filter(v => v !== null).length;
-      if (athAvail >= 4) {
-        const zMV = zScore(ath.maxVert, athStats.maxVert);
-        const zSV = zScore(ath.standVert, athStats.standVert);
-        const zSp = zScore(ath.sprint, athStats.sprint, true);
-        const zSh = zScore(ath.shuttle, athStats.shuttle, true);
-        const zDL = zScore(ath.relDeadlift, athStats.relDL);
-        let bw = { maxVert: 0.30, shuttle: 0.25, sprint: 0.15, standVert: 0.15, relDL: 0.15 };
-        if (role === 'Playmaker') bw = { maxVert: 0.25, shuttle: 0.35, sprint: 0.15, standVert: 0.10, relDL: 0.15 };
-        else if (role === 'Center') bw = { maxVert: 0.20, shuttle: 0.15, sprint: 0.15, standVert: 0.25, relDL: 0.25 };
-        const comps = [{ z: zMV, w: bw.maxVert }, { z: zSh, w: bw.shuttle }, { z: zSp, w: bw.sprint }, { z: zSV, w: bw.standVert }, { z: zDL, w: bw.relDL }];
-        const avail = comps.filter(c => c.z !== null);
-        const totalW = avail.reduce((a, c) => a + c.w, 0);
-        casVal = Math.round((50 + avail.reduce((sum, c) => sum + (c.z as number) * (c.w / totalW), 0) * 10) * 10) / 10;
-      }
+      const age = getPlayerAge(p, profiles);
+      const casVal = calcNbaBenchmarkedCas(ath, role, age);
       let apsVal: number | null = null;
       const anthAvail = [anth.projHeight, anth.weight, anth.projWingspan, anth.projReach].filter(v => v !== null).length;
       if (anthAvail >= 3) {
@@ -1805,16 +1852,8 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
       return { mean, std: std || 1 };
     };
 
-    const allAth = activePlayers.map(p => ({ player: p, ...getPlayerAthData(p) }));
     const allAnthro = activePlayers.map(p => ({ player: p, ...getPlayerAnthroData(p) }));
 
-    const athStats = {
-      maxVert: calcStats(allAth.map(d => d.maxVert).filter((v): v is number => v !== null)),
-      standVert: calcStats(allAth.map(d => d.standVert).filter((v): v is number => v !== null)),
-      sprint: calcStats(allAth.map(d => d.sprint).filter((v): v is number => v !== null)),
-      shuttle: calcStats(allAth.map(d => d.shuttle).filter((v): v is number => v !== null)),
-      relDL: calcStats(allAth.map(d => d.relDeadlift).filter((v): v is number => v !== null)),
-    };
     const anthStats = {
       projHeight: calcStats(allAnthro.map(d => d.projHeight).filter((v): v is number => v !== null)),
       weight: calcStats(allAnthro.map(d => d.weight).filter((v): v is number => v !== null)),
@@ -1834,26 +1873,8 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
         return invert ? -z : z;
       };
 
-      let casVal: number | null = null;
-      const athAvail = [ath.maxVert, ath.standVert, ath.sprint, ath.shuttle, ath.relDeadlift].filter(v => v !== null).length;
-      if (athAvail >= 4) {
-        const zMV = zScore(ath.maxVert, athStats.maxVert);
-        const zSV = zScore(ath.standVert, athStats.standVert);
-        const zSp = zScore(ath.sprint, athStats.sprint, true);
-        const zSh = zScore(ath.shuttle, athStats.shuttle, true);
-        const zDL = zScore(ath.relDeadlift, athStats.relDL);
-        let bw = { maxVert: 0.30, shuttle: 0.25, sprint: 0.15, standVert: 0.15, relDL: 0.15 };
-        if (role === 'Playmaker') bw = { maxVert: 0.25, shuttle: 0.35, sprint: 0.15, standVert: 0.10, relDL: 0.15 };
-        else if (role === 'Center') bw = { maxVert: 0.20, shuttle: 0.15, sprint: 0.15, standVert: 0.25, relDL: 0.25 };
-        const comps = [
-          { z: zMV, w: bw.maxVert }, { z: zSh, w: bw.shuttle }, { z: zSp, w: bw.sprint },
-          { z: zSV, w: bw.standVert }, { z: zDL, w: bw.relDL },
-        ];
-        const avail = comps.filter(c => c.z !== null);
-        const totalW = avail.reduce((a, c) => a + c.w, 0);
-        const cas = avail.reduce((sum, c) => sum + (c.z as number) * (c.w / totalW), 0);
-        casVal = Math.round((50 + cas * 10) * 10) / 10;
-      }
+      const age = getPlayerAge(p, profiles);
+      const casVal = calcNbaBenchmarkedCas(ath, role, age);
 
       let apsVal: number | null = null;
       const anthAvail = [anth.projHeight, anth.weight, anth.projWingspan, anth.projReach].filter(v => v !== null).length;
@@ -2080,7 +2101,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
                       </td>
                     );
                   })}
-                  <td className={`text-center py-2.5 px-1 font-semibold ${row.cas !== null ? (row.cas >= 55 ? 'text-amber-500' : row.cas < 45 ? 'text-red-400' : (isDark ? 'text-gray-300' : 'text-gray-700')) : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{row.cas !== null ? row.cas : '—'}</td>
+                  <td className={`text-center py-2.5 px-1 font-semibold ${row.cas !== null ? (row.cas >= 100 ? 'text-amber-500' : row.cas < 75 ? 'text-red-400' : (isDark ? 'text-gray-300' : 'text-gray-700')) : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{row.cas !== null ? row.cas : '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -2236,74 +2257,44 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
       return { maxVert, standVert, sprint: sp, shuttle: cd, relDeadlift: relDL };
     };
 
-    const allData = players.map(p => ({ player: p, ...getPlayerAthData(p) }));
-
-    const calcStats = (vals: number[]) => {
-      if (vals.length < 2) return { mean: vals[0] || 0, std: 1 };
-      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
-      const std = Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / vals.length);
-      return { mean, std: std || 1 };
-    };
-
-    const maxVertVals = allData.map(d => d.maxVert).filter((v): v is number => v !== null);
-    const standVertVals = allData.map(d => d.standVert).filter((v): v is number => v !== null);
-    const sprintVals = allData.map(d => d.sprint).filter((v): v is number => v !== null);
-    const shuttleVals = allData.map(d => d.shuttle).filter((v): v is number => v !== null);
-    const relDLVals = allData.map(d => d.relDeadlift).filter((v): v is number => v !== null);
-
-    const stats = {
-      maxVert: calcStats(maxVertVals),
-      standVert: calcStats(standVertVals),
-      sprint: calcStats(sprintVals),
-      shuttle: calcStats(shuttleVals),
-      relDL: calcStats(relDLVals),
-    };
-
     const pd = getPlayerAthData(selectedPlayer);
     const availCount = [pd.maxVert, pd.standVert, pd.sprint, pd.shuttle, pd.relDeadlift].filter(v => v !== null).length;
     if (availCount < 4) return null;
 
-    const zScore = (val: number | null, s: { mean: number; std: number }, invert = false): number | null => {
+    const role = profile?.role || '';
+    const archetype = getCasArchetype(role);
+    const baseline = NBA_COMBINE_BASELINES[archetype];
+    const weights = CAS_ARCHETYPE_WEIGHTS[archetype];
+    const age = getPlayerAge(selectedPlayer, profiles);
+    const af = getCasAgeFactor(age);
+
+    const pctOfBaseline = (val: number | null, base: number, invert: boolean): number | null => {
       if (val === null) return null;
-      const z = (val - s.mean) / s.std;
-      return invert ? -z : z;
+      return invert ? (base / val) * 100 : (val / base) * 100;
     };
 
-    const zMaxVert = zScore(pd.maxVert, stats.maxVert);
-    const zStandVert = zScore(pd.standVert, stats.standVert);
-    const zSprint = zScore(pd.sprint, stats.sprint, true);
-    const zShuttle = zScore(pd.shuttle, stats.shuttle, true);
-    const zRelDL = zScore(pd.relDeadlift, stats.relDL);
-
-    const role = profile?.role || '';
-    let baseWeights = { maxVert: 0.30, shuttle: 0.25, sprint: 0.15, standVert: 0.15, relDL: 0.15 };
-    if (role === 'Playmaker') {
-      baseWeights = { maxVert: 0.25, shuttle: 0.35, sprint: 0.15, standVert: 0.10, relDL: 0.15 };
-    } else if (role === 'Center') {
-      baseWeights = { maxVert: 0.20, shuttle: 0.15, sprint: 0.15, standVert: 0.25, relDL: 0.25 };
-    }
-
     const rawComps = [
-      { key: 'maxVert' as const, label: 'Max Vertical', z: zMaxVert, baseW: baseWeights.maxVert, val: pd.maxVert, unit: 'cm' },
-      { key: 'shuttle' as const, label: 'Shuttle Run', z: zShuttle, baseW: baseWeights.shuttle, val: pd.shuttle, unit: 's' },
-      { key: 'sprint' as const, label: '¾ Sprint', z: zSprint, baseW: baseWeights.sprint, val: pd.sprint, unit: 's' },
-      { key: 'standVert' as const, label: 'Standing Vertical', z: zStandVert, baseW: baseWeights.standVert, val: pd.standVert, unit: 'cm' },
-      { key: 'relDL' as const, label: 'Rel. Deadlift', z: zRelDL, baseW: baseWeights.relDL, val: pd.relDeadlift, unit: 'x BW' },
+      { key: 'maxVert' as const, label: 'Max Vertical', pct: pctOfBaseline(pd.maxVert, baseline.maxVert, false), baseW: weights.maxVert, val: pd.maxVert, nba: baseline.maxVert, unit: 'cm' },
+      { key: 'shuttle' as const, label: 'Shuttle Run', pct: pctOfBaseline(pd.shuttle, baseline.shuttle, true), baseW: weights.shuttle, val: pd.shuttle, nba: baseline.shuttle, unit: 's' },
+      { key: 'sprint' as const, label: '¾ Sprint', pct: pctOfBaseline(pd.sprint, baseline.sprint, true), baseW: weights.sprint, val: pd.sprint, nba: baseline.sprint, unit: 's' },
+      { key: 'standVert' as const, label: 'Standing Vertical', pct: pctOfBaseline(pd.standVert, baseline.standVert, false), baseW: weights.standVert, val: pd.standVert, nba: baseline.standVert, unit: 'cm' },
+      { key: 'relDL' as const, label: 'Rel. Deadlift', pct: pctOfBaseline(pd.relDeadlift, baseline.relDL, false), baseW: weights.relDL, val: pd.relDeadlift, nba: baseline.relDL, unit: 'x BW' },
     ];
 
-    const availComps = rawComps.filter(c => c.z !== null);
+    const availComps = rawComps.filter(c => c.pct !== null);
     const totalAvailW = availComps.reduce((a, c) => a + c.baseW, 0);
     const components = rawComps.map(c => ({
       label: c.label,
-      z: c.z ?? 0,
-      w: c.z !== null ? c.baseW / totalAvailW : 0,
+      pct: c.pct ?? 0,
+      w: c.pct !== null ? c.baseW / totalAvailW : 0,
       val: c.val,
+      nba: c.nba,
       unit: c.unit,
-      missing: c.z === null,
+      missing: c.pct === null,
     }));
 
-    const cas = availComps.reduce((sum, c) => sum + (c.z as number) * (c.baseW / totalAvailW), 0);
-    const casNorm = Math.round((50 + cas * 10) * 10) / 10;
+    const weightedPct = availComps.reduce((sum, c) => sum + (c.pct as number) * (c.baseW / totalAvailW), 0);
+    const casNorm = Math.round(weightedPct * af * 100) / 100;
     const jumpDelta = (pd.maxVert !== null && pd.standVert !== null) ? Math.round((pd.maxVert - pd.standVert) * 10) / 10 : null;
     let jumpInsight = '';
     if (jumpDelta !== null) {
@@ -2312,8 +2303,8 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
       else jumpInsight = 'Balanced elastic-strength profile';
     }
 
-    return { cas: casNorm, components, jumpDelta, jumpInsight, archetype: role || 'Baseline', partial: availCount < 5 };
-  }, [sessions, players, selectedPlayer, profile?.role]);
+    return { cas: casNorm, components, jumpDelta, jumpInsight, archetype: archetype, partial: availCount < 5, ageFactor: af, age };
+  }, [sessions, players, selectedPlayer, profile?.role, profiles]);
 
   const apsData = useMemo(() => {
     const getPlayerAnthroData = (p: string) => {
@@ -2833,11 +2824,12 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                 >
                   CAS
                 </button>
-                <div className={`text-4xl font-black leading-none ${casData.cas >= 55 ? 'text-emerald-500' : casData.cas >= 45 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
+                <div className={`text-4xl font-black leading-none ${casData.cas >= 100 ? 'text-emerald-500' : casData.cas >= 75 ? (isDark ? 'text-white' : 'text-gray-900') : 'text-red-400'}`}>
                   {casData.cas}
                 </div>
                 <div className={`text-[10px] mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                   {casData.archetype} {t('weights')}{casData.partial ? ' *' : ''}
+                  {casData.ageFactor > 1 ? ` · Af ${casData.ageFactor}x` : ''}
                 </div>
               </div>
 
@@ -2852,12 +2844,12 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                           </div>
                           <div className={`flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`} />
                           <div className={`w-14 text-[10px] font-mono text-right flex-shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>N/A</div>
-                          <div className={`w-16 text-[10px] text-right flex-shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>—</div>
+                          <div className={`w-20 text-[10px] text-right flex-shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>—</div>
                         </div>
                       );
                     }
-                    const barWidth = Math.min(Math.max((c.z + 3) / 6 * 100, 2), 100);
-                    const isPositive = c.z >= 0;
+                    const barWidth = Math.min(Math.max(c.pct / 1.5, 2), 100);
+                    const isAboveAvg = c.pct >= 100;
                     return (
                       <div key={i} className="flex items-center gap-2">
                         <div className={`w-24 sm:w-28 text-[10px] font-medium text-right flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -2865,16 +2857,16 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                         </div>
                         <div className={`relative flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
                           <div
-                            className={`h-full rounded-full transition-all ${isPositive ? 'bg-gradient-to-r from-orange-500 to-orange-400' : 'bg-gradient-to-r from-red-500/60 to-red-400/60'}`}
+                            className={`h-full rounded-full transition-all ${isAboveAvg ? 'bg-gradient-to-r from-orange-500 to-orange-400' : 'bg-gradient-to-r from-red-500/60 to-red-400/60'}`}
                             style={{ width: `${barWidth}%` }}
                           />
-                          <div className={`absolute top-0 left-1/2 w-px h-full ${isDark ? 'bg-gray-500/60' : 'bg-gray-400/50'}`} />
+                          <div className={`absolute top-0 h-full w-px ${isDark ? 'bg-gray-500/60' : 'bg-gray-400/50'}`} style={{ left: `${100 / 1.5}%` }} />
                         </div>
-                        <div className={`w-14 text-[10px] font-mono text-right flex-shrink-0 ${isPositive ? (isDark ? 'text-orange-400' : 'text-orange-600') : 'text-red-400'}`}>
-                          {c.z > 0 ? '+' : ''}{Math.round(c.z * 100) / 100}
+                        <div className={`w-14 text-[10px] font-mono text-right flex-shrink-0 ${isAboveAvg ? (isDark ? 'text-orange-400' : 'text-orange-600') : 'text-red-400'}`}>
+                          {Math.round(c.pct * 10) / 10}%
                         </div>
-                        <div className={`w-16 text-[10px] text-right flex-shrink-0 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                          {c.val !== null ? `${c.val} ${c.unit}` : '—'}
+                        <div className={`w-20 text-[10px] text-right flex-shrink-0 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {c.val !== null ? `${c.val}` : '—'}<span className={`ml-0.5 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>/ {c.nba}</span>
                         </div>
                       </div>
                     );
@@ -2914,7 +2906,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
                 Composite Athleticism Score (CAS)
               </h3>
               <p className={`text-xs mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                A single score designed to quantify a player's overall basketball-specific athleticism, derived from a five-test battery measuring explosive power, speed, agility, and functional strength.
+                An NBA-benchmarked score where <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>100 = NBA Draft Combine Average</span>. Each test is measured as a percentage of the NBA baseline for the player's archetype, then weighted and age-adjusted to produce a single athleticism index.
               </p>
 
               <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
@@ -2938,39 +2930,71 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               <div className={`rounded-lg p-3 mb-4 border-l-4 ${isDark ? 'bg-orange-500/5 border-orange-500/40' : 'bg-orange-50 border-orange-400'}`}>
                 <div className={`text-xs font-semibold mb-0.5 ${isDark ? 'text-orange-400' : 'text-orange-700'}`}>Jump Delta</div>
                 <div className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                  The difference between Max and Standing Vertical Leaps. This reveals whether an athlete is "strong but not springy" or "springy but not strong," guiding targeted training interventions.
+                  Max Vertical minus Standing Vertical. Reveals whether an athlete is "strong but not springy" ({'<'}5 cm) or "springy but not strong" ({'>'}12 cm), guiding targeted training interventions.
                 </div>
               </div>
 
               <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
-                CAS Calculation
+                CAS Formula
               </h4>
+              <div className={`rounded-lg p-3 mb-3 font-mono text-[11px] ${isDark ? 'bg-gray-800/80 text-gray-300' : 'bg-gray-50 text-gray-700'}`}>
+                CAS = ( {'\u03A3'} Test% of NBA Baseline {'\u00D7'} Weight ) {'\u00D7'} A<sub>f</sub>
+              </div>
               <p className={`text-[11px] leading-relaxed mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Calculated as a weighted sum of normalized Z-scores for each test. Z-scores standardize results by measuring how many standard deviations a player is from the group average. Scores for timed events (sprint, shuttle) are inverted so that a faster time results in a higher score.
+                Each test result is expressed as a percentage of the NBA Draft Combine average for the player's archetype. For timed events (sprint, shuttle), the ratio is inverted so faster = higher. The weighted sum is then multiplied by the Age Factor.
               </p>
 
               <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
-                Baseline Weightings
+                Age-Adjustment Factor (A<sub>f</sub>)
               </h4>
               <div className={`rounded-lg overflow-hidden border mb-3 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                 <table className="w-full text-xs">
                   <thead>
                     <tr className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
-                      <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Test Component</th>
-                      <th className={`text-right py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Weight</th>
+                      <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Age</th>
+                      <th className={`text-right py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Multiplier</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[['14 or under', '1.20x'], ['15', '1.15x'], ['16', '1.10x'], ['17', '1.05x'], ['18+', '1.00x']].map(([age, mult], i) => (
+                      <tr key={i} className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                        <td className={`py-1.5 px-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{age}</td>
+                        <td className={`py-1.5 px-3 text-right font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{mult}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className={`text-[11px] leading-relaxed mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Younger players receive a "potential" boost reflecting their biological margin of growth. If age or position is missing, defaults are 1.0x multiplier and 3&D archetype weightings.
+              </p>
+
+              <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
+                Archetype Weightings
+              </h4>
+              <div className={`rounded-lg overflow-hidden border mb-3 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
+                      <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Test</th>
+                      <th className={`text-center py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Playmaker</th>
+                      <th className={`text-center py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>3&D</th>
+                      <th className={`text-center py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Center</th>
                     </tr>
                   </thead>
                   <tbody>
                     {[
-                      ['Max Vertical Leap', '30%'],
-                      ['Shuttle Run', '25%'],
-                      ['Three-Quarter Sprint', '15%'],
-                      ['Standing Vertical Leap', '15%'],
-                      ['Hex Bar Deadlift (Relative)', '15%'],
-                    ].map(([name, w], i) => (
+                      ['Shuttle Run', '35%', '25%', '15%'],
+                      ['¾ Sprint', '20%', '15%', '15%'],
+                      ['Max Vertical', '20%', '30%', '20%'],
+                      ['Standing Vertical', '15%', '15%', '25%'],
+                      ['Hex Bar DL (Rel.)', '10%', '15%', '25%'],
+                    ].map(([name, pm, wing, ctr], i) => (
                       <tr key={i} className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
                         <td className={`py-1.5 px-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{name}</td>
-                        <td className={`py-1.5 px-3 text-right font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{w}</td>
+                        <td className={`py-1.5 px-3 text-center font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{pm}</td>
+                        <td className={`py-1.5 px-3 text-center font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{wing}</td>
+                        <td className={`py-1.5 px-3 text-center font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{ctr}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -2978,7 +3002,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               </div>
 
               <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                Weights are adjusted for three archetypes — <span className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Guards</span> (Shuttle 35%), <span className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Wings</span> (baseline), and <span className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Bigs</span> (Deadlift & Standing Vertical 25% each) — to reflect the athletic demands of each position.
+                Archetype is determined by position: <span className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Playmaker</span> for guards, <span className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Center</span> for bigs, and <span className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>3&D</span> (default) for wings and unspecified positions.
               </p>
             </div>
           </div>

@@ -27,6 +27,8 @@ The application leverages a modern web stack, utilizing React 18 and TypeScript 
 -   **UI/UX**: Full-page snap-scroll experience for both Internal Hub and VB Hub with quintic ease animation, sticky navigation, and section indicators.
 -   **Community Intelligence Hub**: Integrates Shopify order history for behavioral insights, including RFM segmentation, gateway analysis (top entry products), bundle analysis, and cohort retention heatmaps.
 -   **VB Dashboard (Varese Basketball Youth Development)**: Features player profiles, session data, progression tracking, and a scouting database. Utilizes BigQuery for data, with server-side endpoints for profile and prospect data, and includes anthropometric calculations (e.g., body fat conversion).
+-   **CAS (Composite Athleticism Score)**: NBA-benchmarked scoring system where 100 = NBA Draft Combine Average. Formula: `CAS = (Σ Test% of NBA Baseline × Archetype Weight) × Age Factor`. Three archetypes (Playmaker, 3&D, Center) with position-specific weightings. Age Factor multiplier for youth players: Age ≤14 (1.20x), 15 (1.15x), 16 (1.10x), 17 (1.05x), 18+ (1.00x). Defaults to 3&D weights and 1.0x multiplier when position/age is missing. NBA baselines defined in `NBA_COMBINE_BASELINES` constant. Output rounded to 2 decimal places.
+-   **APS (Anthropometric Potential Score)**: Z-score based, normalized to 50. Uses P.Wingspan (projected) instead of raw wingspan. Weights: P.Reach 40%, P.Wingspan 30%, P.Height 15%, Weight 15%.
 
 ## External Dependencies
 -   **Firebase**: Cloud storage, primary data source for ticketing, persistence for other modules.
