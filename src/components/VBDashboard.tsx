@@ -1531,9 +1531,9 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
     { key: 'wingspan', label: t('Wingspan'), unit: 'cm' },
     { key: 'projWingspan', label: t('P. Wingspan'), unit: 'cm' },
     { key: 'weight', label: t('Weight'), unit: 'kg' },
+    { key: 'bodyFat', label: t('BF %'), unit: '%' },
     { key: 'apeIndex', label: t('Ape Index') },
     { key: 'aps', label: t('APS') },
-    { key: 'bodyFat', label: t('BF %'), unit: '%' },
   ];
 
   const formatVal = (v: number | null, unit?: string) => {
@@ -1588,9 +1588,9 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
       <div className="grid grid-cols-5 gap-3">
         <StatCard label={t('P. Wingspan')} value={teamAvgs.projWingspan} unit="cm" icon={Move} color="#f97316" subtitle={t('Team Average')} />
         <StatCard label={t('Weight')} value={teamAvgs.weight} unit="kg" icon={Weight} color="#ef4444" subtitle={t('Team Average')} />
+        <StatCard label={t('BF %')} value={teamAvgs.bodyFat} unit="%" icon={Heart} color="#ec4899" subtitle={t('Team Average')} />
         <StatCard label={t('Ape Index')} value={teamAvgs.apeIndex !== null ? teamAvgs.apeIndex.toFixed(3) : null} icon={Gauge} color="#f59e0b" subtitle={t('Team Average')} />
         <StatCard label={t('APS')} value={teamAvgs.aps} icon={Zap} color="#8b5cf6" subtitle={t('Team Average')} />
-        <StatCard label={t('BF %')} value={teamAvgs.bodyFat} unit="%" icon={Heart} color="#ec4899" subtitle={t('Team Average')} />
       </div>
 
       <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
@@ -1620,9 +1620,9 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.wingspan)}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.projWingspan)}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.weight)}</td>
+                  <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.bodyFat, '%')}</td>
                   <td className={`text-center py-2.5 px-2 font-semibold ${row.apeIndex !== null && row.apeIndex >= 1.06 ? 'text-green-500' : row.apeIndex !== null && row.apeIndex >= 1.03 ? 'text-blue-500' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.apeIndex !== null ? row.apeIndex.toFixed(3) : '—'}</td>
                   <td className={`text-center py-2.5 px-2 font-semibold ${row.aps !== null && row.aps >= 55 ? 'text-green-500' : row.aps !== null && row.aps >= 45 ? (isDark ? 'text-gray-300' : 'text-gray-700') : row.aps !== null ? 'text-red-500' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.aps)}</td>
-                  <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.bodyFat, '%')}</td>
                 </tr>
               ))}
             </tbody>
