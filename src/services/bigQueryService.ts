@@ -410,7 +410,52 @@ export async function fetchVBProspectsFromBigQuery(): Promise<{ success: boolean
   }
 }
 
-export async function fetchVBDataFromBigQuery(): Promise<{ success: boolean; data: VBMergedSession[]; rawCount: number; mergedCount: number; players: string[] }> {
+export interface VBPlayerAttributes {
+  minLate: number | null;
+  strength1: string | null;
+  strength2: string | null;
+  strength3: string | null;
+  weakness1: string | null;
+  weakness2: string | null;
+  weakness3: string | null;
+  poe1: string | null;
+  poe2: string | null;
+  poe3: string | null;
+  workEthic: number | null;
+  personality: number | null;
+}
+
+function extractPlayerAttributes(rows: any[]): Record<string, VBPlayerAttributes> {
+  const attrs: Record<string, VBPlayerAttributes> = {};
+  const strField = (val: any): string | null => {
+    if (val === null || val === undefined || String(val).trim() === '' || String(val).trim() === '0') return null;
+    return String(val).trim();
+  };
+  for (const row of rows) {
+    const player = getField(row, 'player', 'Player');
+    if (!player || !String(player).trim()) continue;
+    const name = String(player).trim();
+    if (!attrs[name]) {
+      attrs[name] = { minLate: null, strength1: null, strength2: null, strength3: null, weakness1: null, weakness2: null, weakness3: null, poe1: null, poe2: null, poe3: null, workEthic: null, personality: null };
+    }
+    const a = attrs[name];
+    if (!a.strength1) a.strength1 = strField(getField(row, 'strenght_1', 'Strenght_1', 'Strength_1', 'strength_1'));
+    if (!a.strength2) a.strength2 = strField(getField(row, 'strenght_2', 'Strenght_2', 'Strength_2', 'strength_2'));
+    if (!a.strength3) a.strength3 = strField(getField(row, 'strenght_3', 'Strenght_3', 'Strength_3', 'strength_3'));
+    if (!a.weakness1) a.weakness1 = strField(getField(row, 'Weaknesess_1', 'weaknesess_1', 'Weakness_1', 'weakness_1'));
+    if (!a.weakness2) a.weakness2 = strField(getField(row, 'Weaknesess_2', 'weaknesess_2', 'Weakness_2', 'weakness_2'));
+    if (!a.weakness3) a.weakness3 = strField(getField(row, 'Weaknesess_3', 'weaknesess_3', 'Weakness_3', 'weakness_3'));
+    if (!a.poe1) a.poe1 = strField(getField(row, 'PoE_1', 'poe_1', 'POE_1'));
+    if (!a.poe2) a.poe2 = strField(getField(row, 'PoE_2', 'poe_2', 'POE_2'));
+    if (!a.poe3) a.poe3 = strField(getField(row, 'PoE_3', 'poe_3', 'POE_3'));
+    if (a.workEthic === null) { const v = parseFloat(getField(row, 'Work_Ethic', 'work_ethic')); if (!isNaN(v) && v > 0) a.workEthic = v; }
+    if (a.personality === null) { const v = parseFloat(getField(row, 'Personality', 'personality')); if (!isNaN(v) && v > 0) a.personality = v; }
+    if (a.minLate === null) { const v = parseFloat(getField(row, 'min_late', 'Min_Late')); if (!isNaN(v) && v > 0) a.minLate = v; }
+  }
+  return attrs;
+}
+
+export async function fetchVBDataFromBigQuery(): Promise<{ success: boolean; data: VBMergedSession[]; rawCount: number; mergedCount: number; players: string[]; playerAttributes: Record<string, VBPlayerAttributes> }> {
   try {
     const client = getBigQueryClient();
     const query = `SELECT * FROM \`${VB_TABLE}\` ORDER BY timestamp DESC`;
@@ -418,6 +463,7 @@ export async function fetchVBDataFromBigQuery(): Promise<{ success: boolean; dat
     
     const merged = mergeVBRows(rows);
     const players = [...new Set(merged.map(r => r.player))].sort();
+    const playerAttributes = extractPlayerAttributes(rows);
     
     return {
       success: true,
@@ -425,10 +471,11 @@ export async function fetchVBDataFromBigQuery(): Promise<{ success: boolean; dat
       rawCount: rows.length,
       mergedCount: merged.length,
       players,
+      playerAttributes,
     };
   } catch (error: any) {
     console.error('VB BigQuery fetch error:', error.message);
-    return { success: false, data: [], rawCount: 0, mergedCount: 0, players: [] };
+    return { success: false, data: [], rawCount: 0, mergedCount: 0, players: [], playerAttributes: {} };
   }
 }
 

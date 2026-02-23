@@ -958,7 +958,7 @@ app.get("/api/gameday/bigquery", async (req, res) => {
 
 // --- VB (VARESE BASKETBALL) DATA ---
 
-let vbCache: { data: any; rawCount: number; mergedCount: number; players: string[]; timestamp: number } | null = null;
+let vbCache: { data: any; rawCount: number; mergedCount: number; players: string[]; playerAttributes: any; timestamp: number } | null = null;
 const VB_CACHE_TTL = 10 * 60 * 1000;
 
 app.get("/api/vb-data", async (req, res) => {
@@ -972,7 +972,7 @@ app.get("/api/vb-data", async (req, res) => {
     
     const result = await fetchVBDataFromBigQuery();
     if (result.success) {
-      vbCache = { data: result.data, rawCount: result.rawCount, mergedCount: result.mergedCount, players: result.players, timestamp: now };
+      vbCache = { data: result.data, rawCount: result.rawCount, mergedCount: result.mergedCount, players: result.players, playerAttributes: result.playerAttributes, timestamp: now };
       res.json({ success: true, ...vbCache, cached: false });
     } else {
       res.json(result);

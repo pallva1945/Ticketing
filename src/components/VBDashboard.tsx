@@ -2066,7 +2066,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
   );
 }
 
-function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sessions: VBSession[]; players: string[]; initialPlayer: string; profiles: PlayerProfile[] }) {
+function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAttrs }: { sessions: VBSession[]; players: string[]; initialPlayer: string; profiles: PlayerProfile[]; playerAttrs: Record<string, { minLate: number | null; strength1: string | null; strength2: string | null; strength3: string | null; weakness1: string | null; weakness2: string | null; weakness3: string | null; poe1: string | null; poe2: string | null; poe3: string | null; workEthic: number | null; personality: number | null }> }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
   const [selectedPlayer, setSelectedPlayer] = useState(initialPlayer || players[0]);
@@ -2125,6 +2125,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 
   const currentSeason = selectedPackSeason !== 'all' ? selectedPackSeason : (playerSeasons[0] || null);
   const profile = useMemo(() => getPlayerProfile(selectedPlayer, profiles, currentSeason || undefined), [selectedPlayer, profiles, currentSeason]);
+  const attrs = playerAttrs[selectedPlayer] || null;
 
   const playerAge = useMemo(() => {
     const dobSerial = getPlayerDobSerial(selectedPlayer, profiles);
@@ -2477,8 +2478,8 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               <span>✦</span> {t('Strengths')}
             </div>
             <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-              {[profile?.strength1, profile?.strength2, profile?.strength3].filter(Boolean).length > 0
-                ? [profile?.strength1, profile?.strength2, profile?.strength3].filter(Boolean).map((s, i) => (
+              {[attrs?.strength1 || profile?.strength1, attrs?.strength2 || profile?.strength2, attrs?.strength3 || profile?.strength3].filter(Boolean).length > 0
+                ? [attrs?.strength1 || profile?.strength1, attrs?.strength2 || profile?.strength2, attrs?.strength3 || profile?.strength3].filter(Boolean).map((s, i) => (
                     <li key={i} className="flex items-start gap-1.5"><span className="text-emerald-500 mt-0.5">•</span>{s}</li>
                   ))
                 : <li className={`italic ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{t('Not yet assessed')}</li>
@@ -2490,8 +2491,8 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               <span>✦</span> {t('Weaknesses')}
             </div>
             <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-              {[profile?.weakness1, profile?.weakness2, profile?.weakness3].filter(Boolean).length > 0
-                ? [profile?.weakness1, profile?.weakness2, profile?.weakness3].filter(Boolean).map((s, i) => (
+              {[attrs?.weakness1 || profile?.weakness1, attrs?.weakness2 || profile?.weakness2, attrs?.weakness3 || profile?.weakness3].filter(Boolean).length > 0
+                ? [attrs?.weakness1 || profile?.weakness1, attrs?.weakness2 || profile?.weakness2, attrs?.weakness3 || profile?.weakness3].filter(Boolean).map((s, i) => (
                     <li key={i} className="flex items-start gap-1.5"><span className="text-red-400 mt-0.5">•</span>{s}</li>
                   ))
                 : <li className={`italic ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{t('Not yet assessed')}</li>
@@ -2503,8 +2504,8 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
               <span>✦</span> {t('Points of Emphasis')}
             </div>
             <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-              {[profile?.poe1, profile?.poe2, profile?.poe3].filter(Boolean).length > 0
-                ? [profile?.poe1, profile?.poe2, profile?.poe3].filter(Boolean).map((s, i) => (
+              {[attrs?.poe1 || profile?.poe1, attrs?.poe2 || profile?.poe2, attrs?.poe3 || profile?.poe3].filter(Boolean).length > 0
+                ? [attrs?.poe1 || profile?.poe1, attrs?.poe2 || profile?.poe2, attrs?.poe3 || profile?.poe3].filter(Boolean).map((s, i) => (
                     <li key={i} className="flex items-start gap-1.5"><span className="text-amber-500 mt-0.5">•</span>{s}</li>
                   ))
                 : <li className={`italic ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{t('Not yet assessed')}</li>
@@ -2513,13 +2514,29 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
           </div>
           <div className={`rounded-lg p-3 print-inner ${isDark ? 'bg-sky-900/20 border border-sky-800/30' : 'bg-sky-50/50 border border-sky-100'}`}>
             <div className={`text-[11px] font-semibold mb-2 flex items-center gap-1.5 ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>
-              <span>✦</span> {t('Health Report')}
+              <span>✦</span> {t('Character Assessment')}
             </div>
-            <ul className={`text-xs space-y-1 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-              <li className="flex items-start gap-1.5"><span className="text-sky-500 mt-0.5">•</span>{t('Health placeholder 1')}</li>
-              <li className="flex items-start gap-1.5"><span className="text-sky-500 mt-0.5">•</span>{t('Health placeholder 2')}</li>
-              <li className="flex items-start gap-1.5"><span className="text-sky-500 mt-0.5">•</span>{t('Health placeholder 3')}</li>
-            </ul>
+            <div className={`text-xs space-y-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              <div className="flex items-center justify-between">
+                <span className="font-medium">{t('Work Ethic')}</span>
+                <div className="flex gap-0.5">
+                  {[1,2,3,4,5].map(i => (
+                    <span key={i} className={`text-sm ${attrs?.workEthic && i <= attrs.workEthic ? 'text-sky-500' : isDark ? 'text-gray-700' : 'text-gray-300'}`}>★</span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-medium">{t('Personality')}</span>
+                <div className="flex gap-0.5">
+                  {[1,2,3,4,5].map(i => (
+                    <span key={i} className={`text-sm ${attrs?.personality && i <= attrs.personality ? 'text-sky-500' : isDark ? 'text-gray-700' : 'text-gray-300'}`}>★</span>
+                  ))}
+                </div>
+              </div>
+              {(!attrs?.workEthic && !attrs?.personality) && (
+                <div className={`italic text-xs ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>{t('Not yet assessed')}</div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -5084,6 +5101,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [sessions, setSessions] = useState<VBSession[]>([]);
   const [players, setPlayers] = useState<string[]>([]);
   const [profiles, setProfiles] = useState<PlayerProfile[]>([]);
+  const [playerAttrs, setPlayerAttrs] = useState<Record<string, { minLate: number | null; strength1: string | null; strength2: string | null; strength3: string | null; weakness1: string | null; weakness2: string | null; weakness3: string | null; poe1: string | null; poe2: string | null; poe3: string | null; workEthic: number | null; personality: number | null }>>({});
   const [prospects, setProspects] = useState<VBProspect[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -5109,6 +5127,9 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         setSessions(json.data);
         setPlayers(json.players);
         if (json.players.length > 0 && !selectedPlayer) setSelectedPlayer(json.players[0]);
+        if (json.playerAttributes) {
+          setPlayerAttrs(json.playerAttributes);
+        }
       } else {
         setError(json.message || 'Failed to load data');
       }
@@ -5288,7 +5309,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             {activeTab === 'anthropometrics' && <AnthropometricsTab sessions={normalizedSessions} players={players} profiles={profiles} />}
             {activeTab === 'performance' && <PerformanceTab sessions={normalizedSessions} players={players} profiles={profiles} />}
             {activeTab === 'gameperf' && <GamePerformanceTab sessions={normalizedSessions} players={players} profiles={profiles} />}
-            {activeTab === 'player' && <PlayerProfileTab sessions={normalizedSessions} players={players} initialPlayer={selectedPlayer} profiles={profiles} />}
+            {activeTab === 'player' && <PlayerProfileTab sessions={normalizedSessions} players={players} initialPlayer={selectedPlayer} profiles={profiles} playerAttrs={playerAttrs} />}
             {activeTab === 'compare' && <CompareTab sessions={normalizedSessions} players={players} profiles={profiles} />}
             {activeTab === 'progression' && <ProgressionTab sessions={normalizedSessions} players={players} profiles={profiles} />}
             {activeTab === 'search' && <SearchTab sessions={normalizedSessions} players={players} profiles={profiles} />}
