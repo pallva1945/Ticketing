@@ -1009,6 +1009,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Strengths': { en: 'Strengths', it: 'Punti di Forza' },
   'Weaknesses': { en: 'Weaknesses', it: 'Punti Deboli' },
   'Points of Emphasis': { en: 'Points of Emphasis', it: 'Punti di Attenzione' },
+  'To be evaluated': { en: 'To be evaluated', it: 'Da valutare' },
   'Strength placeholder 1': { en: 'To be evaluated', it: 'Da valutare' },
   'Strength placeholder 2': { en: 'To be evaluated', it: 'Da valutare' },
   'Strength placeholder 3': { en: 'To be evaluated', it: 'Da valutare' },
