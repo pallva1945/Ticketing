@@ -403,7 +403,7 @@ export async function fetchVBProspectsFromBigQuery(): Promise<{ success: boolean
 export async function fetchVBDataFromBigQuery(): Promise<{ success: boolean; data: VBMergedSession[]; rawCount: number; mergedCount: number; players: string[] }> {
   try {
     const client = getBigQueryClient();
-    const query = `SELECT * FROM \`${VB_TABLE}\` ORDER BY timestamp DESC`;
+    const query = `SELECT * FROM \`${VB_TABLE}\``;
     const [rows] = await client.query({ query });
     
     const merged = mergeVBRows(rows);
