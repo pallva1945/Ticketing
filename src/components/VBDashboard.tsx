@@ -3243,6 +3243,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles }: { sess
 
           const seasonForMonth = (ym: string) => {
             const d = new Date(ym + '-15');
+            if (isNaN(d.getTime())) return null;
             return getSeason(d.toISOString().substring(0, 10));
           };
           const getSeasonBoundsForMonth = (y: number, m: number) => {

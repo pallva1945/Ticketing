@@ -110,9 +110,10 @@ function parseVBDate(row: any): string {
     const dt = new Date(s);
     if (!isNaN(dt.getTime()) && dt.getFullYear() >= 2000) return dt.toISOString().split('T')[0];
   }
-  const ts = row.timestamp;
+  const ts = row.timestamp || row.Timestamp || row.Marca_temporal;
   if (ts) {
-    const s = String(ts).trim();
+    const tsVal = ts?.value || ts;
+    const s = String(tsVal).trim();
     const parsed = parseSlashDate(s);
     if (parsed) return parsed;
     const dt = new Date(s);
@@ -403,7 +404,7 @@ export async function fetchVBProspectsFromBigQuery(): Promise<{ success: boolean
 export async function fetchVBDataFromBigQuery(): Promise<{ success: boolean; data: VBMergedSession[]; rawCount: number; mergedCount: number; players: string[] }> {
   try {
     const client = getBigQueryClient();
-    const query = `SELECT * FROM \`${VB_TABLE}\``;
+    const query = `SELECT * FROM \`${VB_TABLE}\` ORDER BY timestamp DESC`;
     const [rows] = await client.query({ query });
     
     const merged = mergeVBRows(rows);
