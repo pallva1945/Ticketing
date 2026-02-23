@@ -1793,7 +1793,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
         } else {
           val = s[m.key as keyof VBSession] as number | null;
         }
-        if (val !== null && displayPlayers.includes(s.player)) {
+        if (val !== null && !isNaN(val) && isFinite(val) && displayPlayers.includes(s.player)) {
           const metricMap = monthMap.get(label)!;
           if (!metricMap.has(m.key)) metricMap.set(m.key, { values: [], date: monthKey });
           metricMap.get(m.key)!.values.push(val);
@@ -2016,7 +2016,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
                   <LineChart data={trendData}>
                     <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                     <XAxis dataKey="month" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                    <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => { const pad = Math.max(1, Math.abs(dataMin) * 0.05); return Math.floor(dataMin - pad); }, (dataMax: number) => { const pad = Math.max(1, Math.abs(dataMax) * 0.05); return Math.ceil(dataMax + pad); }]} />
+                    <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => { if (isNaN(dataMin) || !isFinite(dataMin)) return 0; const pad = Math.max(1, Math.abs(dataMin) * 0.05); return Math.floor(dataMin - pad); }, (dataMax: number) => { if (isNaN(dataMax) || !isFinite(dataMax)) return 100; const pad = Math.max(1, Math.abs(dataMax) * 0.05); return Math.ceil(dataMax + pad); }]} />
                     <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} formatter={(value: any) => `${value}${m.key === 'bodyFat' ? '%' : ' ' + m.unit}`} />
                     <Line type="monotone" dataKey={m.key} name={m.label} stroke={m.color} strokeWidth={2} dot={{ fill: m.color, r: 3 }} connectNulls />
                   </LineChart>
