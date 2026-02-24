@@ -623,7 +623,7 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, onF
       const cd = getLatestMetric(filtered, p, 'coneDrill');
       const dl = getLatestMetric(filtered, p, 'deadlift');
       const wt = getLatestMetric(filtered, p, 'weight');
-      const relDL = (dl !== null && wt !== null && wt > 0) ? Math.round((dl / wt) * 100) / 100 : null;
+      const relDL = (dl !== null && wt !== null && wt > 0) ? Math.round(((dl * 0.9) / wt) * 100) / 100 : null;
       return { maxVert, standVert, sprint: sp, shuttle: cd, relDeadlift: relDL };
     };
     const getPlayerAnthroData = (p: string) => {
@@ -1752,7 +1752,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
     { key: 'pureVertical', label: t('Pure Vertical'), unit: 'cm', icon: Zap, color: '#f59e0b', lowerBetter: false },
     { key: 'noStepVertical', label: t('No-Step Vertical'), unit: 'cm', icon: Zap, color: '#8b5cf6', lowerBetter: false },
     { key: 'bodyFat', label: t('BF %'), unit: '%', icon: Heart, color: '#ef4444', lowerBetter: true },
-    { key: 'deadlift', label: t('Strength'), unit: 'kg', icon: Dumbbell, color: '#3b82f6', lowerBetter: false },
+    { key: 'relStrength', label: t('Rel. Strength'), unit: 'x', icon: Dumbbell, color: '#3b82f6', lowerBetter: false },
   ] as const;
 
   const teamAverages = useMemo(() => {
@@ -1774,6 +1774,13 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
           return (v !== null && sr !== null) ? v - sr : null;
         }).filter(v => v !== null) as number[];
         result[m.key] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+      } else if (m.key === 'relStrength') {
+        const vals = displayPlayers.map(p => {
+          const dl = getLatestMetric(filtered, p, 'deadlift');
+          const wt = getLatestMetric(filtered, p, 'weight');
+          return (dl !== null && wt !== null && wt > 0) ? Math.round(((dl * 0.9) / wt) * 100) / 100 : null;
+        }).filter(v => v !== null) as number[];
+        result[m.key] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 100) / 100 : null;
       } else {
         const vals = displayPlayers.map(p => getLatestMetric(filtered, p, m.key as keyof VBSession)).filter(v => v !== null) as number[];
         result[m.key] = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
@@ -1807,6 +1814,10 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
           const raw = s[m.key as keyof VBSession] as number | null;
           const sr = s.standingReach;
           val = (raw !== null && sr !== null) ? raw - sr : null;
+        } else if (m.key === 'relStrength') {
+          const dl = s.deadlift as number | null;
+          const wt = s.weight as number | null;
+          val = (dl !== null && wt !== null && wt > 0) ? Math.round(((dl * 0.9) / wt) * 100) / 100 : null;
         } else {
           val = s[m.key as keyof VBSession] as number | null;
         }
@@ -1843,7 +1854,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
       const cd = getLatestMetric(filtered, p, 'coneDrill');
       const dl = getLatestMetric(filtered, p, 'deadlift');
       const wt = getLatestMetric(filtered, p, 'weight');
-      const relDL = (dl !== null && wt !== null && wt > 0) ? Math.round((dl / wt) * 100) / 100 : null;
+      const relDL = (dl !== null && wt !== null && wt > 0) ? Math.round(((dl * 0.9) / wt) * 100) / 100 : null;
       return { maxVert, standVert, sprint: sp, shuttle: cd, relDeadlift: relDL };
     };
     const getPlayerAnthroData = (p: string) => {
@@ -1875,7 +1886,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
     return results;
   }, [filtered, activePlayers, profiles]);
 
-  type PerfSortKey = 'player' | 'sprint' | 'coneDrill' | 'pureVertical' | 'noStepVertical' | 'bodyFat' | 'deadlift' | 'cas' | 'aps' | 'apeIndex';
+  type PerfSortKey = 'player' | 'sprint' | 'coneDrill' | 'pureVertical' | 'noStepVertical' | 'bodyFat' | 'relStrength' | 'cas' | 'aps' | 'apeIndex';
   const [sortKey, setSortKey] = useState<PerfSortKey>('player');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -1910,6 +1921,18 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
         sprintFirst: getFirstMetric('sprint'),
         coneDrill: getLatestMetric(filtered, player, 'coneDrill'),
         coneDrillFirst: getFirstMetric('coneDrill'),
+        relStrength: (() => {
+          const dl = getLatestMetric(filtered, player, 'deadlift');
+          const wt = getLatestMetric(filtered, player, 'weight');
+          return (dl !== null && wt !== null && wt > 0) ? Math.round(((dl * 0.9) / wt) * 100) / 100 : null;
+        })(),
+        relStrengthFirst: (() => {
+          const dlPs = getPlayerSessions(filtered, player).filter(s => s.deadlift !== null && s.weight !== null).sort((a, b) => a.date.localeCompare(b.date));
+          if (!dlPs.length) return null;
+          const dl = dlPs[0].deadlift as number;
+          const wt = dlPs[0].weight as number;
+          return wt > 0 ? Math.round(((dl * 0.9) / wt) * 100) / 100 : null;
+        })(),
         pureVertical: (() => {
           const v = getLatestMetric(filtered, player, 'pureVertical');
           const sr = getLatestMetric(filtered, player, 'standingReach');
@@ -1930,8 +1953,6 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
         })(),
         bodyFat: bf,
         bodyFatFirst: firstBf,
-        deadlift: getLatestMetric(filtered, player, 'deadlift'),
-        deadliftFirst: getFirstMetric('deadlift'),
         cas: comp.cas,
         aps: comp.aps,
         apeIndex: comp.apeIndex,
@@ -2013,7 +2034,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
 
       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3">
         {metrics.map(m => (
-          <StatCard key={m.key} label={m.label} value={teamAverages[m.key]} unit={m.key === 'bodyFat' ? '%' : ` ${m.unit}`} icon={m.icon} color={m.color} subtitle={selectedPlayer === 'all' ? t('Team Average') : t('Latest')} />
+          <StatCard key={m.key} label={m.label} value={m.key === 'relStrength' && teamAverages[m.key] !== null ? (teamAverages[m.key] as number).toFixed(2) : teamAverages[m.key]} unit={m.key === 'bodyFat' ? '%' : m.key === 'relStrength' ? 'x' : ` ${m.unit}`} icon={m.icon} color={m.color} subtitle={selectedPlayer === 'all' ? t('Team Average') : t('Latest')} />
         ))}
         {(() => {
           const casVals = displayPlayers.map(p => compositeScores[p]?.cas).filter((v): v is number => v !== null);
@@ -2047,12 +2068,12 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
       <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
         <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Performance Table')}</h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-xs table-fixed">
             <thead>
               <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
                 <th onClick={() => handleSort('player')} className={`text-left py-2 px-2 font-semibold cursor-pointer select-none hover:text-orange-500 transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Player')}<SortIcon col="player" /></th>
                 {metrics.map(m => (
-                  <th key={m.key} onClick={() => handleSort(m.key as PerfSortKey)} className={`text-center py-2 px-1 font-semibold cursor-pointer select-none hover:text-orange-500 transition-colors ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{m.label}<SortIcon col={m.key as PerfSortKey} /></th>
+                  <th key={m.key} onClick={() => handleSort(m.key as PerfSortKey)} className={`text-center py-2 px-1 font-semibold cursor-pointer select-none hover:text-orange-500 transition-colors whitespace-nowrap ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{m.label} ({m.unit})<SortIcon col={m.key as PerfSortKey} /></th>
                 ))}
                 <th onClick={() => handleSort('cas')} className={`text-center py-2 px-1 font-semibold cursor-pointer select-none hover:text-orange-500 transition-colors text-amber-500`}>CAS<SortIcon col="cas" /></th>
               </tr>
@@ -2065,9 +2086,10 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
                     const val = row[m.key as keyof typeof row] as number | null;
                     const firstVal = row[(m.key + 'First') as keyof typeof row] as number | null;
                     const delta = getDelta(val, firstVal, m.lowerBetter);
+                    const displayVal = val !== null ? (m.key === 'bodyFat' ? `${val}%` : m.key === 'relStrength' ? `${val.toFixed(2)}x` : val) : '—';
                     return (
                       <td key={m.key} className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                        <div>{val !== null ? (m.key === 'bodyFat' ? `${val}%` : val) : '—'}</div>
+                        <div>{displayVal}</div>
                         {delta && (
                           <span className={`text-[10px] ${delta.improved ? 'text-green-500' : 'text-red-500'}`}>
                             {delta.diff > 0 ? '+' : ''}{delta.diff}
@@ -2229,7 +2251,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
       const cd = getLatestMetric(sessions, p, 'coneDrill');
       const dl = getLatestMetric(sessions, p, 'deadlift');
       const wt = getLatestMetric(sessions, p, 'weight');
-      const relDL = (dl !== null && wt !== null && wt > 0) ? Math.round((dl / wt) * 100) / 100 : null;
+      const relDL = (dl !== null && wt !== null && wt > 0) ? Math.round(((dl * 0.9) / wt) * 100) / 100 : null;
       return { maxVert, standVert, sprint: sp, shuttle: cd, relDeadlift: relDL };
     };
 
