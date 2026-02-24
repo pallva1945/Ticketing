@@ -1436,7 +1436,7 @@ const FULLFIELD_PLAYERS: Record<string, number> = {
   'Ivan Prato': 35989,
   'Tomas Scola': 52890,
   'Marco Bergamin': 15042,
-  'Bruno Farias': 12406,
+  'Bruno Farias': 212406,
   'Tomás Fernández Lang': 53452,
   'Hassane Coulibaly': 65577,
   'Juan Dollberg': 32455,
