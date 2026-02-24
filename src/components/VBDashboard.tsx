@@ -1270,7 +1270,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles, playerAttrs 
 
   return (
     <div className="space-y-6">
-      <div className={`grid grid-cols-8 gap-2 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+      <div className={`grid grid-cols-7 gap-2 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
         <div className="relative">
           <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass + ' w-full'}>
             <option value="all">{t('All Seasons')}</option>
@@ -1319,7 +1319,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles, playerAttrs 
           </select>
           <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
         </div>
-        <div className="relative col-span-2">
+        <div className="relative">
           <select value={selectedPlayerFilter} onChange={e => setSelectedPlayerFilter(e.target.value)} className={selectClass + ' w-full'}>
             <option value="all">{t('All Players')}</option>
             {playersInFilter.map(p => <option key={p} value={p}>{p}</option>)}
