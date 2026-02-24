@@ -1281,7 +1281,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles, playerAttrs 
 
   return (
     <div className="space-y-6">
-      <div className={`grid grid-cols-7 gap-2 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+      <div className={`grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
         <div className="relative">
           <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass + ' w-full'}>
             <option value="all">{t('All Seasons')}</option>
@@ -1339,14 +1339,14 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles, playerAttrs 
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard label={t('Total Load')} value={teamAvgTotalLoad} icon={Activity} color="#0ea5e9" subtitle={t('Avg / Player')} />
         <StatCard label={t('Vitamins')} value={teamAvgVitamins} icon={Pill} color="#8b5cf6" subtitle={t('Avg / Player')} />
         <StatCard label={t('Weights')} value={teamAvgWeights} icon={Dumbbell} color="#10b981" subtitle={t('Avg / Player')} />
         <StatCard label={t('Practice')} value={teamAvgPractice} icon={Crosshair} color="#06b6d4" subtitle={t('Avg / Player')} />
         <StatCard label={t('Game')} value={teamAvgGame} icon={Gamepad2} color="#f97316" subtitle={t('Avg / Player')} />
       </div>
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard label={t('Days Off')} value={teamDaysOff} icon={CalendarOff} color="#6b7280" subtitle={t('Avg / Player')} />
         <StatCard label={t('Injuries')} value={teamAvgInjuries} icon={Heart} color="#ef4444" subtitle={t('Avg / Player')} />
         <StatCard label={t('Min Late')} value={teamAvgMinLate} icon={Timer} color="#ef4444" subtitle={t('Avg / Player')} />
@@ -1379,7 +1379,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles, playerAttrs 
             </ResponsiveContainer>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {([
             { key: 'practice', label: t('Practice'), baseColor: '#3b82f6', goals: proratedGoals.practice },
             { key: 'vitamins', label: t('Vitamins'), baseColor: '#8b5cf6', goals: proratedGoals.vitamins },
@@ -1411,7 +1411,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles, playerAttrs 
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
           <div>
             <p className={`text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Shots Taken')} <span className={`${isDark ? 'text-gray-500' : 'text-gray-400'}`}>({t('Goal')}: {shotsGoal})</span></p>
             <div className="h-40">
@@ -1645,14 +1645,14 @@ function AnthropometricsTab({ sessions, players, profiles, onSelectPlayer }: { s
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard label={t('Height')} value={teamAvgs.height} unit="cm" icon={Ruler} color="#3b82f6" subtitle={t('Team Average')} />
         <StatCard label={t('P. Height')} value={teamAvgs.projHeight} unit="cm" icon={Ruler} color="#8b5cf6" subtitle={t('Team Average')} />
         <StatCard label={t('Reach')} value={teamAvgs.reach} unit="cm" icon={Hand} color="#10b981" subtitle={t('Team Average')} />
         <StatCard label={t('P. Reach')} value={teamAvgs.projReach} unit="cm" icon={Hand} color="#06b6d4" subtitle={t('Team Average')} />
         <StatCard label={t('Wingspan')} value={teamAvgs.wingspan} unit="cm" icon={Move} color="#f59e0b" subtitle={t('Team Average')} />
       </div>
-      <div className="grid grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard label={t('P. Wingspan')} value={teamAvgs.projWingspan} unit="cm" icon={Move} color="#f97316" subtitle={t('Team Average')} />
         <StatCard label={t('Weight')} value={teamAvgs.weight} unit="kg" icon={Weight} color="#ef4444" subtitle={t('Team Average')} />
         <StatCard label={t('BF %')} value={teamAvgs.bodyFat} unit="%" icon={Heart} color="#ec4899" subtitle={t('Team Average')} />
@@ -2009,7 +2009,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
 
   return (
     <div className="space-y-6">
-      <div className={`grid grid-cols-5 gap-2 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+      <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
         <div className="relative">
           <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass + ' w-full'}>
             <option value="all">{t('All Seasons')}</option>
@@ -2056,7 +2056,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
 
       <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
         <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Athletic Trends')} — {t('By Month')}</h3>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {metrics.map(m => (
             <div key={m.key}>
               <p className={`text-xs font-medium mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{m.label} ({m.unit})</p>
@@ -3166,7 +3166,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
           const gridStroke = isDark ? '#374151' : '#e5e7eb';
 
           return (
-            <div className="grid grid-cols-2 gap-4 mt-4 print-charts-grid flex-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 print-charts-grid flex-1">
               <div className={`${chartBox} flex flex-col`}>
                 <h4 className={chartTitle}>{t('Speed & Agility')}</h4>
                 <div className="flex-1 min-h-[160px] print-chart-fill">
@@ -3406,7 +3406,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 print-charts-grid flex-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print-charts-grid flex-1">
                 <div className={`${chartBox} flex flex-col`}>
                   <h4 className={chartTitle}>{t('Load Distribution')}</h4>
                   <div className="flex-1 min-h-[160px] print-chart-fill">
@@ -4719,7 +4719,7 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
 
   return (
     <div className="space-y-6">
-      <div className={`grid grid-cols-4 gap-2 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+      <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-xl border p-3 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
         <div className="relative">
           <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass + ' w-full'}>
             <option value="all">{t('All Seasons')}</option>
@@ -4831,7 +4831,7 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
 
       {hasEnough && (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
               <h3 className={`text-sm font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Performance Radar')}</h3>
               <div className="h-96">
@@ -5532,12 +5532,12 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </button>
           </div>
 
-          <div className="flex gap-1 -mb-px overflow-x-auto scrollbar-hide" style={{ paddingRight: '4rem' }}>
+          <div className="flex gap-0.5 sm:gap-1 -mb-px overflow-x-auto scrollbar-hide" style={{ paddingRight: '4rem' }}>
             {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium border-b-2 transition-all whitespace-nowrap ${
+                className={`flex items-center gap-1.5 px-2 sm:px-3 py-2 sm:py-2.5 text-[10px] sm:text-xs font-medium border-b-2 transition-all whitespace-nowrap ${
                   activeTab === tab.id
                     ? `border-orange-500 ${isDark ? 'text-orange-400' : 'text-orange-600'}`
                     : `border-transparent ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`
