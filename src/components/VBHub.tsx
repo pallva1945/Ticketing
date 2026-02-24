@@ -383,7 +383,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                     { name: 'Luis Scola', role: 'Elite Development Leader' },
                     { name: 'Massimo Ferrariuolo', role: 'Senior Advisor' },
                     { name: 'Giovanni Todisco', role: 'RSG' },
-                    { name: 'Francisco Zambelli', role: 'Head of Operations' },
+                    { name: 'Francesco Zambelli', role: 'Head of Operations' },
                   ].map((p) => (
                     <div key={p.name} className={`py-2 border-b last:border-b-0 ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
                       <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{p.name}</p>
@@ -407,7 +407,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                     { name: 'Tommaso Sacchetti', role: 'HC Serie B · U19' },
                     { name: 'Stefano Bianchi', role: 'HC U19 · U17' },
                     { name: 'Giovanni Todisco', role: 'HC U17 · U15' },
-                    { name: 'Andrea Longoni', role: 'HC U15' },
+                    { name: 'Andrea Longoni', role: 'HC U17 · U15' },
                     { name: 'Federico Besio', role: 'AC U15 · U17' },
                   ].map((p) => (
                     <div key={p.name} className={`py-2 border-b last:border-b-0 ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
