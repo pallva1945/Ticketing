@@ -1747,8 +1747,8 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
   useEffect(() => { setSelectedPlayer('all'); }, [selectedRole]);
 
   const metrics = [
-    { key: 'sprint', label: t('Speed'), unit: 'ms', icon: Timer, color: '#10b981', lowerBetter: true },
-    { key: 'coneDrill', label: t('Agility'), unit: 'ms', icon: Gauge, color: '#f97316', lowerBetter: true },
+    { key: 'sprint', label: t('Speed'), unit: 's', icon: Timer, color: '#10b981', lowerBetter: true },
+    { key: 'coneDrill', label: t('Agility'), unit: 's', icon: Gauge, color: '#f97316', lowerBetter: true },
     { key: 'pureVertical', label: t('Pure Vertical'), unit: 'cm', icon: Zap, color: '#f59e0b', lowerBetter: false },
     { key: 'noStepVertical', label: t('No-Step Vertical'), unit: 'cm', icon: Zap, color: '#8b5cf6', lowerBetter: false },
     { key: 'bodyFat', label: t('BF %'), unit: '%', icon: Heart, color: '#ef4444', lowerBetter: true },
@@ -2838,12 +2838,12 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
           </div>
           <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-orange-50/50'}`}>
             <div className={labelClass}>{t('Sprint')}</div>
-            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.sprint !== null ? latestAthletic.sprint : '—'}<span className="text-xs font-normal ml-0.5 print-sub">ms</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.sprint !== null ? latestAthletic.sprint : '—'}<span className="text-xs font-normal ml-0.5 print-sub">s</span></div>
             {renderDelta(latestAthletic.sprint, combineRef?.sprint, 's', true)}
           </div>
           <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-pink-50/50'}`}>
             <div className={labelClass}>{t('Cone Drill')}</div>
-            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.coneDrill !== null ? latestAthletic.coneDrill : '—'}<span className="text-xs font-normal ml-0.5 print-sub">ms</span></div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.coneDrill !== null ? latestAthletic.coneDrill : '—'}<span className="text-xs font-normal ml-0.5 print-sub">s</span></div>
             {renderDelta(latestAthletic.coneDrill, combineRef?.coneDrill, 's', true)}
           </div>
           <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-green-50/50'}`}>
@@ -4533,8 +4533,8 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
       { key: 'bodyFat', label: t('Body Fat'), unit: '%' },
       { key: 'pureVertical', label: t('Pure Vertical'), unit: 'cm' },
       { key: 'noStepVertical', label: t('No-Step Vertical'), unit: 'cm' },
-      { key: 'sprint', label: t('Sprint'), unit: 'ms' },
-      { key: 'coneDrill', label: t('Cone Drill'), unit: 'ms' },
+      { key: 'sprint', label: t('Sprint'), unit: 's' },
+      { key: 'coneDrill', label: t('Cone Drill'), unit: 's' },
       { key: 'deadlift', label: t('Deadlift'), unit: 'kg' },
     ];
     return metrics.map(m => ({
@@ -4688,8 +4688,8 @@ function ProgressionChart({ sessions, lines, metric, profiles, isDark, convertVa
     { key: 'bodyFat', label: t('Body Fat'), unit: '%' },
     { key: 'pureVertical', label: t('Pure Vertical'), unit: 'cm' },
     { key: 'noStepVertical', label: t('No-Step Vertical'), unit: 'cm' },
-    { key: 'sprint', label: t('Sprint'), unit: 'ms' },
-    { key: 'coneDrill', label: t('Cone Drill'), unit: 'ms' },
+    { key: 'sprint', label: t('Sprint'), unit: 's' },
+    { key: 'coneDrill', label: t('Cone Drill'), unit: 's' },
     { key: 'deadlift', label: t('Deadlift'), unit: 'kg' },
     { key: 'shootingPct', label: t('3PT %'), unit: '%' },
   ];
@@ -4796,8 +4796,8 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
     { key: 'bodyFat', label: t('Body Fat'), unit: '%', group: t('Anthropometrics') },
     { key: 'pureVertical', label: t('Pure Vertical'), unit: 'cm', group: t('Athletics') },
     { key: 'noStepVertical', label: t('No-Step Vertical'), unit: 'cm', group: t('Athletics') },
-    { key: 'sprint', label: t('Sprint'), unit: 'ms', group: t('Athletics') },
-    { key: 'coneDrill', label: t('Cone Drill'), unit: 'ms', group: t('Athletics') },
+    { key: 'sprint', label: t('Sprint'), unit: 's', group: t('Athletics') },
+    { key: 'coneDrill', label: t('Cone Drill'), unit: 's', group: t('Athletics') },
     { key: 'deadlift', label: t('Deadlift'), unit: 'kg', group: t('Athletics') },
     { key: 'shootingPct', label: t('3PT %'), unit: '%', group: t('Shooting') },
   ];
