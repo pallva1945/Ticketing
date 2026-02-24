@@ -854,7 +854,7 @@ function getMonthLabel(dateStr: string): string {
 }
 
 
-function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions: VBSession[]; players: string[]; onSelectPlayer: (p: string) => void; profiles: PlayerProfile[] }) {
+function OverviewTab({ sessions, players, onSelectPlayer, profiles, playerAttrs }: { sessions: VBSession[]; players: string[]; onSelectPlayer: (p: string) => void; profiles: PlayerProfile[]; playerAttrs?: Record<string, any> }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
   const [selectedSeason, setSelectedSeason] = useState<string>(() => getCurrentSeason());
@@ -1027,12 +1027,31 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
     const avg = playerTotals.reduce((a, b) => a + b, 0) / playerTotals.length;
     return avg > 0 ? Math.round(avg * 10) / 10 : null;
   }, [filtered, activePlayers]);
+  const teamAvgPractice = useMemo(() => {
+    const playerTotals = activePlayers.map(p => {
+      const vals = filtered.filter(s => s.player === p && s.practiceLoad).map(s => s.practiceLoad!);
+      return vals.reduce((a, b) => a + b, 0);
+    });
+    return playerTotals.length ? Math.round(playerTotals.reduce((a, b) => a + b, 0) / playerTotals.length * 10) / 10 : null;
+  }, [filtered, activePlayers]);
   const teamAvgInjuries = useMemo(() => {
     const playerCounts = activePlayers.map(p => {
       return new Set(filtered.filter(s => s.player === p && s.injured && s.injured > 0).map(s => s.date)).size;
     });
     return playerCounts.length ? Math.round(playerCounts.reduce((a, b) => a + b, 0) / playerCounts.length * 10) / 10 : null;
   }, [filtered, activePlayers]);
+  const teamAvgShotsTaken = useMemo(() => {
+    const playerTotals = activePlayers.map(p => {
+      const vals = filtered.filter(s => s.player === p && s.shootsTaken).map(s => s.shootsTaken!);
+      return vals.reduce((a, b) => a + b, 0);
+    });
+    return playerTotals.length ? Math.round(playerTotals.reduce((a, b) => a + b, 0) / playerTotals.length) : null;
+  }, [filtered, activePlayers]);
+  const teamAvgMinLate = useMemo(() => {
+    if (!playerAttrs) return null;
+    const vals = activePlayers.map(p => playerAttrs[p]?.minLate).filter((v): v is number => v !== null && v !== undefined);
+    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+  }, [activePlayers, playerAttrs]);
 
   const teamAvgHeight = useMemo(() => {
     const vals = activePlayers.map(p => getLatestMetric(filtered, p, 'height')).filter(v => v !== null) as number[];
@@ -1309,17 +1328,19 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles }: { sessions
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-3">
-        <StatCard label={t('3PT %')} value={avgShootingPct} unit="%" icon={Target} color="#f59e0b" subtitle={t('Team Average')} />
+      <div className="grid grid-cols-5 gap-3">
         <StatCard label={t('Total Load')} value={teamAvgTotalLoad} icon={Activity} color="#0ea5e9" subtitle={t('Avg / Player')} />
         <StatCard label={t('Vitamins')} value={teamAvgVitamins} icon={Pill} color="#8b5cf6" subtitle={t('Avg / Player')} />
         <StatCard label={t('Weights')} value={teamAvgWeights} icon={Dumbbell} color="#10b981" subtitle={t('Avg / Player')} />
-      </div>
-      <div className="grid grid-cols-4 gap-3">
+        <StatCard label={t('Practice')} value={teamAvgPractice} icon={Crosshair} color="#06b6d4" subtitle={t('Avg / Player')} />
         <StatCard label={t('Game')} value={teamAvgGame} icon={Gamepad2} color="#f97316" subtitle={t('Avg / Player')} />
-        <StatCard label={t('Injuries')} value={teamAvgInjuries} icon={Heart} color="#ef4444" subtitle={t('Avg / Player')} />
+      </div>
+      <div className="grid grid-cols-5 gap-3">
         <StatCard label={t('Days Off')} value={teamDaysOff} icon={CalendarOff} color="#6b7280" subtitle={t('Avg / Player')} />
-        <StatCard label={t('Min Late')} value={null} icon={Timer} color="#ef4444" subtitle={t('Avg / Player')} />
+        <StatCard label={t('Injuries')} value={teamAvgInjuries} icon={Heart} color="#ef4444" subtitle={t('Avg / Player')} />
+        <StatCard label={t('Min Late')} value={teamAvgMinLate} icon={Timer} color="#ef4444" subtitle={t('Avg / Player')} />
+        <StatCard label={t('Shots Taken')} value={teamAvgShotsTaken} icon={Target} color="#f59e0b" subtitle={t('Avg / Player')} />
+        <StatCard label={t('3PT %')} value={avgShootingPct} unit="%" icon={Gauge} color="#f59e0b" subtitle={t('Team Average')} />
       </div>
 
       <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
@@ -5305,7 +5326,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         ) : (
           <>
-            {activeTab === 'overview' && <OverviewTab sessions={normalizedSessions} players={players} onSelectPlayer={handleSelectPlayer} profiles={profiles} />}
+            {activeTab === 'overview' && <OverviewTab sessions={normalizedSessions} players={players} onSelectPlayer={handleSelectPlayer} profiles={profiles} playerAttrs={playerAttrs} />}
             {activeTab === 'anthropometrics' && <AnthropometricsTab sessions={normalizedSessions} players={players} profiles={profiles} />}
             {activeTab === 'performance' && <PerformanceTab sessions={normalizedSessions} players={players} profiles={profiles} />}
             {activeTab === 'gameperf' && <GamePerformanceTab sessions={normalizedSessions} players={players} profiles={profiles} />}
