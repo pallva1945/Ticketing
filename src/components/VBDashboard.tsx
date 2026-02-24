@@ -4276,7 +4276,7 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
                 if (e.key === 'Enter') { executeSearch(query); }
                 if (e.key === 'Escape') { setShowSuggestions(false); }
               }}
-              placeholder={t('Search player, date, month, season...')}
+              placeholder={t('Search player, date, month, season, category, role...')}
               className={`flex-1 px-4 py-2.5 rounded-lg text-sm border outline-none transition-all ${isDark ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-orange-500' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-orange-500'}`}
             />
             <button onClick={() => executeSearch(query)} className="px-4 py-2.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors">
