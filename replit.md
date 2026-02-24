@@ -30,7 +30,10 @@ The application leverages a modern web stack, utilizing React 18 and TypeScript 
 -   **CAS (Composite Athleticism Score)**: NBA-benchmarked scoring system where 100 = NBA Draft Combine Average. Formula: `CAS = (Σ Test% of NBA Baseline × Archetype Weight) × Age Factor`. Three archetypes (Playmaker, 3&D, Center) with position-specific weightings. Age Factor multiplier for youth players: Age ≤14 (1.20x), 15 (1.15x), 16 (1.10x), 17 (1.05x), 18+ (1.00x). Defaults to 3&D weights and 1.0x multiplier when position/age is missing. NBA baselines defined in `NBA_COMBINE_BASELINES` constant. Output rounded to 2 decimal places.
 -   **APS (Anthropometric Potential Score)**: NBA-benchmarked scoring system where 100 = NBA Draft Combine Average. Formula: `APS = (Σ Metric% of NBA Baseline × Weight) × Age Factor`. Uses projected measurements (P.Height, P.Wingspan, P.Reach) to account for growth potential. Three archetypes with position-specific NBA anthro baselines defined in `NBA_ANTHRO_BASELINES`. Weights: P.Reach 40%, P.Wingspan 30%, P.Height 15%, Weight 15%. Same age factor multipliers as CAS.
 
+-   **Game Performance Dashboard**: Integrates FullField Basketball API (api.fullfield.info) for game statistics. Features three sub-tabs: Team Performance (aggregate stats, scoring charts, roster stats, game log), Player Performance (individual stats, scoring trends, detailed game log), and Stat Search (search by player name or team ID). Server-side proxy endpoints at `/api/fullfield/*` handle API authentication. Mapped teams: Varese U19, Campus Varese, Robur e Fides U17, Varese U17, Robur e Fides U19. Mapped players: 15 youth players.
+
 ## External Dependencies
+-   **FullField Basketball API**: Game statistics source for VB Dashboard Game Performance tab. API at api.fullfield.info with Bearer token auth (FULLFIELD_API_TOKEN secret).
 -   **Firebase**: Cloud storage, primary data source for ticketing, persistence for other modules.
 -   **Google Gemini AI**: Integrated for potential AI-driven functionalities.
 -   **Replit App Storage**: Used for large file uploads, particularly CRM data.

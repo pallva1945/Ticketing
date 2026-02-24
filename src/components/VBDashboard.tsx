@@ -3486,13 +3486,603 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
 function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
-  return (
-    <div className="space-y-6">
-      <div className={`rounded-xl border p-8 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-        <Trophy size={40} className={`mx-auto mb-4 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
-        <h3 className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Game Performance')}</h3>
-        <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Coming Soon')}</p>
+  const [subTab, setSubTab] = useState<'team' | 'player' | 'search'>('team');
+
+  const TEAMS: Record<string, number> = {
+    'Varese U19': 49897, 'Campus Varese': 56097, 'Robur e Fides U17': 56119,
+    'Varese U17': 56121, 'Robur e Fides U19': 49893
+  };
+  const PLAYERS: Record<string, number> = {
+    'Ivan Prato': 35989, 'Tomas Scola': 52890, 'Marco Bergamin': 15042, 'Bruno Farias': 12406,
+    'Tomás Fernández Lang': 53452, 'Hassane Coulibaly': 65577, 'Juan Dollberg': 32455,
+    'Lautaro Basualdo': 32461, 'Robert Kangur': 32861, 'Pietro Lazzati': 65571,
+    'Tommaso Bada': 65573, 'Francesco Tornese': 65589, 'Pietro Balzarotti': 65593,
+    'Angelo Modanese': 21155, 'Martino Risi': 22937
+  };
+
+  const [selectedTeam, setSelectedTeam] = useState<string>(Object.keys(TEAMS)[0]);
+  const [selectedPlayer, setSelectedPlayer] = useState<string>(Object.keys(PLAYERS)[0]);
+  const [teamSeasons, setTeamSeasons] = useState<any[]>([]);
+  const [teamSeason, setTeamSeason] = useState<string>('');
+  const [teamStats, setTeamStats] = useState<any>(null);
+  const [teamGamelog, setTeamGamelog] = useState<any[]>([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [playerSeasons, setPlayerSeasons] = useState<any[]>([]);
+  const [playerSeason, setPlayerSeason] = useState<string>('');
+  const [playerStats, setPlayerStats] = useState<any>(null);
+  const [playerGamelog, setPlayerGamelog] = useState<any[]>([]);
+  const [playerLoading, setPlayerLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResult, setSearchResult] = useState<any>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchError, setSearchError] = useState('');
+  const [teamError, setTeamError] = useState('');
+  const [playerError, setPlayerError] = useState('');
+
+  useEffect(() => {
+    const teamId = TEAMS[selectedTeam];
+    if (!teamId) return;
+    setTeamLoading(true);
+    setTeamError('');
+    fetch(`/api/fullfield/team/${teamId}/seasons`).then(r => r.json()).then(d => {
+      if (!d.success) throw new Error(d.message || 'Failed to load');
+      const seasons = d.data || [];
+      setTeamSeasons(seasons);
+      const current = seasons.find((s: any) => s.is_current) || seasons[0];
+      if (current) setTeamSeason(String(current.id));
+      else { setTeamStats(null); setTeamGamelog([]); setTeamLoading(false); }
+    }).catch((e) => { setTeamError(e.message); setTeamLoading(false); });
+  }, [selectedTeam]);
+
+  useEffect(() => {
+    const teamId = TEAMS[selectedTeam];
+    if (!teamId || !teamSeason) return;
+    setTeamLoading(true);
+    setTeamError('');
+    Promise.all([
+      fetch(`/api/fullfield/team/${teamId}/stats?season_id=${teamSeason}`).then(r => r.json()),
+      fetch(`/api/fullfield/team/${teamId}/gamelog?season_id=${teamSeason}`).then(r => r.json())
+    ]).then(([statsRes, logRes]) => {
+      setTeamStats(statsRes.data || null);
+      setTeamGamelog((logRes.data || []).filter((g: any) => !g.is_total));
+      setTeamLoading(false);
+    }).catch((e) => { setTeamError(e.message); setTeamLoading(false); });
+  }, [selectedTeam, teamSeason]);
+
+  useEffect(() => {
+    const playerId = PLAYERS[selectedPlayer];
+    if (!playerId) return;
+    setPlayerLoading(true);
+    setPlayerError('');
+    fetch(`/api/fullfield/player/${playerId}/seasons`).then(r => r.json()).then(d => {
+      if (!d.success) throw new Error(d.message || 'Failed to load');
+      const seasons = d.data || [];
+      setPlayerSeasons(seasons);
+      const current = seasons.find((s: any) => s.is_current) || seasons[0];
+      if (current) setPlayerSeason(String(current.id));
+      else { setPlayerStats(null); setPlayerGamelog([]); setPlayerLoading(false); }
+    }).catch((e) => { setPlayerError(e.message); setPlayerLoading(false); });
+  }, [selectedPlayer]);
+
+  useEffect(() => {
+    const playerId = PLAYERS[selectedPlayer];
+    if (!playerId || !playerSeason) return;
+    setPlayerLoading(true);
+    setPlayerError('');
+    Promise.all([
+      fetch(`/api/fullfield/player/${playerId}/stats?season_id=${playerSeason}`).then(r => r.json()),
+      fetch(`/api/fullfield/player/${playerId}/gamelog?season_id=${playerSeason}`).then(r => r.json())
+    ]).then(([statsRes, logRes]) => {
+      setPlayerStats(statsRes.data || null);
+      setPlayerGamelog((logRes.data || []).filter((g: any) => !g.is_total));
+      setPlayerLoading(false);
+    }).catch((e) => { setPlayerError(e.message); setPlayerLoading(false); });
+  }, [selectedPlayer, playerSeason]);
+
+  const doSearch = () => {
+    if (!searchQuery.trim()) return;
+    setSearchLoading(true);
+    setSearchError('');
+    setSearchResult(null);
+    const q = searchQuery.trim();
+    const playerMatch = Object.entries(PLAYERS).find(([name]) => name.toLowerCase().includes(q.toLowerCase()));
+    if (playerMatch) {
+      const [name, id] = playerMatch;
+      fetch(`/api/fullfield/player/${id}/seasons`).then(r => r.json()).then(d => {
+        const seasons = d.data || [];
+        const current = seasons.find((s: any) => s.is_current) || seasons[0];
+        if (!current) { setSearchResult({ type: 'player', name, noData: true }); setSearchLoading(false); return; }
+        return fetch(`/api/fullfield/player/${id}/gamelog?season_id=${current.id}`).then(r => r.json()).then(logRes => {
+          const games = (logRes.data || []).filter((g: any) => !g.is_total);
+          setSearchResult({ type: 'player', name, season: current.name, games });
+          setSearchLoading(false);
+        });
+      }).catch(e => { setSearchError(e.message); setSearchLoading(false); });
+    } else if (/^\d+$/.test(q)) {
+      const teamMatch = Object.entries(TEAMS).find(([, id]) => String(id) === q);
+      if (teamMatch) {
+        const [name, id] = teamMatch;
+        fetch(`/api/fullfield/team/${id}/seasons`).then(r => r.json()).then(d => {
+          const seasons = d.data || [];
+          const current = seasons.find((s: any) => s.is_current) || seasons[0];
+          if (!current) { setSearchResult({ type: 'team', name, noData: true }); setSearchLoading(false); return; }
+          return fetch(`/api/fullfield/team/${id}/gamelog?season_id=${current.id}`).then(r => r.json()).then(logRes => {
+            setSearchResult({ type: 'team', name, season: current.name, games: (logRes.data || []).filter((g: any) => !g.is_total) });
+            setSearchLoading(false);
+          });
+        }).catch(e => { setSearchError(e.message); setSearchLoading(false); });
+      } else {
+        setSearchError(t('No matching team or player found'));
+        setSearchLoading(false);
+      }
+    } else {
+      setSearchError(t('Enter a player name or team ID'));
+      setSearchLoading(false);
+    }
+  };
+
+  const card = `rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`;
+  const subtext = isDark ? 'text-gray-400' : 'text-gray-500';
+  const selectClass = `text-xs py-1.5 pl-2 pr-7 rounded-lg border appearance-none cursor-pointer ${isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-white border-gray-200 text-gray-700'}`;
+
+  const StatCard = ({ label, value, sub, color = 'orange' }: { label: string; value: string | number; sub?: string; color?: string }) => {
+    const colorMap: Record<string, string> = { orange: 'text-orange-500', blue: 'text-blue-500', green: 'text-green-500', purple: 'text-purple-500', red: 'text-red-500' };
+    return (
+      <div className={`${card} p-4`}>
+        <p className={`text-[10px] uppercase tracking-wide font-semibold mb-1 ${subtext}`}>{label}</p>
+        <p className={`text-2xl font-bold ${colorMap[color] || 'text-orange-500'}`}>{value}</p>
+        {sub && <p className={`text-[10px] mt-0.5 ${subtext}`}>{sub}</p>}
       </div>
+    );
+  };
+
+  const getAvgFromBoxscore = (bs: any) => {
+    if (!bs) return null;
+    const gp = bs.game_played || 0;
+    if (gp === 0) return null;
+    return {
+      ppg: (bs.pts / gp).toFixed(1),
+      rpg: (bs.total_rebound / gp).toFixed(1),
+      apg: (bs.assist / gp).toFixed(1),
+      spg: (bs.steal / gp).toFixed(1),
+      bpg: (bs.block / gp).toFixed(1),
+      topg: (bs.turnover / gp).toFixed(1),
+      fg_pct: bs.pts2_all + bs.pts3_all > 0 ? (((bs.pts2_made + bs.pts3_made) / (bs.pts2_all + bs.pts3_all)) * 100).toFixed(1) : '0.0',
+      fg2_pct: bs.pts2_all > 0 ? ((bs.pts2_made / bs.pts2_all) * 100).toFixed(1) : '0.0',
+      fg3_pct: bs.pts3_all > 0 ? ((bs.pts3_made / bs.pts3_all) * 100).toFixed(1) : '0.0',
+      ft_pct: bs.ft_all > 0 ? ((bs.ft_made / bs.ft_all) * 100).toFixed(1) : '0.0',
+      mpg: typeof bs.minute === 'string' ? (parseFloat(bs.minute) / gp).toFixed(1) : bs.minute > 0 ? (bs.minute / gp).toFixed(1) : '0.0',
+      gp,
+      eff: (bs.val / gp).toFixed(1),
+      plusminus: bs.plusminus != null ? (bs.plusminus > 0 ? '+' : '') + bs.plusminus.toFixed(1) : '0'
+    };
+  };
+
+  const renderTeamTab = () => {
+    const avgRow = teamGamelog.length > 0 ? (() => {
+      const totals = teamGamelog.reduce((acc: any, g: any) => {
+        const bs = g.boxscore;
+        if (!bs) return acc;
+        acc.pts += bs.pts || 0; acc.reb += bs.total_rebound || 0; acc.ast += bs.assist || 0;
+        acc.stl += bs.steal || 0; acc.blk += bs.block || 0; acc.to += bs.turnover || 0;
+        acc.fg2m += bs.pts2_made || 0; acc.fg2a += bs.pts2_all || 0;
+        acc.fg3m += bs.pts3_made || 0; acc.fg3a += bs.pts3_all || 0;
+        acc.ftm += bs.ft_made || 0; acc.fta += bs.ft_all || 0;
+        acc.games++; return acc;
+      }, { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, games: 0 });
+      if (totals.games === 0) return null;
+      const g = totals.games;
+      return {
+        ppg: (totals.pts / g).toFixed(1), rpg: (totals.reb / g).toFixed(1), apg: (totals.ast / g).toFixed(1),
+        fg_pct: (totals.fg2a + totals.fg3a) > 0 ? (((totals.fg2m + totals.fg3m) / (totals.fg2a + totals.fg3a)) * 100).toFixed(1) : '0.0',
+        fg3_pct: totals.fg3a > 0 ? ((totals.fg3m / totals.fg3a) * 100).toFixed(1) : '0.0',
+        ft_pct: totals.fta > 0 ? ((totals.ftm / totals.fta) * 100).toFixed(1) : '0.0',
+        gp: g
+      };
+    })() : (() => {
+      const bs = teamStats?.boxscore?.find((b: any) => b.type === 'average');
+      if (!bs || !bs.game_played) return null;
+      return getAvgFromBoxscore(teamStats?.boxscore?.find((b: any) => b.type === 'total'));
+    })();
+
+    const wins = teamGamelog.filter(g => {
+      const game = g.game; if (!game) return false;
+      const isHome = game.own_team === game.home_id;
+      return isHome ? game.home_score > game.away_score : game.away_score > game.home_score;
+    }).length;
+    const losses = teamGamelog.filter(g => {
+      const game = g.game; if (!game) return false;
+      const isHome = game.own_team === game.home_id;
+      return isHome ? game.home_score < game.away_score : game.away_score < game.home_score;
+    }).length;
+
+    const teamPlayers = teamStats?.players || [];
+
+    return (
+      <div className="space-y-5">
+        <div className="flex flex-wrap gap-2">
+          <div className="relative">
+            <select value={selectedTeam} onChange={e => setSelectedTeam(e.target.value)} className={selectClass}>
+              {Object.keys(TEAMS).map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+          </div>
+          {teamSeasons.length > 1 && (
+            <div className="relative">
+              <select value={teamSeason} onChange={e => setTeamSeason(e.target.value)} className={selectClass}>
+                {teamSeasons.map((s: any) => <option key={s.id} value={String(s.id)}>{s.name}</option>)}
+              </select>
+              <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+            </div>
+          )}
+        </div>
+
+        {teamError && (
+          <div className={`${card} p-4 border-red-500/30`}>
+            <p className="text-xs text-red-500">{t('Error loading data')}: {teamError}</p>
+          </div>
+        )}
+        {teamLoading ? (
+          <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-orange-500" /></div>
+        ) : avgRow ? (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <StatCard label="PPG" value={avgRow.ppg} color="orange" />
+              <StatCard label="RPG" value={avgRow.rpg} color="blue" />
+              <StatCard label="APG" value={avgRow.apg} color="green" />
+              <StatCard label="FG%" value={`${avgRow.fg_pct}%`} color="purple" />
+              <StatCard label="3P%" value={`${avgRow.fg3_pct}%`} color="red" />
+              <StatCard label={t('Record')} value={`${wins}W - ${losses}L`} sub={`${avgRow.gp} ${t('games')}`} color="orange" />
+            </div>
+
+            {teamGamelog.length > 0 && (
+              <div className={`${card} p-4`}>
+                <h4 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Scoring by Game')}</h4>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={teamGamelog.slice(-15).map(g => {
+                    const game = g.game;
+                    const bs = g.boxscore;
+                    const isHome = game?.own_team === game?.home_id;
+                    const won = game ? (isHome ? game.home_score > game.away_score : game.away_score > game.home_score) : false;
+                    const opp = game ? (isHome ? game.away_team?.team_name : game.home_team?.team_name) : '?';
+                    return { name: opp?.substring(0, 8) || '?', pts: bs?.pts || 0, won };
+                  })}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#333' : '#eee'} />
+                    <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#999' : '#666' }} angle={-30} textAnchor="end" height={50} />
+                    <YAxis tick={{ fontSize: 10, fill: isDark ? '#999' : '#666' }} />
+                    <Tooltip contentStyle={{ backgroundColor: isDark ? '#1a1a1a' : '#fff', border: `1px solid ${isDark ? '#333' : '#ddd'}`, borderRadius: 8, fontSize: 11 }} />
+                    <Bar dataKey="pts" name={t('Points')} radius={[4, 4, 0, 0]}>
+                      {teamGamelog.slice(-15).map((g, i) => {
+                        const game = g.game;
+                        const isHome = game?.own_team === game?.home_id;
+                        const won = game ? (isHome ? game.home_score > game.away_score : game.away_score > game.home_score) : false;
+                        return <Cell key={i} fill={won ? '#22c55e' : '#ef4444'} />;
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {teamPlayers.length > 0 && (
+              <div className={`${card} p-4 overflow-x-auto`}>
+                <h4 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Roster Stats')}</h4>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                      {['Player', 'GP', 'MIN', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'FG%', '3P%', 'FT%', 'EFF'].map(h => (
+                        <th key={h} className={`py-2 px-1.5 text-left font-semibold ${subtext}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teamPlayers.map((p: any, i: number) => {
+                      const bs = p.boxscore;
+                      if (!bs || !bs.game_played) return null;
+                      const avg = getAvgFromBoxscore(bs);
+                      if (!avg) return null;
+                      return (
+                        <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
+                          <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.name || `#${i + 1}`}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{avg.gp}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{avg.mpg}</td>
+                          <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{avg.ppg}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{avg.rpg}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{avg.apg}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{avg.spg}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{avg.bpg}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{avg.fg_pct}%</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{avg.fg3_pct}%</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{avg.ft_pct}%</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{avg.eff}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {teamGamelog.length > 0 && (
+              <div className={`${card} p-4 overflow-x-auto`}>
+                <h4 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Game Log')}</h4>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                      {['Date', 'Opponent', 'Result', 'PTS', 'REB', 'AST', 'FG%', '3P%'].map(h => (
+                        <th key={h} className={`py-2 px-1.5 text-left font-semibold ${subtext}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {teamGamelog.slice().reverse().map((g: any, i: number) => {
+                      const game = g.game;
+                      const bs = g.boxscore;
+                      if (!game || !bs) return null;
+                      const isHome = game.own_team === game.home_id;
+                      const ownScore = isHome ? game.home_score : game.away_score;
+                      const oppScore = isHome ? game.away_score : game.home_score;
+                      const won = ownScore > oppScore;
+                      const opp = isHome ? game.away_team?.team_name : game.home_team?.team_name;
+                      const fgPct = (bs.pts2_all + bs.pts3_all) > 0 ? (((bs.pts2_made + bs.pts3_made) / (bs.pts2_all + bs.pts3_all)) * 100).toFixed(1) : '-';
+                      const fg3Pct = bs.pts3_all > 0 ? ((bs.pts3_made / bs.pts3_all) * 100).toFixed(1) : '-';
+                      return (
+                        <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{game.start_time?.substring(0, 10) || '-'}</td>
+                          <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{isHome ? 'vs' : '@'} {opp || '?'}</td>
+                          <td className={`py-1.5 px-1.5 font-semibold ${won ? 'text-green-500' : 'text-red-500'}`}>{won ? 'W' : 'L'} {ownScore}-{oppScore}</td>
+                          <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{bs.pts}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.total_rebound}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.assist}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{fgPct}%</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{fg3Pct}%</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className={`${card} p-8 text-center`}>
+            <Trophy size={32} className={`mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
+            <p className={`text-sm ${subtext}`}>{t('No game data available for this team/season')}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderPlayerTab = () => {
+    const totalRow = playerGamelog.length > 0 ? (() => {
+      const totals = playerGamelog.reduce((acc: any, g: any) => {
+        const bs = g.boxscore;
+        if (!bs) return acc;
+        acc.pts += bs.pts || 0; acc.reb += bs.total_rebound || 0; acc.ast += bs.assist || 0;
+        acc.fg2m += bs.pts2_made || 0; acc.fg2a += bs.pts2_all || 0;
+        acc.fg3m += bs.pts3_made || 0; acc.fg3a += bs.pts3_all || 0;
+        acc.ftm += bs.ft_made || 0; acc.fta += bs.ft_all || 0;
+        acc.val += bs.val || 0; acc.min += parseFloat(bs.minute) || 0;
+        acc.games++; return acc;
+      }, { pts: 0, reb: 0, ast: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, val: 0, min: 0, games: 0 });
+      if (totals.games === 0) return null;
+      const g = totals.games;
+      return {
+        ppg: (totals.pts / g).toFixed(1),
+        fg3_pct: totals.fg3a > 0 ? ((totals.fg3m / totals.fg3a) * 100).toFixed(1) : '0.0',
+        ft_pct: totals.fta > 0 ? ((totals.ftm / totals.fta) * 100).toFixed(1) : '0.0',
+        eff: (totals.val / g).toFixed(1), gp: g
+      };
+    })() : (() => {
+      const bs = playerStats?.boxscore?.find((b: any) => b.type === 'total');
+      if (!bs || !bs.game_played) return null;
+      const avg = getAvgFromBoxscore(bs);
+      return avg ? { ppg: avg.ppg, fg3_pct: avg.fg3_pct, ft_pct: avg.ft_pct, eff: avg.eff, gp: avg.gp } : null;
+    })();
+
+    return (
+      <div className="space-y-5">
+        <div className="flex flex-wrap gap-2">
+          <div className="relative">
+            <select value={selectedPlayer} onChange={e => setSelectedPlayer(e.target.value)} className={selectClass}>
+              {Object.keys(PLAYERS).map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+          </div>
+          {playerSeasons.length > 1 && (
+            <div className="relative">
+              <select value={playerSeason} onChange={e => setPlayerSeason(e.target.value)} className={selectClass}>
+                {playerSeasons.map((s: any) => <option key={s.id} value={String(s.id)}>{s.name}</option>)}
+              </select>
+              <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+            </div>
+          )}
+        </div>
+
+        {playerError && (
+          <div className={`${card} p-4 border-red-500/30`}>
+            <p className="text-xs text-red-500">{t('Error loading data')}: {playerError}</p>
+          </div>
+        )}
+        {playerLoading ? (
+          <div className="flex justify-center py-16"><Loader2 size={28} className="animate-spin text-orange-500" /></div>
+        ) : totalRow ? (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label="PPG" value={totalRow.ppg} sub={`${totalRow.gp} ${t('games')}`} color="orange" />
+              <StatCard label="3P%" value={`${totalRow.fg3_pct}%`} color="green" />
+              <StatCard label="FT%" value={`${totalRow.ft_pct}%`} color="blue" />
+              <StatCard label={t('Efficiency')} value={totalRow.eff} color="purple" />
+            </div>
+
+            {playerGamelog.length > 0 && (
+              <div className={`${card} p-4`}>
+                <h4 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Scoring – Last')} {Math.min(playerGamelog.length, 10)} {t('Games')}</h4>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={playerGamelog.slice(-10).map(g => {
+                    const game = g.game;
+                    const bs = g.boxscore;
+                    const isHome = game?.own_team === game?.home_id;
+                    const opp = game ? (isHome ? game.away_team?.team_name : game.home_team?.team_name) : '?';
+                    return { name: opp?.substring(0, 8) || '?', pts: bs?.pts || 0 };
+                  })}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#333' : '#eee'} />
+                    <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#999' : '#666' }} angle={-30} textAnchor="end" height={50} />
+                    <YAxis tick={{ fontSize: 10, fill: isDark ? '#999' : '#666' }} />
+                    <Tooltip contentStyle={{ backgroundColor: isDark ? '#1a1a1a' : '#fff', border: `1px solid ${isDark ? '#333' : '#ddd'}`, borderRadius: 8, fontSize: 11 }} />
+                    <Bar dataKey="pts" name={t('Points')} fill="#f97316" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {playerGamelog.length > 0 && (
+              <div className={`${card} p-4 overflow-x-auto`}>
+                <h4 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Game Log')}</h4>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                      {['Date', 'Opponent', 'MIN', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'FG', '3P', 'FT', '+/-'].map(h => (
+                        <th key={h} className={`py-2 px-1.5 text-left font-semibold ${subtext}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {playerGamelog.slice().reverse().map((g: any, i: number) => {
+                      const game = g.game;
+                      const bs = g.boxscore;
+                      if (!game || !bs) return null;
+                      const isHome = game.own_team === game.home_id;
+                      const opp = isHome ? game.away_team?.team_name : game.home_team?.team_name;
+                      return (
+                        <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{game.start_time?.substring(0, 10) || '-'}</td>
+                          <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{isHome ? 'vs' : '@'} {opp || '?'}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.minute || 0}</td>
+                          <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{bs.pts}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.total_rebound}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.assist}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.steal}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.block}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.pts2_made + bs.pts3_made}/{bs.pts2_all + bs.pts3_all}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.pts3_made}/{bs.pts3_all}</td>
+                          <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.ft_made}/{bs.ft_all}</td>
+                          <td className={`py-1.5 px-1.5 ${bs.plusminus > 0 ? 'text-green-500' : bs.plusminus < 0 ? 'text-red-500' : subtext}`}>{bs.plusminus > 0 ? '+' : ''}{bs.plusminus}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className={`${card} p-8 text-center`}>
+            <User size={32} className={`mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
+            <p className={`text-sm ${subtext}`}>{t('No game data available for this player/season')}</p>
+            {playerSeasons.length === 0 && <p className={`text-xs mt-1 ${subtext}`}>{t('This player has no recorded seasons yet')}</p>}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderSearchTab = () => (
+    <div className="space-y-5">
+      <div className="flex gap-2">
+        <input
+          type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && doSearch()}
+          placeholder={t('Search by player name or team ID...')}
+          className={`flex-1 text-xs py-2 px-3 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700 text-gray-200 placeholder-gray-500' : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400'}`}
+        />
+        <button onClick={doSearch} disabled={searchLoading}
+          className="px-4 py-2 rounded-lg bg-orange-600 text-white text-xs font-semibold hover:bg-orange-700 disabled:opacity-50">
+          {searchLoading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+        </button>
+      </div>
+      <div className={`text-[10px] ${subtext}`}>{t('Try: player name (e.g. "Bergamin") or team ID (e.g. "49897")')}</div>
+      {searchError && <p className="text-xs text-red-500">{searchError}</p>}
+      {searchResult && (
+        <div className={`${card} p-4`}>
+          <h4 className={`text-sm font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            {searchResult.name} {searchResult.season && <span className={`text-xs font-normal ${subtext}`}>({searchResult.season})</span>}
+          </h4>
+          {searchResult.noData ? (
+            <p className={`text-xs ${subtext}`}>{t('No data available')}</p>
+          ) : searchResult.games && searchResult.games.length > 0 ? (
+            <div className="overflow-x-auto mt-3">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                    {['Date', 'Matchup', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'FG', '3P', 'FT'].map(h => (
+                      <th key={h} className={`py-2 px-1.5 text-left font-semibold ${subtext}`}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {searchResult.games.slice().reverse().map((g: any, i: number) => {
+                    const game = g.game;
+                    const bs = g.boxscore;
+                    if (!bs) return null;
+                    const isHome = game?.own_team === game?.home_id;
+                    const opp = game ? (isHome ? game.away_team?.team_name : game.home_team?.team_name) : '?';
+                    const matchup = game ? `${isHome ? 'vs' : '@'} ${opp}` : '-';
+                    return (
+                      <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{game?.start_time?.substring(0, 10) || '-'}</td>
+                        <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{matchup}</td>
+                        <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{bs.pts}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.total_rebound}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.assist}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.steal}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.block}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.pts2_made + bs.pts3_made}/{bs.pts2_all + bs.pts3_all}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.pts3_made}/{bs.pts3_all}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{bs.ft_made}/{bs.ft_all}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className={`text-xs ${subtext}`}>{t('No games found')}</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+
+  const subTabs = [
+    { id: 'team' as const, label: t('Team Performance'), icon: Users },
+    { id: 'player' as const, label: t('Player Performance'), icon: User },
+    { id: 'search' as const, label: t('Stat Search'), icon: Search },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800 overflow-x-auto scrollbar-hide">
+        {subTabs.map(tab => {
+          const Icon = tab.icon;
+          const active = subTab === tab.id;
+          return (
+            <button key={tab.id} onClick={() => setSubTab(tab.id)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
+                active
+                  ? `${isDark ? 'text-orange-400 border-orange-400' : 'text-orange-600 border-orange-600'}`
+                  : `border-transparent ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`
+              }`}>
+              <Icon size={13} />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+      {subTab === 'team' && renderTeamTab()}
+      {subTab === 'player' && renderPlayerTab()}
+      {subTab === 'search' && renderSearchTab()}
     </div>
   );
 }
