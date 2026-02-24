@@ -5533,7 +5533,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </button>
           </div>
 
-          <div className="flex gap-1 -mb-px overflow-x-auto" style={{ paddingRight: '2rem' }}>
+          <div className="flex gap-1 -mb-px overflow-x-auto scrollbar-hide" style={{ paddingRight: '4rem' }}>
             {tabs.map(tab => (
               <button
                 key={tab.id}
