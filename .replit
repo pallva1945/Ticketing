@@ -1,4 +1,4 @@
-modules = ["nodejs-20", "web", "python-3.11"]
+modules = ["nodejs-20", "web"]
 [agent]
 expertMode = true
 integrations = ["javascript_object_storage:2.0.0"]
@@ -19,29 +19,13 @@ author = "agent"
 task = "workflow.run"
 args = "Dev Server"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Scouting Dashboard"
-
 [[workflows.workflow]]
 name = "Dev Server"
 author = "agent"
 
-[workflows.workflow.metadata]
-outputType = "console"
-
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
-waitForPort = 5173
-
-[[workflows.workflow]]
-name = "Scouting Dashboard"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd /home/runner/workspace && python main.py"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
@@ -62,10 +46,6 @@ externalPort = 3000
 [[ports]]
 localPort = 5002
 externalPort = 3001
-
-[[ports]]
-localPort = 5173
-externalPort = 5173
 
 [deployment]
 deploymentTarget = "autoscale"
