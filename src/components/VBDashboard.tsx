@@ -4406,6 +4406,8 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
   );
 }
 
+type CmpMode = 'players' | 'roles' | 'categories' | 'yoy';
+
 function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
@@ -4415,6 +4417,7 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
   const [selectedSeason, setSelectedSeason] = useState(() => getCurrentSeason());
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedRole, setSelectedRole] = useState<string>('all');
+  const [compareMode, setCompareMode] = useState<CmpMode>('players');
 
   const seasonFiltered = useMemo(() => {
     if (selectedSeason === 'all') return validSessions;
@@ -4447,138 +4450,236 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
   useEffect(() => { setSelectedCategory('all'); setSelectedRole('all'); }, [selectedSeason]);
   useEffect(() => { setSelectedRole('all'); }, [selectedCategory]);
 
+  const allRoles = useMemo(() => [...new Set(players.map(p => getPlayerPosition(p, profiles)).filter(r => r))].sort(), [players, profiles]);
+  const allCategories = useMemo(() => {
+    const cats = new Set<string>();
+    sessions.forEach(s => { const season = getSeason(s.date); if (season) { const cat = getPlayerCategory(s.player, profiles, season); if (cat) cats.add(cat); } });
+    return [...cats].sort();
+  }, [sessions, profiles]);
+
   const [selected, setSelected] = useState<string[]>(players.slice(0, 2));
+  const [selectedCmpRoles, setSelectedCmpRoles] = useState<string[]>([]);
+  const [selectedCmpCategories, setSelectedCmpCategories] = useState<string[]>([]);
+  const [yoySeasons, setYoySeasons] = useState<string[]>([]);
+  const [yoyPlayer, setYoyPlayer] = useState<string>(players[0] || '');
+  const [yoyRole, setYoyRole] = useState<string>('all');
+  const [yoyCategory, setYoyCategory] = useState<string>('all');
 
   useEffect(() => {
-    setSelected(prev => {
-      const valid = prev.filter(p => filteredPlayers.includes(p));
-      if (valid.length >= 2) return valid;
-      const remaining = filteredPlayers.filter(p => !valid.includes(p));
-      return [...valid, ...remaining].slice(0, 2);
-    });
-  }, [filteredPlayers]);
+    if (compareMode === 'players') {
+      setSelected(prev => {
+        const valid = prev.filter(p => filteredPlayers.includes(p));
+        if (valid.length >= 2) return valid;
+        const remaining = filteredPlayers.filter(p => !valid.includes(p));
+        return [...valid, ...remaining].slice(0, 2);
+      });
+    }
+    if (compareMode === 'roles' && selectedCmpRoles.length === 0 && allRoles.length > 0) setSelectedCmpRoles(allRoles.slice(0, 3));
+    if (compareMode === 'categories' && selectedCmpCategories.length === 0 && allCategories.length > 0) setSelectedCmpCategories(allCategories.slice(0, 4));
+    if (compareMode === 'yoy' && yoySeasons.length === 0 && seasons.length > 0) setYoySeasons(seasons.slice(0, 3));
+  }, [compareMode, allRoles, allCategories, seasons, filteredPlayers]);
 
-  const getPlayerVal = (player: string, key: string): number | null => {
-    let val = getLatestMetric(roleFiltered, player, key as keyof VBSession);
-    if (val !== null && (key === 'pureVertical' || key === 'noStepVertical')) {
-      const reach = getLatestMetric(roleFiltered, player, 'standingReach');
-      if (reach !== null) val = val - reach; else return null;
-    }
-    if (val !== null && key === 'bodyFat') {
-      const dobSerial = getPlayerDobSerial(player, profiles);
-      const bfSession = getPlayerSessions(roleFiltered, player).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
-      const bf = calcBodyFatPct(val, dobSerial, bfSession?.date);
-      if (bf !== null) val = bf;
-    }
-    return val;
+  const toggleItem = (list: string[], item: string, setter: (v: string[]) => void) => {
+    setter(list.includes(item) ? list.filter(x => x !== item) : [...list, item]);
   };
 
-  const teamRanges = useMemo(() => {
-    const metricKeys = ['pureVertical', 'noStepVertical', 'deadlift', 'shootingPct', 'bodyFat', 'sprint', 'coneDrill'];
-    const ranges: Record<string, { min: number; max: number }> = {};
-    metricKeys.forEach(key => {
-      const allVals = filteredPlayers.map(p => getPlayerVal(p, key)).filter(v => v !== null) as number[];
-      ranges[key] = { min: allVals.length ? Math.min(...allVals) : 0, max: allVals.length ? Math.max(...allVals) : 1 };
-    });
-    return ranges;
-  }, [roleFiltered, filteredPlayers, profiles]);
+  const compEntities = useMemo((): { key: string; label: string; sessions: VBSession[]; players: string[] }[] => {
+    if (compareMode === 'players') {
+      return selected.map(p => ({ key: p, label: p.split(' ').pop() || p, sessions: roleFiltered.filter(s => s.player === p), players: [p] }));
+    }
+    if (compareMode === 'roles') {
+      return selectedCmpRoles.map(role => {
+        const roleSessions = roleFiltered.filter(s => getPlayerPosition(s.player, profiles) === role);
+        const rolePlayers = [...new Set(roleSessions.map(s => s.player))];
+        return { key: role, label: role, sessions: roleSessions, players: rolePlayers };
+      });
+    }
+    if (compareMode === 'categories') {
+      return selectedCmpCategories.map(cat => {
+        const catSessions = roleFiltered.filter(s => {
+          const season = getSeason(s.date);
+          return season ? getPlayerCategory(s.player, profiles, season) === cat : false;
+        });
+        const catPlayers = [...new Set(catSessions.map(s => s.player))];
+        return { key: cat, label: cat, sessions: catSessions, players: catPlayers };
+      });
+    }
+    if (compareMode === 'yoy') {
+      return yoySeasons.map(season => {
+        let seasonSess = validSessions.filter(s => getSeason(s.date) === season);
+        if (yoyPlayer !== 'all') seasonSess = seasonSess.filter(s => s.player === yoyPlayer);
+        if (yoyRole !== 'all') seasonSess = seasonSess.filter(s => getPlayerPosition(s.player, profiles) === yoyRole);
+        if (yoyCategory !== 'all') seasonSess = seasonSess.filter(s => { const sz = getSeason(s.date); return sz ? getPlayerCategory(s.player, profiles, sz) === yoyCategory : false; });
+        const plyrs = [...new Set(seasonSess.map(s => s.player))];
+        return { key: season, label: season, sessions: seasonSess, players: plyrs };
+      });
+    }
+    return [];
+  }, [compareMode, selected, selectedCmpRoles, selectedCmpCategories, yoySeasons, yoyPlayer, yoyRole, yoyCategory, roleFiltered, validSessions, profiles]);
+
+  const hasEnough = compEntities.length >= 2;
+
+  const getValFromSessions = (sess: VBSession[], plyrs: string[], key: string): number | null => {
+    if (key === 'relStrength') {
+      const vals = plyrs.map(p => {
+        const dl = getLatestMetric(sess, p, 'deadlift');
+        const wt = getLatestMetric(sess, p, 'weight');
+        return (dl !== null && wt !== null && wt > 0) ? Math.round(((dl * 0.9) / wt) * 100) / 100 : null;
+      }).filter(v => v !== null) as number[];
+      return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 100) / 100 : null;
+    }
+    const vals = plyrs.map(p => {
+      let val = getLatestMetric(sess, p, key as keyof VBSession);
+      if (val !== null && (key === 'pureVertical' || key === 'noStepVertical')) {
+        const reach = getLatestMetric(sess, p, 'standingReach');
+        if (reach !== null) val = val - reach; else return null;
+      }
+      if (val !== null && key === 'bodyFat') {
+        const dobSerial = getPlayerDobSerial(p, profiles);
+        const bfSession = getPlayerSessions(sess, p).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
+        const bf = calcBodyFatPct(val, dobSerial, bfSession?.date);
+        if (bf !== null) val = bf;
+      }
+      return val;
+    }).filter(v => v !== null) as number[];
+    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+  };
 
   const radarData = useMemo(() => {
-    if (selected.length < 2) return [];
+    if (!hasEnough) return [];
     const metricDefs = [
       { key: 'pureVertical', label: t('Pure Vertical'), invert: false },
       { key: 'noStepVertical', label: t('No-Step V.'), invert: false },
-      { key: 'deadlift', label: t('Deadlift'), invert: false },
+      { key: 'relStrength', label: t('Rel. Strength'), invert: false },
       { key: 'shootingPct', label: t('3PT %'), invert: false },
-      { key: 'bodyFat', label: t('Body Fat'), invert: true },
-      { key: 'sprint', label: t('Sprint'), invert: true },
-      { key: 'coneDrill', label: t('Cone Drill'), invert: true },
+      { key: 'bodyFat', label: t('BF'), invert: true },
+      { key: 'sprint', label: t('Speed'), invert: true },
+      { key: 'coneDrill', label: t('Agility'), invert: true },
     ];
+    const allValsForRange: Record<string, number[]> = {};
+    metricDefs.forEach(m => { allValsForRange[m.key] = []; });
+    compEntities.forEach(e => {
+      metricDefs.forEach(m => {
+        const v = getValFromSessions(e.sessions, e.players, m.key);
+        if (v !== null) allValsForRange[m.key].push(v);
+      });
+    });
     return metricDefs.map(m => {
-      const { min: teamMin, max: teamMax } = teamRanges[m.key] || { min: 0, max: 1 };
-      const range = teamMax - teamMin || 1;
+      const vals = allValsForRange[m.key];
+      const mn = vals.length ? Math.min(...vals) : 0;
+      const mx = vals.length ? Math.max(...vals) : 1;
+      const range = mx - mn || 1;
       const entry: any = { metric: m.label };
-      selected.forEach(p => {
-        const val = getPlayerVal(p, m.key);
-        if (val === null) { entry[p] = 0; return; }
-        if (m.invert) {
-          entry[p] = Math.round(((teamMax - val) / range) * 80 + 20);
-        } else {
-          entry[p] = Math.round(((val - teamMin) / range) * 80 + 20);
-        }
+      compEntities.forEach(e => {
+        const val = getValFromSessions(e.sessions, e.players, m.key);
+        if (val === null) { entry[e.key] = 0; return; }
+        entry[e.key] = m.invert ? Math.round(((mx - val) / range) * 80 + 20) : Math.round(((val - mn) / range) * 80 + 20);
       });
       return entry;
     });
-  }, [roleFiltered, selected, t, profiles, teamRanges]);
-
-  const teamLoadRanges = useMemo(() => {
-    const loadKeys = ['vitaminsLoad', 'weightsLoad', 'gameLoad', 'practiceLoad', 'shootsTaken'];
-    const ranges: Record<string, number> = {};
-    loadKeys.forEach(key => {
-      let globalMax = 0;
-      filteredPlayers.forEach(p => {
-        const ps = getPlayerSessions(roleFiltered, p);
-        const total = ps.reduce((sum, s) => sum + ((s[key as keyof VBSession] as number) || 0), 0);
-        if (total > globalMax) globalMax = total;
-      });
-      ranges[key] = globalMax || 1;
-    });
-    return ranges;
-  }, [roleFiltered, filteredPlayers]);
+  }, [compEntities, hasEnough, t, profiles]);
 
   const loadRadarData = useMemo(() => {
-    if (selected.length < 2) return [];
-    const metrics = [
+    if (!hasEnough) return [];
+    const loadMetrics = [
       { key: 'vitaminsLoad', label: t('Vitamins') },
       { key: 'weightsLoad', label: t('Weights') },
       { key: 'gameLoad', label: t('Game') },
       { key: 'practiceLoad', label: t('Practice') },
       { key: 'shootsTaken', label: t('Shots Taken') },
     ];
-    return metrics.map(m => {
+    const maxPerMetric: Record<string, number> = {};
+    loadMetrics.forEach(m => {
+      let mx = 0;
+      compEntities.forEach(e => {
+        const total = e.sessions.reduce((sum, s) => sum + ((s[m.key as keyof VBSession] as number) || 0), 0);
+        const avg = e.players.length > 0 ? total / e.players.length : 0;
+        if (avg > mx) mx = avg;
+      });
+      maxPerMetric[m.key] = mx || 1;
+    });
+    return loadMetrics.map(m => {
       const entry: any = { metric: m.label };
-      selected.forEach(p => {
-        const ps = getPlayerSessions(roleFiltered, p);
-        const total = ps.reduce((sum, s) => sum + ((s[m.key as keyof VBSession] as number) || 0), 0);
-        entry[p] = Math.round((total / teamLoadRanges[m.key]) * 100);
+      compEntities.forEach(e => {
+        const total = e.sessions.reduce((sum, s) => sum + ((s[m.key as keyof VBSession] as number) || 0), 0);
+        const avg = e.players.length > 0 ? total / e.players.length : 0;
+        entry[e.key] = Math.round((avg / maxPerMetric[m.key]) * 100);
       });
       return entry;
     });
-  }, [roleFiltered, selected, t, teamLoadRanges]);
+  }, [compEntities, hasEnough, t]);
+
+  const getEntityMetricVal = (e: { sessions: VBSession[]; players: string[] }, key: string): number | null => {
+    if (key === 'projHeight' || key === 'projWingspan' || key === 'projReach' || key === 'cas' || key === 'aps') {
+      const vals = e.players.map(p => {
+        if (key === 'projHeight') return getProjectedHeight(p, profiles, e.sessions);
+        if (key === 'projWingspan') return getProjectedWingspan(p, profiles, e.sessions);
+        if (key === 'projReach') return getProjectedReach(p, profiles, e.sessions);
+        if (key === 'cas') {
+          const sr = getLatestMetric(e.sessions, p, 'standingReach');
+          const pv = getLatestMetric(e.sessions, p, 'pureVertical');
+          const nsv = getLatestMetric(e.sessions, p, 'noStepVertical');
+          const maxVert = (pv !== null && sr !== null) ? pv - sr : null;
+          const standVert = (nsv !== null && sr !== null) ? nsv - sr : null;
+          const sp = getLatestMetric(e.sessions, p, 'sprint');
+          const cd = getLatestMetric(e.sessions, p, 'coneDrill');
+          const dl = getLatestMetric(e.sessions, p, 'deadlift');
+          const wt = getLatestMetric(e.sessions, p, 'weight');
+          const relDL = (dl !== null && wt !== null && wt > 0) ? Math.round(((dl * 0.9) / wt) * 100) / 100 : null;
+          const role = getPlayerPosition(p, profiles) || '';
+          const age = getPlayerAge(p, profiles);
+          return calcNbaBenchmarkedCas({ maxVert, standVert, sprint: sp, shuttle: cd, relDeadlift: relDL }, role, age);
+        }
+        if (key === 'aps') {
+          const projH = getProjectedHeight(p, profiles, e.sessions);
+          const weight = getLatestMetric(e.sessions, p, 'weight');
+          const projW = getProjectedWingspan(p, profiles, e.sessions);
+          const projR = getProjectedReach(p, profiles, e.sessions);
+          const role = getPlayerPosition(p, profiles) || '';
+          const age = getPlayerAge(p, profiles);
+          return calcNbaBenchmarkedAps({ projHeight: projH, weight, projWingspan: projW, projReach: projR }, role, age);
+        }
+        return null;
+      }).filter(v => v !== null) as number[];
+      return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
+    }
+    return getValFromSessions(e.sessions, e.players, key);
+  };
 
   const comparisonData = useMemo(() => {
-    const metrics: { key: keyof VBSession; label: string; unit: string }[] = [
-      { key: 'height', label: t('Height'), unit: 'cm' },
+    type CompRow = { key: string; label: string; unit: string; lowerBetter?: boolean; values: (number | null)[] };
+    const rows: CompRow[] = [];
+    const metricDefs: { key: string; label: string; unit: string; lowerBetter?: boolean }[] = [
+      { key: 'projHeight', label: t('P. Height'), unit: 'cm' },
       { key: 'weight', label: t('Weight'), unit: 'kg' },
-      { key: 'wingspan', label: t('Wingspan'), unit: 'cm' },
-      { key: 'standingReach', label: t('Standing Reach'), unit: 'cm' },
-      { key: 'bodyFat', label: t('Body Fat'), unit: '%' },
+      { key: 'projWingspan', label: t('P. Wingspan'), unit: 'cm' },
+      { key: 'projReach', label: t('P. Reach'), unit: 'cm' },
+      { key: 'bodyFat', label: t('BF'), unit: '%', lowerBetter: true },
       { key: 'pureVertical', label: t('Pure Vertical'), unit: 'cm' },
       { key: 'noStepVertical', label: t('No-Step Vertical'), unit: 'cm' },
-      { key: 'sprint', label: t('Sprint'), unit: 's' },
-      { key: 'coneDrill', label: t('Cone Drill'), unit: 's' },
-      { key: 'deadlift', label: t('Deadlift'), unit: 'kg' },
+      { key: 'sprint', label: t('Speed'), unit: 's', lowerBetter: true },
+      { key: 'coneDrill', label: t('Agility'), unit: 's', lowerBetter: true },
+      { key: 'relStrength', label: t('Rel. Strength'), unit: 'x' },
+      { key: 'cas', label: 'CAS', unit: '' },
+      { key: 'aps', label: 'APS', unit: '' },
     ];
-    return metrics.map(m => ({
-      ...m,
-      values: selected.map(p => {
-        const raw = getLatestMetric(roleFiltered, p, m.key);
-        if (raw !== null && m.key === 'bodyFat') {
-          const dobSerial = getPlayerDobSerial(p, profiles);
-          const bfSession = getPlayerSessions(roleFiltered, p).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
-          const bf = calcBodyFatPct(raw, dobSerial, bfSession?.date);
-          return bf !== null ? bf : raw;
-        }
-        if (raw !== null && (m.key === 'pureVertical' || m.key === 'noStepVertical')) {
-          const sr = getLatestMetric(roleFiltered, p, 'standingReach');
-          return sr !== null ? raw - sr : null;
-        }
-        return raw;
-      }),
-    }));
-  }, [roleFiltered, selected, t, profiles]);
+    for (const m of metricDefs) {
+      rows.push({
+        ...m,
+        values: compEntities.map(e => getEntityMetricVal(e, m.key)),
+      });
+    }
+    return rows;
+  }, [compEntities, t, profiles]);
 
   const selectClass = `px-3 py-1.5 rounded-lg text-xs font-medium appearance-none pr-7 ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-gray-700 border-gray-200'} border`;
+
+  const cmpModes: { key: CmpMode; label: string }[] = [
+    { key: 'players', label: t('Players') },
+    { key: 'roles', label: t('Role') },
+    { key: 'categories', label: t('Category') },
+    { key: 'yoy', label: 'YoY' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -4608,12 +4709,91 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
           <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{filteredPlayers.length} {t('players')}</span>
         </div>
       </div>
-      <div>
-        <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Select players to compare')} ({t('max 4')})</label>
-        <PlayerSelector players={filteredPlayers} selected={selected} onChange={setSelected} multiple />
+
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div>
+          <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Compare')}</label>
+          <div className="flex gap-1">
+            {cmpModes.map(m => (
+              <button key={m.key} onClick={() => setCompareMode(m.key)} className={`px-3 py-2 rounded-lg text-xs font-medium transition-all ${compareMode === m.key ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>{m.label}</button>
+            ))}
+          </div>
+        </div>
+        <div className="flex-1">
+          {compareMode === 'players' && (
+            <div>
+              <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Players')}</label>
+              <PlayerSelector players={filteredPlayers} selected={selected} onChange={setSelected} multiple />
+            </div>
+          )}
+          {compareMode === 'roles' && (
+            <div>
+              <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Role')}</label>
+              <div className="flex flex-wrap gap-1.5">
+                {allRoles.map(role => (
+                  <button key={role} onClick={() => toggleItem(selectedCmpRoles, role, setSelectedCmpRoles)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selectedCmpRoles.includes(role) ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>{role}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          {compareMode === 'categories' && (
+            <div>
+              <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Category')}</label>
+              <div className="flex flex-wrap gap-1.5">
+                {allCategories.map(cat => (
+                  <button key={cat} onClick={() => toggleItem(selectedCmpCategories, cat, setSelectedCmpCategories)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${selectedCmpCategories.includes(cat) ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>{cat}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          {compareMode === 'yoy' && (
+            <div className="space-y-3">
+              <div>
+                <label className={`text-xs font-medium mb-2 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Season')}</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {seasons.map(season => (
+                    <button key={season} onClick={() => toggleItem(yoySeasons, season, setYoySeasons)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${yoySeasons.includes(season) ? 'bg-orange-500 text-white' : isDark ? 'bg-gray-800 text-gray-400 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}>{season}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <div>
+                  <label className={`text-xs font-medium mb-1.5 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Player')} <span className={`font-normal ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>({t('optional')})</span></label>
+                  <div className="relative">
+                    <select value={yoyPlayer} onChange={e => setYoyPlayer(e.target.value)} className={selectClass}>
+                      <option value="all">{t('All')}</option>
+                      {players.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+                  </div>
+                </div>
+                <div>
+                  <label className={`text-xs font-medium mb-1.5 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Role')} <span className={`font-normal ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>({t('optional')})</span></label>
+                  <div className="relative">
+                    <select value={yoyRole} onChange={e => setYoyRole(e.target.value)} className={selectClass}>
+                      <option value="all">{t('All')}</option>
+                      {allRoles.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+                  </div>
+                </div>
+                <div>
+                  <label className={`text-xs font-medium mb-1.5 block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Category')} <span className={`font-normal ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>({t('optional')})</span></label>
+                  <div className="relative">
+                    <select value={yoyCategory} onChange={e => setYoyCategory(e.target.value)} className={selectClass}>
+                      <option value="all">{t('All')}</option>
+                      {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {selected.length >= 2 && (
+      {hasEnough && (
         <>
           <div className="grid grid-cols-2 gap-4">
             <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
@@ -4624,8 +4804,8 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
                     <PolarGrid stroke={isDark ? '#374151' : '#e5e7eb'} />
                     <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                     <PolarRadiusAxis tick={{ fontSize: 9 }} domain={[0, 100]} />
-                    {selected.map((p, i) => (
-                      <Radar key={p} name={p.split(' ').pop()} dataKey={p} stroke={METRIC_COLORS[i]} fill={METRIC_COLORS[i]} fillOpacity={0.15} strokeWidth={2} />
+                    {compEntities.map((e, i) => (
+                      <Radar key={e.key} name={e.label} dataKey={e.key} stroke={METRIC_COLORS[i]} fill={METRIC_COLORS[i]} fillOpacity={0.15} strokeWidth={2} />
                     ))}
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                     <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
@@ -4641,8 +4821,8 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
                     <PolarGrid stroke={isDark ? '#374151' : '#e5e7eb'} />
                     <PolarAngleAxis dataKey="metric" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                     <PolarRadiusAxis tick={{ fontSize: 9 }} domain={[0, 100]} />
-                    {selected.map((p, i) => (
-                      <Radar key={p} name={p.split(' ').pop()} dataKey={p} stroke={METRIC_COLORS[i]} fill={METRIC_COLORS[i]} fillOpacity={0.15} strokeWidth={2} />
+                    {compEntities.map((e, i) => (
+                      <Radar key={e.key} name={e.label} dataKey={e.key} stroke={METRIC_COLORS[i]} fill={METRIC_COLORS[i]} fillOpacity={0.15} strokeWidth={2} />
                     ))}
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                     <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
@@ -4659,23 +4839,26 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
                 <thead>
                   <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
                     <th className={`text-left py-2 px-2 font-semibold ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Metric')}</th>
-                    {selected.map((p, i) => (
-                      <th key={p} className="text-center py-2 px-2 font-semibold" style={{ color: METRIC_COLORS[i] }}>{p.split(' ').pop()}</th>
+                    {compEntities.map((e, i) => (
+                      <th key={e.key} className="text-center py-2 px-2 font-semibold" style={{ color: METRIC_COLORS[i] }}>{e.label}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {comparisonData.map(row => (
                     <tr key={row.key} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-50'}`}>
-                      <td className={`py-2 px-2 font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.label} <span className="text-gray-400">({row.unit})</span></td>
+                      <td className={`py-2 px-2 font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.label}{row.unit ? <span className="text-gray-400"> ({row.unit})</span> : ''}</td>
                       {row.values.map((v, i) => {
-                        const best = row.key === 'sprint' || row.key === 'coneDrill' || row.key === 'bodyFat'
-                          ? Math.min(...row.values.filter(x => x !== null) as number[])
-                          : Math.max(...row.values.filter(x => x !== null) as number[]);
-                        const isBest = v === best && row.values.filter(x => x !== null).length > 1;
+                        const validVals = row.values.filter(x => x !== null) as number[];
+                        const best = row.lowerBetter
+                          ? Math.min(...validVals)
+                          : Math.max(...validVals);
+                        const isBest = v === best && validVals.length > 1;
+                        const formatted = v !== null ? (row.key === 'relStrength' ? `${v.toFixed(2)}x` : row.unit === '%' ? `${v}%` : v) : '—';
+                        const scoreColor = (row.key === 'cas' || row.key === 'aps') && v !== null ? (v >= 105 ? 'text-emerald-500 font-semibold' : v >= 95 ? '' : 'text-red-400 font-semibold') : '';
                         return (
-                          <td key={i} className={`text-center py-2 px-2 ${isBest ? 'font-bold' : ''} ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                            {v !== null ? v : '—'}
+                          <td key={i} className={`text-center py-2 px-2 ${isBest ? 'font-bold' : ''} ${scoreColor} ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                            {formatted}
                             {isBest && <span className="text-emerald-500 ml-1">●</span>}
                           </td>
                         );
