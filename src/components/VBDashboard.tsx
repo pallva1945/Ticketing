@@ -4058,7 +4058,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
   const subTabs = [
     { id: 'team' as const, label: t('Team Performance'), icon: Users },
     { id: 'player' as const, label: t('Player Performance'), icon: User },
-    { id: 'search' as const, label: t('Stat Search'), icon: Search },
+    { id: 'search' as const, label: t('Stats Search'), icon: Search },
   ];
 
   return (
