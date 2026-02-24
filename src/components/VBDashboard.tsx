@@ -506,7 +506,11 @@ function getProjectedHeight(player: string, profiles: PlayerProfile[], sessions:
   const predictedIn = coeffs.beta + (coeffs.ht * currentHeightIn) + (coeffs.wt * currentWeightLbs) + (coeffs.mph * mph);
   let predictedCm = predictedIn * 2.54;
 
-  if (predictedCm < currentHeightCm) predictedCm = currentHeightCm;
+  const allHeights = getPlayerSessions(sessions, player)
+    .filter(s => s.height !== null)
+    .map(s => s.height!);
+  const maxActualHeight = allHeights.length > 0 ? Math.max(...allHeights) : currentHeightCm;
+  if (predictedCm < maxActualHeight) predictedCm = maxActualHeight;
 
   return Math.round(predictedCm * 10) / 10;
 }
@@ -528,7 +532,11 @@ function getProjectedReach(player: string, profiles: PlayerProfile[], sessions: 
   const growthRatio = projectedHeight / currentHeight;
   let projectedReach = currentReach * growthRatio;
 
-  if (projectedReach < currentReach) projectedReach = currentReach;
+  const allReaches = getPlayerSessions(sessions, player)
+    .filter(s => s.standingReach !== null)
+    .map(s => s.standingReach!);
+  const maxActualReach = allReaches.length > 0 ? Math.max(...allReaches) : currentReach;
+  if (projectedReach < maxActualReach) projectedReach = maxActualReach;
 
   return Math.round(projectedReach * 10) / 10;
 }
@@ -550,7 +558,11 @@ function getProjectedWingspan(player: string, profiles: PlayerProfile[], session
   const growthRatio = projectedHeight / currentHeight;
   let projectedWingspan = currentWingspan * growthRatio;
 
-  if (projectedWingspan < currentWingspan) projectedWingspan = currentWingspan;
+  const allWingspans = getPlayerSessions(sessions, player)
+    .filter(s => s.wingspan !== null)
+    .map(s => s.wingspan!);
+  const maxActualWingspan = allWingspans.length > 0 ? Math.max(...allWingspans) : currentWingspan;
+  if (projectedWingspan < maxActualWingspan) projectedWingspan = maxActualWingspan;
 
   return Math.round(projectedWingspan * 10) / 10;
 }
