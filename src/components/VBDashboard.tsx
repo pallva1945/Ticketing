@@ -1751,7 +1751,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
     { key: 'coneDrill', label: t('Agility'), unit: 's', icon: Gauge, color: '#f97316', lowerBetter: true },
     { key: 'pureVertical', label: t('Pure Vertical'), unit: 'cm', icon: Zap, color: '#f59e0b', lowerBetter: false },
     { key: 'noStepVertical', label: t('No-Step Vertical'), unit: 'cm', icon: Zap, color: '#8b5cf6', lowerBetter: false },
-    { key: 'bodyFat', label: t('BF %'), unit: '%', icon: Heart, color: '#ef4444', lowerBetter: true },
+    { key: 'bodyFat', label: t('BF'), unit: '%', icon: Heart, color: '#ef4444', lowerBetter: true },
     { key: 'relStrength', label: t('Rel. Strength'), unit: 'x', icon: Dumbbell, color: '#3b82f6', lowerBetter: false },
   ] as const;
 
