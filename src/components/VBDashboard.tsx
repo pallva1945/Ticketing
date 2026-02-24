@@ -2359,7 +2359,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
     }));
 
     const weightedPct = availComps.reduce((sum, c) => sum + c.pct! * (c.baseW / totalAvailW), 0);
-    const apsNorm = Math.round(weightedPct * af * 100) / 100;
+    const apsNorm = Math.round(weightedPct * 100) / 100;
 
     const apeIndex = (pd.wingspan !== null && pd.projHeight !== null && pd.projHeight > 0) ? Math.round((pd.wingspan / pd.projHeight) * 1000) / 1000 : null;
 
@@ -2642,7 +2642,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                   </div>
                   <div className={`text-[10px] mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                     {apsData.archetype} {t('weights')}{apsData.partial ? ' *' : ''}
-                    {apsData.ageFactor > 1 ? ` · Af ${apsData.ageFactor}x` : ''}
+                    
                   </div>
                 </div>
 
