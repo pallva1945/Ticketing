@@ -1426,10 +1426,15 @@ const FULLFIELD_TOKEN = process.env.FULLFIELD_API_TOKEN || '';
 
 const FULLFIELD_TEAMS: Record<string, number> = {
   'Varese U19': 49897,
+  'PV U19': 49897,
   'Campus Varese': 56097,
+  'Varese Basketball': 56097,
   'Robur e Fides U17': 56119,
+  'ReF U17': 56119,
   'Varese U17': 56121,
-  'Robur e Fides U19': 49893
+  'PV U17': 56121,
+  'Robur e Fides U19': 49893,
+  'ReF U19': 49893
 };
 
 const FULLFIELD_PLAYERS: Record<string, number> = {
