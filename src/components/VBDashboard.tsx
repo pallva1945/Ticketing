@@ -4545,6 +4545,35 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
     return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10 : null;
   };
 
+  const teamRanges = useMemo(() => {
+    const metricKeys = ['pureVertical', 'noStepVertical', 'relStrength', 'shootingPct', 'bodyFat', 'sprint', 'coneDrill'];
+    const ranges: Record<string, { min: number; max: number }> = {};
+    const allPlayers = [...new Set(validSessions.map(s => s.player))];
+    metricKeys.forEach(key => {
+      const allVals = allPlayers.map(p => {
+        if (key === 'relStrength') {
+          const dl = getLatestMetric(validSessions, p, 'deadlift');
+          const wt = getLatestMetric(validSessions, p, 'weight');
+          return (dl !== null && wt !== null && wt > 0) ? Math.round(((dl * 0.9) / wt) * 100) / 100 : null;
+        }
+        let val = getLatestMetric(validSessions, p, key as keyof VBSession);
+        if (val !== null && (key === 'pureVertical' || key === 'noStepVertical')) {
+          const reach = getLatestMetric(validSessions, p, 'standingReach');
+          if (reach !== null) val = val - reach; else return null;
+        }
+        if (val !== null && key === 'bodyFat') {
+          const dobSerial = getPlayerDobSerial(p, profiles);
+          const bfSession = getPlayerSessions(validSessions, p).filter(s => s.bodyFat !== null).sort((a, b) => b.date.localeCompare(a.date))[0];
+          const bf = calcBodyFatPct(val, dobSerial, bfSession?.date);
+          if (bf !== null) val = bf;
+        }
+        return val;
+      }).filter(v => v !== null) as number[];
+      ranges[key] = { min: allVals.length ? Math.min(...allVals) : 0, max: allVals.length ? Math.max(...allVals) : 1 };
+    });
+    return ranges;
+  }, [validSessions, profiles]);
+
   const radarData = useMemo(() => {
     if (!hasEnough) return [];
     const metricDefs = [
@@ -4556,28 +4585,34 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
       { key: 'sprint', label: t('Speed'), invert: true },
       { key: 'coneDrill', label: t('Agility'), invert: true },
     ];
-    const allValsForRange: Record<string, number[]> = {};
-    metricDefs.forEach(m => { allValsForRange[m.key] = []; });
-    compEntities.forEach(e => {
-      metricDefs.forEach(m => {
-        const v = getValFromSessions(e.sessions, e.players, m.key);
-        if (v !== null) allValsForRange[m.key].push(v);
-      });
-    });
     return metricDefs.map(m => {
-      const vals = allValsForRange[m.key];
-      const mn = vals.length ? Math.min(...vals) : 0;
-      const mx = vals.length ? Math.max(...vals) : 1;
-      const range = mx - mn || 1;
+      const { min: teamMin, max: teamMax } = teamRanges[m.key] || { min: 0, max: 1 };
+      const range = teamMax - teamMin || 1;
       const entry: any = { metric: m.label };
       compEntities.forEach(e => {
         const val = getValFromSessions(e.sessions, e.players, m.key);
         if (val === null) { entry[e.key] = 0; return; }
-        entry[e.key] = m.invert ? Math.round(((mx - val) / range) * 80 + 20) : Math.round(((val - mn) / range) * 80 + 20);
+        entry[e.key] = m.invert ? Math.round(((teamMax - val) / range) * 80 + 20) : Math.round(((val - teamMin) / range) * 80 + 20);
       });
       return entry;
     });
-  }, [compEntities, hasEnough, t, profiles]);
+  }, [compEntities, hasEnough, t, profiles, teamRanges]);
+
+  const teamLoadRanges = useMemo(() => {
+    const loadKeys = ['vitaminsLoad', 'weightsLoad', 'gameLoad', 'practiceLoad', 'shootsTaken'];
+    const ranges: Record<string, number> = {};
+    const allPlayers = [...new Set(validSessions.map(s => s.player))];
+    loadKeys.forEach(key => {
+      let globalMax = 0;
+      allPlayers.forEach(p => {
+        const ps = getPlayerSessions(validSessions, p);
+        const total = ps.reduce((sum, s) => sum + ((s[key as keyof VBSession] as number) || 0), 0);
+        if (total > globalMax) globalMax = total;
+      });
+      ranges[key] = globalMax || 1;
+    });
+    return ranges;
+  }, [validSessions]);
 
   const loadRadarData = useMemo(() => {
     if (!hasEnough) return [];
@@ -4588,26 +4623,16 @@ function CompareTab({ sessions, players, profiles }: { sessions: VBSession[]; pl
       { key: 'practiceLoad', label: t('Practice') },
       { key: 'shootsTaken', label: t('Shots Taken') },
     ];
-    const maxPerMetric: Record<string, number> = {};
-    loadMetrics.forEach(m => {
-      let mx = 0;
-      compEntities.forEach(e => {
-        const total = e.sessions.reduce((sum, s) => sum + ((s[m.key as keyof VBSession] as number) || 0), 0);
-        const avg = e.players.length > 0 ? total / e.players.length : 0;
-        if (avg > mx) mx = avg;
-      });
-      maxPerMetric[m.key] = mx || 1;
-    });
     return loadMetrics.map(m => {
       const entry: any = { metric: m.label };
       compEntities.forEach(e => {
         const total = e.sessions.reduce((sum, s) => sum + ((s[m.key as keyof VBSession] as number) || 0), 0);
         const avg = e.players.length > 0 ? total / e.players.length : 0;
-        entry[e.key] = Math.round((avg / maxPerMetric[m.key]) * 100);
+        entry[e.key] = Math.round((avg / teamLoadRanges[m.key]) * 100);
       });
       return entry;
     });
-  }, [compEntities, hasEnough, t]);
+  }, [compEntities, hasEnough, t, teamLoadRanges]);
 
   const getEntityMetricVal = (e: { sessions: VBSession[]; players: string[] }, key: string): number | null => {
     if (key === 'projHeight' || key === 'projWingspan' || key === 'projReach' || key === 'cas' || key === 'aps') {
