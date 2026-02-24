@@ -1458,7 +1458,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles, playerAttrs 
   );
 }
 
-function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
+function AnthropometricsTab({ sessions, players, profiles, onSelectPlayer }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[]; onSelectPlayer?: (p: string) => void }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
 
@@ -1667,7 +1667,7 @@ function AnthropometricsTab({ sessions, players, profiles }: { sessions: VBSessi
             </thead>
             <tbody>
               {sorted.map(row => (
-                <tr key={row.player} className={`border-b transition-colors ${isDark ? 'border-gray-800/50 hover:bg-gray-800/30' : 'border-gray-50 hover:bg-gray-50'}`}>
+                <tr key={row.player} onClick={() => onSelectPlayer?.(row.player)} className={`border-b cursor-pointer transition-colors ${isDark ? 'border-gray-800/50 hover:bg-gray-800/50' : 'border-gray-50 hover:bg-gray-50'}`}>
                   <td className={`py-2.5 px-2 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{row.player}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.height)}</td>
                   <td className={`text-center py-2.5 px-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatVal(row.projHeight)}</td>
@@ -5327,7 +5327,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
         ) : (
           <>
             {activeTab === 'overview' && <OverviewTab sessions={normalizedSessions} players={players} onSelectPlayer={handleSelectPlayer} profiles={profiles} playerAttrs={playerAttrs} />}
-            {activeTab === 'anthropometrics' && <AnthropometricsTab sessions={normalizedSessions} players={players} profiles={profiles} />}
+            {activeTab === 'anthropometrics' && <AnthropometricsTab sessions={normalizedSessions} players={players} profiles={profiles} onSelectPlayer={handleSelectPlayer} />}
             {activeTab === 'performance' && <PerformanceTab sessions={normalizedSessions} players={players} profiles={profiles} />}
             {activeTab === 'gameperf' && <GamePerformanceTab sessions={normalizedSessions} players={players} profiles={profiles} />}
             {activeTab === 'player' && <PlayerProfileTab sessions={normalizedSessions} players={players} initialPlayer={selectedPlayer} profiles={profiles} playerAttrs={playerAttrs} />}
