@@ -3493,7 +3493,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
     'Varese U17': 56121, 'Robur e Fides U19': 49893
   };
   const PLAYERS: Record<string, number> = {
-    'Ivan Prato': 35989, 'Tomas Scola': 52890, 'Marco Bergamin': 15042, 'Bruno Farias': 12406,
+    'Ivan Prato': 35989, 'Tomas Scola': 52890, 'Marco Bergamin': 15042, 'Bruno Farias': 212406,
     'Tomás Fernández Lang': 53452, 'Hassane Coulibaly': 65577, 'Juan Dollberg': 32455,
     'Lautaro Basualdo': 32461, 'Robert Kangur': 32861, 'Pietro Lazzati': 65571,
     'Tommaso Bada': 65573, 'Francesco Tornese': 65589, 'Pietro Balzarotti': 65593,
