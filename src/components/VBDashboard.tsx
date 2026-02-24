@@ -1132,7 +1132,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles, playerAttrs 
 
   const monthlyGoals = { practice: { min: 16, max: 32 }, vitamins: { min: 32, max: 48 }, weights: { min: 32, max: 48 }, game: { min: 24, max: 28 } };
   const shotsGoal = filterGranularity === 'day' ? 100 : filterGranularity === 'week' ? 100 : filterGranularity === 'month' ? 700 : 3000;
-  const goalScale = filterGranularity === 'day' ? 1 / 28 : filterGranularity === 'week' ? 1 / 4 : filterGranularity === 'month' ? 1 : 1 / 11;
+  const goalScale = filterGranularity === 'day' ? 1 / 30 : filterGranularity === 'week' ? 1 / 30 : filterGranularity === 'month' ? 7 / 30 : 1;
   const proratedGoals = {
     practice: { min: +(monthlyGoals.practice.min * goalScale).toFixed(1), max: +(monthlyGoals.practice.max * goalScale).toFixed(1) },
     vitamins: { min: +(monthlyGoals.vitamins.min * goalScale).toFixed(1), max: +(monthlyGoals.vitamins.max * goalScale).toFixed(1) },
@@ -5291,7 +5291,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </button>
           </div>
 
-          <div className="flex gap-1 -mb-px overflow-x-auto pr-4">
+          <div className="flex gap-1 -mb-px overflow-x-auto" style={{ paddingRight: '2rem' }}>
             {tabs.map(tab => (
               <button
                 key={tab.id}
