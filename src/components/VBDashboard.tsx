@@ -603,7 +603,7 @@ function getSeasonDays(selectedSeason: string, player?: string): number {
   return Math.max(1, Math.ceil((end.getTime() - seasonStart.getTime()) / 86400000));
 }
 
-function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isDark, selectedSeason, profiles }: { filtered: VBSession[]; allSessions: VBSession[]; activePlayers: string[]; onSelectPlayer: (p: string) => void; isDark: boolean; selectedSeason: string; profiles: PlayerProfile[] }) {
+function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, onFilterPlayer, isDark, selectedSeason, profiles, playerAttrs }: { filtered: VBSession[]; allSessions: VBSession[]; activePlayers: string[]; onSelectPlayer: (p: string) => void; onFilterPlayer?: (p: string) => void; isDark: boolean; selectedSeason: string; profiles: PlayerProfile[]; playerAttrs?: Record<string, any> }) {
   const { t } = useLanguage();
   const [sortKey, setSortKey] = useState<SortKey>('player');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -720,7 +720,7 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isD
       injury: injuryVal,
       nt: ntVal,
       daysOff: daysOffVal,
-      minLate: getPlayerProfile(player, profiles)?.minLate ?? null,
+      minLate: playerAttrs?.[player]?.minLate ?? getPlayerProfile(player, profiles)?.minLate ?? null,
       vacation: (() => {
         if (selectedSeason === 'all') return 0;
         const parts = selectedSeason.match(/^(\d{4})\//);
@@ -824,7 +824,7 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, isD
           </thead>
           <tbody>
             {sorted.map(row => (
-              <tr key={row.player} onClick={() => onSelectPlayer(row.player)} className={`border-b cursor-pointer transition-colors ${isDark ? 'border-gray-800/50 hover:bg-gray-800/50' : 'border-gray-50 hover:bg-gray-50'}`}>
+              <tr key={row.player} onClick={() => { onSelectPlayer(row.player); if (onFilterPlayer) onFilterPlayer(row.player); }} className={`border-b cursor-pointer transition-colors ${isDark ? 'border-gray-800/50 hover:bg-gray-800/50' : 'border-gray-50 hover:bg-gray-50'}`}>
                 <td className={`py-2.5 px-2 font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{row.player}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.shots || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.shotsMade || '—'}</td>
@@ -1453,7 +1453,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles, playerAttrs 
         </div>
       </div>
 
-      <RosterTable filtered={filtered} allSessions={sessions} activePlayers={activePlayers} onSelectPlayer={onSelectPlayer} isDark={isDark} selectedSeason={selectedSeason} profiles={profiles} />
+      <RosterTable filtered={filtered} allSessions={sessions} activePlayers={activePlayers} onSelectPlayer={onSelectPlayer} onFilterPlayer={(p) => setSelectedPlayerFilter(p === selectedPlayerFilter ? 'all' : p)} isDark={isDark} selectedSeason={selectedSeason} profiles={profiles} playerAttrs={playerAttrs} />
     </div>
   );
 }
@@ -5291,7 +5291,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </button>
           </div>
 
-          <div className="flex gap-1 -mb-px overflow-x-auto">
+          <div className="flex gap-1 -mb-px overflow-x-auto pr-4">
             {tabs.map(tab => (
               <button
                 key={tab.id}
