@@ -364,8 +364,7 @@ function calcNbaBenchmarkedAps(
 
   const totalW = avail.reduce((a, c) => a + c.w, 0);
   const weightedPct = avail.reduce((sum, c) => sum + c.pct! * (c.w / totalW), 0);
-  const af = getCasAgeFactor(age);
-  return Math.round(weightedPct * af * 100) / 100;
+  return Math.round(weightedPct * 100) / 100;
 }
 
 function getCasAgeFactor(age: number | null): number {
