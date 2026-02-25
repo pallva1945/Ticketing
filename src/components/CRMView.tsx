@@ -518,11 +518,27 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       customers: stats.customers.size
     })).sort((a, b) => b.tickets - a.tickets) : [];
 
+    const gameSellTypeBreakdown = matchedGame ? Object.entries(
+      matchingRecords.reduce((acc: Record<string, { tickets: number; revenue: number; customers: Set<string> }>, r: any) => {
+        const sellType = (r.sell || r.sellType || r.ticketType || 'Unknown').toUpperCase();
+        if (!acc[sellType]) acc[sellType] = { tickets: 0, revenue: 0, customers: new Set() };
+        acc[sellType].tickets += Number(r.quantity) || 1;
+        acc[sellType].revenue += Number(r.commercialValue) || 0;
+        acc[sellType].customers.add(getCustomerKey(r));
+        return acc;
+      }, {})
+    ).map(([sellType, stats]) => ({
+      sellType,
+      tickets: stats.tickets,
+      revenue: stats.revenue,
+      customers: stats.customers.size
+    })).sort((a, b) => b.tickets - a.tickets) : [];
+
     const gameTotalTickets = matchedGame ? matchingRecords.reduce((sum: number, r: any) => sum + (Number(r.quantity) || 1), 0) : 0;
     const gameTotalRevenue = matchedGame ? matchingRecords.reduce((sum: number, r: any) => sum + (Number(r.commercialValue) || Number(r.price) || 0), 0) : 0;
     const gameUniqueCustomers = matchedGame ? new Set(matchingRecords.map((r: any) => getCustomerKey(r))).size : 0;
 
-    return { seatLocation, seatHistory, matchingRecords, matchedGame: matchedGame || null, gameAttendees, gameZoneBreakdown, gameTotalTickets, gameTotalRevenue, gameUniqueCustomers };
+    return { seatLocation, seatHistory, matchingRecords, matchedGame: matchedGame || null, gameAttendees, gameZoneBreakdown, gameSellTypeBreakdown, gameTotalTickets, gameTotalRevenue, gameUniqueCustomers };
   }, [searchMode, clientSearchQuery, data, games]);
 
   const stats = useMemo(() => {
@@ -2987,34 +3003,67 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                         </div>
                       </div>
 
-                      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                        <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
-                          <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                            <MapPin size={16} className="text-red-500" />
-                            {t('By Zone')}
-                          </h4>
-                        </div>
-                        <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-                          <table className="w-full text-sm">
-                            <thead className="sticky top-0 z-10">
-                              <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Zone')}</th>
-                                <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Tickets')}</th>
-                                <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Customers')}</th>
-                                <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Revenue')}</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                              {seatHistoryData.gameZoneBreakdown.map((z: any, i: number) => (
-                                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                                  <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{z.zone}</td>
-                                  <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{z.tickets}</td>
-                                  <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{z.customers}</td>
-                                  <td className="py-2 px-3 text-right font-medium">{formatCurrency(z.revenue)}</td>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                          <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                            <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                              <MapPin size={16} className="text-red-500" />
+                              {t('By Zone')}
+                            </h4>
+                          </div>
+                          <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                            <table className="w-full text-sm">
+                              <thead className="sticky top-0 z-10">
+                                <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                  <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Zone')}</th>
+                                  <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Tickets')}</th>
+                                  <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Customers')}</th>
+                                  <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Revenue')}</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                {seatHistoryData.gameZoneBreakdown.map((z: any, i: number) => (
+                                  <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                    <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{z.zone}</td>
+                                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{z.tickets}</td>
+                                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{z.customers}</td>
+                                    <td className="py-2 px-3 text-right font-medium">{formatCurrency(z.revenue)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                          <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                            <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                              <Filter size={16} className="text-blue-500" />
+                              {t('By Sell Type')}
+                            </h4>
+                          </div>
+                          <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                            <table className="w-full text-sm">
+                              <thead className="sticky top-0 z-10">
+                                <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                  <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Type')}</th>
+                                  <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Tickets')}</th>
+                                  <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Customers')}</th>
+                                  <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Revenue')}</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                {seatHistoryData.gameSellTypeBreakdown.map((s: any, i: number) => (
+                                  <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                    <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{s.sellType}</td>
+                                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{s.tickets}</td>
+                                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{s.customers}</td>
+                                    <td className="py-2 px-3 text-right font-medium">{formatCurrency(s.revenue)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       </div>
 
