@@ -292,6 +292,7 @@ export async function fetchVBProfilesFromBigQuery(): Promise<{ success: boolean;
         poe3: getField(row, 'POE_3', 'poe_3', 'string_field_25') ? String(getField(row, 'POE_3', 'poe_3', 'string_field_25')).trim() : null,
         workEthic: parseFloat(getField(row, 'Work_Ethic', 'work_ethic', 'string_field_26')) || null,
         personality: parseFloat(getField(row, 'Personality', 'personality', 'string_field_27')) || null,
+        category: getField(row, 'Category', 'category', 'string_field_28') ? String(getField(row, 'Category', 'category', 'string_field_28')).trim() : null,
       };
     });
 

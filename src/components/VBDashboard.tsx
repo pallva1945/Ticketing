@@ -65,6 +65,7 @@ interface PlayerProfile {
   poe3: string | null;
   workEthic: number | null;
   personality: number | null;
+  category: string | null;
 }
 
 interface VBProspect {
@@ -414,6 +415,10 @@ function calcNbaBenchmarkedCas(
 }
 
 function getPlayerCategory(player: string, profiles: PlayerProfile[], season?: string): string {
+  const profile = profiles.find(p => p.name.toLowerCase() === player.toLowerCase() && (!season || p.season === season));
+  if (profile?.category) return profile.category;
+  const anyProfile = profiles.find(p => p.name.toLowerCase() === player.toLowerCase());
+  if (anyProfile?.category) return anyProfile.category;
   const year = getPlayerBirthYear(player, profiles);
   if (!year) return '';
   const endYear = season ? parseInt(season.split('/')[0]) + 1 : 2026;
