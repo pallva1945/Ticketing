@@ -153,13 +153,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [searchSelectedClient, setSearchSelectedClient] = useState<string | null>(null);
   const [searchGameFilter, setSearchGameFilter] = useState<string>('all');
-  const [searchMode, setSearchMode] = useState<'client' | 'seat' | 'game'>('client');
+  const [searchMode, setSearchMode] = useState<'client' | 'seat'>('client');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [sortColumn, setSortColumn] = useState<string>('value');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedCorporate, setSelectedCorporate] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
-  const [selectedSearchGame, setSelectedSearchGame] = useState<string | null>(null);
   const [selectedGiveawayRecipient, setSelectedGiveawayRecipient] = useState<string | null>(null);
   const [selectedGiveawayType, setSelectedGiveawayType] = useState<string | null>(null);
 
@@ -204,90 +203,37 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
   const searchSuggestions = useMemo(() => {
     const query = clientSearchQuery.toLowerCase().trim();
-    if (query.length < 1) return [];
+    if (searchMode !== 'seat' || query.length < 1) return [];
 
-    if (searchMode === 'game') {
-      const allGames = [...new Set(data.map(r => r.gm || r.game).filter(Boolean))];
-      return allGames
-        .filter(g => g.toLowerCase().includes(query))
-        .sort((a, b) => {
-          const getDate = (g: string) => {
-            const match = g.match(/\d{2}\/\d{2}\/\d{4}/);
-            if (match) { const [d, m, y] = match[0].split('/').map(Number); return new Date(y, m - 1, d).getTime(); }
-            return 0;
-          };
-          return getDate(b) - getDate(a);
-        })
-        .slice(0, 15);
-    }
-    if (searchMode === 'seat') {
-      const zones = [...new Set(data.map(r => r.pvZone).filter(Boolean))];
-      const areas = [...new Set(data.map(r => (r as any).area || '').filter(Boolean))];
-      const combined = [...zones.map(z => ({ label: z, type: 'zone' })), ...areas.map(a => ({ label: a, type: 'area' }))];
-      return combined
-        .filter(item => item.label.toLowerCase().includes(query))
-        .reduce((acc, item) => {
-          if (!acc.find(i => i.label === item.label)) acc.push(item);
-          return acc;
-        }, [] as { label: string; type: string }[])
-        .slice(0, 15);
-    }
-    return [];
-  }, [data, clientSearchQuery, searchMode]);
-
-  const gameSearchResults = useMemo(() => {
-    if (searchMode !== 'game' || !selectedSearchGame) return null;
-    const gameRecords = data.filter(r => (r.gm || r.game) === selectedSearchGame);
-    const totalTickets = gameRecords.reduce((sum, r) => sum + (Number(r.quantity) || 1), 0);
-    const totalRevenue = gameRecords.reduce((sum, r) => sum + (Number(r.commercialValue) || Number(r.price) || 0), 0);
-    const uniqueCustomers = new Set(gameRecords.map(r => getCustomerKey(r))).size;
-
-    const zoneBreakdown = Object.entries(
-      gameRecords.reduce((acc, r) => {
-        const zone = r.pvZone || r.zone || 'Unknown';
-        if (!acc[zone]) acc[zone] = { tickets: 0, revenue: 0, customers: new Set<string>() };
-        acc[zone].tickets += Number(r.quantity) || 1;
-        acc[zone].revenue += Number(r.commercialValue) || Number(r.price) || 0;
-        acc[zone].customers.add(getCustomerKey(r));
-        return acc;
-      }, {} as Record<string, { tickets: number; revenue: number; customers: Set<string> }>)
-    ).map(([zone, stats]) => ({
-      zone,
-      tickets: stats.tickets,
-      revenue: stats.revenue,
-      customers: stats.customers.size
-    })).sort((a, b) => b.tickets - a.tickets);
-
-    const sellTypeBreakdown = Object.entries(
-      gameRecords.reduce((acc, r) => {
-        const type = (r.sell || r.sellType || r.ticketType || 'Unknown').toUpperCase();
-        if (!acc[type]) acc[type] = { tickets: 0, revenue: 0 };
-        acc[type].tickets += Number(r.quantity) || 1;
-        acc[type].revenue += Number(r.commercialValue) || Number(r.price) || 0;
-        return acc;
-      }, {} as Record<string, { tickets: number; revenue: number }>)
-    ).map(([type, stats]) => ({ type, ...stats })).sort((a, b) => b.tickets - a.tickets);
-
-    const attendees = Object.entries(
-      gameRecords.reduce((acc, r) => {
-        const key = getCustomerKey(r);
-        if (!acc[key]) acc[key] = {
-          name: toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName),
-          zone: r.pvZone || r.zone || '—',
-          area: (r as any).area || '—',
-          seat: (r as any).seat || '—',
-          sellType: (r.sell || r.sellType || r.ticketType || '—').toUpperCase(),
-          tickets: 0,
-          value: 0
+    const gamesList = [...new Set(data.map(r => r.gm || r.game).filter(Boolean))];
+    const gameSuggestions = gamesList
+      .filter(g => g.toLowerCase().includes(query))
+      .sort((a, b) => {
+        const getDate = (g: string) => {
+          const match = g.match(/\d{2}\/\d{2}\/\d{4}/);
+          if (match) { const [d, m, y] = match[0].split('/').map(Number); return new Date(y, m - 1, d).getTime(); }
+          return 0;
         };
-        acc[key].tickets += Number(r.quantity) || 1;
-        acc[key].value += Number(r.commercialValue) || Number(r.price) || 0;
-        return acc;
-      }, {} as Record<string, any>)
-    ).map(([_, v]) => v).sort((a, b) => b.value - a.value);
+        return getDate(b) - getDate(a);
+      })
+      .slice(0, 8)
+      .map(g => ({ label: g, type: 'game' }));
 
-    return { totalTickets, totalRevenue, uniqueCustomers, zoneBreakdown, sellTypeBreakdown, attendees, gameName: selectedSearchGame };
-  }, [data, searchMode, selectedSearchGame]);
+    const zones = [...new Set(data.map(r => r.pvZone).filter(Boolean))];
+    const areas = [...new Set(data.map(r => (r as any).area || '').filter(Boolean))];
+    const locationSuggestions = [
+      ...zones.map(z => ({ label: z, type: 'zone' })),
+      ...areas.map(a => ({ label: a, type: 'area' }))
+    ]
+      .filter(item => item.label.toLowerCase().includes(query))
+      .reduce((acc, item) => {
+        if (!acc.find(i => i.label === item.label)) acc.push(item);
+        return acc;
+      }, [] as { label: string; type: string }[])
+      .slice(0, 8);
+
+    return [...gameSuggestions, ...locationSuggestions];
+  }, [data, clientSearchQuery, searchMode]);
 
   const filteredData = useMemo(() => {
     let result = [...data];
@@ -324,25 +270,35 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     const query = clientSearchQuery.toLowerCase().trim();
     if (searchMode !== 'seat' || query.length < 2) return null;
     
+    const allGameNames = [...new Set(data.map(r => r.gm || r.game).filter(Boolean))];
+    const matchedGame = allGameNames.find(g => g.toLowerCase() === query) 
+      || allGameNames.find(g => g.toLowerCase().includes(query) && query.length >= 4);
+
     const parts = query.split(/[,\s]+/).map((p: string) => p.trim()).filter((p: string) => p);
     
     let seatNumber: string | null = null;
     let areaFromHyphen: string | null = null;
     let zoneParts: string[] = parts;
     
-    const lastPart = parts[parts.length - 1];
-    const hyphenMatch = lastPart.match(/^([a-z]+)-?(\d+)$/i);
-    
-    if (hyphenMatch) {
-      areaFromHyphen = hyphenMatch[1].toLowerCase();
-      seatNumber = hyphenMatch[2];
-      zoneParts = parts.slice(0, -1);
-    } else if (/^\d+$/.test(lastPart)) {
-      seatNumber = lastPart;
-      zoneParts = parts.slice(0, -1);
+    if (!matchedGame) {
+      const lastPart = parts[parts.length - 1];
+      const hyphenMatch = lastPart.match(/^([a-z]+)-?(\d+)$/i);
+      
+      if (hyphenMatch) {
+        areaFromHyphen = hyphenMatch[1].toLowerCase();
+        seatNumber = hyphenMatch[2];
+        zoneParts = parts.slice(0, -1);
+      } else if (/^\d+$/.test(lastPart)) {
+        seatNumber = lastPart;
+        zoneParts = parts.slice(0, -1);
+      }
     }
 
     const matchingRecords = data.filter((r: any) => {
+      if (matchedGame) {
+        const recordGame = (r.gm || r.game || '').toLowerCase();
+        return recordGame === matchedGame.toLowerCase();
+      }
       const pvZone = ((r as any).pvZone || (r as any).pv_zone || (r as any).Pv_Zone || '').toLowerCase();
       const fullZone = ((r as any).zone || (r as any).Zone || '').toLowerCase();
       const area = ((r as any).area || (r as any).Area || '').toLowerCase();
@@ -357,11 +313,14 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     });
 
     const firstMatch = matchingRecords[0] as any;
-    const seatLocation = firstMatch ? {
-      zone: (firstMatch.zone || firstMatch.Zone || firstMatch.pv_zone || ''),
-      area: areaFromHyphen || (firstMatch.area || firstMatch.Area || ''),
-      seat: seatNumber || 'All seats'
-    } : null;
+    const seatLocation = matchedGame 
+      ? { zone: matchedGame, area: '', seat: '', isGame: true }
+      : firstMatch ? {
+          zone: (firstMatch.zone || firstMatch.Zone || firstMatch.pv_zone || ''),
+          area: areaFromHyphen || (firstMatch.area || firstMatch.Area || ''),
+          seat: seatNumber || 'All seats',
+          isGame: false
+        } : null;
 
     const seatHistory = games.map(game => {
       const gameDate = game.date;
@@ -402,7 +361,43 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       }
     });
 
-    return { seatLocation, seatHistory, matchingRecords };
+    const gameAttendees = matchedGame ? Object.entries(
+      matchingRecords.reduce((acc: Record<string, any>, r: any) => {
+        const key = getCustomerKey(r);
+        if (!acc[key]) acc[key] = {
+          name: toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName),
+          zone: r.pvZone || r.zone || '—',
+          area: (r as any).area || '—',
+          seat: (r as any).seat || '—',
+          sellType: (r.sell || r.sellType || r.ticketType || '—').toUpperCase(),
+          value: 0
+        };
+        acc[key].value += Number(r.commercialValue) || Number(r.price) || 0;
+        return acc;
+      }, {})
+    ).map(([_, v]) => v).sort((a: any, b: any) => a.zone.localeCompare(b.zone) || a.name.localeCompare(b.name)) : [];
+
+    const gameZoneBreakdown = matchedGame ? Object.entries(
+      matchingRecords.reduce((acc: Record<string, { tickets: number; revenue: number; customers: Set<string> }>, r: any) => {
+        const zone = r.pvZone || r.zone || 'Unknown';
+        if (!acc[zone]) acc[zone] = { tickets: 0, revenue: 0, customers: new Set() };
+        acc[zone].tickets += Number(r.quantity) || 1;
+        acc[zone].revenue += Number(r.commercialValue) || Number(r.price) || 0;
+        acc[zone].customers.add(getCustomerKey(r));
+        return acc;
+      }, {})
+    ).map(([zone, stats]) => ({
+      zone,
+      tickets: stats.tickets,
+      revenue: stats.revenue,
+      customers: stats.customers.size
+    })).sort((a, b) => b.tickets - a.tickets) : [];
+
+    const gameTotalTickets = matchedGame ? matchingRecords.reduce((sum: number, r: any) => sum + (Number(r.quantity) || 1), 0) : 0;
+    const gameTotalRevenue = matchedGame ? matchingRecords.reduce((sum: number, r: any) => sum + (Number(r.commercialValue) || Number(r.price) || 0), 0) : 0;
+    const gameUniqueCustomers = matchedGame ? new Set(matchingRecords.map((r: any) => getCustomerKey(r))).size : 0;
+
+    return { seatLocation, seatHistory, matchingRecords, matchedGame: matchedGame || null, gameAttendees, gameZoneBreakdown, gameTotalTickets, gameTotalRevenue, gameUniqueCustomers };
   }, [searchMode, clientSearchQuery, data, games]);
 
   const stats = useMemo(() => {
@@ -2646,7 +2641,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               
               <div className="flex gap-2 mb-4">
                 <button
-                  onClick={() => { setSearchMode('client'); setClientSearchQuery(''); setSearchSelectedClient(null); setSelectedSearchGame(null); setShowSuggestions(false); }}
+                  onClick={() => { setSearchMode('client'); setClientSearchQuery(''); setSearchSelectedClient(null); setShowSuggestions(false); }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                     searchMode === 'client' 
                       ? 'bg-red-600 text-white' 
@@ -2657,7 +2652,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   {t('Client Search')}
                 </button>
                 <button
-                  onClick={() => { setSearchMode('seat'); setClientSearchQuery(''); setSearchSelectedClient(null); setSelectedSearchGame(null); setShowSuggestions(false); }}
+                  onClick={() => { setSearchMode('seat'); setClientSearchQuery(''); setSearchSelectedClient(null); setShowSuggestions(false); }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                     searchMode === 'seat' 
                       ? 'bg-red-600 text-white' 
@@ -2666,17 +2661,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 >
                   <MapPin size={16} />
                   {t('Seat Search')}
-                </button>
-                <button
-                  onClick={() => { setSearchMode('game'); setClientSearchQuery(''); setSearchSelectedClient(null); setSelectedSearchGame(null); setShowSuggestions(false); }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                    searchMode === 'game' 
-                      ? 'bg-red-600 text-white' 
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200'
-                  }`}
-                >
-                  <Calendar size={16} />
-                  {t('Game Search')}
                 </button>
               </div>
               
@@ -2687,15 +2671,13 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     type="text"
                     placeholder={searchMode === 'client' 
                       ? t("Search by name, email, phone...") 
-                      : searchMode === 'seat'
-                      ? t("Search by zone, area, seat (e.g., par o, D, 121)")
-                      : t("Search by game (e.g., Brescia, Milano...)")
+                      : t("Search by game, zone, area, seat...")
                     }
                     value={clientSearchQuery}
                     onChange={(e) => {
                       setClientSearchQuery(e.target.value);
                       setShowSuggestions(true);
-                      if (e.target.value.length < 2) { setSearchSelectedClient(null); setSelectedSearchGame(null); }
+                      if (e.target.value.length < 2) setSearchSelectedClient(null);
                     }}
                     onFocus={() => setShowSuggestions(true)}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
@@ -2704,59 +2686,42 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   />
                   {clientSearchQuery && (
                     <button 
-                      onClick={() => { setClientSearchQuery(''); setSearchSelectedClient(null); setSearchGameFilter('all'); setSelectedSearchGame(null); setShowSuggestions(false); }}
+                      onClick={() => { setClientSearchQuery(''); setSearchSelectedClient(null); setSearchGameFilter('all'); setShowSuggestions(false); }}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400"
                     >
                       <X size={16} />
                     </button>
                   )}
-                  {showSuggestions && clientSearchQuery.length >= 1 && (searchMode === 'game' || searchMode === 'seat') && (
-                    (() => {
-                      const suggestions = searchSuggestions;
-                      if (!suggestions || (Array.isArray(suggestions) && suggestions.length === 0)) return null;
-                      return (
-                        <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                          {searchMode === 'game' && (suggestions as string[]).map((game, i) => (
-                            <button
-                              key={i}
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => {
-                                setClientSearchQuery(game);
-                                setSelectedSearchGame(game);
-                                setShowSuggestions(false);
-                              }}
-                              className="w-full text-left px-4 py-2.5 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2 border-b border-gray-50 dark:border-gray-800 last:border-b-0"
-                            >
-                              <Calendar size={14} className="text-gray-400 flex-shrink-0" />
-                              <span className="text-gray-800 dark:text-gray-200">{game}</span>
-                            </button>
-                          ))}
-                          {searchMode === 'seat' && (suggestions as { label: string; type: string }[]).map((item, i) => (
-                            <button
-                              key={i}
-                              onMouseDown={(e) => e.preventDefault()}
-                              onClick={() => {
-                                setClientSearchQuery(item.label + ' ');
-                                setShowSuggestions(false);
-                              }}
-                              className="w-full text-left px-4 py-2.5 text-sm hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-2 border-b border-gray-50 dark:border-gray-800 last:border-b-0"
-                            >
-                              <MapPin size={14} className="text-gray-400 flex-shrink-0" />
-                              <span className="text-gray-800 dark:text-gray-200">{item.label}</span>
-                              <span className="text-xs text-gray-400 ml-auto">{item.type}</span>
-                            </button>
-                          ))}
-                        </div>
-                      );
-                    })()
+                  {showSuggestions && clientSearchQuery.length >= 1 && searchMode === 'seat' && searchSuggestions.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                      {(searchSuggestions as { label: string; type: string }[]).map((item, i) => (
+                        <button
+                          key={i}
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            if (item.type === 'game') {
+                              setClientSearchQuery(item.label);
+                            } else {
+                              setClientSearchQuery(item.label + ' ');
+                            }
+                            setShowSuggestions(false);
+                          }}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2 border-b border-gray-50 dark:border-gray-800 last:border-b-0 ${
+                            item.type === 'game' ? 'hover:bg-red-50 dark:hover:bg-red-900/20' : 'hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                          }`}
+                        >
+                          {item.type === 'game' ? <Calendar size={14} className="text-red-400 flex-shrink-0" /> : <MapPin size={14} className="text-blue-400 flex-shrink-0" />}
+                          <span className="text-gray-800 dark:text-gray-200">{item.label}</span>
+                          <span className={`text-xs ml-auto ${item.type === 'game' ? 'text-red-400' : 'text-gray-400'}`}>{item.type}</span>
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   {searchMode === 'client' 
                     ? t("Enter at least 2 characters to find a client by name, email, or phone") 
-                    : searchMode === 'seat'
-                    ? t("Search examples: par o, par ex D 121, curva n")
-                    : t("Type to search for a game, then select from suggestions")
+                    : t("Search by game name, zone, area, or seat number")
                   }
                 </p>
               </div>
@@ -2792,210 +2757,179 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               {query.length >= 2 && searchMode === 'seat' && seatHistoryData && (
                 <div className="space-y-4">
                   {seatHistoryData.seatLocation && (
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                    <div className={`bg-gradient-to-br rounded-xl p-4 border ${seatHistoryData.seatLocation.isGame ? 'from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-red-200 dark:border-red-800' : 'from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 border-blue-200 dark:border-blue-800'}`}>
                       <div className="flex items-center gap-3">
-                        <div className="bg-blue-600 text-white rounded-lg p-3">
-                          <MapPin size={24} />
+                        <div className={`text-white rounded-lg p-3 ${seatHistoryData.seatLocation.isGame ? 'bg-red-600' : 'bg-blue-600'}`}>
+                          {seatHistoryData.seatLocation.isGame ? <Calendar size={24} /> : <MapPin size={24} />}
                         </div>
                         <div>
-                          <p className="text-xs text-blue-600 uppercase font-semibold">{t('Seat Location')}</p>
+                          <p className={`text-xs uppercase font-semibold ${seatHistoryData.seatLocation.isGame ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                            {seatHistoryData.seatLocation.isGame ? t('Game') : t('Seat Location')}
+                          </p>
                           <p className="text-lg font-bold text-gray-800 dark:text-gray-100">
-                            {seatHistoryData.seatLocation.zone} {seatHistoryData.seatLocation.area && `- ${t('Section')} ${seatHistoryData.seatLocation.area}`} {seatHistoryData.seatLocation.seat !== 'All seats' && `- ${t('Seat')} ${seatHistoryData.seatLocation.seat}`}
+                            {seatHistoryData.seatLocation.isGame 
+                              ? seatHistoryData.seatLocation.zone
+                              : <>
+                                  {seatHistoryData.seatLocation.zone} {seatHistoryData.seatLocation.area && `- ${t('Section')} ${seatHistoryData.seatLocation.area}`} {seatHistoryData.seatLocation.seat !== 'All seats' && `- ${t('Seat')} ${seatHistoryData.seatLocation.seat}`}
+                                </>
+                            }
                           </p>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
-                      <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                        <Ticket size={18} className="text-blue-500" />
-                        {t('Seat History')} ({seatHistoryData.seatHistory.filter(g => g.occupied).length}/{seatHistoryData.seatHistory.length} {t('games occupied')})
-                      </h4>
-                    </div>
-                    <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
-                      <table className="w-full text-sm">
-                        <thead className="sticky top-0 z-10">
-                          <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Date')}</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Opponent')}</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Status')}</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Occupant')}</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Type')}</th>
-                            <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Value')}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                          {seatHistoryData.seatHistory.length === 0 ? (
-                            <tr>
-                              <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
-                                <MapPin size={32} className="mx-auto mb-2 opacity-30" />
-                                <p>{t('No games found. Make sure game data is loaded.')}</p>
-                              </td>
-                            </tr>
-                          ) : seatHistoryData.seatHistory.map((row, i) => (
-                            <tr key={i} className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${!row.occupied ? 'bg-gray-50/50 dark:bg-gray-800' : ''}`}>
-                              <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{row.date}</td>
-                              <td className="py-2 px-3 font-medium">{row.opponent}</td>
-                              <td className="py-2 px-3">
-                                {row.occupied ? (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800">
-                                    {t('Occupied')}
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
-                                    {t('Empty')}
-                                  </span>
-                                )}
-                              </td>
-                              <td className="py-2 px-3">{row.occupant || '—'}</td>
-                              <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{row.sellType || '—'}</td>
-                              <td className="py-2 px-3 text-right font-medium">
-                                {row.price > 0 ? formatCurrency(row.price) : '—'}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                  {seatHistoryData.matchedGame && (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Total Tickets')}</p>
+                          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{seatHistoryData.gameTotalTickets.toLocaleString('it-IT')}</p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Revenue')}</p>
+                          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(seatHistoryData.gameTotalRevenue)}</p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Unique Customers')}</p>
+                          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{seatHistoryData.gameUniqueCustomers.toLocaleString('it-IT')}</p>
+                        </div>
+                      </div>
 
-                  {seatHistoryData.matchingRecords.length > 0 && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {t('Found')} {seatHistoryData.matchingRecords.length} {t('ticket records for this location')}
-                    </p>
+                      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                          <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                            <MapPin size={16} className="text-red-500" />
+                            {t('By Zone')}
+                          </h4>
+                        </div>
+                        <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                          <table className="w-full text-sm">
+                            <thead className="sticky top-0 z-10">
+                              <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Zone')}</th>
+                                <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Tickets')}</th>
+                                <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Customers')}</th>
+                                <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Revenue')}</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                              {seatHistoryData.gameZoneBreakdown.map((z: any, i: number) => (
+                                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                  <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{z.zone}</td>
+                                  <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{z.tickets}</td>
+                                  <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{z.customers}</td>
+                                  <td className="py-2 px-3 text-right font-medium">{formatCurrency(z.revenue)}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                          <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                            <Users size={16} className="text-red-500" />
+                            {t('Attendees')} ({seatHistoryData.gameAttendees.length})
+                          </h4>
+                        </div>
+                        <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
+                          <table className="w-full text-sm">
+                            <thead className="sticky top-0 z-10">
+                              <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Name')}</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Zone')}</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Area')}</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Seat')}</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Type')}</th>
+                                <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Value')}</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                              {seatHistoryData.gameAttendees.map((a: any, i: number) => (
+                                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                  <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{a.name}</td>
+                                  <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.zone}</td>
+                                  <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.area}</td>
+                                  <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.seat}</td>
+                                  <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.sellType}</td>
+                                  <td className="py-2 px-3 text-right font-medium">{a.value > 0 ? formatCurrency(a.value) : '—'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {!seatHistoryData.matchedGame && (
+                    <>
+                      <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                          <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                            <Ticket size={18} className="text-blue-500" />
+                            {t('Seat History')} ({seatHistoryData.seatHistory.filter(g => g.occupied).length}/{seatHistoryData.seatHistory.length} {t('games occupied')})
+                          </h4>
+                        </div>
+                        <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
+                          <table className="w-full text-sm">
+                            <thead className="sticky top-0 z-10">
+                              <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Date')}</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Opponent')}</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Status')}</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Occupant')}</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Type')}</th>
+                                <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Value')}</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                              {seatHistoryData.seatHistory.length === 0 ? (
+                                <tr>
+                                  <td colSpan={6} className="py-8 text-center text-gray-500 dark:text-gray-400">
+                                    <MapPin size={32} className="mx-auto mb-2 opacity-30" />
+                                    <p>{t('No games found. Make sure game data is loaded.')}</p>
+                                  </td>
+                                </tr>
+                              ) : seatHistoryData.seatHistory.map((row, i) => (
+                                <tr key={i} className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${!row.occupied ? 'bg-gray-50/50 dark:bg-gray-800' : ''}`}>
+                                  <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{row.date}</td>
+                                  <td className="py-2 px-3 font-medium">{row.opponent}</td>
+                                  <td className="py-2 px-3">
+                                    {row.occupied ? (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/20 text-green-800">
+                                        {t('Occupied')}
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                                        {t('Empty')}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-2 px-3">{row.occupant || '—'}</td>
+                                  <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{row.sellType || '—'}</td>
+                                  <td className="py-2 px-3 text-right font-medium">
+                                    {row.price > 0 ? formatCurrency(row.price) : '—'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {seatHistoryData.matchingRecords.length > 0 && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {t('Found')} {seatHistoryData.matchingRecords.length} {t('ticket records for this location')}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               )}
 
-              {searchMode === 'game' && gameSearchResults && (
-                <div className="space-y-4">
-                  <div className="bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-xl p-4 border border-red-200 dark:border-red-800">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-red-600 text-white rounded-lg p-3">
-                        <Calendar size={24} />
-                      </div>
-                      <div>
-                        <p className="text-xs text-red-600 dark:text-red-400 uppercase font-semibold">{t('Game')}</p>
-                        <p className="text-lg font-bold text-gray-800 dark:text-gray-100">{gameSearchResults.gameName}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Total Tickets')}</p>
-                      <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{gameSearchResults.totalTickets.toLocaleString('it-IT')}</p>
-                    </div>
-                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Revenue')}</p>
-                      <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(gameSearchResults.totalRevenue)}</p>
-                    </div>
-                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Unique Customers')}</p>
-                      <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{gameSearchResults.uniqueCustomers.toLocaleString('it-IT')}</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                      <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
-                        <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                          <MapPin size={16} className="text-red-500" />
-                          {t('By Zone')}
-                        </h4>
-                      </div>
-                      <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-                        <table className="w-full text-sm">
-                          <thead className="sticky top-0 z-10">
-                            <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                              <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Zone')}</th>
-                              <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Tickets')}</th>
-                              <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Customers')}</th>
-                              <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Revenue')}</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {gameSearchResults.zoneBreakdown.map((z, i) => (
-                              <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                                <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{z.zone}</td>
-                                <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{z.tickets}</td>
-                                <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{z.customers}</td>
-                                <td className="py-2 px-3 text-right font-medium">{formatCurrency(z.revenue)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-
-                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                      <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
-                        <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                          <Ticket size={16} className="text-red-500" />
-                          {t('By Sell Type')}
-                        </h4>
-                      </div>
-                      <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-                        <table className="w-full text-sm">
-                          <thead className="sticky top-0 z-10">
-                            <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                              <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Type')}</th>
-                              <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Tickets')}</th>
-                              <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Revenue')}</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                            {gameSearchResults.sellTypeBreakdown.map((s, i) => (
-                              <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                                <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{s.type}</td>
-                                <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{s.tickets}</td>
-                                <td className="py-2 px-3 text-right font-medium">{formatCurrency(s.revenue)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
-                      <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                        <Users size={16} className="text-red-500" />
-                        {t('Attendees')} ({gameSearchResults.attendees.length})
-                      </h4>
-                    </div>
-                    <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
-                      <table className="w-full text-sm">
-                        <thead className="sticky top-0 z-10">
-                          <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Name')}</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Zone')}</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Area')}</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Seat')}</th>
-                            <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Type')}</th>
-                            <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Value')}</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                          {gameSearchResults.attendees.map((a: any, i: number) => (
-                            <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                              <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{a.name}</td>
-                              <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.zone}</td>
-                              <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.area}</td>
-                              <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.seat}</td>
-                              <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.sellType}</td>
-                              <td className="py-2 px-3 text-right font-medium">{a.value > 0 ? formatCurrency(a.value) : '—'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {selectedClient && (
                 <div className="space-y-6">
