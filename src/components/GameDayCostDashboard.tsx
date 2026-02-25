@@ -24,7 +24,7 @@ interface CostLine {
   color: string;
 }
 
-const COST_LINES: CostLine[] = [
+const DEFAULT_COST_LINES: CostLine[] = [
   { name: 'Tix Cost', values: [514.24, 0, 1229.00, 6504.15, 7606.71, 4821.83], total: 20675.93, color: '#ef4444' },
   { name: 'Tix Sales Ops', values: [0, 0, 968.83, 1080.05, 1082.91, 1064.81], total: 4196.60, color: '#f97316' },
   { name: 'GD Merchandising', values: [0, 0, 0, 5797.35, 8696.02, 2898.67], total: 17392.04, color: '#f59e0b' },
@@ -39,20 +39,25 @@ const COST_LINES: CostLine[] = [
   { name: 'GD Utilities', values: [0, 0, 3911.48, 5429.48, 11869.25, 7408.93], total: 28619.14, color: '#d946ef' },
 ];
 
-const MONTHLY_TOTALS = MONTHS.map((_, i) => COST_LINES.reduce((sum, line) => sum + line.values[i], 0));
-const GRAND_TOTAL = COST_LINES.reduce((sum, line) => sum + line.total, 0);
-const COST_PER_GAME = GRAND_TOTAL / TOTAL_GAMES;
+interface GameDayCostDashboardProps {
+  costLines?: CostLine[];
+}
 
-const perGameByCategoryStatic = COST_LINES.map(line => ({
-  name: line.name,
-  totalPerGame: line.total / TOTAL_GAMES,
-  total: line.total,
-  color: line.color,
-})).sort((a, b) => b.totalPerGame - a.totalPerGame);
-
-export const GameDayCostDashboard: React.FC = () => {
+export const GameDayCostDashboard: React.FC<GameDayCostDashboardProps> = ({ costLines }) => {
   const { t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const COST_LINES = costLines || DEFAULT_COST_LINES;
+  const MONTHLY_TOTALS = MONTHS.map((_, i) => COST_LINES.reduce((sum, line) => sum + line.values[i], 0));
+  const GRAND_TOTAL = COST_LINES.reduce((sum, line) => sum + line.total, 0);
+  const COST_PER_GAME = GRAND_TOTAL / TOTAL_GAMES;
+
+  const perGameByCategoryData = COST_LINES.map(line => ({
+    name: line.name,
+    totalPerGame: line.total / TOTAL_GAMES,
+    total: line.total,
+    color: line.color,
+  })).sort((a, b) => b.totalPerGame - a.totalPerGame);
 
   const gameMonthsData = MONTHS
     .map((month, i) => {
@@ -104,7 +109,7 @@ export const GameDayCostDashboard: React.FC = () => {
             <span>{t('Avg Cost / Game')}</span>
           </div>
           <div className="text-xl font-bold text-red-600">{formatCurrencyShort(COST_PER_GAME)}</div>
-          <div className="text-[10px] text-gray-400 mt-1">12 {t('categories')}</div>
+          <div className="text-[10px] text-gray-400 mt-1">{COST_LINES.length} {t('categories')}</div>
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
@@ -202,9 +207,9 @@ export const GameDayCostDashboard: React.FC = () => {
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">{t('Cost per Game by Category')}</h3>
         <p className="text-[10px] text-gray-400 dark:text-gray-500 mb-4">{t('Average cost per game across')} {TOTAL_GAMES} {t('home games')}</p>
         <div className="space-y-2">
-          {perGameByCategoryStatic.map((item) => {
+          {perGameByCategoryData.map((item) => {
             const isSelected = selectedCategory === item.name;
-            const pct = (item.totalPerGame / perGameByCategoryStatic[0].totalPerGame) * 100;
+            const pct = (item.totalPerGame / perGameByCategoryData[0].totalPerGame) * 100;
             return (
               <button
                 key={item.name}

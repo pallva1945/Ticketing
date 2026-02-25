@@ -7,7 +7,6 @@ const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maxi
 
 const MONTHS = ['July', 'August', 'September', 'October', 'November', 'December'];
 const GAMES_PER_MONTH = [0, 0, 2, 2, 3, 1];
-const TOTAL_GAMES = GAMES_PER_MONTH.reduce((s, g) => s + g, 0);
 
 interface CostLine {
   name: string;
@@ -16,16 +15,21 @@ interface CostLine {
   color: string;
 }
 
-const COST_LINES: CostLine[] = [
+const DEFAULT_COST_LINES: CostLine[] = [
   { name: 'Events', values: [0, 0, 8647.43, 0, 0, 11823.32], total: 20470.75, color: '#f97316' },
   { name: 'Materials and Advertising', values: [0, 0, 1111.11, 1828.61, 3354.32, 4089.32], total: 10383.36, color: '#3b82f6' },
 ];
 
-const MONTHLY_TOTALS = MONTHS.map((_, i) => COST_LINES.reduce((sum, line) => sum + line.values[i], 0));
-const GRAND_TOTAL = COST_LINES.reduce((sum, line) => sum + line.total, 0);
+interface SponsorshipCostDashboardProps {
+  costLines?: CostLine[];
+}
 
-export const SponsorshipCostDashboard: React.FC = () => {
+export const SponsorshipCostDashboard: React.FC<SponsorshipCostDashboardProps> = ({ costLines }) => {
   const { t } = useLanguage();
+
+  const COST_LINES = costLines || DEFAULT_COST_LINES;
+  const MONTHLY_TOTALS = MONTHS.map((_, i) => COST_LINES.reduce((sum, line) => sum + line.values[i], 0));
+  const GRAND_TOTAL = COST_LINES.reduce((sum, line) => sum + line.total, 0);
 
   const monthlyData = MONTHS
     .map((month, i) => ({
@@ -37,8 +41,10 @@ export const SponsorshipCostDashboard: React.FC = () => {
     .filter(d => d.total > 0);
 
   const peakMonth = monthlyData.reduce((a, b) => a.total > b.total ? a : b);
-  const eventsPct = (COST_LINES[0].total / GRAND_TOTAL) * 100;
-  const matPct = (COST_LINES[1].total / GRAND_TOTAL) * 100;
+  const eventsLine = COST_LINES.find(l => l.name === 'Events') || COST_LINES[0];
+  const matsLine = COST_LINES.find(l => l.name === 'Materials and Advertising') || (COST_LINES[1] || COST_LINES[0]);
+  const eventsPct = (eventsLine.total / GRAND_TOTAL) * 100;
+  const matPct = (matsLine.total / GRAND_TOTAL) * 100;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -76,7 +82,7 @@ export const SponsorshipCostDashboard: React.FC = () => {
             <Flag size={12} />
             <span>{t('Events')}</span>
           </div>
-          <div className="text-xl font-bold text-orange-600">{formatCurrency(COST_LINES[0].total)}</div>
+          <div className="text-xl font-bold text-orange-600">{formatCurrency(eventsLine.total)}</div>
           <div className="text-[10px] text-gray-400 mt-1">{eventsPct.toFixed(1)}% {t('of total')}</div>
         </div>
 
@@ -85,7 +91,7 @@ export const SponsorshipCostDashboard: React.FC = () => {
             <Flag size={12} />
             <span>{t('Materials & Ads')}</span>
           </div>
-          <div className="text-xl font-bold text-blue-600">{formatCurrency(COST_LINES[1].total)}</div>
+          <div className="text-xl font-bold text-blue-600">{formatCurrency(matsLine.total)}</div>
           <div className="text-[10px] text-gray-400 mt-1">{matPct.toFixed(1)}% {t('of total')}</div>
         </div>
       </div>

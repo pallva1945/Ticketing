@@ -28,15 +28,19 @@ const COST_LINES: CostLine[] = [
   { name: 'Penalties and Sanctions', values: [195.98, 195.53, 386.66, 711.41, 364.34, -16.51], total: 1837.41, color: '#a855f7' },
 ];
 
-const MONTHLY_TOTALS = MONTHS.map((_, i) => COST_LINES.reduce((sum, line) => sum + line.values[i], 0));
-const GRAND_TOTAL = COST_LINES.reduce((sum, line) => sum + line.total, 0);
-const SORTED = [...COST_LINES].sort((a, b) => Math.abs(b.total) - Math.abs(a.total));
+interface TeamOpsCostDashboardProps {
+  costLines?: CostLine[];
+}
 
-const TRAVEL_TOTAL = COST_LINES.filter(l => l.name.startsWith('Travel')).reduce((s, l) => s + l.total, 0);
-const TRAVEL_PCT = (TRAVEL_TOTAL / GRAND_TOTAL) * 100;
-
-export const TeamOpsCostDashboard: React.FC = () => {
+export const TeamOpsCostDashboard: React.FC<TeamOpsCostDashboardProps> = ({ costLines }) => {
   const { t } = useLanguage();
+
+  const effectiveLines = costLines || COST_LINES;
+  const MONTHLY_TOTALS = MONTHS.map((_, i) => effectiveLines.reduce((sum, line) => sum + line.values[i], 0));
+  const GRAND_TOTAL = effectiveLines.reduce((sum, line) => sum + line.total, 0);
+  const SORTED = [...effectiveLines].sort((a, b) => Math.abs(b.total) - Math.abs(a.total));
+  const TRAVEL_TOTAL = effectiveLines.filter(l => l.name.startsWith('Travel')).reduce((s, l) => s + l.total, 0);
+  const TRAVEL_PCT = GRAND_TOTAL !== 0 ? (TRAVEL_TOTAL / GRAND_TOTAL) * 100 : 0;
 
   const monthlyData = MONTHS.map((month, i) => ({
     month: t(month).substring(0, 3),
@@ -134,7 +138,7 @@ export const TeamOpsCostDashboard: React.FC = () => {
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('Cost by Category')}</h3>
         <div className="space-y-2.5">
           {SORTED.map(line => {
-            const pct = (Math.abs(line.total) / GRAND_TOTAL) * 100;
+            const pct = GRAND_TOTAL !== 0 ? (Math.abs(line.total) / GRAND_TOTAL) * 100 : 0;
             return (
               <div key={line.name}>
                 <div className="flex items-center justify-between mb-1">
@@ -170,7 +174,7 @@ export const TeamOpsCostDashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {COST_LINES.map((line) => (
+              {effectiveLines.map((line) => (
                 <tr key={line.name} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                   <td className="py-2 pr-4 text-gray-700 dark:text-gray-300 whitespace-nowrap">
                     <div className="flex items-center gap-2">

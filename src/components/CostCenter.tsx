@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Calendar, Flag, Activity, Landmark, ShoppingBag, Users, GraduationCap, Construction, Sun, Moon, PieChart, TrendingUp, Briefcase, Building2, HardHat } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Calendar, Flag, Activity, Landmark, ShoppingBag, Users, GraduationCap, Construction, Sun, Moon, PieChart, TrendingUp, Briefcase, Building2, HardHat, Upload, Check, Loader2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
@@ -11,6 +11,15 @@ import { MerchandisingCostDashboard } from './MerchandisingCostDashboard';
 import { LaborCostDashboard } from './LaborCostDashboard';
 import { SGACombinedDashboard } from './SGACombinedDashboard';
 
+export interface CostLine {
+  name: string;
+  values: number[];
+  total: number;
+  color: string;
+}
+
+export type CostData = Record<string, CostLine[]>;
+
 type CostModule = 'overview' | 'gameday' | 'sponsorship' | 'bops' | 'venue_ops' | 'merchandising' | 'ebp' | 'varese_basketball' | 'sga_labor' | 'sga_other';
 
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
@@ -19,11 +28,73 @@ interface CostCenterProps {
   onBackToLanding: () => void;
 }
 
+function sectionTotal(lines?: CostLine[]): number {
+  if (!lines) return 0;
+  return lines.reduce((s, l) => s + l.total, 0);
+}
+
 export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
   const isDark = theme === 'dark';
   const [activeModule, setActiveModule] = useState<CostModule>('overview');
+  const [costData, setCostData] = useState<CostData | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch('/api/costs/data')
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && res.data) setCostData(res.data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    setUploadSuccess(false);
+    try {
+      const text = await file.text();
+      const res = await fetch('/api/costs/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ csv: text }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        setCostData(result.data);
+        setUploadSuccess(true);
+        setTimeout(() => setUploadSuccess(false), 3000);
+      }
+    } catch (err) {
+      console.error('Upload failed:', err);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const hasDynamic = !!costData;
+  const dynGameday = hasDynamic ? sectionTotal(costData.gameday) : 177396;
+  const dynMerch = hasDynamic ? sectionTotal(costData.merchandising) : 81849;
+  const dynVenueOps = hasDynamic ? sectionTotal(costData.venue_ops) : 49876;
+  const dynSponsorship = hasDynamic ? sectionTotal(costData.sponsorship) : 30854;
+  const bopsProrated = Math.round(3989726 * 6 / 15);
+
+  const dynTeamOps = hasDynamic ? sectionTotal(costData.team_ops) : 189691;
+  const dynMarketing = hasDynamic ? sectionTotal(costData.marketing) : 40726;
+  const dynOffice = hasDynamic ? sectionTotal(costData.office) : 36646;
+  const dynUtilities = hasDynamic ? sectionTotal(costData.utilities) : 89117;
+  const dynFinancial = hasDynamic ? sectionTotal(costData.financial) : 8375;
+  const dynContingencies = hasDynamic ? sectionTotal(costData.contingencies) : 6410;
+
+  const laborProrated = Math.round(511145 * 6 / 12) + 53185;
+  const sgaOtherTotal = dynTeamOps + dynMarketing + dynOffice + dynUtilities + dynFinancial + dynContingencies;
+  const sgaTotal = laborProrated + sgaOtherTotal;
 
   const COS_MODULES: { id: CostModule; label: string; icon: any }[] = [
     { id: 'bops', label: t('BOps'), icon: Activity },
@@ -132,12 +203,49 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
       <main className="max-w-7xl mx-auto px-4 py-8 pt-28">
         {activeModule === 'overview' ? (
           <div className="space-y-8">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
-                <PieChart size={28} className="text-red-600" />
-                {t('Cost Center')} — {t('Executive Overview')}
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('Season')} 2025/26</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
+                  <PieChart size={28} className="text-red-600" />
+                  {t('Cost Center')} — {t('Executive Overview')}
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('Season')} 2025/26</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  className="hidden"
+                  onChange={handleUpload}
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
+                    uploadSuccess
+                      ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
+                      : isDark
+                        ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300'
+                        : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+                  }`}
+                  title={t('Upload cost data CSV')}
+                >
+                  {isUploading ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : uploadSuccess ? (
+                    <Check size={14} />
+                  ) : (
+                    <Upload size={14} />
+                  )}
+                  {isUploading ? t('Uploading...') : uploadSuccess ? t('Updated') : t('Upload CSV')}
+                </button>
+                {hasDynamic && (
+                  <span className="text-[9px] px-1.5 py-0.5 rounded border bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400">
+                    {t('Live Data')}
+                  </span>
+                )}
+              </div>
             </div>
 
             <div>
@@ -150,18 +258,18 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   <p className="text-[11px] text-gray-400 dark:text-gray-500">{t('Direct costs tied to revenue verticals')}</p>
                 </div>
                 <div className="ml-auto text-right">
-                  <div className="text-lg font-bold text-red-600">{formatCurrency(Math.round(3989726 * 6 / 15) + 177396 + 30854 + 49876 + 81849 + 0)}</div>
+                  <div className="text-lg font-bold text-red-600">{formatCurrency(bopsProrated + dynGameday + dynMerch + dynVenueOps + dynSponsorship)}</div>
                   <div className="text-[10px] text-gray-400">Jul–Dec 2025 · {t('BOps prorated')}</div>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {(() => {
                   const COST_CARDS: { id: CostModule; amount: number; detail: string; badge: string; badgeStyle: string }[] = [
-                    { id: 'bops', amount: Math.round(3989726 * 6 / 15), detail: `${t('Players')}: 78% · ${t('Coaches')}: 10.3%`, badge: t('YTD Prorated'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
-                    { id: 'gameday', amount: 177396, detail: `12 ${t('categories')}`, badge: t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
-                    { id: 'merchandising', amount: 81849, detail: `${t('Stock')}: 82.6%`, badge: t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
-                    { id: 'venue_ops', amount: 49876, detail: `${t('Campus - Rental')}: 79.7%`, badge: t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
-                    { id: 'sponsorship', amount: 30854, detail: `${t('Events')}: 66.3% · ${t('Materials & Ads')}: 33.7%`, badge: t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+                    { id: 'bops', amount: bopsProrated, detail: `${t('Players')}: 78% · ${t('Coaches')}: 10.3%`, badge: t('YTD Prorated'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+                    { id: 'gameday', amount: dynGameday, detail: `12 ${t('categories')}`, badge: hasDynamic && costData.gameday ? t('CSV Data') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+                    { id: 'merchandising', amount: dynMerch, detail: `${t('Stock')}: 82.6%`, badge: hasDynamic && costData.merchandising ? t('CSV Data') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+                    { id: 'venue_ops', amount: dynVenueOps, detail: `${t('Campus - Rental')}: 79.7%`, badge: hasDynamic && costData.venue_ops ? t('CSV Data') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+                    { id: 'sponsorship', amount: dynSponsorship, detail: `${t('Events')}: 66.3% · ${t('Materials & Ads')}: 33.7%`, badge: hasDynamic && costData.sponsorship ? t('CSV Data') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
                     { id: 'ebp', amount: 0, detail: t('No costs recorded YTD'), badge: t('Zero Activity'), badgeStyle: 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400' },
                     { id: 'varese_basketball', amount: -1, detail: '', badge: t('Coming Soon'), badgeStyle: '' },
                   ];
@@ -222,7 +330,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   <p className="text-[11px] text-gray-400 dark:text-gray-500">{t('Selling, General & Administrative')}</p>
                 </div>
                 <div className="ml-auto text-right">
-                  <div className="text-lg font-bold text-orange-600">{formatCurrency(189691 + Math.round(511145 * 6 / 12) + 53185 + 40726 + 36646 + 89117 + 8375 + 6410)}</div>
+                  <div className="text-lg font-bold text-orange-600">{formatCurrency(sgaTotal)}</div>
                   <div className="text-[10px] text-gray-400">Jul–Dec 2025</div>
                 </div>
               </div>
@@ -241,8 +349,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   </div>
                   <div className="mt-2 space-y-2">
                     <div className="flex items-baseline gap-2">
-                      <div className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(Math.round(511145 * 6 / 12) + 53185)}</div>
-                      <span className="text-xs font-semibold text-orange-500">46.0%</span>
+                      <div className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(laborProrated)}</div>
+                      <span className="text-xs font-semibold text-orange-500">{sgaTotal > 0 ? ((laborProrated / sgaTotal) * 100).toFixed(1) : '0'}%</span>
                     </div>
                     <div className="text-[10px] text-gray-400 dark:text-gray-500">20 {t('headcount')} · {t('Internal')} + {t('External')}</div>
                     <div className="text-[10px] text-gray-400 dark:text-gray-500">Jul–Dec 2025</div>
@@ -265,13 +373,15 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                   </div>
                   <div className="mt-2 space-y-2">
                     <div className="flex items-baseline gap-2">
-                      <div className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(189691 + 40726 + 36646 + 89117 + 8375 + 6410)}</div>
-                      <span className="text-xs font-semibold text-orange-500">54.0%</span>
+                      <div className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(sgaOtherTotal)}</div>
+                      <span className="text-xs font-semibold text-orange-500">{sgaTotal > 0 ? ((sgaOtherTotal / sgaTotal) * 100).toFixed(1) : '0'}%</span>
                     </div>
                     <div className="text-[10px] text-gray-400 dark:text-gray-500">{t('Team Ops')} · {t('Marketing')} · {t('Office')} · {t('Utilities & Maint.')} · {t('Financial')} · {t('Contingencies')}</div>
                     <div className="text-[10px] text-gray-400 dark:text-gray-500">Jul–Dec 2025</div>
-                    <div className="mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400">
-                      {t('Monthly Actuals')}
+                    <div className={`mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block ${
+                      hasDynamic ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400' : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'
+                    }`}>
+                      {hasDynamic ? t('CSV Data') : t('Monthly Actuals')}
                     </div>
                   </div>
                 </button>
@@ -281,17 +391,17 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
         ) : activeModule === 'bops' ? (
           <BOpsCostDashboard />
         ) : activeModule === 'gameday' ? (
-          <GameDayCostDashboard />
+          <GameDayCostDashboard costLines={costData?.gameday} />
         ) : activeModule === 'sponsorship' ? (
-          <SponsorshipCostDashboard />
+          <SponsorshipCostDashboard costLines={costData?.sponsorship} />
         ) : activeModule === 'venue_ops' ? (
-          <VenueOpsCostDashboard />
+          <VenueOpsCostDashboard costLines={costData?.venue_ops} />
         ) : activeModule === 'merchandising' ? (
-          <MerchandisingCostDashboard />
+          <MerchandisingCostDashboard costLines={costData?.merchandising} />
         ) : activeModule === 'sga_labor' ? (
           <LaborCostDashboard />
         ) : activeModule === 'sga_other' ? (
-          <SGACombinedDashboard />
+          <SGACombinedDashboard costData={costData || undefined} />
         ) : activeModule === 'ebp' ? (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-3">

@@ -14,7 +14,7 @@ interface CostLine {
   color: string;
 }
 
-const COST_LINES: CostLine[] = [
+const DEFAULT_COST_LINES: CostLine[] = [
   { name: 'Arena - Rental', values: [103.67, 103.67, 150.62, 150.62, 150.62, 150.60], total: 809.80, color: '#ef4444' },
   { name: 'Campus - Rental', values: [6621.22, 6621.22, 6621.22, 6621.22, 6621.22, 6621.22], total: 39727.32, color: '#f97316' },
   { name: 'Certification/Licensure Costs', values: [385.10, 385.10, 385.10, 385.10, 580.10, 580.10], total: 2700.60, color: '#f59e0b' },
@@ -24,14 +24,19 @@ const COST_LINES: CostLine[] = [
   { name: 'Utilities', values: [0, 0, 0, 0, 0, 2222.68], total: 2222.68, color: '#8b5cf6' },
 ];
 
-const MONTHLY_TOTALS = MONTHS.map((_, i) => COST_LINES.reduce((sum, line) => sum + line.values[i], 0));
-const GRAND_TOTAL = COST_LINES.reduce((sum, line) => sum + line.total, 0);
-const SORTED = [...COST_LINES].sort((a, b) => b.total - a.total);
-const TOP_COST = SORTED[0];
-const TOP_PCT = (TOP_COST.total / GRAND_TOTAL) * 100;
+interface VenueOpsCostDashboardProps {
+  costLines?: CostLine[];
+}
 
-export const VenueOpsCostDashboard: React.FC = () => {
+export const VenueOpsCostDashboard: React.FC<VenueOpsCostDashboardProps> = ({ costLines }) => {
   const { t } = useLanguage();
+
+  const COST_LINES = costLines || DEFAULT_COST_LINES;
+  const MONTHLY_TOTALS = MONTHS.map((_, i) => COST_LINES.reduce((sum, line) => sum + line.values[i], 0));
+  const GRAND_TOTAL = COST_LINES.reduce((sum, line) => sum + line.total, 0);
+  const SORTED = [...COST_LINES].sort((a, b) => b.total - a.total);
+  const TOP_COST = SORTED[0];
+  const TOP_PCT = (TOP_COST.total / GRAND_TOTAL) * 100;
 
   const monthlyData = MONTHS.map((month, i) => ({
     month: t(month).substring(0, 3),

@@ -62,6 +62,12 @@ export async function initDatabase() {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
         reviewed_at TIMESTAMPTZ
       );
+
+      CREATE TABLE IF NOT EXISTS cost_center_data (
+        id SERIAL PRIMARY KEY,
+        data JSONB NOT NULL,
+        uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
     `);
 
     const adminEmail = 'luisscola@pallacanestrovarese.it';
@@ -255,6 +261,16 @@ export async function getAllAccessRequests() {
 
 export async function updateAccessRequestStatus(id: number, status: string) {
   await pool.query('UPDATE access_requests SET status = $1, reviewed_at = NOW() WHERE id = $2', [status, id]);
+}
+
+export async function saveCostCenterData(data: any) {
+  const result = await pool.query('INSERT INTO cost_center_data (data) VALUES ($1) RETURNING id, uploaded_at', [JSON.stringify(data)]);
+  return result.rows[0];
+}
+
+export async function getLatestCostCenterData() {
+  const result = await pool.query('SELECT data, uploaded_at FROM cost_center_data ORDER BY uploaded_at DESC LIMIT 1');
+  return result.rows[0] || null;
 }
 
 export { pool };

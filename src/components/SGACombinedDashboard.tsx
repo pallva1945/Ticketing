@@ -12,7 +12,14 @@ type SGASubModule = 'overview' | 'team_ops' | 'marketing' | 'office' | 'utilitie
 
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 
-const SUB_MODULES: { id: SGASubModule; labelKey: string; icon: any; amount: number; detailFn: (t: (k: string) => string) => string }[] = [
+interface CostLine {
+  name: string;
+  values: number[];
+  total: number;
+  color: string;
+}
+
+const DEFAULT_SUB_MODULES: { id: SGASubModule; labelKey: string; icon: any; amount: number; detailFn: (t: (k: string) => string) => string }[] = [
   { id: 'team_ops', labelKey: 'Team Ops', icon: Plane, amount: 189691, detailFn: (t) => `${t('Travel')}: 46.1% · ${t('Team Registration')}: 25.6%` },
   { id: 'marketing', labelKey: 'Marketing', icon: Megaphone, amount: 40726, detailFn: (t) => `${t('Advertising')}: 46.8% · 7 ${t('categories')}` },
   { id: 'office', labelKey: 'Office', icon: Building, amount: 36646, detailFn: (t) => `${t('Software & Subs')}: 55.6% · 7 ${t('categories')}` },
@@ -21,14 +28,27 @@ const SUB_MODULES: { id: SGASubModule; labelKey: string; icon: any; amount: numb
   { id: 'contingencies', labelKey: 'Contingencies', icon: AlertTriangle, amount: 6410, detailFn: () => 'Jul–Dec 2025' },
 ];
 
-const TOTAL_SGA_OTHER = SUB_MODULES.filter(m => m.amount > 0).reduce((s, m) => s + m.amount, 0);
+interface SGACombinedDashboardProps {
+  costData?: Record<string, CostLine[]>;
+}
 
-export const SGACombinedDashboard: React.FC = () => {
+export const SGACombinedDashboard: React.FC<SGACombinedDashboardProps> = ({ costData }) => {
   const { theme } = useTheme();
   const { t } = useLanguage();
   const isDark = theme === 'dark';
   const [activeSub, setActiveSub] = useState<SGASubModule>('overview');
 
+  const SUB_MODULES = DEFAULT_SUB_MODULES.map(mod => {
+    const sectionKey = mod.id;
+    if (costData && costData[sectionKey]) {
+      const lines = costData[sectionKey];
+      const total = lines.reduce((s, l) => s + l.total, 0);
+      return { ...mod, amount: Math.round(total), detailFn: () => `${lines.length} ${t('categories')}` };
+    }
+    return mod;
+  });
+
+  const TOTAL_SGA_OTHER = SUB_MODULES.filter(m => m.amount > 0).reduce((s, m) => s + m.amount, 0);
   const sorted = [...SUB_MODULES].sort((a, b) => b.amount - a.amount);
 
   return (
@@ -125,27 +145,87 @@ export const SGACombinedDashboard: React.FC = () => {
           })}
         </div>
       ) : activeSub === 'team_ops' ? (
-        <TeamOpsCostDashboard />
+        <TeamOpsCostDashboard costLines={costData?.team_ops} />
       ) : activeSub === 'marketing' ? (
-        <MarketingCostDashboard />
+        <MarketingCostDashboard costLines={costData?.marketing} />
       ) : activeSub === 'office' ? (
-        <OfficeCostDashboard />
+        <OfficeCostDashboard costLines={costData?.office} />
       ) : activeSub === 'utilities' ? (
-        <UtilitiesCostDashboard />
+        <UtilitiesCostDashboard costLines={costData?.utilities} />
       ) : activeSub === 'financial' ? (
-        <FinancialCostDashboard />
+        <FinancialCostDashboard costLines={costData?.financial} />
       ) : activeSub === 'contingencies' ? (
-        <div className={`rounded-xl border p-12 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
-          <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Construction size={32} className="text-orange-600" />
+        costData?.contingencies && costData.contingencies.length > 0 ? (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-orange-100 dark:bg-orange-900/20 rounded-xl">
+                <AlertTriangle className="text-orange-600" size={22} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('Contingencies')} — {t('Cost Structure')}</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Monthly Actuals')} · Jul–Dec 2025 · SG&A</p>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
+              <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('Full Cost Breakdown')}</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700">
+                      <th className="text-left py-2 pr-4 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">{t('Category')}</th>
+                      {['July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                        <th key={m} className="text-right py-2 px-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">{t(m).substring(0, 3)}</th>
+                      ))}
+                      <th className="text-right py-2 pl-3 text-orange-600 font-semibold whitespace-nowrap">{t('Total')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {costData.contingencies.map((line) => (
+                      <tr key={line.name} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className="py-2 pr-4 text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: line.color }} />
+                            {t(line.name)}
+                          </div>
+                        </td>
+                        {line.values.map((val, i) => (
+                          <td key={i} className={`text-right py-2 px-2 whitespace-nowrap tabular-nums ${val === 0 ? 'text-gray-300 dark:text-gray-600' : 'text-gray-700 dark:text-gray-300'}`}>
+                            {val === 0 ? '—' : formatCurrency(val)}
+                          </td>
+                        ))}
+                        <td className="text-right py-2 pl-3 font-semibold whitespace-nowrap tabular-nums text-gray-900 dark:text-white">
+                          {formatCurrency(line.total)}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/30">
+                      <td className="py-2.5 pr-4 font-bold text-gray-900 dark:text-white">{t('Total Contingencies')}</td>
+                      {[0, 1, 2, 3, 4, 5].map(i => {
+                        const monthTotal = costData.contingencies!.reduce((s, l) => s + l.values[i], 0);
+                        return <td key={i} className="text-right py-2.5 px-2 font-bold text-gray-900 dark:text-white whitespace-nowrap tabular-nums">{formatCurrency(monthTotal)}</td>;
+                      })}
+                      <td className="text-right py-2.5 pl-3 font-bold text-orange-600 whitespace-nowrap tabular-nums">
+                        {formatCurrency(costData.contingencies.reduce((s, l) => s + l.total, 0))}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
-            {t('Contingencies')} — {t('Cost Center')}
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-            {t('This cost vertical is currently being integrated into the PV Financial Center.')} {t('Data pipelines are under construction.')}
-          </p>
-        </div>
+        ) : (
+          <div className={`rounded-xl border p-12 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+            <div className="w-16 h-16 bg-orange-100 dark:bg-orange-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <Construction size={32} className="text-orange-600" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">
+              {t('Contingencies')} — {t('Cost Center')}
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+              {t('This cost vertical is currently being integrated into the PV Financial Center.')} {t('Data pipelines are under construction.')}
+            </p>
+          </div>
+        )
       ) : null}
     </div>
   );

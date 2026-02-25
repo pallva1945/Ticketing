@@ -9,7 +9,7 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV, fetchVBDataFromBigQuery, fetchVBProfilesFromBigQuery, fetchVBProspectsFromBigQuery } from "../src/services/bigQueryService";
-import { initDatabase, upsertUser, getUserByEmail, getUserPermissions, createAccessRequest, getAccessRequestByEmail } from "./db.js";
+import { initDatabase, upsertUser, getUserByEmail, getUserPermissions, createAccessRequest, getAccessRequestByEmail, saveCostCenterData, getLatestCostCenterData } from "./db.js";
 import { registerAdminRoutes } from "./adminRoutes.js";
 import crypto from "crypto";
 
@@ -247,6 +247,129 @@ app.post("/api/auth/logout", (_req, res) => {
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+function parseEuroCurrency(val: string): number {
+  if (!val || val.trim() === '' || val.includes('#REF!')) return 0;
+  let s = val.trim();
+  const negative = s.startsWith('-');
+  s = s.replace(/^-/, '').replace(/€\s*/, '').trim();
+  s = s.replace(/\./g, '').replace(',', '.');
+  const num = parseFloat(s);
+  if (isNaN(num)) return 0;
+  return negative ? -num : num;
+}
+
+const COST_SECTION_MAP: Record<string, string> = {
+  'Venue Operations': 'venue_ops',
+  'GameDay': 'gameday',
+  'Merchandising': 'merchandising',
+  'Sponsorship': 'sponsorship',
+  'Team Operations': 'team_ops',
+  'Marketing': 'marketing',
+  'Office': 'office',
+  'Utilities and Maintenance': 'utilities',
+  'Financial': 'financial',
+  'Contingencies': 'contingencies',
+};
+
+const COST_LINE_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef'];
+
+function parseCostCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      inQuotes = !inQuotes;
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function parseCostCSV(csvText: string): Record<string, any[]> {
+  const lines = csvText.split('\n').map(l => l.trim()).filter(l => l);
+  const sections: Record<string, any[]> = {};
+  let currentSection: string | null = null;
+  const skipPrefixes = ['Cost Of Sales', 'SG&A', 'TOTAL', 'Total Professional'];
+
+  for (const line of lines) {
+    const cols = parseCostCSVLine(line);
+    const label = cols[0].trim();
+
+    if (!label) continue;
+
+    if (skipPrefixes.some(p => label.startsWith(p))) continue;
+
+    if (COST_SECTION_MAP[label] !== undefined) {
+      currentSection = COST_SECTION_MAP[label];
+      if (!sections[currentSection]) sections[currentSection] = [];
+      continue;
+    }
+
+    if (label.startsWith('Total ')) continue;
+
+    if (!currentSection) continue;
+
+    const rawValues = cols.slice(1);
+    if (rawValues.every(v => !v || v === '' || v.includes('#REF!'))) continue;
+
+    const total = parseEuroCurrency(rawValues[0]);
+    const monthlyValues = rawValues.slice(1, 7).map(v => parseEuroCurrency(v));
+
+    if (total === 0 && monthlyValues.every(v => v === 0)) continue;
+
+    const colorIdx = sections[currentSection].length % COST_LINE_COLORS.length;
+    sections[currentSection].push({
+      name: label,
+      values: monthlyValues,
+      total,
+      color: COST_LINE_COLORS[colorIdx],
+    });
+  }
+
+  return sections;
+}
+
+app.post("/api/costs/upload", async (req, res) => {
+  try {
+    const { csv } = req.body;
+    if (!csv || typeof csv !== 'string') {
+      return res.status(400).json({ success: false, message: 'CSV text is required' });
+    }
+    const parsed = parseCostCSV(csv);
+    const sectionCount = Object.keys(parsed).length;
+    const lineCount = Object.values(parsed).reduce((s, lines) => s + lines.length, 0);
+    if (sectionCount === 0) {
+      return res.status(400).json({ success: false, message: 'No valid cost sections found in CSV' });
+    }
+    const saved = await saveCostCenterData(parsed);
+    console.log(`Cost center data uploaded: ${sectionCount} sections, ${lineCount} line items`);
+    res.json({ success: true, data: parsed, sections: sectionCount, lineItems: lineCount, uploadedAt: saved.uploaded_at });
+  } catch (error: any) {
+    console.error('Cost upload error:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/costs/data", async (req, res) => {
+  try {
+    const result = await getLatestCostCenterData();
+    if (!result) {
+      return res.json({ success: true, data: null });
+    }
+    res.json({ success: true, data: result.data, uploadedAt: result.uploaded_at });
+  } catch (error: any) {
+    console.error('Cost data fetch error:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
 });
 
 const validateBigQueryRequest = (req: express.Request, res: express.Response): boolean => {

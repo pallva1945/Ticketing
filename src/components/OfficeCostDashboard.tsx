@@ -24,15 +24,20 @@ const COST_LINES: CostLine[] = [
   { name: 'Office Supplies', values: [0, 0, 156.09, 137.96, 157.42, 205.16], total: 656.63, color: '#f59e0b' },
 ];
 
-const MONTHLY_TOTALS = MONTHS.map((_, i) => COST_LINES.reduce((sum, line) => sum + line.values[i], 0));
-const GRAND_TOTAL = COST_LINES.reduce((sum, line) => sum + line.total, 0);
-const SORTED = [...COST_LINES].sort((a, b) => b.total - a.total);
+interface OfficeCostDashboardProps {
+  costLines?: CostLine[];
+}
 
-const SW_TOTAL = COST_LINES.find(l => l.name === 'Software Licenses & Subscriptions')!.total;
-const SW_PCT = (SW_TOTAL / GRAND_TOTAL) * 100;
-
-export const OfficeCostDashboard: React.FC = () => {
+export const OfficeCostDashboard: React.FC<OfficeCostDashboardProps> = ({ costLines }) => {
   const { t } = useLanguage();
+
+  const effectiveLines = costLines || COST_LINES;
+  const MONTHLY_TOTALS = MONTHS.map((_, i) => effectiveLines.reduce((sum, line) => sum + line.values[i], 0));
+  const GRAND_TOTAL = effectiveLines.reduce((sum, line) => sum + line.total, 0);
+  const SORTED = [...effectiveLines].sort((a, b) => b.total - a.total);
+  const swLine = effectiveLines.find(l => l.name === 'Software Licenses & Subscriptions');
+  const SW_TOTAL = swLine ? swLine.total : 0;
+  const SW_PCT = GRAND_TOTAL !== 0 ? (SW_TOTAL / GRAND_TOTAL) * 100 : 0;
 
   const monthlyData = MONTHS.map((month, i) => ({
     month: t(month).substring(0, 3),
@@ -130,7 +135,7 @@ export const OfficeCostDashboard: React.FC = () => {
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('Cost by Category')}</h3>
         <div className="space-y-2.5">
           {SORTED.map(line => {
-            const pct = (line.total / GRAND_TOTAL) * 100;
+            const pct = GRAND_TOTAL !== 0 ? (line.total / GRAND_TOTAL) * 100 : 0;
             return (
               <div key={line.name}>
                 <div className="flex items-center justify-between mb-1">
@@ -166,7 +171,7 @@ export const OfficeCostDashboard: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {COST_LINES.map((line) => (
+              {effectiveLines.map((line) => (
                 <tr key={line.name} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                   <td className="py-2 pr-4 text-gray-700 dark:text-gray-300 whitespace-nowrap">
                     <div className="flex items-center gap-2">

@@ -14,19 +14,24 @@ interface CostLine {
   color: string;
 }
 
-const COST_LINES: CostLine[] = [
+const DEFAULT_COST_LINES: CostLine[] = [
   { name: 'Stock', values: [268.17, 58880.47, 2304.91, 798.46, 1099.46, 4241.49], total: 67592.97, color: '#ef4444' },
   { name: 'Team Store, e-Commerce Ops', values: [202.41, 301.53, 968.77, 868.68, 1032.92, 1780.92], total: 5155.23, color: '#f97316' },
   { name: 'Customization', values: [63.93, 0, 334.19, 1244.95, 1133.59, 1293.43], total: 4070.09, color: '#3b82f6' },
   { name: 'Sales Ops', values: [0, 754.55, 801.17, 912.37, 915.24, 1647.38], total: 5030.71, color: '#8b5cf6' },
 ];
 
-const MONTHLY_TOTALS = MONTHS.map((_, i) => COST_LINES.reduce((sum, line) => sum + line.values[i], 0));
-const GRAND_TOTAL = COST_LINES.reduce((sum, line) => sum + line.total, 0);
-const SORTED = [...COST_LINES].sort((a, b) => b.total - a.total);
+interface MerchandisingCostDashboardProps {
+  costLines?: CostLine[];
+}
 
-export const MerchandisingCostDashboard: React.FC = () => {
+export const MerchandisingCostDashboard: React.FC<MerchandisingCostDashboardProps> = ({ costLines }) => {
   const { t } = useLanguage();
+
+  const COST_LINES = costLines || DEFAULT_COST_LINES;
+  const MONTHLY_TOTALS = MONTHS.map((_, i) => COST_LINES.reduce((sum, line) => sum + line.values[i], 0));
+  const GRAND_TOTAL = COST_LINES.reduce((sum, line) => sum + line.total, 0);
+  const SORTED = [...COST_LINES].sort((a, b) => b.total - a.total);
 
   const monthlyData = MONTHS.map((month, i) => ({
     month: t(month).substring(0, 3),
@@ -35,7 +40,8 @@ export const MerchandisingCostDashboard: React.FC = () => {
   }));
 
   const peakMonth = monthlyData.reduce((a, b) => a.total > b.total ? a : b);
-  const stockPct = (COST_LINES[0].total / GRAND_TOTAL) * 100;
+  const stockLine = COST_LINES.find(l => l.name === 'Stock') || COST_LINES[0];
+  const stockPct = (stockLine.total / GRAND_TOTAL) * 100;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -64,7 +70,7 @@ export const MerchandisingCostDashboard: React.FC = () => {
             <AlertTriangle size={12} />
             <span>{t('Stock')}</span>
           </div>
-          <div className="text-xl font-bold text-red-600">{formatCurrency(COST_LINES[0].total)}</div>
+          <div className="text-xl font-bold text-red-600">{formatCurrency(stockLine.total)}</div>
           <div className="text-[10px] text-gray-400 mt-1">{stockPct.toFixed(1)}% {t('of total')}</div>
         </div>
 
@@ -82,7 +88,7 @@ export const MerchandisingCostDashboard: React.FC = () => {
             <ShoppingBag size={12} />
             <span>{t('Ops Cost')}</span>
           </div>
-          <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(GRAND_TOTAL - COST_LINES[0].total)}</div>
+          <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(GRAND_TOTAL - stockLine.total)}</div>
           <div className="text-[10px] text-gray-400 mt-1">{t('excl. Stock')}</div>
         </div>
       </div>
