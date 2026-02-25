@@ -345,7 +345,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           occupied: true,
           occupant: `${rec.firstName || rec.name || ''} ${rec.lastName || rec.last_name || ''}`.trim() || 'Unknown',
           sellType: (rec.sell || rec.sellType || rec.type || '—').toUpperCase(),
-          price: Number(rec.price) || Number(rec.comercial_value) || 0,
+          price: Number(rec.commercialValue) || Number(rec.comercial_value) || Number(rec.commercial_value) || Number(rec.price) || 0,
           email: rec.email || '—'
         };
       } else {
