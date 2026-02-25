@@ -165,6 +165,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [gameAttendeeSortDir, setGameAttendeeSortDir] = useState<'asc' | 'desc'>('desc');
   const [gameFilterZone, setGameFilterZone] = useState<string | null>(null);
   const [gameFilterSellType, setGameFilterSellType] = useState<string | null>(null);
+  const [zoneFilterGame, setZoneFilterGame] = useState<string | null>(null);
+  const [zoneFilterSellType, setZoneFilterSellType] = useState<string | null>(null);
 
   const hasActiveFilter = !selectedZones.includes('All') || !selectedGames.includes('All') || !selectedSellTypes.includes('All') || capacityView !== 'all';
 
@@ -431,11 +433,13 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     });
 
     const firstMatch = matchingRecords[0] as any;
+    const isZoneView = !matchedGame && hasLocationFilter && !seatNumber;
     const seatLocation = firstMatch ? {
       zone: matchedGame || (firstMatch.pvZone || firstMatch.pv_zone || firstMatch.Pv_Zone || ''),
       area: areaFilter || (!matchedGame ? (firstMatch.area || firstMatch.Area || '') : ''),
       seat: seatNumber || (!matchedGame ? 'All seats' : ''),
       isGame: !!matchedGame && !hasLocationFilter,
+      isZoneView,
       gameName: matchedGame || null,
       locationLabel: hasLocationFilter ? (() => {
         const z = zoneParts.length > 0 ? (firstMatch?.pvZone || firstMatch?.pv_zone || zoneParts.join(' ')) : '';
@@ -542,7 +546,65 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     const gameTotalRevenue = matchedGame ? matchingRecords.reduce((sum: number, r: any) => sum + (Number(r.commercialValue) || Number(r.price) || 0), 0) : 0;
     const gameUniqueCustomers = matchedGame ? new Set(matchingRecords.map((r: any) => getCustomerKey(r))).size : 0;
 
-    return { seatLocation, seatHistory, matchingRecords, matchedGame: matchedGame || null, gameAttendees, gameZoneBreakdown, gameSellTypeBreakdown, gameTotalTickets, gameTotalRevenue, gameUniqueCustomers };
+    const zoneTotalTickets = isZoneView ? matchingRecords.reduce((sum: number, r: any) => sum + (Number(r.quantity) || 1), 0) : 0;
+    const zoneTotalRevenue = isZoneView ? matchingRecords.reduce((sum: number, r: any) => sum + (Number(r.commercialValue) || 0), 0) : 0;
+    const zoneUniqueCustomers = isZoneView ? new Set(matchingRecords.map((r: any) => getCustomerKey(r))).size : 0;
+
+    const zoneGameBreakdown = isZoneView ? Object.entries(
+      matchingRecords.reduce((acc: Record<string, { tickets: number; revenue: number; customers: Set<string> }>, r: any) => {
+        const game = r.gm || r.game || 'Unknown';
+        if (!acc[game]) acc[game] = { tickets: 0, revenue: 0, customers: new Set() };
+        acc[game].tickets += Number(r.quantity) || 1;
+        acc[game].revenue += Number(r.commercialValue) || 0;
+        acc[game].customers.add(getCustomerKey(r));
+        return acc;
+      }, {})
+    ).map(([game, stats]) => ({
+      game,
+      tickets: stats.tickets,
+      revenue: stats.revenue,
+      customers: stats.customers.size
+    })).sort((a, b) => b.revenue - a.revenue) : [];
+
+    const zoneSellTypeBreakdown = isZoneView ? Object.entries(
+      matchingRecords.reduce((acc: Record<string, { tickets: number; revenue: number; customers: Set<string> }>, r: any) => {
+        const sellType = (r.sell || r.sellType || r.ticketType || 'Unknown').toUpperCase();
+        if (!acc[sellType]) acc[sellType] = { tickets: 0, revenue: 0, customers: new Set() };
+        acc[sellType].tickets += Number(r.quantity) || 1;
+        acc[sellType].revenue += Number(r.commercialValue) || 0;
+        acc[sellType].customers.add(getCustomerKey(r));
+        return acc;
+      }, {})
+    ).map(([sellType, stats]) => ({
+      sellType,
+      tickets: stats.tickets,
+      revenue: stats.revenue,
+      customers: stats.customers.size
+    })).sort((a, b) => b.revenue - a.revenue) : [];
+
+    const zoneAttendees = isZoneView ? matchingRecords.map((r: any) => {
+      let daysInAdvance: number | null = null;
+      if (r.buyTimestamp && r.gmDateTime) {
+        const buyMs = r.buyTimestamp instanceof Date ? r.buyTimestamp.getTime() : new Date(r.buyTimestamp).getTime();
+        const gameMs = typeof r.gmDateTime === 'number' ? r.gmDateTime : new Date(r.gmDateTime).getTime();
+        if (!isNaN(buyMs) && !isNaN(gameMs)) {
+          daysInAdvance = Math.round((gameMs - buyMs) / (1000 * 60 * 60 * 24));
+          if (daysInAdvance < 0) daysInAdvance = 0;
+        }
+      }
+      return {
+        name: toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName || '—'),
+        group: r.group || '—',
+        game: r.gm || r.game || '—',
+        area: ((r as any).area || '—').toUpperCase(),
+        seat: (r as any).seat || '—',
+        sellType: (r.sell || r.sellType || r.ticketType || '—').toUpperCase(),
+        daysInAdvance,
+        value: Number(r.commercialValue) || 0
+      };
+    }).sort((a: any, b: any) => b.value - a.value) : [];
+
+    return { seatLocation, seatHistory, matchingRecords, matchedGame: matchedGame || null, gameAttendees, gameZoneBreakdown, gameSellTypeBreakdown, gameTotalTickets, gameTotalRevenue, gameUniqueCustomers, zoneTotalTickets, zoneTotalRevenue, zoneUniqueCustomers, zoneGameBreakdown, zoneSellTypeBreakdown, zoneAttendees };
   }, [searchMode, clientSearchQuery, data, games]);
 
   const stats = useMemo(() => {
@@ -2786,7 +2848,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               
               <div className="flex gap-2 mb-4">
                 <button
-                  onClick={() => { setSearchMode('client'); setClientSearchQuery(''); setSearchSelectedClient(null); setShowSuggestions(false); setGameFilterZone(null); setGameFilterSellType(null); }}
+                  onClick={() => { setSearchMode('client'); setClientSearchQuery(''); setSearchSelectedClient(null); setShowSuggestions(false); setGameFilterZone(null); setGameFilterSellType(null); setZoneFilterGame(null); setZoneFilterSellType(null); }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                     searchMode === 'client' 
                       ? 'bg-red-600 text-white' 
@@ -2797,7 +2859,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   {t('Client Search')}
                 </button>
                 <button
-                  onClick={() => { setSearchMode('seat'); setClientSearchQuery(''); setSearchSelectedClient(null); setShowSuggestions(false); setGameFilterZone(null); setGameFilterSellType(null); }}
+                  onClick={() => { setSearchMode('seat'); setClientSearchQuery(''); setSearchSelectedClient(null); setShowSuggestions(false); setGameFilterZone(null); setGameFilterSellType(null); setZoneFilterGame(null); setZoneFilterSellType(null); }}
                   className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                     searchMode === 'seat' 
                       ? 'bg-red-600 text-white' 
@@ -2831,7 +2893,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   />
                   {clientSearchQuery && (
                     <button 
-                      onClick={() => { setClientSearchQuery(''); setSearchSelectedClient(null); setSearchGameFilter('all'); setShowSuggestions(false); setGameFilterZone(null); setGameFilterSellType(null); }}
+                      onClick={() => { setClientSearchQuery(''); setSearchSelectedClient(null); setSearchGameFilter('all'); setShowSuggestions(false); setGameFilterZone(null); setGameFilterSellType(null); setZoneFilterGame(null); setZoneFilterSellType(null); }}
                       className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:text-gray-400"
                     >
                       <X size={16} />
@@ -3177,7 +3239,194 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     </>
                   )}
 
-                  {!seatHistoryData.matchedGame && (
+                  {!seatHistoryData.matchedGame && seatHistoryData.seatLocation?.isZoneView && (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Total Tickets')}</p>
+                          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{seatHistoryData.zoneTotalTickets.toLocaleString('it-IT')}</p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Revenue')}</p>
+                          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{formatCurrency(seatHistoryData.zoneTotalRevenue)}</p>
+                        </div>
+                        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 uppercase">{t('Unique Customers')}</p>
+                          <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{seatHistoryData.zoneUniqueCustomers.toLocaleString('it-IT')}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                          <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                            <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                              <Calendar size={16} className="text-red-500" />
+                              {t('By Game')}
+                            </h4>
+                          </div>
+                          <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                            <table className="w-full text-sm">
+                              <thead className="sticky top-0 z-10">
+                                <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                  <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Game')}</th>
+                                  <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Tickets')}</th>
+                                  <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Customers')}</th>
+                                  <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Revenue')}</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                {seatHistoryData.zoneGameBreakdown.map((g: any, i: number) => (
+                                  <tr 
+                                    key={i} 
+                                    className={`cursor-pointer transition-colors ${zoneFilterGame === g.game ? 'bg-red-50 dark:bg-red-900/20 ring-1 ring-red-300 dark:ring-red-700' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                                    onClick={() => setZoneFilterGame(zoneFilterGame === g.game ? null : g.game)}
+                                  >
+                                    <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{g.game}</td>
+                                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{g.tickets}</td>
+                                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{g.customers}</td>
+                                    <td className="py-2 px-3 text-right font-medium">{formatCurrency(g.revenue)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                          <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                            <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                              <Filter size={16} className="text-blue-500" />
+                              {t('By Sell Type')}
+                            </h4>
+                          </div>
+                          <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
+                            <table className="w-full text-sm">
+                              <thead className="sticky top-0 z-10">
+                                <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                  <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Type')}</th>
+                                  <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Tickets')}</th>
+                                  <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Customers')}</th>
+                                  <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Revenue')}</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                {seatHistoryData.zoneSellTypeBreakdown.map((s: any, i: number) => (
+                                  <tr 
+                                    key={i} 
+                                    className={`cursor-pointer transition-colors ${zoneFilterSellType === s.sellType ? 'bg-blue-50 dark:bg-blue-900/20 ring-1 ring-blue-300 dark:ring-blue-700' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                                    onClick={() => setZoneFilterSellType(zoneFilterSellType === s.sellType ? null : s.sellType)}
+                                  >
+                                    <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{s.sellType}</td>
+                                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{s.tickets}</td>
+                                    <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{s.customers}</td>
+                                    <td className="py-2 px-3 text-right font-medium">{formatCurrency(s.revenue)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+
+                      {(zoneFilterGame || zoneFilterSellType) && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{t('Filtering by')}:</span>
+                          {zoneFilterGame && (
+                            <button onClick={() => setZoneFilterGame(null)} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50">
+                              {zoneFilterGame} <X size={12} />
+                            </button>
+                          )}
+                          {zoneFilterSellType && (
+                            <button onClick={() => setZoneFilterSellType(null)} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/50">
+                              {zoneFilterSellType} <X size={12} />
+                            </button>
+                          )}
+                          <button onClick={() => { setZoneFilterGame(null); setZoneFilterSellType(null); }} className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline">
+                            {t('Clear All')}
+                          </button>
+                        </div>
+                      )}
+
+                      {(() => {
+                        const filteredAttendees = seatHistoryData.zoneAttendees
+                          .filter((a: any) => (!zoneFilterGame || a.game === zoneFilterGame) && (!zoneFilterSellType || a.sellType === zoneFilterSellType));
+                        const sortedAttendees = [...filteredAttendees].sort((a: any, b: any) => {
+                          const col = gameAttendeeSortCol;
+                          const dir = gameAttendeeSortDir === 'asc' ? 1 : -1;
+                          if (col === 'value' || col === 'daysInAdvance') {
+                            const av = a[col] ?? -1, bv = b[col] ?? -1;
+                            return (av - bv) * dir;
+                          }
+                          return String(a[col] || '').localeCompare(String(b[col] || ''), undefined, { numeric: true }) * dir;
+                        });
+                        const handleSort = (col: string) => {
+                          if (gameAttendeeSortCol === col) {
+                            setGameAttendeeSortDir(gameAttendeeSortDir === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            setGameAttendeeSortCol(col);
+                            setGameAttendeeSortDir(col === 'value' || col === 'daysInAdvance' ? 'desc' : 'asc');
+                          }
+                        };
+                        const SortIcon = ({ col }: { col: string }) => gameAttendeeSortCol === col 
+                          ? (gameAttendeeSortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />) 
+                          : <ChevronDown size={12} className="opacity-30" />;
+                        return (
+                          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                            <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                              <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                                <Users size={16} className="text-blue-500" />
+                                {t('Attendees')} ({sortedAttendees.length}{(zoneFilterGame || zoneFilterSellType) ? ` / ${seatHistoryData.zoneAttendees.length}` : ''})
+                              </h4>
+                            </div>
+                            <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
+                              <table className="w-full text-sm">
+                                <thead className="sticky top-0 z-10">
+                                  <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                    {[
+                                      { key: 'name', label: t('Name'), align: 'left' },
+                                      { key: 'group', label: t('Group'), align: 'left' },
+                                      { key: 'game', label: t('Game'), align: 'left' },
+                                      { key: 'area', label: t('Area'), align: 'left' },
+                                      { key: 'seat', label: t('Seat'), align: 'left' },
+                                      { key: 'sellType', label: t('Type'), align: 'left' },
+                                      { key: 'daysInAdvance', label: t('Days in Advance'), align: 'right' },
+                                      { key: 'value', label: t('Value'), align: 'right' },
+                                    ].map(col => (
+                                      <th 
+                                        key={col.key}
+                                        onClick={() => handleSort(col.key)}
+                                        className={`${col.align === 'right' ? 'text-right' : 'text-left'} py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 cursor-pointer hover:text-gray-800 dark:hover:text-gray-200 select-none`}
+                                      >
+                                        <span className="inline-flex items-center gap-1">
+                                          {col.label} <SortIcon col={col.key} />
+                                        </span>
+                                      </th>
+                                    ))}
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                                  {sortedAttendees.map((a: any, i: number) => (
+                                    <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                      <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{a.name}</td>
+                                      <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.group}</td>
+                                      <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.game}</td>
+                                      <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.area}</td>
+                                      <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.seat}</td>
+                                      <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.sellType}</td>
+                                      <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{a.daysInAdvance !== null ? a.daysInAdvance : '—'}</td>
+                                      <td className="py-2 px-3 text-right font-medium">{a.value > 0 ? formatCurrency(a.value) : '—'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </>
+                  )}
+
+                  {!seatHistoryData.matchedGame && !seatHistoryData.seatLocation?.isZoneView && (
                     <>
                       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                         <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
