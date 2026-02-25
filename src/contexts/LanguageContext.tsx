@@ -290,6 +290,8 @@ const translations: Record<string, Record<Language, string>> = {
   'League': { en: 'League', it: 'Campionato' },
   'Opponent': { en: 'Opponent', it: 'Avversario' },
   'Zone': { en: 'Zone', it: 'Zona' },
+  'Group': { en: 'Group', it: 'Gruppo' },
+  'Days in Advance': { en: 'Days in Advance', it: 'Giorni di Anticipo' },
   'Tier': { en: 'Tier', it: 'Fascia' },
   'All': { en: 'All', it: 'Tutti' },
 

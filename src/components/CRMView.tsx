@@ -480,21 +480,27 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       }
     });
 
-    const gameAttendees = matchedGame ? Object.entries(
-      matchingRecords.reduce((acc: Record<string, any>, r: any) => {
-        const key = getCustomerKey(r);
-        if (!acc[key]) acc[key] = {
-          name: toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName),
-          zone: r.pvZone || r.zone || '—',
-          area: (r as any).area || '—',
-          seat: (r as any).seat || '—',
-          sellType: (r.sell || r.sellType || r.ticketType || '—').toUpperCase(),
-          value: 0
-        };
-        acc[key].value += Number(r.commercialValue) || Number(r.price) || 0;
-        return acc;
-      }, {})
-    ).map(([_, v]) => v).sort((a: any, b: any) => a.zone.localeCompare(b.zone) || a.name.localeCompare(b.name)) : [];
+    const gameAttendees = matchedGame ? matchingRecords.map((r: any) => {
+      let daysInAdvance: number | null = null;
+      if (r.buyTimestamp && r.gmDateTime) {
+        const buyMs = r.buyTimestamp instanceof Date ? r.buyTimestamp.getTime() : new Date(r.buyTimestamp).getTime();
+        const gameMs = typeof r.gmDateTime === 'number' ? r.gmDateTime : new Date(r.gmDateTime).getTime();
+        if (!isNaN(buyMs) && !isNaN(gameMs)) {
+          daysInAdvance = Math.round((gameMs - buyMs) / (1000 * 60 * 60 * 24));
+          if (daysInAdvance < 0) daysInAdvance = 0;
+        }
+      }
+      return {
+        name: toTitleCase(`${r.firstName || ''} ${r.lastName || ''}`.trim() || r.fullName || '—'),
+        group: r.group || '—',
+        zone: r.pvZone || r.zone || '—',
+        area: (r as any).area || '—',
+        seat: (r as any).seat || '—',
+        sellType: (r.sell || r.sellType || r.ticketType || '—').toUpperCase(),
+        daysInAdvance,
+        value: Number(r.commercialValue) || 0
+      };
+    }).sort((a: any, b: any) => a.zone.localeCompare(b.zone) || a.area.localeCompare(b.area) || String(a.seat).localeCompare(String(b.seat), undefined, { numeric: true })) : [];
 
     const gameZoneBreakdown = matchedGame ? Object.entries(
       matchingRecords.reduce((acc: Record<string, { tickets: number; revenue: number; customers: Set<string> }>, r: any) => {
@@ -2935,10 +2941,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                             <thead className="sticky top-0 z-10">
                               <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                                 <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Name')}</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Group')}</th>
                                 <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Zone')}</th>
                                 <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Area')}</th>
                                 <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Seat')}</th>
                                 <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Type')}</th>
+                                <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Days in Advance')}</th>
                                 <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Value')}</th>
                               </tr>
                             </thead>
@@ -2946,10 +2954,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                               {seatHistoryData.gameAttendees.map((a: any, i: number) => (
                                 <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                                   <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{a.name}</td>
+                                  <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.group}</td>
                                   <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.zone}</td>
                                   <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.area}</td>
                                   <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.seat}</td>
                                   <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.sellType}</td>
+                                  <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{a.daysInAdvance !== null ? a.daysInAdvance : '—'}</td>
                                   <td className="py-2 px-3 text-right font-medium">{a.value > 0 ? formatCurrency(a.value) : '—'}</td>
                                 </tr>
                               ))}
@@ -3020,10 +3030,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                             <thead className="sticky top-0 z-10">
                               <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                                 <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Name')}</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Group')}</th>
                                 <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Zone')}</th>
                                 <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Area')}</th>
                                 <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Seat')}</th>
                                 <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Type')}</th>
+                                <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Days in Advance')}</th>
                                 <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Value')}</th>
                               </tr>
                             </thead>
@@ -3031,10 +3043,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                               {seatHistoryData.gameAttendees.map((a: any, i: number) => (
                                 <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800">
                                   <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{a.name}</td>
+                                  <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.group}</td>
                                   <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.zone}</td>
                                   <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.area}</td>
                                   <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.seat}</td>
                                   <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.sellType}</td>
+                                  <td className="py-2 px-3 text-right text-gray-600 dark:text-gray-400">{a.daysInAdvance !== null ? a.daysInAdvance : '—'}</td>
                                   <td className="py-2 px-3 text-right font-medium">{a.value > 0 ? formatCurrency(a.value) : '—'}</td>
                                 </tr>
                               ))}
