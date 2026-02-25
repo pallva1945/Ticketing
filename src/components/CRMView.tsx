@@ -271,8 +271,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     if (searchMode !== 'seat' || query.length < 2) return null;
     
     const allGameNames = [...new Set(data.map(r => r.gm || r.game).filter(Boolean))];
+    const queryWords = query.split(/[\s,]+/).filter(w => w.length > 0);
     const matchedGame = allGameNames.find(g => g.toLowerCase() === query) 
-      || allGameNames.find(g => g.toLowerCase().includes(query) && query.length >= 4);
+      || allGameNames.find(g => g.toLowerCase().includes(query) && query.length >= 3)
+      || (queryWords.length > 0 && queryWords.every(w => w.length >= 3) ? allGameNames.find(g => queryWords.every(w => g.toLowerCase().includes(w))) : null);
 
     const parts = query.split(/[,\s]+/).map((p: string) => p.trim()).filter((p: string) => p);
     
