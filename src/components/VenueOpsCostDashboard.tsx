@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 
-const MONTHS = ['July', 'August', 'September', 'October', 'November', 'December'];
+const ALL_SEASON_MONTHS = ['July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June'];
 
 interface CostLine {
   name: string;
@@ -32,7 +32,9 @@ export const VenueOpsCostDashboard: React.FC<VenueOpsCostDashboardProps> = ({ co
   const { t } = useLanguage();
 
   const COST_LINES = costLines || DEFAULT_COST_LINES;
-  const MONTHLY_TOTALS = MONTHS.map((_, i) => COST_LINES.reduce((sum, line) => sum + line.values[i], 0));
+  const monthCount = COST_LINES[0]?.values.length || 6;
+  const MONTHS = ALL_SEASON_MONTHS.slice(0, monthCount);
+  const MONTHLY_TOTALS = MONTHS.map((_, i) => COST_LINES.reduce((sum, line) => sum + (line.values[i] || 0), 0));
   const GRAND_TOTAL = COST_LINES.reduce((sum, line) => sum + line.total, 0);
   const SORTED = [...COST_LINES].sort((a, b) => b.total - a.total);
   const TOP_COST = SORTED[0];

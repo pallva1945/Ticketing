@@ -5,7 +5,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 
-const MONTHS = ['July', 'August', 'September', 'October', 'November', 'December'];
+const ALL_SEASON_MONTHS = ['July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June'];
 
 interface CostLine {
   name: string;
@@ -36,7 +36,9 @@ export const TeamOpsCostDashboard: React.FC<TeamOpsCostDashboardProps> = ({ cost
   const { t } = useLanguage();
 
   const effectiveLines = costLines || COST_LINES;
-  const MONTHLY_TOTALS = MONTHS.map((_, i) => effectiveLines.reduce((sum, line) => sum + line.values[i], 0));
+  const monthCount = effectiveLines[0]?.values.length || 6;
+  const MONTHS = ALL_SEASON_MONTHS.slice(0, monthCount);
+  const MONTHLY_TOTALS = MONTHS.map((_, i) => effectiveLines.reduce((sum, line) => sum + (line.values[i] || 0), 0));
   const GRAND_TOTAL = effectiveLines.reduce((sum, line) => sum + line.total, 0);
   const SORTED = [...effectiveLines].sort((a, b) => Math.abs(b.total) - Math.abs(a.total));
   const TRAVEL_TOTAL = effectiveLines.filter(l => l.name.startsWith('Travel')).reduce((s, l) => s + l.total, 0);

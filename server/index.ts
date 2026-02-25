@@ -322,7 +322,7 @@ function parseCostCSV(csvText: string): Record<string, any[]> {
     if (rawValues.every(v => !v || v === '' || v.includes('#REF!'))) continue;
 
     const total = parseEuroCurrency(rawValues[0]);
-    const monthlyValues = rawValues.slice(1, 7).map(v => parseEuroCurrency(v));
+    const monthlyValues = rawValues.slice(1).filter(v => v !== '').map(v => parseEuroCurrency(v));
 
     if (total === 0 && monthlyValues.every(v => v === 0)) continue;
 

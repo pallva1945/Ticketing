@@ -173,9 +173,13 @@ export const SGACombinedDashboard: React.FC<SGACombinedDashboardProps> = ({ cost
                   <thead>
                     <tr className="border-b border-gray-200 dark:border-gray-700">
                       <th className="text-left py-2 pr-4 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">{t('Category')}</th>
-                      {['July', 'August', 'September', 'October', 'November', 'December'].map(m => (
-                        <th key={m} className="text-right py-2 px-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">{t(m).substring(0, 3)}</th>
-                      ))}
+                      {(() => {
+                        const mc = costData?.contingencies?.[0]?.values.length || 6;
+                        const months = ['July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June'].slice(0, mc);
+                        return months.map(m => (
+                          <th key={m} className="text-right py-2 px-2 text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">{t(m).substring(0, 3)}</th>
+                        ));
+                      })()}
                       <th className="text-right py-2 pl-3 text-orange-600 font-semibold whitespace-nowrap">{t('Total')}</th>
                     </tr>
                   </thead>
@@ -200,8 +204,8 @@ export const SGACombinedDashboard: React.FC<SGACombinedDashboardProps> = ({ cost
                     ))}
                     <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800/30">
                       <td className="py-2.5 pr-4 font-bold text-gray-900 dark:text-white">{t('Total Contingencies')}</td>
-                      {[0, 1, 2, 3, 4, 5].map(i => {
-                        const monthTotal = costData.contingencies!.reduce((s, l) => s + l.values[i], 0);
+                      {Array.from({ length: costData.contingencies![0]?.values.length || 6 }, (_, i) => {
+                        const monthTotal = costData.contingencies!.reduce((s, l) => s + (l.values[i] || 0), 0);
                         return <td key={i} className="text-right py-2.5 px-2 font-bold text-gray-900 dark:text-white whitespace-nowrap tabular-nums">{formatCurrency(monthTotal)}</td>;
                       })}
                       <td className="text-right py-2.5 pl-3 font-bold text-orange-600 whitespace-nowrap tabular-nums">

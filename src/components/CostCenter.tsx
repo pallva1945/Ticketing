@@ -33,6 +33,14 @@ function sectionTotal(lines?: CostLine[]): number {
   return lines.reduce((s, l) => s + l.total, 0);
 }
 
+const MONTH_SHORT: Record<number, string> = { 0: 'Jul', 1: 'Aug', 2: 'Sep', 3: 'Oct', 4: 'Nov', 5: 'Dec', 6: 'Jan', 7: 'Feb', 8: 'Mar', 9: 'Apr', 10: 'May', 11: 'Jun' };
+
+function periodLabel(monthCount: number): string {
+  if (monthCount <= 6) return 'Jul–Dec 2025';
+  const endMonth = MONTH_SHORT[monthCount - 1] || 'Jun';
+  return `Jul 2025–${endMonth} 2026`;
+}
+
 export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
@@ -91,6 +99,9 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
   const dynUtilities = hasDynamic ? sectionTotal(costData.utilities) : 89117;
   const dynFinancial = hasDynamic ? sectionTotal(costData.financial) : 8375;
   const dynContingencies = hasDynamic ? sectionTotal(costData.contingencies) : 6410;
+
+  const dataMonthCount = hasDynamic ? (Object.values(costData).find(v => v?.[0]))?.[0]?.values.length || 6 : 6;
+  const period = periodLabel(dataMonthCount);
 
   const laborProrated = Math.round(511145 * 6 / 12) + 53185;
   const sgaOtherTotal = dynTeamOps + dynMarketing + dynOffice + dynUtilities + dynFinancial + dynContingencies;
@@ -259,7 +270,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                 </div>
                 <div className="ml-auto text-right">
                   <div className="text-lg font-bold text-red-600">{formatCurrency(bopsProrated + dynGameday + dynMerch + dynVenueOps + dynSponsorship)}</div>
-                  <div className="text-[10px] text-gray-400">Jul–Dec 2025 · {t('BOps prorated')}</div>
+                  <div className="text-[10px] text-gray-400">{period} · {t('BOps prorated')}</div>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -302,7 +313,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                             <div className="text-[10px] text-gray-400 dark:text-gray-500">
                               {card.detail}
                             </div>
-                            <div className="text-[10px] text-gray-400 dark:text-gray-500">Jul–Dec 2025</div>
+                            <div className="text-[10px] text-gray-400 dark:text-gray-500">{period}</div>
                             <div className={`mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block ${card.badgeStyle}`}>
                               {card.badge}
                             </div>
@@ -331,7 +342,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                 </div>
                 <div className="ml-auto text-right">
                   <div className="text-lg font-bold text-orange-600">{formatCurrency(sgaTotal)}</div>
-                  <div className="text-[10px] text-gray-400">Jul–Dec 2025</div>
+                  <div className="text-[10px] text-gray-400">{period}</div>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -353,7 +364,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                       <span className="text-xs font-semibold text-orange-500">{sgaTotal > 0 ? ((laborProrated / sgaTotal) * 100).toFixed(1) : '0'}%</span>
                     </div>
                     <div className="text-[10px] text-gray-400 dark:text-gray-500">20 {t('headcount')} · {t('Internal')} + {t('External')}</div>
-                    <div className="text-[10px] text-gray-400 dark:text-gray-500">Jul–Dec 2025</div>
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500">{period}</div>
                     <div className="mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400">
                       {t('Monthly Actuals')}
                     </div>
@@ -377,7 +388,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                       <span className="text-xs font-semibold text-orange-500">{sgaTotal > 0 ? ((sgaOtherTotal / sgaTotal) * 100).toFixed(1) : '0'}%</span>
                     </div>
                     <div className="text-[10px] text-gray-400 dark:text-gray-500">{t('Team Ops')} · {t('Marketing')} · {t('Office')} · {t('Utilities & Maint.')} · {t('Financial')} · {t('Contingencies')}</div>
-                    <div className="text-[10px] text-gray-400 dark:text-gray-500">Jul–Dec 2025</div>
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500">{period}</div>
                     <div className={`mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block ${
                       hasDynamic ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400' : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'
                     }`}>
