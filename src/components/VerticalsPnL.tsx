@@ -1,16 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart3, TrendingUp, TrendingDown, Sun, Moon, PieChart } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
+import type { CostData } from './CostCenter';
 
 const formatCurrency = (val: number) => `€${Math.abs(val).toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 const formatCurrencySign = (val: number) => val < 0 ? `(${formatCurrency(val)})` : formatCurrency(val);
 
-const TOTAL_SGA = 837843;
-const VB_SGA = 148459;
-const SHARED_SGA = TOTAL_SGA - VB_SGA;
+const VB_SGA_DEFAULT = 148459;
+const BOPS_COS = 1691290;
 
 interface Vertical {
   id: string;
@@ -22,13 +22,18 @@ interface Vertical {
   sgaFixed: number | null;
 }
 
-const VERTICALS: Vertical[] = [
-  { id: 'gameday', labelKey: 'GameDay', color: '#ef4444', sales: 1177289 + 173508, cos: 206015 + 1691290, sgaPct: 0.45, sgaFixed: null },
-  { id: 'sponsorship', labelKey: 'Sponsorship', color: '#f97316', sales: 1097254, cos: 30854, sgaPct: 0.45, sgaFixed: null },
-  { id: 'merchandising', labelKey: 'Merchandising', color: '#3b82f6', sales: 91742, cos: 81849, sgaPct: 0.05, sgaFixed: null },
-  { id: 'venue_ops', labelKey: 'Venue Ops', color: '#8b5cf6', sales: 85486, cos: 49877, sgaPct: 0.05, sgaFixed: null },
-  { id: 'varese_basketball', labelKey: 'Varese Basketball', color: '#10b981', sales: 386020, cos: 260635, sgaPct: null, sgaFixed: VB_SGA },
-];
+function sectionTotal(lines?: { total: number }[]): number {
+  if (!lines) return 0;
+  return lines.reduce((s, l) => s + l.total, 0);
+}
+
+const MONTH_SHORT: Record<number, string> = { 0: 'Jul', 1: 'Aug', 2: 'Sep', 3: 'Oct', 4: 'Nov', 5: 'Dec', 6: 'Jan', 7: 'Feb', 8: 'Mar', 9: 'Apr', 10: 'May', 11: 'Jun' };
+
+function periodLabel(monthCount: number): string {
+  if (monthCount <= 6) return 'Jul–Dec 2025';
+  const endMonth = MONTH_SHORT[monthCount - 1] || 'Jun';
+  return `Jul 2025–${endMonth} 2026`;
+}
 
 interface VerticalsPnLProps {
   onBackToLanding: () => void;
@@ -38,17 +43,57 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
   const isDark = theme === 'dark';
+  const [costData, setCostData] = useState<CostData | null>(null);
+
+  useEffect(() => {
+    fetch('/api/costs/data')
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && res.data) setCostData(res.data);
+      })
+      .catch(() => {});
+  }, []);
+
+  const hasCsv = !!costData;
+  const dataMonthCount = hasCsv ? (Object.values(costData).find(v => v?.[0]))?.[0]?.values.length || 6 : 6;
+  const period = periodLabel(dataMonthCount);
+
+  const dynGamedayCos = hasCsv && costData.gameday ? Math.round(sectionTotal(costData.gameday)) + BOPS_COS : 206015 + BOPS_COS;
+  const dynSponsorshipCos = hasCsv && costData.sponsorship ? Math.round(sectionTotal(costData.sponsorship)) : 30854;
+  const dynMerchCos = hasCsv && costData.merchandising ? Math.round(sectionTotal(costData.merchandising)) : 81849;
+  const dynVenueOpsCos = hasCsv && costData.venue_ops ? Math.round(sectionTotal(costData.venue_ops)) : 49877;
+
+  const dynProfServices = hasCsv && costData.professional_services ? Math.round(sectionTotal(costData.professional_services)) : 53185;
+  const dynTeamOps = hasCsv && costData.team_ops ? Math.round(sectionTotal(costData.team_ops)) : 189691;
+  const dynMarketing = hasCsv && costData.marketing ? Math.round(sectionTotal(costData.marketing)) : 40726;
+  const dynOffice = hasCsv && costData.office ? Math.round(sectionTotal(costData.office)) : 36646;
+  const dynUtilities = hasCsv && costData.utilities ? Math.round(sectionTotal(costData.utilities)) : 89117;
+  const dynFinancial = hasCsv && costData.financial ? Math.round(sectionTotal(costData.financial)) : 8375;
+  const dynContingencies = hasCsv && costData.contingencies ? Math.round(sectionTotal(costData.contingencies)) : 6410;
+
+  const laborProrated = Math.round(511145 * 6 / 12) + dynProfServices;
+  const sharedSga = laborProrated + dynTeamOps + dynMarketing + dynOffice + dynUtilities + dynFinancial + dynContingencies;
+  const VB_SGA = VB_SGA_DEFAULT;
+  const TOTAL_SGA = sharedSga + VB_SGA;
+
+  const VERTICALS: Vertical[] = [
+    { id: 'gameday', labelKey: 'GameDay', color: '#ef4444', sales: 1177289 + 173508, cos: dynGamedayCos, sgaPct: 0.45, sgaFixed: null },
+    { id: 'sponsorship', labelKey: 'Sponsorship', color: '#f97316', sales: 1097254, cos: dynSponsorshipCos, sgaPct: 0.45, sgaFixed: null },
+    { id: 'merchandising', labelKey: 'Merchandising', color: '#3b82f6', sales: 91742, cos: dynMerchCos, sgaPct: 0.05, sgaFixed: null },
+    { id: 'venue_ops', labelKey: 'Venue Ops', color: '#8b5cf6', sales: 85486, cos: dynVenueOpsCos, sgaPct: 0.05, sgaFixed: null },
+    { id: 'varese_basketball', labelKey: 'Varese Basketball', color: '#10b981', sales: 386020, cos: 260635, sgaPct: null, sgaFixed: VB_SGA },
+  ];
 
   const computed = (() => {
     const sharedVerticals = VERTICALS.filter(v => v.sgaPct !== null);
     let allocated = 0;
     const sharedAllocations = sharedVerticals.map((v, i) => {
       if (i < sharedVerticals.length - 1) {
-        const sga = Math.round(SHARED_SGA * (v.sgaPct || 0));
+        const sga = Math.round(sharedSga * (v.sgaPct || 0));
         allocated += sga;
         return sga;
       }
-      return SHARED_SGA - allocated;
+      return sharedSga - allocated;
     });
     let sharedIdx = 0;
     return VERTICALS.map(v => {
@@ -120,7 +165,7 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
             <BarChart3 size={28} className="text-blue-600" />
             {t('Verticals P&Ls')}
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">H1 2025/26 · Jul–Dec 2025</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">2025/26 · {period}{hasCsv ? ' · CSV' : ''}</p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
