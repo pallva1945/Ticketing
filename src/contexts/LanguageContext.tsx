@@ -1061,6 +1061,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Seat Search': { en: 'Seat Search', it: 'Cerca Posto' },
   'By Zone': { en: 'By Zone', it: 'Per Zona' },
   'By Sell Type': { en: 'By Sell Type', it: 'Per Tipo Vendita' },
+  'Filtering by': { en: 'Filtering by', it: 'Filtro per' },
   'Attendees': { en: 'Attendees', it: 'Partecipanti' },
   'Search by game (e.g., Brescia, Milano...)': { en: 'Search by game (e.g., Brescia, Milano...)', it: 'Cerca partita (es. Brescia, Milano...)' },
   'Type to search for a game, then select from suggestions': { en: 'Type to search for a game, then select from suggestions', it: 'Digita per cercare una partita, poi seleziona dai suggerimenti' },
