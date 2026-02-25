@@ -2358,7 +2358,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
       { key: 'maxVert' as const, label: 'Max Vertical', pct: pctOfBaseline(pd.maxVert, baseline.maxVert, false), baseW: weights.maxVert, val: pd.maxVert, nba: baseline.maxVert, unit: 'cm' },
       { key: 'shuttle' as const, label: 'Shuttle Run', pct: pctOfBaseline(pd.shuttle, baseline.shuttle, true), baseW: weights.shuttle, val: pd.shuttle, nba: baseline.shuttle, unit: 's' },
       { key: 'sprint' as const, label: '¾ Sprint', pct: pctOfBaseline(pd.sprint, baseline.sprint, true), baseW: weights.sprint, val: pd.sprint, nba: baseline.sprint, unit: 's' },
-      { key: 'standVert' as const, label: 'Standing Vertical', pct: pctOfBaseline(pd.standVert, baseline.standVert, false), baseW: weights.standVert, val: pd.standVert, nba: baseline.standVert, unit: 'cm' },
+      { key: 'standVert' as const, label: 'No Step Vertical', pct: pctOfBaseline(pd.standVert, baseline.standVert, false), baseW: weights.standVert, val: pd.standVert, nba: baseline.standVert, unit: 'cm' },
       { key: 'relDL' as const, label: 'Rel. Deadlift', pct: pctOfBaseline(pd.relDeadlift, baseline.relDL, false), baseW: weights.relDL, val: pd.relDeadlift, nba: baseline.relDL, unit: 'x BW' },
     ];
 
@@ -3070,7 +3070,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                 {[
                   { name: 'Shuttle Run', desc: 'Measures agility, body control, and the ability to change direction efficiently — crucial for perimeter defense and offensive cutting.' },
                   { name: '¾ Court Sprint', desc: 'A pure test of linear speed and acceleration over 22.86m, directly translating to transition offense and defense.' },
-                  { name: 'Standing Vertical Leap', desc: 'Measures static, concentric lower-body power — important for rebounding in traffic and contesting shots without a running start.' },
+                  { name: 'No Step Vertical Leap', desc: 'Measures static, concentric lower-body power — important for rebounding in traffic and contesting shots without a running start.' },
                   { name: 'Max Vertical Leap', desc: 'Measures dynamic, elastic power with a running start — the "highlight reel" jump for dunks and chase-down blocks.' },
                   { name: 'Hex Bar Deadlift 1RM (Relative)', desc: 'Quantifies foundational total-body strength relative to bodyweight — the bedrock for all other athletic qualities and injury resilience.' },
                 ].map((c, i) => (
@@ -3084,7 +3084,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
               <div className={`rounded-lg p-3 mb-4 border-l-4 ${isDark ? 'bg-orange-500/5 border-orange-500/40' : 'bg-orange-50 border-orange-400'}`}>
                 <div className={`text-xs font-semibold mb-0.5 ${isDark ? 'text-orange-400' : 'text-orange-700'}`}>Jump Delta</div>
                 <div className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Max Vertical minus Standing Vertical. Reveals whether an athlete is "strong but not springy" ({'<'}5 cm) or "springy but not strong" ({'>'}12 cm), guiding targeted training interventions.
+                  Max Vertical minus No Step Vertical. Reveals whether an athlete is "strong but not springy" ({'<'}5 cm) or "springy but not strong" ({'>'}12 cm), guiding targeted training interventions.
                 </div>
               </div>
 
@@ -3141,7 +3141,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                       ['Shuttle Run', '35%', '25%', '15%'],
                       ['¾ Sprint', '20%', '15%', '15%'],
                       ['Max Vertical', '20%', '30%', '20%'],
-                      ['Standing Vertical', '15%', '15%', '25%'],
+                      ['No Step Vertical', '15%', '15%', '25%'],
                       ['Hex Bar DL (Rel.)', '10%', '15%', '25%'],
                     ].map(([name, pm, wing, ctr], i) => (
                       <tr key={i} className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
