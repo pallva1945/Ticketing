@@ -1084,6 +1084,7 @@ interface ShopifyCustomer {
 }
 
 let shopifyCache: { orders: ShopifyOrder[]; products: ShopifyProduct[]; customers: ShopifyCustomer[]; lastUpdated: string; timestamp: number } | null = null;
+let shopifyWarmingPromise: Promise<void> | null = null;
 const SHOPIFY_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours cache — refresh manually or daily
 
 // Normalize payment method from various gateway names
@@ -1345,6 +1346,11 @@ async function fetchAllShopifyCustomers(): Promise<ShopifyCustomer[]> {
 app.get("/api/shopify/data", async (req, res) => {
   try {
     const forceRefresh = req.query.refresh === 'true';
+    
+    if (!forceRefresh && shopifyWarmingPromise && !shopifyCache) {
+      console.log('Waiting for Shopify pre-warm to complete...');
+      await shopifyWarmingPromise;
+    }
     
     // Return cached data if still valid
     if (shopifyCache && !forceRefresh && (Date.now() - shopifyCache.timestamp) < SHOPIFY_CACHE_TTL) {
@@ -1629,4 +1635,24 @@ app.listen(PORT, '0.0.0.0', () => {
   }).catch(err => {
     console.log('CRM pre-warm error:', err.message);
   });
+
+  if (SHOPIFY_ACCESS_TOKEN) {
+    console.log('Pre-warming Shopify cache in background...');
+    shopifyWarmingPromise = Promise.all([
+      fetchAllShopifyOrders(),
+      fetchAllShopifyProducts(),
+      fetchAllShopifyCustomers()
+    ]).then(([orders, products, customers]) => {
+      shopifyCache = {
+        orders,
+        products,
+        customers,
+        lastUpdated: new Date().toISOString(),
+        timestamp: Date.now()
+      };
+      console.log(`Shopify cache pre-warmed: ${orders.length} orders, ${products.length} products, ${customers.length} customers`);
+    }).catch(err => {
+      console.log('Shopify pre-warm error:', err.message);
+    });
+  }
 });
