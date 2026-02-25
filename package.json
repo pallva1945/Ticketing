@@ -36,6 +36,7 @@
     "express": "^5.2.1",
     "firebase": "^10.8.0",
     "google-auth-library": "^10.5.0",
+    "googleapis": "^171.4.0",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.344.0",
     "multer": "^2.0.2",

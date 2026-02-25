@@ -9,7 +9,8 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV, fetchVBDataFromBigQuery, fetchVBProfilesFromBigQuery, fetchVBProspectsFromBigQuery } from "../src/services/bigQueryService";
-import { initDatabase, upsertUser, getUserByEmail, getUserPermissions, createAccessRequest, getAccessRequestByEmail, saveCostCenterData, getLatestCostCenterData } from "./db.js";
+import { initDatabase, upsertUser, getUserByEmail, getUserPermissions, createAccessRequest, getAccessRequestByEmail, saveCostCenterData, getLatestCostCenterData, getSetting, setSetting } from "./db.js";
+import { getUncachableGoogleSheetClient } from "./googleSheets.js";
 import { registerAdminRoutes } from "./adminRoutes.js";
 import crypto from "crypto";
 
@@ -369,6 +370,78 @@ app.get("/api/costs/data", async (req, res) => {
     res.json({ success: true, data: result.data, uploadedAt: result.uploaded_at });
   } catch (error: any) {
     console.error('Cost data fetch error:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/costs/sheet-config", async (req, res) => {
+  try {
+    const sheetId = await getSetting('cost_sheet_id');
+    const sheetName = await getSetting('cost_sheet_name');
+    res.json({ success: true, sheetId: sheetId || '', sheetName: sheetName || 'SG&A (No Labor)' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/costs/sheet-config", async (req, res) => {
+  try {
+    const { sheetId, sheetName } = req.body;
+    if (!sheetId) return res.status(400).json({ success: false, message: 'sheetId is required' });
+    await setSetting('cost_sheet_id', sheetId);
+    if (sheetName) await setSetting('cost_sheet_name', sheetName);
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/costs/sync-sheet", async (req, res) => {
+  try {
+    let { sheetId, sheetName } = req.body || {};
+    if (!sheetId) sheetId = await getSetting('cost_sheet_id');
+    if (!sheetName) sheetName = await getSetting('cost_sheet_name') || 'SG&A (No Labor)';
+    if (!sheetId) {
+      return res.status(400).json({ success: false, message: 'No Google Sheet configured. Please set a Sheet ID first.' });
+    }
+
+    const sheets = await getUncachableGoogleSheetClient();
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range: `'${sheetName}'`,
+    });
+
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) {
+      return res.status(400).json({ success: false, message: 'Sheet is empty or not found' });
+    }
+
+    const csvLines = rows.map((row: any[]) =>
+      row.map(cell => {
+        const s = String(cell ?? '');
+        if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      }).join(',')
+    );
+    const csvText = csvLines.join('\n');
+
+    const parsed = parseCostCSV(csvText);
+    const sectionCount = Object.keys(parsed).length;
+    const lineCount = Object.values(parsed).reduce((s, lines) => s + lines.length, 0);
+    if (sectionCount === 0) {
+      return res.status(400).json({ success: false, message: 'No valid cost sections found in sheet' });
+    }
+
+    const saved = await saveCostCenterData(parsed);
+    console.log(`Cost center synced from Google Sheet: ${sectionCount} sections, ${lineCount} line items`);
+    res.json({ success: true, data: parsed, sections: sectionCount, lineItems: lineCount, uploadedAt: saved.uploaded_at });
+  } catch (error: any) {
+    console.error('Sheet sync error:', error.message);
+    if (error.message?.includes('not connected')) {
+      return res.status(401).json({ success: false, message: 'Google Sheets not connected. Please reconnect the integration.' });
+    }
     res.status(500).json({ success: false, message: error.message });
   }
 });

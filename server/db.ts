@@ -68,6 +68,12 @@ export async function initDatabase() {
         data JSONB NOT NULL,
         uploaded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
+
+      CREATE TABLE IF NOT EXISTS portal_settings (
+        key VARCHAR(100) PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
     `);
 
     const adminEmail = 'luisscola@pallacanestrovarese.it';
@@ -271,6 +277,18 @@ export async function saveCostCenterData(data: any) {
 export async function getLatestCostCenterData() {
   const result = await pool.query('SELECT data, uploaded_at FROM cost_center_data ORDER BY uploaded_at DESC LIMIT 1');
   return result.rows[0] || null;
+}
+
+export async function getSetting(key: string): Promise<string | null> {
+  const result = await pool.query('SELECT value FROM portal_settings WHERE key = $1', [key]);
+  return result.rows[0]?.value || null;
+}
+
+export async function setSetting(key: string, value: string): Promise<void> {
+  await pool.query(
+    'INSERT INTO portal_settings (key, value, updated_at) VALUES ($1, $2, NOW()) ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = NOW()',
+    [key, value]
+  );
 }
 
 export { pool };
