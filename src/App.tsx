@@ -1146,10 +1146,11 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
     let loadedGameDay: GameDayData[] = [];
     
     const refreshParam = forceRefresh ? '?refresh=true' : '';
-    const [ticketingResponse, gdResponse, sponsorResponse, merchResponse] = await Promise.all([
+    const [ticketingResponse, gdResponse, sponsorResponse, merchRevenueResponse, merchResponse] = await Promise.all([
       fetch(`/api/ticketing${refreshParam}`).catch(e => { console.warn('Ticketing fetch failed:', e); return null; }),
       fetch(`/api/gameday/bigquery${refreshParam}`).catch(e => { console.warn('GameDay fetch failed:', e); return null; }),
       fetch(`/api/sponsorship/bigquery${refreshParam}`).catch(e => { console.warn('Sponsorship fetch failed:', e); return null; }),
+      fetch(`/api/merch/season-revenue`).catch(e => { console.warn('Merch revenue fetch failed:', e); return null; }),
       fetch(`/api/shopify/data${forceRefresh ? '?refresh=true' : ''}`).catch(e => { console.warn('Merch fetch failed:', e); return null; })
     ]);
     
@@ -1281,32 +1282,49 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
         setSponsorDataSource('local');
     }
 
-    // 4. MERCHANDISING DATA - Calculate season-filtered revenue for Executive Overview
+    // 4. MERCHANDISING DATA - Use pre-computed season revenue (fast), fallback to full data
+    let merchRevenueSet = false;
     try {
-        if (merchResponse && merchResponse.ok) {
-            const merchResult = await merchResponse.json();
-            if (merchResult.orders?.length > 0) {
-                const getSeasonFromDate = (dateStr: string): string => {
-                    const date = new Date(dateStr);
-                    const year = date.getFullYear();
-                    const month = date.getMonth(); // 0-indexed: January=0, July=6
-                    if (month >= 6) { // July (6) or later
-                        return `${String(year).slice(2)}/${String(year + 1).slice(2)}`;
-                    } else {
-                        return `${String(year - 1).slice(2)}/${String(year).slice(2)}`;
-                    }
-                };
-                const seasonOrders = merchResult.orders.filter((o: any) => getSeasonFromDate(o.processedAt) === '25/26' && !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0));
-                const seasonRevenueWithTax = seasonOrders.reduce((sum: number, o: any) => sum + o.totalPrice, 0);
-                const seasonTax = seasonOrders.reduce((sum: number, o: any) => sum + (o.totalTax || 0), 0);
-                const seasonRevenue = seasonRevenueWithTax - seasonTax;
-                setMerchRevenue(seasonRevenue);
-                saveToLocalCache('merch', seasonRevenue);
-                console.log(`Merch loaded: ${merchResult.orders.length} total orders, ${seasonOrders.length} in 25/26 season - ${seasonRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}`);
+        if (merchRevenueResponse && merchRevenueResponse.ok) {
+            const revenueResult = await merchRevenueResponse.json();
+            if (revenueResult.success && revenueResult.revenue > 0) {
+                setMerchRevenue(revenueResult.revenue);
+                saveToLocalCache('merch', revenueResult.revenue);
+                merchRevenueSet = true;
+                console.log(`Merch revenue (fast): ${revenueResult.revenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})} from ${revenueResult.orderCount} orders`);
             }
         }
     } catch(e) {
-        console.error("Error loading Merch data", e);
+        console.warn("Merch revenue endpoint failed:", e);
+    }
+
+    if (!merchRevenueSet) {
+        try {
+            if (merchResponse && merchResponse.ok) {
+                const merchResult = await merchResponse.json();
+                if (merchResult.orders?.length > 0) {
+                    const getSeasonFromDate = (dateStr: string): string => {
+                        const date = new Date(dateStr);
+                        const year = date.getFullYear();
+                        const month = date.getMonth();
+                        if (month >= 6) {
+                            return `${String(year).slice(2)}/${String(year + 1).slice(2)}`;
+                        } else {
+                            return `${String(year - 1).slice(2)}/${String(year).slice(2)}`;
+                        }
+                    };
+                    const seasonOrders = merchResult.orders.filter((o: any) => getSeasonFromDate(o.processedAt) === '25/26' && !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0));
+                    const seasonRevenueWithTax = seasonOrders.reduce((sum: number, o: any) => sum + o.totalPrice, 0);
+                    const seasonTax = seasonOrders.reduce((sum: number, o: any) => sum + (o.totalTax || 0), 0);
+                    const seasonRevenue = seasonRevenueWithTax - seasonTax;
+                    setMerchRevenue(seasonRevenue);
+                    saveToLocalCache('merch', seasonRevenue);
+                    console.log(`Merch loaded: ${merchResult.orders.length} total orders, ${seasonOrders.length} in 25/26 season - ${seasonRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}`);
+                }
+            }
+        } catch(e) {
+            console.error("Error loading Merch data", e);
+        }
     }
 
     // Save to localStorage for instant loading next time

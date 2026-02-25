@@ -1140,25 +1140,38 @@ function parseDate(dateStr: string): string {
 }
 
 
-async function fetchShopifyAPI(endpoint: string): Promise<any> {
+async function fetchShopifyAPI(endpoint: string, retries = 5): Promise<any> {
   if (!SHOPIFY_ACCESS_TOKEN) {
     throw new Error('Shopify access token not configured');
   }
   
   const url = `https://${SHOPIFY_STORE}.myshopify.com/admin/api/${SHOPIFY_API_VERSION}/${endpoint}`;
-  const response = await fetch(url, {
-    headers: {
-      'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN,
-      'Content-Type': 'application/json'
-    }
-  });
   
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Shopify API error (${response.status}): ${errorText}`);
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const response = await fetch(url, {
+      headers: {
+        'X-Shopify-Access-Token': SHOPIFY_ACCESS_TOKEN,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.status === 429) {
+      const retryAfter = parseFloat(response.headers.get('Retry-After') || '2');
+      const waitMs = Math.max(retryAfter * 1000, 1000);
+      console.log(`Shopify rate limited, waiting ${waitMs}ms (attempt ${attempt + 1}/${retries + 1})`);
+      await new Promise(r => setTimeout(r, waitMs));
+      continue;
+    }
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Shopify API error (${response.status}): ${errorText}`);
+    }
+    
+    return response.json();
   }
   
-  return response.json();
+  throw new Error('Shopify API: max retries exceeded due to rate limiting');
 }
 
 async function fetchAllShopifyOrders(): Promise<ShopifyOrder[]> {
@@ -1343,17 +1356,52 @@ async function fetchAllShopifyCustomers(): Promise<ShopifyCustomer[]> {
   return customers;
 }
 
+app.get("/api/merch/season-revenue", async (req, res) => {
+  try {
+    if (!forceRefresh(req) && shopifyWarmingPromise && !shopifyCache) {
+      const timeout = new Promise<null>(r => setTimeout(() => r(null), 15000));
+      await Promise.race([shopifyWarmingPromise, timeout]);
+    }
+
+    if (shopifyCache) {
+      const getSeasonFromDate = (dateStr: string): string => {
+        const date = new Date(dateStr);
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        if (month >= 6) return `${String(year).slice(2)}/${String(year + 1).slice(2)}`;
+        return `${String(year - 1).slice(2)}/${String(year).slice(2)}`;
+      };
+      const seasonOrders = shopifyCache.orders.filter(o => 
+        getSeasonFromDate(o.processedAt) === '25/26' && 
+        !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0)
+      );
+      const revenueWithTax = seasonOrders.reduce((sum, o) => sum + o.totalPrice, 0);
+      const tax = seasonOrders.reduce((sum, o) => sum + (o.totalTax || 0), 0);
+      return res.json({ success: true, revenue: revenueWithTax - tax, orderCount: seasonOrders.length });
+    }
+
+    return res.json({ success: false, revenue: 0, message: 'Shopify data not yet available' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, revenue: 0, message: error.message });
+  }
+});
+
+function forceRefresh(req: express.Request): boolean {
+  return req.query.refresh === 'true';
+}
+
 app.get("/api/shopify/data", async (req, res) => {
   try {
-    const forceRefresh = req.query.refresh === 'true';
+    const isForceRefresh = req.query.refresh === 'true';
     
-    if (!forceRefresh && shopifyWarmingPromise && !shopifyCache) {
+    if (!isForceRefresh && shopifyWarmingPromise && !shopifyCache) {
       console.log('Waiting for Shopify pre-warm to complete...');
-      await shopifyWarmingPromise;
+      const timeout = new Promise<null>(r => setTimeout(() => r(null), 30000));
+      await Promise.race([shopifyWarmingPromise, timeout]);
     }
     
     // Return cached data if still valid
-    if (shopifyCache && !forceRefresh && (Date.now() - shopifyCache.timestamp) < SHOPIFY_CACHE_TTL) {
+    if (shopifyCache && !isForceRefresh && (Date.now() - shopifyCache.timestamp) < SHOPIFY_CACHE_TTL) {
       console.log(`Returning cached Shopify data: ${shopifyCache.orders.length} orders`);
       return res.json(shopifyCache);
     }
@@ -1638,11 +1686,10 @@ app.listen(PORT, '0.0.0.0', () => {
 
   if (SHOPIFY_ACCESS_TOKEN) {
     console.log('Pre-warming Shopify cache in background...');
-    shopifyWarmingPromise = Promise.all([
-      fetchAllShopifyOrders(),
-      fetchAllShopifyProducts(),
-      fetchAllShopifyCustomers()
-    ]).then(([orders, products, customers]) => {
+    shopifyWarmingPromise = (async () => {
+      const orders = await fetchAllShopifyOrders();
+      const products = await fetchAllShopifyProducts();
+      const customers = await fetchAllShopifyCustomers();
       shopifyCache = {
         orders,
         products,
@@ -1651,7 +1698,7 @@ app.listen(PORT, '0.0.0.0', () => {
         timestamp: Date.now()
       };
       console.log(`Shopify cache pre-warmed: ${orders.length} orders, ${products.length} products, ${customers.length} customers`);
-    }).catch(err => {
+    })().catch(err => {
       console.log('Shopify pre-warm error:', err.message);
     });
   }
