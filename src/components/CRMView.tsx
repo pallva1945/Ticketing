@@ -161,8 +161,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
   const [selectedGiveawayRecipient, setSelectedGiveawayRecipient] = useState<string | null>(null);
   const [selectedGiveawayType, setSelectedGiveawayType] = useState<string | null>(null);
-  const [gameAttendeeSortCol, setGameAttendeeSortCol] = useState<string>('zone');
-  const [gameAttendeeSortDir, setGameAttendeeSortDir] = useState<'asc' | 'desc'>('asc');
+  const [gameAttendeeSortCol, setGameAttendeeSortCol] = useState<string>('value');
+  const [gameAttendeeSortDir, setGameAttendeeSortDir] = useState<'asc' | 'desc'>('desc');
   const [gameFilterZone, setGameFilterZone] = useState<string | null>(null);
   const [gameFilterSellType, setGameFilterSellType] = useState<string | null>(null);
 
@@ -520,7 +520,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       tickets: stats.tickets,
       revenue: stats.revenue,
       customers: stats.customers.size
-    })).sort((a, b) => b.tickets - a.tickets) : [];
+    })).sort((a, b) => b.revenue - a.revenue) : [];
 
     const gameSellTypeBreakdown = matchedGame ? Object.entries(
       matchingRecords.reduce((acc: Record<string, { tickets: number; revenue: number; customers: Set<string> }>, r: any) => {
@@ -536,7 +536,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       tickets: stats.tickets,
       revenue: stats.revenue,
       customers: stats.customers.size
-    })).sort((a, b) => b.tickets - a.tickets) : [];
+    })).sort((a, b) => b.revenue - a.revenue) : [];
 
     const gameTotalTickets = matchedGame ? matchingRecords.reduce((sum: number, r: any) => sum + (Number(r.quantity) || 1), 0) : 0;
     const gameTotalRevenue = matchedGame ? matchingRecords.reduce((sum: number, r: any) => sum + (Number(r.commercialValue) || Number(r.price) || 0), 0) : 0;
