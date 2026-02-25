@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Calendar, Flag, Activity, Landmark, ShoppingBag, Users, GraduationCap, Construction, Sun, Moon, PieChart, TrendingUp, Briefcase, Building2, HardHat, Upload, Check, Loader2, RefreshCw, Settings, X, FileSpreadsheet } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Flag, Activity, Landmark, ShoppingBag, Users, GraduationCap, Construction, Sun, Moon, PieChart, TrendingUp, Briefcase, Building2, HardHat, Check, Loader2, Settings, X, FileSpreadsheet } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
@@ -47,15 +47,12 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
   const isDark = theme === 'dark';
   const [activeModule, setActiveModule] = useState<CostModule>('overview');
   const [costData, setCostData] = useState<CostData | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncSuccess, setSyncSuccess] = useState(false);
   const [showSheetConfig, setShowSheetConfig] = useState(false);
   const [sheetId, setSheetId] = useState('');
   const [sheetName, setSheetName] = useState('SG&A (No Labor)');
   const [sheetConfigured, setSheetConfigured] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch('/api/costs/data')
@@ -74,32 +71,6 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
       })
       .catch(() => {});
   }, []);
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsUploading(true);
-    setUploadSuccess(false);
-    try {
-      const text = await file.text();
-      const res = await fetch('/api/costs/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ csv: text }),
-      });
-      const result = await res.json();
-      if (result.success) {
-        setCostData(result.data);
-        setUploadSuccess(true);
-        setTimeout(() => setUploadSuccess(false), 3000);
-      }
-    } catch (err) {
-      console.error('Upload failed:', err);
-    } finally {
-      setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
 
   const handleSyncSheet = async () => {
     setIsSyncing(true);
@@ -281,34 +252,6 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('Season')} 2025/26</p>
               </div>
               <div className="flex items-center gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".csv"
-                  className="hidden"
-                  onChange={handleUpload}
-                />
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
-                    uploadSuccess
-                      ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
-                      : isDark
-                        ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300'
-                        : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
-                  }`}
-                  title={t('Upload cost data CSV')}
-                >
-                  {isUploading ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : uploadSuccess ? (
-                    <Check size={14} />
-                  ) : (
-                    <Upload size={14} />
-                  )}
-                  {isUploading ? t('Uploading...') : uploadSuccess ? t('Updated') : t('Upload CSV')}
-                </button>
                 <button
                   onClick={sheetConfigured ? handleSyncSheet : () => setShowSheetConfig(true)}
                   disabled={isSyncing}
