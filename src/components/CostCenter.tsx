@@ -103,7 +103,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
   const dataMonthCount = hasDynamic ? (Object.values(costData).find(v => v?.[0]))?.[0]?.values.length || 6 : 6;
   const period = periodLabel(dataMonthCount);
 
-  const laborProrated = Math.round(511145 * 6 / 12) + 53185;
+  const dynProfServices = hasDynamic ? sectionTotal(costData.professional_services) : 53185;
+  const laborProrated = Math.round(511145 * 6 / 12) + dynProfServices;
   const sgaOtherTotal = dynTeamOps + dynMarketing + dynOffice + dynUtilities + dynFinancial + dynContingencies;
   const sgaTotal = laborProrated + sgaOtherTotal;
 
@@ -410,7 +411,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
         ) : activeModule === 'merchandising' ? (
           <MerchandisingCostDashboard costLines={costData?.merchandising} />
         ) : activeModule === 'sga_labor' ? (
-          <LaborCostDashboard />
+          <LaborCostDashboard professionalServices={costData?.professional_services} />
         ) : activeModule === 'sga_other' ? (
           <SGACombinedDashboard costData={costData || undefined} />
         ) : activeModule === 'ebp' ? (

@@ -34,44 +34,16 @@ const INTERNAL_DEPARTMENTS: DeptLine[] = DEPARTMENTS_ANNUAL.map(d => ({
   total: Math.round(d.total * PRORATE),
 }));
 
-const EXTERNAL_DEPT: DeptLine = {
-  name: 'External',
-  employees: 6,
-  netSalary: 53185,
-  taxes: 0,
-  relatedCost: 0,
-  total: 53185,
-  color: '#e11d48',
-};
+const ALL_SEASON_MONTHS = ['July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June'];
 
-const DEPARTMENTS: DeptLine[] = [...INTERNAL_DEPARTMENTS, EXTERNAL_DEPT];
-
-const GRAND_TOTAL = DEPARTMENTS.reduce((s, d) => s + d.total, 0);
-const INTERNAL_TOTAL = INTERNAL_DEPARTMENTS.reduce((s, d) => s + d.total, 0);
-const ANNUAL_TOTAL = DEPARTMENTS_ANNUAL.reduce((s, d) => s + d.total, 0);
-const TOTAL_EMPLOYEES = DEPARTMENTS.reduce((s, d) => s + d.employees, 0);
-const TOTAL_NET = DEPARTMENTS.reduce((s, d) => s + d.netSalary, 0);
-const TOTAL_TAXES = DEPARTMENTS.reduce((s, d) => s + d.taxes, 0);
-const TOTAL_RELATED = DEPARTMENTS.reduce((s, d) => s + d.relatedCost, 0);
-const SORTED = [...DEPARTMENTS].sort((a, b) => b.total - a.total);
-const AVG_COST_PER_EMP = GRAND_TOTAL / TOTAL_EMPLOYEES;
-
-const COST_STRUCTURE = [
-  { name: 'Net Salary', value: TOTAL_NET, color: '#ef4444' },
-  { name: 'Taxes', value: TOTAL_TAXES, color: '#f97316' },
-  { name: 'Employee Related Cost', value: TOTAL_RELATED, color: '#3b82f6' },
-];
-
-const MONTHS = ['July', 'August', 'September', 'October', 'November', 'December'];
-
-interface ExtLine {
+interface CostLine {
   name: string;
   values: number[];
   total: number;
   color: string;
 }
 
-const EXT_LINES: ExtLine[] = [
+const DEFAULT_EXT_LINES: CostLine[] = [
   { name: 'Accounting', values: [4115.15, 4115.15, 4175.16, 4681.82, 4681.82, 4681.82], total: 26450.92, color: '#ef4444' },
   { name: 'Legal', values: [1571.67, 1572.25, 1572.25, 1572.25, 1572.25, 6389.01], total: 14249.68, color: '#f97316' },
   { name: 'Misc.', values: [0, 0, 2600, 832, 832, 1574.86], total: 5838.86, color: '#3b82f6' },
@@ -80,10 +52,47 @@ const EXT_LINES: ExtLine[] = [
   { name: 'Administrative Taxes', values: [80, 18.34, 158.34, 24.34, 26.34, 98.34], total: 405.70, color: '#f59e0b' },
 ];
 
-const EXT_MONTHLY = MONTHS.map((_, i) => EXT_LINES.reduce((sum, l) => sum + l.values[i], 0));
+interface LaborCostDashboardProps {
+  professionalServices?: CostLine[];
+}
 
-export const LaborCostDashboard: React.FC = () => {
+export const LaborCostDashboard: React.FC<LaborCostDashboardProps> = ({ professionalServices }) => {
   const { t } = useLanguage();
+
+  const EXT_LINES = professionalServices || DEFAULT_EXT_LINES;
+  const monthCount = EXT_LINES[0]?.values.length || 6;
+  const MONTHS = ALL_SEASON_MONTHS.slice(0, monthCount);
+  const EXT_TOTAL = EXT_LINES.reduce((s, l) => s + l.total, 0);
+  const EXT_MONTHLY = MONTHS.map((_, i) => EXT_LINES.reduce((sum, l) => sum + (l.values[i] || 0), 0));
+
+  const EXTERNAL_DEPT: DeptLine = {
+    name: 'External',
+    employees: 6,
+    netSalary: Math.round(EXT_TOTAL),
+    taxes: 0,
+    relatedCost: 0,
+    total: Math.round(EXT_TOTAL),
+    color: '#e11d48',
+  };
+
+  const DEPARTMENTS: DeptLine[] = [...INTERNAL_DEPARTMENTS, EXTERNAL_DEPT];
+  const GRAND_TOTAL = DEPARTMENTS.reduce((s, d) => s + d.total, 0);
+  const INTERNAL_TOTAL = INTERNAL_DEPARTMENTS.reduce((s, d) => s + d.total, 0);
+  const TOTAL_EMPLOYEES = DEPARTMENTS.reduce((s, d) => s + d.employees, 0);
+  const TOTAL_NET = DEPARTMENTS.reduce((s, d) => s + d.netSalary, 0);
+  const TOTAL_TAXES = DEPARTMENTS.reduce((s, d) => s + d.taxes, 0);
+  const TOTAL_RELATED = DEPARTMENTS.reduce((s, d) => s + d.relatedCost, 0);
+  const SORTED = [...DEPARTMENTS].sort((a, b) => b.total - a.total);
+  const AVG_COST_PER_EMP = GRAND_TOTAL / TOTAL_EMPLOYEES;
+
+  const COST_STRUCTURE = [
+    { name: 'Net Salary', value: TOTAL_NET, color: '#ef4444' },
+    { name: 'Taxes', value: TOTAL_TAXES, color: '#f97316' },
+    { name: 'Employee Related Cost', value: TOTAL_RELATED, color: '#3b82f6' },
+  ];
+
+  const lastMonth = MONTHS[MONTHS.length - 1];
+  const periodShort = monthCount <= 6 ? 'Jul–Dec 2025' : `Jul 2025–${t(lastMonth).substring(0, 3)} 2026`;
 
   const barData = SORTED.map(d => ({
     name: t(d.name),
@@ -100,14 +109,14 @@ export const LaborCostDashboard: React.FC = () => {
         </div>
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('Labor')} — {t('Cost Structure')}</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Jul–Dec 2025 · SG&A · {t('Internal prorated + External actuals')}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{periodShort} · SG&A · {t('Internal prorated + External actuals')}</p>
         </div>
         <div className="ml-auto flex gap-1.5">
           <div className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[10px] text-emerald-600 dark:text-emerald-400">
             {t('YTD Prorated')}
           </div>
-          <div className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded text-[10px] text-emerald-600 dark:text-emerald-400">
-            {t('Monthly Actuals')}
+          <div className={`px-2 py-0.5 rounded text-[10px] border ${professionalServices ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400' : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'}`}>
+            {professionalServices ? t('CSV Data') : t('Monthly Actuals')}
           </div>
         </div>
       </div>
@@ -313,7 +322,7 @@ export const LaborCostDashboard: React.FC = () => {
       </div>
       <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
         <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1">{t('External')} — {t('Professional Services')}</h3>
-        <p className="text-[10px] text-gray-400 mb-4">{t('Monthly Actuals')} · Jul–Dec 2025</p>
+        <p className="text-[10px] text-gray-400 mb-4">{t('Monthly Actuals')} · {periodShort}</p>
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
@@ -349,7 +358,7 @@ export const LaborCostDashboard: React.FC = () => {
                 {EXT_MONTHLY.map((val, i) => (
                   <td key={i} className="text-right py-2.5 px-2 font-bold text-gray-900 dark:text-white whitespace-nowrap tabular-nums">{formatCurrency(val)}</td>
                 ))}
-                <td className="text-right py-2.5 pl-3 font-bold text-orange-600 whitespace-nowrap tabular-nums">{formatCurrency(EXTERNAL_DEPT.total)}</td>
+                <td className="text-right py-2.5 pl-3 font-bold text-orange-600 whitespace-nowrap tabular-nums">{formatCurrency(EXT_TOTAL)}</td>
               </tr>
             </tbody>
           </table>

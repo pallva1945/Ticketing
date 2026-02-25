@@ -271,6 +271,7 @@ const COST_SECTION_MAP: Record<string, string> = {
   'Utilities and Maintenance': 'utilities',
   'Financial': 'financial',
   'Contingencies': 'contingencies',
+  'Professional Services': 'professional_services',
 };
 
 const COST_LINE_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981', '#14b8a6', '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef'];
