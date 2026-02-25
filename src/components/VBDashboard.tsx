@@ -434,7 +434,7 @@ function computePotentialScore(
     { label: 'Athleticism', value: data.cas, normalizedValue: data.cas, baseWeight: POTENTIAL_WEIGHTS.cas },
     { label: 'Work Ethic', value: data.workEthic, normalizedValue: normalize15(data.workEthic), baseWeight: POTENTIAL_WEIGHTS.workEthic },
     { label: 'Talent', value: data.talent, normalizedValue: data.talent, baseWeight: POTENTIAL_WEIGHTS.talent },
-    { label: 'Personality', value: data.personality, normalizedValue: normalize15(data.personality), baseWeight: POTENTIAL_WEIGHTS.personality },
+    { label: 'Character', value: data.personality, normalizedValue: normalize15(data.personality), baseWeight: POTENTIAL_WEIGHTS.personality },
   ];
 
   const avail = raw.filter(r => r.normalizedValue !== null);
@@ -2663,7 +2663,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <span className="font-medium">{t('Personality')}</span>
+                <span className="font-medium">{t('Character')}</span>
                 <div className="flex gap-0.5">
                   {[1,2,3,4,5].map(i => (
                     <span key={i} className={`text-sm ${attrs?.personality && i <= attrs.personality ? 'text-sky-500' : isDark ? 'text-gray-700' : 'text-gray-300'}`}>★</span>
@@ -3211,7 +3211,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                     }
                     const barWidth = Math.min(Math.max(c.normalizedValue / 1.5, 2), 100);
                     const isAboveAvg = c.normalizedValue >= 100;
-                    const displayVal = c.label === 'Work Ethic' || c.label === 'Personality' ? `${c.value}/5` : `${c.normalizedValue}`;
+                    const displayVal = c.label === 'Work Ethic' || c.label === 'Character' ? `${c.value}/5` : `${c.normalizedValue}`;
                     return (
                       <div key={i} className="flex items-center gap-2">
                         <div className={`w-24 sm:w-28 text-[10px] font-medium text-right flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
@@ -3269,7 +3269,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                   { name: 'Athleticism (CAS)', weight: '25%', desc: 'Explosive potential in jumping, lateral quickness, and open-court speed. The ability to move.' },
                   { name: 'Work Ethic', weight: '20%', desc: '"Work beats talent when talent doesn\'t work." Love for the gym and desire to improve, rated 1-5 by coaching staff.' },
                   { name: 'Talent', weight: '10%', desc: 'Technical skill and learning speed. Will be computed from game stats (3PT%, FT%, AST/TO, USG%, Intensity, Win Shares). Coming soon.' },
-                  { name: 'Personality', weight: '10%', desc: 'Character matters. Is the player fun to be around? Coachable? A good teammate? Rated 1-5 by coaching staff.' },
+                  { name: 'Character', weight: '10%', desc: 'Character matters. Is the player fun to be around? Coachable? A good teammate? Rated 1-5 by coaching staff.' },
                 ].map((pillar, i) => (
                   <div key={i} className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
                     <div className="flex items-center justify-between mb-1">
@@ -3285,7 +3285,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                 {t('How It Works')}
               </h4>
               <div className={`text-[11px] leading-relaxed space-y-2 mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                <p>{t('APS and CAS are on the NBA 0-100 scale. Work Ethic and Personality (1-5 stars) are normalized to 0-100 (each star = 20 points).')}</p>
+                <p>{t('APS and CAS are on the NBA 0-100 scale. Work Ethic and Character (1-5 stars) are normalized to 0-100 (each star = 20 points).')}</p>
                 <p>{t('If a factor is unavailable, its weight is redistributed proportionally across available factors. Minimum 2 factors required.')}</p>
                 <p>{t('The same Age Factor multiplier used by CAS and APS is applied to the final score, giving younger players a development potential boost.')}</p>
               </div>
