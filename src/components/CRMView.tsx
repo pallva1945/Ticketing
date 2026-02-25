@@ -206,6 +206,54 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     if (searchMode !== 'seat' || query.length < 1) return [];
 
     const gamesList = [...new Set(data.map(r => r.gm || r.game).filter(Boolean))];
+    const zones = [...new Set(data.map(r => r.pvZone).filter(Boolean))];
+    const areas = [...new Set(data.map(r => (r as any).area || '').filter(Boolean))];
+    const rawInput = clientSearchQuery;
+    const endsWithSpace = rawInput.endsWith(' ');
+    const parts = query.split(/[,\s]+/).filter(p => p);
+
+    let detectedGame: string | null = null;
+    let gameWords = 0;
+    for (let i = parts.length; i >= 1; i--) {
+      const candidate = parts.slice(0, i).join(' ');
+      if (candidate.length >= 3) {
+        const found = gamesList.find(g => g.toLowerCase().includes(candidate));
+        if (found) { detectedGame = found; gameWords = i; break; }
+      }
+    }
+    if (!detectedGame) {
+      for (let i = 1; i <= parts.length; i++) {
+        const candidate = parts.slice(parts.length - i).join(' ');
+        if (candidate.length >= 3) {
+          const found = gamesList.find(g => g.toLowerCase().includes(candidate));
+          if (found) { detectedGame = found; break; }
+        }
+      }
+    }
+
+    const locationParts = detectedGame && gameWords > 0 ? parts.slice(gameWords) : [];
+    const locationQuery = locationParts.join(' ');
+    const hasGameAndSpace = detectedGame && endsWithSpace;
+
+    if (hasGameAndSpace) {
+      const locFilter = locationQuery.toLowerCase();
+      const alreadyUsedZones = new Set<string>();
+      locationParts.forEach(p => {
+        zones.forEach(z => { if (z.toLowerCase().includes(p)) alreadyUsedZones.add(z); });
+      });
+      const locationSuggestions = [
+        ...zones.filter(z => !alreadyUsedZones.has(z) || locFilter).map(z => ({ label: z, type: 'zone' })),
+        ...areas.map(a => ({ label: a, type: 'area' }))
+      ]
+        .filter(item => !locFilter || item.label.toLowerCase().includes(locFilter))
+        .reduce((acc, item) => {
+          if (!acc.find(i => i.label === item.label)) acc.push(item);
+          return acc;
+        }, [] as { label: string; type: string }[])
+        .slice(0, 10);
+      return locationSuggestions;
+    }
+
     const gameSuggestions = gamesList
       .filter(g => g.toLowerCase().includes(query))
       .sort((a, b) => {
@@ -219,8 +267,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       .slice(0, 8)
       .map(g => ({ label: g, type: 'game' }));
 
-    const zones = [...new Set(data.map(r => r.pvZone).filter(Boolean))];
-    const areas = [...new Set(data.map(r => (r as any).area || '').filter(Boolean))];
     const locationSuggestions = [
       ...zones.map(z => ({ label: z, type: 'zone' })),
       ...areas.map(a => ({ label: a, type: 'area' }))
@@ -277,6 +323,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
     let matchedGame: string | null = null;
     let gameWordCount = 0;
+    let gamePosition: 'start' | 'end' = 'start';
 
     if (allGameNames.find(g => g.toLowerCase() === query)) {
       matchedGame = allGameNames.find(g => g.toLowerCase() === query)!;
@@ -294,14 +341,37 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             if (leftoverLooksLikeLocation) {
               matchedGame = found;
               gameWordCount = i;
+              gamePosition = 'start';
               break;
+            }
+          }
+        }
+      }
+      if (!matchedGame) {
+        for (let i = 1; i <= parts.length; i++) {
+          const candidate = parts.slice(parts.length - i).join(' ');
+          if (candidate.length >= 3) {
+            const found = allGameNames.find(g => g.toLowerCase().includes(candidate));
+            if (found) {
+              const leftover = parts.slice(0, parts.length - i);
+              const leftoverLooksLikeLocation = leftover.length === 0 || leftover.some(p => 
+                allPvZones.some(z => z.includes(p)) || allAreas.includes(p) || /^\d+$/.test(p)
+              );
+              if (leftoverLooksLikeLocation) {
+                matchedGame = found;
+                gameWordCount = i;
+                gamePosition = 'end';
+                break;
+              }
             }
           }
         }
       }
     }
 
-    const locationParts = matchedGame ? parts.slice(gameWordCount) : parts;
+    const locationParts = matchedGame 
+      ? (gamePosition === 'start' ? parts.slice(gameWordCount) : parts.slice(0, parts.length - gameWordCount))
+      : parts;
     
     let seatNumber: string | null = null;
     let areaFilter: string | null = null;
@@ -2749,11 +2819,28 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                           onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
                             if (item.type === 'game') {
-                              setClientSearchQuery(item.label);
-                            } else {
                               setClientSearchQuery(item.label + ' ');
+                              setShowSuggestions(true);
+                            } else {
+                              const currentInput = clientSearchQuery;
+                              const trimmed = currentInput.trimEnd();
+                              const inputParts = trimmed.toLowerCase().split(/[,\s]+/).filter(p => p);
+                              const gamesList = [...new Set(data.map(r => r.gm || r.game).filter(Boolean))];
+                              let hasGamePrefix = false;
+                              for (let gi = inputParts.length; gi >= 1; gi--) {
+                                const candidate = inputParts.slice(0, gi).join(' ');
+                                if (candidate.length >= 3 && gamesList.find(g => g.toLowerCase().includes(candidate))) {
+                                  hasGamePrefix = true;
+                                  break;
+                                }
+                              }
+                              if (hasGamePrefix) {
+                                setClientSearchQuery(trimmed + ' ' + item.label + ' ');
+                              } else {
+                                setClientSearchQuery(item.label + ' ');
+                              }
+                              setShowSuggestions(true);
                             }
-                            setShowSuggestions(false);
                           }}
                           className={`w-full text-left px-4 py-2.5 text-sm transition-colors flex items-center gap-2 border-b border-gray-50 dark:border-gray-800 last:border-b-0 ${
                             item.type === 'game' ? 'hover:bg-red-50 dark:hover:bg-red-900/20' : 'hover:bg-blue-50 dark:hover:bg-blue-900/20'
