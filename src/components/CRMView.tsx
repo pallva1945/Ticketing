@@ -271,73 +271,105 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     if (searchMode !== 'seat' || query.length < 2) return null;
     
     const allGameNames = [...new Set(data.map(r => r.gm || r.game).filter(Boolean))];
-    const queryWords = query.split(/[\s,]+/).filter(w => w.length > 0);
-    const matchedGame = allGameNames.find(g => g.toLowerCase() === query) 
-      || allGameNames.find(g => g.toLowerCase().includes(query) && query.length >= 3)
-      || (queryWords.length > 0 && queryWords.every(w => w.length >= 3) ? allGameNames.find(g => queryWords.every(w => g.toLowerCase().includes(w))) : null);
-
+    const allPvZones = [...new Set(data.map(r => (r.pvZone || '').toLowerCase()).filter(Boolean))];
+    const allAreas = [...new Set(data.map(r => ((r as any).area || '').toLowerCase()).filter(Boolean))];
     const parts = query.split(/[,\s]+/).map((p: string) => p.trim()).filter((p: string) => p);
-    
-    let seatNumber: string | null = null;
-    let areaFilter: string | null = null;
-    let zoneParts: string[] = parts;
-    
-    if (!matchedGame) {
-      const allPvZones = [...new Set(data.map(r => (r.pvZone || '').toLowerCase()).filter(Boolean))];
-      const allAreas = [...new Set(data.map(r => ((r as any).area || '').toLowerCase()).filter(Boolean))];
-      
-      let remaining = [...parts];
-      
-      if (remaining.length > 0 && /^\d+$/.test(remaining[remaining.length - 1])) {
-        seatNumber = remaining.pop()!;
-      }
-      
-      if (remaining.length > 0) {
-        const lastPart = remaining[remaining.length - 1];
-        const hyphenMatch = lastPart.match(/^([a-z]+)-?(\d+)$/i);
-        if (hyphenMatch) {
-          areaFilter = hyphenMatch[1].toLowerCase();
-          seatNumber = seatNumber || hyphenMatch[2];
-          remaining.pop();
-        } else if (allAreas.includes(lastPart.toLowerCase()) && remaining.length > 1) {
-          areaFilter = remaining.pop()!.toLowerCase();
-        } else if (lastPart.length <= 3 && /^[a-z]+$/i.test(lastPart) && remaining.length > 1) {
-          const couldBeArea = allAreas.some(a => a === lastPart.toLowerCase());
-          const couldBeZone = allPvZones.some(z => z.includes(lastPart.toLowerCase()));
-          if (couldBeArea || (!couldBeZone && allAreas.length > 0)) {
-            areaFilter = remaining.pop()!.toLowerCase();
+
+    let matchedGame: string | null = null;
+    let gameWordCount = 0;
+
+    if (allGameNames.find(g => g.toLowerCase() === query)) {
+      matchedGame = allGameNames.find(g => g.toLowerCase() === query)!;
+      gameWordCount = parts.length;
+    } else {
+      for (let i = parts.length; i >= 1; i--) {
+        const candidate = parts.slice(0, i).join(' ');
+        if (candidate.length >= 3) {
+          const found = allGameNames.find(g => g.toLowerCase().includes(candidate));
+          if (found) {
+            const leftover = parts.slice(i);
+            const leftoverLooksLikeLocation = leftover.length === 0 || leftover.some(p => 
+              allPvZones.some(z => z.includes(p)) || allAreas.includes(p) || /^\d+$/.test(p)
+            );
+            if (leftoverLooksLikeLocation) {
+              matchedGame = found;
+              gameWordCount = i;
+              break;
+            }
           }
         }
       }
-      
-      zoneParts = remaining;
     }
 
-    const matchingRecords = data.filter((r: any) => {
-      if (matchedGame) {
-        const recordGame = (r.gm || r.game || '').toLowerCase();
-        return recordGame === matchedGame.toLowerCase();
+    const locationParts = matchedGame ? parts.slice(gameWordCount) : parts;
+    
+    let seatNumber: string | null = null;
+    let areaFilter: string | null = null;
+    let zoneParts: string[] = [...locationParts];
+    
+    let remaining = [...locationParts];
+    
+    if (remaining.length > 0 && /^\d+$/.test(remaining[remaining.length - 1])) {
+      seatNumber = remaining.pop()!;
+    }
+    
+    if (remaining.length > 0) {
+      const lastPart = remaining[remaining.length - 1];
+      const hyphenMatch = lastPart.match(/^([a-z]+)-?(\d+)$/i);
+      if (hyphenMatch) {
+        areaFilter = hyphenMatch[1].toLowerCase();
+        seatNumber = seatNumber || hyphenMatch[2];
+        remaining.pop();
+      } else if (allAreas.includes(lastPart.toLowerCase()) && (remaining.length > 1 || matchedGame)) {
+        areaFilter = remaining.pop()!.toLowerCase();
+      } else if (lastPart.length <= 3 && /^[a-z]+$/i.test(lastPart) && (remaining.length > 1 || matchedGame)) {
+        const couldBeArea = allAreas.some(a => a === lastPart.toLowerCase());
+        const couldBeZone = allPvZones.some(z => z.includes(lastPart.toLowerCase()));
+        if (couldBeArea || (!couldBeZone && allAreas.length > 0)) {
+          areaFilter = remaining.pop()!.toLowerCase();
+        }
       }
+    }
+    
+    zoneParts = remaining;
+    const hasLocationFilter = zoneParts.length > 0 || areaFilter || seatNumber;
+
+    const matchingRecords = data.filter((r: any) => {
       const pvZone = ((r as any).pvZone || (r as any).pv_zone || (r as any).Pv_Zone || '').toLowerCase();
       const area = ((r as any).area || (r as any).Area || '').toLowerCase();
       const seat = ((r as any).seat || (r as any).Seat || '').toString().trim();
 
-      const zoneMatches = zoneParts.length === 0 || zoneParts.every((p: string) => pvZone.includes(p));
-      const areaMatches = !areaFilter || area === areaFilter;
-      const seatMatches = !seatNumber || seat === seatNumber;
+      if (matchedGame) {
+        const recordGame = (r.gm || r.game || '').toLowerCase();
+        if (recordGame !== matchedGame.toLowerCase()) return false;
+      }
+
+      if (hasLocationFilter) {
+        const zoneMatches = zoneParts.length === 0 || zoneParts.every((p: string) => pvZone.includes(p));
+        const areaMatches = !areaFilter || area === areaFilter;
+        const seatMatches = !seatNumber || seat === seatNumber;
+        if (!zoneMatches || !areaMatches || !seatMatches) return false;
+      } else if (!matchedGame) {
+        return false;
+      }
       
-      return zoneMatches && areaMatches && seatMatches;
+      return true;
     });
 
     const firstMatch = matchingRecords[0] as any;
-    const seatLocation = matchedGame 
-      ? { zone: matchedGame, area: '', seat: '', isGame: true }
-      : firstMatch ? {
-          zone: (firstMatch.pvZone || firstMatch.pv_zone || firstMatch.Pv_Zone || ''),
-          area: areaFilter || (firstMatch.area || firstMatch.Area || ''),
-          seat: seatNumber || 'All seats',
-          isGame: false
-        } : null;
+    const seatLocation = firstMatch ? {
+      zone: matchedGame || (firstMatch.pvZone || firstMatch.pv_zone || firstMatch.Pv_Zone || ''),
+      area: areaFilter || (!matchedGame ? (firstMatch.area || firstMatch.Area || '') : ''),
+      seat: seatNumber || (!matchedGame ? 'All seats' : ''),
+      isGame: !!matchedGame && !hasLocationFilter,
+      gameName: matchedGame || null,
+      locationLabel: hasLocationFilter ? (() => {
+        const z = zoneParts.length > 0 ? (firstMatch?.pvZone || firstMatch?.pv_zone || zoneParts.join(' ')) : '';
+        const a = areaFilter ? areaFilter.toUpperCase() : '';
+        const s = seatNumber || '';
+        return [z, a ? `Area ${a}` : '', s ? `Seat ${s}` : ''].filter(Boolean).join(' — ');
+      })() : null
+    } : null;
 
     const seatHistory = games.map(game => {
       const gameDate = game.date;
@@ -2774,29 +2806,74 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               {query.length >= 2 && searchMode === 'seat' && seatHistoryData && (
                 <div className="space-y-4">
                   {seatHistoryData.seatLocation && (
-                    <div className={`bg-gradient-to-br rounded-xl p-4 border ${seatHistoryData.seatLocation.isGame ? 'from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-red-200 dark:border-red-800' : 'from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 border-blue-200 dark:border-blue-800'}`}>
+                    <div className={`bg-gradient-to-br rounded-xl p-4 border ${seatHistoryData.seatLocation.gameName ? 'from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-red-200 dark:border-red-800' : 'from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/10 border-blue-200 dark:border-blue-800'}`}>
                       <div className="flex items-center gap-3">
-                        <div className={`text-white rounded-lg p-3 ${seatHistoryData.seatLocation.isGame ? 'bg-red-600' : 'bg-blue-600'}`}>
-                          {seatHistoryData.seatLocation.isGame ? <Calendar size={24} /> : <MapPin size={24} />}
+                        <div className={`text-white rounded-lg p-3 ${seatHistoryData.seatLocation.gameName ? 'bg-red-600' : 'bg-blue-600'}`}>
+                          {seatHistoryData.seatLocation.gameName ? <Calendar size={24} /> : <MapPin size={24} />}
                         </div>
                         <div>
-                          <p className={`text-xs uppercase font-semibold ${seatHistoryData.seatLocation.isGame ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                            {seatHistoryData.seatLocation.isGame ? t('Game') : t('Seat Location')}
+                          <p className={`text-xs uppercase font-semibold ${seatHistoryData.seatLocation.gameName ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                            {seatHistoryData.seatLocation.gameName ? t('Game') : t('Seat Location')}
                           </p>
                           <p className="text-lg font-bold text-gray-800 dark:text-gray-100">
-                            {seatHistoryData.seatLocation.isGame 
-                              ? seatHistoryData.seatLocation.zone
-                              : <>
-                                  {seatHistoryData.seatLocation.zone}{seatHistoryData.seatLocation.area ? ` — ${t('Area')} ${seatHistoryData.seatLocation.area.toUpperCase()}` : ''}{seatHistoryData.seatLocation.seat !== 'All seats' ? ` — ${t('Seat')} ${seatHistoryData.seatLocation.seat}` : ''}
-                                </>
-                            }
+                            {seatHistoryData.seatLocation.gameName || seatHistoryData.seatLocation.locationLabel || seatHistoryData.seatLocation.zone}
                           </p>
+                          {seatHistoryData.seatLocation.gameName && seatHistoryData.seatLocation.locationLabel && (
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5 flex items-center gap-1">
+                              <MapPin size={13} className="inline" />
+                              {seatHistoryData.seatLocation.locationLabel}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {seatHistoryData.matchedGame && (
+                  {seatHistoryData.matchedGame && !seatHistoryData.seatLocation?.isGame && (
+                    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                      <div className="p-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+                        <h4 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                          <Users size={16} className="text-red-500" />
+                          {t('Results')} ({seatHistoryData.gameAttendees.length})
+                        </h4>
+                      </div>
+                      {seatHistoryData.gameAttendees.length === 0 ? (
+                        <div className="py-8 text-center text-gray-500 dark:text-gray-400">
+                          <MapPin size={32} className="mx-auto mb-2 opacity-30" />
+                          <p>{t('No records found for this seat/game combination')}</p>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
+                          <table className="w-full text-sm">
+                            <thead className="sticky top-0 z-10">
+                              <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Name')}</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Zone')}</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Area')}</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Seat')}</th>
+                                <th className="text-left py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Type')}</th>
+                                <th className="text-right py-2 px-3 font-semibold text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">{t('Value')}</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                              {seatHistoryData.gameAttendees.map((a: any, i: number) => (
+                                <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                                  <td className="py-2 px-3 font-medium text-gray-800 dark:text-gray-200">{a.name}</td>
+                                  <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.zone}</td>
+                                  <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.area}</td>
+                                  <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.seat}</td>
+                                  <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{a.sellType}</td>
+                                  <td className="py-2 px-3 text-right font-medium">{a.value > 0 ? formatCurrency(a.value) : '—'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {seatHistoryData.matchedGame && seatHistoryData.seatLocation?.isGame && (
                     <>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
