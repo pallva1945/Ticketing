@@ -1812,7 +1812,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
     filtered.forEach(s => {
       const monthKey = s.date.substring(0, 7);
       const d = new Date(s.date);
-      const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+      const label = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       if (!monthMap.has(label)) {
         monthMap.set(label, new Map());
         sortKeyMap.set(label, monthKey);
@@ -3129,7 +3129,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
 
           const { athleticMap, shootingMap } = buildGroupedData();
           const sortedKeys = Object.keys(athleticMap).sort((a, b) => a.localeCompare(b));
-          const dateLabel = (k: string) => weeklyBuckets ? k : k.substring(2);
+          const dateLabel = (k: string) => weeklyBuckets ? k : getMonthLabel(k + '-15');
 
           const speedData = sortedKeys
             .filter(k => athleticMap[k].sprint.length > 0 || athleticMap[k].coneDrill.length > 0)
@@ -3297,7 +3297,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
           }
 
           const loadSortedKeys = Object.keys(loadGroupMap).sort((a, b) => a.localeCompare(b));
-          const loadDateLabel = (k: string) => loadWeeklyBuckets ? k : k.substring(2);
+          const loadDateLabel = (k: string) => loadWeeklyBuckets ? k : getMonthLabel(k + '-15');
           const loadChartData = loadSortedKeys.map(k => ({
             date: loadDateLabel(k),
             [t('Practice')]: Math.round(loadGroupMap[k].practice),
@@ -3371,7 +3371,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
           }
           const availSortedKeys = Object.keys(availabilityMap).sort((a, b) => a.localeCompare(b));
           const availChartData = availSortedKeys.map(k => ({
-            date: loadWeeklyBuckets ? k : k.substring(2),
+            date: loadWeeklyBuckets ? k : getMonthLabel(k + '-15'),
             [t('Days Off')]: availabilityMap[k].daysOff,
             [t('Injury Days')]: availabilityMap[k].injuryDays,
           }));
@@ -5567,7 +5567,7 @@ function ProgressionChart({ sessions, lines, metric, profiles, isDark, convertVa
       line.sessions.filter(s => s[metric] !== null).forEach(s => {
         const monthKey = s.date.substring(0, 7);
         const d = new Date(s.date);
-        const label = d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+        const label = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
         if (!monthMap.has(label)) monthMap.set(label, { sortKey: monthKey, groups: new Map() });
         const val = convertVal(s, s.player, metric);
         if (val !== null && val !== 0) {
