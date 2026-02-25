@@ -464,7 +464,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           occupied: true,
           occupant: `${rec.firstName || rec.name || ''} ${rec.lastName || rec.last_name || ''}`.trim() || 'Unknown',
           sellType: (rec.sell || rec.sellType || rec.type || '—').toUpperCase(),
-          price: Number(rec.commercialValue) || Number(rec.comercial_value) || Number(rec.commercial_value) || Number(rec.price) || 0,
+          commercialValue: Number(rec.commercialValue) || Number(rec.comercial_value) || Number(rec.commercial_value) || 0,
           email: rec.email || '—'
         };
       } else {
@@ -474,7 +474,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           occupied: false,
           occupant: '',
           sellType: '',
-          price: 0,
+          commercialValue: 0,
           email: ''
         };
       }
@@ -614,7 +614,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     const corporateRecords = filteredData.filter(r => (r.sell || r.sellType || '').toLowerCase() === 'corp' || (r.ticketType || '').toLowerCase() === 'corp');
     const uniqueCorps = new Set(corporateRecords.map(r => r.group).filter(Boolean));
     
-    const totalRevenue = filteredData.reduce((sum, r) => sum + (r.price * r.quantity), 0);
+    const totalRevenue = filteredData.reduce((sum, r) => sum + (r.commercialValue * r.quantity), 0);
     const totalCommercialValue = filteredData.reduce((sum, r) => sum + (r.commercialValue * r.quantity), 0);
     const corpCommercialValue = corporateRecords.reduce((sum, r) => sum + (r.commercialValue * r.quantity), 0);
     const totalTickets = filteredData.reduce((sum, r) => sum + r.quantity, 0);
@@ -631,14 +631,14 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       const zone = r.pvZone || 'Unknown';
       if (!zoneBreakdown[zone]) zoneBreakdown[zone] = { count: 0, revenue: 0, value: 0 };
       zoneBreakdown[zone].count += r.quantity;
-      zoneBreakdown[zone].revenue += r.price;
+      zoneBreakdown[zone].revenue += r.commercialValue;
       zoneBreakdown[zone].value += r.commercialValue;
 
       const event = (r.event || '').includes('ABBONAMENTO') ? 'Season Ticket' : 
                     (r.event || '').includes('PACK') ? 'Mini Pack' : 'Single Game';
       if (!eventBreakdown[event]) eventBreakdown[event] = { count: 0, revenue: 0 };
       eventBreakdown[event].count += r.quantity;
-      eventBreakdown[event].revenue += r.price;
+      eventBreakdown[event].revenue += r.commercialValue;
 
       const rawSell = (r.sell || r.sellType || '').toLowerCase();
       const rawTicketType = (r.ticketType || '').toLowerCase();
@@ -646,7 +646,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       const normalizedSellType = (r.sell || r.sellType || r.ticketType || 'Unknown').toUpperCase();
       if (!rawSellTypeBreakdown[normalizedSellType]) rawSellTypeBreakdown[normalizedSellType] = { count: 0, revenue: 0, value: 0 };
       rawSellTypeBreakdown[normalizedSellType].count += r.quantity;
-      rawSellTypeBreakdown[normalizedSellType].revenue += r.price;
+      rawSellTypeBreakdown[normalizedSellType].revenue += r.commercialValue;
       rawSellTypeBreakdown[normalizedSellType].value += r.commercialValue;
       
       // Only categorize valid sell types (ABB, TIX, CORP, MP, VB) into ticket type groups
@@ -662,7 +662,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       if (sellCategory) {
         if (!groupedSellTypeBreakdown[sellCategory]) groupedSellTypeBreakdown[sellCategory] = { count: 0, revenue: 0, value: 0 };
         groupedSellTypeBreakdown[sellCategory].count += r.quantity;
-        groupedSellTypeBreakdown[sellCategory].revenue += r.price;
+        groupedSellTypeBreakdown[sellCategory].revenue += r.commercialValue;
         groupedSellTypeBreakdown[sellCategory].value += r.commercialValue;
       }
 
@@ -682,19 +682,19 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       }
       if (!paymentBreakdown[payment]) paymentBreakdown[payment] = { count: 0, revenue: 0 };
       paymentBreakdown[payment].count += r.quantity;
-      paymentBreakdown[payment].revenue += r.price;
+      paymentBreakdown[payment].revenue += r.commercialValue;
 
       const discount = r.discountType || r.ticketType || 'Unknown';
       if (!discountBreakdown[discount]) discountBreakdown[discount] = { count: 0, revenue: 0 };
       discountBreakdown[discount].count += r.quantity;
-      discountBreakdown[discount].revenue += r.price;
+      discountBreakdown[discount].revenue += r.commercialValue;
 
       const isCorp = (r.sell || r.sellType || '').toLowerCase() === 'corp' || (r.ticketType || '').toLowerCase() === 'corp';
       if (isCorp) {
         const corpKey = r.group || r.fullName || 'Unknown';
         if (!corpBreakdown[corpKey]) corpBreakdown[corpKey] = { count: 0, revenue: 0, value: 0, zones: {} as Record<string, number> };
         corpBreakdown[corpKey].count += r.quantity;
-        corpBreakdown[corpKey].revenue += r.price * r.quantity;
+        corpBreakdown[corpKey].revenue += r.commercialValue * r.quantity;
         corpBreakdown[corpKey].value += r.commercialValue * r.quantity;
         const zone = r.pvZone || r.zone || 'Unknown';
         corpBreakdown[corpKey].zones[zone] = (corpBreakdown[corpKey].zones[zone] || 0) + (Number(r.quantity) || 1);
@@ -774,7 +774,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         const sellType = r.sell || r.sellType || r.ticketType || 'Unknown';
         acc[key].sellTypes[sellType] = (acc[key].sellTypes[sellType] || 0) + (Number(r.quantity) || 1);
         acc[key].tickets += Number(r.quantity) || 1;
-        acc[key].revenue += Number(r.price) || 0;
+        acc[key].revenue += Number(r.commercialValue) || 0;
         acc[key].value += Number(r.commercialValue) || 0;
         acc[key].transactions += 1;
         const zone = r.pvZone || r.zone || 'Unknown';
@@ -1053,7 +1053,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     if (records.length === 0) return null;
     
     const first = records[0];
-    const totalSpend = records.reduce((sum, r) => sum + r.price, 0);
+    const totalSpend = records.reduce((sum, r) => sum + r.commercialValue, 0);
     const totalValue = records.reduce((sum, r) => sum + r.commercialValue, 0);
     const ticketCount = records.reduce((sum, r) => sum + r.quantity, 0);
     const zones = [...new Set(records.map(r => r.pvZone).filter(Boolean))];
@@ -3092,7 +3092,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                                   <td className="py-2 px-3">{row.occupant || '—'}</td>
                                   <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{row.sellType || '—'}</td>
                                   <td className="py-2 px-3 text-right font-medium">
-                                    {row.price > 0 ? formatCurrency(row.price) : '—'}
+                                    {row.commercialValue > 0 ? formatCurrency(row.commercialValue) : '—'}
                                   </td>
                                 </tr>
                               ))}
