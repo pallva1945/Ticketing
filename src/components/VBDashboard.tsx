@@ -414,6 +414,64 @@ function calcNbaBenchmarkedCas(
   return Math.round(weightedPct * af * 100) / 100;
 }
 
+interface PotentialScoreResult {
+  score: number;
+  components: { label: string; value: number; normalizedValue: number; weight: number; contribution: number }[];
+  ageFactor: number;
+  factorsUsed: number;
+}
+
+const POTENTIAL_WEIGHTS = { aps: 0.35, cas: 0.25, workEthic: 0.20, talent: 0.10, personality: 0.10 };
+
+function computePotentialScore(
+  data: { aps: number | null; cas: number | null; workEthic: number | null; personality: number | null; talent: number | null },
+  age: number | null
+): PotentialScoreResult | null {
+  const normalize15 = (v: number | null) => v !== null ? v * 20 : null;
+
+  const raw = [
+    { label: 'Size', value: data.aps, normalizedValue: data.aps, baseWeight: POTENTIAL_WEIGHTS.aps },
+    { label: 'Athleticism', value: data.cas, normalizedValue: data.cas, baseWeight: POTENTIAL_WEIGHTS.cas },
+    { label: 'Work Ethic', value: data.workEthic, normalizedValue: normalize15(data.workEthic), baseWeight: POTENTIAL_WEIGHTS.workEthic },
+    { label: 'Talent', value: data.talent, normalizedValue: data.talent, baseWeight: POTENTIAL_WEIGHTS.talent },
+    { label: 'Personality', value: data.personality, normalizedValue: normalize15(data.personality), baseWeight: POTENTIAL_WEIGHTS.personality },
+  ];
+
+  const avail = raw.filter(r => r.normalizedValue !== null);
+  if (avail.length < 2) return null;
+
+  const totalW = avail.reduce((s, r) => s + r.baseWeight, 0);
+  const af = getCasAgeFactor(age);
+
+  const components = raw.map(r => {
+    const isAvail = r.normalizedValue !== null;
+    const adjWeight = isAvail ? r.baseWeight / totalW : 0;
+    const contribution = isAvail ? r.normalizedValue! * adjWeight : 0;
+    return {
+      label: r.label,
+      value: r.value !== null ? r.value : 0,
+      normalizedValue: r.normalizedValue !== null ? r.normalizedValue : 0,
+      weight: isAvail ? adjWeight : r.baseWeight,
+      contribution,
+    };
+  });
+
+  const weightedSum = components.reduce((s, c) => s + c.contribution, 0);
+  const score = Math.round(weightedSum * af * 100) / 100;
+
+  return { score, components, ageFactor: af, factorsUsed: avail.length };
+}
+
+function getPlayerWorkEthic(player: string, profiles: PlayerProfile[]): number | null {
+  const p = profiles.find(pr => pr.name.toLowerCase() === player.toLowerCase());
+  return p?.workEthic ?? null;
+}
+
+function getPlayerPersonality(player: string, profiles: PlayerProfile[]): number | null {
+  const p = profiles.find(pr => pr.name.toLowerCase() === player.toLowerCase());
+  return p?.personality ?? null;
+}
+
 function getPlayerCategory(player: string, profiles: PlayerProfile[], season?: string): string {
   const profile = profiles.find(p => p.name.toLowerCase() === player.toLowerCase() && (!season || p.season === season));
   if (profile?.category) return profile.category;
@@ -650,7 +708,7 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, onF
       const projR = getProjectedReach(p, profiles, filtered);
       return { projHeight: projH, weight, wingspan, projWingspan, projReach: projR };
     };
-    const results: Record<string, { cas: number | null; aps: number | null; apeIndex: number | null }> = {};
+    const results: Record<string, { cas: number | null; aps: number | null; apeIndex: number | null; potential: PotentialScoreResult | null }> = {};
     for (const p of activePlayers) {
       const ath = getPlayerAthData(p);
       const anth = getPlayerAnthroData(p);
@@ -659,7 +717,10 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, onF
       const casVal = calcNbaBenchmarkedCas(ath, role, age);
       const apsVal = calcNbaBenchmarkedAps(anth, role, age);
       const apeIndex = (anth.wingspan !== null && anth.projHeight !== null && anth.projHeight > 0) ? Math.round((anth.wingspan / anth.projHeight) * 1000) / 1000 : null;
-      results[p] = { cas: casVal, aps: apsVal, apeIndex };
+      const we = getPlayerWorkEthic(p, profiles);
+      const pers = getPlayerPersonality(p, profiles);
+      const potentialResult = computePotentialScore({ aps: apsVal, cas: casVal, workEthic: we, personality: pers, talent: null }, age);
+      results[p] = { cas: casVal, aps: apsVal, apeIndex, potential: potentialResult };
     }
     return results;
   }, [filtered, activePlayers, profiles]);
@@ -1888,7 +1949,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
       return { mean, std: std || 1 };
     };
 
-    const results: Record<string, { cas: number | null; aps: number | null; apeIndex: number | null }> = {};
+    const results: Record<string, { cas: number | null; aps: number | null; apeIndex: number | null; potential: PotentialScoreResult | null }> = {};
     for (const p of activePlayers) {
       const ath = getPlayerAthData(p);
       const anth = getPlayerAnthroData(p);
@@ -1897,12 +1958,15 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
       const casVal = calcNbaBenchmarkedCas(ath, role, age);
       const apsVal = calcNbaBenchmarkedAps(anth, role, age);
       const apeIndex = (anth.wingspan !== null && anth.projHeight !== null && anth.projHeight > 0) ? Math.round((anth.wingspan / anth.projHeight) * 1000) / 1000 : null;
-      results[p] = { cas: casVal, aps: apsVal, apeIndex };
+      const we = getPlayerWorkEthic(p, profiles);
+      const pers = getPlayerPersonality(p, profiles);
+      const potentialResult = computePotentialScore({ aps: apsVal, cas: casVal, workEthic: we, personality: pers, talent: null }, age);
+      results[p] = { cas: casVal, aps: apsVal, apeIndex, potential: potentialResult };
     }
     return results;
   }, [filtered, activePlayers, profiles]);
 
-  type PerfSortKey = 'player' | 'sprint' | 'coneDrill' | 'pureVertical' | 'noStepVertical' | 'bodyFat' | 'relStrength' | 'cas' | 'aps' | 'apeIndex';
+  type PerfSortKey = 'player' | 'sprint' | 'coneDrill' | 'pureVertical' | 'noStepVertical' | 'bodyFat' | 'relStrength' | 'cas' | 'aps' | 'apeIndex' | 'potential';
   const [sortKey, setSortKey] = useState<PerfSortKey>('player');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -1929,7 +1993,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
         return calcBodyFatPct(raw, dobSerial, ps[0].date);
       })();
 
-      const comp = compositeScores[player] || { cas: null, aps: null, apeIndex: null };
+      const comp = compositeScores[player] || { cas: null, aps: null, apeIndex: null, potential: null };
 
       return {
         player,
@@ -1972,6 +2036,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
         cas: comp.cas,
         aps: comp.aps,
         apeIndex: comp.apeIndex,
+        potential: comp.potential?.score ?? null,
       };
     });
   }, [filtered, displayPlayers, profiles, compositeScores]);
@@ -2092,6 +2157,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
                   <th key={m.key} onClick={() => handleSort(m.key as PerfSortKey)} className={`text-center py-2 px-1 font-semibold cursor-pointer select-none hover:text-orange-500 transition-colors whitespace-nowrap ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{m.label} ({m.unit})<SortIcon col={m.key as PerfSortKey} /></th>
                 ))}
                 <th onClick={() => handleSort('cas')} className={`text-center py-2 px-1 font-semibold cursor-pointer select-none hover:text-orange-500 transition-colors text-amber-500`}>CAS<SortIcon col="cas" /></th>
+                <th onClick={() => handleSort('potential')} className={`text-center py-2 px-1 font-semibold cursor-pointer select-none hover:text-orange-500 transition-colors text-purple-500`}>PVB<SortIcon col="potential" /></th>
               </tr>
             </thead>
             <tbody>
@@ -2115,6 +2181,7 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
                     );
                   })}
                   <td className={`text-center py-2.5 px-1 font-semibold ${row.cas !== null ? (row.cas >= 105 ? 'text-emerald-500' : row.cas >= 95 ? (isDark ? 'text-gray-300' : 'text-gray-700') : 'text-red-400') : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{row.cas !== null ? row.cas : '—'}</td>
+                  <td className={`text-center py-2.5 px-1 font-semibold ${row.potential !== null ? (row.potential >= 100 ? 'text-blue-500' : row.potential >= 80 ? 'text-emerald-500' : row.potential >= 60 ? 'text-amber-500' : row.potential >= 40 ? 'text-orange-500' : 'text-red-400') : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{row.potential !== null ? row.potential : '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -2370,6 +2437,17 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
 
     return { aps: apsNorm, components, apeIndex, partial: availCount < 4, archetype, ageFactor: af, age };
   }, [sessions, players, selectedPlayer, profiles]);
+
+  const [showPvbInfo, setShowPvbInfo] = useState(false);
+
+  const potentialData = useMemo(() => {
+    const casVal = casData?.cas ?? null;
+    const apsVal = apsData?.aps ?? null;
+    const we = getPlayerWorkEthic(selectedPlayer, profiles);
+    const pers = getPlayerPersonality(selectedPlayer, profiles);
+    const age = getPlayerAge(selectedPlayer, profiles);
+    return computePotentialScore({ aps: apsVal, cas: casVal, workEthic: we, personality: pers, talent: null }, age);
+  }, [casData, apsData, selectedPlayer, profiles]);
 
   const totalTaken = ps.reduce((a, s) => a + (s.shootsTaken || 0), 0);
   const totalMade = ps.reduce((a, s) => a + (s.shootsMade || 0), 0);
@@ -3080,6 +3158,159 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
               <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                 Archetype is determined by position: <span className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Playmaker</span> for guards, <span className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Center</span> for bigs, and <span className={`font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>3&D</span> (default) for wings and unspecified positions.
               </p>
+            </div>
+          </div>
+        )}
+
+        {potentialData && (
+          <div className={`rounded-xl border p-4 mb-5 print-pvb ${isDark ? 'bg-gradient-to-r from-purple-500/5 to-gray-900 border-purple-500/20' : 'bg-gradient-to-r from-purple-50 to-white border-purple-200'}`}>
+            <div className="flex flex-col sm:flex-row gap-4 items-start">
+              <div className="flex-shrink-0 text-center sm:text-left sm:min-w-[120px]">
+                <button
+                  onClick={() => setShowPvbInfo(true)}
+                  className={`text-4xl sm:text-5xl font-black uppercase tracking-widest mb-2 cursor-pointer transition-colors ${isDark ? 'text-purple-400 hover:text-purple-300' : 'text-purple-600 hover:text-purple-500'}`}
+                >
+                  PVB
+                </button>
+                <div className={`text-4xl font-black leading-none ${potentialData.score >= 100 ? 'text-blue-500' : potentialData.score >= 80 ? 'text-emerald-500' : potentialData.score >= 60 ? 'text-amber-500' : potentialData.score >= 40 ? 'text-orange-500' : 'text-red-400'}`}>
+                  {potentialData.score}
+                </div>
+                <div className={`text-[10px] mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {potentialData.factorsUsed}/5 {t('factors')}{potentialData.ageFactor > 1 ? ` · Af ${potentialData.ageFactor}x` : ''}
+                </div>
+              </div>
+
+              <div className="flex-1 min-w-0 w-full">
+                <div className="space-y-1.5">
+                  {potentialData.components.map((c, i) => {
+                    const isTalent = c.label === 'Talent';
+                    const isAvail = c.contribution > 0 || (!isTalent && c.normalizedValue > 0);
+                    if (isTalent) {
+                      return (
+                        <div key={i} className="flex items-center gap-2 opacity-40">
+                          <div className={`w-24 sm:w-28 text-[10px] font-medium text-right flex-shrink-0 line-through ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                            {t(c.label)} <span className={`${isDark ? 'text-gray-600' : 'text-gray-300'}`}>({Math.round(POTENTIAL_WEIGHTS.talent * 100)}%)</span>
+                          </div>
+                          <div className={`flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`} />
+                          <div className={`w-14 text-[10px] font-mono text-right flex-shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>{t('TBD')}</div>
+                          <div className={`w-20 text-[10px] text-right flex-shrink-0 italic ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>{t('Coming Soon')}</div>
+                        </div>
+                      );
+                    }
+                    if (!isAvail) {
+                      return (
+                        <div key={i} className="flex items-center gap-2 opacity-40">
+                          <div className={`w-24 sm:w-28 text-[10px] font-medium text-right flex-shrink-0 line-through ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                            {t(c.label)}
+                          </div>
+                          <div className={`flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`} />
+                          <div className={`w-14 text-[10px] font-mono text-right flex-shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>N/A</div>
+                          <div className={`w-20 text-[10px] text-right flex-shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>—</div>
+                        </div>
+                      );
+                    }
+                    const barWidth = Math.min(Math.max(c.normalizedValue / 1.5, 2), 100);
+                    const isAboveAvg = c.normalizedValue >= 100;
+                    const displayVal = c.label === 'Work Ethic' || c.label === 'Personality' ? `${c.value}/5` : `${c.normalizedValue}`;
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        <div className={`w-24 sm:w-28 text-[10px] font-medium text-right flex-shrink-0 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                          {t(c.label)} <span className={`${isDark ? 'text-gray-600' : 'text-gray-300'}`}>({Math.round(c.weight * 100)}%)</span>
+                        </div>
+                        <div className={`relative flex-1 h-4 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                          <div
+                            className={`h-full rounded-full transition-all ${isAboveAvg ? 'bg-gradient-to-r from-purple-500 to-purple-400' : 'bg-gradient-to-r from-purple-500/60 to-purple-400/60'}`}
+                            style={{ width: `${barWidth}%` }}
+                          />
+                          <div className={`absolute top-0 h-full w-px ${isDark ? 'bg-gray-500/60' : 'bg-gray-400/50'}`} style={{ left: `${100 / 1.5}%` }} />
+                        </div>
+                        <div className={`w-14 text-[10px] font-mono text-right flex-shrink-0 ${isAboveAvg ? (isDark ? 'text-purple-400' : 'text-purple-600') : isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                          {Math.round(c.normalizedValue * 10) / 10}
+                        </div>
+                        <div className={`w-20 text-[10px] text-right flex-shrink-0 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {displayVal}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showPvbInfo && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setShowPvbInfo(false)}>
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+            <div
+              className={`relative max-w-lg w-full max-h-[80vh] overflow-y-auto rounded-2xl border shadow-2xl p-6 ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}
+              onClick={e => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setShowPvbInfo(false)}
+                className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
+              >
+                ✕
+              </button>
+
+              <h3 className={`text-lg font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                PVB Potential Score
+              </h3>
+              <p className={`text-xs mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                {t('A composite score based on the PVB Potential Matrix — our 5-pillar framework for evaluating youth basketball potential. Scale is 0-100 where')} <span className={`font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>100 = NBA Draft Combine Average</span>.
+              </p>
+
+              <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
+                {t('The 5 Pillars')}
+              </h4>
+              <div className="space-y-2 mb-4">
+                {[
+                  { name: 'Size (APS)', weight: '35%', desc: 'The Non-Negotiable. Height, wingspan, and standing reach — adjusted for age and projected growth. Basketball demands size.' },
+                  { name: 'Athleticism (CAS)', weight: '25%', desc: 'Explosive potential in jumping, lateral quickness, and open-court speed. The ability to move.' },
+                  { name: 'Work Ethic', weight: '20%', desc: '"Work beats talent when talent doesn\'t work." Love for the gym and desire to improve, rated 1-5 by coaching staff.' },
+                  { name: 'Talent', weight: '10%', desc: 'Technical skill and learning speed. Will be computed from game stats (3PT%, FT%, AST/TO, USG%, Intensity, Win Shares). Coming soon.' },
+                  { name: 'Personality', weight: '10%', desc: 'Character matters. Is the player fun to be around? Coachable? A good teammate? Rated 1-5 by coaching staff.' },
+                ].map((pillar, i) => (
+                  <div key={i} className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/50' : 'bg-gray-50'}`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-xs font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{pillar.name}</span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isDark ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-50 text-purple-600'}`}>{pillar.weight}</span>
+                    </div>
+                    <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{pillar.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
+                {t('How It Works')}
+              </h4>
+              <div className={`text-[11px] leading-relaxed space-y-2 mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <p>{t('APS and CAS are on the NBA 0-100 scale. Work Ethic and Personality (1-5 stars) are normalized to 0-100 (each star = 20 points).')}</p>
+                <p>{t('If a factor is unavailable, its weight is redistributed proportionally across available factors. Minimum 2 factors required.')}</p>
+                <p>{t('The same Age Factor multiplier used by CAS and APS is applied to the final score, giving younger players a development potential boost.')}</p>
+              </div>
+
+              <h4 className={`text-xs font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
+                {t('Score Interpretation')}
+              </h4>
+              <div className={`rounded-lg overflow-hidden border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
+                      <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Score')}</th>
+                      <th className={`text-left py-2 px-3 font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Level')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[['100+', 'Elite — NBA baseline exceeded', 'text-blue-500'], ['80–99', 'High Potential', 'text-emerald-500'], ['60–79', 'Solid Prospect', 'text-amber-500'], ['40–59', 'Developing', 'text-orange-500'], ['< 40', 'Early Stage', 'text-red-400']].map(([range, label, color], i) => (
+                      <tr key={i} className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                        <td className={`py-1.5 px-3 font-semibold ${color}`}>{range}</td>
+                        <td className={`py-1.5 px-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{label}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
