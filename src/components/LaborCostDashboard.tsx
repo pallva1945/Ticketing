@@ -116,7 +116,7 @@ export const LaborCostDashboard: React.FC<LaborCostDashboardProps> = ({ professi
             {t('YTD Prorated')}
           </div>
           <div className={`px-2 py-0.5 rounded text-[10px] border ${professionalServices ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400' : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'}`}>
-            {professionalServices ? t('CSV Data') : t('Monthly Actuals')}
+            {professionalServices ? t('Google Sheet') : t('Monthly Actuals')}
           </div>
         </div>
       </div>

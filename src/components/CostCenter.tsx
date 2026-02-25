@@ -308,10 +308,10 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                 {(() => {
                   const COST_CARDS: { id: CostModule; amount: number; detail: string; badge: string; badgeStyle: string }[] = [
                     { id: 'bops', amount: bopsProrated, detail: `${t('Players')}: 78% · ${t('Coaches')}: 10.3%`, badge: t('YTD Prorated'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
-                    { id: 'gameday', amount: dynGameday, detail: `12 ${t('categories')}`, badge: hasDynamic && costData.gameday ? t('CSV Data') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
-                    { id: 'merchandising', amount: dynMerch, detail: `${t('Stock')}: 82.6%`, badge: hasDynamic && costData.merchandising ? t('CSV Data') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
-                    { id: 'venue_ops', amount: dynVenueOps, detail: `${t('Campus - Rental')}: 79.7%`, badge: hasDynamic && costData.venue_ops ? t('CSV Data') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
-                    { id: 'sponsorship', amount: dynSponsorship, detail: `${t('Events')}: 66.3% · ${t('Materials & Ads')}: 33.7%`, badge: hasDynamic && costData.sponsorship ? t('CSV Data') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+                    { id: 'gameday', amount: dynGameday, detail: `12 ${t('categories')}`, badge: hasDynamic && costData.gameday ? t('Google Sheet') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+                    { id: 'merchandising', amount: dynMerch, detail: `${t('Stock')}: 82.6%`, badge: hasDynamic && costData.merchandising ? t('Google Sheet') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+                    { id: 'venue_ops', amount: dynVenueOps, detail: `${t('Campus - Rental')}: 79.7%`, badge: hasDynamic && costData.venue_ops ? t('Google Sheet') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
+                    { id: 'sponsorship', amount: dynSponsorship, detail: `${t('Events')}: 66.3% · ${t('Materials & Ads')}: 33.7%`, badge: hasDynamic && costData.sponsorship ? t('Google Sheet') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
                     { id: 'ebp', amount: 0, detail: t('No costs recorded YTD'), badge: t('Zero Activity'), badgeStyle: 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400' },
                     { id: 'varese_basketball', amount: -1, detail: '', badge: t('Coming Soon'), badgeStyle: '' },
                   ];
@@ -423,7 +423,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
                     <div className={`mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block ${
                       hasDynamic ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400' : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400'
                     }`}>
-                      {hasDynamic ? t('CSV Data') : t('Monthly Actuals')}
+                      {hasDynamic ? t('Google Sheet') : t('Monthly Actuals')}
                     </div>
                   </div>
                 </button>
