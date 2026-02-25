@@ -279,21 +279,38 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     const parts = query.split(/[,\s]+/).map((p: string) => p.trim()).filter((p: string) => p);
     
     let seatNumber: string | null = null;
-    let areaFromHyphen: string | null = null;
+    let areaFilter: string | null = null;
     let zoneParts: string[] = parts;
     
     if (!matchedGame) {
-      const lastPart = parts[parts.length - 1];
-      const hyphenMatch = lastPart.match(/^([a-z]+)-?(\d+)$/i);
+      const allPvZones = [...new Set(data.map(r => (r.pvZone || '').toLowerCase()).filter(Boolean))];
+      const allAreas = [...new Set(data.map(r => ((r as any).area || '').toLowerCase()).filter(Boolean))];
       
-      if (hyphenMatch) {
-        areaFromHyphen = hyphenMatch[1].toLowerCase();
-        seatNumber = hyphenMatch[2];
-        zoneParts = parts.slice(0, -1);
-      } else if (/^\d+$/.test(lastPart)) {
-        seatNumber = lastPart;
-        zoneParts = parts.slice(0, -1);
+      let remaining = [...parts];
+      
+      if (remaining.length > 0 && /^\d+$/.test(remaining[remaining.length - 1])) {
+        seatNumber = remaining.pop()!;
       }
+      
+      if (remaining.length > 0) {
+        const lastPart = remaining[remaining.length - 1];
+        const hyphenMatch = lastPart.match(/^([a-z]+)-?(\d+)$/i);
+        if (hyphenMatch) {
+          areaFilter = hyphenMatch[1].toLowerCase();
+          seatNumber = seatNumber || hyphenMatch[2];
+          remaining.pop();
+        } else if (allAreas.includes(lastPart.toLowerCase()) && remaining.length > 1) {
+          areaFilter = remaining.pop()!.toLowerCase();
+        } else if (lastPart.length <= 3 && /^[a-z]+$/i.test(lastPart) && remaining.length > 1) {
+          const couldBeArea = allAreas.some(a => a === lastPart.toLowerCase());
+          const couldBeZone = allPvZones.some(z => z.includes(lastPart.toLowerCase()));
+          if (couldBeArea || (!couldBeZone && allAreas.length > 0)) {
+            areaFilter = remaining.pop()!.toLowerCase();
+          }
+        }
+      }
+      
+      zoneParts = remaining;
     }
 
     const matchingRecords = data.filter((r: any) => {
@@ -302,24 +319,22 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         return recordGame === matchedGame.toLowerCase();
       }
       const pvZone = ((r as any).pvZone || (r as any).pv_zone || (r as any).Pv_Zone || '').toLowerCase();
-      const fullZone = ((r as any).zone || (r as any).Zone || '').toLowerCase();
       const area = ((r as any).area || (r as any).Area || '').toLowerCase();
       const seat = ((r as any).seat || (r as any).Seat || '').toString().trim();
-      const combinedZone = `${pvZone} ${fullZone} ${area}`.toLowerCase();
 
-      const allZonePartsMatch = zoneParts.length === 0 || zoneParts.every((p: string) => combinedZone.includes(p));
-      const areaMatches = !areaFromHyphen || area === areaFromHyphen;
+      const zoneMatches = zoneParts.length === 0 || zoneParts.every((p: string) => pvZone.includes(p));
+      const areaMatches = !areaFilter || area === areaFilter;
       const seatMatches = !seatNumber || seat === seatNumber;
       
-      return allZonePartsMatch && areaMatches && seatMatches;
+      return zoneMatches && areaMatches && seatMatches;
     });
 
     const firstMatch = matchingRecords[0] as any;
     const seatLocation = matchedGame 
       ? { zone: matchedGame, area: '', seat: '', isGame: true }
       : firstMatch ? {
-          zone: (firstMatch.zone || firstMatch.Zone || firstMatch.pv_zone || ''),
-          area: areaFromHyphen || (firstMatch.area || firstMatch.Area || ''),
+          zone: (firstMatch.pvZone || firstMatch.pv_zone || firstMatch.Pv_Zone || ''),
+          area: areaFilter || (firstMatch.area || firstMatch.Area || ''),
           seat: seatNumber || 'All seats',
           isGame: false
         } : null;
@@ -2723,7 +2738,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                   {searchMode === 'client' 
                     ? t("Enter at least 2 characters to find a client by name, email, or phone") 
-                    : t("Search by game name, zone, area, or seat number")
+                    : t("Examples: par o D 25, curva nord, tribuna est B, milano")
                   }
                 </p>
               </div>
@@ -2772,7 +2787,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                             {seatHistoryData.seatLocation.isGame 
                               ? seatHistoryData.seatLocation.zone
                               : <>
-                                  {seatHistoryData.seatLocation.zone} {seatHistoryData.seatLocation.area && `- ${t('Section')} ${seatHistoryData.seatLocation.area}`} {seatHistoryData.seatLocation.seat !== 'All seats' && `- ${t('Seat')} ${seatHistoryData.seatLocation.seat}`}
+                                  {seatHistoryData.seatLocation.zone}{seatHistoryData.seatLocation.area ? ` — ${t('Area')} ${seatHistoryData.seatLocation.area.toUpperCase()}` : ''}{seatHistoryData.seatLocation.seat !== 'All seats' ? ` — ${t('Seat')} ${seatHistoryData.seatLocation.seat}` : ''}
                                 </>
                             }
                           </p>
