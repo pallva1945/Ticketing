@@ -717,13 +717,13 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, onF
       const casVal = calcNbaBenchmarkedCas(ath, role, age);
       const apsVal = calcNbaBenchmarkedAps(anth, role, age);
       const apeIndex = (anth.wingspan !== null && anth.projHeight !== null && anth.projHeight > 0) ? Math.round((anth.wingspan / anth.projHeight) * 1000) / 1000 : null;
-      const we = getPlayerWorkEthic(p, profiles);
-      const pers = getPlayerPersonality(p, profiles);
+      const we = getPlayerWorkEthic(p, profiles) ?? playerAttrs?.[p]?.workEthic ?? null;
+      const pers = getPlayerPersonality(p, profiles) ?? playerAttrs?.[p]?.personality ?? null;
       const potentialResult = computePotentialScore({ aps: apsVal, cas: casVal, workEthic: we, personality: pers, talent: null }, age);
       results[p] = { cas: casVal, aps: apsVal, apeIndex, potential: potentialResult };
     }
     return results;
-  }, [filtered, activePlayers, profiles]);
+  }, [filtered, activePlayers, profiles, playerAttrs]);
 
   useEffect(() => {
     if (!canShowRates && viewMode !== 'total') setViewMode('total');
@@ -1766,7 +1766,7 @@ function AnthropometricsTab({ sessions, players, profiles, onSelectPlayer }: { s
   );
 }
 
-function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[] }) {
+function PerformanceTab({ sessions, players, profiles, playerAttrs }: { sessions: VBSession[]; players: string[]; profiles: PlayerProfile[]; playerAttrs?: Record<string, any> }) {
   const { t } = useLanguage();
   const isDark = useIsDark();
 
@@ -1958,13 +1958,13 @@ function PerformanceTab({ sessions, players, profiles }: { sessions: VBSession[]
       const casVal = calcNbaBenchmarkedCas(ath, role, age);
       const apsVal = calcNbaBenchmarkedAps(anth, role, age);
       const apeIndex = (anth.wingspan !== null && anth.projHeight !== null && anth.projHeight > 0) ? Math.round((anth.wingspan / anth.projHeight) * 1000) / 1000 : null;
-      const we = getPlayerWorkEthic(p, profiles);
-      const pers = getPlayerPersonality(p, profiles);
+      const we = getPlayerWorkEthic(p, profiles) ?? playerAttrs?.[p]?.workEthic ?? null;
+      const pers = getPlayerPersonality(p, profiles) ?? playerAttrs?.[p]?.personality ?? null;
       const potentialResult = computePotentialScore({ aps: apsVal, cas: casVal, workEthic: we, personality: pers, talent: null }, age);
       results[p] = { cas: casVal, aps: apsVal, apeIndex, potential: potentialResult };
     }
     return results;
-  }, [filtered, activePlayers, profiles]);
+  }, [filtered, activePlayers, profiles, playerAttrs]);
 
   type PerfSortKey = 'player' | 'sprint' | 'coneDrill' | 'pureVertical' | 'noStepVertical' | 'bodyFat' | 'relStrength' | 'cas' | 'aps' | 'apeIndex' | 'potential';
   const [sortKey, setSortKey] = useState<PerfSortKey>('player');
@@ -2443,11 +2443,11 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
   const potentialData = useMemo(() => {
     const casVal = casData?.cas ?? null;
     const apsVal = apsData?.aps ?? null;
-    const we = getPlayerWorkEthic(selectedPlayer, profiles);
-    const pers = getPlayerPersonality(selectedPlayer, profiles);
+    const we = getPlayerWorkEthic(selectedPlayer, profiles) ?? attrs?.workEthic ?? null;
+    const pers = getPlayerPersonality(selectedPlayer, profiles) ?? attrs?.personality ?? null;
     const age = getPlayerAge(selectedPlayer, profiles);
     return computePotentialScore({ aps: apsVal, cas: casVal, workEthic: we, personality: pers, talent: null }, age);
-  }, [casData, apsData, selectedPlayer, profiles]);
+  }, [casData, apsData, selectedPlayer, profiles, attrs]);
 
   const totalTaken = ps.reduce((a, s) => a + (s.shootsTaken || 0), 0);
   const totalMade = ps.reduce((a, s) => a + (s.shootsMade || 0), 0);
@@ -6398,7 +6398,7 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           <>
             {activeTab === 'overview' && <OverviewTab sessions={normalizedSessions} players={players} onSelectPlayer={handleSelectPlayer} profiles={profiles} playerAttrs={playerAttrs} />}
             {activeTab === 'anthropometrics' && <AnthropometricsTab sessions={normalizedSessions} players={players} profiles={profiles} onSelectPlayer={handleSelectPlayer} />}
-            {activeTab === 'performance' && <PerformanceTab sessions={normalizedSessions} players={players} profiles={profiles} />}
+            {activeTab === 'performance' && <PerformanceTab sessions={normalizedSessions} players={players} profiles={profiles} playerAttrs={playerAttrs} />}
             {activeTab === 'gameperf' && <GamePerformanceTab sessions={normalizedSessions} players={players} profiles={profiles} />}
             {activeTab === 'player' && <PlayerProfileTab sessions={normalizedSessions} players={players} initialPlayer={selectedPlayer} profiles={profiles} playerAttrs={playerAttrs} />}
             {activeTab === 'compare' && <CompareTab sessions={normalizedSessions} players={players} profiles={profiles} />}
