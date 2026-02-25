@@ -1220,7 +1220,7 @@ function OverviewTab({ sessions, players, onSelectPlayer, profiles, playerAttrs 
         const w = getSeasonWeek(s.date, season);
         return `W${w}`;
       }
-      return s.date.substring(5, 7) + '/' + s.date.substring(2, 4);
+      return getMonthLabel(s.date);
     };
 
     const getSortKey = (s: VBSession): string => {
