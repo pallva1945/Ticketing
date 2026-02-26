@@ -2963,8 +2963,13 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
             {renderDelta(latestAthletic.coneDrill, combineRef?.coneDrill, 's', true)}
           </div>
           <div className={`rounded-lg p-3 print-inner-sm text-center print-stat-card ${isDark ? 'bg-gray-800/60' : 'bg-green-50/50'}`}>
-            <div className={labelClass}>{t('Deadlift')}</div>
-            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{latestAthletic.deadlift !== null ? latestAthletic.deadlift : '—'}<span className="text-xs font-normal ml-0.5 print-sub">kg</span></div>
+            <div className={labelClass}>{t('Rel. Strength')}</div>
+            <div className={`text-xl font-bold print-value-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>{(() => {
+              const dl = getLatestMetric(sessions, selectedPlayer, 'deadlift');
+              const wt = getLatestMetric(sessions, selectedPlayer, 'weight');
+              if (dl !== null && wt !== null && wt > 0) return (Math.round(((dl * 0.9) / wt) * 100) / 100).toFixed(2);
+              return '—';
+            })()}<span className="text-xs font-normal ml-0.5 print-sub">x BW</span></div>
           </div>
         </div>
 
