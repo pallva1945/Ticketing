@@ -271,12 +271,22 @@ export const MerchandisingView: React.FC = () => {
     
     const salesOrders = filteredOrders.filter(o => !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0));
     const giveawayOrders = filteredOrders.filter(o => o.totalPrice === 0);
-    const giveawayByClient: Record<string, { recipient: string; items: { title: string; quantity: number; cost: number; date: string; orderId: string; orderNumber: string }[]; totalCost: number; totalItems: number }> = {};
+    const parseTag = (tags: string, prefix: string): string | null => {
+      if (!tags) return null;
+      const regex = new RegExp(prefix + ':\\s*([^,]+)', 'i');
+      const match = tags.match(regex);
+      return match ? match[1].trim() : null;
+    };
+    const giveawayByClient: Record<string, { recipient: string; items: { title: string; quantity: number; cost: number; date: string; orderId: string; orderNumber: string; authorizedBy: string | null; detail: string | null }[]; totalCost: number; totalItems: number; authorizedBy: string | null; detail: string | null }> = {};
     giveawayOrders.forEach(order => {
       const recipient = order.customerName.startsWith('PV') ? order.customerName.slice(2).trim() : (order.customerName || 'N/A');
+      const authorizedBy = parseTag(order.tags, 'AUT');
+      const detail = parseTag(order.tags, 'DET');
       if (!giveawayByClient[recipient]) {
-        giveawayByClient[recipient] = { recipient, items: [], totalCost: 0, totalItems: 0 };
+        giveawayByClient[recipient] = { recipient, items: [], totalCost: 0, totalItems: 0, authorizedBy: null, detail: null };
       }
+      if (authorizedBy && !giveawayByClient[recipient].authorizedBy) giveawayByClient[recipient].authorizedBy = authorizedBy;
+      if (detail && !giveawayByClient[recipient].detail) giveawayByClient[recipient].detail = detail;
       order.lineItems.forEach(item => {
         const product = data.products.find(p => p.id === item.productId);
         const unitCost = product?.variants?.[0]?.price || item.price || 0;
@@ -287,7 +297,9 @@ export const MerchandisingView: React.FC = () => {
           cost,
           date: order.processedAt,
           orderId: order.id,
-          orderNumber: order.orderNumber
+          orderNumber: order.orderNumber,
+          authorizedBy,
+          detail
         });
         giveawayByClient[recipient].totalCost += cost;
         giveawayByClient[recipient].totalItems += item.quantity;
@@ -1724,7 +1736,7 @@ export const MerchandisingView: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{client.recipient}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{client.totalItems} {t('items')}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{client.totalItems} {t('items')}{client.authorizedBy ? ` · ${t('Auth')}: ${client.authorizedBy}` : ''}{client.detail ? ` · ${client.detail}` : ''}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -1739,6 +1751,8 @@ export const MerchandisingView: React.FC = () => {
                           <th className="text-left px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Product')}</th>
                           <th className="text-right px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Qty')}</th>
                           <th className="text-right px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Opportunity Cost')}</th>
+                          <th className="text-left px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Authorized By')}</th>
+                          <th className="text-left px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Detail')}</th>
                           <th className="text-right px-2 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400">{t('Date')}</th>
                         </tr>
                       </thead>
@@ -1753,6 +1767,8 @@ export const MerchandisingView: React.FC = () => {
                             </td>
                             <td className="px-2 py-2 text-right text-gray-800 dark:text-gray-100">{item.quantity}</td>
                             <td className="px-2 py-2 text-right text-orange-600">{formatCurrency(item.cost)}</td>
+                            <td className="px-2 py-2 text-left text-gray-700 dark:text-gray-300 text-xs">{item.authorizedBy || '—'}</td>
+                            <td className="px-2 py-2 text-left text-gray-700 dark:text-gray-300 text-xs">{item.detail || '—'}</td>
                             <td className="px-2 py-2 text-right text-gray-500 dark:text-gray-400 text-xs">{new Date(item.date).toLocaleDateString()}</td>
                           </tr>
                         ))}
