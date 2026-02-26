@@ -280,8 +280,8 @@ export const MerchandisingView: React.FC = () => {
     const giveawayByClient: Record<string, { recipient: string; items: { title: string; quantity: number; cost: number; date: string; orderId: string; orderNumber: string; authorizedBy: string | null; detail: string | null }[]; totalCost: number; totalItems: number; authorizedBy: string | null; detail: string | null }> = {};
     giveawayOrders.forEach(order => {
       const recipient = order.customerName.startsWith('PV') ? order.customerName.slice(2).trim() : (order.customerName || 'N/A');
-      const authorizedBy = parseTag(order.tags, 'AUT');
-      const detail = parseTag(order.tags, 'DET');
+      const authorizedBy = parseTag(order.tags || '', 'AUT');
+      const detail = parseTag(order.tags || '', 'DET');
       if (!giveawayByClient[recipient]) {
         giveawayByClient[recipient] = { recipient, items: [], totalCost: 0, totalItems: 0, authorizedBy: null, detail: null };
       }
