@@ -3326,22 +3326,29 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
           const weeklyBuckets = getWeeklyBuckets(ps);
 
           const buildGroupedData = () => {
-            type AthGroup = { sprint: number[]; coneDrill: number[]; pureVert: number[]; noStepVert: number[]; deadlift: number[] };
+            type AthGroup = { sprint: number[]; coneDrill: number[]; pureVert: number[]; noStepVert: number[]; relStrength: number[] };
             type ShotGroup = { taken: number; made: number };
             const athleticMap: Record<string, AthGroup> = {};
             const shootingMap: Record<string, ShotGroup> = {};
 
+            const computeRelStr = (s: any) => {
+              const dl = s.deadlift as number | null;
+              const wt = s.weight as number | null;
+              if (dl !== null && wt !== null && wt > 0) return Math.round(((dl * 0.9) / wt) * 100) / 100;
+              return null;
+            };
+
             if (weeklyBuckets) {
               weeklyBuckets.forEach(({ week, sessions: ws }) => {
                 const key = `W${week}`;
-                athleticMap[key] = { sprint: [], coneDrill: [], pureVert: [], noStepVert: [], deadlift: [] };
+                athleticMap[key] = { sprint: [], coneDrill: [], pureVert: [], noStepVert: [], relStrength: [] };
                 shootingMap[key] = { taken: 0, made: 0 };
                 ws.forEach(s => {
                   if (s.sprint !== null) athleticMap[key].sprint.push(s.sprint);
                   if (s.coneDrill !== null) athleticMap[key].coneDrill.push(s.coneDrill);
                   if (s.pureVertical !== null && sr !== null) athleticMap[key].pureVert.push(s.pureVertical - sr);
                   if (s.noStepVertical !== null && sr !== null) athleticMap[key].noStepVert.push(s.noStepVertical - sr);
-                  if (s.deadlift !== null) athleticMap[key].deadlift.push(s.deadlift);
+                  const rs = computeRelStr(s); if (rs !== null) athleticMap[key].relStrength.push(rs);
                   shootingMap[key].taken += s.shootsTaken || 0;
                   shootingMap[key].made += s.shootsMade || 0;
                 });
@@ -3349,12 +3356,12 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
             } else {
               ps.forEach(s => {
                 const key = s.date.substring(0, 7);
-                if (!athleticMap[key]) athleticMap[key] = { sprint: [], coneDrill: [], pureVert: [], noStepVert: [], deadlift: [] };
+                if (!athleticMap[key]) athleticMap[key] = { sprint: [], coneDrill: [], pureVert: [], noStepVert: [], relStrength: [] };
                 if (s.sprint !== null) athleticMap[key].sprint.push(s.sprint);
                 if (s.coneDrill !== null) athleticMap[key].coneDrill.push(s.coneDrill);
                 if (s.pureVertical !== null && sr !== null) athleticMap[key].pureVert.push(s.pureVertical - sr);
                 if (s.noStepVertical !== null && sr !== null) athleticMap[key].noStepVert.push(s.noStepVertical - sr);
-                if (s.deadlift !== null) athleticMap[key].deadlift.push(s.deadlift);
+                const rs = computeRelStr(s); if (rs !== null) athleticMap[key].relStrength.push(rs);
                 if (!shootingMap[key]) shootingMap[key] = { taken: 0, made: 0 };
                 shootingMap[key].taken += s.shootsTaken || 0;
                 shootingMap[key].made += s.shootsMade || 0;
@@ -3383,11 +3390,11 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
               [t('No-Step Vertical')]: avg(athleticMap[k].noStepVert),
             }));
 
-          const deadliftData = sortedKeys
-            .filter(k => athleticMap[k].deadlift.length > 0)
+          const relStrengthData = sortedKeys
+            .filter(k => athleticMap[k].relStrength.length > 0)
             .map(k => ({
               date: dateLabel(k),
-              [t('Deadlift')]: avg(athleticMap[k].deadlift),
+              [t('Rel. Strength')]: avg(athleticMap[k].relStrength),
             }));
 
           const shotSortedKeys = Object.keys(shootingMap).sort((a, b) => a.localeCompare(b));
@@ -3462,15 +3469,15 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
               </div>
 
               <div className={`${chartBox} flex flex-col`}>
-                <h4 className={chartTitle}>{t('Deadlift')}</h4>
+                <h4 className={chartTitle}>{t('Rel. Strength')}<span className={`ml-1 font-normal text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>(x BW)</span></h4>
                 <div className="flex-1 min-h-[160px] print-chart-fill">
                   <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={deadliftData}>
+                    <ComposedChart data={relStrengthData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                       <XAxis dataKey="date" tick={tickStyle} />
-                      <YAxis tick={tickStyle} domain={['dataMin - 5', 'dataMax + 5']} />
+                      <YAxis tick={tickStyle} domain={['dataMin - 0.1', 'dataMax + 0.1']} />
                       <Tooltip contentStyle={tipStyle} />
-                      <Bar dataKey={t('Deadlift')} fill="#10b981" opacity={0.7} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey={t('Rel. Strength')} fill="#10b981" opacity={0.7} radius={[4, 4, 0, 0]} />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
