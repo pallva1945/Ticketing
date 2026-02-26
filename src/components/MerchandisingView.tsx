@@ -1724,7 +1724,7 @@ export const MerchandisingView: React.FC = () => {
 
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('Giveaways by Recipient')}</h3>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('Giveaways by Department')}</h3>
             </div>
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
               {stats.giveawayClients.map((client) => (
@@ -1736,7 +1736,7 @@ export const MerchandisingView: React.FC = () => {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{client.recipient}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{client.totalItems} {t('items')}{client.authorizedBy ? ` · ${t('Auth')}: ${client.authorizedBy}` : ''}{client.detail ? ` · ${client.detail}` : ''}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{client.totalItems} {t('items')}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
