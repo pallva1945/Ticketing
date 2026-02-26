@@ -5772,7 +5772,7 @@ function ProgressionChart({ sessions, lines, metric, profiles, isDark, convertVa
     { key: 'noStepVertical', label: t('No-Step Vertical'), unit: 'cm' },
     { key: 'sprint', label: t('Sprint'), unit: 's' },
     { key: 'coneDrill', label: t('Cone Drill'), unit: 's' },
-    { key: 'deadlift', label: t('Deadlift'), unit: 'kg' },
+    { key: 'deadlift', label: t('Rel. Strength'), unit: 'x BW' },
     { key: 'shootingPct', label: t('3PT %'), unit: '%' },
   ];
   const currentMetric = allMetrics.find(m => m.key === metric);
@@ -5880,7 +5880,7 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
     { key: 'noStepVertical', label: t('No-Step Vertical'), unit: 'cm', group: t('Athletics') },
     { key: 'sprint', label: t('Sprint'), unit: 's', group: t('Athletics') },
     { key: 'coneDrill', label: t('Cone Drill'), unit: 's', group: t('Athletics') },
-    { key: 'deadlift', label: t('Deadlift'), unit: 'kg', group: t('Athletics') },
+    { key: 'deadlift', label: t('Rel. Strength'), unit: 'x BW', group: t('Athletics') },
     { key: 'shootingPct', label: t('3PT %'), unit: '%', group: t('Shooting') },
   ];
 
@@ -5949,6 +5949,11 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
     if (met === 'pureVertical' || met === 'noStepVertical') {
       const sr = session.standingReach;
       return sr !== null ? val - sr : null;
+    }
+    if (met === 'deadlift') {
+      const wt = session.weight as number | null;
+      if (wt !== null && wt > 0) return Math.round(((val * 0.9) / wt) * 100) / 100;
+      return null;
     }
     return val;
   };
