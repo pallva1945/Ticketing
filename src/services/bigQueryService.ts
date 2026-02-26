@@ -303,6 +303,84 @@ export async function fetchVBProfilesFromBigQuery(): Promise<{ success: boolean;
   }
 }
 
+const VB_IND_GAMES_TABLE = 'ticketing-migration.ticketing_migration.sg_ind_games';
+
+export interface VBIndGame {
+  player_name: string;
+  player_id: number;
+  game_date: number;
+  team_name: string;
+  opponent_name: string;
+  final_score: string;
+  team_score: number;
+  opponent_score: number;
+  competition_name: string;
+  competition_team_id: number;
+  side: string | null;
+  win_lose: string | null;
+  starter: number;
+  minutes_calc: string | null;
+  pts: number;
+  pts2_made: number;
+  pts2_all: number;
+  pts3_made: number;
+  pts3_all: number;
+  ft_made: number;
+  ft_all: number;
+  total_rebounds: number;
+  offensive_rebound: number;
+  defensive_rebound: number;
+  assist: number;
+  turnover: number;
+  steal: number;
+  block: number;
+  personal_foul: number;
+  plusminus_bs: number;
+  val: number;
+}
+
+function excelDateToISO(serial: number | null): string | null {
+  if (serial === null || serial === undefined || isNaN(serial) || serial < 1 || serial > 100000) return null;
+  const epoch = new Date(1899, 11, 30);
+  const d = new Date(epoch.getTime() + serial * 86400000);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString().substring(0, 10);
+}
+
+export async function fetchVBIndGamesFromBigQuery(): Promise<{ success: boolean; data: VBIndGame[] }> {
+  try {
+    const client = getBigQueryClient();
+    const query = `SELECT player_name, player_id, game_date, team_name, opponent_name, final_score, team_score, opponent_score, competition_name, competition_team_id, side, win_lose, starter, minutes_calc, pts, pts2_made, pts2_all, pts3_made, pts3_all, ft_made, ft_all, total_rebounds, offensive_rebound, defensive_rebound, assist, turnover, steal, block, personal_foul, plusminus_bs, val FROM \`${VB_IND_GAMES_TABLE}\` WHERE player_name IS NOT NULL ORDER BY game_date DESC`;
+    const [rows] = await client.query({ query });
+    const data = rows.map((r: any) => ({
+      ...r,
+      game_date_iso: r.game_date ? excelDateToISO(r.game_date) : null,
+      pts: r.pts || 0,
+      pts2_made: r.pts2_made || 0,
+      pts2_all: r.pts2_all || 0,
+      pts3_made: r.pts3_made || 0,
+      pts3_all: r.pts3_all || 0,
+      ft_made: r.ft_made || 0,
+      ft_all: r.ft_all || 0,
+      total_rebounds: r.total_rebounds || 0,
+      offensive_rebound: r.offensive_rebound || 0,
+      defensive_rebound: r.defensive_rebound || 0,
+      assist: r.assist || 0,
+      turnover: r.turnover || 0,
+      steal: r.steal || 0,
+      block: r.block || 0,
+      personal_foul: r.personal_foul || 0,
+      plusminus_bs: r.plusminus_bs || 0,
+      val: r.val || 0,
+    }));
+    console.log(`Fetched ${data.length} individual game records from BigQuery`);
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('VB Ind Games BigQuery fetch error:', error.message);
+    return { success: false, data: [] };
+  }
+}
+
 const VB_PROSPECTS_TABLE = 'ticketing-migration.ticketing_migration.sg_prospects';
 
 export interface VBProspect {

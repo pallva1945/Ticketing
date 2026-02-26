@@ -8,7 +8,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV, fetchVBDataFromBigQuery, fetchVBProfilesFromBigQuery, fetchVBProspectsFromBigQuery } from "../src/services/bigQueryService";
+import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV, fetchVBDataFromBigQuery, fetchVBProfilesFromBigQuery, fetchVBProspectsFromBigQuery, fetchVBIndGamesFromBigQuery } from "../src/services/bigQueryService";
 import { initDatabase, upsertUser, getUserByEmail, getUserPermissions, createAccessRequest, getAccessRequestByEmail, saveCostCenterData, getLatestCostCenterData, getSetting, setSetting } from "./db.js";
 import { getUncachableGoogleSheetClient } from "./googleSheets.js";
 import { registerAdminRoutes } from "./adminRoutes.js";
@@ -1672,147 +1672,21 @@ app.get("/api/shopify/customers", async (req, res) => {
   }
 });
 
-const FULLFIELD_API_BASE = 'https://api.fullfield.info/api/basketball-ffb';
-const FULLFIELD_TOKEN = process.env.FULLFIELD_API_TOKEN || '';
+let indGamesCache: any[] | null = null;
+let indGamesCacheTime = 0;
+const IND_GAMES_CACHE_TTL = 600000;
 
-const FULLFIELD_TEAMS: Record<string, number> = {
-  'Varese U19': 49897,
-  'PV U19': 49897,
-  'Campus Varese': 56097,
-  'Varese Basketball': 56097,
-  'Robur e Fides U17': 56119,
-  'ReF U17': 56119,
-  'Varese U17': 56121,
-  'PV U17': 56121,
-  'Robur e Fides U19': 49893,
-  'ReF U19': 49893
-};
-
-const FULLFIELD_PLAYERS: Record<string, number> = {
-  'Ivan Prato': 35989,
-  'Tomas Scola': 52890,
-  'Marco Bergamin': 15042,
-  'Bruno Farias': 212406,
-  'Tomás Fernández Lang': 53452,
-  'Hassane Coulibaly': 65577,
-  'Juan Dollberg': 32455,
-  'Lautaro Basualdo': 32461,
-  'Robert Kangur': 32861,
-  'Pietro Lazzati': 65571,
-  'Tommaso Bada': 65573,
-  'Francesco Tornese': 65589,
-  'Pietro Balzarotti': 65593,
-  'Angelo Modanese': 21155,
-  'Martino Risi': 22937
-};
-
-async function fullfieldFetch(endpoint: string, params: Record<string, string> = {}) {
-  if (!FULLFIELD_TOKEN) throw new Error('FullField API token not configured');
-  const url = new URL(`${FULLFIELD_API_BASE}/${endpoint}`);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  const resp = await fetch(url.toString(), {
-    headers: {
-      'Authorization': `Bearer ${FULLFIELD_TOKEN}`,
-      'Accept': 'application/json'
+app.get("/api/vb/ind-games", async (_req, res) => {
+  try {
+    if (indGamesCache && Date.now() - indGamesCacheTime < IND_GAMES_CACHE_TTL) {
+      return res.json({ success: true, data: indGamesCache });
     }
-  });
-  if (!resp.ok) throw new Error(`FullField API error: ${resp.status}`);
-  return resp.json();
-}
-
-app.get("/api/fullfield/teams", (_req, res) => {
-  res.json({ success: true, teams: FULLFIELD_TEAMS });
-});
-
-app.get("/api/fullfield/players", (_req, res) => {
-  res.json({ success: true, players: FULLFIELD_PLAYERS });
-});
-
-app.get("/api/fullfield/team/:teamId/seasons", async (req, res) => {
-  try {
-    const data = await fullfieldFetch(`team/get-seasons/${req.params.teamId}`);
-    res.json({ success: true, data: data.data || [] });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-app.get("/api/fullfield/team/:teamId/profile", async (req, res) => {
-  try {
-    const data = await fullfieldFetch(`team/getMainData/teamid/${req.params.teamId}`);
-    res.json({ success: true, data: data.data });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-app.get("/api/fullfield/team/:teamId/stats", async (req, res) => {
-  try {
-    const seasonId = req.query.season_id as string;
-    if (!seasonId) return res.status(400).json({ success: false, message: 'season_id required' });
-    const params: Record<string, string> = { season_id: seasonId };
-    if (req.query.competition_id) params.competition_id = req.query.competition_id as string;
-    const data = await fullfieldFetch(`team/get-main-stat/${req.params.teamId}`, params);
-    res.json({ success: true, data: data.data, meta: data.meta });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-app.get("/api/fullfield/team/:teamId/gamelog", async (req, res) => {
-  try {
-    const seasonId = req.query.season_id as string;
-    if (!seasonId) return res.status(400).json({ success: false, message: 'season_id required' });
-    const params: Record<string, string> = { season_id: seasonId };
-    if (req.query.competition_id) params.competition_id = req.query.competition_id as string;
-    const data = await fullfieldFetch(`team/get-gamelog/${req.params.teamId}`, params);
-    res.json({ success: true, data: data.data || [] });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-app.get("/api/fullfield/player/:playerId/seasons", async (req, res) => {
-  try {
-    const data = await fullfieldFetch(`player/get-seasons/${req.params.playerId}`);
-    res.json({ success: true, data: data.data || [] });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-app.get("/api/fullfield/player/:playerId/stats", async (req, res) => {
-  try {
-    const seasonId = req.query.season_id as string;
-    if (!seasonId) return res.status(400).json({ success: false, message: 'season_id required' });
-    const params: Record<string, string> = { season_id: seasonId };
-    if (req.query.competition_id) params.competition_id = req.query.competition_id as string;
-    const data = await fullfieldFetch(`player/get-main-stat/${req.params.playerId}`, params);
-    res.json({ success: true, data: data.data, meta: data.meta });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-app.get("/api/fullfield/player/:playerId/gamelog", async (req, res) => {
-  try {
-    const seasonId = req.query.season_id as string;
-    if (!seasonId) return res.status(400).json({ success: false, message: 'season_id required' });
-    const params: Record<string, string> = { season_id: seasonId };
-    if (req.query.competition_id) params.competition_id = req.query.competition_id as string;
-    const data = await fullfieldFetch(`player/get-gamelog/${req.params.playerId}`, params);
-    res.json({ success: true, data: data.data || [] });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
-
-app.get("/api/fullfield/player/:playerId/career", async (req, res) => {
-  try {
-    const seasonId = req.query.season_id as string;
-    if (!seasonId) return res.status(400).json({ success: false, message: 'season_id required' });
-    const data = await fullfieldFetch(`player/get-career-stat/${req.params.playerId}`, { season_id: seasonId });
-    res.json({ success: true, data: data.data });
+    const result = await fetchVBIndGamesFromBigQuery();
+    if (result.success) {
+      indGamesCache = result.data;
+      indGamesCacheTime = Date.now();
+    }
+    res.json(result);
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
