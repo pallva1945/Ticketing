@@ -106,25 +106,25 @@ const Root: React.FC = () => {
   }
 
   if (currentView === 'vb' && canAccessPage('hub')) {
-    return <VBDashboard onBack={handleBackToVBHub} />;
+    return <VBDashboard onBack={handleBackToVBHub} onHome={handleBackToWelcome} />;
   }
 
   if (currentView === 'revenue' && canAccessPage('revenue')) {
-    return <App onBackToLanding={handleBackToFinancial} />;
+    return <App onBackToLanding={handleBackToFinancial} onHome={handleBackToWelcome} />;
   }
 
   if (currentView === 'cost' && canAccessPage('cost')) {
-    return <CostCenter onBackToLanding={handleBackToFinancial} />;
+    return <CostCenter onBackToLanding={handleBackToFinancial} onHome={handleBackToWelcome} />;
   }
 
   if (currentView === 'pnl' && canAccessPage('pnl')) {
-    return <VerticalsPnL onBackToLanding={handleBackToFinancial} />;
+    return <VerticalsPnL onBackToLanding={handleBackToFinancial} onHome={handleBackToWelcome} />;
   }
 
   if (currentView === 'landing') {
     return <FinancialCenter onNavigate={(section) => {
       if (canAccessPage(section)) handleNavigate(section);
-    }} />;
+    }} onHome={handleBackToWelcome} />;
   }
 
   if (currentView === 'vb-hub' && canAccessPage('hub')) {

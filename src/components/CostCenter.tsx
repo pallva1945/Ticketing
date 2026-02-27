@@ -26,6 +26,7 @@ const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maxi
 
 interface CostCenterProps {
   onBackToLanding: () => void;
+  onHome?: () => void;
 }
 
 function sectionTotal(lines?: CostLine[]): number {
@@ -41,7 +42,7 @@ function periodLabel(monthCount: number): string {
   return `Jul 2025–${endMonth} 2026`;
 }
 
-export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
+export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
   const isDark = theme === 'dark';
@@ -236,6 +237,15 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding }) => {
             >
               {isDark ? <Sun size={14} className="text-yellow-400" /> : <Moon size={14} className="text-gray-500" />}
             </button>
+            {onHome && (
+              <button
+                onClick={onHome}
+                className="p-1.5 rounded-lg transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
+                title={t('Back to Home')}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 dark:text-gray-400"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </button>
+            )}
           </div>
         </div>
       </div>

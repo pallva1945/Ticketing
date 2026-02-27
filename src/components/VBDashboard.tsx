@@ -3772,6 +3772,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
   }, [allGames]);
 
   const [selectedTeam, setSelectedTeam] = useState<string>('');
+  const [selectedGameId, setSelectedGameId] = useState<string>('all');
   const [selectedPlayer, setSelectedPlayer] = useState<string>('');
   const [selectedPlayerLeague, setSelectedPlayerLeague] = useState<string>('all');
   const [selectedPlayerSeason, setSelectedPlayerSeason] = useState<string>('all');
@@ -3859,6 +3860,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
   };
 
   useEffect(() => { if (teamNames.length > 0 && !selectedTeam) setSelectedTeam(teamNames[0]); }, [teamNames]);
+  useEffect(() => { setSelectedGameId('all'); }, [selectedTeam]);
   useEffect(() => { if (playerNames.length > 0 && !selectedPlayer) setSelectedPlayer(playerNames[0]); }, [playerNames]);
   useEffect(() => { setSelectedPlayerLeague('all'); setSelectedPlayerSeason('all'); }, [selectedPlayer]);
 
@@ -3893,18 +3895,28 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
     const lgPaceSum = lgGames.reduce((s, g) => s + (g.pace || 0), 0);
     const lgPace = lgGames.length > 0 ? lgPaceSum / lgGames.length : 80;
 
-    const tmGP = teamGames.length;
-    const tmPace = tmGP > 0 ? teamGames.reduce((s, g) => s + (g.pace || 0), 0) / tmGP : lgPace;
-    const tmTotalPoss = teamGames.reduce((s, g) => s + (g.poss || 0), 0);
+    const filteredTeamGames = selectedGameId !== 'all'
+      ? teamGames.filter(g => `${g.game_date_iso}_${g.opponent_name}` === selectedGameId)
+      : teamGames;
+    const filteredIndGames = selectedGameId !== 'all'
+      ? indTeamGames.filter(g => {
+          const sg = filteredTeamGames[0];
+          return sg && g.game_date_iso === sg.game_date_iso && g.opponent_name === sg.opponent_name;
+        })
+      : indTeamGames;
+
+    const tmGP = filteredTeamGames.length;
+    const tmPace = tmGP > 0 ? filteredTeamGames.reduce((s, g) => s + (g.pace || 0), 0) / tmGP : lgPace;
+    const tmTotalPoss = filteredTeamGames.reduce((s, g) => s + (g.poss || 0), 0);
     const tmOppPoss = tmTotalPoss;
-    const tmDefRtg = tmGP > 0 ? teamGames.reduce((s, g) => s + (g.def_rtg || 0), 0) / tmGP : 100;
+    const tmDefRtg = tmGP > 0 ? filteredTeamGames.reduce((s, g) => s + (g.def_rtg || 0), 0) / tmGP : 100;
 
     const marPtsWin = 0.32 * lgPtsPG * (tmPace / (lgPace || 1));
 
     const byPlayer: Record<string, any[]> = {};
-    indTeamGames.forEach(g => { if (!byPlayer[g.player_name]) byPlayer[g.player_name] = []; byPlayer[g.player_name].push(g); });
+    filteredIndGames.forEach(g => { if (!byPlayer[g.player_name]) byPlayer[g.player_name] = []; byPlayer[g.player_name].push(g); });
 
-    const allPlayerPossTotal = indTeamGames.reduce((s, g) => s + (g.poss || 0), 0);
+    const allPlayerPossTotal = filteredIndGames.reduce((s, g) => s + (g.poss || 0), 0);
 
     return Object.entries(byPlayer).map(([name, games]) => {
       const gamesPlayed = new Set(games.map(g => `${g.game_date}_${g.opponent_name}`)).size;
@@ -3961,7 +3973,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         ws: ws.toFixed(2),
       };
     }).sort((a, b) => parseFloat(b.pts) - parseFloat(a.pts));
-  }, [indTeamGames, teamGames, allTeamGames]);
+  }, [indTeamGames, teamGames, allTeamGames, selectedGameId]);
 
   const allPlayerGames = useMemo(() => allGames.filter(g => g.player_name === selectedPlayer), [allGames, selectedPlayer]);
 
@@ -3993,6 +4005,9 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
 
   const renderTeamTab = () => {
     const gp = teamGames.length;
+    const isSingleGame = selectedGameId !== 'all';
+    const singleGame = isSingleGame ? teamGames.find(g => `${g.game_date_iso}_${g.opponent_name}` === selectedGameId) : null;
+
     const teamSelector = (
       <div className="flex flex-wrap gap-2">
         <div className="relative">
@@ -4001,6 +4016,24 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
           </select>
           <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
         </div>
+        {gp > 0 && (
+          <div className="relative">
+            <select value={selectedGameId} onChange={e => setSelectedGameId(e.target.value)} className={selectClass}>
+              <option value="all">{t('All Games')} ({gp})</option>
+              {teamGames.map(g => {
+                const key = `${g.game_date_iso}_${g.opponent_name}`;
+                const isWin = g.win_lose === 'win';
+                const prefix = g.side === 'home' ? 'vs' : '@';
+                return (
+                  <option key={key} value={key}>
+                    {formatDateDMY(g.game_date_iso)} — {prefix} {displayTeamName(g.opponent_name)} ({isWin ? 'W' : 'L'} {g.team_score}-{g.opponent_score})
+                  </option>
+                );
+              })}
+            </select>
+            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+          </div>
+        )}
       </div>
     );
 
@@ -4020,7 +4053,10 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
       oppLookup.set(key, g);
     });
 
-    const totals = teamGames.reduce((acc, g) => {
+    const viewGames = singleGame ? [singleGame] : teamGames;
+    const viewGp = viewGames.length;
+
+    const totals = viewGames.reduce((acc, g) => {
       acc.pts += g.team_score; acc.reb += g.total_rebounds; acc.ast += g.assist;
       acc.stl += g.steal; acc.blk += g.block; acc.to += g.turnover;
       acc.fg_made += g.fg_made; acc.fg_all += g.fg_all;
@@ -4051,13 +4087,13 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
       }
       return acc;
     }, { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fg_made: 0, fg_all: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, pf: 0, ptsAllowed: 0, off_rtg: 0, def_rtg: 0, net_rtg: 0, pace: 0, poss: 0, efg_sum: 0, efg_count: 0, oreb_per_sum: 0, oreb_per_count: 0, dreb_per_sum: 0, dreb_per_count: 0, tov_per_sum: 0, tov_per_count: 0, fta40_sum: 0, fta40_count: 0, opp_efg_sum: 0, opp_efg_count: 0, opp_tov_per_sum: 0, opp_tov_per_count: 0, opp_fta40_sum: 0, opp_fta40_count: 0, opp_matched: 0 });
-    const wins = teamGames.filter(g => g.win_lose === 'win').length;
-    const losses = gp - wins;
+    const wins = viewGames.filter(g => g.win_lose === 'win').length;
+    const losses = viewGp - wins;
 
-    const avgNetRtg = (totals.net_rtg / gp).toFixed(1);
-    const avgOffRtg = (totals.off_rtg / gp).toFixed(1);
-    const avgDefRtg = (totals.def_rtg / gp).toFixed(1);
-    const avgPace = Math.round(totals.pace / gp);
+    const avgNetRtg = (totals.net_rtg / viewGp).toFixed(1);
+    const avgOffRtg = (totals.off_rtg / viewGp).toFixed(1);
+    const avgDefRtg = (totals.def_rtg / viewGp).toFixed(1);
+    const avgPace = Math.round(totals.pace / viewGp);
 
     const avgEfg = totals.efg_count > 0 ? (totals.efg_sum / totals.efg_count).toFixed(1) : '-';
     const avgOrebPct = totals.oreb_per_count > 0 ? (totals.oreb_per_sum / totals.oreb_per_count).toFixed(1) : '-';
@@ -4074,11 +4110,41 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
       <div className="space-y-5">
         {teamSelector}
 
+        {singleGame && (
+          <div className={`${card} p-4 flex items-center justify-between`}>
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm ${singleGame.win_lose === 'win' ? 'bg-green-500' : 'bg-red-500'}`}>
+                {singleGame.win_lose === 'win' ? 'W' : 'L'}
+              </div>
+              <div>
+                <p className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {singleGame.side === 'home' ? 'vs' : '@'} {displayTeamName(singleGame.opponent_name)}
+                </p>
+                <p className={`text-xs ${subtext}`}>{formatDateDMY(singleGame.game_date_iso)} · {singleGame.competition_name || ''}</p>
+              </div>
+            </div>
+            <p className={`text-2xl font-bold ${singleGame.win_lose === 'win' ? 'text-green-500' : 'text-red-500'}`}>
+              {singleGame.team_score} - {singleGame.opponent_score}
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label={t('Record')} value={`${wins}W - ${losses}L`} sub={`${gp} ${t('games')}`} color="orange" />
-          <StatCard label="Net Rtg" value={`${parseFloat(avgNetRtg) > 0 ? '+' : ''}${avgNetRtg}`} color={parseFloat(avgNetRtg) >= 0 ? 'green' : 'red'} />
-          <StatCard label="ORtg" value={avgOffRtg} color="green" />
-          <StatCard label="DRtg" value={avgDefRtg} sub={`Pace ${avgPace}`} color="red" />
+          {isSingleGame ? (
+            <>
+              <StatCard label={t('Result')} value={`${wins > 0 ? 'W' : 'L'} ${totals.pts}-${totals.ptsAllowed}`} color={wins > 0 ? 'green' : 'red'} />
+              <StatCard label="Net Rtg" value={`${parseFloat(avgNetRtg) > 0 ? '+' : ''}${avgNetRtg}`} color={parseFloat(avgNetRtg) >= 0 ? 'green' : 'red'} />
+              <StatCard label="ORtg" value={avgOffRtg} color="green" />
+              <StatCard label="DRtg" value={avgDefRtg} sub={`Pace ${avgPace}`} color="red" />
+            </>
+          ) : (
+            <>
+              <StatCard label={t('Record')} value={`${wins}W - ${losses}L`} sub={`${viewGp} ${t('games')}`} color="orange" />
+              <StatCard label="Net Rtg" value={`${parseFloat(avgNetRtg) > 0 ? '+' : ''}${avgNetRtg}`} color={parseFloat(avgNetRtg) >= 0 ? 'green' : 'red'} />
+              <StatCard label="ORtg" value={avgOffRtg} color="green" />
+              <StatCard label="DRtg" value={avgDefRtg} sub={`Pace ${avgPace}`} color="red" />
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-4 gap-3">
@@ -6397,7 +6463,7 @@ function ProgressionTab({ sessions, players, profiles }: { sessions: VBSession[]
   );
 }
 
-export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+export const VBDashboard: React.FC<{ onBack: () => void; onHome?: () => void }> = ({ onBack, onHome }) => {
   const { t } = useLanguage();
   const isDark = useIsDark();
   const [sessions, setSessions] = useState<VBSession[]>([]);
@@ -6570,6 +6636,15 @@ export const VBDashboard: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             >
               <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
             </button>
+            {onHome && (
+              <button
+                onClick={onHome}
+                className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
+                title="Home"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </button>
+            )}
           </div>
 
           <div className="flex gap-0.5 sm:gap-1 -mb-px overflow-x-auto scrollbar-hide" style={{ paddingRight: '4rem' }}>

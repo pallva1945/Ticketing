@@ -1010,7 +1010,7 @@ service cloud.firestore {
   </div>
 );
 
-const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) => {
+const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ onBackToLanding, onHome }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
   const { userEmail, userName, userPicture, logout, isAdmin, accessLevel, permissions } = useAuth();
@@ -2677,6 +2677,15 @@ const App: React.FC<{ onBackToLanding?: () => void }> = ({ onBackToLanding }) =>
              >
                 {isDark ? <Sun size={16} className="text-yellow-400" /> : <Moon size={16} className="text-gray-500" />}
              </button>
+             {onHome && (
+               <button
+                 onClick={onHome}
+                 className="p-2 rounded-lg transition-all border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 bg-white dark:bg-gray-900"
+                 title={t('Back to Home')}
+               >
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 dark:text-gray-400"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+               </button>
+             )}
              <div className="h-6 w-px bg-gray-200 dark:bg-gray-700"></div>
              <div className="text-right">
                  <p className="text-xs font-bold text-gray-900 dark:text-white">{TEAM_NAME}</p>
