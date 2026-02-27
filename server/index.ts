@@ -446,6 +446,81 @@ app.post("/api/costs/sync-sheet", async (req, res) => {
   }
 });
 
+const ALLOWED_REVENUE_MODULES = ['bops', 'venue_ops', 'gameday', 'sponsorship', 'merchandising', 'ticketing'];
+
+app.get("/api/revenue/sheet-config/:module", async (req, res) => {
+  try {
+    const mod = req.params.module;
+    if (!ALLOWED_REVENUE_MODULES.includes(mod)) return res.status(400).json({ success: false, message: 'Invalid module' });
+    const sheetId = await getSetting(`${mod}_sheet_id`);
+    const sheetName = await getSetting(`${mod}_sheet_name`);
+    res.json({ success: true, sheetId: sheetId || '', sheetName: sheetName || '' });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/revenue/sheet-config/:module", async (req, res) => {
+  try {
+    const mod = req.params.module;
+    if (!ALLOWED_REVENUE_MODULES.includes(mod)) return res.status(400).json({ success: false, message: 'Invalid module' });
+    const { sheetId, sheetName } = req.body;
+    if (!sheetId) return res.status(400).json({ success: false, message: 'sheetId is required' });
+    await setSetting(`${mod}_sheet_id`, sheetId);
+    if (sheetName) await setSetting(`${mod}_sheet_name`, sheetName);
+    res.json({ success: true });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.post("/api/revenue/sync-sheet/:module", async (req, res) => {
+  try {
+    const mod = req.params.module;
+    if (!ALLOWED_REVENUE_MODULES.includes(mod)) return res.status(400).json({ success: false, message: 'Invalid module' });
+    let { sheetId, sheetName } = req.body || {};
+    if (!sheetId) sheetId = await getSetting(`${mod}_sheet_id`);
+    if (!sheetName) sheetName = await getSetting(`${mod}_sheet_name`);
+    if (!sheetId) {
+      return res.status(400).json({ success: false, message: 'No Google Sheet configured. Please set a Sheet ID first.' });
+    }
+
+    const sheets = await getUncachableGoogleSheetClient();
+    const range = sheetName ? `'${sheetName}'` : 'Sheet1';
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId: sheetId,
+      range,
+    });
+
+    const rows = response.data.values;
+    if (!rows || rows.length === 0) {
+      return res.status(400).json({ success: false, message: 'Sheet is empty or not found' });
+    }
+
+    await setSetting(`${mod}_sheet_data`, JSON.stringify(rows));
+    console.log(`Revenue module '${mod}' synced from Google Sheet: ${rows.length} rows`);
+    res.json({ success: true, data: rows, rowCount: rows.length });
+  } catch (error: any) {
+    console.error(`Revenue sheet sync error (${req.params.module}):`, error.message);
+    if (error.message?.includes('not connected')) {
+      return res.status(401).json({ success: false, message: 'Google Sheets not connected. Please reconnect the integration.' });
+    }
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/revenue/sheet-data/:module", async (req, res) => {
+  try {
+    const mod = req.params.module;
+    if (!ALLOWED_REVENUE_MODULES.includes(mod)) return res.status(400).json({ success: false, message: 'Invalid module' });
+    const raw = await getSetting(`${mod}_sheet_data`);
+    if (!raw) return res.json({ success: true, data: null });
+    res.json({ success: true, data: JSON.parse(raw) });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 const validateBigQueryRequest = (req: express.Request, res: express.Response): boolean => {
   const isInternalRequest = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip?.includes('127.0.0.1') || req.ip === '::ffff:127.0.0.1';
   
