@@ -4053,7 +4053,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
     const avgNetRtg = (totals.net_rtg / gp).toFixed(1);
     const avgOffRtg = (totals.off_rtg / gp).toFixed(1);
     const avgDefRtg = (totals.def_rtg / gp).toFixed(1);
-    const avgPace = (totals.pace / gp).toFixed(1);
+    const avgPace = Math.round(totals.pace / gp);
 
     const avgEfg = totals.efg_count > 0 ? (totals.efg_sum / totals.efg_count).toFixed(1) : '-';
     const avgOrebPct = totals.oreb_per_count > 0 ? (totals.oreb_per_sum / totals.oreb_per_count).toFixed(1) : '-';
