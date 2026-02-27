@@ -3763,10 +3763,13 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
 
   const [selectedTeam, setSelectedTeam] = useState<string>('');
   const [selectedPlayer, setSelectedPlayer] = useState<string>('');
+  const [selectedPlayerLeague, setSelectedPlayerLeague] = useState<string>('all');
+  const [selectedPlayerSeason, setSelectedPlayerSeason] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => { if (teamNames.length > 0 && !selectedTeam) setSelectedTeam(teamNames[0]); }, [teamNames]);
   useEffect(() => { if (playerNames.length > 0 && !selectedPlayer) setSelectedPlayer(playerNames[0]); }, [playerNames]);
+  useEffect(() => { setSelectedPlayerLeague('all'); setSelectedPlayerSeason('all'); }, [selectedPlayer]);
 
   const card = `rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`;
   const subtext = isDark ? 'text-gray-400' : 'text-gray-500';
@@ -3826,7 +3829,33 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
     }).sort((a, b) => parseFloat(b.ppg) - parseFloat(a.ppg));
   }, [teamGames]);
 
-  const playerGames = useMemo(() => allGames.filter(g => g.player_name === selectedPlayer).sort((a, b) => (b.game_date || 0) - (a.game_date || 0)), [allGames, selectedPlayer]);
+  const allPlayerGames = useMemo(() => allGames.filter(g => g.player_name === selectedPlayer), [allGames, selectedPlayer]);
+
+  const playerLeagues = useMemo(() => {
+    const set = new Set<string>();
+    allPlayerGames.forEach(g => { const cn = (g.competition_name || '').trim(); if (cn) { const league = cn.replace(/\s*\d{4}-\d{4}$/, '').trim(); if (league) set.add(league); } });
+    return Array.from(set).sort();
+  }, [allPlayerGames]);
+
+  const playerSeasonsList = useMemo(() => {
+    const set = new Set<string>();
+    allPlayerGames.forEach(g => { const cn = (g.competition_name || '').trim(); const m = cn.match(/(\d{4}-\d{4})$/); if (m) set.add(m[1]); });
+    return Array.from(set).sort().reverse();
+  }, [allPlayerGames]);
+
+  const playerGames = useMemo(() => {
+    return allPlayerGames.filter(g => {
+      const cn = (g.competition_name || '').trim();
+      if (selectedPlayerLeague !== 'all') {
+        const league = cn.replace(/\s*\d{4}-\d{4}$/, '').trim();
+        if (league !== selectedPlayerLeague) return false;
+      }
+      if (selectedPlayerSeason !== 'all') {
+        if (!cn.endsWith(selectedPlayerSeason)) return false;
+      }
+      return true;
+    }).sort((a, b) => (b.game_date || 0) - (a.game_date || 0));
+  }, [allPlayerGames, selectedPlayerLeague, selectedPlayerSeason]);
 
   const renderTeamTab = () => {
     const gp = scheduleGames.length;
@@ -3995,6 +4024,24 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
             </select>
             <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
           </div>
+          {playerSeasonsList.length > 0 && (
+            <div className="relative">
+              <select value={selectedPlayerSeason} onChange={e => setSelectedPlayerSeason(e.target.value)} className={selectClass}>
+                <option value="all">{t('All Seasons')}</option>
+                {playerSeasonsList.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+            </div>
+          )}
+          {playerLeagues.length > 0 && (
+            <div className="relative">
+              <select value={selectedPlayerLeague} onChange={e => setSelectedPlayerLeague(e.target.value)} className={selectClass}>
+                <option value="all">{t('All Leagues')}</option>
+                {playerLeagues.map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
+              <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+            </div>
+          )}
         </div>
 
         {totalRow ? (
