@@ -4302,17 +4302,12 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         efg: efg !== null ? efg.toFixed(1) : null,
         ts: ts !== null ? ts.toFixed(1) : null,
         ft40: t.ft40_count > 0 ? (t.ft40_sum / t.ft40_count).toFixed(1) : null,
-        dreb_pg: (t.dreb / gp).toFixed(1),
-        oreb_pg: (t.oreb / gp).toFixed(1),
-        blk_pg: (t.blk / gp).toFixed(1),
-        stl_pg: (t.stl / gp).toFixed(1),
-        ast_pg: (t.ast / gp).toFixed(1),
         ast_to: t.to > 0 ? (t.ast / t.to).toFixed(2) : (t.ast > 0 ? '∞' : '0.00'),
-        dreb_pm: hasMin && totalMin > 0 ? (t.dreb / totalMin).toFixed(2) : null,
-        oreb_pm: hasMin && totalMin > 0 ? (t.oreb / totalMin).toFixed(2) : null,
-        blk_pm: hasMin && totalMin > 0 ? (t.blk / totalMin).toFixed(2) : null,
-        stl_pm: hasMin && totalMin > 0 ? (t.stl / totalMin).toFixed(2) : null,
-        ast_pm: hasMin && totalMin > 0 ? (t.ast / totalMin).toFixed(2) : null,
+        dreb_40: hasMin && totalMin > 0 ? ((t.dreb / totalMin) * 40).toFixed(1) : null,
+        oreb_40: hasMin && totalMin > 0 ? ((t.oreb / totalMin) * 40).toFixed(1) : null,
+        blk_40: hasMin && totalMin > 0 ? ((t.blk / totalMin) * 40).toFixed(1) : null,
+        stl_40: hasMin && totalMin > 0 ? ((t.stl / totalMin) * 40).toFixed(1) : null,
+        ast_40: hasMin && totalMin > 0 ? ((t.ast / totalMin) * 40).toFixed(1) : null,
       };
     })() : null;
 
@@ -4365,15 +4360,11 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                   { label: '3P%', value: `${totalRow.fg3_pct}%`, desc: '3-Point %' },
                   { label: 'FT%', value: `${totalRow.ft_pct}%`, desc: 'Free Throw %' },
                   { label: 'AST/TO', value: totalRow.ast_to, desc: 'Assist to Turnover' },
-                  { label: 'DREB/G', value: totalRow.dreb_pg, desc: 'Def Reb per Game' },
-                  { label: 'OREB/G', value: totalRow.oreb_pg, desc: 'Off Reb per Game' },
-                  { label: 'STL/G', value: totalRow.stl_pg, desc: 'Steals per Game' },
-                  { label: 'BLK/G', value: totalRow.blk_pg, desc: 'Blocks per Game' },
-                  ...(totalRow.dreb_pm != null ? [{ label: 'DREB/Min', value: totalRow.dreb_pm, desc: 'Def Reb per Minute' }] : []),
-                  ...(totalRow.oreb_pm != null ? [{ label: 'OREB/Min', value: totalRow.oreb_pm, desc: 'Off Reb per Minute' }] : []),
-                  ...(totalRow.stl_pm != null ? [{ label: 'STL/Min', value: totalRow.stl_pm, desc: 'Steals per Minute' }] : []),
-                  ...(totalRow.blk_pm != null ? [{ label: 'BLK/Min', value: totalRow.blk_pm, desc: 'Blocks per Minute' }] : []),
-                  ...(totalRow.ast_pm != null ? [{ label: 'AST/Min', value: totalRow.ast_pm, desc: 'Assists per Minute' }] : []),
+                  ...(totalRow.dreb_40 != null ? [{ label: 'DREB/40', value: totalRow.dreb_40, desc: 'Def Reb per 40 min' }] : []),
+                  ...(totalRow.oreb_40 != null ? [{ label: 'OREB/40', value: totalRow.oreb_40, desc: 'Off Reb per 40 min' }] : []),
+                  ...(totalRow.stl_40 != null ? [{ label: 'STL/40', value: totalRow.stl_40, desc: 'Steals per 40 min' }] : []),
+                  ...(totalRow.blk_40 != null ? [{ label: 'BLK/40', value: totalRow.blk_40, desc: 'Blocks per 40 min' }] : []),
+                  ...(totalRow.ast_40 != null ? [{ label: 'AST/40', value: totalRow.ast_40, desc: 'Assists per 40 min' }] : []),
                 ].map((s, i) => (
                   <div key={i} className="flex items-center justify-between py-1">
                     <span className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`} title={s.desc}>{s.label}</span>
