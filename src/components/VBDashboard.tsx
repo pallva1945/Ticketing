@@ -4394,7 +4394,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
               <table className="w-full text-xs">
                 <thead>
                   <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                    {['Date', 'Opponent', 'Result', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TO', 'FG', '3P', 'FT', 'VAL', 'PPP', 'eFG%', 'TS%', 'AST/TO'].map(h => (
+                    {['Date', 'Opponent', 'Result', 'MIN', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TO', 'FG', '3P', 'FT', 'VAL', 'PPP', 'eFG%', 'TS%', 'AST/TO'].map(h => (
                       <th key={h} className={`py-2 px-1.5 text-left font-semibold whitespace-nowrap ${subtext}`}>{h}</th>
                     ))}
                   </tr>
@@ -4411,6 +4411,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                         <td className={`py-1.5 px-1.5 whitespace-nowrap ${subtext}`}>{formatDateDMY(g.game_date_iso)}</td>
                         <td className={`py-1.5 px-1.5 font-medium whitespace-nowrap ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.side === 'home' ? 'vs' : '@'} {displayTeamName(g.opponent_name)}</td>
                         <td className={`py-1.5 px-1.5 font-semibold whitespace-nowrap ${g.win_lose === 'win' ? 'text-green-500' : 'text-red-500'}`}>{g.win_lose === 'win' ? 'W' : 'L'} {g.team_score}-{g.opponent_score}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.minutes_calc != null ? parseFloat(g.minutes_calc).toFixed(1) : '—'}</td>
                         <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{g.pts}</td>
                         <td className={`py-1.5 px-1.5 ${subtext}`}>{g.total_rebounds}</td>
                         <td className={`py-1.5 px-1.5 ${subtext}`}>{g.assist}</td>
