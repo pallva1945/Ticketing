@@ -3766,6 +3766,70 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
   const [selectedPlayerLeague, setSelectedPlayerLeague] = useState<string>('all');
   const [selectedPlayerSeason, setSelectedPlayerSeason] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedSearchGame, setExpandedSearchGame] = useState<number | null>(null);
+
+  const formatDateDMY = (iso: string | null) => {
+    if (!iso) return '-';
+    const parts = iso.split('-');
+    if (parts.length !== 3) return iso;
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
+  };
+
+  const parseSearchQuery = (raw: string) => {
+    const tokens = raw.trim().split(/\s+/);
+    const statAliases: Record<string, string> = {
+      pts: 'pts', points: 'pts', p: 'pts',
+      reb: 'total_rebounds', rebounds: 'total_rebounds', r: 'total_rebounds',
+      ast: 'assist', assists: 'assist', a: 'assist',
+      stl: 'steal', steals: 'steal', s: 'steal',
+      blk: 'block', blocks: 'block', b: 'block',
+      to: 'turnover', turnovers: 'turnover',
+      val: 'val', eff: 'val',
+      min: 'minutes_calc', minutes: 'minutes_calc',
+      oreb: 'offensive_rebound', dreb: 'defensive_rebound',
+      pf: 'personal_foul', fouls: 'personal_foul',
+      plusminus: 'plusminus_bs', pm: 'plusminus_bs',
+    };
+    const filters: { field: string; op: '>=' | '<=' | '='; value: number; label: string }[] = [];
+    let winFilter: 'win' | 'loss' | null = null;
+    const nameWords: string[] = [];
+
+    let i = 0;
+    while (i < tokens.length) {
+      const tok = tokens[i].toLowerCase();
+      if (tok === 'win' || tok === 'w') { winFilter = 'win'; i++; continue; }
+      if (tok === 'loss' || tok === 'lose' || tok === 'l') { winFilter = 'loss'; i++; continue; }
+      const statMatch = tok.match(/^([+\-><]=?|[=])(\d+\.?\d*)$/);
+      if (statMatch && i + 1 < tokens.length) {
+        const opRaw = statMatch[1];
+        const val = parseFloat(statMatch[2]);
+        const nextTok = tokens[i + 1].toLowerCase();
+        const field = statAliases[nextTok];
+        if (field) {
+          const op: '>=' | '<=' | '=' = (opRaw === '-' || opRaw === '<' || opRaw === '<=') ? '<=' : opRaw === '=' ? '=' : '>=';
+          filters.push({ field, op, value: val, label: nextTok.toUpperCase() });
+          i += 2;
+          continue;
+        }
+      }
+      const inlineMatch = tok.match(/^([+\-><]=?|[=])(\d+\.?\d*)(.+)$/);
+      if (inlineMatch) {
+        const opRaw = inlineMatch[1];
+        const val = parseFloat(inlineMatch[2]);
+        const statName = inlineMatch[3].toLowerCase();
+        const field = statAliases[statName];
+        if (field) {
+          const op: '>=' | '<=' | '=' = (opRaw === '-' || opRaw === '<' || opRaw === '<=') ? '<=' : opRaw === '=' ? '=' : '>=';
+          filters.push({ field, op, value: val, label: statName.toUpperCase() });
+          i++;
+          continue;
+        }
+      }
+      nameWords.push(tokens[i]);
+      i++;
+    }
+    return { nameQuery: nameWords.join(' ').toLowerCase(), filters, winFilter };
+  };
 
   useEffect(() => { if (teamNames.length > 0 && !selectedTeam) setSelectedTeam(teamNames[0]); }, [teamNames]);
   useEffect(() => { if (playerNames.length > 0 && !selectedPlayer) setSelectedPlayer(playerNames[0]); }, [playerNames]);
@@ -3976,7 +4040,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                 const fg3P = g.fg3a > 0 ? ((g.fg3m / g.fg3a) * 100).toFixed(1) : '-';
                 return (
                   <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
-                    <td className={`py-1.5 px-1.5 ${subtext}`}>{g.date || '-'}</td>
+                    <td className={`py-1.5 px-1.5 ${subtext}`}>{formatDateDMY(g.date) || '-'}</td>
                     <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.side === 'home' ? 'vs' : '@'} {g.opponent || '?'}</td>
                     <td className={`py-1.5 px-1.5 font-semibold ${g.win ? 'text-green-500' : 'text-red-500'}`}>{g.win ? 'W' : 'L'} {g.team_score}-{g.opponent_score}</td>
                     <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{g.pts}</td>
@@ -4081,7 +4145,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                 <tbody>
                   {playerGames.map((g, i) => (
                     <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.game_date_iso || '-'}</td>
+                      <td className={`py-1.5 px-1.5 ${subtext}`}>{formatDateDMY(g.game_date_iso)}</td>
                       <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.side === 'home' ? 'vs' : '@'} {g.opponent_name || '?'}</td>
                       <td className={`py-1.5 px-1.5 font-semibold ${g.win_lose === 'win' ? 'text-green-500' : 'text-red-500'}`}>{g.win_lose === 'win' ? 'W' : 'L'} {g.team_score}-{g.opponent_score}</td>
                       <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{g.pts}</td>
@@ -4110,22 +4174,141 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
   };
 
   const renderSearchTab = () => {
-    const q = searchQuery.trim().toLowerCase();
-    const matchedGames = q ? allGames.filter(g =>
-      g.player_name?.toLowerCase().includes(q) || g.team_name?.toLowerCase().includes(q) || g.opponent_name?.toLowerCase().includes(q)
-    ).sort((a, b) => (b.game_date || 0) - (a.game_date || 0)) : [];
+    const raw = searchQuery.trim();
+    const parsed = raw ? parseSearchQuery(raw) : null;
+
+    const matchedGames = parsed ? allGames.filter(g => {
+      if (parsed.nameQuery) {
+        const haystack = `${g.player_name || ''} ${g.team_name || ''} ${g.opponent_name || ''}`.toLowerCase();
+        if (!parsed.nameQuery.split(' ').every(w => haystack.includes(w))) return false;
+      }
+      if (parsed.winFilter === 'win' && g.win_lose !== 'win') return false;
+      if (parsed.winFilter === 'loss' && g.win_lose !== 'loss') return false;
+      for (const f of parsed.filters) {
+        const val = (g as any)[f.field];
+        if (val === null || val === undefined) return false;
+        const num = typeof val === 'number' ? val : parseFloat(val);
+        if (isNaN(num)) return false;
+        if (f.op === '>=' && num < f.value) return false;
+        if (f.op === '<=' && num > f.value) return false;
+        if (f.op === '=' && num !== f.value) return false;
+      }
+      return true;
+    }).sort((a, b) => (b.game_date || 0) - (a.game_date || 0)) : [];
+
+    const activeFilters = parsed ? [...(parsed.filters.map(f => `${f.op === '>=' ? '≥' : f.op === '<=' ? '≤' : '='}${f.value} ${f.label}`)), ...(parsed.winFilter ? [parsed.winFilter === 'win' ? 'WIN' : 'LOSS'] : [])] : [];
+
+    const renderExpandedDetail = (g: any) => {
+      const statGroups = [
+        { title: 'Scoring', stats: [
+          { label: 'Points', value: g.pts },
+          { label: 'FG', value: `${g.fg_made ?? (g.pts2_made + g.pts3_made)}/${g.fg_all ?? (g.pts2_all + g.pts3_all)}`, pct: g.fg_per != null ? `${(g.fg_per * 100).toFixed(1)}%` : ((g.pts2_all + g.pts3_all) > 0 ? `${(((g.pts2_made + g.pts3_made) / (g.pts2_all + g.pts3_all)) * 100).toFixed(1)}%` : null) },
+          { label: '2PT', value: `${g.pts2_made}/${g.pts2_all}`, pct: g.pts2_per != null ? `${(g.pts2_per * 100).toFixed(1)}%` : (g.pts2_all > 0 ? `${((g.pts2_made / g.pts2_all) * 100).toFixed(1)}%` : null) },
+          { label: '3PT', value: `${g.pts3_made}/${g.pts3_all}`, pct: g.pts3_per != null ? `${(g.pts3_per * 100).toFixed(1)}%` : (g.pts3_all > 0 ? `${((g.pts3_made / g.pts3_all) * 100).toFixed(1)}%` : null) },
+          { label: 'FT', value: `${g.ft_made}/${g.ft_all}`, pct: g.ft_per != null ? `${(g.ft_per * 100).toFixed(1)}%` : (g.ft_all > 0 ? `${((g.ft_made / g.ft_all) * 100).toFixed(1)}%` : null) },
+          { label: 'eFG%', value: g.efg_per != null ? `${(g.efg_per * 100).toFixed(1)}%` : null },
+          { label: 'TS%', value: g.ts_per != null ? `${(g.ts_per * 100).toFixed(1)}%` : null },
+        ]},
+        { title: 'Rebounds & Passing', stats: [
+          { label: 'Total Reb', value: g.total_rebounds },
+          { label: 'Off Reb', value: g.offensive_rebound },
+          { label: 'Def Reb', value: g.defensive_rebound },
+          { label: 'Assists', value: g.assist },
+          { label: 'Turnovers', value: g.turnover },
+          { label: 'AST/TO', value: g.turnover > 0 ? (g.assist / g.turnover).toFixed(1) : g.assist > 0 ? '∞' : '-' },
+        ]},
+        { title: 'Defense & Other', stats: [
+          { label: 'Steals', value: g.steal },
+          { label: 'Blocks', value: g.block },
+          { label: 'Fouls', value: g.personal_foul },
+          { label: '+/-', value: g.plusminus_bs != null ? (g.plusminus_bs > 0 ? `+${g.plusminus_bs}` : g.plusminus_bs) : null },
+          { label: 'VAL', value: g.val },
+        ]},
+        { title: 'Advanced', stats: [
+          { label: 'Minutes', value: g.minutes_calc != null ? parseFloat(g.minutes_calc).toFixed(1) : null },
+          { label: 'USG%', value: g.usg_per != null ? `${(g.usg_per * 100).toFixed(1)}%` : null },
+          { label: 'OFF Rtg', value: g.off_rtg != null ? parseFloat(g.off_rtg).toFixed(1) : null },
+          { label: 'DEF Rtg', value: g.def_rtg != null ? parseFloat(g.def_rtg).toFixed(1) : null },
+          { label: 'NET Rtg', value: g.net_rtg != null ? parseFloat(g.net_rtg).toFixed(1) : null },
+          { label: 'Poss', value: g.poss != null ? parseFloat(g.poss).toFixed(0) : null },
+          { label: 'Starter', value: g.starter === 'starter' ? 'Yes' : g.starter === 'bench' ? 'No' : g.starter || '-' },
+        ]},
+      ];
+
+      return (
+        <tr>
+          <td colSpan={12} className="p-0">
+            <div className={`px-4 py-3 ${isDark ? 'bg-gray-800/60' : 'bg-gray-50'}`}>
+              <div className="flex flex-wrap items-center gap-3 mb-3">
+                <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{g.player_name}</span>
+                <span className={`text-xs ${subtext}`}>{g.team_name}</span>
+                <span className={`text-xs ${subtext}`}>{g.side === 'home' ? 'vs' : '@'} {g.opponent_name}</span>
+                <span className={`text-xs font-semibold ${g.win_lose === 'win' ? 'text-green-500' : 'text-red-500'}`}>
+                  {g.win_lose === 'win' ? 'W' : 'L'} {g.team_score}-{g.opponent_score}
+                </span>
+                <span className={`text-[10px] ${subtext}`}>{g.competition_name}</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {statGroups.map((group, gi) => (
+                  <div key={gi}>
+                    <h5 className={`text-[10px] font-bold uppercase tracking-wider mb-1.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{group.title}</h5>
+                    <div className="space-y-0.5">
+                      {group.stats.map((s, si) => (
+                        s.value !== null && s.value !== undefined ? (
+                          <div key={si} className="flex items-center justify-between text-[11px]">
+                            <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>{s.label}</span>
+                            <span className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                              {s.value}{(s as any).pct ? <span className={`ml-1 ${subtext}`}>({(s as any).pct})</span> : null}
+                            </span>
+                          </div>
+                        ) : null
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </td>
+        </tr>
+      );
+    };
 
     return (
       <div className="space-y-5">
         <div className="flex gap-2">
           <input
-            type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-            placeholder={t('Search by player name, team, or opponent...')}
+            type="text" value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setExpandedSearchGame(null); }}
+            placeholder="Scola +20 pts +5 ast win"
             className={`flex-1 text-xs py-2 px-3 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700 text-gray-200 placeholder-gray-500' : 'bg-white border-gray-200 text-gray-800 placeholder-gray-400'}`}
           />
         </div>
-        <div className={`text-[10px] ${subtext}`}>{t('Try: player name (e.g. "Bergamin") or team name (e.g. "Campus Varese")')}</div>
-        {q && matchedGames.length > 0 && (
+        <div className={`text-[10px] leading-relaxed ${subtext}`}>
+          {t('Type a name then add filters')}: <span className={`font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>+10 pts</span> (≥10 points), <span className={`font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>+5 ast</span> (≥5 assists), <span className={`font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>win</span> / <span className={`font-mono ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>loss</span>
+          <br />
+          {t('Stats')}: pts, reb, ast, stl, blk, to, val, min, oreb, dreb, pf, plusminus · {t('Click a row to expand full game details')}
+        </div>
+
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {parsed?.nameQuery && (
+              <span className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full ${isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
+                🔍 {parsed.nameQuery}
+              </span>
+            )}
+            {parsed?.filters.map((f, i) => (
+              <span key={i} className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full ${isDark ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-50 text-orange-600'}`}>
+                {f.op === '>=' ? '≥' : f.op === '<=' ? '≤' : '='}{f.value} {f.label}
+              </span>
+            ))}
+            {parsed?.winFilter && (
+              <span className={`inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full ${parsed.winFilter === 'win' ? (isDark ? 'bg-green-900/30 text-green-400' : 'bg-green-50 text-green-600') : (isDark ? 'bg-red-900/30 text-red-400' : 'bg-red-50 text-red-600')}`}>
+                {parsed.winFilter === 'win' ? 'WIN' : 'LOSS'}
+              </span>
+            )}
+          </div>
+        )}
+
+        {raw && matchedGames.length > 0 && (
           <div className={`${card} p-4`}>
             <h4 className={`text-sm font-bold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
               {matchedGames.length} {t('results')}
@@ -4134,34 +4317,42 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
               <table className="w-full text-xs">
                 <thead>
                   <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                    {['Date', 'Player', 'Team', 'Opponent', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'FG', '3P', 'FT'].map(h => (
+                    {['Date', 'Player', 'Team', 'Opponent', 'W/L', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'FG', 'VAL'].map(h => (
                       <th key={h} className={`py-2 px-1.5 text-left font-semibold ${subtext}`}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {matchedGames.slice(0, 50).map((g, i) => (
-                    <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.game_date_iso || '-'}</td>
-                      <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.player_name}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.team_name}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.opponent_name}</td>
-                      <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{g.pts}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.total_rebounds}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.assist}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.steal}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.block}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.pts2_made + g.pts3_made}/{g.pts2_all + g.pts3_all}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.pts3_made}/{g.pts3_all}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.ft_made}/{g.ft_all}</td>
-                    </tr>
+                  {matchedGames.slice(0, 100).map((g, i) => (
+                    <React.Fragment key={i}>
+                      <tr
+                        onClick={() => setExpandedSearchGame(expandedSearchGame === i ? null : i)}
+                        className={`border-b cursor-pointer transition-colors ${expandedSearchGame === i ? (isDark ? 'bg-gray-800/70' : 'bg-orange-50/50') : ''} ${isDark ? 'border-gray-800/50 hover:bg-gray-800/50' : 'border-gray-100 hover:bg-gray-50'}`}
+                      >
+                        <td className={`py-1.5 px-1.5 whitespace-nowrap ${subtext}`}>{formatDateDMY(g.game_date_iso)}</td>
+                        <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.player_name}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.team_name}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.opponent_name}</td>
+                        <td className={`py-1.5 px-1.5 font-semibold ${g.win_lose === 'win' ? 'text-green-500' : 'text-red-500'}`}>
+                          {g.win_lose === 'win' ? 'W' : 'L'} {g.team_score}-{g.opponent_score}
+                        </td>
+                        <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{g.pts}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.total_rebounds}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.assist}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.steal}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.block}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{(g.pts2_made + g.pts3_made)}/{(g.pts2_all + g.pts3_all)}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.val}</td>
+                      </tr>
+                      {expandedSearchGame === i && renderExpandedDetail(g)}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
         )}
-        {q && matchedGames.length === 0 && (
+        {raw && matchedGames.length === 0 && (
           <p className={`text-xs ${subtext}`}>{t('No results found')}</p>
         )}
       </div>
