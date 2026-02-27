@@ -1,0 +1,579 @@
+Column	Description
+id	
+Row identifier.
+
+schedule_id	
+Game identifier (FK to schedule).
+
+competition_id	
+Competition identifier (FK to competitions).
+
+competition_phase_id	
+Competition phase identifier (FK to competition_phases).
+
+player_id	
+Player identifier (FK to players).
+
+competition_team_id	
+Team identifier for the player (FK to competition_teams).
+
+competition_opponent_id	
+Opponent team identifier (FK to competition_teams).
+
+source_id	
+Stats/PBP provider identifier (FK to pbp_sources).
+
+starter	
+Starter indicator (starter vs bench).
+
+minute	
+Minutes played.
+
+seconds	
+Seconds played (extra precision).
+
+minute_bs	
+Minutes (boxscore/provider version).
+
+poss	
+Player possessions.
+
+poss_opp	
+Opponent possessions (while this player context applies).
+
+poss_team	
+Team possessions (context for the player).
+
+pace	
+Pace estimate (possessions per game/40 depending on system).
+
+usg_per	
+Usage percentage.
+
+off_rtg	
+Offensive rating (points per 100 possessions / per 100 plays depending on provider).
+
+def_rtg	
+Defensive rating.
+
+net_rtg	
+Net rating (off_rtg - def_rtg).
+
+pts	
+Points scored by player.
+
+pts_chance	
+Expected/scoring-chance points indicator (provider-specific).
+
+pts_opp	
+Points allowed/conceded while in this context (defensive points).
+
+pts_bs	
+Points (boxscore/provider version).
+
+exp_pts	
+Expected points based on shot quality model (provider-specific).
+
+freq	
+Frequency/share of possessions/attempts in this context.
+
+ppp	
+Points per possession.
+
+pts2_made	
+2PT made.
+
+pts2_made_bs	
+2PT made (boxscore/provider version).
+
+pts2_all	
+2PT attempted.
+
+pts2_all_bs	
+2PT attempted (boxscore/provider version).
+
+pts2_per	
+2PT percentage.
+
+pts2_per_bs	
+2PT percentage (boxscore/provider version).
+
+pts2_teammate_made	
+Teammate 2PT made attributed in this context (provider-specific).
+
+ast_received_p2_pts	
+2PT points from assists received.
+
+p2_pts_ast_given	
+2PT points created via assists given.
+
+pts3_made	
+3PT made.
+
+pts3_made_bs	
+3PT made (boxscore/provider version).
+
+pts3_all	
+3PT attempted.
+
+pts3_all_bs	
+3PT attempted (boxscore/provider version).
+
+pts3_per	
+3PT percentage.
+
+pts3_per_bs	
+3PT percentage (boxscore/provider version).
+
+pts3_teammate_made	
+Teammate 3PT made attributed in this context (provider-specific).
+
+ast_received_p3_pts	
+3PT points from assists received.
+
+p3_pts_ast_given	
+3PT points created via assists given.
+
+ft_made	
+Free throws made.
+
+ft_made_bs	
+Free throws made (boxscore/provider version).
+
+ft_all	
+Free throws attempted.
+
+ft_all_bs	
+Free throws attempted (boxscore/provider version).
+
+ft_per	
+Free throw percentage.
+
+ft_per_bs	
+Free throw percentage (boxscore/provider version).
+
+ft_exp_pts	
+Expected points from free throws (provider-specific).
+
+ft_freq	
+Free throw frequency (share/rate).
+
+ft_ratio	
+Free throw ratio/rate (provider-specific definition).
+
+ft_2p	
+Free throws generated from 2PT actions (count).
+
+ft_2p_opp	
+Opponent free throws from 2PT actions (count).
+
+ft_2p_chance	
+Chance/opportunity indicator for 2PT-derived free throws (provider-specific).
+
+ft_3p	
+Free throws generated from 3PT actions (count).
+
+ft_3p_opp	
+Opponent free throws from 3PT actions (count).
+
+ft_3p_chance	
+Chance/opportunity indicator for 3PT-derived free throws (provider-specific).
+
+ft_2p_miss	
+Missed free throws from 2PT-derived trips (count).
+
+ft_2p_miss_opp	
+Opponent missed free throws from 2PT-derived trips (count).
+
+ft_2p_miss_chance	
+Chance/opportunity for missed 2PT-derived free throws (provider-specific).
+
+ft_3p_miss	
+Missed free throws from 3PT-derived trips (count).
+
+ft_3p_miss_opp	
+Opponent missed free throws from 3PT-derived trips (count).
+
+ft_3p_miss_chance	
+Chance/opportunity for missed 3PT-derived free throws (provider-specific).
+
+ast_received_ft_pts	
+Free throw points resulting from assists received (provider-specific).
+
+ft_pts_ast_given	
+Free throw points created via assists given (provider-specific).
+
+fta_per_40	
+Free throw attempts per 40 minutes.
+
+fg_made	
+Field goals made (all FG).
+
+fg_made_opp	
+Opponent field goals made (allowed) in this context.
+
+fg_made_bs	
+Field goals made (boxscore/provider version).
+
+fg_all	
+Field goals attempted (all FG).
+
+fg_all_opp	
+Opponent field goals attempted in this context.
+
+fg_all_bs	
+Field goals attempted (boxscore/provider version).
+
+fg_per	
+Field goal percentage.
+
+fg_per_opp	
+Opponent field goal percentage in this context.
+
+fg_per_bs	
+Field goal percentage (boxscore/provider version).
+
+fg_made_chance	
+Chance/opportunity indicator for FG made (provider-specific).
+
+fg_all_chance	
+Chance/opportunity indicator for FG attempts (provider-specific).
+
+efg_per	
+Effective FG percentage.
+
+ts_per	
+True shooting percentage.
+
+rim_made	
+Rim attempts made (at rim).
+
+rim_all	
+Rim attempts (at rim).
+
+rim_exp_pts	
+Expected points at rim.
+
+rim_pts	
+Points scored at rim.
+
+rim_freq	
+Rim attempt frequency.
+
+paint_made	
+Paint attempts made.
+
+paint_all	
+Paint attempts.
+
+paint_exp_pts	
+Expected points in paint.
+
+paint_pts	
+Points scored in paint.
+
+paint_freq	
+Paint attempt frequency.
+
+np2_made	
+Non-paint 2PT made.
+
+np2_all	
+Non-paint 2PT attempts.
+
+np2_exp_pts	
+Expected points on non-paint 2PT.
+
+np2_pts	
+Points on non-paint 2PT.
+
+np2_freq	
+Non-paint 2PT frequency.
+
+c3_made	
+Corner 3 made.
+
+c3_all	
+Corner 3 attempts.
+
+c3_exp_pts	
+Expected points on corner 3s.
+
+c3_pts	
+Points on corner 3s.
+
+c3_freq	
+Corner 3 frequency.
+
+l3_made	
+Long/above-the-break 3 made.
+
+l3_all	
+Long/above-the-break 3 attempts.
+
+l3_exp_pts	
+Expected points on long 3s.
+
+l3_pts	
+Points on long 3s.
+
+l3_freq	
+Long 3 frequency.
+
+around_basket_made	
+Shots made around basket (close range bucket).
+
+around_basket_all	
+Shot attempts around basket (close range bucket).
+
+mid_pts2_left_made	
+Midrange 2PT made (left).
+
+mid_pts2_left_all	
+Midrange 2PT attempts (left).
+
+mid_pts2_center_made	
+Midrange 2PT made (center).
+
+mid_pts2_center_all	
+Midrange 2PT attempts (center).
+
+mid_pts2_right_made	
+Midrange 2PT made (right).
+
+mid_pts2_right_all	
+Midrange 2PT attempts (right).
+
+long_pts2_left_corner_made	
+Long 2PT made (left corner zone).
+
+long_pts2_left_corner_all	
+Long 2PT attempts (left corner zone).
+
+long_pts2_left_made	
+Long 2PT made (left).
+
+long_pts2_left_all	
+Long 2PT attempts (left).
+
+long_pts2_center_made	
+Long 2PT made (center).
+
+long_pts2_center_all	
+Long 2PT attempts (center).
+
+long_pts2_right_made	
+Long 2PT made (right).
+
+long_pts2_right_all	
+Long 2PT attempts (right).
+
+long_pts2_right_corner_made	
+Long 2PT made (right corner zone).
+
+long_pts2_right_corner_all	
+Long 2PT attempts (right corner zone).
+
+pts3_left_corner_made	
+3PT made (left corner).
+
+pts3_left_corner_all	
+3PT attempts (left corner).
+
+pts3_left_long_made	
+3PT made (left wing/long).
+
+pts3_left_long_all	
+3PT attempts (left wing/long).
+
+pts3_center_long_made	
+3PT made (top/center long).
+
+pts3_center_long_all	
+3PT attempts (top/center long).
+
+pts3_right_long_made	
+3PT made (right wing/long).
+
+pts3_right_long_all	
+3PT attempts (right wing/long).
+
+pts3_right_corner_made	
+3PT made (right corner).
+
+pts3_right_corner_all	
+3PT attempts (right corner).
+
+fullcourt_made	
+Full-court shots made.
+
+fullcourt_all	
+Full-court shots attempted.
+
+poss_fg_made	
+Possessions ending in made FG (provider-specific).
+
+poss_fg_all	
+Possessions ending in FG attempt (provider-specific).
+
+poss_exp_pts	
+Expected points per possession bucket (provider-specific).
+
+poss_pts	
+Points scored in the possession bucket (provider-specific).
+
+non_morey_fg_made	
+FG made outside 'Moreyball' zones (provider-defined).
+
+non_morey_fg_all	
+FG attempts outside 'Moreyball' zones.
+
+non_morey_exp_pts	
+Expected points outside 'Moreyball' zones.
+
+non_morey_pts	
+Points outside 'Moreyball' zones.
+
+non_morey_freq	
+Frequency of non-Morey attempts.
+
+non_morey_attempt_per	
+Share/percentage of non-Morey attempts.
+
+morey_fg_made	
+FG made in 'Moreyball' zones (rim + threes typically; provider-defined).
+
+morey_fg_all	
+FG attempts in 'Moreyball' zones.
+
+morey_exp_pts	
+Expected points in 'Moreyball' zones.
+
+morey_pts	
+Points in 'Moreyball' zones.
+
+morey_freq	
+Frequency of Morey attempts.
+
+morey_per	
+Morey percentage (provider-specific).
+
+morey_attempt_per	
+Share/percentage of Morey attempts.
+
+exp_pps	
+Expected points per shot (or per scoring attempt; provider-specific).
+
+offensive_rebound	
+Offensive rebounds.
+
+offensive_rebound_bs	
+Offensive rebounds (boxscore/provider version).
+
+offensive_rebound_per	
+Offensive rebound percentage/rate.
+
+offensive_rebound_per_chance	
+Chance-based offensive rebound rate (provider-specific).
+
+offensive_rebound_opp	
+Offensive rebounds allowed to opponent.
+
+offensive_rebound_chance	
+Offensive rebound chances/opportunities (provider-specific).
+
+offensive_rebound_teammate	
+Teammate offensive rebounds in this context (provider-specific).
+
+defensive_rebound	
+Defensive rebounds.
+
+defensive_rebound_bs	
+Defensive rebounds (boxscore/provider version).
+
+defensive_rebound_per	
+Defensive rebound percentage/rate.
+
+defensive_rebound_opp	
+Opponent defensive rebounds (in this context).
+
+defensive_rebound_chance	
+Defensive rebound chances/opportunities (provider-specific).
+
+defensive_rebound_teammate	
+Teammate defensive rebounds in this context (provider-specific).
+
+assist	
+Assists.
+
+assist_bs	
+Assists (boxscore/provider version).
+
+ast_per	
+Assist percentage/rate.
+
+turnover	
+Turnovers.
+
+turnover_opp	
+Opponent turnovers forced/committed in this context.
+
+turnover_bs	
+Turnovers (boxscore/provider version).
+
+turnover_chance	
+Turnover chances/opportunities (provider-specific).
+
+to_per	
+Turnover percentage/rate.
+
+steal	
+Steals.
+
+steal_bs	
+Steals (boxscore/provider version).
+
+steal_chance	
+Steal chances/opportunities (provider-specific).
+
+block	
+Blocks.
+
+block_bs	
+Blocks (boxscore/provider version).
+
+block_chance	
+Block chances/opportunities (provider-specific).
+
+personal_foul	
+Personal fouls committed.
+
+personal_foul_bs	
+Personal fouls (boxscore/provider version).
+
+personal_foul_chance	
+Foul chances/opportunities (provider-specific).
+
+plusminus_bs	
+Plus/minus (boxscore/provider version).
+
+kills	
+Kills (provider-specific impact/stop metric).
+
+win_lose	
+Game result indicator (win/lose).
+
+side	
+Home/away indicator.
+
+val	
+Player evaluation value (provider-specific).
+
+jersey	
+(no explanation yet)
+
+created_at	
+Created timestamp.
+
+updated_at	
+Updated timestamp.
