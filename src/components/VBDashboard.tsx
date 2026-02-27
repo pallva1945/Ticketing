@@ -4423,8 +4423,8 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                         <td className={`py-1.5 px-1.5 ${subtext}`}>{g.ft_made}/{g.ft_all}</td>
                         <td className={`py-1.5 px-1.5 ${subtext}`}>{g.val}</td>
                         <td className={`py-1.5 px-1.5 ${subtext}`}>{g.ppp != null ? parseFloat(g.ppp).toFixed(2) : '—'}</td>
-                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.efg_per != null ? `${(g.efg_per * 100).toFixed(1)}` : (gEfg ?? '—')}</td>
-                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.ts_per != null ? `${(g.ts_per * 100).toFixed(1)}` : (gTs ?? '—')}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.efg_per != null ? parseFloat(g.efg_per).toFixed(1) : (gEfg ?? '—')}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.ts_per != null ? parseFloat(g.ts_per).toFixed(1) : (gTs ?? '—')}</td>
                         <td className={`py-1.5 px-1.5 ${subtext}`}>{gAstTo}</td>
                       </tr>
                     );
@@ -4472,12 +4472,12 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
       const statGroups = [
         { title: 'Scoring', stats: [
           { label: 'Points', value: g.pts },
-          { label: 'FG', value: `${g.fg_made ?? (g.pts2_made + g.pts3_made)}/${g.fg_all ?? (g.pts2_all + g.pts3_all)}`, pct: g.fg_per != null ? `${(g.fg_per * 100).toFixed(1)}%` : ((g.pts2_all + g.pts3_all) > 0 ? `${(((g.pts2_made + g.pts3_made) / (g.pts2_all + g.pts3_all)) * 100).toFixed(1)}%` : null) },
-          { label: '2PT', value: `${g.pts2_made}/${g.pts2_all}`, pct: g.pts2_per != null ? `${(g.pts2_per * 100).toFixed(1)}%` : (g.pts2_all > 0 ? `${((g.pts2_made / g.pts2_all) * 100).toFixed(1)}%` : null) },
-          { label: '3PT', value: `${g.pts3_made}/${g.pts3_all}`, pct: g.pts3_per != null ? `${(g.pts3_per * 100).toFixed(1)}%` : (g.pts3_all > 0 ? `${((g.pts3_made / g.pts3_all) * 100).toFixed(1)}%` : null) },
-          { label: 'FT', value: `${g.ft_made}/${g.ft_all}`, pct: g.ft_per != null ? `${(g.ft_per * 100).toFixed(1)}%` : (g.ft_all > 0 ? `${((g.ft_made / g.ft_all) * 100).toFixed(1)}%` : null) },
-          { label: 'eFG%', value: g.efg_per != null ? `${(g.efg_per * 100).toFixed(1)}%` : null },
-          { label: 'TS%', value: g.ts_per != null ? `${(g.ts_per * 100).toFixed(1)}%` : null },
+          { label: 'FG', value: `${g.fg_made ?? (g.pts2_made + g.pts3_made)}/${g.fg_all ?? (g.pts2_all + g.pts3_all)}`, pct: g.fg_per != null ? `${parseFloat(g.fg_per).toFixed(1)}%` : ((g.pts2_all + g.pts3_all) > 0 ? `${(((g.pts2_made + g.pts3_made) / (g.pts2_all + g.pts3_all)) * 100).toFixed(1)}%` : null) },
+          { label: '2PT', value: `${g.pts2_made}/${g.pts2_all}`, pct: g.pts2_per != null ? `${parseFloat(g.pts2_per).toFixed(1)}%` : (g.pts2_all > 0 ? `${((g.pts2_made / g.pts2_all) * 100).toFixed(1)}%` : null) },
+          { label: '3PT', value: `${g.pts3_made}/${g.pts3_all}`, pct: g.pts3_per != null ? `${parseFloat(g.pts3_per).toFixed(1)}%` : (g.pts3_all > 0 ? `${((g.pts3_made / g.pts3_all) * 100).toFixed(1)}%` : null) },
+          { label: 'FT', value: `${g.ft_made}/${g.ft_all}`, pct: g.ft_per != null ? `${parseFloat(g.ft_per).toFixed(1)}%` : (g.ft_all > 0 ? `${((g.ft_made / g.ft_all) * 100).toFixed(1)}%` : null) },
+          { label: 'eFG%', value: g.efg_per != null ? `${parseFloat(g.efg_per).toFixed(1)}%` : null },
+          { label: 'TS%', value: g.ts_per != null ? `${parseFloat(g.ts_per).toFixed(1)}%` : null },
         ]},
         { title: 'Rebounds & Passing', stats: [
           { label: 'Total Reb', value: g.total_rebounds },
@@ -4496,7 +4496,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         ]},
         { title: 'Advanced', stats: [
           { label: 'Minutes', value: g.minutes_calc != null ? parseFloat(g.minutes_calc).toFixed(1) : null },
-          { label: 'USG%', value: g.usg_per != null ? `${(g.usg_per * 100).toFixed(1)}%` : null },
+          { label: 'USG%', value: g.usg_per != null && g.usg_per > 0 ? `${parseFloat(g.usg_per).toFixed(1)}%` : null },
           { label: 'OFF Rtg', value: g.off_rtg != null ? parseFloat(g.off_rtg).toFixed(1) : null },
           { label: 'DEF Rtg', value: g.def_rtg != null ? parseFloat(g.def_rtg).toFixed(1) : null },
           { label: 'NET Rtg', value: g.net_rtg != null ? parseFloat(g.net_rtg).toFixed(1) : null },
