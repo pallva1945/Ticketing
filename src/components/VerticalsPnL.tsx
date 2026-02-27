@@ -5,6 +5,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
 import type { CostData } from './CostCenter';
+import { parseBopsSheetData } from './BOpsDashboard';
+import { parseVenueOpsSheetData } from './VenueOpsDashboard';
 
 const formatCurrency = (val: number) => `€${Math.abs(val).toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 const formatCurrencySign = (val: number) => val < 0 ? `(${formatCurrency(val)})` : formatCurrency(val);
@@ -44,6 +46,8 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
   const { language, toggleLanguage, t } = useLanguage();
   const isDark = theme === 'dark';
   const [costData, setCostData] = useState<CostData | null>(null);
+  const [bopsYTD, setBopsYTD] = useState(173508);
+  const [venueOpsYTD, setVenueOpsYTD] = useState(85486);
 
   useEffect(() => {
     fetch('/api/costs/data')
@@ -52,13 +56,37 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
         if (res.success && res.data) setCostData(res.data);
       })
       .catch(() => {});
+    fetch('/api/revenue/sheet-data/bops')
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && res.data) {
+          const parsed = parseBopsSheetData(res.data);
+          if (parsed) {
+            const ytd = parsed.monthlyRevenue.reduce((s, item) => s + item.values.reduce((a, b) => a + b, 0), 0);
+            if (ytd > 0) setBopsYTD(ytd);
+          }
+        }
+      })
+      .catch(() => {});
+    fetch('/api/revenue/sheet-data/venue_ops')
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && res.data) {
+          const parsed = parseVenueOpsSheetData(res.data);
+          if (parsed) {
+            const ytd = parsed.monthlyRevenue.reduce((s, item) => s + item.values.reduce((a, b) => a + b, 0), 0);
+            if (ytd > 0) setVenueOpsYTD(ytd);
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const hasCsv = !!costData;
   const dataMonthCount = hasCsv ? (Object.values(costData).find(v => v?.[0]))?.[0]?.values.length || 6 : 6;
   const period = periodLabel(dataMonthCount);
 
-  const dynGamedayCos = hasCsv && costData.gameday ? Math.round(sectionTotal(costData.gameday)) + BOPS_COS : 206015 + BOPS_COS;
+  const dynGamedayCos = hasCsv && costData.gameday ? Math.round(sectionTotal(costData.gameday)) : 206015;
   const dynSponsorshipCos = hasCsv && costData.sponsorship ? Math.round(sectionTotal(costData.sponsorship)) : 30854;
   const dynMerchCos = hasCsv && costData.merchandising ? Math.round(sectionTotal(costData.merchandising)) : 81849;
   const dynVenueOpsCos = hasCsv && costData.venue_ops ? Math.round(sectionTotal(costData.venue_ops)) : 49877;
@@ -77,11 +105,12 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
   const TOTAL_SGA = sharedSga + VB_SGA;
 
   const VERTICALS: Vertical[] = [
-    { id: 'gameday', labelKey: 'GameDay', color: '#ef4444', sales: 1177289 + 173508, cos: dynGamedayCos, sgaPct: 0.45, sgaFixed: null },
-    { id: 'sponsorship', labelKey: 'Sponsorship', color: '#f97316', sales: 1097254, cos: dynSponsorshipCos, sgaPct: 0.45, sgaFixed: null },
+    { id: 'gameday', labelKey: 'GameDay', color: '#ef4444', sales: 1177289, cos: dynGamedayCos, sgaPct: 0.40, sgaFixed: null },
+    { id: 'sponsorship', labelKey: 'Sponsorship', color: '#f97316', sales: 1097254, cos: dynSponsorshipCos, sgaPct: 0.40, sgaFixed: null },
+    { id: 'bops', labelKey: 'BOps', color: '#10b981', sales: bopsYTD, cos: BOPS_COS, sgaPct: 0.10, sgaFixed: null },
     { id: 'merchandising', labelKey: 'Merchandising', color: '#3b82f6', sales: 91742, cos: dynMerchCos, sgaPct: 0.05, sgaFixed: null },
-    { id: 'venue_ops', labelKey: 'Venue Ops', color: '#8b5cf6', sales: 85486, cos: dynVenueOpsCos, sgaPct: 0.05, sgaFixed: null },
-    { id: 'varese_basketball', labelKey: 'Varese Basketball', color: '#10b981', sales: 386020, cos: 260635, sgaPct: null, sgaFixed: VB_SGA },
+    { id: 'venue_ops', labelKey: 'Venue Ops', color: '#8b5cf6', sales: venueOpsYTD, cos: dynVenueOpsCos, sgaPct: 0.05, sgaFixed: null },
+    { id: 'varese_basketball', labelKey: 'Varese Basketball', color: '#14b8a6', sales: 386020, cos: 260635, sgaPct: null, sgaFixed: VB_SGA },
   ];
 
   const computed = (() => {
@@ -172,7 +201,7 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
             <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-1">{t('Total Sales')}</div>
             <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(totalSales)}</div>
-            <div className="text-[10px] text-gray-400 mt-1">5 {t('verticals')}</div>
+            <div className="text-[10px] text-gray-400 mt-1">6 {t('verticals')}</div>
           </div>
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">
             <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-1">{t('Gross Profit')}</div>
