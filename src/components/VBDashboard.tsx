@@ -4181,7 +4181,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                     <td className={`py-1.5 px-1.5 ${subtext}`}>{ftP}%</td>
                     <td className={`py-1.5 px-1.5 ${subtext}`}>{g.off_rtg ? g.off_rtg.toFixed(1) : '-'}</td>
                     <td className={`py-1.5 px-1.5 ${subtext}`}>{g.def_rtg ? g.def_rtg.toFixed(1) : '-'}</td>
-                    <td className={`py-1.5 px-1.5 ${subtext}`}>{g.pace || '-'}</td>
+                    <td className={`py-1.5 px-1.5 ${subtext}`}>{g.pace ? Math.round(g.pace) : '-'}</td>
                   </tr>
                 );
               })}
