@@ -3953,7 +3953,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
     );
 
     const totals = teamGames.reduce((acc, g) => {
-      acc.pts += g.team_score || g.pts; acc.reb += g.total_rebounds; acc.ast += g.assist;
+      acc.pts += g.team_score; acc.reb += g.total_rebounds; acc.ast += g.assist;
       acc.stl += g.steal; acc.blk += g.block; acc.to += g.turnover;
       acc.fg_made += g.fg_made; acc.fg_all += g.fg_all;
       acc.fg3m += g.pts3_made; acc.fg3a += g.pts3_all;
@@ -4001,7 +4001,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
           <h4 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Scoring by Game')}</h4>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={teamGames.slice().reverse().slice(-15).map(g => ({
-              name: displayTeamName(g.opponent_name).substring(0, 8), pts: g.pts, won: g.win_lose === 'win'
+              name: displayTeamName(g.opponent_name).substring(0, 8), pts: g.team_score, won: g.win_lose === 'win'
             }))}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#333' : '#eee'} />
               <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#999' : '#666' }} angle={-30} textAnchor="end" height={50} />
@@ -4069,7 +4069,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                     <td className={`py-1.5 px-1.5 whitespace-nowrap ${subtext}`}>{formatDateDMY(g.game_date_iso)}</td>
                     <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.side === 'home' ? 'vs' : '@'} {displayTeamName(g.opponent_name)}</td>
                     <td className={`py-1.5 px-1.5 font-semibold ${isWin ? 'text-green-500' : 'text-red-500'}`}>{isWin ? 'W' : 'L'} {g.team_score}-{g.opponent_score}</td>
-                    <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{g.pts}</td>
+                    <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{g.team_score}</td>
                     <td className={`py-1.5 px-1.5 ${subtext}`}>{g.total_rebounds}</td>
                     <td className={`py-1.5 px-1.5 ${subtext}`}>{g.assist}</td>
                     <td className={`py-1.5 px-1.5 ${subtext}`}>{g.steal}</td>
