@@ -3973,22 +3973,22 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
       acc.poss += g.poss || 0;
       acc.efg_sum += g.efg_per || 0;
       acc.efg_count += g.efg_per != null ? 1 : 0;
+      if (g.offensive_rebound_per != null) { acc.oreb_per_sum += g.offensive_rebound_per; acc.oreb_per_count++; }
+      if (g.defensive_rebound_per != null) { acc.dreb_per_sum += g.defensive_rebound_per; acc.dreb_per_count++; }
+      if (g.turnover_per != null) { acc.tov_per_sum += g.turnover_per; acc.tov_per_count++; }
+      if (g.fta_per_40 != null) { acc.fta40_sum += g.fta_per_40; acc.fta40_count++; }
 
       const oppKey = `${g.game_date_iso}_${g.opponent_name}`;
       const opp = oppLookup.get(oppKey);
       if (opp) {
         acc.opp_efg_sum += opp.efg_per || 0;
         acc.opp_efg_count += opp.efg_per != null ? 1 : 0;
-        acc.opp_oreb += opp.offensive_rebound || 0;
-        acc.opp_dreb += opp.defensive_rebound || 0;
-        acc.opp_to += opp.turnover || 0;
-        acc.opp_poss += opp.poss || 0;
-        acc.opp_ftm += opp.ft_made || 0;
-        acc.opp_fga += opp.fg_all || 0;
+        if (opp.turnover_per != null) { acc.opp_tov_per_sum += opp.turnover_per; acc.opp_tov_per_count++; }
+        if (opp.fta_per_40 != null) { acc.opp_fta40_sum += opp.fta_per_40; acc.opp_fta40_count++; }
         acc.opp_matched++;
       }
       return acc;
-    }, { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fg_made: 0, fg_all: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, pf: 0, ptsAllowed: 0, off_rtg: 0, def_rtg: 0, net_rtg: 0, pace: 0, poss: 0, efg_sum: 0, efg_count: 0, opp_efg_sum: 0, opp_efg_count: 0, opp_oreb: 0, opp_dreb: 0, opp_to: 0, opp_poss: 0, opp_ftm: 0, opp_fga: 0, opp_matched: 0 });
+    }, { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fg_made: 0, fg_all: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, pf: 0, ptsAllowed: 0, off_rtg: 0, def_rtg: 0, net_rtg: 0, pace: 0, poss: 0, efg_sum: 0, efg_count: 0, oreb_per_sum: 0, oreb_per_count: 0, dreb_per_sum: 0, dreb_per_count: 0, tov_per_sum: 0, tov_per_count: 0, fta40_sum: 0, fta40_count: 0, opp_efg_sum: 0, opp_efg_count: 0, opp_tov_per_sum: 0, opp_tov_per_count: 0, opp_fta40_sum: 0, opp_fta40_count: 0, opp_matched: 0 });
     const wins = teamGames.filter(g => g.win_lose === 'win').length;
     const losses = gp - wins;
 
@@ -3997,16 +3997,16 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
     const avgDefRtg = (totals.def_rtg / gp).toFixed(1);
     const avgPace = (totals.pace / gp).toFixed(1);
 
-    const efgPct = totals.efg_count > 0 ? (totals.efg_sum / totals.efg_count).toFixed(1) : '-';
-    const orebPct = totals.poss > 0 ? ((totals.oreb / totals.poss) * 100).toFixed(1) : '-';
-    const tovPct = totals.poss > 0 ? ((totals.to / totals.poss) * 100).toFixed(1) : '-';
-    const ftr = totals.fg_all > 0 ? ((totals.ftm / totals.fg_all) * 100).toFixed(1) : '-';
+    const avgEfg = totals.efg_count > 0 ? (totals.efg_sum / totals.efg_count).toFixed(1) : '-';
+    const avgOrebPct = totals.oreb_per_count > 0 ? (totals.oreb_per_sum / totals.oreb_per_count).toFixed(1) : '-';
+    const avgTovPct = totals.tov_per_count > 0 ? (totals.tov_per_sum / totals.tov_per_count).toFixed(1) : '-';
+    const avgFtaPer40 = totals.fta40_count > 0 ? (totals.fta40_sum / totals.fta40_count).toFixed(1) : '-';
 
     const hasOpp = totals.opp_matched > 0;
     const oppEfgPct = hasOpp && totals.opp_efg_count > 0 ? (totals.opp_efg_sum / totals.opp_efg_count).toFixed(1) : '-';
-    const drebPct = hasOpp && (totals.dreb + totals.opp_oreb) > 0 ? ((totals.dreb / (totals.dreb + totals.opp_oreb)) * 100).toFixed(1) : (totals.poss > 0 ? ((totals.dreb / totals.poss) * 100).toFixed(1) : '-');
-    const oppTovPct = hasOpp && totals.opp_poss > 0 ? ((totals.opp_to / totals.opp_poss) * 100).toFixed(1) : '-';
-    const oppFtr = hasOpp && totals.opp_fga > 0 ? ((totals.opp_ftm / totals.opp_fga) * 100).toFixed(1) : '-';
+    const avgDrebPct = totals.dreb_per_count > 0 ? (totals.dreb_per_sum / totals.dreb_per_count).toFixed(1) : '-';
+    const oppTovPct = hasOpp && totals.opp_tov_per_count > 0 ? (totals.opp_tov_per_sum / totals.opp_tov_per_count).toFixed(1) : '-';
+    const oppFtaPer40 = hasOpp && totals.opp_fta40_count > 0 ? (totals.opp_fta40_sum / totals.opp_fta40_count).toFixed(1) : '-';
 
     return (
       <div className="space-y-5">
@@ -4020,17 +4020,17 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         </div>
 
         <div className="grid grid-cols-4 gap-3">
-          <StatCard label="eFG%" value={`${efgPct}%`} color="green" />
-          <StatCard label="OREB%" value={`${orebPct}%`} color="blue" />
-          <StatCard label="TOV%" value={`${tovPct}%`} color="orange" />
-          <StatCard label="FTR" value={`${ftr}%`} color="purple" />
+          <StatCard label="eFG%" value={avgEfg !== '-' ? `${avgEfg}%` : '-'} color="green" />
+          <StatCard label="OREB%" value={avgOrebPct !== '-' ? `${avgOrebPct}%` : '-'} color="blue" />
+          <StatCard label="TOV%" value={avgTovPct !== '-' ? `${avgTovPct}%` : '-'} color="orange" />
+          <StatCard label="FT/40" value={avgFtaPer40} color="purple" />
         </div>
 
         <div className="grid grid-cols-4 gap-3">
           <StatCard label="Opp eFG%" value={oppEfgPct !== '-' ? `${oppEfgPct}%` : '-'} sub={hasOpp ? `${totals.opp_matched} ${t('games')}` : t('No data')} color="red" />
-          <StatCard label="DREB%" value={`${drebPct}%`} color="blue" />
+          <StatCard label="DREB%" value={avgDrebPct !== '-' ? `${avgDrebPct}%` : '-'} color="blue" />
           <StatCard label="Opp TOV%" value={oppTovPct !== '-' ? `${oppTovPct}%` : '-'} sub={hasOpp ? `${totals.opp_matched} ${t('games')}` : t('No data')} color="green" />
-          <StatCard label="Opp FTR" value={oppFtr !== '-' ? `${oppFtr}%` : '-'} sub={hasOpp ? `${totals.opp_matched} ${t('games')}` : t('No data')} color="red" />
+          <StatCard label="Opp FT/40" value={oppFtaPer40 !== '-' ? oppFtaPer40 : '-'} sub={hasOpp ? `${totals.opp_matched} ${t('games')}` : t('No data')} color="red" />
         </div>
 
         <div className={`${card} p-4`}>
