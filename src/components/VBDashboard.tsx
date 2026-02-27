@@ -3953,17 +3953,18 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
     );
 
     const totals = teamGames.reduce((acc, g) => {
-      acc.pts += g.pts; acc.reb += g.total_rebounds; acc.ast += g.assist;
+      acc.pts += g.team_score || g.pts; acc.reb += g.total_rebounds; acc.ast += g.assist;
       acc.stl += g.steal; acc.blk += g.block; acc.to += g.turnover;
       acc.fg_made += g.fg_made; acc.fg_all += g.fg_all;
       acc.fg3m += g.pts3_made; acc.fg3a += g.pts3_all;
       acc.ftm += g.ft_made; acc.fta += g.ft_all;
       acc.oreb += g.offensive_rebound; acc.dreb += g.defensive_rebound;
       acc.pf += g.personal_foul;
+      acc.ptsAllowed += g.opponent_score || 0;
       acc.off_rtg += g.off_rtg || 0; acc.def_rtg += g.def_rtg || 0;
       acc.pace += g.pace || 0;
       return acc;
-    }, { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fg_made: 0, fg_all: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, pf: 0, off_rtg: 0, def_rtg: 0, pace: 0 });
+    }, { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fg_made: 0, fg_all: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, pf: 0, ptsAllowed: 0, off_rtg: 0, def_rtg: 0, pace: 0 });
     const wins = teamGames.filter(g => g.win_lose === 'win').length;
     const losses = gp - wins;
     const ppg = (totals.pts / gp).toFixed(1);
