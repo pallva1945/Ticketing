@@ -4272,14 +4272,47 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         a.fg3m += g.pts3_made; a.fg3a += g.pts3_all;
         a.ftm += g.ft_made; a.fta += g.ft_all;
         a.val += g.val; a.stl += g.steal; a.blk += g.block;
+        a.oreb += g.offensive_rebound; a.dreb += g.defensive_rebound;
+        a.to += g.turnover;
+        if (g.ppp != null && g.poss != null && g.poss > 0) { a.ppp_pts += g.pts; a.ppp_poss += g.poss; }
+        else if (g.ppp != null) { a.ppp_sum += g.ppp; a.ppp_count++; }
+        if (g.fta_per_40 != null) { a.ft40_sum += g.fta_per_40; a.ft40_count++; }
+        if (g.minutes_calc != null) {
+          const mc = String(g.minutes_calc);
+          const minVal = mc.includes(':') ? (() => { const [mm, ss] = mc.split(':').map(Number); return mm + (ss || 0) / 60; })() : parseFloat(mc);
+          if (!isNaN(minVal)) { a.min_sum += minVal; a.min_count++; }
+        }
         return a;
-      }, { pts: 0, reb: 0, ast: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, val: 0, stl: 0, blk: 0 });
+      }, { pts: 0, reb: 0, ast: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, val: 0, stl: 0, blk: 0, oreb: 0, dreb: 0, to: 0, ppp_pts: 0, ppp_poss: 0, ppp_sum: 0, ppp_count: 0, ft40_sum: 0, ft40_count: 0, min_sum: 0, min_count: 0 });
+      const fgm = t.fg2m + t.fg3m;
+      const fga = t.fg2a + t.fg3a;
+      const efg = fga > 0 ? ((fgm + 0.5 * t.fg3m) / fga) * 100 : null;
+      const ts = (2 * (fga + 0.44 * t.fta)) > 0 ? (t.pts / (2 * (fga + 0.44 * t.fta))) * 100 : null;
+      const ppp = t.ppp_poss > 0 ? t.ppp_pts / t.ppp_poss : (t.ppp_count > 0 ? t.ppp_sum / t.ppp_count : null);
+      const hasMin = t.min_count > 0;
+      const totalMin = t.min_sum;
       return {
         ppg: (t.pts / gp).toFixed(1),
         rpg: (t.reb / gp).toFixed(1),
+        apg: (t.ast / gp).toFixed(1),
         fg3_pct: t.fg3a > 0 ? ((t.fg3m / t.fg3a) * 100).toFixed(1) : '0.0',
         ft_pct: t.fta > 0 ? ((t.ftm / t.fta) * 100).toFixed(1) : '0.0',
-        val: (t.val / gp).toFixed(1), gp
+        val: (t.val / gp).toFixed(1), gp,
+        ppp: ppp !== null ? ppp.toFixed(2) : null,
+        efg: efg !== null ? efg.toFixed(1) : null,
+        ts: ts !== null ? ts.toFixed(1) : null,
+        ft40: t.ft40_count > 0 ? (t.ft40_sum / t.ft40_count).toFixed(1) : null,
+        dreb_pg: (t.dreb / gp).toFixed(1),
+        oreb_pg: (t.oreb / gp).toFixed(1),
+        blk_pg: (t.blk / gp).toFixed(1),
+        stl_pg: (t.stl / gp).toFixed(1),
+        ast_pg: (t.ast / gp).toFixed(1),
+        ast_to: t.to > 0 ? (t.ast / t.to).toFixed(2) : (t.ast > 0 ? '∞' : '0.00'),
+        dreb_pm: hasMin && totalMin > 0 ? (t.dreb / totalMin).toFixed(2) : null,
+        oreb_pm: hasMin && totalMin > 0 ? (t.oreb / totalMin).toFixed(2) : null,
+        blk_pm: hasMin && totalMin > 0 ? (t.blk / totalMin).toFixed(2) : null,
+        stl_pm: hasMin && totalMin > 0 ? (t.stl / totalMin).toFixed(2) : null,
+        ast_pm: hasMin && totalMin > 0 ? (t.ast / totalMin).toFixed(2) : null,
       };
     })() : null;
 
@@ -4316,9 +4349,38 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
           <>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <StatCard label="PPG" value={totalRow.ppg} sub={`${totalRow.gp} ${t('games')}`} color="orange" />
-              <StatCard label="3P%" value={`${totalRow.fg3_pct}%`} color="green" />
-              <StatCard label="FT%" value={`${totalRow.ft_pct}%`} color="blue" />
+              <StatCard label="RPG" value={totalRow.rpg} color="sky" />
+              <StatCard label="APG" value={totalRow.apg} color="green" />
               <StatCard label="VAL" value={totalRow.val} color="purple" />
+            </div>
+
+            <div className={`${card} p-4`}>
+              <h4 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Advanced Stats')}</h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-2">
+                {[
+                  { label: 'PPP', value: totalRow.ppp, desc: 'Points Per Possession' },
+                  { label: 'eFG%', value: totalRow.efg ? `${totalRow.efg}%` : null, desc: 'Effective FG%' },
+                  { label: 'TS%', value: totalRow.ts ? `${totalRow.ts}%` : null, desc: 'True Shooting%' },
+                  { label: 'FT/40', value: totalRow.ft40, desc: 'FT per 40 min' },
+                  { label: '3P%', value: `${totalRow.fg3_pct}%`, desc: '3-Point %' },
+                  { label: 'FT%', value: `${totalRow.ft_pct}%`, desc: 'Free Throw %' },
+                  { label: 'AST/TO', value: totalRow.ast_to, desc: 'Assist to Turnover' },
+                  { label: 'DREB/G', value: totalRow.dreb_pg, desc: 'Def Reb per Game' },
+                  { label: 'OREB/G', value: totalRow.oreb_pg, desc: 'Off Reb per Game' },
+                  { label: 'STL/G', value: totalRow.stl_pg, desc: 'Steals per Game' },
+                  { label: 'BLK/G', value: totalRow.blk_pg, desc: 'Blocks per Game' },
+                  ...(totalRow.dreb_pm != null ? [{ label: 'DREB/Min', value: totalRow.dreb_pm, desc: 'Def Reb per Minute' }] : []),
+                  ...(totalRow.oreb_pm != null ? [{ label: 'OREB/Min', value: totalRow.oreb_pm, desc: 'Off Reb per Minute' }] : []),
+                  ...(totalRow.stl_pm != null ? [{ label: 'STL/Min', value: totalRow.stl_pm, desc: 'Steals per Minute' }] : []),
+                  ...(totalRow.blk_pm != null ? [{ label: 'BLK/Min', value: totalRow.blk_pm, desc: 'Blocks per Minute' }] : []),
+                  ...(totalRow.ast_pm != null ? [{ label: 'AST/Min', value: totalRow.ast_pm, desc: 'Assists per Minute' }] : []),
+                ].map((s, i) => (
+                  <div key={i} className="flex items-center justify-between py-1">
+                    <span className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`} title={s.desc}>{s.label}</span>
+                    <span className={`text-sm font-semibold tabular-nums ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{s.value ?? '—'}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className={`${card} p-4`}>
@@ -4341,28 +4403,40 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
               <table className="w-full text-xs">
                 <thead>
                   <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                    {['Date', 'Opponent', 'Result', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'FG', '3P', 'FT', 'VAL'].map(h => (
-                      <th key={h} className={`py-2 px-1.5 text-left font-semibold ${subtext}`}>{h}</th>
+                    {['Date', 'Opponent', 'Result', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TO', 'FG', '3P', 'FT', 'VAL', 'PPP', 'eFG%', 'TS%', 'AST/TO'].map(h => (
+                      <th key={h} className={`py-2 px-1.5 text-left font-semibold whitespace-nowrap ${subtext}`}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {playerGames.map((g, i) => (
-                    <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{formatDateDMY(g.game_date_iso)}</td>
-                      <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.side === 'home' ? 'vs' : '@'} {displayTeamName(g.opponent_name)}</td>
-                      <td className={`py-1.5 px-1.5 font-semibold ${g.win_lose === 'win' ? 'text-green-500' : 'text-red-500'}`}>{g.win_lose === 'win' ? 'W' : 'L'} {g.team_score}-{g.opponent_score}</td>
-                      <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{g.pts}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.total_rebounds}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.assist}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.steal}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.block}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.pts2_made + g.pts3_made}/{g.pts2_all + g.pts3_all}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.pts3_made}/{g.pts3_all}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.ft_made}/{g.ft_all}</td>
-                      <td className={`py-1.5 px-1.5 ${subtext}`}>{g.val}</td>
-                    </tr>
-                  ))}
+                  {playerGames.map((g, i) => {
+                    const gFga = g.pts2_all + g.pts3_all;
+                    const gFgm = g.pts2_made + g.pts3_made;
+                    const gEfg = gFga > 0 ? (((gFgm + 0.5 * g.pts3_made) / gFga) * 100).toFixed(1) : null;
+                    const gTs = (2 * (gFga + 0.44 * g.ft_all)) > 0 ? ((g.pts / (2 * (gFga + 0.44 * g.ft_all))) * 100).toFixed(1) : null;
+                    const gAstTo = g.turnover > 0 ? (g.assist / g.turnover).toFixed(1) : (g.assist > 0 ? '∞' : '—');
+                    return (
+                      <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
+                        <td className={`py-1.5 px-1.5 whitespace-nowrap ${subtext}`}>{formatDateDMY(g.game_date_iso)}</td>
+                        <td className={`py-1.5 px-1.5 font-medium whitespace-nowrap ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.side === 'home' ? 'vs' : '@'} {displayTeamName(g.opponent_name)}</td>
+                        <td className={`py-1.5 px-1.5 font-semibold whitespace-nowrap ${g.win_lose === 'win' ? 'text-green-500' : 'text-red-500'}`}>{g.win_lose === 'win' ? 'W' : 'L'} {g.team_score}-{g.opponent_score}</td>
+                        <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{g.pts}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.total_rebounds}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.assist}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.steal}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.block}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.turnover}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{gFgm}/{gFga}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.pts3_made}/{g.pts3_all}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.ft_made}/{g.ft_all}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.val}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.ppp != null ? parseFloat(g.ppp).toFixed(2) : '—'}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.efg_per != null ? `${(g.efg_per * 100).toFixed(1)}` : (gEfg ?? '—')}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.ts_per != null ? `${(g.ts_per * 100).toFixed(1)}` : (gTs ?? '—')}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{gAstTo}</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
