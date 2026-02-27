@@ -3921,7 +3921,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
       }, { pts: 0, oreb: 0, dreb: 0, stl: 0, blk: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, val: 0, poss: 0, ppp_sum: 0, ppp_count: 0, oreb_per_sum: 0, oreb_per_count: 0, dreb_per_sum: 0, dreb_per_count: 0, stl_per_sum: 0, stl_per_count: 0, blk_per_sum: 0, blk_per_count: 0, efg_sum: 0, efg_count: 0, fta40_sum: 0, fta40_count: 0 });
       const gp = gamesPlayed;
 
-      const ptsGen = tt.pts;
+      const ptsGen = tt.val > 0 ? tt.val : tt.pts;
       const possTot = tt.poss;
       const marOffPl = ptsGen - 0.92 * lgPtsPoss * possTot;
       const ows = marPtsWin > 0 ? Math.max(marOffPl / marPtsWin, 0) : 0;
@@ -3953,7 +3953,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         fg3_pct: tt.fg3a > 0 ? ((tt.fg3m / tt.fg3a) * 100).toFixed(1) : '-',
         ft_pct: tt.fta > 0 ? ((tt.ftm / tt.fta) * 100).toFixed(1) : '-',
         ft40: tt.fta40_count > 0 ? (tt.fta40_sum / tt.fta40_count).toFixed(1) : '-',
-        eff: (tt.val / gp).toFixed(1),
+        val: (tt.val / gp).toFixed(1),
         ws: ws.toFixed(2),
       };
     }).sort((a, b) => parseFloat(b.pts) - parseFloat(a.pts));
@@ -4140,7 +4140,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                     <td className={`py-1.5 px-1 ${subtext}`}>{p.fg3_pct !== '-' ? `${p.fg3_pct}%` : '-'}</td>
                     <td className={`py-1.5 px-1 ${subtext}`}>{p.ft_pct !== '-' ? `${p.ft_pct}%` : '-'}</td>
                     <td className={`py-1.5 px-1 ${subtext}`}>{p.ft40}</td>
-                    <td className={`py-1.5 px-1 ${subtext}`}>{p.eff}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.val}</td>
                     <td className={`py-1.5 px-1 ${subtext}`}>{p.ws}</td>
                   </tr>
                 ))}
@@ -4209,7 +4209,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         rpg: (t.reb / gp).toFixed(1),
         fg3_pct: t.fg3a > 0 ? ((t.fg3m / t.fg3a) * 100).toFixed(1) : '0.0',
         ft_pct: t.fta > 0 ? ((t.ftm / t.fta) * 100).toFixed(1) : '0.0',
-        eff: (t.val / gp).toFixed(1), gp
+        val: (t.val / gp).toFixed(1), gp
       };
     })() : null;
 
@@ -4248,7 +4248,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
               <StatCard label="PPG" value={totalRow.ppg} sub={`${totalRow.gp} ${t('games')}`} color="orange" />
               <StatCard label="3P%" value={`${totalRow.fg3_pct}%`} color="green" />
               <StatCard label="FT%" value={`${totalRow.ft_pct}%`} color="blue" />
-              <StatCard label={t('Efficiency')} value={totalRow.eff} color="purple" />
+              <StatCard label="VAL" value={totalRow.val} color="purple" />
             </div>
 
             <div className={`${card} p-4`}>
