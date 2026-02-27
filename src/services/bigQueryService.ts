@@ -381,6 +381,109 @@ export async function fetchVBIndGamesFromBigQuery(): Promise<{ success: boolean;
   }
 }
 
+const VB_TEAM_GAMES_TABLE = 'ticketing-migration.ticketing_migration.sg_team_games';
+
+export interface VBTeamGame {
+  game_id: number;
+  game_date: string;
+  game_date_iso: string | null;
+  team_name: string;
+  opponent_name: string;
+  final_score: string;
+  team_score: number;
+  opponent_score: number;
+  competition_name: string;
+  league_name: string;
+  competition_phase_name: string;
+  side: string;
+  win_lose: string;
+  pts: number;
+  pts2_made: number;
+  pts2_all: number;
+  pts2_per: number;
+  pts3_made: number;
+  pts3_all: number;
+  pts3_per: number;
+  ft_made: number;
+  ft_all: number;
+  ft_per: number;
+  fg_made: number;
+  fg_all: number;
+  fg_per: number;
+  efg_per: number;
+  ts_per: number;
+  total_rebounds: number;
+  offensive_rebound: number;
+  defensive_rebound: number;
+  assist: number;
+  turnover: number;
+  steal: number;
+  block: number;
+  personal_foul: number;
+  plusminus_bs: number;
+  pace: number;
+  off_rtg: number;
+  def_rtg: number;
+  net_rtg: number;
+  poss: number;
+  ppp: number;
+  rim_made: number;
+  rim_all: number;
+  rim_freq: number;
+  paint_made: number;
+  paint_all: number;
+  paint_freq: number;
+  c3_made: number;
+  c3_all: number;
+  c3_freq: number;
+  l3_made: number;
+  l3_all: number;
+  l3_freq: number;
+  morey_fg_made: number;
+  morey_fg_all: number;
+  morey_per: number;
+  morey_freq: number;
+  minutes_calc: number;
+}
+
+export async function fetchVBTeamGamesFromBigQuery(): Promise<{ success: boolean; data: VBTeamGame[] }> {
+  try {
+    const client = getBigQueryClient();
+    const query = `SELECT game_id, game_date, team_name, opponent_name, final_score, team_score, opponent_score, competition_name, league_name, competition_phase_name, side, win_lose, pts, pts2_made, pts2_all, pts2_per, pts3_made, pts3_all, pts3_per, ft_made, ft_all, ft_per, fg_made, fg_all, fg_per, efg_per, ts_per, total_rebounds, offensive_rebound, defensive_rebound, assist, turnover, steal, block, personal_foul, plusminus_bs, pace, off_rtg, def_rtg, net_rtg, poss, ppp, rim_made, rim_all, rim_freq, paint_made, paint_all, paint_freq, c3_made, c3_all, c3_freq, l3_made, l3_all, l3_freq, morey_fg_made, morey_fg_all, morey_per, morey_freq, minutes_calc FROM \`${VB_TEAM_GAMES_TABLE}\` ORDER BY game_date DESC`;
+    const [rows] = await client.query({ query });
+    const data = rows.map((r: any) => {
+      const gd = r.game_date?.value || r.game_date;
+      const isoDate = typeof gd === 'string' ? gd.substring(0, 10) : (typeof gd === 'number' ? excelDateToISO(gd) : null);
+      return {
+        ...r,
+        game_date_iso: isoDate,
+        pts: r.pts || 0,
+        pts2_made: r.pts2_made || 0,
+        pts2_all: r.pts2_all || 0,
+        pts3_made: r.pts3_made || 0,
+        pts3_all: r.pts3_all || 0,
+        ft_made: r.ft_made || 0,
+        ft_all: r.ft_all || 0,
+        total_rebounds: r.total_rebounds || 0,
+        offensive_rebound: r.offensive_rebound || 0,
+        defensive_rebound: r.defensive_rebound || 0,
+        assist: r.assist || 0,
+        turnover: r.turnover || 0,
+        steal: r.steal || 0,
+        block: r.block || 0,
+        personal_foul: r.personal_foul || 0,
+        pace: r.pace || 0,
+        poss: r.poss || 0,
+      };
+    });
+    console.log(`Fetched ${data.length} team game records from BigQuery`);
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('VB Team Games BigQuery fetch error:', error.message);
+    return { success: false, data: [] };
+  }
+}
+
 const VB_PROSPECTS_TABLE = 'ticketing-migration.ticketing_migration.sg_prospects';
 
 export interface VBProspect {

@@ -8,7 +8,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV, fetchVBDataFromBigQuery, fetchVBProfilesFromBigQuery, fetchVBProspectsFromBigQuery, fetchVBIndGamesFromBigQuery } from "../src/services/bigQueryService";
+import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV, fetchVBDataFromBigQuery, fetchVBProfilesFromBigQuery, fetchVBProspectsFromBigQuery, fetchVBIndGamesFromBigQuery, fetchVBTeamGamesFromBigQuery } from "../src/services/bigQueryService";
 import { initDatabase, upsertUser, getUserByEmail, getUserPermissions, createAccessRequest, getAccessRequestByEmail, saveCostCenterData, getLatestCostCenterData, getSetting, setSetting } from "./db.js";
 import { getUncachableGoogleSheetClient } from "./googleSheets.js";
 import { registerAdminRoutes } from "./adminRoutes.js";
@@ -1685,6 +1685,26 @@ app.get("/api/vb/ind-games", async (_req, res) => {
     if (result.success) {
       indGamesCache = result.data;
       indGamesCacheTime = Date.now();
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+let teamGamesCache: any[] | null = null;
+let teamGamesCacheTime = 0;
+const TEAM_GAMES_CACHE_TTL = 600000;
+
+app.get("/api/vb/team-games", async (_req, res) => {
+  try {
+    if (teamGamesCache && Date.now() - teamGamesCacheTime < TEAM_GAMES_CACHE_TTL) {
+      return res.json({ success: true, data: teamGamesCache });
+    }
+    const result = await fetchVBTeamGamesFromBigQuery();
+    if (result.success) {
+      teamGamesCache = result.data;
+      teamGamesCacheTime = Date.now();
     }
     res.json(result);
   } catch (error: any) {

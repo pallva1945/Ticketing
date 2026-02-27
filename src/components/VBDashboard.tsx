@@ -3736,24 +3736,30 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
   const isDark = useIsDark();
   const [subTab, setSubTab] = useState<'team' | 'player' | 'search'>('team');
   const [allGames, setAllGames] = useState<any[]>([]);
+  const [allTeamGames, setAllTeamGames] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     setLoading(true);
     setError('');
-    fetch('/api/vb/ind-games').then(r => r.json()).then(d => {
-      if (!d.success) throw new Error(d.message || 'Failed to load');
-      setAllGames(d.data || []);
+    Promise.all([
+      fetch('/api/vb/ind-games').then(r => r.json()),
+      fetch('/api/vb/team-games').then(r => r.json()),
+    ]).then(([indRes, teamRes]) => {
+      if (!indRes.success) throw new Error(indRes.message || 'Failed to load individual games');
+      setAllGames(indRes.data || []);
+      if (teamRes.success) setAllTeamGames(teamRes.data || []);
       setLoading(false);
     }).catch(e => { setError(e.message); setLoading(false); });
   }, []);
 
   const teamNames = useMemo(() => {
     const names = new Set<string>();
-    allGames.forEach(g => { if (g.team_name) names.add(g.team_name); });
+    allTeamGames.forEach(g => { if (g.team_name) names.add(g.team_name); });
+    if (names.size === 0) allGames.forEach(g => { if (g.team_name) names.add(g.team_name); });
     return Array.from(names).sort();
-  }, [allGames]);
+  }, [allTeamGames, allGames]);
 
   const playerNames = useMemo(() => {
     const names = new Set<string>();
@@ -3771,15 +3777,17 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
   const displayTeamName = (name: string | null) => {
     if (!name) return '-';
     const map: Record<string, string> = {
-      'Robur et Fides Varese U17': 'ReF U17',
-      'Pallacanestro Varese U17': 'PV U17',
-      'Robur et Fides Varese U19': 'ReF U19',
-      'Pallacanestro Varese U19': 'PV U19',
-      'Campus Varese': 'VB',
+      'robur et fides varese u17': 'ReF U17',
+      'robur et fides u17': 'ReF U17',
+      'pallacanestro varese u17': 'PV U17',
+      'robur et fides varese u19': 'ReF U19',
+      'robur et fides u19': 'ReF U19',
+      'pallacanestro varese u19': 'PV U19',
+      'varese u19': 'PV U19',
+      'campus varese': 'VB',
     };
-    for (const [full, short] of Object.entries(map)) {
-      if (name.toLowerCase() === full.toLowerCase()) return short;
-    }
+    const key = name.toLowerCase().trim();
+    if (map[key]) return map[key];
     return name;
   };
 
@@ -3865,28 +3873,13 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
     );
   };
 
-  const teamGames = useMemo(() => allGames.filter(g => g.team_name === selectedTeam), [allGames, selectedTeam]);
+  const teamGames = useMemo(() => allTeamGames.filter(g => g.team_name === selectedTeam).sort((a, b) => (b.game_date_iso || '').localeCompare(a.game_date_iso || '')), [allTeamGames, selectedTeam]);
 
-  const scheduleGames = useMemo(() => {
-    const bySchedule: Record<string, any[]> = {};
-    teamGames.forEach(g => { if (g.game_date) { const k = `${g.game_date}_${g.opponent_name}`; if (!bySchedule[k]) bySchedule[k] = []; bySchedule[k].push(g); } });
-    return Object.values(bySchedule).map(rows => {
-      const first = rows[0];
-      const tot = rows.reduce((acc, r) => {
-        acc.pts += r.pts; acc.reb += r.total_rebounds; acc.ast += r.assist;
-        acc.stl += r.steal; acc.blk += r.block; acc.to += r.turnover;
-        acc.fg2m += r.pts2_made; acc.fg2a += r.pts2_all;
-        acc.fg3m += r.pts3_made; acc.fg3a += r.pts3_all;
-        acc.ftm += r.ft_made; acc.fta += r.ft_all;
-        return acc;
-      }, { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0 });
-      return { ...tot, date: first.game_date_iso, opponent: first.opponent_name, team_score: first.team_score, opponent_score: first.opponent_score, side: first.side, win: first.win_lose === 'win' };
-    }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  }, [teamGames]);
+  const indTeamGames = useMemo(() => allGames.filter(g => g.team_name === selectedTeam), [allGames, selectedTeam]);
 
   const playerAverages = useMemo(() => {
     const byPlayer: Record<string, any[]> = {};
-    teamGames.forEach(g => { if (!byPlayer[g.player_name]) byPlayer[g.player_name] = []; byPlayer[g.player_name].push(g); });
+    indTeamGames.forEach(g => { if (!byPlayer[g.player_name]) byPlayer[g.player_name] = []; byPlayer[g.player_name].push(g); });
     return Object.entries(byPlayer).map(([name, games]) => {
       const gamesPlayed = new Set(games.map(g => `${g.game_date}_${g.opponent_name}`)).size;
       const tt = games.reduce((a, g) => {
@@ -3906,7 +3899,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         eff: (tt.val / gp).toFixed(1),
       };
     }).sort((a, b) => parseFloat(b.ppg) - parseFloat(a.ppg));
-  }, [teamGames]);
+  }, [indTeamGames]);
 
   const allPlayerGames = useMemo(() => allGames.filter(g => g.player_name === selectedPlayer), [allGames, selectedPlayer]);
 
@@ -3937,17 +3930,21 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
   }, [allPlayerGames, selectedPlayerLeague, selectedPlayerSeason]);
 
   const renderTeamTab = () => {
-    const gp = scheduleGames.length;
+    const gp = teamGames.length;
+    const teamSelector = (
+      <div className="flex flex-wrap gap-2">
+        <div className="relative">
+          <select value={selectedTeam} onChange={e => setSelectedTeam(e.target.value)} className={selectClass}>
+            {teamNames.map(t => <option key={t} value={t}>{displayTeamName(t)}</option>)}
+          </select>
+          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+        </div>
+      </div>
+    );
+
     if (gp === 0) return (
       <div className="space-y-5">
-        <div className="flex flex-wrap gap-2">
-          <div className="relative">
-            <select value={selectedTeam} onChange={e => setSelectedTeam(e.target.value)} className={selectClass}>
-              {teamNames.map(t => <option key={t} value={t}>{displayTeamName(t)}</option>)}
-            </select>
-            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
-          </div>
-        </div>
+        {teamSelector}
         <div className={`${card} p-8 text-center`}>
           <Trophy size={32} className={`mx-auto mb-3 ${isDark ? 'text-gray-700' : 'text-gray-300'}`} />
           <p className={`text-sm ${subtext}`}>{t('No game data available for this team/season')}</p>
@@ -3955,52 +3952,63 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
       </div>
     );
 
-    const totals = scheduleGames.reduce((acc, g) => {
-      acc.pts += g.pts; acc.reb += g.reb; acc.ast += g.ast;
-      acc.fg2m += g.fg2m; acc.fg2a += g.fg2a; acc.fg3m += g.fg3m; acc.fg3a += g.fg3a;
+    const totals = teamGames.reduce((acc, g) => {
+      acc.pts += g.pts; acc.reb += g.total_rebounds; acc.ast += g.assist;
+      acc.stl += g.steal; acc.blk += g.block; acc.to += g.turnover;
+      acc.fg_made += g.fg_made; acc.fg_all += g.fg_all;
+      acc.fg3m += g.pts3_made; acc.fg3a += g.pts3_all;
+      acc.ftm += g.ft_made; acc.fta += g.ft_all;
+      acc.oreb += g.offensive_rebound; acc.dreb += g.defensive_rebound;
+      acc.pf += g.personal_foul;
+      acc.off_rtg += g.off_rtg || 0; acc.def_rtg += g.def_rtg || 0;
+      acc.pace += g.pace || 0;
       return acc;
-    }, { pts: 0, reb: 0, ast: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0 });
-    const wins = scheduleGames.filter(g => g.win).length;
+    }, { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fg_made: 0, fg_all: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, pf: 0, off_rtg: 0, def_rtg: 0, pace: 0 });
+    const wins = teamGames.filter(g => g.win_lose === 'win').length;
     const losses = gp - wins;
     const ppg = (totals.pts / gp).toFixed(1);
     const rpg = (totals.reb / gp).toFixed(1);
     const apg = (totals.ast / gp).toFixed(1);
-    const fgPct = (totals.fg2a + totals.fg3a) > 0 ? (((totals.fg2m + totals.fg3m) / (totals.fg2a + totals.fg3a)) * 100).toFixed(1) : '0.0';
+    const fgPct = totals.fg_all > 0 ? ((totals.fg_made / totals.fg_all) * 100).toFixed(1) : '0.0';
     const fg3Pct = totals.fg3a > 0 ? ((totals.fg3m / totals.fg3a) * 100).toFixed(1) : '0.0';
+    const ftPct = totals.fta > 0 ? ((totals.ftm / totals.fta) * 100).toFixed(1) : '0.0';
+    const avgOffRtg = (totals.off_rtg / gp).toFixed(1);
+    const avgDefRtg = (totals.def_rtg / gp).toFixed(1);
+    const avgPace = (totals.pace / gp).toFixed(1);
 
     return (
       <div className="space-y-5">
-        <div className="flex flex-wrap gap-2">
-          <div className="relative">
-            <select value={selectedTeam} onChange={e => setSelectedTeam(e.target.value)} className={selectClass}>
-              {teamNames.map(t => <option key={t} value={t}>{displayTeamName(t)}</option>)}
-            </select>
-            <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
-          </div>
-        </div>
+        {teamSelector}
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <StatCard label="PPG" value={ppg} color="orange" />
-          <StatCard label="RPG" value={rpg} color="blue" />
-          <StatCard label="APG" value={apg} color="green" />
-          <StatCard label="FG%" value={`${fgPct}%`} color="purple" />
-          <StatCard label="3P%" value={`${fg3Pct}%`} color="red" />
           <StatCard label={t('Record')} value={`${wins}W - ${losses}L`} sub={`${gp} ${t('games')}`} color="orange" />
+          <StatCard label="PPG" value={ppg} color="orange" />
+          <StatCard label="RPG" value={rpg} sub={`${(totals.oreb / gp).toFixed(1)} OFF · ${(totals.dreb / gp).toFixed(1)} DEF`} color="blue" />
+          <StatCard label="APG" value={apg} sub={`${(totals.to / gp).toFixed(1)} TO`} color="green" />
+          <StatCard label="FG%" value={`${fgPct}%`} sub={`${(totals.fg_made / gp).toFixed(1)}/${(totals.fg_all / gp).toFixed(1)}`} color="purple" />
+          <StatCard label="3P%" value={`${fg3Pct}%`} sub={`${(totals.fg3m / gp).toFixed(1)}/${(totals.fg3a / gp).toFixed(1)}`} color="red" />
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard label="FT%" value={`${ftPct}%`} sub={`${(totals.ftm / gp).toFixed(1)}/${(totals.fta / gp).toFixed(1)}`} color="blue" />
+          <StatCard label="OFF Rtg" value={avgOffRtg} color="green" />
+          <StatCard label="DEF Rtg" value={avgDefRtg} color="red" />
+          <StatCard label="Pace" value={avgPace} color="purple" />
         </div>
 
         <div className={`${card} p-4`}>
           <h4 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Scoring by Game')}</h4>
           <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={scheduleGames.slice().reverse().slice(-15).map(g => ({
-              name: (g.opponent || '?').substring(0, 8), pts: g.pts, won: g.win
+            <BarChart data={teamGames.slice().reverse().slice(-15).map(g => ({
+              name: displayTeamName(g.opponent_name).substring(0, 8), pts: g.pts, won: g.win_lose === 'win'
             }))}>
               <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#333' : '#eee'} />
               <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#999' : '#666' }} angle={-30} textAnchor="end" height={50} />
               <YAxis tick={{ fontSize: 10, fill: isDark ? '#999' : '#666' }} />
               <Tooltip contentStyle={{ backgroundColor: isDark ? '#1a1a1a' : '#fff', border: `1px solid ${isDark ? '#333' : '#ddd'}`, borderRadius: 8, fontSize: 11 }} />
               <Bar dataKey="pts" name={t('Points')} radius={[4, 4, 0, 0]}>
-                {scheduleGames.slice().reverse().slice(-15).map((g, i) => (
-                  <Cell key={i} fill={g.win ? '#22c55e' : '#ef4444'} />
+                {teamGames.slice().reverse().slice(-15).map((g, i) => (
+                  <Cell key={i} fill={g.win_lose === 'win' ? '#22c55e' : '#ef4444'} />
                 ))}
               </Bar>
             </BarChart>
@@ -4044,25 +4052,34 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
           <table className="w-full text-xs">
             <thead>
               <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                {['Date', 'Opponent', 'Result', 'PTS', 'REB', 'AST', 'FG%', '3P%'].map(h => (
+                {['Date', 'Opponent', 'Result', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'TO', 'FG%', '3P%', 'FT%', 'ORtg', 'DRtg', 'Pace'].map(h => (
                   <th key={h} className={`py-2 px-1.5 text-left font-semibold ${subtext}`}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {scheduleGames.map((g, i) => {
-                const fgP = (g.fg2a + g.fg3a) > 0 ? (((g.fg2m + g.fg3m) / (g.fg2a + g.fg3a)) * 100).toFixed(1) : '-';
-                const fg3P = g.fg3a > 0 ? ((g.fg3m / g.fg3a) * 100).toFixed(1) : '-';
+              {teamGames.map((g, i) => {
+                const fgP = g.fg_per != null ? g.fg_per.toFixed(1) : (g.fg_all > 0 ? ((g.fg_made / g.fg_all) * 100).toFixed(1) : '-');
+                const fg3P = g.pts3_per != null ? g.pts3_per.toFixed(1) : (g.pts3_all > 0 ? ((g.pts3_made / g.pts3_all) * 100).toFixed(1) : '-');
+                const ftP = g.ft_per != null ? g.ft_per.toFixed(1) : (g.ft_all > 0 ? ((g.ft_made / g.ft_all) * 100).toFixed(1) : '-');
+                const isWin = g.win_lose === 'win';
                 return (
                   <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
-                    <td className={`py-1.5 px-1.5 ${subtext}`}>{formatDateDMY(g.date) || '-'}</td>
-                    <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.side === 'home' ? 'vs' : '@'} {displayTeamName(g.opponent)}</td>
-                    <td className={`py-1.5 px-1.5 font-semibold ${g.win ? 'text-green-500' : 'text-red-500'}`}>{g.win ? 'W' : 'L'} {g.team_score}-{g.opponent_score}</td>
+                    <td className={`py-1.5 px-1.5 whitespace-nowrap ${subtext}`}>{formatDateDMY(g.game_date_iso)}</td>
+                    <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.side === 'home' ? 'vs' : '@'} {displayTeamName(g.opponent_name)}</td>
+                    <td className={`py-1.5 px-1.5 font-semibold ${isWin ? 'text-green-500' : 'text-red-500'}`}>{isWin ? 'W' : 'L'} {g.team_score}-{g.opponent_score}</td>
                     <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{g.pts}</td>
-                    <td className={`py-1.5 px-1.5 ${subtext}`}>{g.reb}</td>
-                    <td className={`py-1.5 px-1.5 ${subtext}`}>{g.ast}</td>
+                    <td className={`py-1.5 px-1.5 ${subtext}`}>{g.total_rebounds}</td>
+                    <td className={`py-1.5 px-1.5 ${subtext}`}>{g.assist}</td>
+                    <td className={`py-1.5 px-1.5 ${subtext}`}>{g.steal}</td>
+                    <td className={`py-1.5 px-1.5 ${subtext}`}>{g.block}</td>
+                    <td className={`py-1.5 px-1.5 ${subtext}`}>{g.turnover}</td>
                     <td className={`py-1.5 px-1.5 ${subtext}`}>{fgP}%</td>
                     <td className={`py-1.5 px-1.5 ${subtext}`}>{fg3P}%</td>
+                    <td className={`py-1.5 px-1.5 ${subtext}`}>{ftP}%</td>
+                    <td className={`py-1.5 px-1.5 ${subtext}`}>{g.off_rtg ? g.off_rtg.toFixed(1) : '-'}</td>
+                    <td className={`py-1.5 px-1.5 ${subtext}`}>{g.def_rtg ? g.def_rtg.toFixed(1) : '-'}</td>
+                    <td className={`py-1.5 px-1.5 ${subtext}`}>{g.pace || '-'}</td>
                   </tr>
                 );
               })}
