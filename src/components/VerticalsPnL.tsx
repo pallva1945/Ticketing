@@ -46,8 +46,8 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
   const { language, toggleLanguage, t } = useLanguage();
   const isDark = theme === 'dark';
   const [costData, setCostData] = useState<CostData | null>(null);
-  const [bopsYTD, setBopsYTD] = useState(173508);
-  const [venueOpsYTD, setVenueOpsYTD] = useState(85486);
+  const [bopsYTD, setBopsYTD] = useState(0);
+  const [venueOpsYTD, setVenueOpsYTD] = useState(0);
 
   useEffect(() => {
     fetch('/api/costs/data')
@@ -63,7 +63,7 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
           const parsed = parseBopsSheetData(res.data);
           if (parsed) {
             const ytd = parsed.monthlyRevenue.reduce((s, item) => s + item.values.reduce((a, b) => a + b, 0), 0);
-            if (ytd > 0) setBopsYTD(ytd);
+            setBopsYTD(ytd);
           }
         }
       })
@@ -75,7 +75,7 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding }) =
           const parsed = parseVenueOpsSheetData(res.data);
           if (parsed) {
             const ytd = parsed.monthlyRevenue.reduce((s, item) => s + item.values.reduce((a, b) => a + b, 0), 0);
-            if (ytd > 0) setVenueOpsYTD(ytd);
+            setVenueOpsYTD(ytd);
           }
         }
       })

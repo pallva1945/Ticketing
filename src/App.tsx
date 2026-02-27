@@ -164,6 +164,36 @@ const RevenueHome = ({
 }) => {
     const { t } = useLanguage();
     const [corpTixInSponsorship, setCorpTixInSponsorship] = useState(true);
+    const [bopsYTD, setBopsYTD] = useState(0);
+    const [venueOpsYTD, setVenueOpsYTD] = useState(0);
+
+    useEffect(() => {
+      fetch('/api/revenue/sheet-data/bops')
+        .then(r => r.json())
+        .then(res => {
+          if (res.success && res.data) {
+            const parsed = parseBopsSheetData(res.data);
+            if (parsed) {
+              const ytd = parsed.monthlyRevenue.reduce((s: number, item: any) => s + item.values.reduce((a: number, b: number) => a + b, 0), 0);
+              setBopsYTD(ytd);
+            }
+          }
+        })
+        .catch(() => {});
+      fetch('/api/revenue/sheet-data/venue_ops')
+        .then(r => r.json())
+        .then(res => {
+          if (res.success && res.data) {
+            const parsed = parseVenueOpsSheetData(res.data);
+            if (parsed) {
+              const ytd = parsed.monthlyRevenue.reduce((s: number, item: any) => s + item.values.reduce((a: number, b: number) => a + b, 0), 0);
+              setVenueOpsYTD(ytd);
+            }
+          }
+        })
+        .catch(() => {});
+    }, []);
+
     // Constants
     const TOTAL_GAMES_SEASON = 15;
     const gamesCount = Math.max(gamesPlayed, 1);
@@ -213,18 +243,18 @@ const RevenueHome = ({
       { 
           id: 'bops', 
           name: 'BOps', 
-          current: 173508, 
+          current: bopsYTD, 
           target: 525000, 
           pacingType: 'fourTen' as const,
-          icon: Activity, colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', barClass: 'bg-emerald-500', isVariable: false, isProrated: false, hasData: true 
+          icon: Activity, colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', barClass: 'bg-emerald-500', isVariable: false, isProrated: false, hasData: bopsYTD > 0 
       },
       { 
           id: 'venue_ops', 
           name: 'Venue Ops', 
-          current: 85485.36, 
+          current: venueOpsYTD, 
           target: 262364, 
           pacingType: 'h1' as const,
-          icon: Landmark, colorClass: 'text-slate-600', bgClass: 'bg-slate-50', barClass: 'bg-slate-500', isVariable: false, isProrated: false, hasData: true 
+          icon: Landmark, colorClass: 'text-slate-600', bgClass: 'bg-slate-50', barClass: 'bg-slate-500', isVariable: false, isProrated: false, hasData: venueOpsYTD > 0 
       },
       { 
           id: 'merchandising', 
