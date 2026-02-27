@@ -216,7 +216,7 @@ function PlayerSelector({ players, selected, onChange, multiple }: { players: st
   );
 }
 
-type SortKey = 'player' | 'height' | 'projHeight' | 'reach' | 'projReach' | 'pureVertical' | 'sprint' | 'coneDrill' | 'weight' | 'wingspan' | 'bodyFat' | 'pct' | 'shots' | 'shotsMade' | 'totalLoad' | 'vitamins' | 'weights' | 'practice' | 'game' | 'injury' | 'nt' | 'minLate' | 'daysOff' | 'vacation' | 'cas' | 'aps' | 'apeIndex';
+type SortKey = 'player' | 'height' | 'projHeight' | 'reach' | 'projReach' | 'pureVertical' | 'sprint' | 'coneDrill' | 'weight' | 'wingspan' | 'bodyFat' | 'pct' | 'shots' | 'shotsMade' | 'totalLoad' | 'vitamins' | 'weights' | 'practice' | 'game' | 'injury' | 'nt' | 'minLate' | 'daysOff' | 'vacation' | 'cas' | 'aps' | 'apeIndex' | 'potential';
 type SortDir = 'asc' | 'desc';
 
 interface RosterRow {
@@ -247,6 +247,7 @@ interface RosterRow {
   cas: number | null;
   aps: number | null;
   apeIndex: number | null;
+  potential: number | null;
 }
 
 function getCurrentSeason(): string {
@@ -813,6 +814,7 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, onF
       cas: rosterComposites[player]?.cas ?? null,
       aps: rosterComposites[player]?.aps ?? null,
       apeIndex: rosterComposites[player]?.apeIndex ?? null,
+      potential: rosterComposites[player]?.potential?.score ?? null,
     };
   }), [filtered, activePlayers, viewMode, selectedSeason, profiles, rosterComposites]);
 
@@ -868,6 +870,7 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, onF
     { key: 'minLate', label: t('Min Late') },
     { key: 'daysOff', label: t('Days Off') },
     { key: 'vacation', label: t('Vacation') },
+    { key: 'potential', label: 'PVB' },
   ];
 
   return (
@@ -916,6 +919,7 @@ function RosterTable({ filtered, allSessions, activePlayers, onSelectPlayer, onF
                 <td className={`text-center py-2.5 px-1 ${row.minLate !== null && row.minLate > 0 ? 'text-red-500 font-semibold' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.minLate ?? '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.daysOff || '—'}</td>
                 <td className={`text-center py-2.5 px-1 ${row.vacation > 0 ? 'text-amber-500 font-semibold' : isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.vacation || '—'}</td>
+                <td className={`text-center py-2.5 px-1 font-semibold ${row.potential !== null ? (row.potential >= 100 ? 'text-blue-500' : row.potential >= 80 ? 'text-emerald-500' : row.potential >= 60 ? 'text-amber-500' : row.potential >= 40 ? 'text-orange-500' : 'text-red-400') : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{row.potential !== null ? row.potential : '—'}</td>
               </tr>
             ))}
           </tbody>
