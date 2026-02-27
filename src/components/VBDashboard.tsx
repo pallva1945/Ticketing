@@ -4116,7 +4116,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
             <table className="w-full text-xs whitespace-nowrap">
               <thead>
                 <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                  {['Player', 'GP', 'PTS', 'PPP', 'OREB', 'OREB%', 'DREB', 'DREB%', 'STL', 'STL%', 'BLK', 'BLK%', 'eFG%', '3P%', 'FT%', 'FT/40', 'EFF', 'WS'].map(h => (
+                  {['Player', 'GP', 'PTS', 'PPP', 'OREB', 'OREB%', 'DREB', 'DREB%', 'STL', 'STL%', 'BLK', 'BLK%', 'eFG%', '3P%', 'FT%', 'FT/40', 'VAL', 'WS'].map(h => (
                     <th key={h} className={`py-2 px-1 text-left font-semibold ${subtext}`}>{h}</th>
                   ))}
                 </tr>
@@ -4271,7 +4271,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
               <table className="w-full text-xs">
                 <thead>
                   <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                    {['Date', 'Opponent', 'Result', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'FG', '3P', 'FT', 'EFF'].map(h => (
+                    {['Date', 'Opponent', 'Result', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'FG', '3P', 'FT', 'VAL'].map(h => (
                       <th key={h} className={`py-2 px-1.5 text-left font-semibold ${subtext}`}>{h}</th>
                     ))}
                   </tr>
