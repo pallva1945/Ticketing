@@ -3883,22 +3883,46 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
     return Object.entries(byPlayer).map(([name, games]) => {
       const gamesPlayed = new Set(games.map(g => `${g.game_date}_${g.opponent_name}`)).size;
       const tt = games.reduce((a, g) => {
-        a.pts += g.pts; a.reb += g.total_rebounds; a.ast += g.assist; a.stl += g.steal; a.blk += g.block;
+        a.pts += g.pts; a.oreb += g.offensive_rebound; a.dreb += g.defensive_rebound;
+        a.stl += g.steal; a.blk += g.block;
         a.fg2m += g.pts2_made; a.fg2a += g.pts2_all; a.fg3m += g.pts3_made; a.fg3a += g.pts3_all;
         a.ftm += g.ft_made; a.fta += g.ft_all; a.val += g.val;
+        a.poss += g.poss || 0;
+        if (g.ppp != null) { a.ppp_sum += g.ppp; a.ppp_count++; }
+        if (g.offensive_rebound_per != null && g.offensive_rebound_per > 0) { a.oreb_per_sum += g.offensive_rebound_per; a.oreb_per_count++; }
+        if (g.defensive_rebound_per != null && g.defensive_rebound_per > 0) { a.dreb_per_sum += g.defensive_rebound_per; a.dreb_per_count++; }
+        if (g.steal_chance != null && g.steal_chance > 0) { a.stl_per_sum += g.steal_chance; a.stl_per_count++; }
+        if (g.block_chance != null && g.block_chance > 0) { a.blk_per_sum += g.block_chance; a.blk_per_count++; }
+        if (g.efg_per != null) { a.efg_sum += g.efg_per; a.efg_count++; }
+        if (g.fta_per_40 != null) { a.fta40_sum += g.fta_per_40; a.fta40_count++; }
+        a.kills += g.kills || 0;
         return a;
-      }, { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, val: 0 });
+      }, { pts: 0, oreb: 0, dreb: 0, stl: 0, blk: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, val: 0, poss: 0, ppp_sum: 0, ppp_count: 0, oreb_per_sum: 0, oreb_per_count: 0, dreb_per_sum: 0, dreb_per_count: 0, stl_per_sum: 0, stl_per_count: 0, blk_per_sum: 0, blk_per_count: 0, efg_sum: 0, efg_count: 0, fta40_sum: 0, fta40_count: 0, kills: 0 });
       const gp = gamesPlayed;
+      const orebPctCalc = tt.poss > 0 ? ((tt.oreb / tt.poss) * 100).toFixed(1) : '-';
+      const drebPctCalc = tt.poss > 0 ? ((tt.dreb / tt.poss) * 100).toFixed(1) : '-';
+      const stlPctCalc = tt.poss > 0 ? ((tt.stl / tt.poss) * 100).toFixed(1) : '-';
+      const blkPctCalc = tt.poss > 0 ? ((tt.blk / tt.poss) * 100).toFixed(1) : '-';
       return {
         name, gp,
-        ppg: (tt.pts / gp).toFixed(1), rpg: (tt.reb / gp).toFixed(1), apg: (tt.ast / gp).toFixed(1),
-        spg: (tt.stl / gp).toFixed(1), bpg: (tt.blk / gp).toFixed(1),
-        fg_pct: (tt.fg2a + tt.fg3a) > 0 ? (((tt.fg2m + tt.fg3m) / (tt.fg2a + tt.fg3a)) * 100).toFixed(1) : '0.0',
-        fg3_pct: tt.fg3a > 0 ? ((tt.fg3m / tt.fg3a) * 100).toFixed(1) : '0.0',
-        ft_pct: tt.fta > 0 ? ((tt.ftm / tt.fta) * 100).toFixed(1) : '0.0',
+        pts: (tt.pts / gp).toFixed(1),
+        ppp: tt.ppp_count > 0 ? (tt.ppp_sum / tt.ppp_count).toFixed(2) : '-',
+        oreb: (tt.oreb / gp).toFixed(1),
+        orebPct: tt.oreb_per_count > 0 ? (tt.oreb_per_sum / tt.oreb_per_count).toFixed(1) : orebPctCalc,
+        dreb: (tt.dreb / gp).toFixed(1),
+        drebPct: tt.dreb_per_count > 0 ? (tt.dreb_per_sum / tt.dreb_per_count).toFixed(1) : drebPctCalc,
+        stl: (tt.stl / gp).toFixed(1),
+        stlPct: tt.stl_per_count > 0 ? (tt.stl_per_sum / tt.stl_per_count).toFixed(1) : stlPctCalc,
+        blk: (tt.blk / gp).toFixed(1),
+        blkPct: tt.blk_per_count > 0 ? (tt.blk_per_sum / tt.blk_per_count).toFixed(1) : blkPctCalc,
+        efg: tt.efg_count > 0 ? (tt.efg_sum / tt.efg_count).toFixed(1) : '-',
+        fg3_pct: tt.fg3a > 0 ? ((tt.fg3m / tt.fg3a) * 100).toFixed(1) : '-',
+        ft_pct: tt.fta > 0 ? ((tt.ftm / tt.fta) * 100).toFixed(1) : '-',
+        ft40: tt.fta40_count > 0 ? (tt.fta40_sum / tt.fta40_count).toFixed(1) : '-',
         eff: (tt.val / gp).toFixed(1),
+        ws: tt.kills > 0 ? (tt.kills / gp).toFixed(2) : '-',
       };
-    }).sort((a, b) => parseFloat(b.ppg) - parseFloat(a.ppg));
+    }).sort((a, b) => parseFloat(b.pts) - parseFloat(a.pts));
   }, [indTeamGames]);
 
   const allPlayerGames = useMemo(() => allGames.filter(g => g.player_name === selectedPlayer), [allGames, selectedPlayer]);
@@ -4055,28 +4079,35 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         {playerAverages.length > 0 && (
           <div className={`${card} p-4 overflow-x-auto`}>
             <h4 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Roster Stats')}</h4>
-            <table className="w-full text-xs">
+            <table className="w-full text-xs whitespace-nowrap">
               <thead>
                 <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                  {['Player', 'GP', 'PTS', 'REB', 'AST', 'STL', 'BLK', 'FG%', '3P%', 'FT%', 'EFF'].map(h => (
-                    <th key={h} className={`py-2 px-1.5 text-left font-semibold ${subtext}`}>{h}</th>
+                  {['Player', 'GP', 'PTS', 'PPP', 'OREB', 'OREB%', 'DREB', 'DREB%', 'STL', 'STL%', 'BLK', 'BLK%', 'eFG%', '3P%', 'FT%', 'FT/40', 'EFF', 'WS'].map(h => (
+                    <th key={h} className={`py-2 px-1 text-left font-semibold ${subtext}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {playerAverages.map((p, i) => (
                   <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
-                    <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.name}</td>
-                    <td className={`py-1.5 px-1.5 ${subtext}`}>{p.gp}</td>
-                    <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{p.ppg}</td>
-                    <td className={`py-1.5 px-1.5 ${subtext}`}>{p.rpg}</td>
-                    <td className={`py-1.5 px-1.5 ${subtext}`}>{p.apg}</td>
-                    <td className={`py-1.5 px-1.5 ${subtext}`}>{p.spg}</td>
-                    <td className={`py-1.5 px-1.5 ${subtext}`}>{p.bpg}</td>
-                    <td className={`py-1.5 px-1.5 ${subtext}`}>{p.fg_pct}%</td>
-                    <td className={`py-1.5 px-1.5 ${subtext}`}>{p.fg3_pct}%</td>
-                    <td className={`py-1.5 px-1.5 ${subtext}`}>{p.ft_pct}%</td>
-                    <td className={`py-1.5 px-1.5 ${subtext}`}>{p.eff}</td>
+                    <td className={`py-1.5 px-1 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.name}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.gp}</td>
+                    <td className={`py-1.5 px-1 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{p.pts}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.ppp}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.oreb}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.orebPct !== '-' ? `${p.orebPct}%` : '-'}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.dreb}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.drebPct !== '-' ? `${p.drebPct}%` : '-'}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.stl}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.stlPct !== '-' ? `${p.stlPct}%` : '-'}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.blk}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.blkPct !== '-' ? `${p.blkPct}%` : '-'}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.efg !== '-' ? `${p.efg}%` : '-'}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.fg3_pct !== '-' ? `${p.fg3_pct}%` : '-'}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.ft_pct !== '-' ? `${p.ft_pct}%` : '-'}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.ft40}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.eff}</td>
+                    <td className={`py-1.5 px-1 ${subtext}`}>{p.ws}</td>
                   </tr>
                 ))}
               </tbody>

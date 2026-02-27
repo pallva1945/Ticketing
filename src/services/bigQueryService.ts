@@ -350,7 +350,7 @@ function excelDateToISO(serial: number | null): string | null {
 export async function fetchVBIndGamesFromBigQuery(): Promise<{ success: boolean; data: VBIndGame[] }> {
   try {
     const client = getBigQueryClient();
-    const query = `SELECT player_name, player_id, game_date, team_name, opponent_name, final_score, team_score, opponent_score, competition_name, competition_team_id, side, win_lose, starter, minutes_calc, pts, pts2_made, pts2_all, pts2_per, pts3_made, pts3_all, pts3_per, ft_made, ft_all, ft_per, fg_made, fg_all, fg_per, efg_per, ts_per, total_rebounds, offensive_rebound, defensive_rebound, assist, turnover, steal, block, personal_foul, plusminus_bs, val, usg_per, off_rtg, def_rtg, net_rtg, poss FROM \`${VB_IND_GAMES_TABLE}\` WHERE player_name IS NOT NULL ORDER BY game_date DESC`;
+    const query = `SELECT player_name, player_id, game_date, team_name, opponent_name, final_score, team_score, opponent_score, competition_name, competition_team_id, side, win_lose, starter, minutes_calc, minute, seconds, pts, pts2_made, pts2_all, pts2_per, pts3_made, pts3_all, pts3_per, ft_made, ft_all, ft_per, fg_made, fg_all, fg_per, efg_per, ts_per, total_rebounds, offensive_rebound, offensive_rebound_per, defensive_rebound, defensive_rebound_per, assist, turnover, to_per, steal, steal_chance, block, block_chance, personal_foul, plusminus_bs, val, usg_per, off_rtg, def_rtg, net_rtg, poss, poss_team, ppp, fta_per_40, kills FROM \`${VB_IND_GAMES_TABLE}\` WHERE player_name IS NOT NULL ORDER BY game_date DESC`;
     const [rows] = await client.query({ query });
     const data = rows.map((r: any) => ({
       ...r,
