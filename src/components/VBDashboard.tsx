@@ -3878,8 +3878,30 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
   const indTeamGames = useMemo(() => allGames.filter(g => g.team_name === selectedTeam), [allGames, selectedTeam]);
 
   const playerAverages = useMemo(() => {
+    const teamComps = new Set<string>();
+    teamGames.forEach(g => { const c = (g.competition_name || '').trim(); if (c) teamComps.add(c); });
+
+    const lgGames = allTeamGames.filter(g => teamComps.has((g.competition_name || '').trim()));
+    const lgTotPts = lgGames.reduce((s, g) => s + (g.team_score || 0) + (g.opponent_score || 0), 0);
+    const lgTotPoss = lgGames.reduce((s, g) => s + (g.poss || 0), 0);
+    const lgPtsPoss = lgTotPoss > 0 ? lgTotPts / (2 * lgTotPoss) : 1;
+    const lgPtsPG = lgGames.length > 0 ? lgTotPts / (2 * lgGames.length) : 75;
+    const lgPaceSum = lgGames.reduce((s, g) => s + (g.pace || 0), 0);
+    const lgPace = lgGames.length > 0 ? lgPaceSum / lgGames.length : 80;
+
+    const tmGP = teamGames.length;
+    const tmPace = tmGP > 0 ? teamGames.reduce((s, g) => s + (g.pace || 0), 0) / tmGP : lgPace;
+    const tmTotalPoss = teamGames.reduce((s, g) => s + (g.poss || 0), 0);
+    const tmOppPoss = tmTotalPoss;
+    const tmDefRtg = tmGP > 0 ? teamGames.reduce((s, g) => s + (g.def_rtg || 0), 0) / tmGP : 100;
+
+    const marPtsWin = 0.32 * lgPtsPG * (tmPace / (lgPace || 1));
+
     const byPlayer: Record<string, any[]> = {};
     indTeamGames.forEach(g => { if (!byPlayer[g.player_name]) byPlayer[g.player_name] = []; byPlayer[g.player_name].push(g); });
+
+    const allPlayerPossTotal = indTeamGames.reduce((s, g) => s + (g.poss || 0), 0);
+
     return Object.entries(byPlayer).map(([name, games]) => {
       const gamesPlayed = new Set(games.map(g => `${g.game_date}_${g.opponent_name}`)).size;
       const tt = games.reduce((a, g) => {
@@ -3895,10 +3917,22 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         if (g.block_chance != null && g.block_chance > 0) { a.blk_per_sum += g.block_chance; a.blk_per_count++; }
         if (g.efg_per != null) { a.efg_sum += g.efg_per; a.efg_count++; }
         if (g.fta_per_40 != null) { a.fta40_sum += g.fta_per_40; a.fta40_count++; }
-        a.kills += g.kills || 0;
         return a;
-      }, { pts: 0, oreb: 0, dreb: 0, stl: 0, blk: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, val: 0, poss: 0, ppp_sum: 0, ppp_count: 0, oreb_per_sum: 0, oreb_per_count: 0, dreb_per_sum: 0, dreb_per_count: 0, stl_per_sum: 0, stl_per_count: 0, blk_per_sum: 0, blk_per_count: 0, efg_sum: 0, efg_count: 0, fta40_sum: 0, fta40_count: 0, kills: 0 });
+      }, { pts: 0, oreb: 0, dreb: 0, stl: 0, blk: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, val: 0, poss: 0, ppp_sum: 0, ppp_count: 0, oreb_per_sum: 0, oreb_per_count: 0, dreb_per_sum: 0, dreb_per_count: 0, stl_per_sum: 0, stl_per_count: 0, blk_per_sum: 0, blk_per_count: 0, efg_sum: 0, efg_count: 0, fta40_sum: 0, fta40_count: 0 });
       const gp = gamesPlayed;
+
+      const ptsGen = tt.pts;
+      const possTot = tt.poss;
+      const marOffPl = ptsGen - 0.92 * lgPtsPoss * possTot;
+      const ows = marPtsWin > 0 ? Math.max(marOffPl / marPtsWin, 0) : 0;
+
+      const possShare = allPlayerPossTotal > 0 ? tt.poss / allPlayerPossTotal : 0;
+      const playerOppPoss = tmOppPoss * possShare;
+      const marDefPl = playerOppPoss * (1.08 * lgPtsPoss - tmDefRtg / 100);
+      const dws = marPtsWin > 0 ? Math.max(marDefPl / marPtsWin, 0) : 0;
+
+      const ws = ows + dws;
+
       const orebPctCalc = tt.poss > 0 ? ((tt.oreb / tt.poss) * 100).toFixed(1) : '-';
       const drebPctCalc = tt.poss > 0 ? ((tt.dreb / tt.poss) * 100).toFixed(1) : '-';
       const stlPctCalc = tt.poss > 0 ? ((tt.stl / tt.poss) * 100).toFixed(1) : '-';
@@ -3920,10 +3954,10 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         ft_pct: tt.fta > 0 ? ((tt.ftm / tt.fta) * 100).toFixed(1) : '-',
         ft40: tt.fta40_count > 0 ? (tt.fta40_sum / tt.fta40_count).toFixed(1) : '-',
         eff: (tt.val / gp).toFixed(1),
-        ws: tt.kills > 0 ? (tt.kills / gp).toFixed(2) : '-',
+        ws: ws.toFixed(2),
       };
     }).sort((a, b) => parseFloat(b.pts) - parseFloat(a.pts));
-  }, [indTeamGames]);
+  }, [indTeamGames, teamGames, allTeamGames]);
 
   const allPlayerGames = useMemo(() => allGames.filter(g => g.player_name === selectedPlayer), [allGames, selectedPlayer]);
 
