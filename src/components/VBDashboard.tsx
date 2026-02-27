@@ -3952,6 +3952,12 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
       </div>
     );
 
+    const oppLookup = new Map<string, any>();
+    allTeamGames.forEach(g => {
+      const key = `${g.game_date_iso}_${g.team_name}`;
+      oppLookup.set(key, g);
+    });
+
     const totals = teamGames.reduce((acc, g) => {
       acc.pts += g.team_score; acc.reb += g.total_rebounds; acc.ast += g.assist;
       acc.stl += g.steal; acc.blk += g.block; acc.to += g.turnover;
@@ -3962,39 +3968,69 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
       acc.pf += g.personal_foul;
       acc.ptsAllowed += g.opponent_score || 0;
       acc.off_rtg += g.off_rtg || 0; acc.def_rtg += g.def_rtg || 0;
+      acc.net_rtg += g.net_rtg || 0;
       acc.pace += g.pace || 0;
+      acc.poss += g.poss || 0;
+      acc.efg_sum += g.efg_per || 0;
+      acc.efg_count += g.efg_per != null ? 1 : 0;
+
+      const oppKey = `${g.game_date_iso}_${g.opponent_name}`;
+      const opp = oppLookup.get(oppKey);
+      if (opp) {
+        acc.opp_efg_sum += opp.efg_per || 0;
+        acc.opp_efg_count += opp.efg_per != null ? 1 : 0;
+        acc.opp_oreb += opp.offensive_rebound || 0;
+        acc.opp_dreb += opp.defensive_rebound || 0;
+        acc.opp_to += opp.turnover || 0;
+        acc.opp_poss += opp.poss || 0;
+        acc.opp_ftm += opp.ft_made || 0;
+        acc.opp_fga += opp.fg_all || 0;
+        acc.opp_matched++;
+      }
       return acc;
-    }, { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fg_made: 0, fg_all: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, pf: 0, ptsAllowed: 0, off_rtg: 0, def_rtg: 0, pace: 0 });
+    }, { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, fg_made: 0, fg_all: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, oreb: 0, dreb: 0, pf: 0, ptsAllowed: 0, off_rtg: 0, def_rtg: 0, net_rtg: 0, pace: 0, poss: 0, efg_sum: 0, efg_count: 0, opp_efg_sum: 0, opp_efg_count: 0, opp_oreb: 0, opp_dreb: 0, opp_to: 0, opp_poss: 0, opp_ftm: 0, opp_fga: 0, opp_matched: 0 });
     const wins = teamGames.filter(g => g.win_lose === 'win').length;
     const losses = gp - wins;
-    const ppg = (totals.pts / gp).toFixed(1);
-    const rpg = (totals.reb / gp).toFixed(1);
-    const apg = (totals.ast / gp).toFixed(1);
-    const fgPct = totals.fg_all > 0 ? ((totals.fg_made / totals.fg_all) * 100).toFixed(1) : '0.0';
-    const fg3Pct = totals.fg3a > 0 ? ((totals.fg3m / totals.fg3a) * 100).toFixed(1) : '0.0';
-    const ftPct = totals.fta > 0 ? ((totals.ftm / totals.fta) * 100).toFixed(1) : '0.0';
+
+    const avgNetRtg = (totals.net_rtg / gp).toFixed(1);
     const avgOffRtg = (totals.off_rtg / gp).toFixed(1);
     const avgDefRtg = (totals.def_rtg / gp).toFixed(1);
     const avgPace = (totals.pace / gp).toFixed(1);
+
+    const efgPct = totals.efg_count > 0 ? (totals.efg_sum / totals.efg_count).toFixed(1) : '-';
+    const orebPct = totals.poss > 0 ? ((totals.oreb / totals.poss) * 100).toFixed(1) : '-';
+    const tovPct = totals.poss > 0 ? ((totals.to / totals.poss) * 100).toFixed(1) : '-';
+    const ftr = totals.fg_all > 0 ? ((totals.ftm / totals.fg_all) * 100).toFixed(1) : '-';
+
+    const hasOpp = totals.opp_matched > 0;
+    const oppEfgPct = hasOpp && totals.opp_efg_count > 0 ? (totals.opp_efg_sum / totals.opp_efg_count).toFixed(1) : '-';
+    const drebPct = hasOpp && (totals.dreb + totals.opp_oreb) > 0 ? ((totals.dreb / (totals.dreb + totals.opp_oreb)) * 100).toFixed(1) : (totals.poss > 0 ? ((totals.dreb / totals.poss) * 100).toFixed(1) : '-');
+    const oppTovPct = hasOpp && totals.opp_poss > 0 ? ((totals.opp_to / totals.opp_poss) * 100).toFixed(1) : '-';
+    const oppFtr = hasOpp && totals.opp_fga > 0 ? ((totals.opp_ftm / totals.opp_fga) * 100).toFixed(1) : '-';
 
     return (
       <div className="space-y-5">
         {teamSelector}
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatCard label={t('Record')} value={`${wins}W - ${losses}L`} sub={`${gp} ${t('games')}`} color="orange" />
-          <StatCard label="PPG" value={ppg} color="orange" />
-          <StatCard label="RPG" value={rpg} sub={`${(totals.oreb / gp).toFixed(1)} OFF · ${(totals.dreb / gp).toFixed(1)} DEF`} color="blue" />
-          <StatCard label="APG" value={apg} sub={`${(totals.to / gp).toFixed(1)} TO`} color="green" />
-          <StatCard label="FG%" value={`${fgPct}%`} sub={`${(totals.fg_made / gp).toFixed(1)}/${(totals.fg_all / gp).toFixed(1)}`} color="purple" />
-          <StatCard label="3P%" value={`${fg3Pct}%`} sub={`${(totals.fg3m / gp).toFixed(1)}/${(totals.fg3a / gp).toFixed(1)}`} color="red" />
+          <StatCard label="Net Rtg" value={`${parseFloat(avgNetRtg) > 0 ? '+' : ''}${avgNetRtg}`} color={parseFloat(avgNetRtg) >= 0 ? 'green' : 'red'} />
+          <StatCard label="ORtg" value={avgOffRtg} color="green" />
+          <StatCard label="DRtg" value={avgDefRtg} sub={`Pace ${avgPace}`} color="red" />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard label="FT%" value={`${ftPct}%`} sub={`${(totals.ftm / gp).toFixed(1)}/${(totals.fta / gp).toFixed(1)}`} color="blue" />
-          <StatCard label="OFF Rtg" value={avgOffRtg} color="green" />
-          <StatCard label="DEF Rtg" value={avgDefRtg} color="red" />
-          <StatCard label="Pace" value={avgPace} color="purple" />
+        <div className="grid grid-cols-4 gap-3">
+          <StatCard label="eFG%" value={`${efgPct}%`} color="green" />
+          <StatCard label="OREB%" value={`${orebPct}%`} color="blue" />
+          <StatCard label="TOV%" value={`${tovPct}%`} color="orange" />
+          <StatCard label="FTR" value={`${ftr}%`} color="purple" />
+        </div>
+
+        <div className="grid grid-cols-4 gap-3">
+          <StatCard label="Opp eFG%" value={oppEfgPct !== '-' ? `${oppEfgPct}%` : '-'} sub={hasOpp ? `${totals.opp_matched} ${t('games')}` : t('No data')} color="red" />
+          <StatCard label="DREB%" value={`${drebPct}%`} color="blue" />
+          <StatCard label="Opp TOV%" value={oppTovPct !== '-' ? `${oppTovPct}%` : '-'} sub={hasOpp ? `${totals.opp_matched} ${t('games')}` : t('No data')} color="green" />
+          <StatCard label="Opp FTR" value={oppFtr !== '-' ? `${oppFtr}%` : '-'} sub={hasOpp ? `${totals.opp_matched} ${t('games')}` : t('No data')} color="red" />
         </div>
 
         <div className={`${card} p-4`}>
