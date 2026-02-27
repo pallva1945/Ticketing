@@ -3768,6 +3768,21 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedSearchGame, setExpandedSearchGame] = useState<number | null>(null);
 
+  const displayTeamName = (name: string | null) => {
+    if (!name) return '-';
+    const map: Record<string, string> = {
+      'Robur et Fides Varese U17': 'ReF U17',
+      'Pallacanestro Varese U17': 'PV U17',
+      'Robur et Fides Varese U19': 'ReF U19',
+      'Pallacanestro Varese U19': 'PV U19',
+      'Campus Varese': 'VB',
+    };
+    for (const [full, short] of Object.entries(map)) {
+      if (name.toLowerCase() === full.toLowerCase()) return short;
+    }
+    return name;
+  };
+
   const formatDateDMY = (iso: string | null) => {
     if (!iso) return '-';
     const parts = iso.split('-');
@@ -3928,7 +3943,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         <div className="flex flex-wrap gap-2">
           <div className="relative">
             <select value={selectedTeam} onChange={e => setSelectedTeam(e.target.value)} className={selectClass}>
-              {teamNames.map(t => <option key={t} value={t}>{t}</option>)}
+              {teamNames.map(t => <option key={t} value={t}>{displayTeamName(t)}</option>)}
             </select>
             <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
           </div>
@@ -3958,7 +3973,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         <div className="flex flex-wrap gap-2">
           <div className="relative">
             <select value={selectedTeam} onChange={e => setSelectedTeam(e.target.value)} className={selectClass}>
-              {teamNames.map(t => <option key={t} value={t}>{t}</option>)}
+              {teamNames.map(t => <option key={t} value={t}>{displayTeamName(t)}</option>)}
             </select>
             <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
           </div>
@@ -4041,7 +4056,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                 return (
                   <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
                     <td className={`py-1.5 px-1.5 ${subtext}`}>{formatDateDMY(g.date) || '-'}</td>
-                    <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.side === 'home' ? 'vs' : '@'} {g.opponent || '?'}</td>
+                    <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.side === 'home' ? 'vs' : '@'} {displayTeamName(g.opponent)}</td>
                     <td className={`py-1.5 px-1.5 font-semibold ${g.win ? 'text-green-500' : 'text-red-500'}`}>{g.win ? 'W' : 'L'} {g.team_score}-{g.opponent_score}</td>
                     <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{g.pts}</td>
                     <td className={`py-1.5 px-1.5 ${subtext}`}>{g.reb}</td>
@@ -4146,7 +4161,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                   {playerGames.map((g, i) => (
                     <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
                       <td className={`py-1.5 px-1.5 ${subtext}`}>{formatDateDMY(g.game_date_iso)}</td>
-                      <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.side === 'home' ? 'vs' : '@'} {g.opponent_name || '?'}</td>
+                      <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.side === 'home' ? 'vs' : '@'} {displayTeamName(g.opponent_name)}</td>
                       <td className={`py-1.5 px-1.5 font-semibold ${g.win_lose === 'win' ? 'text-green-500' : 'text-red-500'}`}>{g.win_lose === 'win' ? 'W' : 'L'} {g.team_score}-{g.opponent_score}</td>
                       <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{g.pts}</td>
                       <td className={`py-1.5 px-1.5 ${subtext}`}>{g.total_rebounds}</td>
@@ -4179,7 +4194,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
 
     const matchedGames = parsed ? allGames.filter(g => {
       if (parsed.nameQuery) {
-        const haystack = `${g.player_name || ''} ${g.team_name || ''} ${g.opponent_name || ''}`.toLowerCase();
+        const haystack = `${g.player_name || ''} ${g.team_name || ''} ${displayTeamName(g.team_name)} ${g.opponent_name || ''} ${displayTeamName(g.opponent_name)}`.toLowerCase();
         if (!parsed.nameQuery.split(' ').every(w => haystack.includes(w))) return false;
       }
       if (parsed.winFilter === 'win' && g.win_lose !== 'win') return false;
@@ -4241,8 +4256,8 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
             <div className={`px-4 py-3 ${isDark ? 'bg-gray-800/60' : 'bg-gray-50'}`}>
               <div className="flex flex-wrap items-center gap-3 mb-3">
                 <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{g.player_name}</span>
-                <span className={`text-xs ${subtext}`}>{g.team_name}</span>
-                <span className={`text-xs ${subtext}`}>{g.side === 'home' ? 'vs' : '@'} {g.opponent_name}</span>
+                <span className={`text-xs ${subtext}`}>{displayTeamName(g.team_name)}</span>
+                <span className={`text-xs ${subtext}`}>{g.side === 'home' ? 'vs' : '@'} {displayTeamName(g.opponent_name)}</span>
                 <span className={`text-xs font-semibold ${g.win_lose === 'win' ? 'text-green-500' : 'text-red-500'}`}>
                   {g.win_lose === 'win' ? 'W' : 'L'} {g.team_score}-{g.opponent_score}
                 </span>
@@ -4331,8 +4346,8 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                       >
                         <td className={`py-1.5 px-1.5 whitespace-nowrap ${subtext}`}>{formatDateDMY(g.game_date_iso)}</td>
                         <td className={`py-1.5 px-1.5 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.player_name}</td>
-                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.team_name}</td>
-                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.opponent_name}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{displayTeamName(g.team_name)}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{displayTeamName(g.opponent_name)}</td>
                         <td className={`py-1.5 px-1.5 font-semibold ${g.win_lose === 'win' ? 'text-green-500' : 'text-red-500'}`}>
                           {g.win_lose === 'win' ? 'W' : 'L'} {g.team_score}-{g.opponent_score}
                         </td>
