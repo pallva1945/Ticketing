@@ -106,9 +106,9 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding, onH
   const TOTAL_SGA = sharedSga + VB_SGA;
 
   const VERTICALS: Vertical[] = [
-    { id: 'gameday', labelKey: 'GameDay', color: '#ef4444', sales: 1177289, cos: dynGamedayCos, sgaPct: 0.40, sgaFixed: null },
+    { id: 'gameday', labelKey: 'GameDay', color: '#ef4444', sales: 1177289, cos: dynGamedayCos, sgaPct: 0.20, sgaFixed: null },
     { id: 'sponsorship', labelKey: 'Sponsorship', color: '#f97316', sales: 1097254, cos: dynSponsorshipCos, sgaPct: 0.20, sgaFixed: null },
-    { id: 'bops', labelKey: 'BOps', color: '#10b981', sales: bopsYTD, cos: BOPS_COS, sgaPct: 0.30, sgaFixed: null },
+    { id: 'bops', labelKey: 'BOps', color: '#10b981', sales: bopsYTD, cos: BOPS_COS, sgaPct: 0.50, sgaFixed: null },
     { id: 'merchandising', labelKey: 'Merchandising', color: '#3b82f6', sales: 91742, cos: dynMerchCos, sgaPct: 0.05, sgaFixed: null },
     { id: 'venue_ops', labelKey: 'Venue Ops', color: '#8b5cf6', sales: venueOpsYTD, cos: dynVenueOpsCos, sgaPct: 0.05, sgaFixed: null },
     { id: 'varese_basketball', labelKey: 'Varese Basketball', color: '#14b8a6', sales: 386020, cos: 260635, sgaPct: null, sgaFixed: VB_SGA },
