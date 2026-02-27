@@ -4308,7 +4308,6 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         blk_40: hasMin && totalMin > 0 ? ((t.blk / totalMin) * 40).toFixed(1) : (gp > 0 ? (t.blk / gp).toFixed(1) : '0.0'),
         stl_40: hasMin && totalMin > 0 ? ((t.stl / totalMin) * 40).toFixed(1) : (gp > 0 ? (t.stl / gp).toFixed(1) : '0.0'),
         ast_40: hasMin && totalMin > 0 ? ((t.ast / totalMin) * 40).toFixed(1) : (gp > 0 ? (t.ast / gp).toFixed(1) : '0.0'),
-        hasMinutes: hasMin && totalMin > 0,
       };
     })() : null;
 
@@ -4360,12 +4359,12 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                   { label: 'FT/40', value: totalRow.ft40, desc: 'FT per 40 min' },
                   { label: '3P%', value: `${totalRow.fg3_pct}%`, desc: '3-Point %' },
                   { label: 'FT%', value: `${totalRow.ft_pct}%`, desc: 'Free Throw %' },
-                  { label: 'AST/TO', value: totalRow.ast_to, desc: 'Assist to Turnover' },
-                  { label: totalRow.hasMinutes ? 'DREB/40' : 'DREB/G', value: totalRow.dreb_40, desc: totalRow.hasMinutes ? 'Def Reb per 40 min' : 'Def Reb per Game' },
-                  { label: totalRow.hasMinutes ? 'OREB/40' : 'OREB/G', value: totalRow.oreb_40, desc: totalRow.hasMinutes ? 'Off Reb per 40 min' : 'Off Reb per Game' },
-                  { label: totalRow.hasMinutes ? 'STL/40' : 'STL/G', value: totalRow.stl_40, desc: totalRow.hasMinutes ? 'Steals per 40 min' : 'Steals per Game' },
-                  { label: totalRow.hasMinutes ? 'BLK/40' : 'BLK/G', value: totalRow.blk_40, desc: totalRow.hasMinutes ? 'Blocks per 40 min' : 'Blocks per Game' },
-                  { label: totalRow.hasMinutes ? 'AST/40' : 'AST/G', value: totalRow.ast_40, desc: totalRow.hasMinutes ? 'Assists per 40 min' : 'Assists per Game' },
+                  { label: 'AST/TO', value: totalRow.ast_to, desc: 'Assist to Turnover Ratio' },
+                  { label: 'DREB/40', value: totalRow.dreb_40, desc: 'Def Reb per 40 min' },
+                  { label: 'OREB/40', value: totalRow.oreb_40, desc: 'Off Reb per 40 min' },
+                  { label: 'STL/40', value: totalRow.stl_40, desc: 'Steals per 40 min' },
+                  { label: 'BLK/40', value: totalRow.blk_40, desc: 'Blocks per 40 min' },
+                  { label: 'AST/40', value: totalRow.ast_40, desc: 'Assists per 40 min' },
                 ].map((s, i) => (
                   <div key={i} className="flex items-center justify-between py-1">
                     <span className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`} title={s.desc}>{s.label}</span>
