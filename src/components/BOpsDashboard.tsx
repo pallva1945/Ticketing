@@ -34,11 +34,7 @@ export interface BopsSheetData {
   seasonBudget: number;
 }
 
-const DEFAULT_MONTHLY_REVENUE: MonthlyRevenueItem[] = [
-  { name: 'Buy Out (Elisée Assui)', values: [0, 0, 0, 80000, 0, 0, 0, 0, 0, 0, 0, 0], color: '#10b981', note: 'Player buyout revenue' },
-  { name: 'U23–U26', values: [0, 0, 0, 4625, 4625, 4625, 4625, 0, 0, 0, 0, 0], color: '#6366f1', note: 'Youth development allocation' },
-  { name: 'LBA Shared Revenue', values: [0, 0, 0, 18752, 18752, 18752, 18752, 0, 0, 0, 0, 0], color: '#f59e0b', note: 'League shared revenue pool' },
-];
+const EMPTY_MONTHLY_REVENUE: MonthlyRevenueItem[] = [];
 
 const DEFAULT_SEASON_BUDGET = 525000;
 
@@ -228,7 +224,7 @@ export const BOpsDashboard: React.FC = () => {
     }
   };
 
-  const monthlyRevenue = sheetData?.monthlyRevenue || DEFAULT_MONTHLY_REVENUE;
+  const monthlyRevenue = sheetData?.monthlyRevenue || EMPTY_MONTHLY_REVENUE;
   const seasonBudget = sheetData?.seasonBudget || DEFAULT_SEASON_BUDGET;
   const hasLiveData = !!sheetData;
 

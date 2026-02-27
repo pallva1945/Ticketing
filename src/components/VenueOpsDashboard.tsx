@@ -41,10 +41,7 @@ export interface VenueOpsSheetData {
   seasonBudget: number;
 }
 
-const DEFAULT_MONTHLY_REVENUE: MonthlyRevenueItem[] = [
-  { name: 'Municipality Contribution', values: [0, 0, 12000, 12000, 12000, 12000, 8000, 0, 0, 0, 0, 0], color: '#3b82f6', note: 'Municipal arena subsidy' },
-  { name: 'Arena Events & Rentals', values: [0, 500, 3000, 10000, 5000, 18986, 0, 0, 0, 0, 0, 0], color: '#10b981', note: 'Games, parties, productions, corporate' },
-];
+const EMPTY_MONTHLY_REVENUE: MonthlyRevenueItem[] = [];
 
 const DEFAULT_SEASON_BUDGET = 262364;
 
@@ -277,7 +274,7 @@ export const VenueOpsDashboard: React.FC = () => {
     }
   };
 
-  const monthlyRevenue = sheetData?.monthlyRevenue || DEFAULT_MONTHLY_REVENUE;
+  const monthlyRevenue = sheetData?.monthlyRevenue || EMPTY_MONTHLY_REVENUE;
   const seasonBudget = sheetData?.seasonBudget || DEFAULT_SEASON_BUDGET;
   const hasLiveData = !!sheetData;
 
