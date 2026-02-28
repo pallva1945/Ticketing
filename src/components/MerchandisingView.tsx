@@ -714,6 +714,46 @@ export const MerchandisingView: React.FC = () => {
     };
   }, [allOrdersForCommunity]);
 
+  const rfmEvolution = useMemo(() => {
+    if (!allOrdersForCommunity.length) return [];
+    const sorted = [...allOrdersForCommunity].sort((a, b) => new Date(a.processedAt).getTime() - new Date(b.processedAt).getTime());
+    const firstDate = new Date(sorted[0].processedAt);
+    const lastDate = new Date(sorted[sorted.length - 1].processedAt);
+    const months: { label: string; endDate: Date }[] = [];
+    const cur = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1);
+    while (cur <= lastDate) {
+      const end = new Date(cur.getFullYear(), cur.getMonth() + 1, 0, 23, 59, 59);
+      const mmYY = `${String(cur.getMonth() + 1).padStart(2, '0')}/${String(cur.getFullYear()).slice(-2)}`;
+      months.push({ label: mmYY, endDate: end });
+      cur.setMonth(cur.getMonth() + 1);
+    }
+    return months.map(({ label, endDate }) => {
+      const sixBefore = new Date(endDate); sixBefore.setMonth(sixBefore.getMonth() - 6);
+      const thirtyBefore = new Date(endDate); thirtyBefore.setDate(thirtyBefore.getDate() - 30);
+      const custMap: Record<string, { orders: number; totalSpent: number; firstOrder: Date; lastOrder: Date }> = {};
+      allOrdersForCommunity.forEach(o => {
+        const d = new Date(o.processedAt);
+        if (d > endDate) return;
+        const email = o.customerEmail;
+        if (!email) return;
+        const net = o.totalPrice - (o.totalTax || 0);
+        if (!custMap[email]) custMap[email] = { orders: 0, totalSpent: 0, firstOrder: d, lastOrder: d };
+        custMap[email].orders++;
+        custMap[email].totalSpent += net;
+        if (d < custMap[email].firstOrder) custMap[email].firstOrder = d;
+        if (d > custMap[email].lastOrder) custMap[email].lastOrder = d;
+      });
+      const custs = Object.values(custMap);
+      const total = custs.length;
+      const champions = custs.filter(c => c.orders >= 3 && c.totalSpent >= 100).length;
+      const atRisk = custs.filter(c => c.orders >= 2 && c.lastOrder < sixBefore).length;
+      const newBlood = custs.filter(c => c.orders === 1 && c.firstOrder >= thirtyBefore).length;
+      const repeat = custs.filter(c => c.orders >= 2).length;
+      const repeatRate = total > 0 ? Math.round((repeat / total) * 1000) / 10 : 0;
+      return { month: label, Champions: champions, 'At Risk': atRisk, 'New Blood': newBlood, RepeatRate: repeatRate, total };
+    });
+  }, [allOrdersForCommunity]);
+
   const gatewayData = useMemo(() => {
     if (!allOrdersForCommunity.length) return { entryProducts: [] as { title: string; count: number }[], bundles: [] as { product1: string; product2: string; count: number }[] };
     const customerFirstOrders: Record<string, ShopifyOrder> = {};
@@ -1880,6 +1920,51 @@ export const MerchandisingView: React.FC = () => {
               <p className="text-xs text-gray-500 dark:text-gray-400">{rfmData.totalCustomers.toLocaleString()} {t('total')}</p>
             </div>
           </div>
+
+          {rfmEvolution.length > 0 && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1 flex items-center gap-2">
+                  <TrendingUp size={16} className="text-green-600" />
+                  {t('Segment Evolution')}
+                </h3>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-4">{t('Champions, At Risk & New Blood over time')}</p>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={rfmEvolution} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="month" tick={{ fontSize: 9 }} interval={Math.max(Math.floor(rfmEvolution.length / 10), 1)} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontSize: '12px' }} />
+                      <Legend wrapperStyle={{ fontSize: '11px' }} />
+                      <Line type="monotone" dataKey="Champions" stroke="#10b981" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="At Risk" stroke="#ef4444" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="New Blood" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+                <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1 flex items-center gap-2">
+                  <Target size={16} className="text-orange-600" />
+                  {t('Repeat Purchase Rate Evolution')}
+                </h3>
+                <p className="text-[10px] text-gray-500 dark:text-gray-400 mb-4">{t('% of customers with 2+ orders over time')}</p>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={rfmEvolution} margin={{ top: 5, right: 20, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="month" tick={{ fontSize: 9 }} interval={Math.max(Math.floor(rfmEvolution.length / 10), 1)} />
+                      <YAxis tick={{ fontSize: 10 }} domain={[0, 'auto']} tickFormatter={(v: number) => `${v}%`} />
+                      <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontSize: '12px' }} formatter={(v: number) => `${v}%`} />
+                      <Line type="monotone" dataKey="RepeatRate" name={t('Repeat Rate')} stroke="#f97316" strokeWidth={2.5} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
 
           {gatewayData.entryProducts.length > 0 && (
             <>
