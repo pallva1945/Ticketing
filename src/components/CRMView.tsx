@@ -167,6 +167,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [gameFilterSellType, setGameFilterSellType] = useState<string | null>(null);
   const [zoneFilterGame, setZoneFilterGame] = useState<string | null>(null);
   const [zoneFilterSellType, setZoneFilterSellType] = useState<string | null>(null);
+  const [personaSortCol, setPersonaSortCol] = useState<string>('total');
+  const [personaSortDir, setPersonaSortDir] = useState<'asc' | 'desc'>('desc');
 
   const hasActiveFilter = !selectedZones.includes('All') || !selectedGames.includes('All') || !selectedSellTypes.includes('All') || capacityView !== 'all';
 
@@ -1615,26 +1617,50 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
                   <tr>
-                    <th className="text-left py-3 px-4 font-medium">{t('Zone')}</th>
-                    <th className="text-center py-3 px-4 font-medium">{t('Under 25')}</th>
-                    <th className="text-center py-3 px-4 font-medium">25-44</th>
-                    <th className="text-center py-3 px-4 font-medium">45-64</th>
-                    <th className="text-center py-3 px-4 font-medium">65+</th>
-                    <th className="text-right py-3 px-4 font-medium">{t('Avg Price')}</th>
-                    <th className="text-right py-3 px-4 font-medium">{t('Avg Advance')}</th>
-                    <th className="text-right py-3 px-4 font-medium">{t('Top Location')}</th>
+                    {[
+                      { key: 'zone', label: t('Zone'), align: 'text-left' },
+                      { key: 'Under 25', label: t('Under 25'), align: 'text-center' },
+                      { key: '25-44', label: '25-44', align: 'text-center' },
+                      { key: '45-64', label: '45-64', align: 'text-center' },
+                      { key: '65+', label: '65+', align: 'text-center' },
+                      { key: 'avgPrice', label: t('Avg Price'), align: 'text-right' },
+                      { key: 'avgAdvance', label: t('Avg Advance'), align: 'text-right' },
+                      { key: 'topLocation', label: t('Top Location'), align: 'text-right' },
+                    ].map(col => (
+                      <th key={col.key} className={`${col.align} py-3 px-4 font-medium cursor-pointer select-none hover:text-gray-900 dark:hover:text-gray-200 transition-colors`}
+                        onClick={() => { if (personaSortCol === col.key) { setPersonaSortDir(d => d === 'asc' ? 'desc' : 'asc'); } else { setPersonaSortCol(col.key); setPersonaSortDir('desc'); } }}>
+                        <span className="inline-flex items-center gap-1">
+                          {col.label}
+                          {personaSortCol === col.key && (personaSortDir === 'desc' ? <ChevronDown size={14} /> : <ChevronUp size={14} />)}
+                        </span>
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {Object.entries(stats.zoneByAge || {})
-                    .sort((a, b) => Object.values(b[1]).reduce((s, v) => s + v, 0) - Object.values(a[1]).reduce((s, v) => s + v, 0))
-                    .slice(0, 10)
                     .map(([zone, ages]) => {
-                      const locations = (stats.zoneByLocation || {})[zone] || {};
-                      const topLoc = Object.entries(locations).filter(([loc]) => loc !== 'Unknown').sort((a, b) => b[1] - a[1])[0];
                       const zoneTotal = Object.values(ages).reduce((s, v) => s + v, 0);
                       const zs = (stats.zoneStats || {})[zone];
                       const avgPrice = zs && zs.totalTickets > 0 ? zs.totalValue / zs.totalTickets : 0;
+                      const avgAdvance = zs && zs.advanceCount > 0 ? Math.round(zs.totalAdvanceDays / zs.advanceCount) : 0;
+                      const locations = (stats.zoneByLocation || {})[zone] || {};
+                      const topLoc = Object.entries(locations).filter(([loc]) => loc !== 'Unknown').sort((a, b) => b[1] - a[1])[0];
+                      return { zone, ages, zoneTotal, avgPrice, avgAdvance, topLoc };
+                    })
+                    .sort((a, b) => {
+                      let va: number | string = 0, vb: number | string = 0;
+                      const ageGroups = ['Under 25', '25-44', '45-64', '65+'];
+                      if (personaSortCol === 'zone') { va = a.zone.toLowerCase(); vb = b.zone.toLowerCase(); return personaSortDir === 'asc' ? (va < vb ? -1 : va > vb ? 1 : 0) : (va > vb ? -1 : va < vb ? 1 : 0); }
+                      if (personaSortCol === 'total') { va = a.zoneTotal; vb = b.zoneTotal; }
+                      else if (ageGroups.includes(personaSortCol)) { va = a.zoneTotal > 0 ? ((a.ages[personaSortCol] || 0) / a.zoneTotal) : 0; vb = b.zoneTotal > 0 ? ((b.ages[personaSortCol] || 0) / b.zoneTotal) : 0; }
+                      else if (personaSortCol === 'avgPrice') { va = a.avgPrice; vb = b.avgPrice; }
+                      else if (personaSortCol === 'avgAdvance') { va = a.avgAdvance; vb = b.avgAdvance; }
+                      else if (personaSortCol === 'topLocation') { va = a.topLoc ? a.topLoc[1] : 0; vb = b.topLoc ? b.topLoc[1] : 0; }
+                      return personaSortDir === 'asc' ? (va as number) - (vb as number) : (vb as number) - (va as number);
+                    })
+                    .slice(0, 10)
+                    .map(({ zone, ages, zoneTotal, avgPrice, avgAdvance, topLoc }) => {
                       const ageGroups = ['Under 25', '25-44', '45-64', '65+'];
                       const getColorIntensity = (pct: number) => {
                         if (pct === 0) return 'bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-500';
@@ -1662,7 +1688,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                             {avgPrice > 0 ? `€${avgPrice.toFixed(0)}` : '-'}
                           </td>
                           <td className="py-3 px-4 text-right font-medium text-gray-700 dark:text-gray-200">
-                            {zs && zs.advanceCount > 0 ? `${Math.round(zs.totalAdvanceDays / zs.advanceCount)}d` : '-'}
+                            {avgAdvance > 0 ? `${avgAdvance}d` : '-'}
                           </td>
                           <td className="py-3 px-4 text-right">
                             {topLoc ? (
