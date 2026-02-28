@@ -4479,6 +4479,49 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                     );
                   })}
                 </tbody>
+                {gp > 1 && (() => {
+                  const tot = playerGames.reduce((a, g) => {
+                    a.pts += g.pts; a.reb += g.total_rebounds; a.ast += g.assist;
+                    a.stl += g.steal; a.blk += g.block; a.to += g.turnover; a.val += g.val;
+                    a.fg2m += g.pts2_made; a.fg2a += g.pts2_all;
+                    a.fg3m += g.pts3_made; a.fg3a += g.pts3_all;
+                    a.ftm += g.ft_made; a.fta += g.ft_all;
+                    a.poss += g.poss || 0;
+                    if (g.minutes_calc != null) { const mv = parseFloat(g.minutes_calc); if (!isNaN(mv)) { a.min += mv; a.minG++; } }
+                    return a;
+                  }, { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, val: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, poss: 0, min: 0, minG: 0 });
+                  const tFgm = tot.fg2m + tot.fg3m;
+                  const tFga = tot.fg2a + tot.fg3a;
+                  const tEfg = tFga > 0 ? (((tFgm + 0.5 * tot.fg3m) / tFga) * 100).toFixed(1) : '—';
+                  const tTs = (2 * (tFga + 0.44 * tot.fta)) > 0 ? ((tot.pts / (2 * (tFga + 0.44 * tot.fta))) * 100).toFixed(1) : '—';
+                  const tPpp = tot.poss > 0 ? (tot.pts / tot.poss).toFixed(2) : '—';
+                  const tAstTo = tot.to > 0 ? (tot.ast / tot.to).toFixed(1) : (tot.ast > 0 ? '∞' : '—');
+                  const tMin = tot.minG > 0 ? (tot.min / gp).toFixed(1) : '—';
+                  const boldCell = `py-1.5 px-1.5 font-bold ${isDark ? 'text-gray-200' : 'text-gray-800'}`;
+                  return (
+                    <tfoot>
+                      <tr className={`border-t-2 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                        <td className={boldCell} colSpan={2}>{t('AVG')} ({gp} {t('games')})</td>
+                        <td className={boldCell}></td>
+                        <td className={boldCell}>{tMin}</td>
+                        <td className={`py-1.5 px-1.5 font-bold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{(tot.pts / gp).toFixed(1)}</td>
+                        <td className={boldCell}>{(tot.reb / gp).toFixed(1)}</td>
+                        <td className={boldCell}>{(tot.ast / gp).toFixed(1)}</td>
+                        <td className={boldCell}>{(tot.stl / gp).toFixed(1)}</td>
+                        <td className={boldCell}>{(tot.blk / gp).toFixed(1)}</td>
+                        <td className={boldCell}>{(tot.to / gp).toFixed(1)}</td>
+                        <td className={boldCell}>{tFga > 0 ? `${((tFgm / tFga) * 100).toFixed(1)}%` : '—'}</td>
+                        <td className={boldCell}>{tot.fg3a > 0 ? `${((tot.fg3m / tot.fg3a) * 100).toFixed(1)}%` : '—'}</td>
+                        <td className={boldCell}>{tot.fta > 0 ? `${((tot.ftm / tot.fta) * 100).toFixed(1)}%` : '—'}</td>
+                        <td className={boldCell}>{(tot.val / gp).toFixed(1)}</td>
+                        <td className={boldCell}>{tPpp}</td>
+                        <td className={boldCell}>{tEfg}</td>
+                        <td className={boldCell}>{tTs}</td>
+                        <td className={boldCell}>{tAstTo}</td>
+                      </tr>
+                    </tfoot>
+                  );
+                })()}
               </table>
             </div>
           </>
