@@ -7,13 +7,13 @@ const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maxi
 const formatCurrencyShort = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 
 const ALL_SEASON_MONTHS = ['July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June'];
-const ALL_GAMES_PER_MONTH = [0, 0, 2, 2, 3, 1, 3, 2, 3, 2, 2, 0];
+const ALL_GAMES_PER_MONTH = [0, 0, 0, 2, 3, 1, 2, 0, 3, 2, 2, 0];
 
 const GAME_DATES: Record<string, string[]> = {
-  September: ['3 Sep', '28 Sep'],
   October: ['11 Oct', '25 Oct'],
   November: ['4 Nov', '16 Nov', '23 Nov'],
   December: ['21 Dec'],
+  January: ['3 Jan', '18 Jan'],
 };
 
 interface CostLine {

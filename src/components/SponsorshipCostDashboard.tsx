@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 
 const ALL_SEASON_MONTHS = ['July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March', 'April', 'May', 'June'];
-const ALL_GAMES_PER_MONTH = [0, 0, 2, 2, 3, 1, 3, 2, 3, 2, 2, 0];
+const ALL_GAMES_PER_MONTH = [0, 0, 0, 2, 3, 1, 2, 0, 3, 2, 2, 0];
 
 interface CostLine {
   name: string;
