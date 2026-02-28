@@ -4275,16 +4275,18 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         a.val += g.val; a.stl += g.steal; a.blk += g.block;
         a.oreb += g.offensive_rebound; a.dreb += g.defensive_rebound;
         a.to += g.turnover;
+        a.poss += g.poss || 0;
         if (g.ppp != null && g.poss != null && g.poss > 0) { a.ppp_pts += g.pts; a.ppp_poss += g.poss; }
         else if (g.ppp != null) { a.ppp_sum += g.ppp; a.ppp_count++; }
         if (g.fta_per_40 != null) { a.ft40_sum += g.fta_per_40; a.ft40_count++; }
+        if (g.defensive_rebound_per != null && g.defensive_rebound_per > 0) { a.dreb_per_sum += g.defensive_rebound_per; a.dreb_per_count++; }
         if (g.minutes_calc != null) {
           const mc = String(g.minutes_calc);
           const minVal = mc.includes(':') ? (() => { const [mm, ss] = mc.split(':').map(Number); return mm + (ss || 0) / 60; })() : parseFloat(mc);
           if (!isNaN(minVal)) { a.min_sum += minVal; a.min_count++; }
         }
         return a;
-      }, { pts: 0, reb: 0, ast: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, val: 0, stl: 0, blk: 0, oreb: 0, dreb: 0, to: 0, ppp_pts: 0, ppp_poss: 0, ppp_sum: 0, ppp_count: 0, ft40_sum: 0, ft40_count: 0, min_sum: 0, min_count: 0 });
+      }, { pts: 0, reb: 0, ast: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, val: 0, stl: 0, blk: 0, oreb: 0, dreb: 0, to: 0, poss: 0, ppp_pts: 0, ppp_poss: 0, ppp_sum: 0, ppp_count: 0, ft40_sum: 0, ft40_count: 0, min_sum: 0, min_count: 0, dreb_per_sum: 0, dreb_per_count: 0 });
       const fgm = t.fg2m + t.fg3m;
       const fga = t.fg2a + t.fg3a;
       const efg = fga > 0 ? ((fgm + 0.5 * t.fg3m) / fga) * 100 : null;
@@ -4304,7 +4306,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         ts: ts !== null ? ts.toFixed(1) : null,
         ft40: t.ft40_count > 0 ? (t.ft40_sum / t.ft40_count).toFixed(1) : null,
         ast_to: t.to > 0 ? (t.ast / t.to).toFixed(2) : (t.ast > 0 ? '∞' : '0.00'),
-        dreb_40: hasMin && totalMin > 0 ? ((t.dreb / totalMin) * 40).toFixed(1) : (gp > 0 ? (t.dreb / gp).toFixed(1) : '0.0'),
+        dreb_pct: t.dreb_per_count > 0 ? (t.dreb_per_sum / t.dreb_per_count).toFixed(1) : (t.poss > 0 ? ((t.dreb / t.poss) * 100).toFixed(1) : null),
         oreb_40: hasMin && totalMin > 0 ? ((t.oreb / totalMin) * 40).toFixed(1) : (gp > 0 ? (t.oreb / gp).toFixed(1) : '0.0'),
         blk_40: hasMin && totalMin > 0 ? ((t.blk / totalMin) * 40).toFixed(1) : (gp > 0 ? (t.blk / gp).toFixed(1) : '0.0'),
         stl_40: hasMin && totalMin > 0 ? ((t.stl / totalMin) * 40).toFixed(1) : (gp > 0 ? (t.stl / gp).toFixed(1) : '0.0'),
@@ -4361,7 +4363,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                   { label: '3P%', value: `${totalRow.fg3_pct}%`, desc: '3-Point %' },
                   { label: 'FT%', value: `${totalRow.ft_pct}%`, desc: 'Free Throw %' },
                   { label: 'AST/TO', value: totalRow.ast_to, desc: 'Assist to Turnover Ratio' },
-                  { label: 'DREB/40', value: totalRow.dreb_40, desc: 'Def Reb per 40 min' },
+                  { label: 'DREB%', value: totalRow.dreb_pct ? `${totalRow.dreb_pct}%` : null, desc: 'Defensive Rebound %' },
                   { label: 'OREB/40', value: totalRow.oreb_40, desc: 'Off Reb per 40 min' },
                   { label: 'STL/40', value: totalRow.stl_40, desc: 'Steals per 40 min' },
                   { label: 'BLK/40', value: totalRow.blk_40, desc: 'Blocks per 40 min' },
