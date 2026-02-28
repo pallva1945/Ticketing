@@ -19,7 +19,7 @@ function getSeasonMonthsElapsed(): number {
   const now = new Date();
   const month = now.getMonth();
   const seasonIndex = month >= 6 ? month - 6 : month + 6;
-  const GAME_MONTH_START = 3;
+  const GAME_MONTH_START = 2;
   const TOTAL_GAME_MONTHS = 10;
   const elapsed = Math.max(0, Math.min(seasonIndex - GAME_MONTH_START + 1, TOTAL_GAME_MONTHS));
   return elapsed;
@@ -148,7 +148,7 @@ export function parseBopsSheetData(rows: string[][]): BopsSheetData | null {
   if (breakdown.length === 0) return null;
 
   const elapsed = getSeasonMonthsElapsed();
-  const GAME_MONTH_START = 3;
+  const GAME_MONTH_START = 2;
   const items: MonthlyRevenueItem[] = breakdown.map((b, i) => ({
     name: b.name,
     values: SEASON_MONTHS.map((_, mi) => mi >= GAME_MONTH_START && mi < GAME_MONTH_START + elapsed ? Math.round(b.amount / Math.max(elapsed, 1)) : 0),
