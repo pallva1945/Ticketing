@@ -4262,9 +4262,49 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
     );
   };
 
+  const playerWinShares = useMemo(() => {
+    if (playerGames.length === 0) return null;
+    const playerTeams = new Set(playerGames.map(g => g.team_name));
+    const relevantTeamGames = allTeamGames.filter(g => playerTeams.has(g.team_name));
+    const teamComps = new Set<string>();
+    relevantTeamGames.forEach(g => { const c = (g.competition_name || '').trim(); if (c) teamComps.add(c); });
+
+    const lgGames = allTeamGames.filter(g => teamComps.has((g.competition_name || '').trim()));
+    const lgTotPts = lgGames.reduce((s, g) => s + (g.team_score || 0) + (g.opponent_score || 0), 0);
+    const lgTotPoss = lgGames.reduce((s, g) => s + (g.poss || 0), 0);
+    const lgPtsPoss = lgTotPoss > 0 ? lgTotPts / (2 * lgTotPoss) : 1;
+    const lgPtsPG = lgGames.length > 0 ? lgTotPts / (2 * lgGames.length) : 75;
+    const lgPaceSum = lgGames.reduce((s, g) => s + (g.pace || 0), 0);
+    const lgPace = lgGames.length > 0 ? lgPaceSum / lgGames.length : 80;
+
+    const tmGP = relevantTeamGames.length;
+    const tmPace = tmGP > 0 ? relevantTeamGames.reduce((s, g) => s + (g.pace || 0), 0) / tmGP : lgPace;
+    const tmTotalPoss = relevantTeamGames.reduce((s, g) => s + (g.poss || 0), 0);
+    const tmDefRtg = tmGP > 0 ? relevantTeamGames.reduce((s, g) => s + (g.def_rtg || 0), 0) / tmGP : 100;
+
+    const marPtsWin = 0.32 * lgPtsPG * (tmPace / (lgPace || 1));
+
+    const allIndForTeams = allGames.filter(g => playerTeams.has(g.team_name));
+    const allPlayerPossTotal = allIndForTeams.reduce((s, g) => s + (g.poss || 0), 0);
+
+    const plPts = playerGames.reduce((s, g) => s + g.pts, 0);
+    const plVal = playerGames.reduce((s, g) => s + g.val, 0);
+    const plPoss = playerGames.reduce((s, g) => s + (g.poss || 0), 0);
+
+    const ptsGen = plVal > 0 ? plVal : plPts;
+    const marOffPl = ptsGen - 0.92 * lgPtsPoss * plPoss;
+    const ows = marPtsWin > 0 ? Math.max(marOffPl / marPtsWin, 0) : 0;
+
+    const possShare = allPlayerPossTotal > 0 ? plPoss / allPlayerPossTotal : 0;
+    const playerOppPoss = tmTotalPoss * possShare;
+    const marDefPl = playerOppPoss * (1.08 * lgPtsPoss - tmDefRtg / 100);
+    const dws = marPtsWin > 0 ? Math.max(marDefPl / marPtsWin, 0) : 0;
+
+    return (ows + dws).toFixed(2);
+  }, [playerGames, allTeamGames, allGames]);
+
   const renderPlayerTab = () => {
     const gp = playerGames.length;
-    const playerWs = playerAverages.find(p => p.name === selectedPlayer)?.ws ?? null;
 
     const totalRow = gp > 0 ? (() => {
       const t = playerGames.reduce((a, g) => {
@@ -4371,7 +4411,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                   { label: 'STL%', value: totalRow.stl_pct ? `${totalRow.stl_pct}%` : null, desc: 'Steal %' },
                   { label: 'BLK%', value: totalRow.blk_pct ? `${totalRow.blk_pct}%` : null, desc: 'Block %' },
                   { label: 'AST/40', value: totalRow.ast_40, desc: 'Assists per 40 min' },
-                  { label: 'WS', value: playerWs, desc: 'Win Shares' },
+                  { label: 'WS', value: playerWinShares, desc: 'Win Shares' },
                 ].map((s, i) => (
                   <div key={i} className="flex items-center justify-between py-1">
                     <span className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`} title={s.desc}>{s.label}</span>
