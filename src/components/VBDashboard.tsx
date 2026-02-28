@@ -4264,6 +4264,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
 
   const renderPlayerTab = () => {
     const gp = playerGames.length;
+    const playerWs = playerAverages.find(p => p.name === selectedPlayer)?.ws ?? null;
 
     const totalRow = gp > 0 ? (() => {
       const t = playerGames.reduce((a, g) => {
@@ -4365,6 +4366,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                   { label: 'STL/40', value: totalRow.stl_40, desc: 'Steals per 40 min' },
                   { label: 'BLK/40', value: totalRow.blk_40, desc: 'Blocks per 40 min' },
                   { label: 'AST/40', value: totalRow.ast_40, desc: 'Assists per 40 min' },
+                  { label: 'WS', value: playerWs, desc: 'Win Shares' },
                 ].map((s, i) => (
                   <div key={i} className="flex items-center justify-between py-1">
                     <span className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`} title={s.desc}>{s.label}</span>
