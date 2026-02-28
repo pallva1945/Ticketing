@@ -1240,10 +1240,17 @@ app.get("/api/gameday/merch-revenue", async (req, res) => {
         return res.json({ success: true, revenue: 0 });
       }
     }
-    const total = gameDayCache.rawRows.reduce((sum: number, row: any) => {
-      const v = parseFloat(row.Merch_eur || row.merch_eur || '0');
-      return sum + (isNaN(v) ? 0 : v);
-    }, 0);
+    const now2 = new Date();
+    const month = now2.getMonth();
+    const year = now2.getFullYear();
+    const startYear = month >= 6 ? year : year - 1;
+    const currentSeason = `${String(startYear).slice(2)}-${String(startYear + 1).slice(2)}`;
+    const total = gameDayCache.rawRows
+      .filter((row: any) => (row.Season || '') === currentSeason)
+      .reduce((sum: number, row: any) => {
+        const v = parseFloat(row.Merch_eur || row.merch_eur || '0');
+        return sum + (isNaN(v) ? 0 : v);
+      }, 0);
     res.json({ success: true, revenue: total });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
