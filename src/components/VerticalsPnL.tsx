@@ -49,6 +49,7 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding, onH
   const [costData, setCostData] = useState<CostData | null>(null);
   const [bopsYTD, setBopsYTD] = useState(0);
   const [venueOpsYTD, setVenueOpsYTD] = useState(0);
+  const [merchSales, setMerchSales] = useState(91742);
 
   useEffect(() => {
     fetch('/api/costs/data')
@@ -81,6 +82,14 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding, onH
         }
       })
       .catch(() => {});
+    fetch('/api/merch/season-revenue')
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && res.revenue > 0) {
+          setMerchSales(Math.round(res.revenue));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const hasCsv = !!costData;
@@ -108,7 +117,7 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding, onH
   const VERTICALS: Vertical[] = [
     { id: 'gameday_bops', labelKey: 'GameDay & BOps', color: '#ef4444', sales: 1177289 + bopsYTD, cos: dynGamedayCos + BOPS_COS, sgaPct: 0.60, sgaFixed: null },
     { id: 'sponsorship', labelKey: 'Sponsorship', color: '#f97316', sales: 1097254, cos: dynSponsorshipCos, sgaPct: 0.30, sgaFixed: null },
-    { id: 'merchandising', labelKey: 'Merchandising', color: '#3b82f6', sales: 91742, cos: dynMerchCos, sgaPct: 0.05, sgaFixed: null },
+    { id: 'merchandising', labelKey: 'Merchandising', color: '#3b82f6', sales: merchSales, cos: dynMerchCos, sgaPct: 0.05, sgaFixed: null },
     { id: 'venue_ops', labelKey: 'Venue Ops', color: '#8b5cf6', sales: venueOpsYTD, cos: dynVenueOpsCos, sgaPct: 0.05, sgaFixed: null },
     { id: 'varese_basketball', labelKey: 'Varese Basketball', color: '#14b8a6', sales: 386020, cos: 260635, sgaPct: null, sgaFixed: VB_SGA },
   ];
