@@ -1399,7 +1399,7 @@ interface ShopifyCustomer {
 
 let shopifyCache: { orders: ShopifyOrder[]; products: ShopifyProduct[]; customers: ShopifyCustomer[]; lastUpdated: string; timestamp: number } | null = null;
 let shopifyWarmingPromise: Promise<void> | null = null;
-const SHOPIFY_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours cache — refresh manually or daily
+const SHOPIFY_CACHE_TTL = 30 * 60 * 1000; // 30 minutes cache
 
 // Normalize payment method from various gateway names
 function normalizePaymentMethod(method: string): string {
