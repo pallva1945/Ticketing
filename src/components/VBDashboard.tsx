@@ -463,6 +463,65 @@ function computePotentialScore(
   return { score, components, ageFactor: af, factorsUsed: avail.length };
 }
 
+const NBA_SKILL_BASELINES = {
+  fg3_pct: 36.0,
+  ft_pct: 78.0,
+  ast_to: 1.8,
+  usg_pct: 20.0,
+  intensity: 0.25,
+  ws_per_game: 0.10,
+};
+
+const TALENT_WEIGHTS = {
+  fg3_pct: 0.20,
+  ft_pct: 0.15,
+  ast_to: 0.20,
+  usg_pct: 0.15,
+  intensity: 0.15,
+  ws_per_game: 0.15,
+};
+
+interface TalentScoreResult {
+  score: number;
+  components: { label: string; value: number; pctOfNba: number; weight: number }[];
+  factorsUsed: number;
+}
+
+function computeTalentScore(
+  stats: { fg3_pct: number | null; ft_pct: number | null; ast_to: number | null; usg_pct: number | null; intensity: number | null; ws_per_game: number | null },
+  age: number | null
+): TalentScoreResult | null {
+  const raw = [
+    { key: 'fg3_pct' as const, label: '3PT%', value: stats.fg3_pct, base: NBA_SKILL_BASELINES.fg3_pct, w: TALENT_WEIGHTS.fg3_pct },
+    { key: 'ft_pct' as const, label: 'FT%', value: stats.ft_pct, base: NBA_SKILL_BASELINES.ft_pct, w: TALENT_WEIGHTS.ft_pct },
+    { key: 'ast_to' as const, label: 'AST/TO', value: stats.ast_to, base: NBA_SKILL_BASELINES.ast_to, w: TALENT_WEIGHTS.ast_to },
+    { key: 'usg_pct' as const, label: 'USG%', value: stats.usg_pct, base: NBA_SKILL_BASELINES.usg_pct, w: TALENT_WEIGHTS.usg_pct },
+    { key: 'intensity' as const, label: 'Intensity', value: stats.intensity, base: NBA_SKILL_BASELINES.intensity, w: TALENT_WEIGHTS.intensity },
+    { key: 'ws_per_game' as const, label: 'WS/G', value: stats.ws_per_game, base: NBA_SKILL_BASELINES.ws_per_game, w: TALENT_WEIGHTS.ws_per_game },
+  ];
+
+  const avail = raw.filter(r => r.value !== null && r.value > 0);
+  if (avail.length < 3) return null;
+
+  const totalW = avail.reduce((s, r) => s + r.w, 0);
+  const components = raw.map(r => {
+    const isAvail = r.value !== null && r.value > 0;
+    const pctOfNba = isAvail ? (r.value! / r.base) * 100 : 0;
+    const adjWeight = isAvail ? r.w / totalW : 0;
+    return { label: r.label, value: r.value ?? 0, pctOfNba: Math.round(pctOfNba * 10) / 10, weight: adjWeight };
+  });
+
+  const weightedScore = avail.reduce((s, r) => {
+    const pct = (r.value! / r.base) * 100;
+    return s + pct * (r.w / totalW);
+  }, 0);
+
+  const af = getCasAgeFactor(age);
+  const score = Math.round(weightedScore * af * 100) / 100;
+
+  return { score, components, factorsUsed: avail.length };
+}
+
 function getPlayerWorkEthic(player: string, profiles: PlayerProfile[]): number | null {
   const p = profiles.find(pr => pr.name.toLowerCase() === player.toLowerCase());
   return p?.workEthic ?? null;
@@ -4303,6 +4362,30 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
     return (ows + dws).toFixed(2);
   }, [playerGames, allTeamGames, allGames]);
 
+  const playerTalentScore = useMemo(() => {
+    if (playerGames.length < 3) return null;
+    const gp = playerGames.length;
+    const totals = playerGames.reduce((a, g) => {
+      a.fg3m += g.pts3_made; a.fg3a += g.pts3_all;
+      a.ftm += g.ft_made; a.fta += g.ft_all;
+      a.ast += g.assist; a.to += g.turnover;
+      a.val += g.val; a.poss += g.poss || 0;
+      if (g.usg_per != null && g.usg_per > 0) { a.usg_sum += parseFloat(g.usg_per); a.usg_count++; }
+      return a;
+    }, { fg3m: 0, fg3a: 0, ftm: 0, fta: 0, ast: 0, to: 0, val: 0, poss: 0, usg_sum: 0, usg_count: 0 });
+
+    const fg3Pct = totals.fg3a > 0 ? (totals.fg3m / totals.fg3a) * 100 : null;
+    const ftPct = totals.fta > 0 ? (totals.ftm / totals.fta) * 100 : null;
+    const astTo = totals.to > 0 ? totals.ast / totals.to : (totals.ast > 0 ? 3.0 : null);
+    const usgPct = totals.usg_count > 0 ? totals.usg_sum / totals.usg_count : null;
+    const intensity = totals.poss > 0 ? totals.val / totals.poss : null;
+    const wsVal = playerWinShares ? parseFloat(playerWinShares) : null;
+    const wsPerGame = wsVal !== null && gp > 0 ? wsVal / gp : null;
+
+    const age = getPlayerAge(selectedPlayer, profiles);
+    return computeTalentScore({ fg3_pct: fg3Pct, ft_pct: ftPct, ast_to: astTo, usg_pct: usgPct, intensity, ws_per_game: wsPerGame }, age);
+  }, [playerGames, playerWinShares, selectedPlayer, profiles]);
+
   const renderPlayerTab = () => {
     const gp = playerGames.length;
 
@@ -4323,13 +4406,14 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         if (g.offensive_rebound_per != null && g.offensive_rebound_per > 0) { a.oreb_per_sum += g.offensive_rebound_per; a.oreb_per_count++; }
         if (g.steal_chance != null && g.steal_chance > 0) { a.stl_per_sum += g.steal_chance; a.stl_per_count++; }
         if (g.block_chance != null && g.block_chance > 0) { a.blk_per_sum += g.block_chance; a.blk_per_count++; }
+        if (g.usg_per != null && g.usg_per > 0) { a.usg_sum += parseFloat(g.usg_per); a.usg_count++; }
         if (g.minutes_calc != null) {
           const mc = String(g.minutes_calc);
           const minVal = mc.includes(':') ? (() => { const [mm, ss] = mc.split(':').map(Number); return mm + (ss || 0) / 60; })() : parseFloat(mc);
           if (!isNaN(minVal)) { a.min_sum += minVal; a.min_count++; }
         }
         return a;
-      }, { pts: 0, reb: 0, ast: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, val: 0, stl: 0, blk: 0, oreb: 0, dreb: 0, to: 0, poss: 0, ppp_pts: 0, ppp_poss: 0, ppp_sum: 0, ppp_count: 0, ft40_sum: 0, ft40_count: 0, min_sum: 0, min_count: 0, dreb_per_sum: 0, dreb_per_count: 0, oreb_per_sum: 0, oreb_per_count: 0, stl_per_sum: 0, stl_per_count: 0, blk_per_sum: 0, blk_per_count: 0 });
+      }, { pts: 0, reb: 0, ast: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, val: 0, stl: 0, blk: 0, oreb: 0, dreb: 0, to: 0, poss: 0, ppp_pts: 0, ppp_poss: 0, ppp_sum: 0, ppp_count: 0, ft40_sum: 0, ft40_count: 0, min_sum: 0, min_count: 0, dreb_per_sum: 0, dreb_per_count: 0, oreb_per_sum: 0, oreb_per_count: 0, stl_per_sum: 0, stl_per_count: 0, blk_per_sum: 0, blk_per_count: 0, usg_sum: 0, usg_count: 0 });
       const fgm = t.fg2m + t.fg3m;
       const fga = t.fg2a + t.fg3a;
       const efg = fga > 0 ? ((fgm + 0.5 * t.fg3m) / fga) * 100 : null;
@@ -4422,6 +4506,46 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                 ))}
               </div>
             </div>
+
+            {playerTalentScore && (
+              <div className={`${card} p-4 ${isDark ? 'border-amber-500/20' : 'border-amber-200'}`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <h4 className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Skill Score')}</h4>
+                  <span className={`text-lg font-black tabular-nums ${playerTalentScore.score >= 100 ? 'text-blue-500' : playerTalentScore.score >= 80 ? 'text-emerald-500' : playerTalentScore.score >= 60 ? 'text-amber-500' : playerTalentScore.score >= 40 ? 'text-orange-500' : 'text-red-400'}`}>
+                    {playerTalentScore.score}
+                  </span>
+                  <span className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{playerTalentScore.factorsUsed}/6 {t('factors')} · 100 = NBA avg</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-1.5">
+                  {playerTalentScore.components.map((c, i) => {
+                    const isAvail = c.pctOfNba > 0;
+                    const barW = Math.min(Math.max(c.pctOfNba / 1.5, 2), 100);
+                    return (
+                      <div key={i} className={!isAvail ? 'opacity-30' : ''}>
+                        <div className="flex items-center justify-between mb-0.5">
+                          <span className={`text-[10px] font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{c.label}</span>
+                          <span className={`text-[10px] font-mono ${isAvail ? (c.pctOfNba >= 100 ? (isDark ? 'text-amber-400' : 'text-amber-600') : isDark ? 'text-gray-300' : 'text-gray-600') : isDark ? 'text-gray-600' : 'text-gray-300'}`}>
+                            {isAvail ? c.pctOfNba : '—'}
+                          </span>
+                        </div>
+                        <div className={`h-2 rounded-full overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+                          {isAvail && (
+                            <div
+                              className={`h-full rounded-full ${c.pctOfNba >= 100 ? 'bg-gradient-to-r from-amber-500 to-amber-400' : 'bg-gradient-to-r from-amber-500/50 to-amber-400/50'}`}
+                              style={{ width: `${barW}%` }}
+                            />
+                          )}
+                        </div>
+                        <div className={`text-[9px] mt-0.5 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                          {isAvail ? (c.label === 'Intensity' ? c.value.toFixed(2) : c.label === 'WS/G' ? c.value.toFixed(3) : c.label === 'AST/TO' ? c.value.toFixed(2) : c.label === 'USG%' ? `${c.value.toFixed(1)}%` : `${c.value.toFixed(1)}%`) : '—'}
+                          {isAvail ? ` (${Math.round(c.weight * 100)}%)` : ''}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className={`${card} p-4`}>
               <h4 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Scoring – Last')} {Math.min(gp, 10)} {t('Games')}</h4>
