@@ -15,6 +15,16 @@ const formatCompact = (val: number) => {
   return `€${Math.round(val)}`;
 };
 
+function getSeasonMonthsElapsed(): number {
+  const now = new Date();
+  const month = now.getMonth();
+  const seasonIndex = month >= 6 ? month - 6 : month + 6;
+  const GAME_MONTH_START = 3;
+  const TOTAL_GAME_MONTHS = 10;
+  const elapsed = Math.max(0, Math.min(seasonIndex - GAME_MONTH_START + 1, TOTAL_GAME_MONTHS));
+  return elapsed;
+}
+
 const parseEuro = (s: string): number => {
   if (!s || typeof s !== 'string') return 0;
   const cleaned = s.replace(/[€\s]/g, '').replace(/\./g, '').replace(',', '.');
@@ -47,7 +57,7 @@ const NOTES = [
   {
     type: 'info' as const,
     title: 'Revenue Recognition',
-    text: 'All BOps revenue is accounted on a 4/10 basis to match gameday revenue recognition timing across the season.',
+    text: `All BOps revenue is accounted on a ${getSeasonMonthsElapsed()}/10 basis to match gameday revenue recognition timing across the season.`,
   },
 ];
 
@@ -137,9 +147,11 @@ export function parseBopsSheetData(rows: string[][]): BopsSheetData | null {
 
   if (breakdown.length === 0) return null;
 
+  const elapsed = getSeasonMonthsElapsed();
+  const GAME_MONTH_START = 3;
   const items: MonthlyRevenueItem[] = breakdown.map((b, i) => ({
     name: b.name,
-    values: SEASON_MONTHS.map((_, mi) => [3, 4, 5, 6].includes(mi) ? Math.round(b.amount / 4) : 0),
+    values: SEASON_MONTHS.map((_, mi) => mi >= GAME_MONTH_START && mi < GAME_MONTH_START + elapsed ? Math.round(b.amount / Math.max(elapsed, 1)) : 0),
     color: COLORS_POOL[i % COLORS_POOL.length],
     note: b.note,
   }));
