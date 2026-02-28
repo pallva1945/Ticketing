@@ -406,8 +406,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
                     </div>
                     <div className="text-[10px] text-gray-400 dark:text-gray-500">20 {t('headcount')} · {t('Internal')} + {t('External')}</div>
                     <div className="text-[10px] text-gray-400 dark:text-gray-500">{period}</div>
-                    <div className="mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400">
-                      {t('Monthly Actuals')}
+                    <div className="mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400">
+                      {t('YTD Prorated')}
                     </div>
                   </div>
                 </button>
