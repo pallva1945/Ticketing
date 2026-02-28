@@ -1162,6 +1162,17 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
         if (cachedMerch) setMerchRevenue(cachedMerch);
         setDataSources({ ticketing: 'bigquery', gameday: 'bigquery', sponsorship: 'bigquery', crm: 'bigquery' });
         setIsLoadingData(false);
+        if (!cachedMerch) {
+          fetch('/api/merch/season-revenue')
+            .then(r => r.json())
+            .then(res => {
+              if (res.success && res.revenue > 0) {
+                setMerchRevenue(res.revenue);
+                saveToLocalCache('merch', res.revenue);
+              }
+            })
+            .catch(() => {});
+        }
         return;
       }
     }
