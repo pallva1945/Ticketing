@@ -477,17 +477,56 @@ export const MerchandisingView: React.FC = () => {
   const searchedOrders = useMemo(() => {
     let result = filteredOrders.filter(o => o.totalPrice > 0);
     if (orderSearch.trim()) {
-      const searchLower = orderSearch.toLowerCase();
-      result = result.filter(o =>
-        o.orderNumber.toLowerCase().includes(searchLower) ||
-        o.customerName.toLowerCase().includes(searchLower) ||
-        o.customerEmail.toLowerCase().includes(searchLower) ||
-        formatDate(o.processedAt).toLowerCase().includes(searchLower) ||
-        o.totalPrice.toString().includes(searchLower) ||
-        o.financialStatus.toLowerCase().includes(searchLower) ||
-        o.fulfillmentStatus?.toLowerCase().includes(searchLower) ||
-        (o.paymentMethod || '').toLowerCase().includes(searchLower)
-      );
+      const searchLower = orderSearch.toLowerCase().trim();
+      const monthMap: Record<string, number> = {
+        jan: 0, january: 0, gen: 0, gennaio: 0,
+        feb: 1, february: 1, febbraio: 1,
+        mar: 2, march: 2, marzo: 2,
+        apr: 3, april: 3, aprile: 3,
+        may: 4, maggio: 4, mag: 4,
+        jun: 5, june: 5, giu: 5, giugno: 5,
+        jul: 6, july: 6, lug: 6, luglio: 6,
+        aug: 7, august: 7, ago: 7, agosto: 7,
+        sep: 8, september: 8, set: 8, settembre: 8,
+        oct: 9, october: 9, ott: 9, ottobre: 9,
+        nov: 10, november: 10, novembre: 10,
+        dec: 11, december: 11, dic: 11, dicembre: 11,
+      };
+      const words = searchLower.split(/[\s,/\-]+/).filter(w => w.length > 0);
+      let dateMonth: number | null = null;
+      let dateYear: number | null = null;
+      let dateDay: number | null = null;
+      const textParts: string[] = [];
+      words.forEach(w => {
+        if (monthMap[w] !== undefined) { dateMonth = monthMap[w]; }
+        else if (/^\d{4}$/.test(w)) { dateYear = parseInt(w); }
+        else if (/^\d{1,2}$/.test(w) && parseInt(w) >= 1 && parseInt(w) <= 31) { dateDay = parseInt(w); }
+        else { textParts.push(w); }
+      });
+      const hasDateFilter = dateMonth !== null || dateYear !== null;
+      if (hasDateFilter) {
+        result = result.filter(o => {
+          const d = new Date(o.processedAt);
+          if (dateMonth !== null && d.getMonth() !== dateMonth) return false;
+          if (dateYear !== null && d.getFullYear() !== dateYear) return false;
+          if (dateDay !== null && d.getDate() !== dateDay) return false;
+          return true;
+        });
+      }
+      if (textParts.length > 0) {
+        const textSearch = textParts.join(' ');
+        result = result.filter(o =>
+          o.orderNumber.toLowerCase().includes(textSearch) ||
+          o.customerName.toLowerCase().includes(textSearch) ||
+          o.customerEmail.toLowerCase().includes(textSearch) ||
+          formatDate(o.processedAt).toLowerCase().includes(textSearch) ||
+          o.totalPrice.toString().includes(textSearch) ||
+          o.financialStatus.toLowerCase().includes(textSearch) ||
+          o.fulfillmentStatus?.toLowerCase().includes(textSearch) ||
+          (o.paymentMethod || '').toLowerCase().includes(textSearch) ||
+          o.lineItems.some(li => li.title.toLowerCase().includes(textSearch))
+        );
+      }
     }
     // Apply sorting
     if (orderSort.direction) {
@@ -1339,7 +1378,7 @@ export const MerchandisingView: React.FC = () => {
               <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
-                placeholder={t("Search orders by number, date, customer, total, payment...")}
+                placeholder={t("Search: dec 2025, customer name, product, payment method...")}
                 value={orderSearch}
                 onChange={(e) => { setOrderSearch(e.target.value); setOrdersLimit(50); }}
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
