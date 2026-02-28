@@ -485,11 +485,20 @@ interface TalentScoreResult {
   score: number;
   components: { label: string; value: number; pctOfNba: number; weight: number }[];
   factorsUsed: number;
+  leagueFactor: number;
+}
+
+function getLeagueLevelFactor(teamNames: string[]): number {
+  const joined = teamNames.map(t => (t || '').toLowerCase()).join(' ');
+  if (/u15|u16|under.?15|under.?16/.test(joined)) return 0.70;
+  if (/u17|under.?17/.test(joined)) return 0.75;
+  if (/u19|under.?19/.test(joined)) return 0.85;
+  return 1.0;
 }
 
 function computeTalentScore(
   stats: { fg3_pct: number | null; ft_pct: number | null; ast_to: number | null; usg_pct: number | null; intensity: number | null; ws_per_game: number | null },
-  age: number | null
+  leagueFactor: number
 ): TalentScoreResult | null {
   const raw = [
     { key: 'fg3_pct' as const, label: '3PT%', value: stats.fg3_pct, base: NBA_SKILL_BASELINES.fg3_pct, w: TALENT_WEIGHTS.fg3_pct },
@@ -516,10 +525,9 @@ function computeTalentScore(
     return s + pct * (r.w / totalW);
   }, 0);
 
-  const af = getCasAgeFactor(age);
-  const score = Math.round(weightedScore * af * 100) / 100;
+  const score = Math.round(weightedScore * leagueFactor * 100) / 100;
 
-  return { score, components, factorsUsed: avail.length };
+  return { score, components, factorsUsed: avail.length, leagueFactor };
 }
 
 function getPlayerWorkEthic(player: string, profiles: PlayerProfile[]): number | null {
@@ -4382,9 +4390,10 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
     const wsVal = playerWinShares ? parseFloat(playerWinShares) : null;
     const wsPerGame = wsVal !== null && gp > 0 ? wsVal / gp : null;
 
-    const age = getPlayerAge(selectedPlayer, profiles);
-    return computeTalentScore({ fg3_pct: fg3Pct, ft_pct: ftPct, ast_to: astTo, usg_pct: usgPct, intensity, ws_per_game: wsPerGame }, age);
-  }, [playerGames, playerWinShares, selectedPlayer, profiles]);
+    const teamNames = [...new Set(playerGames.map(g => g.team_name || ''))];
+    const lf = getLeagueLevelFactor(teamNames);
+    return computeTalentScore({ fg3_pct: fg3Pct, ft_pct: ftPct, ast_to: astTo, usg_pct: usgPct, intensity, ws_per_game: wsPerGame }, lf);
+  }, [playerGames, playerWinShares]);
 
   const renderPlayerTab = () => {
     const gp = playerGames.length;
@@ -4514,7 +4523,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                   <span className={`text-lg font-black tabular-nums ${playerTalentScore.score >= 100 ? 'text-blue-500' : playerTalentScore.score >= 80 ? 'text-emerald-500' : playerTalentScore.score >= 60 ? 'text-amber-500' : playerTalentScore.score >= 40 ? 'text-orange-500' : 'text-red-400'}`}>
                     {playerTalentScore.score}
                   </span>
-                  <span className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{playerTalentScore.factorsUsed}/6 {t('factors')} · 100 = NBA avg</span>
+                  <span className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{playerTalentScore.factorsUsed}/6 {t('factors')}{playerTalentScore.leagueFactor < 1 ? ` · Lf ${playerTalentScore.leagueFactor}x` : ''} · 100 = NBA avg</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-4 gap-y-1.5">
                   {playerTalentScore.components.map((c, i) => {
