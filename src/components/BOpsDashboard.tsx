@@ -21,7 +21,7 @@ function getSeasonMonthsElapsed(): number {
   const seasonIndex = month >= 6 ? month - 6 : month + 6;
   const GAME_MONTH_START = 2;
   const TOTAL_GAME_MONTHS = 10;
-  const elapsed = Math.max(0, Math.min(seasonIndex - GAME_MONTH_START + 1, TOTAL_GAME_MONTHS));
+  const elapsed = Math.max(0, Math.min(seasonIndex - GAME_MONTH_START, TOTAL_GAME_MONTHS));
   return elapsed;
 }
 
@@ -57,7 +57,7 @@ const NOTES = [
   {
     type: 'info' as const,
     title: 'Revenue Recognition',
-    text: `All BOps revenue is accounted on a ${getSeasonMonthsElapsed()}/10 basis to match gameday revenue recognition timing across the season.`,
+    text: 'All BOps revenue is recognized across 10 months (Sep–Jun) to match gameday revenue recognition timing across the season.',
   },
 ];
 
@@ -149,9 +149,10 @@ export function parseBopsSheetData(rows: string[][]): BopsSheetData | null {
 
   const elapsed = getSeasonMonthsElapsed();
   const GAME_MONTH_START = 2;
+  const TOTAL_GAME_MONTHS = 10;
   const items: MonthlyRevenueItem[] = breakdown.map((b, i) => ({
     name: b.name,
-    values: SEASON_MONTHS.map((_, mi) => mi >= GAME_MONTH_START && mi < GAME_MONTH_START + elapsed ? Math.round(b.amount / Math.max(elapsed, 1)) : 0),
+    values: SEASON_MONTHS.map((_, mi) => mi >= GAME_MONTH_START && mi < GAME_MONTH_START + elapsed ? Math.round(b.amount / TOTAL_GAME_MONTHS) : 0),
     color: COLORS_POOL[i % COLORS_POOL.length],
     note: b.note,
   }));
