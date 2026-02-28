@@ -1228,6 +1228,28 @@ app.get("/api/gameday/bigquery", async (req, res) => {
   }
 });
 
+app.get("/api/gameday/merch-revenue", async (req, res) => {
+  try {
+    if (!gameDayCache?.rawRows) {
+      const result = await fetchGameDayFromBigQuery();
+      if (result.success && result.rawRows) {
+        const now = Date.now();
+        const csvContent = convertBigQueryRowsToGameDayCSV(result.rawRows);
+        gameDayCache = { csvContent, rawRows: result.rawRows, rowCount: result.rawRows.length, timestamp: now };
+      } else {
+        return res.json({ success: true, revenue: 0 });
+      }
+    }
+    const total = gameDayCache.rawRows.reduce((sum: number, row: any) => {
+      const v = parseFloat(row.Merch_eur || row.merch_eur || '0');
+      return sum + (isNaN(v) ? 0 : v);
+    }, 0);
+    res.json({ success: true, revenue: total });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // --- VB (VARESE BASKETBALL) DATA ---
 
 let vbCache: { data: any; rawCount: number; mergedCount: number; players: string[]; playerAttributes: any; timestamp: number } | null = null;

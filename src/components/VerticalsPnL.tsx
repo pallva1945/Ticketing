@@ -82,14 +82,16 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding, onH
         }
       })
       .catch(() => {});
-    fetch('/api/merch/season-revenue')
-      .then(r => r.json())
-      .then(res => {
-        if (res.success && res.revenue > 0) {
-          setMerchSales(Math.round(res.revenue));
-        }
-      })
-      .catch(() => {});
+    Promise.all([
+      fetch('/api/merch/season-revenue').then(r => r.json()).catch(() => ({ success: false })),
+      fetch('/api/gameday/merch-revenue').then(r => r.json()).catch(() => ({ success: false })),
+    ]).then(([shopifyRes, gdMerchRes]) => {
+      const totalShopify = shopifyRes.success && shopifyRes.revenue > 0 ? shopifyRes.revenue : 0;
+      const gdMerch = gdMerchRes.success ? gdMerchRes.revenue : 0;
+      if (totalShopify > 0) {
+        setMerchSales(Math.round(Math.max(0, totalShopify - gdMerch)));
+      }
+    });
   }, []);
 
   const hasCsv = !!costData;
