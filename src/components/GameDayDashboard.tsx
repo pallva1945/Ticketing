@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { GameDayData } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { ShoppingBag, Coffee, Car, Crown, DollarSign, Users, Ticket, Tv, Flag, Sparkles, AlertCircle, Coins } from 'lucide-react';
+import { ShoppingBag, Coffee, Car, Crown, DollarSign, Users, Ticket, Flag, Sparkles, AlertCircle, Coins } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface GameDayDashboardProps {
@@ -32,9 +32,8 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
           parking: acc.parking + game.parkingRevenue,
           exp: acc.exp + game.expRevenue,
           sponsorship: acc.sponsorship + game.sponsorshipRevenue,
-          tv: acc.tv + game.tvRevenue,
       }), {
-          attendance: 0, tix: 0, merch: 0, fb: 0, hospitality: 0, parking: 0, exp: 0, sponsorship: 0, tv: 0
+          attendance: 0, tix: 0, merch: 0, fb: 0, hospitality: 0, parking: 0, exp: 0, sponsorship: 0
       });
 
       // Net GameDay Variable (Merch + F&B + Hosp + Park + Exp)
@@ -45,11 +44,11 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
       // "Budget Revenue" / "GameDay Net Revenue" logic
       // According to requirement:
       // If Toggle ON: 2.9M Target -> Measures Everything (Total Revenue including Tix)
-      // If Toggle OFF: 1.25M Target -> Measures Everything minus Tix (Variable + Spons + TV)
+      // If Toggle OFF: 1.25M Target -> Measures Everything minus Tix (Variable + Spons)
       
       const revenueForBudget = includeTicketing 
-          ? (totalVariable + totals.tix + totals.sponsorship + totals.tv)
-          : (totalVariable + totals.sponsorship + totals.tv);
+          ? (totalVariable + totals.tix + totals.sponsorship)
+          : (totalVariable + totals.sponsorship);
 
       return {
           gameCount,
@@ -61,7 +60,6 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
           parking: totals.parking / gameCount,
           exp: totals.exp / gameCount,
           sponsorship: totals.sponsorship / gameCount,
-          tv: totals.tv / gameCount,
           
           // Calculated Averages for Cards
           avgBudgetRev: revenueForBudget / gameCount,
@@ -81,8 +79,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
       Hospitality: game.hospitalityRevenue,
       Parking: game.parkingRevenue,
       Experience: game.expRevenue,
-      Sponsorship: game.sponsorshipRevenue, 
-      TV: game.tvRevenue
+      Sponsorship: game.sponsorshipRevenue
   }));
 
   const formatCurrency = (val: number) => `€${val >= 1000 ? (val/1000).toFixed(1) + 'k' : val.toFixed(0)}`;
@@ -199,17 +196,7 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                     borderTop
                 />
 
-                {/* 5. Fixed Context (Ticketing or TV based on toggle) */}
-                {includeTicketing ? (
-                    <KPICard 
-                        label={t("Avg TV Rights")}
-                        value={stats.tv}
-                        subLabel={t("Allocated / Game")}
-                        icon={Tv}
-                        color="text-purple-600 border-purple-100"
-                        borderTop
-                    />
-                ) : (
+                {!includeTicketing && (
                     <KPICard 
                         label={t("Avg Ticketing")}
                         value={stats.tix}
@@ -243,7 +230,6 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
                             <Bar dataKey="Ticketing" stackId="a" fill="#ef4444" />
                         )}
                         <Bar dataKey="Sponsorship" stackId="a" fill="#3b82f6" />
-                        <Bar dataKey="TV" stackId="a" fill="#6366f1" />
                         
                         {/* Variable Streams on Top - Aligned with Bottom Card Order */}
                         <Bar dataKey="Hospitality" stackId="a" fill="#10b981" />
