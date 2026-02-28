@@ -443,17 +443,17 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
         ) : activeModule === 'bops' ? (
           <BOpsCostDashboard />
         ) : activeModule === 'gameday' ? (
-          <GameDayCostDashboard costLines={costData?.gameday} />
+          <GameDayCostDashboard costLines={costData?.gameday} period={period} />
         ) : activeModule === 'sponsorship' ? (
-          <SponsorshipCostDashboard costLines={costData?.sponsorship} />
+          <SponsorshipCostDashboard costLines={costData?.sponsorship} period={period} />
         ) : activeModule === 'venue_ops' ? (
-          <VenueOpsCostDashboard costLines={costData?.venue_ops} />
+          <VenueOpsCostDashboard costLines={costData?.venue_ops} period={period} />
         ) : activeModule === 'merchandising' ? (
-          <MerchandisingCostDashboard costLines={costData?.merchandising} />
+          <MerchandisingCostDashboard costLines={costData?.merchandising} period={period} />
         ) : activeModule === 'sga_labor' ? (
           <LaborCostDashboard professionalServices={costData?.professional_services} />
         ) : activeModule === 'sga_other' ? (
-          <SGACombinedDashboard costData={costData || undefined} />
+          <SGACombinedDashboard costData={costData || undefined} period={period} />
         ) : activeModule === 'ebp' ? (
           <div className="space-y-6 animate-fade-in">
             <div className="flex items-center gap-3">
@@ -462,14 +462,14 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">EBP — {t('Cost Structure')}</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Monthly Actuals')} · Jul–Dec 2025</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Monthly Actuals')} · {period}</p>
               </div>
             </div>
             <div className={`rounded-xl border p-12 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
               <div className="text-5xl font-bold text-gray-300 dark:text-gray-600 mb-3">€0</div>
               <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('No costs recorded YTD')}</h3>
               <p className="text-sm text-gray-400 dark:text-gray-500 max-w-sm mx-auto">
-                {t('No EBP expenses have been recorded for the Jul–Dec 2025 period.')}
+                {t('No EBP expenses have been recorded for the')} {period} {t('period.')}
               </p>
             </div>
           </div>

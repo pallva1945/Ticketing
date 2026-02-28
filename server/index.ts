@@ -316,7 +316,20 @@ function parseCostCSV(csvText: string): Record<string, any[]> {
       continue;
     }
 
-    if (label.startsWith('Total ')) continue;
+    if (label.startsWith('Total ') && currentSection) {
+      const rawVals = cols.slice(1);
+      const hasData = rawVals.some(v => v && v !== '' && !v.includes('#REF!'));
+      if (hasData && sections[currentSection] && sections[currentSection].length === 0) {
+        const total = parseEuroCurrency(rawVals[0]);
+        const monthlyValues = rawVals.slice(1).filter(v => v !== '').map(v => parseEuroCurrency(v));
+        if (total !== 0 || monthlyValues.some(v => v !== 0)) {
+          const sectionLabel = Object.entries(COST_SECTION_MAP).find(([, v]) => v === currentSection)?.[0] || currentSection;
+          const colorIdx = sections[currentSection].length % COST_LINE_COLORS.length;
+          sections[currentSection].push({ name: sectionLabel, values: monthlyValues, total, color: COST_LINE_COLORS[colorIdx] });
+        }
+      }
+      continue;
+    }
 
     if (!currentSection) continue;
 

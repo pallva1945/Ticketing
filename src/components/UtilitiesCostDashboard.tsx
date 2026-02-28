@@ -23,9 +23,10 @@ const COST_LINES: CostLine[] = [
 
 interface UtilitiesCostDashboardProps {
   costLines?: CostLine[];
+  period?: string;
 }
 
-export const UtilitiesCostDashboard: React.FC<UtilitiesCostDashboardProps> = ({ costLines }) => {
+export const UtilitiesCostDashboard: React.FC<UtilitiesCostDashboardProps> = ({ costLines, period = 'Jul–Dec 2025' }) => {
   const { t } = useLanguage();
 
   const effectiveLines = costLines || COST_LINES;
@@ -55,7 +56,7 @@ export const UtilitiesCostDashboard: React.FC<UtilitiesCostDashboardProps> = ({ 
         </div>
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('Utilities & Maintenance')} — {t('Cost Structure')}</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{t('Monthly Actuals')} · Jul–Dec 2025 · SG&A</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('Monthly Actuals')} · {period} · SG&A</p>
         </div>
       </div>
 
@@ -66,7 +67,7 @@ export const UtilitiesCostDashboard: React.FC<UtilitiesCostDashboardProps> = ({ 
             <span>{t('Total Cost')}</span>
           </div>
           <div className="text-xl font-bold text-gray-900 dark:text-white">{formatCurrency(GRAND_TOTAL)}</div>
-          <div className="text-[10px] text-gray-400 mt-1">Jul–Dec 2025</div>
+          <div className="text-[10px] text-gray-400 mt-1">{period}</div>
         </div>
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-4">

@@ -40,9 +40,10 @@ const DEFAULT_COST_LINES: CostLine[] = [
 
 interface GameDayCostDashboardProps {
   costLines?: CostLine[];
+  period?: string;
 }
 
-export const GameDayCostDashboard: React.FC<GameDayCostDashboardProps> = ({ costLines }) => {
+export const GameDayCostDashboard: React.FC<GameDayCostDashboardProps> = ({ costLines, period = 'Jul–Dec 2025' }) => {
   const { t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
@@ -92,7 +93,7 @@ export const GameDayCostDashboard: React.FC<GameDayCostDashboardProps> = ({ cost
         </div>
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('GameDay')} — {t('Cost Structure')}</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{t('Monthly Actuals')} · Jul–Dec 2025 · {TOTAL_GAMES} {t('home games')}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('Monthly Actuals')} · {period} · {TOTAL_GAMES} {t('home games')}</p>
         </div>
       </div>
 

@@ -25,14 +25,15 @@ const DEFAULT_SUB_MODULES: { id: SGASubModule; labelKey: string; icon: any; amou
   { id: 'office', labelKey: 'Office', icon: Building, amount: 36646, detailFn: (t) => `${t('Software & Subs')}: 55.6% · 7 ${t('categories')}` },
   { id: 'utilities', labelKey: 'Utilities & Maint.', icon: Zap, amount: 89117, detailFn: (t) => `${t('Utilities')}: 37.3% · ${t('Maintenance')}: 36.3%` },
   { id: 'financial', labelKey: 'Financial', icon: DollarSign, amount: 8375, detailFn: (t) => `${t('Bank Charges')}: 92.3% · 4 ${t('categories')}` },
-  { id: 'contingencies', labelKey: 'Contingencies', icon: AlertTriangle, amount: 6410, detailFn: () => 'Jul–Dec 2025' },
+  { id: 'contingencies', labelKey: 'Contingencies', icon: AlertTriangle, amount: 6410, detailFn: () => '' },
 ];
 
 interface SGACombinedDashboardProps {
   costData?: Record<string, CostLine[]>;
+  period?: string;
 }
 
-export const SGACombinedDashboard: React.FC<SGACombinedDashboardProps> = ({ costData }) => {
+export const SGACombinedDashboard: React.FC<SGACombinedDashboardProps> = ({ costData, period = 'Jul–Dec 2025' }) => {
   const { theme } = useTheme();
   const { t } = useLanguage();
   const isDark = theme === 'dark';
@@ -59,7 +60,7 @@ export const SGACombinedDashboard: React.FC<SGACombinedDashboardProps> = ({ cost
         </div>
         <div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('SG&A')} — {t('General & Administrative')}</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">{t('Monthly Actuals')} · Jul–Dec 2025</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('Monthly Actuals')} · {period}</p>
         </div>
         <div className="ml-auto text-right">
           <div className="text-xl font-bold text-orange-600">{formatCurrency(TOTAL_SGA_OTHER)}</div>
@@ -127,7 +128,7 @@ export const SGACombinedDashboard: React.FC<SGACombinedDashboardProps> = ({ cost
                       {pct && <span className="text-xs font-semibold text-orange-500">{pct}%</span>}
                     </div>
                     <div className="text-[10px] text-gray-400 dark:text-gray-500">{card.detailFn(t)}</div>
-                    <div className="text-[10px] text-gray-400 dark:text-gray-500">Jul–Dec 2025</div>
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500">{period}</div>
                     <div className="mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400">
                       {t('Monthly Actuals')}
                     </div>
@@ -145,15 +146,15 @@ export const SGACombinedDashboard: React.FC<SGACombinedDashboardProps> = ({ cost
           })}
         </div>
       ) : activeSub === 'team_ops' ? (
-        <TeamOpsCostDashboard costLines={costData?.team_ops} />
+        <TeamOpsCostDashboard costLines={costData?.team_ops} period={period} />
       ) : activeSub === 'marketing' ? (
-        <MarketingCostDashboard costLines={costData?.marketing} />
+        <MarketingCostDashboard costLines={costData?.marketing} period={period} />
       ) : activeSub === 'office' ? (
-        <OfficeCostDashboard costLines={costData?.office} />
+        <OfficeCostDashboard costLines={costData?.office} period={period} />
       ) : activeSub === 'utilities' ? (
-        <UtilitiesCostDashboard costLines={costData?.utilities} />
+        <UtilitiesCostDashboard costLines={costData?.utilities} period={period} />
       ) : activeSub === 'financial' ? (
-        <FinancialCostDashboard costLines={costData?.financial} />
+        <FinancialCostDashboard costLines={costData?.financial} period={period} />
       ) : activeSub === 'contingencies' ? (
         costData?.contingencies && costData.contingencies.length > 0 ? (
           <div className="space-y-6 animate-fade-in">
@@ -163,7 +164,7 @@ export const SGACombinedDashboard: React.FC<SGACombinedDashboardProps> = ({ cost
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('Contingencies')} — {t('Cost Structure')}</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Monthly Actuals')} · Jul–Dec 2025 · SG&A</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Monthly Actuals')} · {period} · SG&A</p>
               </div>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm p-5">
