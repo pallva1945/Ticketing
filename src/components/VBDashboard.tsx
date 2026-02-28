@@ -4353,6 +4353,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         oreb_pct: t.oreb_per_count > 0 ? (t.oreb_per_sum / t.oreb_per_count).toFixed(1) : (t.poss > 0 ? ((t.oreb / t.poss) * 100).toFixed(1) : null),
         stl_pct: t.stl_per_count > 0 ? (t.stl_per_sum / t.stl_per_count).toFixed(1) : (t.poss > 0 ? ((t.stl / t.poss) * 100).toFixed(1) : null),
         blk_pct: t.blk_per_count > 0 ? (t.blk_per_sum / t.blk_per_count).toFixed(1) : (t.poss > 0 ? ((t.blk / t.poss) * 100).toFixed(1) : null),
+        to_pct: t.poss > 0 ? ((t.to / t.poss) * 100).toFixed(1) : null,
         ast_40: hasMin && totalMin > 0 ? ((t.ast / totalMin) * 40).toFixed(1) : (gp > 0 ? (t.ast / gp).toFixed(1) : '0.0'),
       };
     })() : null;
@@ -4410,6 +4411,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                   { label: 'OREB%', value: totalRow.oreb_pct ? `${totalRow.oreb_pct}%` : null, desc: 'Offensive Rebound %' },
                   { label: 'STL%', value: totalRow.stl_pct ? `${totalRow.stl_pct}%` : null, desc: 'Steal %' },
                   { label: 'BLK%', value: totalRow.blk_pct ? `${totalRow.blk_pct}%` : null, desc: 'Block %' },
+                  { label: 'TO%', value: totalRow.to_pct ? `${totalRow.to_pct}%` : null, desc: 'Turnover %' },
                   { label: 'AST/40', value: totalRow.ast_40, desc: 'Assists per 40 min' },
                   { label: 'WS', value: playerWinShares, desc: 'Win Shares' },
                 ].map((s, i) => (
