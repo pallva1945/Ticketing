@@ -1077,14 +1077,14 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                 <tr className={`border-b ${isDark ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
                   <th className="text-left py-2 px-3 font-medium">{t('Van')}</th>
                   <th className="text-right py-2 px-2 font-medium text-xs">{t('Trips')}</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">Gas/km</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Toll')}/km</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Service')}/km</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Repair')}/km</th>
                   <th className="text-right py-2 px-2 font-medium text-xs">Km</th>
-                  <th className="text-right py-2 px-2 font-medium text-xs">Gas</th>
-                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Toll')}</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Total')}</th>
                   <th className="text-right py-2 px-2 font-medium text-xs">{t('Insurance')}</th>
                   <th className="text-right py-2 px-2 font-medium text-xs">{t('Bollo')}</th>
-                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Service')}</th>
-                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Repair')}</th>
-                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Total')}</th>
                   <th className="text-right py-2 px-3 font-medium text-xs">€/km</th>
                 </tr>
               </thead>
@@ -1098,14 +1098,14 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                         {v}
                       </td>
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatNum(s.trips)}</td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{perKm(s.gasCost, s.km)}</td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{perKm(s.tollCrosses * TOLL_COST_PER_CROSS, s.km)}</td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.serviceCost > 0 ? perKm(s.serviceCost, s.km) : '—'}</td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.repairCost > 0 ? perKm(s.repairCost, s.km) : '—'}</td>
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatNum(s.km)}</td>
-                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatCurrency(s.gasCost)}</td>
-                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatCurrency(s.tollCrosses * TOLL_COST_PER_CROSS)}</td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(s.totalCost)}</td>
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.insurance > 0 ? formatCurrency(s.insurance) : '—'}</td>
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.bollo > 0 ? formatCurrency(s.bollo) : '—'}</td>
-                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.serviceCost > 0 ? formatCurrency(s.serviceCost) : '—'}</td>
-                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.repairCost > 0 ? formatCurrency(s.repairCost) : '—'}</td>
-                      <td className={`text-right py-2 px-2 tabular-nums text-xs font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(s.totalCost)}</td>
                       <td className={`text-right py-2 px-3 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{perKm(s.totalCost, s.km)}</td>
                     </tr>
                   );
@@ -1113,14 +1113,14 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                 <tr className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
                   <td className="py-2 px-3">{t('Total')}</td>
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{formatNum(o.trips)}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{perKm(o.gasCost, o.km)}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{perKm(tollCost, o.km)}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{o.serviceCost > 0 ? perKm(o.serviceCost, o.km) : '—'}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{perKm(o.repairCost, o.km)}</td>
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{formatNum(o.km)}</td>
-                  <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.gasCost)}</td>
-                  <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(tollCost)}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.totalCost)}</td>
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.insurance)}</td>
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.bollo)}</td>
-                  <td className="text-right py-2 px-2 tabular-nums text-xs">{o.serviceCost > 0 ? formatCurrency(o.serviceCost) : '—'}</td>
-                  <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.repairCost)}</td>
-                  <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.totalCost)}</td>
                   <td className="text-right py-2 px-3 tabular-nums text-xs">{perKm(o.totalCost, o.km)}</td>
                 </tr>
               </tbody>
