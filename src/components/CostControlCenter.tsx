@@ -146,6 +146,11 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
     if (smi < 0) continue;
 
     const getVal = (name: string) => { const i = col(name); return i >= 0 ? parseEuro(row[i] || '') : 0; };
+    const rawCell = (name: string) => { const i = col(name); return i >= 0 ? (row[i] || '').trim() : ''; };
+
+    const requiredFields = ['gas_arena', 'gas_campus', 'gas_cost', 'electricity_arena', 'electricity_campus', 'electricity_cost', 'total_cost'];
+    const hasIncomplete = requiredFields.some(f => rawCell(f) === '');
+    if (hasIncomplete) continue;
 
     allRows.push({
       seasonMonthIndex: smi,
