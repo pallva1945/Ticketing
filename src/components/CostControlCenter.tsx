@@ -252,16 +252,17 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
 
   const headers = rows[0].map(h => (h || '').trim().toLowerCase().replace(/\s+/g, '_'));
   const col = (name: string) => headers.indexOf(name);
-  const dateIdx = col('date');
-  const vanIdx = col('van') >= 0 ? col('van') : col('vehicle');
+  const colIncludes = (name: string) => headers.findIndex(h => h.includes(name));
+  const dateIdx = col('date') >= 0 ? col('date') : colIncludes('date');
+  const vanIdx = col('van') >= 0 ? col('van') : (col('vehicle') >= 0 ? col('vehicle') : colIncludes('van'));
   const kmIdx = col('km') >= 0 ? col('km') : col('km_');
-  const gasCostIdx = col('gas_cost');
-  const tollIdx = col('toll_crosses');
-  const parkingIdx = col('parking_cost');
-  const olioIdx = col('olio');
-  const repairIdx = col('repair_cost');
-  const insuranceIdx = col('insurance');
-  const bolloIdx = col('bollo');
+  const gasCostIdx = col('gas_cost') >= 0 ? col('gas_cost') : colIncludes('gas_cost');
+  const tollIdx = col('toll_crosses') >= 0 ? col('toll_crosses') : colIncludes('toll');
+  const parkingIdx = col('parking_cost') >= 0 ? col('parking_cost') : colIncludes('parking');
+  const olioIdx = col('olio') >= 0 ? col('olio') : colIncludes('olio');
+  const repairIdx = col('repair_cost') >= 0 ? col('repair_cost') : colIncludes('repair');
+  const insuranceIdx = col('insurance') >= 0 ? col('insurance') : colIncludes('insurance');
+  const bolloIdx = col('bollo') >= 0 ? col('bollo') : colIncludes('bollo');
   const employeeIdx = col('employee');
   const deptIdx = col('department');
 
@@ -273,8 +274,26 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
 
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r];
-    if (!row || row.length < 5) continue;
+    if (!row || row.length < 2) continue;
+
     const dateStr = (row[dateIdx] || '').trim();
+    const vanName = (row[vanIdx] || '').trim();
+
+    const insuranceVal = insuranceIdx >= 0 && insuranceIdx < row.length ? parseEuro(row[insuranceIdx] || '') : 0;
+    const bolloVal = bolloIdx >= 0 && bolloIdx < row.length ? parseEuro(row[bolloIdx] || '') : 0;
+
+    if ((insuranceVal > 0 || bolloVal > 0) && dateStr && vanName) {
+      const fcSeason = dateToSeason(dateStr);
+      if (fcSeason) {
+        allSeasonSet.add(fcSeason);
+        const key = `${fcSeason}||${vanName}`;
+        if (!vanFixedCosts[key]) vanFixedCosts[key] = { insurance: 0, bollo: 0 };
+        if (insuranceVal > 0 && vanFixedCosts[key].insurance === 0) vanFixedCosts[key].insurance = insuranceVal;
+        if (bolloVal > 0 && vanFixedCosts[key].bollo === 0) vanFixedCosts[key].bollo = bolloVal;
+      }
+    }
+
+    if (row.length < 5) continue;
     if (!dateStr) continue;
 
     const parts = dateStr.split('/');
@@ -303,10 +322,6 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
     const serviceCost = olioRaw && /[€\d]/.test(olioRaw) && !/^[A-Za-z]/.test(olioRaw) ? parseEuro(olioRaw) : 0;
 
     const repairCost = repairIdx >= 0 ? parseEuro(row[repairIdx] || '') : 0;
-    const insurance = insuranceIdx >= 0 ? parseEuro(row[insuranceIdx] || '') : 0;
-    const bollo = bolloIdx >= 0 ? parseEuro(row[bolloIdx] || '') : 0;
-
-    const vanName = (row[vanIdx] || '').trim();
 
     allTrips.push({
       date: dateStr,
@@ -326,13 +341,6 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
       employee: employeeIdx >= 0 ? (row[employeeIdx] || '').trim() : '',
       department: deptIdx >= 0 ? (row[deptIdx] || '').trim() : '',
     });
-
-    if (insurance > 0 || bollo > 0) {
-      const key = `${season}||${vanName}`;
-      if (!vanFixedCosts[key]) vanFixedCosts[key] = { insurance: 0, bollo: 0 };
-      if (insurance > 0 && vanFixedCosts[key].insurance === 0) vanFixedCosts[key].insurance = insurance;
-      if (bollo > 0 && vanFixedCosts[key].bollo === 0) vanFixedCosts[key].bollo = bollo;
-    }
   }
 
   const sortedSeasons = Array.from(allSeasonSet).sort();
