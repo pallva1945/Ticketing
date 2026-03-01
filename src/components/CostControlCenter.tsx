@@ -269,6 +269,7 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
 
   const allTrips: VanTrip[] = [];
   const allSeasonSet = new Set<string>();
+  const vanFixedCosts: Record<string, { insurance: number; bollo: number }> = {};
 
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r];
@@ -305,24 +306,33 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
     const insurance = insuranceIdx >= 0 ? parseEuro(row[insuranceIdx] || '') : 0;
     const bollo = bolloIdx >= 0 ? parseEuro(row[bolloIdx] || '') : 0;
 
+    const vanName = (row[vanIdx] || '').trim();
+
     allTrips.push({
       date: dateStr,
       calMonth,
       calYear,
       season,
       seasonMonthIndex: smi,
-      van: (row[vanIdx] || '').trim(),
+      van: vanName,
       km,
       gasCost,
       tollCrosses,
       parkingCost,
       serviceCost,
       repairCost,
-      insurance,
-      bollo,
+      insurance: 0,
+      bollo: 0,
       employee: employeeIdx >= 0 ? (row[employeeIdx] || '').trim() : '',
       department: deptIdx >= 0 ? (row[deptIdx] || '').trim() : '',
     });
+
+    if (insurance > 0 || bollo > 0) {
+      const key = `${season}||${vanName}`;
+      if (!vanFixedCosts[key]) vanFixedCosts[key] = { insurance: 0, bollo: 0 };
+      if (insurance > 0 && vanFixedCosts[key].insurance === 0) vanFixedCosts[key].insurance = insurance;
+      if (bollo > 0 && vanFixedCosts[key].bollo === 0) vanFixedCosts[key].bollo = bollo;
+    }
   }
 
   const sortedSeasons = Array.from(allSeasonSet).sort();
@@ -331,7 +341,7 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
     return { overall: { km: 0, gasCost: 0, tollCrosses: 0, parkingCost: 0, serviceCost: 0, repairCost: 0, insurance: 0, bollo: 0, trips: 0, days: 0, totalCost: 0 }, byVan: {}, vans: [], allSeasons: sortedSeasons, monthlyOverall: [], monthlyByVan: {}, projYearlyKm: 0, daysInSeason: 0, yoyLineData: [] };
   }
 
-  const sumTrips = (trips: VanTrip[]): VanSummary => {
+  const sumTrips = (trips: VanTrip[]): Omit<VanSummary, 'insurance' | 'bollo'> & { insurance: number; bollo: number } => {
     const uniqueDays = new Set(trips.map(t => t.date)).size;
     const km = trips.reduce((s, t) => s + t.km, 0);
     const gasCost = trips.reduce((s, t) => s + t.gasCost, 0);
@@ -339,30 +349,58 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
     const parkingCost = trips.reduce((s, t) => s + t.parkingCost, 0);
     const serviceCost = trips.reduce((s, t) => s + t.serviceCost, 0);
     const repairCost = trips.reduce((s, t) => s + t.repairCost, 0);
-    const insurance = trips.reduce((s, t) => s + t.insurance, 0);
-    const bollo = trips.reduce((s, t) => s + t.bollo, 0);
-    const totalCost = gasCost + (tollCrosses * TOLL_COST_PER_CROSS) + parkingCost + serviceCost + repairCost + insurance + bollo;
-    return { km, gasCost, tollCrosses, parkingCost, serviceCost, repairCost, insurance, bollo, trips: trips.length, days: uniqueDays, totalCost };
+    const totalCost = gasCost + (tollCrosses * TOLL_COST_PER_CROSS) + parkingCost + serviceCost + repairCost;
+    return { km, gasCost, tollCrosses, parkingCost, serviceCost, repairCost, insurance: 0, bollo: 0, trips: trips.length, days: uniqueDays, totalCost };
   };
 
-  const overall = sumTrips(seasonTrips);
   const vanNames = Array.from(new Set(seasonTrips.map(t => t.van))).sort();
+
+  const seasonFixedByVan: Record<string, { insurance: number; bollo: number }> = {};
+  let totalSeasonInsurance = 0;
+  let totalSeasonBollo = 0;
+  vanNames.forEach(v => {
+    const key = `${selectedSeason}||${v}`;
+    const fc = vanFixedCosts[key] || { insurance: 0, bollo: 0 };
+    seasonFixedByVan[v] = fc;
+    totalSeasonInsurance += fc.insurance;
+    totalSeasonBollo += fc.bollo;
+  });
+
   const byVan: Record<string, VanSummary> = {};
-  vanNames.forEach(v => { byVan[v] = sumTrips(seasonTrips.filter(t => t.van === v)); });
+  vanNames.forEach(v => {
+    const s = sumTrips(seasonTrips.filter(t => t.van === v));
+    const fc = seasonFixedByVan[v];
+    s.insurance = fc.insurance;
+    s.bollo = fc.bollo;
+    s.totalCost += fc.insurance + fc.bollo;
+    byVan[v] = s;
+  });
+
+  const overallBase = sumTrips(seasonTrips);
+  overallBase.insurance = totalSeasonInsurance;
+  overallBase.bollo = totalSeasonBollo;
+  overallBase.totalCost += totalSeasonInsurance + totalSeasonBollo;
+  const overall = overallBase;
+
+  const monthlyInsurance = Math.round((totalSeasonInsurance / 12) * 100) / 100;
+  const monthlyBollo = Math.round((totalSeasonBollo / 12) * 100) / 100;
 
   const monthlyOverall = SEASON_MONTHS.map((month, mi) => {
     const mTrips = seasonTrips.filter(t => t.seasonMonthIndex === mi);
     const s = sumTrips(mTrips);
-    return { month, km: s.km, gasCost: s.gasCost, tollCrosses: s.tollCrosses, parkingCost: s.parkingCost, serviceCost: s.serviceCost, repairCost: s.repairCost, insurance: s.insurance, bollo: s.bollo, totalCost: s.totalCost, trips: mTrips.length };
+    return { month, km: s.km, gasCost: s.gasCost, tollCrosses: s.tollCrosses, parkingCost: s.parkingCost, serviceCost: s.serviceCost, repairCost: s.repairCost, insurance: monthlyInsurance, bollo: monthlyBollo, totalCost: s.totalCost + monthlyInsurance + monthlyBollo, trips: mTrips.length };
   });
 
   const monthlyByVan: Record<string, { month: string; km: number; gasCost: number; totalCost: number }[]> = {};
   vanNames.forEach(v => {
     const vTrips = seasonTrips.filter(t => t.van === v);
+    const fc = seasonFixedByVan[v];
+    const mIns = Math.round((fc.insurance / 12) * 100) / 100;
+    const mBol = Math.round((fc.bollo / 12) * 100) / 100;
     monthlyByVan[v] = SEASON_MONTHS.map((month, mi) => {
       const mTrips = vTrips.filter(t => t.seasonMonthIndex === mi);
       const s = sumTrips(mTrips);
-      return { month, km: s.km, gasCost: s.gasCost, totalCost: s.totalCost };
+      return { month, km: s.km, gasCost: s.gasCost, totalCost: s.totalCost + mIns + mBol };
     });
   });
 
@@ -374,8 +412,14 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
     const entry: Record<string, number | string> = { month };
     sortedSeasons.forEach(s => {
       const sTrips = allTrips.filter(t => t.season === s && t.seasonMonthIndex === mi);
-      const total = sTrips.reduce((sum, t) => sum + t.gasCost + (t.tollCrosses * TOLL_COST_PER_CROSS) + t.parkingCost + t.serviceCost + t.repairCost + t.insurance + t.bollo, 0);
-      entry[s] = total;
+      const variableCost = sTrips.reduce((sum, t) => sum + t.gasCost + (t.tollCrosses * TOLL_COST_PER_CROSS) + t.parkingCost + t.serviceCost + t.repairCost, 0);
+      const sVans = Array.from(new Set(allTrips.filter(t => t.season === s).map(t => t.van)));
+      let sFixedMonthly = 0;
+      sVans.forEach(v => {
+        const fc = vanFixedCosts[`${s}||${v}`];
+        if (fc) sFixedMonthly += (fc.insurance + fc.bollo) / 12;
+      });
+      entry[s] = Math.round((variableCost + sFixedMonthly) * 100) / 100;
     });
     return entry;
   });
@@ -927,7 +971,7 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             { label: 'YTD Km', value: formatKm(o.km), sub: `${formatNum(o.trips)} ${t('trips')} · ${formatNum(data.daysInSeason)} ${t('days')}` },
             { label: 'YTD Gas', value: formatCurrency(o.gasCost), sub: perKm(o.gasCost, o.km) + ' /km' },
             { label: 'YTD Toll', value: formatCurrency(tollCost), sub: `${formatNum(o.tollCrosses)} ${t('crosses')} · €${TOLL_COST_PER_CROSS.toFixed(2)}/cross` },
-            { label: t('YTD Fix Cost'), value: formatCurrency(fixedCost), sub: `${t('Insurance')} ${formatCurrency(o.insurance)} · ${t('Bollo')} ${formatCurrency(o.bollo)}` },
+            { label: t('Fix Cost (Yr)'), value: formatCurrency(fixedCost), sub: `${t('Ins.')} ${formatCurrency(o.insurance)} · ${t('Bollo')} ${formatCurrency(o.bollo)} · ${formatCurrency(Math.round((fixedCost / 12) * 100) / 100)}/mo` },
             { label: 'YTD Parking', value: formatCurrency(o.parkingCost), sub: perKm(o.parkingCost, o.km) + ' /km' },
             { label: 'YTD Service', value: formatCurrency(o.serviceCost), sub: perKm(o.serviceCost, o.km) + ' /km' },
             { label: 'YTD Repair', value: formatCurrency(o.repairCost), sub: perKm(o.repairCost, o.km) + ' /km' },
@@ -1100,8 +1144,8 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                       { label: t('Daily Km'), value: formatNum(s.days > 0 ? Math.round(s.km / s.days) : 0) },
                       { label: 'Gas/km', value: perKm(s.gasCost, s.km) },
                       { label: t('Toll Cost'), value: formatCurrency(tc) },
-                      { label: t('Insurance'), value: s.insurance > 0 ? formatCurrency(s.insurance) : '—' },
-                      { label: t('Bollo'), value: s.bollo > 0 ? formatCurrency(s.bollo) : '—' },
+                      { label: t('Insurance (Yr)'), value: s.insurance > 0 ? formatCurrency(s.insurance) : '—' },
+                      { label: t('Bollo (Yr)'), value: s.bollo > 0 ? formatCurrency(s.bollo) : '—' },
                       { label: t('Repair'), value: s.repairCost > 0 ? formatCurrency(s.repairCost) : '—' },
                       { label: '€/km', value: perKm(s.totalCost, s.km) },
                     ].map((row, i) => (
