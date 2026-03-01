@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Shield, Zap, Truck, Search, Sun, Moon, ArrowLeft, Home, FileSpreadsheet, Loader2, Check, Settings, RefreshCw, Calendar } from 'lucide-react';
+import { Shield, Zap, Truck, Search, Sun, Moon, ArrowLeft, Home, FileSpreadsheet, Loader2, Check, Settings, RefreshCw, Calendar, ExternalLink, ChevronDown, ChevronUp, Filter, X, Link2, Unlink } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell, Legend, LineChart, Line } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -573,6 +573,72 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
   const [syncSuccess, setSyncSuccess] = useState<string | null>(null);
 
   const [txSearch, setTxSearch] = useState('');
+  const [txType, setTxType] = useState<'all' | 'invoices' | 'payments'>('all');
+  const [txDateFrom, setTxDateFrom] = useState('');
+  const [txDateTo, setTxDateTo] = useState('');
+  const [txResults, setTxResults] = useState<any[]>([]);
+  const [txLoading, setTxLoading] = useState(false);
+  const [txError, setTxError] = useState('');
+  const [txExpanded, setTxExpanded] = useState<string | null>(null);
+  const [xeroConnected, setXeroConnected] = useState<boolean | null>(null);
+  const [xeroConnecting, setXeroConnecting] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/xero/status', { credentials: 'include' }).then(r => r.json()).then(d => setXeroConnected(d.connected)).catch(() => setXeroConnected(false));
+    const hash = window.location.hash;
+    if (hash.includes('xero=success')) {
+      setXeroConnected(true);
+      setActiveTab('transactions');
+      window.history.replaceState(null, '', window.location.pathname + '#cost-control');
+    } else if (hash.includes('xero=error')) {
+      const msg = new URLSearchParams(hash.split('?')[1] || '').get('msg') || 'Connection failed';
+      setTxError(`Xero connection error: ${msg}`);
+      setActiveTab('transactions');
+      window.history.replaceState(null, '', window.location.pathname + '#cost-control');
+    }
+  }, []);
+
+  const handleXeroConnect = async () => {
+    setXeroConnecting(true);
+    try {
+      const resp = await fetch('/api/xero/authorize', { credentials: 'include' });
+      const data = await resp.json();
+      if (data.url) window.location.href = data.url;
+      else { setTxError(data.error || 'Failed to get authorization URL'); setXeroConnecting(false); }
+    } catch (err) {
+      setTxError('Failed to start Xero authorization');
+      setXeroConnecting(false);
+    }
+  };
+
+  const handleXeroDisconnect = async () => {
+    await fetch('/api/xero/disconnect', { method: 'POST', credentials: 'include' });
+    setXeroConnected(false);
+    setTxResults([]);
+  };
+
+  const handleTxSearch = async () => {
+    setTxLoading(true);
+    setTxError('');
+    try {
+      const params = new URLSearchParams();
+      if (txSearch) params.set('q', txSearch);
+      if (txType !== 'all') params.set('type', txType);
+      if (txDateFrom) params.set('dateFrom', txDateFrom);
+      if (txDateTo) params.set('dateTo', txDateTo);
+      const resp = await fetch(`/api/xero/search?${params.toString()}`, { credentials: 'include' });
+      if (!resp.ok) {
+        const errData = await resp.json();
+        throw new Error(errData.error || 'Search failed');
+      }
+      const data = await resp.json();
+      setTxResults(data.results || []);
+    } catch (err: any) {
+      setTxError(err.message);
+    } finally {
+      setTxLoading(false);
+    }
+  };
 
   const energyData = useMemo(() => {
     if (!energyRawRows) return null;
@@ -1411,45 +1477,228 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
     );
   };
 
-  const renderTransactionsTab = () => (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-          <Search size={20} className="text-purple-600" />
-        </div>
-        <div>
-          <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('Transaction Search')}</h2>
-          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Search accounting transactions from Xero')}</p>
-        </div>
-      </div>
+  const statusColor = (status: string) => {
+    const s = status.toUpperCase();
+    if (s === 'PAID' || s === 'AUTHORISED') return isDark ? 'text-emerald-400' : 'text-emerald-600';
+    if (s === 'DRAFT') return isDark ? 'text-gray-400' : 'text-gray-500';
+    if (s === 'VOIDED' || s === 'DELETED') return isDark ? 'text-red-400' : 'text-red-500';
+    return isDark ? 'text-amber-400' : 'text-amber-600';
+  };
 
-      <div className={`p-8 rounded-xl border text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
-        <Search size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-        <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('Xero Integration Coming Soon')}</h3>
-        <p className={`text-sm mb-4 max-w-md mx-auto ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-          {t('Connect your Xero account to search invoices, bills, and payments directly from the portal. Set up your Xero API credentials to get started.')}
-        </p>
-        <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm ${isDark ? 'bg-purple-900/30 text-purple-400' : 'bg-purple-50 text-purple-700'}`}>
-          <Shield size={16} />
-          {t('Requires Xero OAuth setup')}
-        </div>
+  const typeColor = (type: string) => {
+    if (type === 'Invoice') return isDark ? 'bg-blue-900/40 text-blue-300' : 'bg-blue-50 text-blue-700';
+    if (type === 'Bill') return isDark ? 'bg-orange-900/40 text-orange-300' : 'bg-orange-50 text-orange-700';
+    return isDark ? 'bg-green-900/40 text-green-300' : 'bg-green-50 text-green-700';
+  };
 
-        <div className="mt-6">
-          <div className="relative max-w-lg mx-auto">
-            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              value={txSearch}
-              onChange={(e) => setTxSearch(e.target.value)}
-              placeholder={t('Search transactions (connect Xero to enable)...')}
-              disabled
-              className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm opacity-50 cursor-not-allowed ${isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-700'}`}
-            />
+  const formatTxDate = (d: string) => {
+    if (!d) return '—';
+    const dt = new Date(d);
+    return `${String(dt.getDate()).padStart(2, '0')}-${String(dt.getMonth() + 1).padStart(2, '0')}-${dt.getFullYear()}`;
+  };
+
+  const renderTransactionsTab = () => {
+    if (xeroConnected === null) {
+      return (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 size={24} className="animate-spin text-purple-500" />
+        </div>
+      );
+    }
+
+    if (!xeroConnected) {
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+              <Search size={20} className="text-purple-600" />
+            </div>
+            <div>
+              <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('Transaction Search')}</h2>
+              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Search accounting transactions from Xero')}</p>
+            </div>
+          </div>
+          <div className={`p-8 rounded-xl border text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+            <Shield size={48} className="mx-auto text-purple-400 mb-4" />
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('Connect Xero')}</h3>
+            <p className={`text-sm mb-6 max-w-md mx-auto ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              {t('Connect your Xero account to search invoices, bills, and payments directly from the portal.')}
+            </p>
+            <button
+              onClick={handleXeroConnect}
+              disabled={xeroConnecting}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white bg-purple-600 hover:bg-purple-700 transition-colors disabled:opacity-50"
+            >
+              {xeroConnecting ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
+              {xeroConnecting ? t('Connecting...') : t('Connect Xero Account')}
+            </button>
           </div>
         </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+              <Search size={20} className="text-purple-600" />
+            </div>
+            <div>
+              <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('Transaction Search')}</h2>
+              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Search accounting transactions from Xero')}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              {t('Connected')}
+            </span>
+            <button onClick={handleXeroDisconnect} className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-500' : 'hover:bg-gray-100 text-gray-400'}`} title={t('Disconnect Xero')}>
+              <Unlink size={14} />
+            </button>
+          </div>
+        </div>
+
+        <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={txSearch}
+                onChange={(e) => setTxSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleTxSearch()}
+                placeholder={t('Search by contact, invoice number, or reference...')}
+                className={`w-full pl-10 pr-4 py-2.5 rounded-lg border text-sm ${isDark ? 'bg-gray-800 border-gray-700 text-gray-200 placeholder-gray-500' : 'bg-gray-50 border-gray-200 text-gray-700 placeholder-gray-400'}`}
+              />
+            </div>
+            <button
+              onClick={handleTxSearch}
+              disabled={txLoading}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 transition-colors disabled:opacity-50 whitespace-nowrap"
+            >
+              {txLoading ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+              {t('Search')}
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 mt-3">
+            <div className="flex items-center gap-1.5">
+              <Filter size={14} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
+              <select
+                value={txType}
+                onChange={(e) => setTxType(e.target.value as any)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs border ${isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-600'}`}
+              >
+                <option value="all">{t('All Types')}</option>
+                <option value="invoices">{t('Invoices & Bills')}</option>
+                <option value="payments">{t('Payments')}</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Calendar size={14} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
+              <input type="date" value={txDateFrom} onChange={(e) => setTxDateFrom(e.target.value)} className={`px-2.5 py-1.5 rounded-lg text-xs border ${isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-600'}`} />
+              <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>—</span>
+              <input type="date" value={txDateTo} onChange={(e) => setTxDateTo(e.target.value)} className={`px-2.5 py-1.5 rounded-lg text-xs border ${isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-gray-50 border-gray-200 text-gray-600'}`} />
+            </div>
+            {(txDateFrom || txDateTo || txType !== 'all') && (
+              <button onClick={() => { setTxDateFrom(''); setTxDateTo(''); setTxType('all'); }} className="inline-flex items-center gap-1 text-xs text-purple-500 hover:text-purple-400">
+                <X size={12} /> {t('Clear filters')}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {txError && (
+          <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
+            {txError}
+          </div>
+        )}
+
+        {txResults.length > 0 && (
+          <div className="space-y-2">
+            <p className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              {txResults.length} {t('results found')}
+            </p>
+            {txResults.map((tx) => (
+              <div key={tx.id} className={`rounded-xl border overflow-hidden transition-colors ${isDark ? 'bg-gray-900 border-gray-800 hover:border-gray-700' : 'bg-white border-gray-200 hover:border-gray-300'}`}>
+                <button
+                  onClick={() => setTxExpanded(txExpanded === tx.id ? null : tx.id)}
+                  className="w-full text-left px-4 py-3 flex items-center gap-3"
+                >
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${typeColor(tx.type)}`}>{tx.type}</span>
+                  <span className={`flex-1 text-sm font-medium truncate ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{tx.contact || '—'}</span>
+                  <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{tx.number}</span>
+                  <span className={`text-xs ${statusColor(tx.status)}`}>{tx.status}</span>
+                  <span className={`text-sm font-semibold tabular-nums ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{formatCurrency(tx.total)}</span>
+                  <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{formatTxDate(tx.date)}</span>
+                  {txExpanded === tx.id ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+                </button>
+
+                {txExpanded === tx.id && (
+                  <div className={`px-4 pb-4 border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 mb-3">
+                      <div>
+                        <p className={`text-[10px] uppercase ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Reference')}</p>
+                        <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{tx.reference || '—'}</p>
+                      </div>
+                      <div>
+                        <p className={`text-[10px] uppercase ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Due Date')}</p>
+                        <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatTxDate(tx.dueDate)}</p>
+                      </div>
+                      <div>
+                        <p className={`text-[10px] uppercase ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Paid')}</p>
+                        <p className={`text-sm font-medium ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatCurrency(tx.amountPaid)}</p>
+                      </div>
+                      <div>
+                        <p className={`text-[10px] uppercase ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Outstanding')}</p>
+                        <p className={`text-sm font-medium ${tx.amountDue > 0 ? (isDark ? 'text-red-400' : 'text-red-600') : (isDark ? 'text-gray-400' : 'text-gray-500')}`}>{formatCurrency(tx.amountDue)}</p>
+                      </div>
+                    </div>
+
+                    {tx.lineItems && tx.lineItems.length > 0 && (
+                      <div className={`rounded-lg overflow-hidden border ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                        <table className="w-full text-xs">
+                          <thead className={isDark ? 'bg-gray-800' : 'bg-gray-50'}>
+                            <tr>
+                              <th className={`px-3 py-2 text-left font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Description')}</th>
+                              <th className={`px-3 py-2 text-right font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Qty')}</th>
+                              <th className={`px-3 py-2 text-right font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Unit Price')}</th>
+                              <th className={`px-3 py-2 text-right font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Amount')}</th>
+                              <th className={`px-3 py-2 text-right font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Account')}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {tx.lineItems.map((li: any, i: number) => (
+                              <tr key={i} className={isDark ? 'border-t border-gray-800' : 'border-t border-gray-100'}>
+                                <td className={`px-3 py-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{li.description || '—'}</td>
+                                <td className={`px-3 py-2 text-right tabular-nums ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{li.quantity}</td>
+                                <td className={`px-3 py-2 text-right tabular-nums ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{formatCurrency(li.unitAmount)}</td>
+                                <td className={`px-3 py-2 text-right font-medium tabular-nums ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{formatCurrency(li.lineAmount)}</td>
+                                <td className={`px-3 py-2 text-right ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{li.accountCode}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {txResults.length === 0 && !txLoading && !txError && (
+          <div className={`p-8 rounded-xl border text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+            <Search size={32} className={`mx-auto mb-3 ${isDark ? 'text-gray-600' : 'text-gray-300'}`} />
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Search for invoices, bills, or payments by contact name, number, or reference')}</p>
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className={`min-h-screen ${isDark ? 'dark bg-gray-950' : 'bg-gray-50'}`}>
