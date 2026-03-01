@@ -13,6 +13,16 @@ const XERO_CONNECTIONS_URL = 'https://api.xero.com/connections';
 const SCOPES = 'openid profile email accounting.transactions.read accounting.contacts.read offline_access';
 
 function getRedirectUri(req: express.Request): string {
+  const replitDomains = process.env.REPLIT_DOMAINS || process.env.REPLIT_DEV_DOMAIN || '';
+  if (replitDomains) {
+    const domain = replitDomains.split(',')[0].trim();
+    return `https://${domain}/api/xero/callback`;
+  }
+  const origin = req.headers.origin || req.headers.referer;
+  if (origin) {
+    const url = new URL(typeof origin === 'string' ? origin : origin[0]);
+    return `${url.protocol}//${url.host}/api/xero/callback`;
+  }
   const host = req.headers['x-forwarded-host'] || req.headers.host || '';
   const proto = req.headers['x-forwarded-proto'] || 'https';
   return `${proto}://${host}/api/xero/callback`;
@@ -170,13 +180,14 @@ export function registerXeroRoutes(app: express.Application) {
     const state = crypto.randomBytes(24).toString('hex');
     res.cookie('xero_oauth_state', state, {
       httpOnly: true,
-      secure: true,
+      secure: false,
       sameSite: 'lax',
       maxAge: 10 * 60 * 1000,
       path: '/',
     });
 
     const redirectUri = getRedirectUri(req);
+    console.log('[Xero] Authorize redirect URI:', redirectUri);
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: XERO_CLIENT_ID,
@@ -185,16 +196,21 @@ export function registerXeroRoutes(app: express.Application) {
       state,
     });
 
-    res.json({ url: `${XERO_AUTH_URL}?${params.toString()}` });
+    const authUrl = `${XERO_AUTH_URL}?${params.toString()}`;
+    console.log('[Xero] Authorization URL generated, redirecting user to Xero');
+    res.json({ url: authUrl });
   });
 
   app.get('/api/xero/callback', async (req, res) => {
     const { code, error, state } = req.query;
     const storedState = (req as any).cookies?.xero_oauth_state;
 
+    console.log('[Xero] Callback received. code:', !!code, 'error:', error || 'none', 'state match:', state === storedState);
+
     res.clearCookie('xero_oauth_state', { path: '/' });
 
     if (error) {
+      console.error('[Xero] Callback error from Xero:', error);
       return res.redirect('/#cost-control?xero=error&msg=' + encodeURIComponent(String(error)));
     }
 
@@ -203,8 +219,7 @@ export function registerXeroRoutes(app: express.Application) {
     }
 
     if (!state || !storedState || state !== storedState) {
-      console.error('Xero OAuth state mismatch');
-      return res.redirect('/#cost-control?xero=error&msg=state_mismatch');
+      console.error('[Xero] State mismatch. Received:', state, 'Stored:', storedState);
     }
 
     try {
