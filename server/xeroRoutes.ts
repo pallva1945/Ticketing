@@ -163,19 +163,13 @@ export function registerXeroRoutes(app: express.Application) {
     }
   });
 
-  app.get('/api/xero/authorize', requireAuth, (req, res) => {
+  app.get('/api/xero/authorize', requireAuth, async (req, res) => {
     if (!XERO_CLIENT_ID) {
       return res.status(500).json({ error: 'XERO_CLIENT_ID not configured' });
     }
 
     const state = crypto.randomBytes(24).toString('hex');
-    res.cookie('xero_oauth_state', state, {
-      httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
-      maxAge: 10 * 60 * 1000,
-      path: '/',
-    });
+    await setSetting('xero_oauth_state', JSON.stringify({ state, created: Date.now() }));
 
     const redirectUri = getRedirectUri(req);
     console.log('[Xero] Authorize redirect URI:', redirectUri);
@@ -194,11 +188,20 @@ export function registerXeroRoutes(app: express.Application) {
 
   app.get('/api/xero/callback', async (req, res) => {
     const { code, error, state } = req.query;
-    const storedState = (req as any).cookies?.xero_oauth_state;
+
+    let storedState = '';
+    try {
+      const raw = await getSetting('xero_oauth_state');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Date.now() - parsed.created < 10 * 60 * 1000) {
+          storedState = parsed.state;
+        }
+      }
+      await setSetting('xero_oauth_state', '');
+    } catch {}
 
     console.log('[Xero] Callback received. code:', !!code, 'error:', error || 'none', 'state match:', state === storedState);
-
-    res.clearCookie('xero_oauth_state', { path: '/' });
 
     if (error) {
       console.error('[Xero] Callback error from Xero:', error);
@@ -210,11 +213,12 @@ export function registerXeroRoutes(app: express.Application) {
     }
 
     if (!state || !storedState || state !== storedState) {
-      console.error('[Xero] State mismatch. Received:', state, 'Stored:', storedState);
+      console.error('[Xero] State mismatch. Received:', state, 'Stored:', storedState || 'empty');
     }
 
     try {
       const redirectUri = getRedirectUri(req);
+      console.log('[Xero] Token exchange with redirect URI:', redirectUri);
       const tokenResp = await fetch(XERO_TOKEN_URL, {
         method: 'POST',
         headers: {
@@ -230,11 +234,12 @@ export function registerXeroRoutes(app: express.Application) {
 
       if (!tokenResp.ok) {
         const errText = await tokenResp.text();
-        console.error('Xero token exchange failed:', errText);
+        console.error('[Xero] Token exchange failed:', tokenResp.status, errText);
         return res.redirect('/#cost-control?xero=error&msg=token_exchange_failed');
       }
 
       const tokenData = await tokenResp.json() as any;
+      console.log('[Xero] Token exchange successful, fetching connections...');
 
       const connResp = await fetch(XERO_CONNECTIONS_URL, {
         headers: { 'Authorization': `Bearer ${tokenData.access_token}` },
@@ -243,13 +248,17 @@ export function registerXeroRoutes(app: express.Application) {
       let tenantId = '';
       if (connResp.ok) {
         const connections = await connResp.json() as any[];
+        console.log('[Xero] Found', connections.length, 'connection(s)');
         if (connections.length > 0) {
           tenantId = connections[0].tenantId;
+          console.log('[Xero] Using tenant:', connections[0].tenantName || tenantId);
         }
+      } else {
+        console.error('[Xero] Connections fetch failed:', connResp.status);
       }
 
       if (!tenantId) {
-        console.error('No Xero tenant found after OAuth');
+        console.error('[Xero] No tenant found after OAuth');
         return res.redirect('/#cost-control?xero=error&msg=no_tenant');
       }
 
@@ -260,9 +269,10 @@ export function registerXeroRoutes(app: express.Application) {
         tenant_id: tenantId,
       });
 
+      console.log('[Xero] Connection complete! Tokens stored successfully.');
       res.redirect('/#cost-control?xero=success');
     } catch (err: any) {
-      console.error('Xero callback error:', err);
+      console.error('[Xero] Callback error:', err);
       res.redirect('/#cost-control?xero=error&msg=' + encodeURIComponent(err.message));
     }
   });
