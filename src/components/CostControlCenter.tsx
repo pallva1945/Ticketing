@@ -57,6 +57,49 @@ interface SheetTabData {
   yoySummary: { gasYtd: number; gasYtdPrev: number; elecYtd: number; elecYtdPrev: number; totalYtd: number; totalYtdPrev: number };
 }
 
+interface VanTrip {
+  date: string;
+  calMonth: number;
+  calYear: number;
+  season: string;
+  seasonMonthIndex: number;
+  van: string;
+  km: number;
+  gasCost: number;
+  tollCrosses: number;
+  parkingCost: number;
+  serviceCost: number;
+  repairCost: number;
+  employee: string;
+  department: string;
+}
+
+interface VanSummary {
+  km: number;
+  gasCost: number;
+  tollCrosses: number;
+  parkingCost: number;
+  serviceCost: number;
+  repairCost: number;
+  trips: number;
+  days: number;
+  totalCost: number;
+}
+
+interface VanTabData {
+  overall: VanSummary;
+  byVan: Record<string, VanSummary>;
+  vans: string[];
+  allSeasons: string[];
+  monthlyOverall: { month: string; km: number; gasCost: number; tollCrosses: number; parkingCost: number; serviceCost: number; repairCost: number; totalCost: number; trips: number }[];
+  monthlyByVan: Record<string, { month: string; km: number; gasCost: number; totalCost: number }[]>;
+  projYearlyKm: number;
+  daysInSeason: number;
+  yoyLineData: { month: string; [season: string]: number | string }[];
+}
+
+const TOLL_COST_PER_CROSS = 4.30;
+
 const COLORS = {
   gas: '#f59e0b',
   gasLight: '#fbbf24',
@@ -185,6 +228,144 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
   };
 }
 
+function dateToSeason(dateStr: string): string {
+  const parts = dateStr.split('/');
+  if (parts.length < 3) return '';
+  const m = parseInt(parts[1], 10);
+  const y = parseInt(parts[2], 10);
+  const fullY = y < 100 ? 2000 + y : y;
+  if (m >= 7) return `${String(fullY).slice(-2)}-${String(fullY + 1).slice(-2)}`;
+  return `${String(fullY - 1).slice(-2)}-${String(fullY).slice(-2)}`;
+}
+
+function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData | null {
+  if (!rows || rows.length < 2) return null;
+
+  const headers = rows[0].map(h => (h || '').trim().toLowerCase().replace(/\s+/g, '_'));
+  const col = (name: string) => headers.indexOf(name);
+  const dateIdx = col('date');
+  const vanIdx = col('van') >= 0 ? col('van') : col('vehicle');
+  const kmIdx = col('km_') >= 0 ? col('km_') : col('km');
+  const gasCostIdx = col('gas_cost');
+  const tollIdx = col('toll_crosses');
+  const parkingIdx = col('parking_cost');
+  const olioIdx = col('olio');
+  const repairIdx = col('repair_cost');
+  const employeeIdx = col('employee');
+  const deptIdx = col('department');
+
+  if (dateIdx < 0 || vanIdx < 0) return null;
+
+  const allTrips: VanTrip[] = [];
+  const allSeasonSet = new Set<string>();
+
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    if (!row || row.length < 5) continue;
+    const dateStr = (row[dateIdx] || '').trim();
+    if (!dateStr) continue;
+
+    const parts = dateStr.split('/');
+    if (parts.length < 3) continue;
+    const calMonth = parseInt(parts[1], 10);
+    const calYear = (() => { const y = parseInt(parts[2], 10); return y < 100 ? 2000 + y : y; })();
+    const season = dateToSeason(dateStr);
+    if (!season) continue;
+    allSeasonSet.add(season);
+
+    const smi = dateToSeasonMonthIndex(dateStr);
+
+    const km = (() => {
+      const v = kmIdx >= 0 ? (row[kmIdx] || '').trim() : '';
+      if (!v) return 0;
+      return parseInt(v.replace(/\./g, '').replace(',', '.'), 10) || 0;
+    })();
+
+    const gasCost = gasCostIdx >= 0 ? parseEuro(row[gasCostIdx] || '') : 0;
+    const tollCrosses = tollIdx >= 0 ? (parseInt((row[tollIdx] || '').replace(/\D/g, ''), 10) || 0) : 0;
+
+    const parkingRaw = parkingIdx >= 0 ? (row[parkingIdx] || '').trim() : '';
+    const parkingCost = parkingRaw && !/^[A-Za-z]/.test(parkingRaw) ? parseEuro(parkingRaw) : 0;
+
+    const olioRaw = olioIdx >= 0 ? (row[olioIdx] || '').trim() : '';
+    const serviceCost = olioRaw && /[€\d]/.test(olioRaw) && !/^[A-Za-z]/.test(olioRaw) ? parseEuro(olioRaw) : 0;
+
+    const repairCost = repairIdx >= 0 ? parseEuro(row[repairIdx] || '') : 0;
+
+    allTrips.push({
+      date: dateStr,
+      calMonth,
+      calYear,
+      season,
+      seasonMonthIndex: smi,
+      van: (row[vanIdx] || '').trim(),
+      km,
+      gasCost,
+      tollCrosses,
+      parkingCost,
+      serviceCost,
+      repairCost,
+      employee: employeeIdx >= 0 ? (row[employeeIdx] || '').trim() : '',
+      department: deptIdx >= 0 ? (row[deptIdx] || '').trim() : '',
+    });
+  }
+
+  const sortedSeasons = Array.from(allSeasonSet).sort();
+  const seasonTrips = allTrips.filter(t => t.season === selectedSeason);
+  if (seasonTrips.length === 0 && allTrips.length > 0) {
+    return { overall: { km: 0, gasCost: 0, tollCrosses: 0, parkingCost: 0, serviceCost: 0, repairCost: 0, trips: 0, days: 0, totalCost: 0 }, byVan: {}, vans: [], allSeasons: sortedSeasons, monthlyOverall: [], monthlyByVan: {}, projYearlyKm: 0, daysInSeason: 0, yoyLineData: [] };
+  }
+
+  const sumTrips = (trips: VanTrip[]): VanSummary => {
+    const uniqueDays = new Set(trips.map(t => t.date)).size;
+    const km = trips.reduce((s, t) => s + t.km, 0);
+    const gasCost = trips.reduce((s, t) => s + t.gasCost, 0);
+    const tollCrosses = trips.reduce((s, t) => s + t.tollCrosses, 0);
+    const parkingCost = trips.reduce((s, t) => s + t.parkingCost, 0);
+    const serviceCost = trips.reduce((s, t) => s + t.serviceCost, 0);
+    const repairCost = trips.reduce((s, t) => s + t.repairCost, 0);
+    const totalCost = gasCost + (tollCrosses * TOLL_COST_PER_CROSS) + parkingCost + serviceCost + repairCost;
+    return { km, gasCost, tollCrosses, parkingCost, serviceCost, repairCost, trips: trips.length, days: uniqueDays, totalCost };
+  };
+
+  const overall = sumTrips(seasonTrips);
+  const vanNames = Array.from(new Set(seasonTrips.map(t => t.van))).sort();
+  const byVan: Record<string, VanSummary> = {};
+  vanNames.forEach(v => { byVan[v] = sumTrips(seasonTrips.filter(t => t.van === v)); });
+
+  const monthlyOverall = SEASON_MONTHS.map((month, mi) => {
+    const mTrips = seasonTrips.filter(t => t.seasonMonthIndex === mi);
+    const s = sumTrips(mTrips);
+    return { month, km: s.km, gasCost: s.gasCost, tollCrosses: s.tollCrosses, parkingCost: s.parkingCost, serviceCost: s.serviceCost, repairCost: s.repairCost, totalCost: s.totalCost, trips: mTrips.length };
+  });
+
+  const monthlyByVan: Record<string, { month: string; km: number; gasCost: number; totalCost: number }[]> = {};
+  vanNames.forEach(v => {
+    const vTrips = seasonTrips.filter(t => t.van === v);
+    monthlyByVan[v] = SEASON_MONTHS.map((month, mi) => {
+      const mTrips = vTrips.filter(t => t.seasonMonthIndex === mi);
+      const s = sumTrips(mTrips);
+      return { month, km: s.km, gasCost: s.gasCost, totalCost: s.totalCost };
+    });
+  });
+
+  const activeMonths = monthlyOverall.filter(m => m.trips > 0).length;
+  const daysInSeason = new Set(seasonTrips.map(t => t.date)).size;
+  const projYearlyKm = activeMonths > 0 ? Math.round((overall.km / activeMonths) * 12) : 0;
+
+  const yoyLineData = SEASON_MONTHS.map((month, mi) => {
+    const entry: Record<string, number | string> = { month };
+    sortedSeasons.forEach(s => {
+      const sTrips = allTrips.filter(t => t.season === s && t.seasonMonthIndex === mi);
+      const total = sTrips.reduce((sum, t) => sum + t.gasCost + (t.tollCrosses * TOLL_COST_PER_CROSS) + t.parkingCost + t.serviceCost + t.repairCost, 0);
+      entry[s] = total;
+    });
+    return entry;
+  });
+
+  return { overall, byVan, vans: vanNames, allSeasons: sortedSeasons, monthlyOverall, monthlyByVan, projYearlyKm, daysInSeason, yoyLineData };
+}
+
 function getCurrentSeason(): string {
   const now = new Date();
   const year = now.getFullYear();
@@ -229,12 +410,12 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
   const [txSearch, setTxSearch] = useState('');
 
   const energyData = useMemo(() => energyRawRows ? parseEnergySheetData(energyRawRows, selectedSeason) : null, [energyRawRows, selectedSeason]);
-  const vanData = useMemo(() => vanRawRows ? parseEnergySheetData(vanRawRows, selectedSeason) : null, [vanRawRows, selectedSeason]);
+  const vanData = useMemo(() => vanRawRows ? parseVanSheetData(vanRawRows, selectedSeason) : null, [vanRawRows, selectedSeason]);
 
   const seasons = useMemo(() => {
     const fromData = new Set<string>();
     energyData?.allSeasons.forEach(s => fromData.add(s));
-    vanData?.allSeasons.forEach(s => fromData.add(s));
+    vanData?.allSeasons?.forEach(s => fromData.add(s));
     if (fromData.size > 0) return Array.from(fromData).sort();
     const now = new Date();
     const year = now.getFullYear();
@@ -622,6 +803,295 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
     );
   };
 
+  const VAN_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444'];
+
+  const renderVanTab = () => {
+    const data = vanData;
+    const configured = vanConfigured;
+    const formatNum = (v: number) => v.toLocaleString('it-IT');
+    const formatKm = (v: number) => `${v.toLocaleString('it-IT')} km`;
+    const perKm = (cost: number, km: number) => km > 0 ? `€${(cost / km).toFixed(3)}` : '—';
+    const lastActiveMonth = data ? (() => { for (let i = 11; i >= 0; i--) { if (data.monthlyOverall[i]?.trips > 0) return i; } return -1; })() : -1;
+
+    const sheetConfigBlock = (
+      <>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+              <Truck size={20} className="text-blue-600" />
+            </div>
+            <div>
+              <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{t('Van Costs')}</h2>
+              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Season')} {selectedSeason}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {configured && (
+              <button onClick={() => handleSyncSheet('van')} disabled={isSyncing === 'van'}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${syncSuccess === 'van' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-900/50'}`}>
+                {isSyncing === 'van' ? <Loader2 size={14} className="animate-spin" /> : syncSuccess === 'van' ? <Check size={14} /> : <RefreshCw size={14} />}
+                {syncSuccess === 'van' ? t('Synced') : t('Sync Sheet')}
+              </button>
+            )}
+            <button onClick={() => setShowVanConfig(!showVanConfig)}
+              className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
+              <Settings size={16} />
+            </button>
+          </div>
+        </div>
+
+        {showVanConfig && (
+          <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+            <h4 className={`text-sm font-semibold mb-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('Google Sheet Configuration')}</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">{t('Sheet ID')}</label>
+                <input value={vanSheetId} onChange={(e) => setVanSheetId(e.target.value)} placeholder="1abc..." className="w-full px-3 py-2 border rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">{t('Tab Name')}</label>
+                <input value={vanSheetName} onChange={(e) => setVanSheetName(e.target.value)} placeholder="Van" className="w-full px-3 py-2 border rounded-lg text-sm" />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-3">
+              <button onClick={() => handleSaveConfig('van')} className="px-4 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700">{t('Save')}</button>
+              <button onClick={() => setShowVanConfig(false)} className="px-4 py-1.5 bg-gray-200 dark:bg-gray-700 text-xs rounded-lg">{t('Cancel')}</button>
+            </div>
+          </div>
+        )}
+      </>
+    );
+
+    if (!data || data.overall.trips === 0) {
+      return (
+        <div className="space-y-6">
+          {sheetConfigBlock}
+          <div className={`p-12 rounded-xl border text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+            <FileSpreadsheet size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
+            <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{data ? t('No data for season') + ' ' + selectedSeason : t('No Data Connected')}</h3>
+            <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              {data ? t('Select a different season or sync the sheet with updated data.') : t('Connect a Google Sheet to start tracking') + ' ' + t('van costs') + '.'}
+            </p>
+            {!configured && (
+              <button onClick={() => setShowVanConfig(true)} className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">
+                <FileSpreadsheet size={16} className="inline mr-1.5" />{t('Connect Sheet')}
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const o = data.overall;
+    const tollCost = o.tollCrosses * TOLL_COST_PER_CROSS;
+    const dailyKm = data.daysInSeason > 0 ? Math.round(o.km / data.daysInSeason) : 0;
+    const costPerKm = o.km > 0 ? o.totalCost / o.km : 0;
+
+    const chartData = SEASON_MONTHS.map((name, i) => {
+      const m = data.monthlyOverall[i];
+      return { name, Gas: m.gasCost, Toll: m.tollCrosses * TOLL_COST_PER_CROSS, Parking: m.parkingCost, Service: m.serviceCost, Repair: m.repairCost, total: m.totalCost };
+    }).slice(0, Math.max(lastActiveMonth + 2, 7));
+
+    const kmChartData = SEASON_MONTHS.map((name, i) => {
+      const entry: Record<string, any> = { name };
+      data.vans.forEach(v => { entry[v] = data.monthlyByVan[v]?.[i]?.km || 0; });
+      return entry;
+    }).slice(0, Math.max(lastActiveMonth + 2, 7));
+
+    const SEASON_LINE_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+
+    return (
+      <div className="space-y-6">
+        {sheetConfigBlock}
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { label: 'YTD Km', value: formatKm(o.km), sub: `${formatNum(o.trips)} ${t('trips')} · ${formatNum(data.daysInSeason)} ${t('days')}` },
+            { label: 'YTD Gas', value: formatCurrency(o.gasCost), sub: perKm(o.gasCost, o.km) + ' /km' },
+            { label: 'YTD Toll', value: formatCurrency(tollCost), sub: `${formatNum(o.tollCrosses)} ${t('crosses')} · €${TOLL_COST_PER_CROSS.toFixed(2)}/cross` },
+            { label: 'YTD Parking', value: formatCurrency(o.parkingCost), sub: perKm(o.parkingCost, o.km) + ' /km' },
+            { label: 'YTD Service', value: formatCurrency(o.serviceCost), sub: perKm(o.serviceCost, o.km) + ' /km' },
+            { label: 'YTD Repair', value: formatCurrency(o.repairCost), sub: perKm(o.repairCost, o.km) + ' /km' },
+            { label: t('Proj. Yearly Km'), value: formatKm(data.projYearlyKm), sub: `${lastActiveMonth + 1}/12 ${t('months')}` },
+            { label: t('YTD Cost / Km'), value: `€${costPerKm.toFixed(3)}`, sub: formatCurrency(o.totalCost) + ` ${t('total')}` },
+          ].map((kpi, i) => (
+            <div key={i} className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
+              <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{kpi.label}</p>
+              <p className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{kpi.value}</p>
+              <p className={`text-[10px] mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{kpi.sub}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className={`p-3 rounded-lg border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm text-center`}>
+            <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Daily Km')}</p>
+            <p className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatNum(dailyKm)}</p>
+          </div>
+          <div className={`p-3 rounded-lg border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm text-center`}>
+            <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Gas / Km')}</p>
+            <p className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{perKm(o.gasCost, o.km)}</p>
+          </div>
+          <div className={`p-3 rounded-lg border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm text-center`}>
+            <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Toll / Cross')}</p>
+            <p className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>€{TOLL_COST_PER_CROSS.toFixed(2)}</p>
+          </div>
+          <div className={`p-3 rounded-lg border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm text-center`}>
+            <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Repair / Km')}</p>
+            <p className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{perKm(o.repairCost, o.km)}</p>
+          </div>
+        </div>
+
+        <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+          <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('Monthly Cost Breakdown')}</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                <YAxis tickFormatter={formatCompact} tick={{ fontSize: 10 }} />
+                <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="Gas" stackId="cost" fill="#f59e0b" />
+                <Bar dataKey="Toll" stackId="cost" fill="#8b5cf6" />
+                <Bar dataKey="Parking" stackId="cost" fill="#3b82f6" />
+                <Bar dataKey="Service" stackId="cost" fill="#10b981" />
+                <Bar dataKey="Repair" stackId="cost" fill="#ef4444" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+          <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('Km by Van')}</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={kmChartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                <YAxis tickFormatter={(v: number) => v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(v)} tick={{ fontSize: 10 }} />
+                <Tooltip formatter={(value: number) => formatNum(value) + ' km'} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                {data.vans.map((v, i) => (
+                  <Bar key={v} dataKey={v} stackId="km" fill={VAN_COLORS[i % VAN_COLORS.length]} radius={i === data.vans.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {data.allSeasons.length > 1 && (
+          <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+            <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('Year-over-Year Comparison')}</h3>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data.yoyLineData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                  <YAxis tickFormatter={formatCompact} tick={{ fontSize: 10 }} />
+                  <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  {data.allSeasons.map((s, i) => (
+                    <Line key={s} type="monotone" dataKey={s} stroke={SEASON_LINE_COLORS[i % SEASON_LINE_COLORS.length]} strokeWidth={s === selectedSeason ? 3 : 1.5} strokeOpacity={s === selectedSeason ? 1 : 0.5} dot={s === selectedSeason ? { r: 4 } : false} activeDot={s === selectedSeason ? { r: 6 } : { r: 3 }} connectNulls />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+          <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('Breakdown by Van')}</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className={`border-b ${isDark ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
+                  <th className="text-left py-2 px-3 font-medium">{t('Van')}</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Trips')}</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">Km</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">Gas</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Toll')}</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Parking')}</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Service')}</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Repair')}</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Total')}</th>
+                  <th className="text-right py-2 px-3 font-medium text-xs">€/km</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.vans.map((v, idx) => {
+                  const s = data.byVan[v];
+                  return (
+                    <tr key={v} className={`border-b ${isDark ? 'border-gray-800 hover:bg-gray-800/50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                      <td className={`py-2 px-3 font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                        <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: VAN_COLORS[idx % VAN_COLORS.length] }} />
+                        {v}
+                      </td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatNum(s.trips)}</td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatNum(s.km)}</td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatCurrency(s.gasCost)}</td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatCurrency(s.tollCrosses * TOLL_COST_PER_CROSS)}</td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.parkingCost > 0 ? formatCurrency(s.parkingCost) : '—'}</td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.serviceCost > 0 ? formatCurrency(s.serviceCost) : '—'}</td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.repairCost > 0 ? formatCurrency(s.repairCost) : '—'}</td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(s.totalCost)}</td>
+                      <td className={`text-right py-2 px-3 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{perKm(s.totalCost, s.km)}</td>
+                    </tr>
+                  );
+                })}
+                <tr className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                  <td className="py-2 px-3">{t('Total')}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{formatNum(o.trips)}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{formatNum(o.km)}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.gasCost)}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(tollCost)}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{o.parkingCost > 0 ? formatCurrency(o.parkingCost) : '—'}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{o.serviceCost > 0 ? formatCurrency(o.serviceCost) : '—'}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.repairCost)}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.totalCost)}</td>
+                  <td className="text-right py-2 px-3 tabular-nums text-xs">{perKm(o.totalCost, o.km)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+          <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('Per-Van KPIs')}</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {data.vans.map((v, idx) => {
+              const s = data.byVan[v];
+              const tc = s.tollCrosses * TOLL_COST_PER_CROSS;
+              return (
+                <div key={v} className={`p-4 rounded-xl border ${isDark ? 'bg-gray-800/50 border-gray-800' : 'bg-gray-50 border-gray-100'}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: VAN_COLORS[idx % VAN_COLORS.length] }} />
+                    <span className={`text-sm font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{v}</span>
+                  </div>
+                  <div className="space-y-1.5 text-xs">
+                    {[
+                      { label: 'Km', value: formatNum(s.km) },
+                      { label: t('Daily Km'), value: formatNum(s.days > 0 ? Math.round(s.km / s.days) : 0) },
+                      { label: 'Gas/km', value: perKm(s.gasCost, s.km) },
+                      { label: t('Toll Cost'), value: formatCurrency(tc) },
+                      { label: t('Repair'), value: s.repairCost > 0 ? formatCurrency(s.repairCost) : '—' },
+                      { label: '€/km', value: perKm(s.totalCost, s.km) },
+                    ].map((row, i) => (
+                      <div key={i} className="flex justify-between">
+                        <span className={isDark ? 'text-gray-400' : 'text-gray-500'}>{row.label}</span>
+                        <span className={`font-medium tabular-nums ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{row.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderTransactionsTab = () => (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -725,7 +1195,7 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {activeTab === 'energy' && renderSheetTab('energy', energyData, energyConfigured, energySheetId, setEnergySheetId, energySheetName, setEnergySheetName, showEnergyConfig, setShowEnergyConfig, Zap, 'text-yellow-600')}
-        {activeTab === 'van' && renderSheetTab('van', vanData, vanConfigured, vanSheetId, setVanSheetId, vanSheetName, setVanSheetName, showVanConfig, setShowVanConfig, Truck, 'text-blue-600')}
+        {activeTab === 'van' && renderVanTab()}
         {activeTab === 'transactions' && renderTransactionsTab()}
       </main>
     </div>
