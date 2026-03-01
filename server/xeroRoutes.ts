@@ -12,20 +12,11 @@ const XERO_CONNECTIONS_URL = 'https://api.xero.com/connections';
 
 const SCOPES = 'openid profile email accounting.transactions.read accounting.contacts.read offline_access';
 
-function getRedirectUri(req: express.Request): string {
-  const replitDomains = process.env.REPLIT_DOMAINS || process.env.REPLIT_DEV_DOMAIN || '';
-  if (replitDomains) {
-    const domain = replitDomains.split(',')[0].trim();
-    return `https://${domain}/api/xero/callback`;
+function getRedirectUri(_req: express.Request): string {
+  if (process.env.XERO_REDIRECT_URI) {
+    return process.env.XERO_REDIRECT_URI;
   }
-  const origin = req.headers.origin || req.headers.referer;
-  if (origin) {
-    const url = new URL(typeof origin === 'string' ? origin : origin[0]);
-    return `${url.protocol}//${url.host}/api/xero/callback`;
-  }
-  const host = req.headers['x-forwarded-host'] || req.headers.host || '';
-  const proto = req.headers['x-forwarded-proto'] || 'https';
-  return `${proto}://${host}/api/xero/callback`;
+  return 'https://PVsales.replit.app/api/xero/callback';
 }
 
 function sanitizeXeroQuery(input: string): string {
