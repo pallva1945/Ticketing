@@ -70,6 +70,8 @@ interface VanTrip {
   parkingCost: number;
   serviceCost: number;
   repairCost: number;
+  insurance: number;
+  bollo: number;
   employee: string;
   department: string;
 }
@@ -81,6 +83,8 @@ interface VanSummary {
   parkingCost: number;
   serviceCost: number;
   repairCost: number;
+  insurance: number;
+  bollo: number;
   trips: number;
   days: number;
   totalCost: number;
@@ -250,12 +254,14 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
   const col = (name: string) => headers.indexOf(name);
   const dateIdx = col('date');
   const vanIdx = col('van') >= 0 ? col('van') : col('vehicle');
-  const kmIdx = col('km_') >= 0 ? col('km_') : col('km');
+  const kmIdx = col('km') >= 0 ? col('km') : col('km_');
   const gasCostIdx = col('gas_cost');
   const tollIdx = col('toll_crosses');
   const parkingIdx = col('parking_cost');
   const olioIdx = col('olio');
   const repairIdx = col('repair_cost');
+  const insuranceIdx = col('insurance');
+  const bolloIdx = col('bollo');
   const employeeIdx = col('employee');
   const deptIdx = col('department');
 
@@ -296,6 +302,8 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
     const serviceCost = olioRaw && /[€\d]/.test(olioRaw) && !/^[A-Za-z]/.test(olioRaw) ? parseEuro(olioRaw) : 0;
 
     const repairCost = repairIdx >= 0 ? parseEuro(row[repairIdx] || '') : 0;
+    const insurance = insuranceIdx >= 0 ? parseEuro(row[insuranceIdx] || '') : 0;
+    const bollo = bolloIdx >= 0 ? parseEuro(row[bolloIdx] || '') : 0;
 
     allTrips.push({
       date: dateStr,
@@ -310,6 +318,8 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
       parkingCost,
       serviceCost,
       repairCost,
+      insurance,
+      bollo,
       employee: employeeIdx >= 0 ? (row[employeeIdx] || '').trim() : '',
       department: deptIdx >= 0 ? (row[deptIdx] || '').trim() : '',
     });
@@ -318,7 +328,7 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
   const sortedSeasons = Array.from(allSeasonSet).sort();
   const seasonTrips = allTrips.filter(t => t.season === selectedSeason);
   if (seasonTrips.length === 0 && allTrips.length > 0) {
-    return { overall: { km: 0, gasCost: 0, tollCrosses: 0, parkingCost: 0, serviceCost: 0, repairCost: 0, trips: 0, days: 0, totalCost: 0 }, byVan: {}, vans: [], allSeasons: sortedSeasons, monthlyOverall: [], monthlyByVan: {}, projYearlyKm: 0, daysInSeason: 0, yoyLineData: [] };
+    return { overall: { km: 0, gasCost: 0, tollCrosses: 0, parkingCost: 0, serviceCost: 0, repairCost: 0, insurance: 0, bollo: 0, trips: 0, days: 0, totalCost: 0 }, byVan: {}, vans: [], allSeasons: sortedSeasons, monthlyOverall: [], monthlyByVan: {}, projYearlyKm: 0, daysInSeason: 0, yoyLineData: [] };
   }
 
   const sumTrips = (trips: VanTrip[]): VanSummary => {
@@ -329,8 +339,10 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
     const parkingCost = trips.reduce((s, t) => s + t.parkingCost, 0);
     const serviceCost = trips.reduce((s, t) => s + t.serviceCost, 0);
     const repairCost = trips.reduce((s, t) => s + t.repairCost, 0);
-    const totalCost = gasCost + (tollCrosses * TOLL_COST_PER_CROSS) + parkingCost + serviceCost + repairCost;
-    return { km, gasCost, tollCrosses, parkingCost, serviceCost, repairCost, trips: trips.length, days: uniqueDays, totalCost };
+    const insurance = trips.reduce((s, t) => s + t.insurance, 0);
+    const bollo = trips.reduce((s, t) => s + t.bollo, 0);
+    const totalCost = gasCost + (tollCrosses * TOLL_COST_PER_CROSS) + parkingCost + serviceCost + repairCost + insurance + bollo;
+    return { km, gasCost, tollCrosses, parkingCost, serviceCost, repairCost, insurance, bollo, trips: trips.length, days: uniqueDays, totalCost };
   };
 
   const overall = sumTrips(seasonTrips);
@@ -341,7 +353,7 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
   const monthlyOverall = SEASON_MONTHS.map((month, mi) => {
     const mTrips = seasonTrips.filter(t => t.seasonMonthIndex === mi);
     const s = sumTrips(mTrips);
-    return { month, km: s.km, gasCost: s.gasCost, tollCrosses: s.tollCrosses, parkingCost: s.parkingCost, serviceCost: s.serviceCost, repairCost: s.repairCost, totalCost: s.totalCost, trips: mTrips.length };
+    return { month, km: s.km, gasCost: s.gasCost, tollCrosses: s.tollCrosses, parkingCost: s.parkingCost, serviceCost: s.serviceCost, repairCost: s.repairCost, insurance: s.insurance, bollo: s.bollo, totalCost: s.totalCost, trips: mTrips.length };
   });
 
   const monthlyByVan: Record<string, { month: string; km: number; gasCost: number; totalCost: number }[]> = {};
@@ -362,7 +374,7 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
     const entry: Record<string, number | string> = { month };
     sortedSeasons.forEach(s => {
       const sTrips = allTrips.filter(t => t.season === s && t.seasonMonthIndex === mi);
-      const total = sTrips.reduce((sum, t) => sum + t.gasCost + (t.tollCrosses * TOLL_COST_PER_CROSS) + t.parkingCost + t.serviceCost + t.repairCost, 0);
+      const total = sTrips.reduce((sum, t) => sum + t.gasCost + (t.tollCrosses * TOLL_COST_PER_CROSS) + t.parkingCost + t.serviceCost + t.repairCost + t.insurance + t.bollo, 0);
       entry[s] = total;
     });
     return entry;
@@ -889,12 +901,13 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
 
     const o = data.overall;
     const tollCost = o.tollCrosses * TOLL_COST_PER_CROSS;
+    const fixedCost = o.insurance + o.bollo;
     const dailyKm = data.daysInSeason > 0 ? Math.round(o.km / data.daysInSeason) : 0;
     const costPerKm = o.km > 0 ? o.totalCost / o.km : 0;
 
     const chartData = SEASON_MONTHS.map((name, i) => {
       const m = data.monthlyOverall[i];
-      return { name, Gas: m.gasCost, Toll: m.tollCrosses * TOLL_COST_PER_CROSS, Parking: m.parkingCost, Service: m.serviceCost, Repair: m.repairCost, total: m.totalCost };
+      return { name, Gas: m.gasCost, Toll: m.tollCrosses * TOLL_COST_PER_CROSS, Insurance: m.insurance, Bollo: m.bollo, Parking: m.parkingCost, Service: m.serviceCost, Repair: m.repairCost, total: m.totalCost };
     }).slice(0, Math.max(lastActiveMonth + 2, 7));
 
     const kmChartData = SEASON_MONTHS.map((name, i) => {
@@ -914,6 +927,7 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             { label: 'YTD Km', value: formatKm(o.km), sub: `${formatNum(o.trips)} ${t('trips')} · ${formatNum(data.daysInSeason)} ${t('days')}` },
             { label: 'YTD Gas', value: formatCurrency(o.gasCost), sub: perKm(o.gasCost, o.km) + ' /km' },
             { label: 'YTD Toll', value: formatCurrency(tollCost), sub: `${formatNum(o.tollCrosses)} ${t('crosses')} · €${TOLL_COST_PER_CROSS.toFixed(2)}/cross` },
+            { label: t('YTD Fix Cost'), value: formatCurrency(fixedCost), sub: `${t('Insurance')} ${formatCurrency(o.insurance)} · ${t('Bollo')} ${formatCurrency(o.bollo)}` },
             { label: 'YTD Parking', value: formatCurrency(o.parkingCost), sub: perKm(o.parkingCost, o.km) + ' /km' },
             { label: 'YTD Service', value: formatCurrency(o.serviceCost), sub: perKm(o.serviceCost, o.km) + ' /km' },
             { label: 'YTD Repair', value: formatCurrency(o.repairCost), sub: perKm(o.repairCost, o.km) + ' /km' },
@@ -929,22 +943,21 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className={`p-3 rounded-lg border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm text-center`}>
-            <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Daily Km')}</p>
-            <p className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatNum(dailyKm)}</p>
-          </div>
-          <div className={`p-3 rounded-lg border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm text-center`}>
-            <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Gas / Km')}</p>
-            <p className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{perKm(o.gasCost, o.km)}</p>
-          </div>
-          <div className={`p-3 rounded-lg border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm text-center`}>
-            <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Toll / Cross')}</p>
-            <p className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>€{TOLL_COST_PER_CROSS.toFixed(2)}</p>
-          </div>
-          <div className={`p-3 rounded-lg border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm text-center`}>
-            <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Repair / Km')}</p>
-            <p className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{perKm(o.repairCost, o.km)}</p>
-          </div>
+          {[
+            { label: t('Daily Km'), value: formatNum(dailyKm) },
+            { label: t('Gas / Km'), value: perKm(o.gasCost, o.km) },
+            { label: t('Toll / Cross'), value: `€${TOLL_COST_PER_CROSS.toFixed(2)}` },
+            { label: t('Fix Cost / Km'), value: perKm(fixedCost, o.km) },
+            { label: t('Parking / Km'), value: perKm(o.parkingCost, o.km) },
+            { label: t('Service / Km'), value: perKm(o.serviceCost, o.km) },
+            { label: t('Repair / Km'), value: perKm(o.repairCost, o.km) },
+            { label: t('Total / Km'), value: perKm(o.totalCost, o.km) },
+          ].map((m, i) => (
+            <div key={i} className={`p-3 rounded-lg border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm text-center`}>
+              <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{m.label}</p>
+              <p className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{m.value}</p>
+            </div>
+          ))}
         </div>
 
         <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
@@ -959,6 +972,8 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar dataKey="Gas" stackId="cost" fill="#f59e0b" />
                 <Bar dataKey="Toll" stackId="cost" fill="#8b5cf6" />
+                <Bar dataKey="Insurance" stackId="cost" fill="#06b6d4" />
+                <Bar dataKey="Bollo" stackId="cost" fill="#64748b" />
                 <Bar dataKey="Parking" stackId="cost" fill="#3b82f6" />
                 <Bar dataKey="Service" stackId="cost" fill="#10b981" />
                 <Bar dataKey="Repair" stackId="cost" fill="#ef4444" radius={[4, 4, 0, 0]} />
@@ -1017,6 +1032,8 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                   <th className="text-right py-2 px-2 font-medium text-xs">Gas</th>
                   <th className="text-right py-2 px-2 font-medium text-xs">{t('Toll')}</th>
                   <th className="text-right py-2 px-2 font-medium text-xs">{t('Parking')}</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Insurance')}</th>
+                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Bollo')}</th>
                   <th className="text-right py-2 px-2 font-medium text-xs">{t('Service')}</th>
                   <th className="text-right py-2 px-2 font-medium text-xs">{t('Repair')}</th>
                   <th className="text-right py-2 px-2 font-medium text-xs">{t('Total')}</th>
@@ -1037,6 +1054,8 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatCurrency(s.gasCost)}</td>
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatCurrency(s.tollCrosses * TOLL_COST_PER_CROSS)}</td>
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.parkingCost > 0 ? formatCurrency(s.parkingCost) : '—'}</td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.insurance > 0 ? formatCurrency(s.insurance) : '—'}</td>
+                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.bollo > 0 ? formatCurrency(s.bollo) : '—'}</td>
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.serviceCost > 0 ? formatCurrency(s.serviceCost) : '—'}</td>
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.repairCost > 0 ? formatCurrency(s.repairCost) : '—'}</td>
                       <td className={`text-right py-2 px-2 tabular-nums text-xs font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(s.totalCost)}</td>
@@ -1051,6 +1070,8 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.gasCost)}</td>
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(tollCost)}</td>
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{o.parkingCost > 0 ? formatCurrency(o.parkingCost) : '—'}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.insurance)}</td>
+                  <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.bollo)}</td>
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{o.serviceCost > 0 ? formatCurrency(o.serviceCost) : '—'}</td>
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.repairCost)}</td>
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.totalCost)}</td>
@@ -1079,6 +1100,8 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                       { label: t('Daily Km'), value: formatNum(s.days > 0 ? Math.round(s.km / s.days) : 0) },
                       { label: 'Gas/km', value: perKm(s.gasCost, s.km) },
                       { label: t('Toll Cost'), value: formatCurrency(tc) },
+                      { label: t('Insurance'), value: s.insurance > 0 ? formatCurrency(s.insurance) : '—' },
+                      { label: t('Bollo'), value: s.bollo > 0 ? formatCurrency(s.bollo) : '—' },
                       { label: t('Repair'), value: s.repairCost > 0 ? formatCurrency(s.repairCost) : '—' },
                       { label: '€/km', value: perKm(s.totalCost, s.km) },
                     ].map((row, i) => (
