@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, BarChart3, ArrowRight, Lock } from 'lucide-react';
+import { TrendingUp, TrendingDown, BarChart3, ArrowRight, Lock, Shield } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
@@ -43,6 +43,16 @@ export const FinancialCenter: React.FC<FinancialCenterProps> = ({ onNavigate, on
       color: 'from-blue-500 to-indigo-600',
       iconBg: 'bg-blue-100 dark:bg-blue-900/30',
       iconColor: 'text-blue-600',
+      available: true,
+    },
+    {
+      id: 'cost-control',
+      title: t('Cost Control'),
+      description: t('Track energy consumption, vehicle costs, and search accounting transactions across all cost units.'),
+      icon: Shield,
+      color: 'from-purple-500 to-violet-600',
+      iconBg: 'bg-purple-100 dark:bg-purple-900/30',
+      iconColor: 'text-purple-600',
       available: true,
     },
   ];

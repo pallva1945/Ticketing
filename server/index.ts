@@ -459,7 +459,7 @@ app.post("/api/costs/sync-sheet", async (req, res) => {
   }
 });
 
-const ALLOWED_REVENUE_MODULES = ['bops', 'venue_ops', 'gameday', 'sponsorship', 'merchandising', 'ticketing'];
+const ALLOWED_REVENUE_MODULES = ['bops', 'venue_ops', 'gameday', 'sponsorship', 'merchandising', 'ticketing', 'energy', 'van'];
 
 app.get("/api/revenue/sheet-config/:module", async (req, res) => {
   try {

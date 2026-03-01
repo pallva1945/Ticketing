@@ -7,6 +7,7 @@ import { VBHub } from './components/VBHub';
 import { FinancialCenter } from './components/FinancialCenter';
 import { CostCenter } from './components/CostCenter';
 import { VerticalsPnL } from './components/VerticalsPnL';
+import { CostControlCenter } from './components/CostControlCenter';
 import { LoginPage } from './components/LoginPage';
 import { AdminPanel } from './components/AdminPanel';
 import { InviteAcceptPage } from './components/InviteAcceptPage';
@@ -119,6 +120,10 @@ const Root: React.FC = () => {
 
   if (currentView === 'pnl' && canAccessPage('pnl')) {
     return <VerticalsPnL onBackToLanding={handleBackToFinancial} onHome={handleBackToWelcome} />;
+  }
+
+  if (currentView === 'cost-control') {
+    return <CostControlCenter onBackToLanding={handleBackToFinancial} onHome={handleBackToWelcome} />;
   }
 
   if (currentView === 'landing') {
