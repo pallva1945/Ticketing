@@ -30,71 +30,85 @@ interface MonthlyItem {
 interface SheetTabData {
   items: MonthlyItem[];
   seasonBudget: number;
+  allSeasons: string[];
+  rawRows: ParsedRow[];
+}
+
+interface ParsedRow {
+  date: string;
+  season: string;
+  seasonMonthIndex: number;
+  [key: string]: any;
 }
 
 const COLORS_POOL = ['#8b5cf6', '#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#f97316', '#a855f7'];
 
-const MONTH_ALIASES: Record<string, number> = {
-  'jul': 0, 'july': 0, 'lug': 0, 'luglio': 0,
-  'aug': 1, 'august': 1, 'ago': 1, 'agosto': 1,
-  'sep': 2, 'september': 2, 'set': 2, 'settembre': 2,
-  'oct': 3, 'october': 3, 'ott': 3, 'ottobre': 3,
-  'nov': 4, 'november': 4, 'novembre': 4,
-  'dec': 5, 'december': 5, 'dic': 5, 'dicembre': 5,
-  'jan': 6, 'january': 6, 'gen': 6, 'gennaio': 6,
-  'feb': 7, 'february': 7, 'febbraio': 7,
-  'mar': 8, 'march': 8, 'marzo': 8,
-  'apr': 9, 'april': 9, 'aprile': 9,
-  'may': 10, 'maggio': 10, 'mag': 10,
-  'jun': 11, 'june': 11, 'giu': 11, 'giugno': 11,
+const COST_COLUMN_LABELS: Record<string, string> = {
+  gas_cost: 'Gas',
+  electricity_cost: 'Electricity',
+  total_cost: 'Total Cost',
 };
 
-function parseSheetData(rows: string[][]): SheetTabData | null {
+function dateToSeasonMonthIndex(dateStr: string): number {
+  const parts = dateStr.split('/');
+  if (parts.length < 3) return -1;
+  const m = parseInt(parts[1], 10);
+  const CALENDAR_TO_SEASON: Record<number, number> = { 7: 0, 8: 1, 9: 2, 10: 3, 11: 4, 12: 5, 1: 6, 2: 7, 3: 8, 4: 9, 5: 10, 6: 11 };
+  return CALENDAR_TO_SEASON[m] ?? -1;
+}
+
+function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTabData | null {
   if (!rows || rows.length < 2) return null;
-  const items: MonthlyItem[] = [];
-  let seasonBudget = 0;
-  let monthIndices: number[] = [];
 
-  for (let r = 0; r < rows.length; r++) {
-    const row = rows[r];
-    if (!row || row.length === 0) continue;
-    const label = (row[0] || '').trim().toLowerCase();
+  const headers = rows[0].map(h => (h || '').trim().toLowerCase().replace(/\s+/g, '_'));
+  const dateIdx = headers.indexOf('date');
+  const seasonIdx = headers.indexOf('season');
+  if (dateIdx < 0 || seasonIdx < 0) return null;
 
-    if (label === 'month' || label === 'mese' || label === 'period') {
-      monthIndices = [];
-      for (let c = 1; c < row.length; c++) {
-        const cellVal = (row[c] || '').trim().toLowerCase();
-        const mi = MONTH_ALIASES[cellVal];
-        if (mi !== undefined) monthIndices.push(mi);
+  const costCols: { idx: number; key: string; label: string }[] = [];
+  headers.forEach((h, i) => {
+    if (COST_COLUMN_LABELS[h]) costCols.push({ idx: i, key: h, label: COST_COLUMN_LABELS[h] });
+  });
+  if (costCols.length === 0) {
+    headers.forEach((h, i) => {
+      if (h.includes('cost') || h.includes('costo') || h.includes('total')) {
+        costCols.push({ idx: i, key: h, label: h.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) });
       }
-      continue;
-    }
-
-    if (label === 'budget' || label === 'season budget' || label === 'total budget') {
-      seasonBudget = parseEuro(row[1] || '');
-      continue;
-    }
-
-    if (label === '' || label === 'category' || label === 'name' || label === 'item') continue;
-
-    const values = new Array(12).fill(0);
-    let hasValue = false;
-    for (let c = 1; c < row.length && c - 1 < monthIndices.length; c++) {
-      const v = parseEuro(row[c] || '');
-      if (v > 0) { values[monthIndices[c - 1]] = v; hasValue = true; }
-    }
-    if (hasValue) {
-      items.push({
-        name: (row[0] || '').trim(),
-        values,
-        color: COLORS_POOL[items.length % COLORS_POOL.length],
-        unit: (row[row.length - 1] || '').trim() || undefined,
-      });
-    }
+    });
   }
 
-  if (items.length === 0) return null;
-  return { items, seasonBudget };
+  const allSeasons = new Set<string>();
+  const parsed: ParsedRow[] = [];
+
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    if (!row || row.length < 2) continue;
+    const date = (row[dateIdx] || '').trim();
+    const season = (row[seasonIdx] || '').trim();
+    if (!date || !season) continue;
+    allSeasons.add(season);
+    const smi = dateToSeasonMonthIndex(date);
+    if (smi < 0) continue;
+    const entry: ParsedRow = { date, season, seasonMonthIndex: smi };
+    costCols.forEach(col => { entry[col.key] = parseEuro(row[col.idx] || ''); });
+    parsed.push(entry);
+  }
+
+  const seasonRows = parsed.filter(r => r.season === selectedSeason);
+
+  const items: MonthlyItem[] = costCols
+    .filter(col => col.key !== 'total_cost')
+    .map((col, ci) => {
+      const values = new Array(12).fill(0);
+      seasonRows.forEach(r => { values[r.seasonMonthIndex] += r[col.key] || 0; });
+      return { name: col.label, values, color: COLORS_POOL[ci % COLORS_POOL.length] };
+    })
+    .filter(item => item.values.some(v => v > 0));
+
+  const sortedSeasons = Array.from(allSeasons).sort();
+
+  if (items.length === 0 && seasonRows.length === 0) return { items: [], seasonBudget: 0, allSeasons: sortedSeasons, rawRows: parsed };
+  return { items, seasonBudget: 0, allSeasons: sortedSeasons, rawRows: parsed };
 }
 
 function getCurrentSeason(): string {
@@ -122,8 +136,8 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
   const [activeTab, setActiveTab] = useState<TabId>('energy');
   const [selectedSeason, setSelectedSeason] = useState(getCurrentSeason());
 
-  const [energyData, setEnergyData] = useState<SheetTabData | null>(null);
-  const [vanData, setVanData] = useState<SheetTabData | null>(null);
+  const [energyRawRows, setEnergyRawRows] = useState<string[][] | null>(null);
+  const [vanRawRows, setVanRawRows] = useState<string[][] | null>(null);
 
   const [energySheetId, setEnergySheetId] = useState('');
   const [energySheetName, setEnergySheetName] = useState('Energy');
@@ -140,7 +154,14 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
 
   const [txSearch, setTxSearch] = useState('');
 
+  const energyData = useMemo(() => energyRawRows ? parseEnergySheetData(energyRawRows, selectedSeason) : null, [energyRawRows, selectedSeason]);
+  const vanData = useMemo(() => vanRawRows ? parseEnergySheetData(vanRawRows, selectedSeason) : null, [vanRawRows, selectedSeason]);
+
   const seasons = useMemo(() => {
+    const fromData = new Set<string>();
+    energyData?.allSeasons.forEach(s => fromData.add(s));
+    vanData?.allSeasons.forEach(s => fromData.add(s));
+    if (fromData.size > 0) return Array.from(fromData).sort();
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth();
@@ -150,7 +171,7 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
       result.push(`${String(y).slice(-2)}-${String(y + 1).slice(-2)}`);
     }
     return result;
-  }, []);
+  }, [energyData, vanData]);
 
   useEffect(() => {
     ['energy', 'van'].forEach(mod => {
@@ -171,9 +192,8 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
         .then(r => r.json())
         .then(res => {
           if (res.success && res.data) {
-            const parsed = parseSheetData(res.data);
-            if (mod === 'energy' && parsed) setEnergyData(parsed);
-            if (mod === 'van' && parsed) setVanData(parsed);
+            if (mod === 'energy') setEnergyRawRows(res.data);
+            if (mod === 'van') setVanRawRows(res.data);
           }
         }).catch(() => {});
     });
@@ -186,9 +206,8 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
       const res = await fetch(`/api/revenue/sync-sheet/${mod}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
       const result = await res.json();
       if (result.success) {
-        const parsed = parseSheetData(result.data);
-        if (mod === 'energy' && parsed) setEnergyData(parsed);
-        if (mod === 'van' && parsed) setVanData(parsed);
+        if (mod === 'energy') setEnergyRawRows(result.data);
+        if (mod === 'van') setVanRawRows(result.data);
         setSyncSuccess(mod);
         setTimeout(() => setSyncSuccess(null), 3000);
       } else {
@@ -229,7 +248,11 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
     const monthlyTotals = SEASON_MONTHS.map((_, mi) => items.reduce((s, item) => s + item.values[mi], 0));
     const ytd = monthlyTotals.reduce((s, v) => s + v, 0);
     const lastActiveMonth = (() => { for (let i = 11; i >= 0; i--) { if (monthlyTotals[i] > 0) return i; } return -1; })();
-    const chartData = SEASON_MONTHS.map((name, i) => ({ name, total: monthlyTotals[i], hasData: i <= lastActiveMonth })).slice(0, Math.max(lastActiveMonth + 2, 7));
+    const chartData = SEASON_MONTHS.map((name, i) => {
+      const entry: Record<string, any> = { name, total: monthlyTotals[i], hasData: i <= lastActiveMonth };
+      items.forEach(item => { entry[item.name] = item.values[i]; });
+      return entry;
+    }).slice(0, Math.max(lastActiveMonth + 2, 7));
     const itemYTDs = items.map(item => item.values.reduce((s, v) => s + v, 0));
 
     return (
@@ -279,7 +302,7 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
           </div>
         )}
 
-        {!data ? (
+        {!data || (!data.items.length && !data.rawRows.length) ? (
           <div className={`p-12 rounded-xl border text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
             <FileSpreadsheet size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('No Data Connected')}</h3>
@@ -289,6 +312,12 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             <button onClick={() => setShowConfigFn(true)} className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">
               <FileSpreadsheet size={16} className="inline mr-1.5" />{t('Connect Sheet')}
             </button>
+          </div>
+        ) : items.length === 0 ? (
+          <div className={`p-8 rounded-xl border text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+            <Calendar size={36} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+            <h3 className={`text-base font-semibold mb-1 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('No data for season')} {selectedSeason}</h3>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Select a different season or sync the sheet with updated data.')}</p>
           </div>
         ) : (
           <>
@@ -324,11 +353,16 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                     <YAxis tickFormatter={formatCompact} tick={{ fontSize: 10 }} />
                     <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
-                    <Bar dataKey="total" radius={[4, 4, 0, 0]}>
-                      {chartData.map((entry, index) => (
-                        <Cell key={index} fill={entry.hasData ? (mod === 'energy' ? '#f59e0b' : '#3b82f6') : '#e5e7eb'} />
-                      ))}
-                    </Bar>
+                    {items.length > 1 && <Legend wrapperStyle={{ fontSize: 11 }} />}
+                    {items.length > 1 ? items.map((item, idx) => (
+                      <Bar key={item.name} dataKey={item.name} stackId="cost" fill={item.color} radius={idx === items.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
+                    )) : (
+                      <Bar dataKey="total" radius={[4, 4, 0, 0]}>
+                        {chartData.map((entry, index) => (
+                          <Cell key={index} fill={entry.hasData ? (mod === 'energy' ? '#f59e0b' : '#3b82f6') : '#e5e7eb'} />
+                        ))}
+                      </Bar>
+                    )}
                   </BarChart>
                 </ResponsiveContainer>
               </div>
