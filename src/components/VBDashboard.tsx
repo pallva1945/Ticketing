@@ -428,7 +428,7 @@ function computePotentialScore(
   data: { aps: number | null; cas: number | null; workEthic: number | null; personality: number | null; talent: number | null },
   age: number | null
 ): PotentialScoreResult | null {
-  const normalize15 = (v: number | null) => v !== null ? (v + 1) * 20 : null;
+  const normalize15 = (v: number | null) => v !== null ? v * 20 : null;
 
   const raw = [
     { label: 'Size', value: data.aps, normalizedValue: data.aps, baseWeight: POTENTIAL_WEIGHTS.aps },
@@ -3361,7 +3361,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                 {t('How It Works')}
               </h4>
               <div className={`text-[11px] leading-relaxed space-y-2 mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                <p>{t('APS and CAS are on the NBA 0-100 scale. Work Ethic and Character (1-5 stars) are normalized so that 4/5 = 100 (baseline) and 5/5 = 120 (exceptional). Formula: (stars + 1) × 20.')}</p>
+                <p>{t('APS and CAS are on the NBA 0-100 scale. Work Ethic and Character (1-5 stars) are normalized to 0-100 where each star = 20 points (e.g. 5/5 = 100 = NBA baseline). Formula: stars × 20.')}</p>
                 <p>{t('If a factor is unavailable, its weight is redistributed proportionally across available factors. Minimum 2 factors required.')}</p>
                 <p>{t('The same Age Factor multiplier used by CAS and APS is applied to the final score, giving younger players a development potential boost.')}</p>
               </div>

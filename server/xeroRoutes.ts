@@ -19,16 +19,6 @@ function getRedirectUri(_req: express.Request): string {
   return 'https://pallva.it/api/xero/callback';
 }
 
-function sanitizeXeroQuery(input: string): string {
-  return input.replace(/["\\]/g, '').replace(/[^\w\s\-_.@&àèéìòùÀÈÉÌÒÙ]/g, '').trim().substring(0, 100);
-}
-
-function isValidDate(d: string): boolean {
-  if (!d) return false;
-  const parsed = new Date(d);
-  return !isNaN(parsed.getTime());
-}
-
 interface XeroTokens {
   access_token: string;
   refresh_token: string;
@@ -70,7 +60,7 @@ async function refreshAccessToken(currentTokens: XeroTokens): Promise<XeroTokens
   });
 
   if (!resp.ok) {
-    console.error('Xero token refresh failed:', resp.status, await resp.text());
+    console.error('[Xero] Token refresh failed:', resp.status, await resp.text());
     return null;
   }
 
@@ -88,7 +78,7 @@ async function getValidToken(): Promise<{ token: string; tenantId: string } | nu
   if (!tokens) return null;
 
   if (!tokens.tenant_id) {
-    console.error('Xero tenant_id is empty — connection incomplete');
+    console.error('[Xero] tenant_id is empty');
     return null;
   }
 
@@ -127,6 +117,19 @@ async function xeroGet(path: string, token: string, tenantId: string, params?: R
   return resp.json();
 }
 
+function parseXeroDate(d: string | undefined | null): string {
+  if (!d) return '';
+  const match = d.match(/\/Date\((\d+)/);
+  if (match) {
+    return new Date(parseInt(match[1])).toISOString().split('T')[0];
+  }
+  if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.split('T')[0];
+  return d;
+}
+
+let transactionsCache: { data: any[]; fetchedAt: number } | null = null;
+const CACHE_TTL = 5 * 60 * 1000;
+
 export function registerXeroRoutes(app: express.Application) {
   const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const token = (req as any).cookies?.pv_auth;
@@ -140,14 +143,6 @@ export function registerXeroRoutes(app: express.Application) {
     } catch {
       return res.status(401).json({ error: 'Invalid session' });
     }
-  };
-
-  const requireAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const user = (req as any).user;
-    if (!user || user.role !== 'admin') {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-    next();
   };
 
   app.get('/api/xero/status', requireAuth, async (_req, res) => {
@@ -182,7 +177,7 @@ export function registerXeroRoutes(app: express.Application) {
     });
 
     const authUrl = `${XERO_AUTH_URL}?${params.toString()}`;
-    console.log('[Xero] Authorization URL generated, redirecting user to Xero');
+    console.log('[Xero] Authorization URL generated');
     res.json({ url: authUrl });
   });
 
@@ -204,7 +199,7 @@ export function registerXeroRoutes(app: express.Application) {
     console.log('[Xero] Callback received. code:', !!code, 'error:', error || 'none', 'state match:', state === storedState);
 
     if (error) {
-      console.error('[Xero] Callback error from Xero:', error);
+      console.error('[Xero] Callback error:', error);
       return res.redirect('/#cost-control?xero=error&msg=' + encodeURIComponent(String(error)));
     }
 
@@ -269,7 +264,7 @@ export function registerXeroRoutes(app: express.Application) {
         tenant_id: tenantId,
       });
 
-      console.log('[Xero] Connection complete! Tokens stored successfully.');
+      console.log('[Xero] Connection complete! Tokens stored.');
       res.redirect('/#cost-control?xero=success');
     } catch (err: any) {
       console.error('[Xero] Callback error:', err);
@@ -280,164 +275,108 @@ export function registerXeroRoutes(app: express.Application) {
   app.post('/api/xero/disconnect', requireAuth, async (_req, res) => {
     try {
       await clearTokens();
+      transactionsCache = null;
       res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.get('/api/xero/search', requireAuth, async (req, res) => {
+  app.get('/api/xero/transactions', requireAuth, async (_req, res) => {
     try {
       const auth = await getValidToken();
       if (!auth) {
         return res.status(401).json({ error: 'Not connected to Xero' });
       }
 
-      const { q, type, dateFrom, dateTo, page } = req.query;
-      const searchType = String(type || 'all');
-      const pageNum = Math.max(1, parseInt(String(page || '1'), 10) || 1);
-      const results: any[] = [];
+      if (transactionsCache && Date.now() - transactionsCache.fetchedAt < CACHE_TTL) {
+        return res.json({ transactions: transactionsCache.data });
+      }
 
-      const sanitizedQ = q ? sanitizeXeroQuery(String(q)) : '';
+      const allTransactions: any[] = [];
 
-      const buildWhere = () => {
-        const clauses: string[] = [];
-        if (sanitizedQ) {
-          clauses.push(`(Contact.Name.Contains("${sanitizedQ}") || Reference.Contains("${sanitizedQ}") || InvoiceNumber.Contains("${sanitizedQ}"))`);
+      let accountsMap: Record<string, { name: string; type: string }> = {};
+      try {
+        const acctData = await xeroGet('/Accounts', auth.token, auth.tenantId);
+        for (const a of (acctData.Accounts || [])) {
+          accountsMap[a.Code] = { name: a.Name || '', type: a.Type || '' };
         }
-        if (dateFrom && isValidDate(String(dateFrom))) {
-          const d = new Date(String(dateFrom));
-          clauses.push(`Date >= DateTime(${d.getFullYear()}, ${d.getMonth() + 1}, ${d.getDate()})`);
-        }
-        if (dateTo && isValidDate(String(dateTo))) {
-          const d = new Date(String(dateTo));
-          clauses.push(`Date <= DateTime(${d.getFullYear()}, ${d.getMonth() + 1}, ${d.getDate()})`);
-        }
-        return clauses.length > 0 ? clauses.join(' && ') : undefined;
-      };
+        console.log('[Xero] Loaded', Object.keys(accountsMap).length, 'accounts');
+      } catch (err: any) {
+        console.error('[Xero] Accounts fetch error:', err.message);
+      }
 
-      const buildPaymentWhere = () => {
-        const clauses: string[] = [];
-        if (dateFrom && isValidDate(String(dateFrom))) {
-          const d = new Date(String(dateFrom));
-          clauses.push(`Date >= DateTime(${d.getFullYear()}, ${d.getMonth() + 1}, ${d.getDate()})`);
-        }
-        if (dateTo && isValidDate(String(dateTo))) {
-          const d = new Date(String(dateTo));
-          clauses.push(`Date <= DateTime(${d.getFullYear()}, ${d.getMonth() + 1}, ${d.getDate()})`);
-        }
-        return clauses.length > 0 ? clauses.join(' && ') : undefined;
-      };
-
-      if (searchType === 'all' || searchType === 'invoices') {
+      for (let page = 1; page <= 10; page++) {
         try {
-          const params: Record<string, string> = { page: String(pageNum), order: 'Date DESC' };
-          const w = buildWhere();
-          if (w) params.where = w;
-          const data = await xeroGet('/Invoices', auth.token, auth.tenantId, params);
-          const invoices = (data.Invoices || []).map((inv: any) => ({
-            id: inv.InvoiceID,
-            type: inv.Type === 'ACCPAY' ? 'Bill' : 'Invoice',
-            number: inv.InvoiceNumber || '',
-            reference: inv.Reference || '',
-            contact: inv.Contact?.Name || '',
-            date: inv.Date ? inv.Date.replace('/Date(', '').replace('+0000)/', '') : '',
-            dueDate: inv.DueDate ? inv.DueDate.replace('/Date(', '').replace('+0000)/', '') : '',
-            status: inv.Status || '',
-            total: inv.Total || 0,
-            amountDue: inv.AmountDue || 0,
-            amountPaid: inv.AmountPaid || 0,
-            currency: inv.CurrencyCode || 'EUR',
-            lineItems: (inv.LineItems || []).map((li: any) => ({
-              description: li.Description || '',
-              quantity: li.Quantity || 0,
-              unitAmount: li.UnitAmount || 0,
-              lineAmount: li.LineAmount || 0,
-              accountCode: li.AccountCode || '',
-              taxType: li.TaxType || '',
-            })),
-          }));
-          results.push(...invoices);
+          const data = await xeroGet('/Invoices', auth.token, auth.tenantId, {
+            page: String(page),
+            order: 'Date DESC',
+            statuses: 'AUTHORISED,PAID,SUBMITTED',
+          });
+          const invoices = data.Invoices || [];
+          if (invoices.length === 0) break;
+
+          for (const inv of invoices) {
+            const invDate = parseXeroDate(inv.Date);
+            const invType = inv.Type === 'ACCPAY' ? 'Bill' : 'Invoice';
+            const contact = inv.Contact?.Name || '';
+
+            for (const li of (inv.LineItems || [])) {
+              const acctCode = li.AccountCode || '';
+              const acct = accountsMap[acctCode];
+              allTransactions.push({
+                id: `${inv.InvoiceID}-${li.LineItemID || Math.random()}`,
+                date: invDate,
+                category: acct?.type || invType,
+                subcategory: acct?.name || acctCode,
+                detail: li.Description || `${contact} - ${inv.InvoiceNumber || ''}`,
+                cost: li.LineAmount || 0,
+                contact,
+                invoiceNumber: inv.InvoiceNumber || '',
+                reference: inv.Reference || '',
+                status: inv.Status || '',
+                type: invType,
+                accountCode: acctCode,
+              });
+            }
+
+            if (!inv.LineItems || inv.LineItems.length === 0) {
+              allTransactions.push({
+                id: inv.InvoiceID,
+                date: invDate,
+                category: invType,
+                subcategory: '',
+                detail: `${contact} - ${inv.InvoiceNumber || ''} ${inv.Reference || ''}`.trim(),
+                cost: inv.Total || 0,
+                contact,
+                invoiceNumber: inv.InvoiceNumber || '',
+                reference: inv.Reference || '',
+                status: inv.Status || '',
+                type: invType,
+                accountCode: '',
+              });
+            }
+          }
         } catch (err: any) {
-          console.error('Xero invoices fetch error:', err.message);
+          console.error('[Xero] Invoices page', page, 'error:', err.message);
+          break;
         }
       }
 
-      if (searchType === 'all' || searchType === 'payments') {
-        try {
-          const params: Record<string, string> = { page: String(pageNum), order: 'Date DESC' };
-          const w = buildPaymentWhere();
-          if (w) params.where = w;
-          const data = await xeroGet('/Payments', auth.token, auth.tenantId, params);
-          const payments = (data.Payments || []).filter((p: any) => {
-            if (!sanitizedQ) return true;
-            const search = sanitizedQ.toLowerCase();
-            return (p.Invoice?.Contact?.Name || '').toLowerCase().includes(search) ||
-              (p.Invoice?.InvoiceNumber || '').toLowerCase().includes(search) ||
-              (p.Reference || '').toLowerCase().includes(search);
-          }).map((p: any) => ({
-            id: p.PaymentID,
-            type: 'Payment',
-            number: p.Reference || '',
-            reference: p.Invoice?.InvoiceNumber || '',
-            contact: p.Invoice?.Contact?.Name || '',
-            date: p.Date ? p.Date.replace('/Date(', '').replace('+0000)/', '') : '',
-            dueDate: '',
-            status: p.Status || '',
-            total: p.Amount || 0,
-            amountDue: 0,
-            amountPaid: p.Amount || 0,
-            currency: p.CurrencyCode || 'EUR',
-            lineItems: [],
-          }));
-          results.push(...payments);
-        } catch (err: any) {
-          console.error('Xero payments fetch error:', err.message);
-        }
-      }
+      allTransactions.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 
-      results.forEach(r => {
-        if (r.date && /^\d+$/.test(r.date)) {
-          r.date = new Date(parseInt(r.date)).toISOString().split('T')[0];
-        }
-        if (r.dueDate && /^\d+$/.test(r.dueDate)) {
-          r.dueDate = new Date(parseInt(r.dueDate)).toISOString().split('T')[0];
-        }
-      });
+      transactionsCache = { data: allTransactions, fetchedAt: Date.now() };
+      console.log('[Xero] Loaded', allTransactions.length, 'transaction line items');
 
-      results.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-
-      res.json({ results, page: pageNum, hasMore: results.length >= 100 });
+      res.json({ transactions: allTransactions });
     } catch (err: any) {
-      console.error('Xero search error:', err);
+      console.error('[Xero] Transactions error:', err);
       res.status(500).json({ error: err.message });
     }
   });
 
-  app.get('/api/xero/contacts', requireAuth, async (req, res) => {
-    try {
-      const auth = await getValidToken();
-      if (!auth) return res.status(401).json({ error: 'Not connected' });
-
-      const { q } = req.query;
-      const params: Record<string, string> = { order: 'Name ASC' };
-      if (q) {
-        const sanitized = sanitizeXeroQuery(String(q));
-        if (sanitized) params.where = `Name.Contains("${sanitized}")`;
-      }
-
-      const data = await xeroGet('/Contacts', auth.token, auth.tenantId, params);
-      const contacts = (data.Contacts || []).slice(0, 50).map((c: any) => ({
-        id: c.ContactID,
-        name: c.Name,
-        email: c.EmailAddress || '',
-        isSupplier: c.IsSupplier || false,
-        isCustomer: c.IsCustomer || false,
-      }));
-
-      res.json({ contacts });
-    } catch (err: any) {
-      res.status(500).json({ error: err.message });
-    }
+  app.post('/api/xero/refresh-transactions', requireAuth, async (_req, res) => {
+    transactionsCache = null;
+    res.json({ success: true });
   });
 }
