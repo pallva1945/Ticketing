@@ -52,8 +52,11 @@ interface SheetTabData {
   monthRows: MonthRow[];
   facilityGas: { arena: number[]; campus: number[] };
   facilityElec: { arena: number[]; campus: number[] };
+  prevFacilityGas: { arena: number[]; campus: number[] };
+  prevFacilityElec: { arena: number[]; campus: number[] };
   yoyLineData: { month: string; [season: string]: number | string }[];
   seasonYtds: Record<string, number>;
+  ltmMonthlyTotals: number[];
   yoySummary: { gasYtd: number; gasYtdPrev: number; elecYtd: number; elecYtdPrev: number; totalYtd: number; totalYtdPrev: number };
 }
 
@@ -182,6 +185,9 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
   const prevSeason = prevSeasonIdx >= 0 ? sortedSeasons[prevSeasonIdx] : null;
   const prevRows = prevSeason ? allRows.filter(r => r.season === prevSeason) : [];
 
+  const activeMonthIndices = new Set(seasonRows.map(r => r.seasonMonthIndex));
+  const prevRowsLtm = prevRows.filter(r => activeMonthIndices.has(r.seasonMonthIndex));
+
   const gasValues = new Array(12).fill(0);
   const elecValues = new Array(12).fill(0);
   const gasArena = new Array(12).fill(0);
@@ -196,6 +202,21 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
     gasCampus[r.seasonMonthIndex] += r.gasCampus;
     elecArena[r.seasonMonthIndex] += r.elecArena;
     elecCampus[r.seasonMonthIndex] += r.elecCampus;
+  });
+
+  const prevGasArena = new Array(12).fill(0);
+  const prevGasCampus = new Array(12).fill(0);
+  const prevElecArena = new Array(12).fill(0);
+  const prevElecCampus = new Array(12).fill(0);
+
+  const ltmMonthlyTotals = new Array(12).fill(0);
+
+  prevRowsLtm.forEach(r => {
+    prevGasArena[r.seasonMonthIndex] += r.gasArena;
+    prevGasCampus[r.seasonMonthIndex] += r.gasCampus;
+    prevElecArena[r.seasonMonthIndex] += r.elecArena;
+    prevElecCampus[r.seasonMonthIndex] += r.elecCampus;
+    ltmMonthlyTotals[r.seasonMonthIndex] += r.totalCost;
   });
 
   const items: MonthlyItem[] = [
@@ -218,9 +239,9 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
   });
 
   const gasYtd = seasonRows.reduce((s, r) => s + r.gasCost, 0);
-  const gasYtdPrev = prevRows.reduce((s, r) => s + r.gasCost, 0);
+  const gasYtdPrev = prevRowsLtm.reduce((s, r) => s + r.gasCost, 0);
   const elecYtd = seasonRows.reduce((s, r) => s + r.elecCost, 0);
-  const elecYtdPrev = prevRows.reduce((s, r) => s + r.elecCost, 0);
+  const elecYtdPrev = prevRowsLtm.reduce((s, r) => s + r.elecCost, 0);
   const totalYtd = gasYtd + elecYtd;
   const totalYtdPrev = gasYtdPrev + elecYtdPrev;
 
@@ -231,8 +252,11 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
     monthRows: seasonRows,
     facilityGas: { arena: gasArena, campus: gasCampus },
     facilityElec: { arena: elecArena, campus: elecCampus },
+    prevFacilityGas: { arena: prevGasArena, campus: prevGasCampus },
+    prevFacilityElec: { arena: prevElecArena, campus: prevElecCampus },
     yoyLineData,
     seasonYtds,
+    ltmMonthlyTotals,
     yoySummary: { gasYtd, gasYtdPrev, elecYtd, elecYtdPrev, totalYtd, totalYtdPrev },
   };
 }
@@ -679,18 +703,18 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
               <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
                 <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('YTD Total')}</p>
                 <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(ytd)}</p>
-                {hasPrevSeason && <p className={`text-[10px] mt-1 font-semibold ${yoyColor(ytd, yoy!.totalYtdPrev)}`}>{yoyPctLabel(ytd, yoy!.totalYtdPrev)} {t('vs')} {prevSeasonLabel}</p>}
+                {hasPrevSeason && <p className={`text-[10px] mt-1 font-semibold ${yoyColor(ytd, yoy!.totalYtdPrev)}`}>{yoyPctLabel(ytd, yoy!.totalYtdPrev)} {t('vs LTM')}</p>}
                 {!hasPrevSeason && <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Through')} {SEASON_MONTHS[lastActiveMonth] || '—'}</p>}
               </div>
               <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
                 <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 text-amber-500`}>{t('Gas YTD')}</p>
                 <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(yoy?.gasYtd || 0)}</p>
-                {hasPrevSeason && <p className={`text-[10px] mt-1 font-semibold ${yoyColor(yoy!.gasYtd, yoy!.gasYtdPrev)}`}>{yoyPctLabel(yoy!.gasYtd, yoy!.gasYtdPrev)} {t('vs')} {prevSeasonLabel}</p>}
+                {hasPrevSeason && <p className={`text-[10px] mt-1 font-semibold ${yoyColor(yoy!.gasYtd, yoy!.gasYtdPrev)}`}>{yoyPctLabel(yoy!.gasYtd, yoy!.gasYtdPrev)} {t('vs LTM')}</p>}
               </div>
               <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
                 <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 text-blue-500`}>{t('Electricity YTD')}</p>
                 <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(yoy?.elecYtd || 0)}</p>
-                {hasPrevSeason && <p className={`text-[10px] mt-1 font-semibold ${yoyColor(yoy!.elecYtd, yoy!.elecYtdPrev)}`}>{yoyPctLabel(yoy!.elecYtd, yoy!.elecYtdPrev)} {t('vs')} {prevSeasonLabel}</p>}
+                {hasPrevSeason && <p className={`text-[10px] mt-1 font-semibold ${yoyColor(yoy!.elecYtd, yoy!.elecYtdPrev)}`}>{yoyPctLabel(yoy!.elecYtd, yoy!.elecYtdPrev)} {t('vs LTM')}</p>}
               </div>
               <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
                 <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Avg Monthly')}</p>
@@ -800,21 +824,84 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                     const gaC = data.facilityGas.campus.reduce((s,v) => s+v, 0);
                     const elA = data.facilityElec.arena.reduce((s,v) => s+v, 0);
                     const elC = data.facilityElec.campus.reduce((s,v) => s+v, 0);
+                    const pGaA = data.prevFacilityGas.arena.reduce((s,v) => s+v, 0);
+                    const pGaC = data.prevFacilityGas.campus.reduce((s,v) => s+v, 0);
+                    const pElA = data.prevFacilityElec.arena.reduce((s,v) => s+v, 0);
+                    const pElC = data.prevFacilityElec.campus.reduce((s,v) => s+v, 0);
                     return [
-                      { label: t('Gas Arena'), value: gaA.toLocaleString('it-IT') + ' m³', color: 'text-purple-500' },
-                      { label: t('Gas Campus'), value: gaC.toLocaleString('it-IT') + ' m³', color: 'text-emerald-500' },
-                      { label: t('Elec Arena'), value: elA.toLocaleString('it-IT') + ' kWh', color: 'text-purple-500' },
-                      { label: t('Elec Campus'), value: elC.toLocaleString('it-IT') + ' kWh', color: 'text-emerald-500' },
+                      { label: t('Gas Arena'), value: gaA.toLocaleString('it-IT') + ' m³', color: 'text-purple-500', cur: gaA, prev: pGaA },
+                      { label: t('Gas Campus'), value: gaC.toLocaleString('it-IT') + ' m³', color: 'text-emerald-500', cur: gaC, prev: pGaC },
+                      { label: t('Elec Arena'), value: elA.toLocaleString('it-IT') + ' kWh', color: 'text-purple-500', cur: elA, prev: pElA },
+                      { label: t('Elec Campus'), value: elC.toLocaleString('it-IT') + ' kWh', color: 'text-emerald-500', cur: elC, prev: pElC },
                     ].map((s, i) => (
                       <div key={i} className={`p-3 rounded-lg border ${isDark ? 'bg-gray-800/50 border-gray-800' : 'bg-gray-50 border-gray-100'}`}>
                         <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${s.color}`}>{s.label}</p>
                         <p className={`text-sm font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-800'}`}>{s.value}</p>
+                        {s.prev > 0 && <p className={`text-[10px] mt-0.5 font-semibold ${yoyColor(s.cur, s.prev)}`}>{yoyPctLabel(s.cur, s.prev)} {t('vs LTM')}</p>}
                       </div>
                     ));
                   })()}
                 </div>
               </div>
             )}
+
+            {}
+            {mod === 'energy' && data && hasPrevSeason && (data.prevFacilityGas.arena.some(v => v > 0) || data.prevFacilityElec.arena.some(v => v > 0)) && (() => {
+              const ltmFacilityData = SEASON_MONTHS.map((name, i) => ({
+                name,
+                'Gas Arena': data.facilityGas.arena[i],
+                'Gas Arena LTM': data.prevFacilityGas.arena[i],
+                'Gas Campus': data.facilityGas.campus[i],
+                'Gas Campus LTM': data.prevFacilityGas.campus[i],
+                'Elec Arena': data.facilityElec.arena[i],
+                'Elec Arena LTM': data.prevFacilityElec.arena[i],
+                'Elec Campus': data.facilityElec.campus[i],
+                'Elec Campus LTM': data.prevFacilityElec.campus[i],
+              })).slice(0, Math.max(lastActiveMonth + 2, 7));
+              return (
+                <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+                  <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('LTM Facility Comparison')}</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className={`text-xs font-semibold mb-2 text-amber-500`}>{t('Gas Consumption LTM')} (m³)</h4>
+                      <div className="h-52">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={ltmFacilityData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="name" tick={{ fontSize: 9 }} />
+                            <YAxis tickFormatter={(v: number) => v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(v)} tick={{ fontSize: 9 }} />
+                            <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} formatter={(v: number) => v.toLocaleString('it-IT')} />
+                            <Legend wrapperStyle={{ fontSize: 10 }} />
+                            <Bar dataKey="Gas Arena" fill={COLORS.arena} radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="Gas Arena LTM" fill={COLORS.arena} fillOpacity={0.3} radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="Gas Campus" fill={COLORS.campus} radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="Gas Campus LTM" fill={COLORS.campus} fillOpacity={0.3} radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className={`text-xs font-semibold mb-2 text-blue-500`}>{t('Electricity Consumption LTM')} (kWh)</h4>
+                      <div className="h-52">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={ltmFacilityData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="name" tick={{ fontSize: 9 }} />
+                            <YAxis tickFormatter={(v: number) => v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(v)} tick={{ fontSize: 9 }} />
+                            <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} formatter={(v: number) => v.toLocaleString('it-IT')} />
+                            <Legend wrapperStyle={{ fontSize: 10 }} />
+                            <Bar dataKey="Elec Arena" fill={COLORS.arena} radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="Elec Arena LTM" fill={COLORS.arena} fillOpacity={0.3} radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="Elec Campus" fill={COLORS.campus} radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="Elec Campus LTM" fill={COLORS.campus} fillOpacity={0.3} radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {}
             <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
@@ -854,9 +941,9 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                     </tr>
                     {hasPrevSeason && prevSeasonLabel && (
                       <tr className={`${isDark ? 'text-gray-500' : 'text-gray-400'} text-xs`}>
-                        <td className="py-1.5 px-3 italic">{prevSeasonLabel}</td>
+                        <td className="py-1.5 px-3 italic">{t('LTM')} ({prevSeasonLabel})</td>
                         {SEASON_MONTHS.slice(0, Math.max(lastActiveMonth + 1, 1)).map((_, mi) => {
-                          const prev = (data!.yoyLineData[mi]?.[prevSeasonLabel] as number) || 0;
+                          const prev = data!.ltmMonthlyTotals[mi] || 0;
                           return <td key={mi} className="text-right py-1.5 px-2 tabular-nums">{prev > 0 ? formatCurrency(prev) : '—'}</td>;
                         })}
                         <td className="text-right py-1.5 px-3 tabular-nums">{formatCurrency(yoy!.totalYtdPrev)}</td>
