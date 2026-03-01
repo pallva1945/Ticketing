@@ -57,7 +57,7 @@ interface SheetTabData {
   yoyLineData: { month: string; [season: string]: number | string }[];
   seasonYtds: Record<string, number>;
   ltmMonthlyTotals: number[];
-  ltmPeriods: { label: string; season: string; monthlyTotals: number[]; facilityGas: { arena: number[]; campus: number[] }; facilityElec: { arena: number[]; campus: number[] } }[];
+  ltmPeriods: { label: string; season: string; monthlyTotals: number[]; gasCosts: number[]; elecCosts: number[]; facilityGas: { arena: number[]; campus: number[] }; facilityElec: { arena: number[]; campus: number[] } }[];
   ltmMonthLabels: string[];
   yoySummary: { gasYtd: number; gasYtdPrev: number; elecYtd: number; elecYtdPrev: number; totalYtd: number; totalYtdPrev: number };
 }
@@ -281,6 +281,8 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
     const earlierRows = laterSeason === earlierSeason ? laterRows : (rowsBySeason[earlierSeason] || []);
 
     const mt = new Array(12).fill(0);
+    const gc = new Array(12).fill(0);
+    const ec = new Array(12).fill(0);
     const fga = new Array(12).fill(0);
     const fgc = new Array(12).fill(0);
     const fea = new Array(12).fill(0);
@@ -293,6 +295,8 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
       const row = rows.find(r => r.seasonMonthIndex === smi);
       if (!row) { if (k > 0) { complete = false; break; } continue; }
       mt[wi] = row.totalCost;
+      gc[wi] = row.gasCost;
+      ec[wi] = row.elecCost;
       fga[wi] = row.gasArena;
       fgc[wi] = row.gasCampus;
       fea[wi] = row.elecArena;
@@ -304,6 +308,8 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
       label: k === 0 ? 'LTM' : `LTM-${k}`,
       season: laterSeason,
       monthlyTotals: mt,
+      gasCosts: gc,
+      elecCosts: ec,
       facilityGas: { arena: fga, campus: fgc },
       facilityElec: { arena: fea, campus: fec },
     });
@@ -568,7 +574,19 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
 
   const [txSearch, setTxSearch] = useState('');
 
-  const energyData = useMemo(() => energyRawRows ? parseEnergySheetData(energyRawRows, selectedSeason) : null, [energyRawRows, selectedSeason]);
+  const energyData = useMemo(() => {
+    if (!energyRawRows) return null;
+    const hdr = energyRawRows[0]?.map(h => (h || '').trim().toLowerCase().replace(/\s+/g, '_'));
+    const sIdx = hdr?.indexOf('season') ?? -1;
+    let latest = selectedSeason;
+    if (sIdx >= 0) {
+      const ss = new Set<string>();
+      for (let r = 1; r < energyRawRows.length; r++) { const s = (energyRawRows[r]?.[sIdx] || '').trim(); if (s) ss.add(s); }
+      const sorted = Array.from(ss).sort();
+      if (sorted.length > 0) latest = sorted[sorted.length - 1];
+    }
+    return parseEnergySheetData(energyRawRows, latest);
+  }, [energyRawRows]);
   const vanData = useMemo(() => vanRawRows ? parseVanSheetData(vanRawRows, selectedSeason) : null, [vanRawRows, selectedSeason]);
 
   const seasons = useMemo(() => {
@@ -669,34 +687,59 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
   const renderSheetTab = (mod: 'energy' | 'van', data: SheetTabData | null, configured: boolean, sheetId: string, setSheetIdFn: (v: string) => void, sheetName: string, setSheetNameFn: (v: string) => void, showConfig: boolean, setShowConfigFn: (v: boolean) => void, icon: React.ElementType, iconColor: string) => {
     const Icon = icon;
     const items = data?.items || [];
-    const monthlyTotals = SEASON_MONTHS.map((_, mi) => items.reduce((s, item) => s + item.values[mi], 0));
-    const ytd = monthlyTotals.reduce((s, v) => s + v, 0);
-    const lastActiveMonth = (() => { for (let i = 11; i >= 0; i--) { if (monthlyTotals[i] > 0) return i; } return -1; })();
-    const chartData = SEASON_MONTHS.map((name, i) => {
-      const entry: Record<string, any> = { name, total: monthlyTotals[i], hasData: i <= lastActiveMonth };
-      items.forEach(item => { entry[item.name] = item.values[i]; });
-      return entry;
-    }).slice(0, Math.max(lastActiveMonth + 2, 7));
-    const itemYTDs = items.map(item => item.values.reduce((s, v) => s + v, 0));
-
-    const yoy = data?.yoySummary;
-    const hasPrevSeason = yoy && yoy.totalYtdPrev > 0;
-    const prevSeasonLabel = data?.allSeasons ? (() => {
-      const idx = data.allSeasons.indexOf(selectedSeason);
-      return idx > 0 ? data.allSeasons[idx - 1] : null;
-    })() : null;
-
-    const facilityChartData = data ? SEASON_MONTHS.map((name, i) => ({
-      name,
-      'Gas Arena': data.facilityGas.arena[i],
-      'Gas Campus': data.facilityGas.campus[i],
-      'Elec Arena': data.facilityElec.arena[i],
-      'Elec Campus': data.facilityElec.campus[i],
-    })).slice(0, Math.max(lastActiveMonth + 2, 7)) : [];
 
     const LTM_LINE_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
     const ltmPeriods = data?.ltmPeriods || [];
     const ltmMonthLabels = data?.ltmMonthLabels || [];
+    const ltmCurrent = ltmPeriods.length > 0 ? ltmPeriods[0] : null;
+    const ltmPrev = ltmPeriods.length > 1 ? ltmPeriods[1] : null;
+    const isLtmMode = mod === 'energy' && ltmCurrent !== null && ltmMonthLabels.length === 12;
+
+    const ltmActiveIndices = isLtmMode ? ltmCurrent!.monthlyTotals.map((v, i) => v > 0 ? i : -1).filter(i => i >= 0) : [];
+    const ltmActiveLabels = ltmActiveIndices.map(i => ltmMonthLabels[i]);
+    const ltmTotal = isLtmMode ? ltmActiveIndices.reduce((s, i) => s + ltmCurrent!.monthlyTotals[i], 0) : 0;
+    const ltmGasTotal = isLtmMode ? ltmActiveIndices.reduce((s, i) => s + ltmCurrent!.gasCosts[i], 0) : 0;
+    const ltmElecTotal = isLtmMode ? ltmActiveIndices.reduce((s, i) => s + ltmCurrent!.elecCosts[i], 0) : 0;
+    const ltmPrevTotal = isLtmMode && ltmPrev ? ltmActiveIndices.reduce((s, i) => s + ltmPrev.monthlyTotals[i], 0) : 0;
+    const ltmPrevGasTotal = isLtmMode && ltmPrev ? ltmActiveIndices.reduce((s, i) => s + ltmPrev.gasCosts[i], 0) : 0;
+    const ltmPrevElecTotal = isLtmMode && ltmPrev ? ltmActiveIndices.reduce((s, i) => s + ltmPrev.elecCosts[i], 0) : 0;
+    const ltmActiveMonths = ltmActiveIndices.length;
+
+    const monthlyTotals = SEASON_MONTHS.map((_, mi) => items.reduce((s, item) => s + item.values[mi], 0));
+    const ytd = monthlyTotals.reduce((s, v) => s + v, 0);
+    const lastActiveMonth = (() => { for (let i = 11; i >= 0; i--) { if (monthlyTotals[i] > 0) return i; } return -1; })();
+    const chartData = isLtmMode
+      ? ltmActiveIndices.map(wi => {
+          const name = ltmMonthLabels[wi];
+          return { name, total: ltmCurrent!.monthlyTotals[wi], hasData: true, Gas: ltmCurrent!.gasCosts[wi], Electricity: ltmCurrent!.elecCosts[wi] };
+        })
+      : SEASON_MONTHS.map((name, i) => {
+          const entry: Record<string, any> = { name, total: monthlyTotals[i], hasData: i <= lastActiveMonth };
+          items.forEach(item => { entry[item.name] = item.values[i]; });
+          return entry;
+        }).slice(0, Math.max(lastActiveMonth + 2, 7));
+    const itemYTDs = isLtmMode ? [ltmGasTotal, ltmElecTotal] : items.map(item => item.values.reduce((s, v) => s + v, 0));
+    const energyItems = isLtmMode ? [{ name: 'Gas', color: COLORS.gas }, { name: 'Electricity', color: COLORS.electricity }].filter((_, idx) => (idx === 0 ? ltmGasTotal > 0 : ltmElecTotal > 0)) : items;
+
+    const yoy = data?.yoySummary;
+    const hasPrevSeason = isLtmMode ? ltmPrev !== null : (yoy && yoy.totalYtdPrev > 0);
+
+    const facilityChartData = isLtmMode
+      ? ltmActiveIndices.map(wi => ({
+          name: ltmMonthLabels[wi],
+          'Gas Arena': ltmCurrent!.facilityGas.arena[wi],
+          'Gas Campus': ltmCurrent!.facilityGas.campus[wi],
+          'Elec Arena': ltmCurrent!.facilityElec.arena[wi],
+          'Elec Campus': ltmCurrent!.facilityElec.campus[wi],
+        }))
+      : data ? SEASON_MONTHS.map((name, i) => ({
+          name,
+          'Gas Arena': data.facilityGas.arena[i],
+          'Gas Campus': data.facilityGas.campus[i],
+          'Elec Arena': data.facilityElec.arena[i],
+          'Elec Campus': data.facilityElec.campus[i],
+        })).slice(0, Math.max(lastActiveMonth + 2, 7)) : [];
+
     const ltmLineChartData = ltmMonthLabels.length === 12 ? ltmMonthLabels.map((month, wi) => {
       const entry: Record<string, number | string> = { month };
       ltmPeriods.forEach(p => { entry[`${p.label} (${p.season})`] = p.monthlyTotals[wi]; });
@@ -713,7 +756,7 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             </div>
             <div>
               <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>{mod === 'energy' ? t('Energy Consumption') : t('Van Costs')}</h2>
-              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Season')} {selectedSeason}</p>
+              <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{isLtmMode ? t('Last Twelve Months') : `${t('Season')} ${selectedSeason}`}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -762,7 +805,7 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
               <FileSpreadsheet size={16} className="inline mr-1.5" />{t('Connect Sheet')}
             </button>
           </div>
-        ) : items.length === 0 ? (
+        ) : (items.length === 0 && !isLtmMode) ? (
           <div className={`p-8 rounded-xl border text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
             <Calendar size={36} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
             <h3 className={`text-base font-semibold mb-1 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('No data for season')} {selectedSeason}</h3>
@@ -773,25 +816,28 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             {}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-                <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('YTD Total')}</p>
-                <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(ytd)}</p>
-                {hasPrevSeason && <p className={`text-[10px] mt-1 font-semibold ${yoyColor(ytd, yoy!.totalYtdPrev)}`}>{yoyPctLabel(ytd, yoy!.totalYtdPrev)} {t('vs LTM')}</p>}
-                {!hasPrevSeason && <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Through')} {SEASON_MONTHS[lastActiveMonth] || '—'}</p>}
+                <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{isLtmMode ? t('LTM Total') : t('YTD Total')}</p>
+                <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(isLtmMode ? ltmTotal : ytd)}</p>
+                {isLtmMode && ltmPrev ? <p className={`text-[10px] mt-1 font-semibold ${yoyColor(ltmTotal, ltmPrevTotal)}`}>{yoyPctLabel(ltmTotal, ltmPrevTotal)} {t('vs LTM-1')}</p>
+                : hasPrevSeason && !isLtmMode ? <p className={`text-[10px] mt-1 font-semibold ${yoyColor(ytd, yoy!.totalYtdPrev)}`}>{yoyPctLabel(ytd, yoy!.totalYtdPrev)} {t('vs LTM')}</p>
+                : <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{isLtmMode ? `${ltmActiveMonths} ${t('months')}` : `${t('Through')} ${SEASON_MONTHS[lastActiveMonth] || '—'}`}</p>}
               </div>
               <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-                <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 text-amber-500`}>{t('Gas YTD')}</p>
-                <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(yoy?.gasYtd || 0)}</p>
-                {hasPrevSeason && <p className={`text-[10px] mt-1 font-semibold ${yoyColor(yoy!.gasYtd, yoy!.gasYtdPrev)}`}>{yoyPctLabel(yoy!.gasYtd, yoy!.gasYtdPrev)} {t('vs LTM')}</p>}
+                <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 text-amber-500`}>{isLtmMode ? t('Gas LTM') : t('Gas YTD')}</p>
+                <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(isLtmMode ? ltmGasTotal : (yoy?.gasYtd || 0))}</p>
+                {isLtmMode && ltmPrev ? <p className={`text-[10px] mt-1 font-semibold ${yoyColor(ltmGasTotal, ltmPrevGasTotal)}`}>{yoyPctLabel(ltmGasTotal, ltmPrevGasTotal)} {t('vs LTM-1')}</p>
+                : hasPrevSeason && !isLtmMode && <p className={`text-[10px] mt-1 font-semibold ${yoyColor(yoy!.gasYtd, yoy!.gasYtdPrev)}`}>{yoyPctLabel(yoy!.gasYtd, yoy!.gasYtdPrev)} {t('vs LTM')}</p>}
               </div>
               <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
-                <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 text-blue-500`}>{t('Electricity YTD')}</p>
-                <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(yoy?.elecYtd || 0)}</p>
-                {hasPrevSeason && <p className={`text-[10px] mt-1 font-semibold ${yoyColor(yoy!.elecYtd, yoy!.elecYtdPrev)}`}>{yoyPctLabel(yoy!.elecYtd, yoy!.elecYtdPrev)} {t('vs LTM')}</p>}
+                <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 text-blue-500`}>{isLtmMode ? t('Electricity LTM') : t('Electricity YTD')}</p>
+                <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(isLtmMode ? ltmElecTotal : (yoy?.elecYtd || 0))}</p>
+                {isLtmMode && ltmPrev ? <p className={`text-[10px] mt-1 font-semibold ${yoyColor(ltmElecTotal, ltmPrevElecTotal)}`}>{yoyPctLabel(ltmElecTotal, ltmPrevElecTotal)} {t('vs LTM-1')}</p>
+                : hasPrevSeason && !isLtmMode && <p className={`text-[10px] mt-1 font-semibold ${yoyColor(yoy!.elecYtd, yoy!.elecYtdPrev)}`}>{yoyPctLabel(yoy!.elecYtd, yoy!.elecYtdPrev)} {t('vs LTM')}</p>}
               </div>
               <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'} shadow-sm`}>
                 <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Avg Monthly')}</p>
-                <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{lastActiveMonth >= 0 ? formatCurrency(ytd / (lastActiveMonth + 1)) : '—'}</p>
-                <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{lastActiveMonth + 1} {t('months')}</p>
+                <p className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>{isLtmMode ? formatCurrency(ltmActiveMonths > 0 ? ltmTotal / ltmActiveMonths : 0) : (lastActiveMonth >= 0 ? formatCurrency(ytd / (lastActiveMonth + 1)) : '—')}</p>
+                <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{isLtmMode ? `${ltmActiveMonths} ${t('months')}` : `${lastActiveMonth + 1} ${t('months')}`}</p>
               </div>
             </div>
 
@@ -805,9 +851,9 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                     <YAxis tickFormatter={formatCompact} tick={{ fontSize: 10 }} />
                     <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
-                    {items.length > 1 && <Legend wrapperStyle={{ fontSize: 11 }} />}
-                    {items.length > 1 ? items.map((item, idx) => (
-                      <Bar key={item.name} dataKey={item.name} stackId="cost" fill={item.color} radius={idx === items.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
+                    {(isLtmMode ? energyItems : items).length > 1 && <Legend wrapperStyle={{ fontSize: 11 }} />}
+                    {(isLtmMode ? energyItems : items).length > 1 ? (isLtmMode ? energyItems : items).map((item, idx) => (
+                      <Bar key={item.name} dataKey={item.name} stackId="cost" fill={item.color} radius={idx === (isLtmMode ? energyItems : items).length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
                     )) : (
                       <Bar dataKey="total" radius={[4, 4, 0, 0]}>
                         {chartData.map((entry, index) => (
@@ -892,14 +938,19 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                 {}
                 <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {(() => {
-                    const gaA = data.facilityGas.arena.reduce((s,v) => s+v, 0);
-                    const gaC = data.facilityGas.campus.reduce((s,v) => s+v, 0);
-                    const elA = data.facilityElec.arena.reduce((s,v) => s+v, 0);
-                    const elC = data.facilityElec.campus.reduce((s,v) => s+v, 0);
-                    const pGaA = data.prevFacilityGas.arena.reduce((s,v) => s+v, 0);
-                    const pGaC = data.prevFacilityGas.campus.reduce((s,v) => s+v, 0);
-                    const pElA = data.prevFacilityElec.arena.reduce((s,v) => s+v, 0);
-                    const pElC = data.prevFacilityElec.campus.reduce((s,v) => s+v, 0);
+                    const sumActive = (arr: number[]) => isLtmMode ? ltmActiveIndices.reduce((s, i) => s + arr[i], 0) : arr.reduce((s,v) => s+v, 0);
+                    const curFGas = isLtmMode ? ltmCurrent!.facilityGas : data.facilityGas;
+                    const curFElec = isLtmMode ? ltmCurrent!.facilityElec : data.facilityElec;
+                    const prevFGas = isLtmMode && ltmPrev ? ltmPrev.facilityGas : { arena: data.prevFacilityGas.arena, campus: data.prevFacilityGas.campus };
+                    const prevFElec = isLtmMode && ltmPrev ? ltmPrev.facilityElec : { arena: data.prevFacilityElec.arena, campus: data.prevFacilityElec.campus };
+                    const gaA = sumActive(curFGas.arena);
+                    const gaC = sumActive(curFGas.campus);
+                    const elA = sumActive(curFElec.arena);
+                    const elC = sumActive(curFElec.campus);
+                    const pGaA = sumActive(prevFGas.arena);
+                    const pGaC = sumActive(prevFGas.campus);
+                    const pElA = sumActive(prevFElec.arena);
+                    const pElC = sumActive(prevFElec.campus);
                     return [
                       { label: t('Gas Arena'), value: gaA.toLocaleString('it-IT') + ' m³', color: 'text-purple-500', cur: gaA, prev: pGaA },
                       { label: t('Gas Campus'), value: gaC.toLocaleString('it-IT') + ' m³', color: 'text-emerald-500', cur: gaC, prev: pGaC },
@@ -909,7 +960,7 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                       <div key={i} className={`p-3 rounded-lg border ${isDark ? 'bg-gray-800/50 border-gray-800' : 'bg-gray-50 border-gray-100'}`}>
                         <p className={`text-[10px] font-bold uppercase tracking-wider mb-0.5 ${s.color}`}>{s.label}</p>
                         <p className={`text-sm font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-800'}`}>{s.value}</p>
-                        {s.prev > 0 && <p className={`text-[10px] mt-0.5 font-semibold ${yoyColor(s.cur, s.prev)}`}>{yoyPctLabel(s.cur, s.prev)} {t('vs LTM')}</p>}
+                        {s.prev > 0 && <p className={`text-[10px] mt-0.5 font-semibold ${yoyColor(s.cur, s.prev)}`}>{yoyPctLabel(s.cur, s.prev)} {isLtmMode ? t('vs LTM-1') : t('vs LTM')}</p>}
                       </div>
                     ));
                   })()}
@@ -979,43 +1030,82 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                   <thead>
                     <tr className={`border-b ${isDark ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-gray-500'}`}>
                       <th className="text-left py-2 px-3 font-medium">{t('Item')}</th>
-                      {SEASON_MONTHS.slice(0, Math.max(lastActiveMonth + 1, 1)).map(m => (
+                      {(isLtmMode ? ltmActiveLabels : SEASON_MONTHS.slice(0, Math.max(lastActiveMonth + 1, 1))).map(m => (
                         <th key={m} className="text-right py-2 px-2 font-medium text-xs">{m}</th>
                       ))}
                       <th className="text-right py-2 px-3 font-medium">{t('Total')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((item, idx) => (
-                      <tr key={idx} className={`border-b ${isDark ? 'border-gray-800 hover:bg-gray-800/50' : 'border-gray-100 hover:bg-gray-50'}`}>
-                        <td className={`py-2 px-3 font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
-                          <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: item.color }} />
-                          {item.name}
-                        </td>
-                        {SEASON_MONTHS.slice(0, Math.max(lastActiveMonth + 1, 1)).map((m, mi) => (
-                          <td key={m} className={`text-right py-2 px-2 tabular-nums text-xs ${item.values[mi] > 0 ? (isDark ? 'text-gray-200' : 'text-gray-700') : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>
-                            {item.values[mi] > 0 ? formatCurrency(item.values[mi]) : '—'}
-                          </td>
+                    {isLtmMode ? (
+                      <>
+                        {ltmGasTotal > 0 && (
+                          <tr className={`border-b ${isDark ? 'border-gray-800 hover:bg-gray-800/50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                            <td className={`py-2 px-3 font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                              <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: COLORS.gas }} />Gas
+                            </td>
+                            {ltmActiveIndices.map(wi => {
+                              const v = ltmCurrent!.gasCosts[wi];
+                              return <td key={wi} className={`text-right py-2 px-2 tabular-nums text-xs ${v > 0 ? (isDark ? 'text-gray-200' : 'text-gray-700') : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{v > 0 ? formatCurrency(v) : '—'}</td>;
+                            })}
+                            <td className={`text-right py-2 px-3 font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(ltmGasTotal)}</td>
+                          </tr>
+                        )}
+                        {ltmElecTotal > 0 && (
+                          <tr className={`border-b ${isDark ? 'border-gray-800 hover:bg-gray-800/50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                            <td className={`py-2 px-3 font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                              <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: COLORS.electricity }} />Electricity
+                            </td>
+                            {ltmActiveIndices.map(wi => {
+                              const v = ltmCurrent!.elecCosts[wi];
+                              return <td key={wi} className={`text-right py-2 px-2 tabular-nums text-xs ${v > 0 ? (isDark ? 'text-gray-200' : 'text-gray-700') : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>{v > 0 ? formatCurrency(v) : '—'}</td>;
+                            })}
+                            <td className={`text-right py-2 px-3 font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(ltmElecTotal)}</td>
+                          </tr>
+                        )}
+                        <tr className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                          <td className="py-2 px-3">{t('Total')}</td>
+                          {ltmActiveIndices.map(wi => {
+                            const v = ltmCurrent!.monthlyTotals[wi];
+                            return <td key={wi} className="text-right py-2 px-2 tabular-nums text-xs">{v > 0 ? formatCurrency(v) : '—'}</td>;
+                          })}
+                          <td className="text-right py-2 px-3 tabular-nums">{formatCurrency(ltmTotal)}</td>
+                        </tr>
+                        {ltmPrev && (
+                          <tr className={`${isDark ? 'text-gray-500' : 'text-gray-400'} text-xs`}>
+                            <td className="py-1.5 px-3 italic">{t('LTM-1')} ({ltmPrev.season})</td>
+                            {ltmActiveIndices.map(wi => {
+                              const v = ltmPrev.monthlyTotals[wi];
+                              return <td key={wi} className="text-right py-1.5 px-2 tabular-nums">{v > 0 ? formatCurrency(v) : '—'}</td>;
+                            })}
+                            <td className="text-right py-1.5 px-3 tabular-nums">{formatCurrency(ltmPrevTotal)}</td>
+                          </tr>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {items.map((item, idx) => (
+                          <tr key={idx} className={`border-b ${isDark ? 'border-gray-800 hover:bg-gray-800/50' : 'border-gray-100 hover:bg-gray-50'}`}>
+                            <td className={`py-2 px-3 font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                              <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: item.color }} />
+                              {item.name}
+                            </td>
+                            {SEASON_MONTHS.slice(0, Math.max(lastActiveMonth + 1, 1)).map((m, mi) => (
+                              <td key={m} className={`text-right py-2 px-2 tabular-nums text-xs ${item.values[mi] > 0 ? (isDark ? 'text-gray-200' : 'text-gray-700') : (isDark ? 'text-gray-600' : 'text-gray-300')}`}>
+                                {item.values[mi] > 0 ? formatCurrency(item.values[mi]) : '—'}
+                              </td>
+                            ))}
+                            <td className={`text-right py-2 px-3 font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(itemYTDs[idx])}</td>
+                          </tr>
                         ))}
-                        <td className={`text-right py-2 px-3 font-semibold tabular-nums ${isDark ? 'text-white' : 'text-gray-800'}`}>{formatCurrency(itemYTDs[idx])}</td>
-                      </tr>
-                    ))}
-                    <tr className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
-                      <td className="py-2 px-3">{t('Total')}</td>
-                      {SEASON_MONTHS.slice(0, Math.max(lastActiveMonth + 1, 1)).map((m, mi) => (
-                        <td key={m} className="text-right py-2 px-2 tabular-nums text-xs">{monthlyTotals[mi] > 0 ? formatCurrency(monthlyTotals[mi]) : '—'}</td>
-                      ))}
-                      <td className="text-right py-2 px-3 tabular-nums">{formatCurrency(ytd)}</td>
-                    </tr>
-                    {hasPrevSeason && prevSeasonLabel && (
-                      <tr className={`${isDark ? 'text-gray-500' : 'text-gray-400'} text-xs`}>
-                        <td className="py-1.5 px-3 italic">{t('LTM')} ({prevSeasonLabel})</td>
-                        {SEASON_MONTHS.slice(0, Math.max(lastActiveMonth + 1, 1)).map((_, mi) => {
-                          const prev = data!.ltmMonthlyTotals[mi] || 0;
-                          return <td key={mi} className="text-right py-1.5 px-2 tabular-nums">{prev > 0 ? formatCurrency(prev) : '—'}</td>;
-                        })}
-                        <td className="text-right py-1.5 px-3 tabular-nums">{formatCurrency(yoy!.totalYtdPrev)}</td>
-                      </tr>
+                        <tr className={`font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                          <td className="py-2 px-3">{t('Total')}</td>
+                          {SEASON_MONTHS.slice(0, Math.max(lastActiveMonth + 1, 1)).map((m, mi) => (
+                            <td key={m} className="text-right py-2 px-2 tabular-nums text-xs">{monthlyTotals[mi] > 0 ? formatCurrency(monthlyTotals[mi]) : '—'}</td>
+                          ))}
+                          <td className="text-right py-2 px-3 tabular-nums">{formatCurrency(ytd)}</td>
+                        </tr>
+                      </>
                     )}
                   </tbody>
                 </table>
