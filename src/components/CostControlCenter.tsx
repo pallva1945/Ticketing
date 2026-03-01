@@ -580,6 +580,7 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
   const [xeroConnecting, setXeroConnecting] = useState(false);
   const [txSortKey, setTxSortKey] = useState<'date' | 'category' | 'subcategory' | 'detail' | 'cost'>('date');
   const [txSortDir, setTxSortDir] = useState<'asc' | 'desc'>('desc');
+  const [txExpanded, setTxExpanded] = useState<string | null>(null);
 
   const MONTH_NAMES: Record<string, number> = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12, january: 1, february: 2, march: 3, april: 4, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12, gennaio: 1, febbraio: 2, marzo: 3, aprile: 4, maggio: 5, giugno: 6, luglio: 7, agosto: 8, settembre: 9, ottobre: 10, novembre: 11, dicembre: 12 };
 
@@ -1667,15 +1668,99 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                   </tr>
                 </thead>
                 <tbody>
-                  {txFiltered.slice(0, 500).map((tx, i) => (
-                    <tr key={tx.id || i} className={`${isDark ? 'border-t border-gray-800 hover:bg-gray-800/50' : 'border-t border-gray-100 hover:bg-gray-50'} transition-colors`}>
-                      <td className={`px-3 py-2 tabular-nums text-xs whitespace-nowrap ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatTxDate(tx.date)}</td>
-                      <td className={`px-3 py-2 text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{tx.category || '—'}</td>
-                      <td className={`px-3 py-2 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{tx.subcategory || '—'}</td>
-                      <td className={`px-3 py-2 text-xs max-w-xs truncate ${isDark ? 'text-gray-300' : 'text-gray-700'}`} title={tx.detail}>{tx.detail || '—'}</td>
-                      <td className={`px-3 py-2 text-right tabular-nums text-xs font-medium whitespace-nowrap ${tx.cost < 0 ? (isDark ? 'text-red-400' : 'text-red-600') : (isDark ? 'text-gray-200' : 'text-gray-800')}`}>{formatCurrency(tx.cost)}</td>
-                    </tr>
-                  ))}
+                  {txFiltered.slice(0, 500).map((tx, i) => {
+                    const isExp = txExpanded === tx.id;
+                    return (
+                      <React.Fragment key={tx.id || i}>
+                        <tr
+                          onClick={() => setTxExpanded(isExp ? null : tx.id)}
+                          className={`cursor-pointer ${isDark ? 'border-t border-gray-800 hover:bg-gray-800/50' : 'border-t border-gray-100 hover:bg-gray-50'} ${isExp ? (isDark ? 'bg-gray-800/30' : 'bg-purple-50/30') : ''} transition-colors`}
+                        >
+                          <td className={`px-3 py-2 tabular-nums text-xs whitespace-nowrap ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatTxDate(tx.date)}</td>
+                          <td className={`px-3 py-2 text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{tx.category || '—'}</td>
+                          <td className={`px-3 py-2 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{tx.subcategory || '—'}</td>
+                          <td className={`px-3 py-2 text-xs max-w-xs truncate ${isDark ? 'text-gray-300' : 'text-gray-700'}`} title={tx.detail}>{tx.detail || '—'}</td>
+                          <td className={`px-3 py-2 text-right tabular-nums text-xs font-medium whitespace-nowrap ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{formatCurrency(tx.cost)}</td>
+                        </tr>
+                        {isExp && (
+                          <tr className={isDark ? 'border-t border-gray-800' : 'border-t border-gray-100'}>
+                            <td colSpan={5} className="px-0 py-0">
+                              <div className={`px-4 py-3 ${isDark ? 'bg-gray-800/40' : 'bg-gray-50'}`}>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-2">
+                                  <div>
+                                    <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Invoice #')}</p>
+                                    <p className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{tx.invoiceNumber || '—'}</p>
+                                  </div>
+                                  <div>
+                                    <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Reference')}</p>
+                                    <p className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{tx.reference || '—'}</p>
+                                  </div>
+                                  <div>
+                                    <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Status')}</p>
+                                    <p className={`text-xs font-medium ${tx.status === 'PAID' ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : (isDark ? 'text-amber-400' : 'text-amber-600')}`}>{tx.status || '—'}</p>
+                                  </div>
+                                  <div>
+                                    <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Due Date')}</p>
+                                    <p className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{tx.dueDate ? formatTxDate(tx.dueDate) : '—'}</p>
+                                  </div>
+                                  <div>
+                                    <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Account Code')}</p>
+                                    <p className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{tx.accountCode || '—'}</p>
+                                  </div>
+                                  <div>
+                                    <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Currency')}</p>
+                                    <p className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{tx.currency || 'EUR'}</p>
+                                  </div>
+                                  {tx.quantity !== null && tx.quantity !== undefined && (
+                                    <div>
+                                      <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Qty')}</p>
+                                      <p className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{tx.quantity}</p>
+                                    </div>
+                                  )}
+                                  {tx.unitAmount !== null && tx.unitAmount !== undefined && (
+                                    <div>
+                                      <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Unit Price')}</p>
+                                      <p className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatCurrency(tx.unitAmount)}</p>
+                                    </div>
+                                  )}
+                                  {tx.taxType && (
+                                    <div>
+                                      <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Tax Type')}</p>
+                                      <p className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{tx.taxType}</p>
+                                    </div>
+                                  )}
+                                  {tx.taxAmount > 0 && (
+                                    <div>
+                                      <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Tax Amount')}</p>
+                                      <p className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{formatCurrency(tx.taxAmount)}</p>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Invoice Total')}</p>
+                                    <p className={`text-xs font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{formatCurrency(tx.totalInvoice)}</p>
+                                  </div>
+                                  <div>
+                                    <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Paid')}</p>
+                                    <p className={`text-xs font-medium ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{formatCurrency(tx.amountPaid)}</p>
+                                  </div>
+                                  <div>
+                                    <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Outstanding')}</p>
+                                    <p className={`text-xs font-medium ${tx.amountDue > 0 ? (isDark ? 'text-red-400' : 'text-red-600') : (isDark ? 'text-gray-400' : 'text-gray-500')}`}>{formatCurrency(tx.amountDue)}</p>
+                                  </div>
+                                </div>
+                                {tx.detail && (
+                                  <div className="mt-2 pt-2 border-t" style={{ borderColor: isDark ? '#374151' : '#e5e7eb' }}>
+                                    <p className={`text-[10px] uppercase font-semibold mb-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Description')}</p>
+                                    <p className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{tx.detail}</p>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
                 {txFiltered.length > 0 && (
                   <tfoot className={`sticky bottom-0 ${isDark ? 'bg-gray-900 border-t border-gray-700' : 'bg-gray-50 border-t border-gray-300'}`}>

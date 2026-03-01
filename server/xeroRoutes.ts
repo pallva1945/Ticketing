@@ -317,8 +317,9 @@ export function registerXeroRoutes(app: express.Application) {
           if (invoices.length === 0) break;
 
           for (const inv of invoices) {
+            if (inv.Type !== 'ACCPAY') continue;
             const invDate = parseXeroDate(inv.Date);
-            const invType = inv.Type === 'ACCPAY' ? 'Bill' : 'Invoice';
+            const dueDate = parseXeroDate(inv.DueDate);
             const contact = inv.Contact?.Name || '';
 
             for (const li of (inv.LineItems || [])) {
@@ -327,16 +328,25 @@ export function registerXeroRoutes(app: express.Application) {
               allTransactions.push({
                 id: `${inv.InvoiceID}-${li.LineItemID || Math.random()}`,
                 date: invDate,
-                category: contact || invType,
+                dueDate,
+                category: contact,
                 subcategory: acct?.name || acctCode,
-                detail: li.Description || `${inv.InvoiceNumber || ''}`,
+                detail: li.Description || '',
                 cost: li.LineAmount || 0,
                 contact,
                 invoiceNumber: inv.InvoiceNumber || '',
                 reference: inv.Reference || '',
                 status: inv.Status || '',
-                type: invType,
+                type: 'Bill',
                 accountCode: acctCode,
+                quantity: li.Quantity ?? null,
+                unitAmount: li.UnitAmount ?? null,
+                taxType: li.TaxType || '',
+                taxAmount: li.TaxAmount ?? 0,
+                currency: inv.CurrencyCode || 'EUR',
+                totalInvoice: inv.Total || 0,
+                amountPaid: inv.AmountPaid || 0,
+                amountDue: inv.AmountDue || 0,
               });
             }
 
@@ -344,7 +354,8 @@ export function registerXeroRoutes(app: express.Application) {
               allTransactions.push({
                 id: inv.InvoiceID,
                 date: invDate,
-                category: contact || invType,
+                dueDate,
+                category: contact,
                 subcategory: '',
                 detail: `${inv.InvoiceNumber || ''} ${inv.Reference || ''}`.trim(),
                 cost: inv.Total || 0,
@@ -352,8 +363,16 @@ export function registerXeroRoutes(app: express.Application) {
                 invoiceNumber: inv.InvoiceNumber || '',
                 reference: inv.Reference || '',
                 status: inv.Status || '',
-                type: invType,
+                type: 'Bill',
                 accountCode: '',
+                quantity: null,
+                unitAmount: null,
+                taxType: '',
+                taxAmount: 0,
+                currency: inv.CurrencyCode || 'EUR',
+                totalInvoice: inv.Total || 0,
+                amountPaid: inv.AmountPaid || 0,
+                amountDue: inv.AmountDue || 0,
               });
             }
           }
