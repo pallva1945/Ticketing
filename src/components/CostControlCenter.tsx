@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Shield, Zap, Truck, Search, Sun, Moon, ArrowLeft, Home, FileSpreadsheet, Loader2, Check, Settings, RefreshCw, Calendar } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell, Legend, LineChart, Line } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
@@ -52,7 +52,8 @@ interface SheetTabData {
   monthRows: MonthRow[];
   facilityGas: { arena: number[]; campus: number[] };
   facilityElec: { arena: number[]; campus: number[] };
-  yoyData: { month: string; gasCur: number; gasPrev: number; elecCur: number; elecPrev: number; totalCur: number; totalPrev: number }[];
+  yoyLineData: { month: string; [season: string]: number | string }[];
+  seasonYtds: Record<string, number>;
   yoySummary: { gasYtd: number; gasYtdPrev: number; elecYtd: number; elecYtdPrev: number; totalYtd: number; totalYtdPrev: number };
 }
 
@@ -150,18 +151,18 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
     { name: 'Electricity', values: elecValues, color: COLORS.electricity },
   ].filter(item => item.values.some(v => v > 0));
 
-  const yoyData = SEASON_MONTHS.map((month, mi) => {
-    const cur = seasonRows.find(r => r.seasonMonthIndex === mi);
-    const prev = prevRows.find(r => r.seasonMonthIndex === mi);
-    return {
-      month,
-      gasCur: cur?.gasCost || 0,
-      gasPrev: prev?.gasCost || 0,
-      elecCur: cur?.elecCost || 0,
-      elecPrev: prev?.elecCost || 0,
-      totalCur: cur?.totalCost || 0,
-      totalPrev: prev?.totalCost || 0,
-    };
+  const yoyLineData = SEASON_MONTHS.map((month, mi) => {
+    const entry: Record<string, number | string> = { month };
+    sortedSeasons.forEach(s => {
+      const row = allRows.find(r => r.season === s && r.seasonMonthIndex === mi);
+      entry[s] = row ? row.totalCost : 0;
+    });
+    return entry;
+  });
+
+  const seasonYtds: Record<string, number> = {};
+  sortedSeasons.forEach(s => {
+    seasonYtds[s] = allRows.filter(r => r.season === s).reduce((sum, r) => sum + r.totalCost, 0);
   });
 
   const gasYtd = seasonRows.reduce((s, r) => s + r.gasCost, 0);
@@ -178,7 +179,8 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
     monthRows: seasonRows,
     facilityGas: { arena: gasArena, campus: gasCampus },
     facilityElec: { arena: elecArena, campus: elecCampus },
-    yoyData,
+    yoyLineData,
+    seasonYtds,
     yoySummary: { gasYtd, gasYtdPrev, elecYtd, elecYtdPrev, totalYtd, totalYtdPrev },
   };
 }
@@ -352,13 +354,9 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
       'Elec Campus': data.facilityElec.campus[i],
     })).slice(0, Math.max(lastActiveMonth + 2, 7)) : [];
 
-    const yoyChartData = data?.yoyData
-      ? data.yoyData.filter((_, i) => i <= Math.max(lastActiveMonth, 0)).map(d => ({
-          name: d.month,
-          [selectedSeason]: d.totalCur,
-          ...(prevSeasonLabel ? { [prevSeasonLabel]: d.totalPrev } : {}),
-        }))
-      : [];
+    const allSeasonsInData = data?.allSeasons || [];
+    const SEASON_LINE_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+    const yoyLineChartData = data?.yoyLineData || [];
 
     return (
       <div className="space-y-6">
@@ -477,20 +475,31 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             </div>
 
             {}
-            {hasPrevSeason && yoyChartData.length > 0 && (
+            {allSeasonsInData.length > 1 && yoyLineChartData.length > 0 && (
               <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
                 <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('Year-over-Year Comparison')}</h3>
-                <div className="h-64">
+                <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={yoyChartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                    <LineChart data={yoyLineChartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                      <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                       <YAxis tickFormatter={formatCompact} tick={{ fontSize: 10 }} />
                       <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      {prevSeasonLabel && <Bar dataKey={prevSeasonLabel} fill={COLORS.prevSeason} radius={[4, 4, 0, 0]} />}
-                      <Bar dataKey={selectedSeason} fill={COLORS.total} radius={[4, 4, 0, 0]} />
-                    </BarChart>
+                      {allSeasonsInData.map((s, i) => (
+                        <Line
+                          key={s}
+                          type="monotone"
+                          dataKey={s}
+                          stroke={SEASON_LINE_COLORS[i % SEASON_LINE_COLORS.length]}
+                          strokeWidth={s === selectedSeason ? 3 : 1.5}
+                          strokeOpacity={s === selectedSeason ? 1 : 0.5}
+                          dot={s === selectedSeason ? { r: 4 } : false}
+                          activeDot={s === selectedSeason ? { r: 6 } : { r: 3 }}
+                          connectNulls
+                        />
+                      ))}
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
@@ -593,11 +602,11 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                       ))}
                       <td className="text-right py-2 px-3 tabular-nums">{formatCurrency(ytd)}</td>
                     </tr>
-                    {hasPrevSeason && (
+                    {hasPrevSeason && prevSeasonLabel && (
                       <tr className={`${isDark ? 'text-gray-500' : 'text-gray-400'} text-xs`}>
                         <td className="py-1.5 px-3 italic">{prevSeasonLabel}</td>
                         {SEASON_MONTHS.slice(0, Math.max(lastActiveMonth + 1, 1)).map((_, mi) => {
-                          const prev = data!.yoyData[mi]?.totalPrev || 0;
+                          const prev = (data!.yoyLineData[mi]?.[prevSeasonLabel] as number) || 0;
                           return <td key={mi} className="text-right py-1.5 px-2 tabular-nums">{prev > 0 ? formatCurrency(prev) : '—'}</td>;
                         })}
                         <td className="text-right py-1.5 px-3 tabular-nums">{formatCurrency(yoy!.totalYtdPrev)}</td>
