@@ -100,7 +100,7 @@ interface VanTabData {
   byVan: Record<string, VanSummary>;
   vans: string[];
   allSeasons: string[];
-  monthlyOverall: { month: string; km: number; gasCost: number; tollCrosses: number; parkingCost: number; serviceCost: number; repairCost: number; totalCost: number; trips: number }[];
+  monthlyOverall: { month: string; km: number; gasCost: number; tollCrosses: number; parkingCost: number; serviceCost: number; repairCost: number; insurance: number; bollo: number; totalCost: number; trips: number }[];
   monthlyByVan: Record<string, { month: string; km: number; gasCost: number; totalCost: number }[]>;
   projYearlyKm: number;
   daysInSeason: number;
@@ -226,8 +226,8 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
     { name: 'Electricity', values: elecValues, color: COLORS.electricity },
   ].filter(item => item.values.some(v => v > 0));
 
-  const yoyLineData = SEASON_MONTHS.map((month, mi) => {
-    const entry: Record<string, number | string> = { month };
+  const yoyLineData: { month: string; [season: string]: number | string }[] = SEASON_MONTHS.map((month, mi) => {
+    const entry: { month: string; [season: string]: number | string } = { month };
     sortedSeasons.forEach(s => {
       const row = allRows.find(r => r.season === s && r.seasonMonthIndex === mi);
       entry[s] = row ? row.totalCost : 0;
@@ -512,8 +512,8 @@ function parseVanSheetData(rows: string[][], selectedSeason: string): VanTabData
   const daysInSeason = new Set(seasonTrips.map(t => t.date)).size;
   const projYearlyKm = activeMonths > 0 ? Math.round((overall.km / activeMonths) * 12) : 0;
 
-  const yoyLineData = SEASON_MONTHS.map((month, mi) => {
-    const entry: Record<string, number | string> = { month };
+  const yoyLineData: { month: string; [season: string]: number | string }[] = SEASON_MONTHS.map((month, mi) => {
+    const entry: { month: string; [season: string]: number | string } = { month };
     sortedSeasons.forEach(s => {
       const sTrips = allTrips.filter(t => t.season === s && t.seasonMonthIndex === mi);
       const variableCost = sTrips.reduce((sum, t) => sum + t.gasCost + (t.tollCrosses * TOLL_COST_PER_CROSS) + t.parkingCost + t.serviceCost + t.repairCost, 0);

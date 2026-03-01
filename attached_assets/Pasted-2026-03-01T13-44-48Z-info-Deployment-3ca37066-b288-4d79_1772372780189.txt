@@ -1,0 +1,32 @@
+2026-03-01T13:44:48Z info: Deployment: 3ca37066-b288-4d79-bdec-c4a8e459afde
+2026-03-01T13:44:48Z info: Running Security Scan
+2026-03-01T13:45:14Z info: Connecting to builder
+2026-03-01T13:45:15Z info: Builder connected
+2026-03-01T13:45:15Z info: Installing packages
+2026-03-01T13:45:16Z info: Starting Build
+
+> pallacanestro-varese-dashboard@0.0.0 build
+> tsc && vite build
+
+
+src/components/CostControlCenter.tsx(261,24): error TS2322: Type '{ items: MonthlyItem[]; seasonBudget: number; allSeasons: string[]; monthRows: MonthRow[]; facilityGas: { arena: any[]; campus: any[]; }; facilityElec: { arena: any[]; campus: any[]; }; ... 7 more ...; yoySummary: { ...; }; }' is not assignable to type 'SheetTabData'.
+  Types of property 'yoyLineData' are incompatible.
+    Type 'Record<string, string | number>[]' is not assignable to type '{ [season: string]: string | number; month: string; }[]'.
+      Property 'month' is missing in type 'Record<string, string | number>' but required in type '{ [season: string]: string | number; month: string; }'.
+
+src/components/CostControlCenter.tsx(264,26): error TS2322: Type '{ items: MonthlyItem[]; seasonBudget: number; allSeasons: string[]; monthRows: MonthRow[]; facilityGas: { arena: any[]; campus: any[]; }; facilityElec: { arena: any[]; campus: any[]; }; ... 7 more ...; yoySummary: { ...; }; }' is not assignable to type 'SheetTabData'.
+  Types of property 'yoyLineData' are incompatible.
+    Type 'Record<string, string | number>[]' is not assignable to type '{ [season: string]: string | number; month: string; }[]'.
+      Property 'month' is missing in type 'Record<string, string | number>' but required in type '{ [season: string]: string | number; month: string; }'.
+src/components/CostControlCenter.tsx(327,5): error TS2322: Type 'Record<string, string | number>[]' is not assignable to type '{ [season: string]: string | number; month: string; }[]'.
+  Property 'month' is missing in type 'Record<string, string | number>' but required in type '{ [season: string]: string | number; month: string; }'.
+src/components/CostControlCenter.tsx(531,129): error TS2322: Type 'Record<string, string | number>[]' is not assignable to type '{ [season: string]: string | number; month: string; }[]'.
+  Property 'month' is missing in type 'Record<string, string | number>' but required in type '{ [season: string]: string | number; month: string; }'.
+src/components/CostControlCenter.tsx(1207,94): error TS2339: Property 'insurance' does not exist on type '{ month: string; km: number; gasCost: number; tollCrosses: number; parkingCost: number; serviceCost: number; repairCost: number; totalCost: number; trips: number; }'.
+src/components/CostControlCenter.tsx(1207,114): error TS2339: Property 'bollo' does not exist on type '{ month: string; km: number; gasCost: number; tollCrosses: number; parkingCost: number; serviceCost: number; repairCost: number; totalCost: number; trips: number; }'.
+
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.11.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.11.0
+npm notice To update run: npm install -g npm@11.11.0
+npm notice
