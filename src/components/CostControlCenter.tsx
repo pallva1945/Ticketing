@@ -58,6 +58,7 @@ interface SheetTabData {
   seasonYtds: Record<string, number>;
   ltmMonthlyTotals: number[];
   ltmPeriods: { label: string; season: string; monthlyTotals: number[]; facilityGas: { arena: number[]; campus: number[] }; facilityElec: { arena: number[]; campus: number[] } }[];
+  ltmMonthLabels: string[];
   yoySummary: { gasYtd: number; gasYtdPrev: number; elecYtd: number; elecYtdPrev: number; totalYtd: number; totalYtdPrev: number };
 }
 
@@ -249,51 +250,63 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
   const selectedIdx = sortedSeasons.indexOf(selectedSeason);
   const ltmPeriods: SheetTabData['ltmPeriods'] = [];
 
-  if (selectedIdx < 0) {
-    return {
-      items, seasonBudget: 0, allSeasons: sortedSeasons, monthRows: seasonRows,
-      facilityGas: { arena: gasArena, campus: gasCampus }, facilityElec: { arena: elecArena, campus: elecCampus },
-      prevFacilityGas: { arena: prevGasArena, campus: prevGasCampus }, prevFacilityElec: { arena: prevElecArena, campus: prevElecCampus },
-      yoyLineData, seasonYtds, ltmMonthlyTotals, ltmPeriods,
-      yoySummary: { gasYtd, gasYtdPrev, elecYtd, elecYtdPrev, totalYtd, totalYtdPrev },
-    };
-  }
+  const emptyReturn = () => ({
+    items, seasonBudget: 0, allSeasons: sortedSeasons, monthRows: seasonRows,
+    facilityGas: { arena: gasArena, campus: gasCampus }, facilityElec: { arena: elecArena, campus: elecCampus },
+    prevFacilityGas: { arena: prevGasArena, campus: prevGasCampus }, prevFacilityElec: { arena: prevElecArena, campus: prevElecCampus },
+    yoyLineData, seasonYtds, ltmMonthlyTotals, ltmPeriods, ltmMonthLabels: [] as string[],
+    yoySummary: { gasYtd, gasYtdPrev, elecYtd, elecYtdPrev, totalYtd, totalYtdPrev },
+  });
 
-  for (let si = selectedIdx; si >= 0; si--) {
-    const s = sortedSeasons[si];
-    const sRows = allRows.filter(r => r.season === s);
-    if (si === selectedIdx) {
-      ltmPeriods.push({
-        label: 'LTM',
-        season: s,
-        monthlyTotals: gasValues.map((g, i) => g + elecValues[i]),
-        facilityGas: { arena: [...gasArena], campus: [...gasCampus] },
-        facilityElec: { arena: [...elecArena], campus: [...elecCampus] },
-      });
-    } else {
-      const hasAllActive = [...activeMonthIndices].every(mi => sRows.some(r => r.seasonMonthIndex === mi));
-      if (!hasAllActive) break;
-      const mt = new Array(12).fill(0);
-      const fga = new Array(12).fill(0);
-      const fgc = new Array(12).fill(0);
-      const fea = new Array(12).fill(0);
-      const fec = new Array(12).fill(0);
-      sRows.filter(r => activeMonthIndices.has(r.seasonMonthIndex)).forEach(r => {
-        mt[r.seasonMonthIndex] += r.totalCost;
-        fga[r.seasonMonthIndex] += r.gasArena;
-        fgc[r.seasonMonthIndex] += r.gasCampus;
-        fea[r.seasonMonthIndex] += r.elecArena;
-        fec[r.seasonMonthIndex] += r.elecCampus;
-      });
-      const offset = selectedIdx - si;
-      ltmPeriods.push({
-        label: `LTM-${offset}`,
-        season: s,
-        monthlyTotals: mt,
-        facilityGas: { arena: fga, campus: fgc },
-        facilityElec: { arena: fea, campus: fec },
-      });
+  if (selectedIdx < 0) return emptyReturn();
+
+  const lastActiveSMI = (() => { for (let i = 11; i >= 0; i--) { if (gasValues[i] + elecValues[i] > 0) return i; } return -1; })();
+  if (lastActiveSMI < 0) return emptyReturn();
+
+  const windowSMIs: number[] = [];
+  for (let i = 1; i <= 12; i++) windowSMIs.push((lastActiveSMI + i) % 12);
+  const ltmMonthLabels = windowSMIs.map(smi => SEASON_MONTHS[smi]);
+
+  const rowsBySeason: Record<string, MonthRow[]> = {};
+  sortedSeasons.forEach(s => { rowsBySeason[s] = allRows.filter(r => r.season === s); });
+
+  for (let k = 0; ; k++) {
+    const laterIdx = selectedIdx - k;
+    const earlierIdx = lastActiveSMI < 11 ? selectedIdx - 1 - k : laterIdx;
+    if (laterIdx < 0 || earlierIdx < 0) break;
+
+    const laterSeason = sortedSeasons[laterIdx];
+    const earlierSeason = sortedSeasons[earlierIdx];
+    const laterRows = rowsBySeason[laterSeason] || [];
+    const earlierRows = laterSeason === earlierSeason ? laterRows : (rowsBySeason[earlierSeason] || []);
+
+    const mt = new Array(12).fill(0);
+    const fga = new Array(12).fill(0);
+    const fgc = new Array(12).fill(0);
+    const fea = new Array(12).fill(0);
+    const fec = new Array(12).fill(0);
+
+    let complete = true;
+    for (let wi = 0; wi < 12; wi++) {
+      const smi = windowSMIs[wi];
+      const rows = smi <= lastActiveSMI ? laterRows : earlierRows;
+      const row = rows.find(r => r.seasonMonthIndex === smi);
+      if (!row) { if (k > 0) { complete = false; break; } continue; }
+      mt[wi] = row.totalCost;
+      fga[wi] = row.gasArena;
+      fgc[wi] = row.gasCampus;
+      fea[wi] = row.elecArena;
+      fec[wi] = row.elecCampus;
     }
+    if (!complete) break;
+
+    ltmPeriods.push({
+      label: k === 0 ? 'LTM' : `LTM-${k}`,
+      season: laterSeason,
+      monthlyTotals: mt,
+      facilityGas: { arena: fga, campus: fgc },
+      facilityElec: { arena: fea, campus: fec },
+    });
   }
 
   return {
@@ -309,6 +322,7 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
     seasonYtds,
     ltmMonthlyTotals,
     ltmPeriods,
+    ltmMonthLabels,
     yoySummary: { gasYtd, gasYtdPrev, elecYtd, elecYtdPrev, totalYtd, totalYtdPrev },
   };
 }
@@ -682,11 +696,12 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
 
     const LTM_LINE_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
     const ltmPeriods = data?.ltmPeriods || [];
-    const ltmLineChartData = ltmPeriods.length > 0 ? SEASON_MONTHS.map((month, mi) => {
+    const ltmMonthLabels = data?.ltmMonthLabels || [];
+    const ltmLineChartData = ltmMonthLabels.length === 12 ? ltmMonthLabels.map((month, wi) => {
       const entry: Record<string, number | string> = { month };
-      ltmPeriods.forEach(p => { entry[`${p.label} (${p.season})`] = p.monthlyTotals[mi]; });
+      ltmPeriods.forEach(p => { entry[`${p.label} (${p.season})`] = p.monthlyTotals[wi]; });
       return entry;
-    }).slice(0, Math.max(lastActiveMonth + 2, 7)) : [];
+    }) : [];
     const ltmLineKeys = ltmPeriods.map(p => `${p.label} (${p.season})`);
 
     return (
@@ -903,7 +918,7 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             )}
 
             {}
-            {mod === 'energy' && ltmPeriods.length > 1 && (() => {
+            {mod === 'energy' && ltmPeriods.length > 1 && ltmMonthLabels.length === 12 && (() => {
               const FACILITY_METRICS = [
                 { title: t('Gas Arena LTM') + ' (m³)', color: 'text-amber-500', accessor: (p: typeof ltmPeriods[0]) => p.facilityGas.arena },
                 { title: t('Gas Campus LTM') + ' (m³)', color: 'text-amber-500', accessor: (p: typeof ltmPeriods[0]) => p.facilityGas.campus },
@@ -915,11 +930,11 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                   <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('LTM Facility Comparison')}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {FACILITY_METRICS.map((metric, mi) => {
-                      const chartData = SEASON_MONTHS.map((month, smi) => {
+                      const chartData = ltmMonthLabels.map((month, wi) => {
                         const entry: Record<string, number | string> = { month };
-                        ltmPeriods.forEach(p => { entry[`${p.label} (${p.season})`] = metric.accessor(p)[smi]; });
+                        ltmPeriods.forEach(p => { entry[`${p.label} (${p.season})`] = metric.accessor(p)[wi]; });
                         return entry;
-                      }).slice(0, Math.max(lastActiveMonth + 2, 7));
+                      });
                       const lineKeys = ltmPeriods.map(p => `${p.label} (${p.season})`);
                       return (
                         <div key={mi}>
