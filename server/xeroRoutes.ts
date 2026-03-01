@@ -327,9 +327,9 @@ export function registerXeroRoutes(app: express.Application) {
               allTransactions.push({
                 id: `${inv.InvoiceID}-${li.LineItemID || Math.random()}`,
                 date: invDate,
-                category: acct?.type || invType,
+                category: contact || invType,
                 subcategory: acct?.name || acctCode,
-                detail: li.Description || `${contact} - ${inv.InvoiceNumber || ''}`,
+                detail: li.Description || `${inv.InvoiceNumber || ''}`,
                 cost: li.LineAmount || 0,
                 contact,
                 invoiceNumber: inv.InvoiceNumber || '',
@@ -344,9 +344,9 @@ export function registerXeroRoutes(app: express.Application) {
               allTransactions.push({
                 id: inv.InvoiceID,
                 date: invDate,
-                category: invType,
+                category: contact || invType,
                 subcategory: '',
-                detail: `${contact} - ${inv.InvoiceNumber || ''} ${inv.Reference || ''}`.trim(),
+                detail: `${inv.InvoiceNumber || ''} ${inv.Reference || ''}`.trim(),
                 cost: inv.Total || 0,
                 contact,
                 invoiceNumber: inv.InvoiceNumber || '',

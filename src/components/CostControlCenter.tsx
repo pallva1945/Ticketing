@@ -1653,10 +1653,10 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                       <span className="inline-flex items-center gap-1">{t('Date')} <SortIcon col="date" /></span>
                     </th>
                     <th onClick={() => toggleTxSort('category')} className={`px-3 py-2.5 text-left text-xs font-semibold cursor-pointer select-none ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}>
-                      <span className="inline-flex items-center gap-1">{t('Category')} <SortIcon col="category" /></span>
+                      <span className="inline-flex items-center gap-1">{t('To')} <SortIcon col="category" /></span>
                     </th>
                     <th onClick={() => toggleTxSort('subcategory')} className={`px-3 py-2.5 text-left text-xs font-semibold cursor-pointer select-none ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}>
-                      <span className="inline-flex items-center gap-1">{t('Subcategory')} <SortIcon col="subcategory" /></span>
+                      <span className="inline-flex items-center gap-1">{t('Account')} <SortIcon col="subcategory" /></span>
                     </th>
                     <th onClick={() => toggleTxSort('detail')} className={`px-3 py-2.5 text-left text-xs font-semibold cursor-pointer select-none ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-500 hover:text-gray-700'}`}>
                       <span className="inline-flex items-center gap-1">{t('Detail')} <SortIcon col="detail" /></span>
