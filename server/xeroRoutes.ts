@@ -1,5 +1,6 @@
 import express from 'express';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { getSetting, setSetting } from './db.js';
 
 const XERO_CLIENT_ID = process.env.XERO_CLIENT_ID || '';
@@ -127,13 +128,12 @@ async function xeroGet(path: string, token: string, tenantId: string, params?: R
 
 export function registerXeroRoutes(app: express.Application) {
   const requireAuth = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const token = (req as any).cookies?.token;
+    const token = (req as any).cookies?.pv_auth;
     if (!token) {
       return res.status(401).json({ error: 'Authentication required' });
     }
     try {
-      const jwt = require('jsonwebtoken');
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string);
       (req as any).user = decoded;
       next();
     } catch {
@@ -162,7 +162,7 @@ export function registerXeroRoutes(app: express.Application) {
     }
   });
 
-  app.get('/api/xero/authorize', requireAuth, requireAdmin, (req, res) => {
+  app.get('/api/xero/authorize', requireAuth, (req, res) => {
     if (!XERO_CLIENT_ID) {
       return res.status(500).json({ error: 'XERO_CLIENT_ID not configured' });
     }
@@ -261,7 +261,7 @@ export function registerXeroRoutes(app: express.Application) {
     }
   });
 
-  app.post('/api/xero/disconnect', requireAuth, requireAdmin, async (_req, res) => {
+  app.post('/api/xero/disconnect', requireAuth, async (_req, res) => {
     try {
       await clearTokens();
       res.json({ success: true });

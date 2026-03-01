@@ -1532,6 +1532,9 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
               {xeroConnecting ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
               {xeroConnecting ? t('Connecting...') : t('Connect Xero Account')}
             </button>
+            {txError && (
+              <p className="mt-4 text-sm text-red-500 dark:text-red-400">{txError}</p>
+            )}
           </div>
         </div>
       );
