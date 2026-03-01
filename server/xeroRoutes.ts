@@ -16,7 +16,7 @@ function getRedirectUri(_req: express.Request): string {
   if (process.env.XERO_REDIRECT_URI) {
     return process.env.XERO_REDIRECT_URI;
   }
-  return 'https://PVsales.replit.app/api/xero/callback';
+  return 'https://pallva.it/api/xero/callback';
 }
 
 function sanitizeXeroQuery(input: string): string {
