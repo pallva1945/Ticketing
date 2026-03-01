@@ -57,6 +57,7 @@ interface SheetTabData {
   yoyLineData: { month: string; [season: string]: number | string }[];
   seasonYtds: Record<string, number>;
   ltmMonthlyTotals: number[];
+  ltmPeriods: { label: string; season: string; monthlyTotals: number[]; facilityGas: { arena: number[]; campus: number[] }; facilityElec: { arena: number[]; campus: number[] } }[];
   yoySummary: { gasYtd: number; gasYtdPrev: number; elecYtd: number; elecYtdPrev: number; totalYtd: number; totalYtdPrev: number };
 }
 
@@ -245,6 +246,56 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
   const totalYtd = gasYtd + elecYtd;
   const totalYtdPrev = gasYtdPrev + elecYtdPrev;
 
+  const selectedIdx = sortedSeasons.indexOf(selectedSeason);
+  const ltmPeriods: SheetTabData['ltmPeriods'] = [];
+
+  if (selectedIdx < 0) {
+    return {
+      items, seasonBudget: 0, allSeasons: sortedSeasons, monthRows: seasonRows,
+      facilityGas: { arena: gasArena, campus: gasCampus }, facilityElec: { arena: elecArena, campus: elecCampus },
+      prevFacilityGas: { arena: prevGasArena, campus: prevGasCampus }, prevFacilityElec: { arena: prevElecArena, campus: prevElecCampus },
+      yoyLineData, seasonYtds, ltmMonthlyTotals, ltmPeriods,
+      yoySummary: { gasYtd, gasYtdPrev, elecYtd, elecYtdPrev, totalYtd, totalYtdPrev },
+    };
+  }
+
+  for (let si = selectedIdx; si >= 0; si--) {
+    const s = sortedSeasons[si];
+    const sRows = allRows.filter(r => r.season === s);
+    if (si === selectedIdx) {
+      ltmPeriods.push({
+        label: 'LTM',
+        season: s,
+        monthlyTotals: gasValues.map((g, i) => g + elecValues[i]),
+        facilityGas: { arena: [...gasArena], campus: [...gasCampus] },
+        facilityElec: { arena: [...elecArena], campus: [...elecCampus] },
+      });
+    } else {
+      const hasAllActive = [...activeMonthIndices].every(mi => sRows.some(r => r.seasonMonthIndex === mi));
+      if (!hasAllActive) break;
+      const mt = new Array(12).fill(0);
+      const fga = new Array(12).fill(0);
+      const fgc = new Array(12).fill(0);
+      const fea = new Array(12).fill(0);
+      const fec = new Array(12).fill(0);
+      sRows.filter(r => activeMonthIndices.has(r.seasonMonthIndex)).forEach(r => {
+        mt[r.seasonMonthIndex] += r.totalCost;
+        fga[r.seasonMonthIndex] += r.gasArena;
+        fgc[r.seasonMonthIndex] += r.gasCampus;
+        fea[r.seasonMonthIndex] += r.elecArena;
+        fec[r.seasonMonthIndex] += r.elecCampus;
+      });
+      const offset = selectedIdx - si;
+      ltmPeriods.push({
+        label: `LTM-${offset}`,
+        season: s,
+        monthlyTotals: mt,
+        facilityGas: { arena: fga, campus: fgc },
+        facilityElec: { arena: fea, campus: fec },
+      });
+    }
+  }
+
   return {
     items,
     seasonBudget: 0,
@@ -257,6 +308,7 @@ function parseEnergySheetData(rows: string[][], selectedSeason: string): SheetTa
     yoyLineData,
     seasonYtds,
     ltmMonthlyTotals,
+    ltmPeriods,
     yoySummary: { gasYtd, gasYtdPrev, elecYtd, elecYtdPrev, totalYtd, totalYtdPrev },
   };
 }
@@ -628,9 +680,14 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
       'Elec Campus': data.facilityElec.campus[i],
     })).slice(0, Math.max(lastActiveMonth + 2, 7)) : [];
 
-    const allSeasonsInData = data?.allSeasons || [];
-    const SEASON_LINE_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
-    const yoyLineChartData = data?.yoyLineData || [];
+    const LTM_LINE_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'];
+    const ltmPeriods = data?.ltmPeriods || [];
+    const ltmLineChartData = ltmPeriods.length > 0 ? SEASON_MONTHS.map((month, mi) => {
+      const entry: Record<string, number | string> = { month };
+      ltmPeriods.forEach(p => { entry[`${p.label} (${p.season})`] = p.monthlyTotals[mi]; });
+      return entry;
+    }).slice(0, Math.max(lastActiveMonth + 2, 7)) : [];
+    const ltmLineKeys = ltmPeriods.map(p => `${p.label} (${p.season})`);
 
     return (
       <div className="space-y-6">
@@ -749,27 +806,27 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             </div>
 
             {}
-            {allSeasonsInData.length > 1 && yoyLineChartData.length > 0 && (
+            {ltmLineKeys.length > 1 && ltmLineChartData.length > 0 && (
               <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-                <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('Year-over-Year Comparison')}</h3>
+                <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('LTM Comparison')}</h3>
                 <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={yoyLineChartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                    <LineChart data={ltmLineChartData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} />
                       <XAxis dataKey="month" tick={{ fontSize: 10 }} />
                       <YAxis tickFormatter={formatCompact} tick={{ fontSize: 10 }} />
                       <Tooltip formatter={(value: number) => formatCurrency(value)} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      {allSeasonsInData.map((s, i) => (
+                      {ltmLineKeys.map((key, i) => (
                         <Line
-                          key={s}
+                          key={key}
                           type="monotone"
-                          dataKey={s}
-                          stroke={SEASON_LINE_COLORS[i % SEASON_LINE_COLORS.length]}
-                          strokeWidth={s === selectedSeason ? 3 : 1.5}
-                          strokeOpacity={s === selectedSeason ? 1 : 0.5}
-                          dot={s === selectedSeason ? { r: 4 } : false}
-                          activeDot={s === selectedSeason ? { r: 6 } : { r: 3 }}
+                          dataKey={key}
+                          stroke={LTM_LINE_COLORS[i % LTM_LINE_COLORS.length]}
+                          strokeWidth={i === 0 ? 3 : 1.5}
+                          strokeOpacity={i === 0 ? 1 : 0.5}
+                          dot={i === 0 ? { r: 4 } : false}
+                          activeDot={i === 0 ? { r: 6 } : { r: 3 }}
                           connectNulls
                         />
                       ))}
@@ -846,58 +903,54 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             )}
 
             {}
-            {mod === 'energy' && data && hasPrevSeason && (data.prevFacilityGas.arena.some(v => v > 0) || data.prevFacilityElec.arena.some(v => v > 0)) && (() => {
-              const ltmFacilityData = SEASON_MONTHS.map((name, i) => ({
-                name,
-                'Gas Arena': data.facilityGas.arena[i],
-                'Gas Arena LTM': data.prevFacilityGas.arena[i],
-                'Gas Campus': data.facilityGas.campus[i],
-                'Gas Campus LTM': data.prevFacilityGas.campus[i],
-                'Elec Arena': data.facilityElec.arena[i],
-                'Elec Arena LTM': data.prevFacilityElec.arena[i],
-                'Elec Campus': data.facilityElec.campus[i],
-                'Elec Campus LTM': data.prevFacilityElec.campus[i],
-              })).slice(0, Math.max(lastActiveMonth + 2, 7));
+            {mod === 'energy' && ltmPeriods.length > 1 && (() => {
+              const FACILITY_METRICS = [
+                { title: t('Gas Arena LTM') + ' (m³)', color: 'text-amber-500', accessor: (p: typeof ltmPeriods[0]) => p.facilityGas.arena },
+                { title: t('Gas Campus LTM') + ' (m³)', color: 'text-amber-500', accessor: (p: typeof ltmPeriods[0]) => p.facilityGas.campus },
+                { title: t('Elec Arena LTM') + ' (kWh)', color: 'text-blue-500', accessor: (p: typeof ltmPeriods[0]) => p.facilityElec.arena },
+                { title: t('Elec Campus LTM') + ' (kWh)', color: 'text-blue-500', accessor: (p: typeof ltmPeriods[0]) => p.facilityElec.campus },
+              ];
               return (
                 <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
                   <h3 className={`text-sm font-bold uppercase tracking-wider mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('LTM Facility Comparison')}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                      <h4 className={`text-xs font-semibold mb-2 text-amber-500`}>{t('Gas Consumption LTM')} (m³)</h4>
-                      <div className="h-52">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={ltmFacilityData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="name" tick={{ fontSize: 9 }} />
-                            <YAxis tickFormatter={(v: number) => v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(v)} tick={{ fontSize: 9 }} />
-                            <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} formatter={(v: number) => v.toLocaleString('it-IT')} />
-                            <Legend wrapperStyle={{ fontSize: 10 }} />
-                            <Bar dataKey="Gas Arena" fill={COLORS.arena} radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="Gas Arena LTM" fill={COLORS.arena} fillOpacity={0.3} radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="Gas Campus" fill={COLORS.campus} radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="Gas Campus LTM" fill={COLORS.campus} fillOpacity={0.3} radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                    <div>
-                      <h4 className={`text-xs font-semibold mb-2 text-blue-500`}>{t('Electricity Consumption LTM')} (kWh)</h4>
-                      <div className="h-52">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={ltmFacilityData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="name" tick={{ fontSize: 9 }} />
-                            <YAxis tickFormatter={(v: number) => v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(v)} tick={{ fontSize: 9 }} />
-                            <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} formatter={(v: number) => v.toLocaleString('it-IT')} />
-                            <Legend wrapperStyle={{ fontSize: 10 }} />
-                            <Bar dataKey="Elec Arena" fill={COLORS.arena} radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="Elec Arena LTM" fill={COLORS.arena} fillOpacity={0.3} radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="Elec Campus" fill={COLORS.campus} radius={[4, 4, 0, 0]} />
-                            <Bar dataKey="Elec Campus LTM" fill={COLORS.campus} fillOpacity={0.3} radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
+                    {FACILITY_METRICS.map((metric, mi) => {
+                      const chartData = SEASON_MONTHS.map((month, smi) => {
+                        const entry: Record<string, number | string> = { month };
+                        ltmPeriods.forEach(p => { entry[`${p.label} (${p.season})`] = metric.accessor(p)[smi]; });
+                        return entry;
+                      }).slice(0, Math.max(lastActiveMonth + 2, 7));
+                      const lineKeys = ltmPeriods.map(p => `${p.label} (${p.season})`);
+                      return (
+                        <div key={mi}>
+                          <h4 className={`text-xs font-semibold mb-2 ${metric.color}`}>{metric.title}</h4>
+                          <div className="h-52">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                                <XAxis dataKey="month" tick={{ fontSize: 9 }} />
+                                <YAxis tickFormatter={(v: number) => v >= 1000 ? `${(v/1000).toFixed(0)}K` : String(v)} tick={{ fontSize: 9 }} />
+                                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }} formatter={(v: number) => v.toLocaleString('it-IT')} />
+                                <Legend wrapperStyle={{ fontSize: 10 }} />
+                                {lineKeys.map((key, li) => (
+                                  <Line
+                                    key={key}
+                                    type="monotone"
+                                    dataKey={key}
+                                    stroke={LTM_LINE_COLORS[li % LTM_LINE_COLORS.length]}
+                                    strokeWidth={li === 0 ? 2.5 : 1.5}
+                                    strokeOpacity={li === 0 ? 1 : 0.5}
+                                    dot={li === 0 ? { r: 3 } : false}
+                                    activeDot={li === 0 ? { r: 5 } : { r: 3 }}
+                                    connectNulls
+                                  />
+                                ))}
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
