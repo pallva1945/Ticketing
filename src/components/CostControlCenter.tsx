@@ -959,7 +959,7 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
 
     const chartData = SEASON_MONTHS.map((name, i) => {
       const m = data.monthlyOverall[i];
-      return { name, Gas: m.gasCost, Toll: m.tollCrosses * TOLL_COST_PER_CROSS, Insurance: m.insurance, Bollo: m.bollo, Parking: m.parkingCost, Service: m.serviceCost, Repair: m.repairCost, total: m.totalCost };
+      return { name, Gas: m.gasCost, Toll: m.tollCrosses * TOLL_COST_PER_CROSS, Insurance: m.insurance, Bollo: m.bollo, Service: m.serviceCost, Repair: m.repairCost, total: m.totalCost };
     }).slice(0, Math.max(lastActiveMonth + 2, 7));
 
     const kmChartData = SEASON_MONTHS.map((name, i) => {
@@ -980,7 +980,6 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             { label: 'YTD Gas', value: formatCurrency(o.gasCost), sub: perKm(o.gasCost, o.km) + ' /km' },
             { label: 'YTD Toll', value: formatCurrency(tollCost), sub: `${formatNum(o.tollCrosses)} ${t('crosses')} · €${TOLL_COST_PER_CROSS.toFixed(2)}/cross` },
             { label: t('Fix Cost (Yr)'), value: formatCurrency(fixedCost), sub: `${t('Ins.')} ${formatCurrency(o.insurance)} · ${t('Bollo')} ${formatCurrency(o.bollo)} · ${formatCurrency(Math.round((fixedCost / 12) * 100) / 100)}/mo` },
-            { label: 'YTD Parking', value: formatCurrency(o.parkingCost), sub: perKm(o.parkingCost, o.km) + ' /km' },
             { label: 'YTD Service', value: formatCurrency(o.serviceCost), sub: perKm(o.serviceCost, o.km) + ' /km' },
             { label: 'YTD Repair', value: formatCurrency(o.repairCost), sub: perKm(o.repairCost, o.km) + ' /km' },
             { label: t('Proj. Yearly Km'), value: formatKm(data.projYearlyKm), sub: `${lastActiveMonth + 1}/12 ${t('months')}` },
@@ -1000,7 +999,6 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             { label: t('Gas / Km'), value: perKm(o.gasCost, o.km) },
             { label: t('Toll / Cross'), value: `€${TOLL_COST_PER_CROSS.toFixed(2)}` },
             { label: t('Fix Cost / Km'), value: perKm(fixedCost, o.km) },
-            { label: t('Parking / Km'), value: perKm(o.parkingCost, o.km) },
             { label: t('Service / Km'), value: perKm(o.serviceCost, o.km) },
             { label: t('Repair / Km'), value: perKm(o.repairCost, o.km) },
             { label: t('Total / Km'), value: perKm(o.totalCost, o.km) },
@@ -1026,7 +1024,6 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                 <Bar dataKey="Toll" stackId="cost" fill="#8b5cf6" />
                 <Bar dataKey="Insurance" stackId="cost" fill="#06b6d4" />
                 <Bar dataKey="Bollo" stackId="cost" fill="#64748b" />
-                <Bar dataKey="Parking" stackId="cost" fill="#3b82f6" />
                 <Bar dataKey="Service" stackId="cost" fill="#10b981" />
                 <Bar dataKey="Repair" stackId="cost" fill="#ef4444" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -1083,7 +1080,6 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                   <th className="text-right py-2 px-2 font-medium text-xs">Km</th>
                   <th className="text-right py-2 px-2 font-medium text-xs">Gas</th>
                   <th className="text-right py-2 px-2 font-medium text-xs">{t('Toll')}</th>
-                  <th className="text-right py-2 px-2 font-medium text-xs">{t('Parking')}</th>
                   <th className="text-right py-2 px-2 font-medium text-xs">{t('Insurance')}</th>
                   <th className="text-right py-2 px-2 font-medium text-xs">{t('Bollo')}</th>
                   <th className="text-right py-2 px-2 font-medium text-xs">{t('Service')}</th>
@@ -1105,7 +1101,6 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatNum(s.km)}</td>
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatCurrency(s.gasCost)}</td>
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{formatCurrency(s.tollCrosses * TOLL_COST_PER_CROSS)}</td>
-                      <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.parkingCost > 0 ? formatCurrency(s.parkingCost) : '—'}</td>
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.insurance > 0 ? formatCurrency(s.insurance) : '—'}</td>
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.bollo > 0 ? formatCurrency(s.bollo) : '—'}</td>
                       <td className={`text-right py-2 px-2 tabular-nums text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{s.serviceCost > 0 ? formatCurrency(s.serviceCost) : '—'}</td>
@@ -1121,7 +1116,6 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{formatNum(o.km)}</td>
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.gasCost)}</td>
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(tollCost)}</td>
-                  <td className="text-right py-2 px-2 tabular-nums text-xs">{o.parkingCost > 0 ? formatCurrency(o.parkingCost) : '—'}</td>
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.insurance)}</td>
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{formatCurrency(o.bollo)}</td>
                   <td className="text-right py-2 px-2 tabular-nums text-xs">{o.serviceCost > 0 ? formatCurrency(o.serviceCost) : '—'}</td>
