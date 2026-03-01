@@ -1704,8 +1704,8 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
                                     <p className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{tx.dueDate ? formatTxDate(tx.dueDate) : '—'}</p>
                                   </div>
                                   <div>
-                                    <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Account Code')}</p>
-                                    <p className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{tx.accountCode || '—'}</p>
+                                    <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Account')}</p>
+                                    <p className={`text-xs ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{tx.subcategory || tx.accountCode || '—'}</p>
                                   </div>
                                   <div>
                                     <p className={`text-[10px] uppercase font-semibold ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{t('Currency')}</p>
