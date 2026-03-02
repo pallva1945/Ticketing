@@ -515,13 +515,47 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
           (() => {
             const cosGrand = vbPnl.cosSections.reduce((s, sec) => s + sec.total, 0);
             const VB_COS_COLORS: Record<string, string> = { bops: '#ef4444', ebp: '#f97316' };
-            const pieData = vbPnl.cosSections.map(sec => ({ name: sec.label, value: Math.round(sec.total) }));
             const SEASON_MONTHS = ['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];
             const barData = SEASON_MONTHS.slice(0, vbPnl.monthCount).map((m, idx) => {
               const point: Record<string, any> = { month: m };
               vbPnl.cosSections.forEach(sec => { point[sec.label] = Math.round(sec.values[idx]); });
               return point;
             });
+
+            const allLines = vbPnl.cosSections.flatMap(sec => sec.lines.map(l => ({ ...l, source: sec.label })));
+            const topDrivers = [...allLines].filter(l => l.total > 0).sort((a, b) => b.total - a.total).slice(0, 8);
+            const DRIVER_COLORS = ['#dc2626','#ea580c','#d97706','#ca8a04','#65a30d','#0891b2','#7c3aed','#be185d'];
+
+            const BUCKET_MAP: Record<string, string> = {};
+            const BUCKET_KEYWORDS: [string[], string][] = [
+              [['salary', 'salari', 'irpef', 'inps', 'enpals', 'tax', 'contribut', 'payroll', 'deduction', 'agent fee'], 'Personnel'],
+              [['housing', 'foresteria rental', 'foresteria electricity'], 'Housing'],
+              [['food', 'meals'], 'Food & Meals'],
+              [['flight', 'transport'], 'Travel'],
+              [['utilities', 'electricity', 'heating', 'wi-fi'], 'Utilities'],
+              [['insurance', 'medical', 'school'], 'Insurance & Welfare'],
+              [['registration', 'tesseramento'], 'Registration'],
+              [['analytics', 'research'], 'Analytics'],
+              [['ebdp', 'ebp'], 'EBP Program'],
+            ];
+            allLines.forEach(l => {
+              const ll = l.label.toLowerCase();
+              for (const [keywords, bucket] of BUCKET_KEYWORDS) {
+                if (keywords.some(k => ll.includes(k))) { BUCKET_MAP[l.key] = bucket; return; }
+              }
+              BUCKET_MAP[l.key] = 'Other';
+            });
+            const bucketTotals: Record<string, number> = {};
+            allLines.forEach(l => {
+              const b = BUCKET_MAP[l.key] || 'Other';
+              bucketTotals[b] = (bucketTotals[b] || 0) + l.total;
+            });
+            const compositionData = Object.entries(bucketTotals)
+              .filter(([, v]) => v > 0)
+              .sort((a, b) => b[1] - a[1])
+              .map(([name, value]) => ({ name, value: Math.round(value) }));
+            const COMP_COLORS = ['#3b82f6','#ef4444','#f59e0b','#10b981','#8b5cf6','#ec4899','#06b6d4','#64748b','#d946ef','#84cc16'];
+
             return (
               <div className="space-y-6">
                 <div className="flex items-center gap-3">
@@ -547,24 +581,48 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
                     </div>
                   ))}
                 </div>
+
+                <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">{t('Top Cost Drivers')}</p>
+                  <p className="text-[10px] text-gray-400 mb-4">{t('Highest individual line items across all CoS')}</p>
+                  <div className="space-y-2.5">
+                    {topDrivers.map((d, i) => {
+                      const maxVal = topDrivers[0]?.total || 1;
+                      const pct = (d.total / maxVal) * 100;
+                      return (
+                        <div key={d.key} className="flex items-center gap-3">
+                          <div className="w-32 sm:w-44 text-xs font-medium text-gray-700 dark:text-gray-300 truncate" title={d.label}>{d.label}</div>
+                          <div className="flex-1 h-5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden relative">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: DRIVER_COLORS[i % DRIVER_COLORS.length] }} />
+                          </div>
+                          <div className="w-20 text-right text-xs font-bold text-gray-900 dark:text-white">{formatCurrency(Math.round(d.total))}</div>
+                          <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${d.source === 'BOps' ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : 'bg-orange-50 dark:bg-orange-900/20 text-orange-600'}`}>{d.source}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white mb-3">{t('CoS Split')}</p>
-                    <div className="h-48">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">{t('Cost Composition')}</p>
+                    <p className="text-[10px] text-gray-400 mb-3">{t('Where the money goes')}</p>
+                    <div className="h-52">
                       <ResponsiveContainer width="100%" height="100%">
                         <RePieChart>
-                          <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value">
-                            {pieData.map((_, i) => <Cell key={i} fill={Object.values(VB_COS_COLORS)[i] || '#6b7280'} />)}
+                          <Pie data={compositionData} cx="50%" cy="50%" innerRadius={40} outerRadius={72} paddingAngle={2} dataKey="value">
+                            {compositionData.map((_, i) => <Cell key={i} fill={COMP_COLORS[i % COMP_COLORS.length]} />)}
                           </Pie>
                           <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                          <Legend wrapperStyle={{ fontSize: '11px' }} />
+                          <Legend wrapperStyle={{ fontSize: '10px' }} />
                         </RePieChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
                   <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
-                    <p className="text-sm font-bold text-gray-900 dark:text-white mb-3">{t('Monthly Trend')}</p>
-                    <div className="h-48">
+                    <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">{t('Monthly Trend')}</p>
+                    <p className="text-[10px] text-gray-400 mb-3">BOps vs EBP</p>
+                    <div className="h-52">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={barData}>
                           <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
