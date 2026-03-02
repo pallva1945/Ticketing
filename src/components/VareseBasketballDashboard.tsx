@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Euro, Trophy, Flag, Activity, TrendingUp, TrendingDown, CheckCircle2, Calendar, Target, Dumbbell, FileSpreadsheet, Loader2, Settings, X, Check, BarChart3 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Trophy, Flag, Activity, TrendingUp, Calendar, Dumbbell, FileSpreadsheet, Loader2, Settings, X, Check } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -164,13 +164,27 @@ const COLORS = {
 
 const getColor = (key: string): string => (COLORS as any)[key] || '#6b7280';
 
-type Section = 'overview' | 'revenue' | 'costs' | 'pnl';
+type ActiveView = 'overview' | 'sponsorship' | 'bops' | 'gameday' | 'ebp';
+
+const SECTION_ICONS: Record<string, any> = {
+  sponsorship: Flag,
+  bops: Activity,
+  gameday: Calendar,
+  ebp: Dumbbell,
+};
+
+const SECTION_COLORS: Record<string, { text: string; bg: string; bar: string }> = {
+  sponsorship: { text: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/30', bar: 'bg-blue-500' },
+  bops: { text: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/30', bar: 'bg-emerald-500' },
+  gameday: { text: 'text-indigo-600', bg: 'bg-indigo-50 dark:bg-indigo-900/30', bar: 'bg-indigo-500' },
+  ebp: { text: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/30', bar: 'bg-purple-500' },
+};
 
 export const VareseBasketballDashboard: React.FC = () => {
   const { t } = useLanguage();
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const [activeSection, setActiveSection] = useState<Section>('overview');
+  const [activeView, setActiveView] = useState<ActiveView>('overview');
   const [pnlData, setPnlData] = useState<VbPnlData | null>(null);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -239,71 +253,25 @@ export const VareseBasketballDashboard: React.FC = () => {
   };
 
   const totalRevenue = pnlData ? pnlData.revenue.reduce((s, l) => s + l.total, 0) : 0;
-  const totalCos = pnlData ? pnlData.cos.reduce((s, l) => s + l.total, 0) : 0;
-  const totalSga = pnlData ? pnlData.sga.reduce((s, l) => s + l.total, 0) : 0;
-  const grossProfit = totalRevenue - totalCos;
-  const ebitda = grossProfit - totalSga;
-  const grossMargin = totalRevenue > 0 ? (grossProfit / totalRevenue * 100) : 0;
-  const ebitdaMargin = totalRevenue > 0 ? (ebitda / totalRevenue * 100) : 0;
   const monthCount = pnlData?.monthCount || 7;
-
   const periodLabel = monthCount <= 6 ? 'Jul–Dec 2025' : `Jul 2025–${SEASON_MONTHS[monthCount - 1]} 2026`;
 
-  const monthlyRevenueChart = pnlData ? SEASON_MONTHS.slice(0, monthCount).map((m, i) => {
-    const entry: any = { month: m };
-    let total = 0;
-    pnlData.revenue.forEach(line => {
-      entry[line.label] = line.values[i];
-      total += line.values[i];
-    });
-    entry.total = total;
-    return entry;
-  }) : [];
+  const getLineByKey = (key: string) => pnlData?.revenue.find(l => l.key === key);
 
-  const revenueBreakdownChart = pnlData ? pnlData.revenue.map(l => ({
-    name: l.label,
-    value: l.total,
-    color: getColor(l.key),
-  })) : [];
+  const monthlyChartForLine = (line: VbPnlLine) => {
+    return SEASON_MONTHS.slice(0, monthCount).map((m, i) => ({
+      month: m,
+      value: line.values[i],
+    }));
+  };
 
-  const costBreakdownChart = pnlData ? [
-    ...pnlData.cos.map(l => ({ name: `CoS: ${l.label}`, value: l.total, color: getColor(l.key) })),
-    ...pnlData.sga.map(l => ({ name: `SG&A: ${l.label}`, value: l.total, color: getColor(l.key) })),
-  ] : [];
-
-  const pnlTableData = (() => {
-    if (!pnlData) return [];
-    const rows: { label: string; values: number[]; total: number; isHeader?: boolean; isBold?: boolean }[] = [];
-
-    rows.push({ label: 'Revenue', values: [], total: totalRevenue, isHeader: true });
-    pnlData.revenue.forEach(l => rows.push({ label: `  ${l.label}`, values: l.values, total: l.total }));
-
-    const revByMonth = new Array(12).fill(0);
-    pnlData.revenue.forEach(l => l.values.forEach((v, i) => revByMonth[i] += v));
-    rows.push({ label: 'Total Revenue', values: revByMonth, total: totalRevenue, isBold: true });
-
-    rows.push({ label: 'Cost of Sales', values: [], total: totalCos, isHeader: true });
-    pnlData.cos.forEach(l => rows.push({ label: `  ${l.label}`, values: l.values, total: l.total }));
-
-    const cosByMonth = new Array(12).fill(0);
-    pnlData.cos.forEach(l => l.values.forEach((v, i) => cosByMonth[i] += v));
-    rows.push({ label: 'Total CoS', values: cosByMonth, total: totalCos, isBold: true });
-
-    const gpByMonth = revByMonth.map((v, i) => v - cosByMonth[i]);
-    rows.push({ label: 'Gross Profit', values: gpByMonth, total: grossProfit, isBold: true });
-
-    rows.push({ label: 'SG&A', values: [], total: totalSga, isHeader: true });
-    pnlData.sga.forEach(l => rows.push({ label: `  ${l.label}`, values: l.values, total: l.total }));
-
-    const sgaByMonth = new Array(12).fill(0);
-    pnlData.sga.forEach(l => l.values.forEach((v, i) => sgaByMonth[i] += v));
-    rows.push({ label: 'Total SG&A', values: sgaByMonth, total: totalSga, isBold: true });
-
-    const ebitdaByMonth = gpByMonth.map((v, i) => v - sgaByMonth[i]);
-    rows.push({ label: 'EBITDA', values: ebitdaByMonth, total: ebitda, isBold: true });
-
-    return rows;
-  })();
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 size={32} className="text-teal-600 animate-spin" />
+      </div>
+    );
+  }
 
   const SyncToolbar = () => (
     <div className="flex items-center gap-2 flex-wrap">
@@ -329,38 +297,92 @@ export const VareseBasketballDashboard: React.FC = () => {
     </div>
   );
 
-  const ConfigPanel = () => showConfig ? (
-    <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{t('Google Sheet Configuration')}</p>
-        <button onClick={() => setShowConfig(false)} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className="text-[10px] font-semibold text-gray-500 uppercase">{t('Spreadsheet ID')}</label>
-          <input value={sheetId} onChange={e => setSheetId(e.target.value)}
-            className="w-full mt-1 px-3 py-2 text-xs border rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700" placeholder="1BxiMVs0XRA5nFMdKvBd..." />
-        </div>
-        <div>
-          <label className="text-[10px] font-semibold text-gray-500 uppercase">{t('Tab Name')}</label>
-          <input value={sheetName} onChange={e => setSheetName(e.target.value)}
-            className="w-full mt-1 px-3 py-2 text-xs border rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700" placeholder="P&L" />
-        </div>
-      </div>
-      <button onClick={handleSaveConfig} disabled={!sheetId}
-        className="mt-3 px-4 py-2 text-xs font-semibold rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50">
-        {t('Save & Close')}
-      </button>
-    </div>
-  ) : null;
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 size={32} className="text-teal-600 animate-spin" />
+  const renderSectionDetail = (key: string) => {
+    const line = getLineByKey(key);
+    if (!line) return (
+      <div className={`rounded-xl border p-12 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+        <p className="text-gray-400">{t('No data available for this section. Sync the Google Sheet to load data.')}</p>
       </div>
     );
-  }
+    const Icon = SECTION_ICONS[key] || Flag;
+    const colors = SECTION_COLORS[key] || SECTION_COLORS.sponsorship;
+    const chartData = monthlyChartForLine(line);
+    const pctOfTotal = totalRevenue > 0 ? (line.total / totalRevenue * 100).toFixed(1) : '0';
+
+    return (
+      <>
+        <div className="flex items-center gap-3 mb-2">
+          <button onClick={() => setActiveView('overview')} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+            <TrendingUp size={16} />
+          </button>
+          <div className={`p-2.5 rounded-xl ${colors.bg}`}>
+            <Icon size={22} className={colors.text} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{line.label}</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('Revenue')} · {periodLabel}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">{t('YTD Revenue')}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(line.total)}</p>
+            <p className="text-xs text-gray-400 mt-1">{periodLabel}</p>
+          </div>
+          <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">{t('Share of VB Revenue')}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{pctOfTotal}%</p>
+            <p className="text-xs text-gray-400 mt-1">{t('of')} {formatCurrency(totalRevenue)} {t('total')}</p>
+          </div>
+          <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">{t('Monthly Avg')}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(Math.round(line.total / Math.max(1, monthCount)))}</p>
+            <p className="text-xs text-gray-400 mt-1">{monthCount} {t('months')}</p>
+          </div>
+        </div>
+
+        <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+          <p className="text-sm font-bold text-gray-900 dark:text-white mb-4">{t('Monthly Breakdown')}</p>
+          <div className="h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                <XAxis dataKey="month" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                <YAxis tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={v => `€${Math.round(v/1000)}K`} />
+                <Tooltip formatter={(val: number) => formatCurrency(val)} contentStyle={{ backgroundColor: isDark ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', fontSize: '11px' }} />
+                <Bar dataKey="value" fill={getColor(key)} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+          <p className="text-sm font-bold text-gray-900 dark:text-white mb-3">{t('Monthly Detail')}</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  {SEASON_MONTHS.slice(0, monthCount).map(m => (
+                    <th key={m} className="text-center py-2 px-3 font-semibold text-gray-500">{m}</th>
+                  ))}
+                  <th className="text-center py-2 px-3 font-bold text-gray-700 dark:text-gray-300">{t('Total')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  {line.values.slice(0, monthCount).map((v, i) => (
+                    <td key={i} className="text-center py-2 px-3 text-gray-700 dark:text-gray-300 font-medium">{v > 0 ? formatCurrency(v) : '-'}</td>
+                  ))}
+                  <td className="text-center py-2 px-3 font-bold text-teal-600">{formatCurrency(line.total)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </>
+    );
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -371,20 +393,43 @@ export const VareseBasketballDashboard: React.FC = () => {
           </div>
           <div>
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('Varese Basketball')}</h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{t('P&L')} – {periodLabel}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('Revenue')} – {periodLabel}</p>
           </div>
         </div>
         <SyncToolbar />
       </div>
 
-      <ConfigPanel />
+      {showConfig && (
+        <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'} shadow-sm`}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-bold text-gray-700 dark:text-gray-300">{t('Google Sheet Configuration')}</p>
+            <button onClick={() => setShowConfig(false)} className="text-gray-400 hover:text-gray-600"><X size={14} /></button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase">{t('Spreadsheet ID')}</label>
+              <input value={sheetId} onChange={e => setSheetId(e.target.value)}
+                className="w-full mt-1 px-3 py-2 text-xs border rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700" placeholder="1BxiMVs0XRA5nFMdKvBd..." />
+            </div>
+            <div>
+              <label className="text-[10px] font-semibold text-gray-500 uppercase">{t('Tab Name')}</label>
+              <input value={sheetName} onChange={e => setSheetName(e.target.value)}
+                className="w-full mt-1 px-3 py-2 text-xs border rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700" placeholder="P&L" />
+            </div>
+          </div>
+          <button onClick={handleSaveConfig} disabled={!sheetId}
+            className="mt-3 px-4 py-2 text-xs font-semibold rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50">
+            {t('Save & Close')}
+          </button>
+        </div>
+      )}
 
       {!pnlData ? (
         <div className={`text-center py-16 rounded-xl border-2 border-dashed ${isDark ? 'border-gray-700 bg-gray-900/50' : 'border-gray-200 bg-gray-50'}`}>
           <FileSpreadsheet size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
           <h3 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-2">{t('Connect Your VB P&L')}</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
-            {t('Configure a Google Sheet with the Varese Basketball P&L to populate revenue, costs, and SG&A data.')}
+            {t('Configure a Google Sheet with the Varese Basketball P&L to populate revenue data.')}
           </p>
           <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
             {t('Expected structure: Sections (Revenue, CoS, SG&A) with line items in rows and months in columns.')}
@@ -395,331 +440,78 @@ export const VareseBasketballDashboard: React.FC = () => {
             {t('Configure Google Sheet')}
           </button>
         </div>
-      ) : (
+      ) : activeView === 'overview' ? (
         <>
-          <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 pb-1">
-            {(['overview', 'revenue', 'costs', 'pnl'] as const).map(section => (
-              <button key={section} onClick={() => setActiveSection(section)}
-                className={`px-4 py-2 text-xs font-semibold rounded-t-lg transition-colors ${activeSection === section ? 'bg-teal-600 text-white' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}>
-                {section === 'overview' ? t('Executive Overview') : section === 'revenue' ? t('Revenue') : section === 'costs' ? t('Costs') : t('P&L')}
-              </button>
-            ))}
-          </div>
-
-          {activeSection === 'overview' && (
-            <>
-              <div className="bg-gradient-to-r from-teal-800 to-teal-900 rounded-xl p-6 text-white">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-                  <div>
-                    <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">{t('Revenue')}</p>
-                    <p className="text-3xl sm:text-4xl font-bold">{formatCurrency(totalRevenue)}</p>
-                    <p className="text-xs text-teal-300/70 mt-1">{periodLabel}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">{t('Total Costs')}</p>
-                    <p className="text-3xl sm:text-4xl font-bold text-red-300">{formatCurrency(totalCos + totalSga)}</p>
-                    <p className="text-xs text-teal-300/70 mt-1">{t('CoS')} + {t('SG&A')}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">{t('Gross Profit')}</p>
-                    <p className={`text-3xl sm:text-4xl font-bold ${grossProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrencySign(grossProfit)}</p>
-                    <p className="text-xs text-teal-300/70 mt-1">{grossMargin.toFixed(1)}% {t('margin')}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">{t('EBITDA')}</p>
-                    <p className={`text-3xl sm:text-4xl font-bold ${ebitda >= 0 ? 'text-green-400' : 'text-red-400'}`}>{formatCurrencySign(ebitda)}</p>
-                    <p className="text-xs text-teal-300/70 mt-1">{ebitdaMargin.toFixed(1)}% {t('margin')}</p>
-                  </div>
-                </div>
+          <div className="bg-gradient-to-r from-teal-800 to-teal-900 rounded-xl p-6 text-white">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+              <div>
+                <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">{t('Total Revenue')}</p>
+                <p className="text-3xl sm:text-4xl font-bold">{formatCurrency(totalRevenue)}</p>
+                <p className="text-xs text-teal-300/70 mt-1">{periodLabel}</p>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {pnlData.revenue.map((line, idx) => (
-                  <div key={line.key} className={`p-5 rounded-xl border shadow-sm cursor-pointer hover:shadow-md transition-shadow ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}
-                    onClick={() => setActiveSection('revenue')}>
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{line.label}</p>
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getColor(line.key) }} />
-                    </div>
-                    <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(line.total)}</p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{totalRevenue > 0 ? (line.total / totalRevenue * 100).toFixed(1) : 0}% {t('of revenue')}</p>
-                    <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full mt-3 overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${totalRevenue > 0 ? Math.min(100, line.total / totalRevenue * 100) : 0}%`, backgroundColor: getColor(line.key) }} />
-                    </div>
-                  </div>
-                ))}
+              <div>
+                <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">{t('Monthly Avg')}</p>
+                <p className="text-3xl sm:text-4xl font-bold text-teal-200">{formatCurrency(Math.round(totalRevenue / Math.max(1, monthCount)))}</p>
+                <p className="text-xs text-teal-300/70 mt-1">{monthCount} {t('months')}</p>
               </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-                  <p className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-4">{t('Cost of Sales Breakdown')}</p>
-                  <div className="space-y-3">
-                    {pnlData.cos.map(line => (
-                      <div key={line.key} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getColor(line.key) }} />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">{line.label}</span>
-                        </div>
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(line.total)}</span>
-                      </div>
-                    ))}
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-                      <span className="text-xs font-bold text-gray-500">{t('Total CoS')}</span>
-                      <span className="text-sm font-bold text-red-600">{formatCurrency(totalCos)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-                  <p className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-4">{t('SG&A Breakdown')}</p>
-                  <div className="space-y-3">
-                    {pnlData.sga.map(line => (
-                      <div key={line.key} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getColor(line.key) }} />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">{line.label}</span>
-                        </div>
-                        <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(line.total)}</span>
-                      </div>
-                    ))}
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-                      <span className="text-xs font-bold text-gray-500">{t('Total SG&A')}</span>
-                      <span className="text-sm font-bold text-red-600">{formatCurrency(totalSga)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {activeSection === 'revenue' && (
-            <>
-              <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">{t('Monthly Revenue by Category')}</p>
-                  <p className="text-xs text-gray-500">{periodLabel}</p>
-                </div>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={monthlyRevenueChart}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                      <XAxis dataKey="month" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                      <YAxis tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={v => `€${Math.round(v/1000)}K`} />
-                      <Tooltip formatter={(val: number) => formatCurrency(val)} contentStyle={{ backgroundColor: isDark ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', fontSize: '11px' }} />
-                      {pnlData.revenue.map(line => (
-                        <Bar key={line.key} dataKey={line.label} stackId="rev" fill={getColor(line.key)} radius={[0, 0, 0, 0]} />
-                      ))}
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-                <p className="text-sm font-bold text-gray-900 dark:text-white mb-4">{t('Revenue Detail')}</p>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-gray-200 dark:border-gray-700">
-                        <th className="text-left py-2 px-2 font-semibold text-gray-500">{t('Category')}</th>
-                        {SEASON_MONTHS.slice(0, monthCount).map(m => (
-                          <th key={m} className="text-right py-2 px-2 font-semibold text-gray-500">{m}</th>
-                        ))}
-                        <th className="text-right py-2 px-2 font-bold text-gray-700 dark:text-gray-300">{t('Total')}</th>
-                        <th className="text-right py-2 px-2 font-semibold text-gray-500">%</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {pnlData.revenue.map(line => (
-                        <tr key={line.key} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                          <td className="py-2 px-2 font-medium text-gray-900 dark:text-white flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: getColor(line.key) }} />
-                            {line.label}
-                          </td>
-                          {line.values.slice(0, monthCount).map((v, i) => (
-                            <td key={i} className="text-right py-2 px-2 text-gray-600 dark:text-gray-400">{v > 0 ? formatCurrency(v) : '-'}</td>
-                          ))}
-                          <td className="text-right py-2 px-2 font-bold text-gray-900 dark:text-white">{formatCurrency(line.total)}</td>
-                          <td className="text-right py-2 px-2 text-gray-500">{totalRevenue > 0 ? (line.total / totalRevenue * 100).toFixed(1) : 0}%</td>
-                        </tr>
-                      ))}
-                      <tr className="border-t-2 border-gray-300 dark:border-gray-600 font-bold">
-                        <td className="py-2 px-2 text-gray-900 dark:text-white">{t('Total')}</td>
-                        {SEASON_MONTHS.slice(0, monthCount).map((m, i) => {
-                          const monthTotal = pnlData.revenue.reduce((s, l) => s + l.values[i], 0);
-                          return <td key={m} className="text-right py-2 px-2 text-gray-900 dark:text-white">{monthTotal > 0 ? formatCurrency(monthTotal) : '-'}</td>;
-                        })}
-                        <td className="text-right py-2 px-2 text-teal-600">{formatCurrency(totalRevenue)}</td>
-                        <td className="text-right py-2 px-2 text-gray-500">100%</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          )}
-
-          {activeSection === 'costs' && (
-            <>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">{t('Cost of Sales')}</p>
-                  <p className="text-xs text-gray-500 mb-4">{t('Direct costs tied to revenue generation')}</p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700">
-                          <th className="text-left py-2 px-2 font-semibold text-gray-500">{t('Item')}</th>
-                          {SEASON_MONTHS.slice(0, monthCount).map(m => (
-                            <th key={m} className="text-right py-2 px-2 font-semibold text-gray-500">{m}</th>
-                          ))}
-                          <th className="text-right py-2 px-2 font-bold text-gray-700 dark:text-gray-300">{t('Total')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pnlData.cos.map(line => (
-                          <tr key={line.key} className="border-b border-gray-100 dark:border-gray-800">
-                            <td className="py-2 px-2 font-medium text-gray-900 dark:text-white">{line.label}</td>
-                            {line.values.slice(0, monthCount).map((v, i) => (
-                              <td key={i} className="text-right py-2 px-2 text-gray-600 dark:text-gray-400">{v > 0 ? formatCurrency(v) : '-'}</td>
-                            ))}
-                            <td className="text-right py-2 px-2 font-bold text-red-600">{formatCurrency(line.total)}</td>
-                          </tr>
-                        ))}
-                        <tr className="border-t-2 border-gray-300 dark:border-gray-600 font-bold">
-                          <td className="py-2 px-2 text-gray-900 dark:text-white">{t('Total CoS')}</td>
-                          {SEASON_MONTHS.slice(0, monthCount).map((m, i) => {
-                            const monthTotal = pnlData.cos.reduce((s, l) => s + l.values[i], 0);
-                            return <td key={m} className="text-right py-2 px-2 text-red-600">{monthTotal > 0 ? formatCurrency(monthTotal) : '-'}</td>;
-                          })}
-                          <td className="text-right py-2 px-2 text-red-600">{formatCurrency(totalCos)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-                  <p className="text-sm font-bold text-gray-900 dark:text-white mb-1">{t('SG&A')}</p>
-                  <p className="text-xs text-gray-500 mb-4">{t('Selling, General & Administrative expenses')}</p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-gray-200 dark:border-gray-700">
-                          <th className="text-left py-2 px-2 font-semibold text-gray-500">{t('Item')}</th>
-                          {SEASON_MONTHS.slice(0, monthCount).map(m => (
-                            <th key={m} className="text-right py-2 px-2 font-semibold text-gray-500">{m}</th>
-                          ))}
-                          <th className="text-right py-2 px-2 font-bold text-gray-700 dark:text-gray-300">{t('Total')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pnlData.sga.map(line => (
-                          <tr key={line.key} className="border-b border-gray-100 dark:border-gray-800">
-                            <td className="py-2 px-2 font-medium text-gray-900 dark:text-white">{line.label}</td>
-                            {line.values.slice(0, monthCount).map((v, i) => (
-                              <td key={i} className="text-right py-2 px-2 text-gray-600 dark:text-gray-400">{v > 0 ? formatCurrency(v) : '-'}</td>
-                            ))}
-                            <td className="text-right py-2 px-2 font-bold text-red-600">{formatCurrency(line.total)}</td>
-                          </tr>
-                        ))}
-                        <tr className="border-t-2 border-gray-300 dark:border-gray-600 font-bold">
-                          <td className="py-2 px-2 text-gray-900 dark:text-white">{t('Total SG&A')}</td>
-                          {SEASON_MONTHS.slice(0, monthCount).map((m, i) => {
-                            const monthTotal = pnlData.sga.reduce((s, l) => s + l.values[i], 0);
-                            return <td key={m} className="text-right py-2 px-2 text-red-600">{monthTotal > 0 ? formatCurrency(monthTotal) : '-'}</td>;
-                          })}
-                          <td className="text-right py-2 px-2 text-red-600">{formatCurrency(totalSga)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-
-              <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-                <p className="text-sm font-bold text-gray-900 dark:text-white mb-4">{t('Cost Distribution')}</p>
-                <div className="h-56">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={costBreakdownChart} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                      <XAxis type="number" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={v => `€${Math.round(v/1000)}K`} />
-                      <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} width={120} />
-                      <Tooltip formatter={(val: number) => formatCurrency(val)} contentStyle={{ backgroundColor: isDark ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', fontSize: '11px' }} />
-                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                        {costBreakdownChart.map((entry, idx) => (
-                          <Cell key={idx} fill={entry.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </>
-          )}
-
-          {activeSection === 'pnl' && (
-            <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <BarChart3 size={16} className="text-teal-600" />
-                  <p className="text-sm font-bold text-gray-900 dark:text-white">{t('Consolidated P&L')}</p>
-                </div>
-                <p className="text-xs text-gray-500">{periodLabel}</p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b-2 border-gray-300 dark:border-gray-600">
-                      <th className="text-left py-2 px-2 font-bold text-gray-700 dark:text-gray-300">{t('Line Item')}</th>
-                      {SEASON_MONTHS.slice(0, monthCount).map(m => (
-                        <th key={m} className="text-right py-2 px-2 font-semibold text-gray-500">{m}</th>
-                      ))}
-                      <th className="text-right py-2 px-2 font-bold text-gray-700 dark:text-gray-300">{t('YTD')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pnlTableData.map((row, idx) => {
-                      const isNeg = row.total < 0;
-                      const isSummary = row.isBold;
-                      const isSection = row.isHeader;
-                      return (
-                        <tr key={idx}
-                          className={`
-                            ${isSection ? 'bg-gray-50 dark:bg-gray-800/50' : ''}
-                            ${isSummary ? 'border-t border-gray-300 dark:border-gray-600 font-bold' : 'border-b border-gray-100 dark:border-gray-800'}
-                            ${row.label === 'EBITDA' ? 'bg-teal-50 dark:bg-teal-900/20' : ''}
-                          `}>
-                          <td className={`py-2 px-2 ${isSummary || isSection ? 'font-bold' : ''} ${isSection ? 'text-gray-500 dark:text-gray-400 uppercase text-[10px] tracking-wider' : 'text-gray-900 dark:text-white'}`}>
-                            {row.label}
-                          </td>
-                          {isSection ? (
-                            <>
-                              {SEASON_MONTHS.slice(0, monthCount).map(m => (
-                                <td key={m} className="py-2 px-2" />
-                              ))}
-                              <td className="text-right py-2 px-2 font-bold text-gray-500 dark:text-gray-400">{formatCurrency(row.total)}</td>
-                            </>
-                          ) : (
-                            <>
-                              {row.values.slice(0, monthCount).map((v, i) => (
-                                <td key={i} className={`text-right py-2 px-2 ${v < 0 ? 'text-red-500' : 'text-gray-600 dark:text-gray-400'}`}>
-                                  {v !== 0 ? formatCurrencySign(v) : '-'}
-                                </td>
-                              ))}
-                              <td className={`text-right py-2 px-2 font-bold ${isNeg ? 'text-red-600' : row.label === 'EBITDA' || row.label === 'Gross Profit' ? 'text-teal-600' : 'text-gray-900 dark:text-white'}`}>
-                                {formatCurrencySign(row.total)}
-                              </td>
-                            </>
-                          )}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div>
+                <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">{t('Categories')}</p>
+                <p className="text-3xl sm:text-4xl font-bold text-teal-200">{pnlData.revenue.length}</p>
+                <p className="text-xs text-teal-300/70 mt-1">{t('revenue streams')}</p>
               </div>
             </div>
-          )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {(['sponsorship', 'bops', 'gameday', 'ebp'] as const).map(key => {
+              const line = getLineByKey(key);
+              const Icon = SECTION_ICONS[key] || Flag;
+              const colors = SECTION_COLORS[key] || SECTION_COLORS.sponsorship;
+              const amount = line?.total || 0;
+              const pct = totalRevenue > 0 ? (amount / totalRevenue * 100) : 0;
+
+              return (
+                <button key={key} onClick={() => line && setActiveView(key)}
+                  className={`text-left p-5 rounded-xl border shadow-sm transition-all hover:shadow-md ${line ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'} ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{key === 'bops' ? t('BOps') : key === 'ebp' ? t('EBP') : key === 'gameday' ? t('GameDay') : t('Sponsorship')}</p>
+                    <div className={`p-2 rounded-lg ${colors.bg}`}>
+                      <Icon size={16} className={colors.text} />
+                    </div>
+                  </div>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(amount)}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{pct.toFixed(1)}% {t('of total')}</p>
+                  <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full mt-3 overflow-hidden">
+                    <div className={`h-full rounded-full ${colors.bar}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+            <p className="text-sm font-bold text-gray-900 dark:text-white mb-4">{t('Monthly Revenue')}</p>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={SEASON_MONTHS.slice(0, monthCount).map((m, i) => {
+                  const entry: any = { month: m };
+                  pnlData.revenue.forEach(line => { entry[line.label] = line.values[i]; });
+                  return entry;
+                })}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                  <YAxis tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={v => `€${Math.round(v/1000)}K`} />
+                  <Tooltip formatter={(val: number) => formatCurrency(val)} contentStyle={{ backgroundColor: isDark ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', fontSize: '11px' }} />
+                  {pnlData.revenue.map(line => (
+                    <Bar key={line.key} dataKey={line.label} stackId="rev" fill={getColor(line.key)} radius={[0, 0, 0, 0]} />
+                  ))}
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </>
+      ) : (
+        renderSectionDetail(activeView)
       )}
     </div>
   );
