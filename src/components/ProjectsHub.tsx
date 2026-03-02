@@ -280,6 +280,9 @@ const arenaText = (lang: string) => {
       { src: '/arena/renderings/vip_lounge_1.png', caption: 'VIP Lounge — Premium Hospitality' },
       { src: '/arena/renderings/vip_lounge_2.png', caption: 'VIP Lounge — Catering Area' },
       { src: '/arena/renderings/vip_entrance.png', caption: 'VIP Lounge — Reception Entrance' },
+      { src: '/arena/renderings/piazza_overview.jpg', caption: 'Arena Piazza — Bar, Store & Fan Area' },
+      { src: '/arena/renderings/parking_fanzone.png', caption: 'Parking & Fan Zone — Multi-Level Facility' },
+      { src: '/arena/renderings/tourism_bar.png', caption: 'PV Tourism Center & Bar — Street View' },
     ] : [
       { src: '/arena/renderings/tribuna_ovest.png', caption: 'Tribuna Ovest — Ingresso Store & Bar' },
       { src: '/arena/renderings/bar.png', caption: 'Bar Premium — Operativo 24/7' },
@@ -289,6 +292,9 @@ const arenaText = (lang: string) => {
       { src: '/arena/renderings/vip_lounge_1.png', caption: 'VIP Lounge — Ospitalità Premium' },
       { src: '/arena/renderings/vip_lounge_2.png', caption: 'VIP Lounge — Area Catering' },
       { src: '/arena/renderings/vip_entrance.png', caption: 'VIP Lounge — Ingresso Reception' },
+      { src: '/arena/renderings/piazza_overview.jpg', caption: 'Piazza Arena — Bar, Store & Area Fan' },
+      { src: '/arena/renderings/parking_fanzone.png', caption: 'Parcheggio & Fan Zone — Struttura Multi-Livello' },
+      { src: '/arena/renderings/tourism_bar.png', caption: 'Centro Turismo PV & Bar — Vista Strada' },
     ],
     contactTitle: isEN ? 'Contact' : 'Contatti',
     contactDesc: isEN
