@@ -183,8 +183,8 @@ const arenaText = (lang: string) => {
   const isEN = lang === 'en';
   return {
     nav: isEN
-      ? [['#arena-upgrades', 'Upgrades'], ['#arena-plans', 'Floor Plans'], ['#arena-milestones', 'Milestones']]
-      : [['#arena-upgrades', 'Interventi'], ['#arena-plans', 'Planimetrie'], ['#arena-milestones', 'Fasi']],
+      ? [['#arena-upgrades', 'Upgrades'], ['#arena-plans', 'Floor Plans'], ['#arena-milestones', 'Milestones'], ['#arena-renderings', 'Renderings']]
+      : [['#arena-upgrades', 'Interventi'], ['#arena-plans', 'Planimetrie'], ['#arena-milestones', 'Fasi'], ['#arena-renderings', 'Rendering']],
     heroTitle: isEN ? 'Remodeling the Heart of Varese Basketball' : 'La Riqualificazione del Cuore del Basket Varesino',
     heroDesc: isEN
       ? 'A comprehensive renovation of the Enerxenia Arena to enhance fan experience, unlock 24/7 commercial potential, and bring the venue up to modern European standards.'
@@ -267,8 +267,27 @@ const arenaText = (lang: string) => {
     ],
     rendersTitle: isEN ? 'Renderings' : 'Rendering',
     rendersDesc: isEN
-      ? 'Visual renderings of the renovated arena will be added as the design progresses.'
-      : 'I rendering visivi dell\'arena ristrutturata saranno aggiunti man mano che il progetto avanza.',
+      ? 'A preview of the renovated Enerxenia Arena — more renderings will be added as the design evolves.'
+      : "Un'anteprima dell'Enerxenia Arena ristrutturata — altri rendering verranno aggiunti man mano che il progetto evolve.",
+    renders: isEN ? [
+      { src: '/arena/renderings/tribuna_ovest.png', caption: 'Tribuna Ovest — Store & Bar Entrance' },
+      { src: '/arena/renderings/bar.png', caption: 'Premium Bar — 24/7 Operation' },
+      { src: '/arena/renderings/terrace.png', caption: 'Outdoor Terrace — Lounge & Events' },
+      { src: '/arena/renderings/store_exterior.png', caption: 'Official Store — Street View' },
+      { src: '/arena/renderings/seating.jpg', caption: 'New VIP Seating — Red & Black' },
+      { src: '/arena/renderings/vip_lounge_1.png', caption: 'VIP Lounge — Premium Hospitality' },
+      { src: '/arena/renderings/vip_lounge_2.png', caption: 'VIP Lounge — Catering Area' },
+      { src: '/arena/renderings/vip_entrance.png', caption: 'VIP Lounge — Reception Entrance' },
+    ] : [
+      { src: '/arena/renderings/tribuna_ovest.png', caption: 'Tribuna Ovest — Ingresso Store & Bar' },
+      { src: '/arena/renderings/bar.png', caption: 'Bar Premium — Operativo 24/7' },
+      { src: '/arena/renderings/terrace.png', caption: 'Terrazza Esterna — Lounge & Eventi' },
+      { src: '/arena/renderings/store_exterior.png', caption: 'Official Store — Vista Esterna' },
+      { src: '/arena/renderings/seating.jpg', caption: 'Nuove Sedute VIP — Rosso & Nero' },
+      { src: '/arena/renderings/vip_lounge_1.png', caption: 'VIP Lounge — Ospitalità Premium' },
+      { src: '/arena/renderings/vip_lounge_2.png', caption: 'VIP Lounge — Area Catering' },
+      { src: '/arena/renderings/vip_entrance.png', caption: 'VIP Lounge — Ingresso Reception' },
+    ],
     contactTitle: isEN ? 'Contact' : 'Contatti',
     contactDesc: isEN
       ? 'For inquiries about the arena renovation project, please reach out to us.'
@@ -288,6 +307,7 @@ const ArenaDetailPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { language, t } = useLanguage();
   const tx = arenaText(language);
   const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set());
+  const [arenaRenderIdx, setArenaRenderIdx] = useState(0);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -468,20 +488,49 @@ const ArenaDetailPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         </section>
 
-        <section className="py-20 md:py-28 bg-gray-50">
+        <section id="arena-renderings" className="py-20 md:py-28 bg-gray-50">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center max-w-3xl mx-auto mb-14">
               <h2 id="rend-title" className={`text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 ${fadeClass('rend-title')}`}>{tx.rendersTitle}</h2>
               <p id="rend-desc" className={`text-base text-gray-600 ${fadeClass('rend-desc')}`}>{tx.rendersDesc}</p>
             </div>
-            <div id="rend-placeholder" className={`max-w-2xl mx-auto rounded-xl border-2 border-dashed border-gray-200 bg-white p-12 text-center ${fadeClass('rend-placeholder')}`}>
-              <Clock size={40} className="mx-auto text-gray-300 mb-4" />
-              <h3 className="text-base font-bold text-gray-400 mb-2">{language === 'en' ? 'Coming Soon' : 'In Arrivo'}</h3>
-              <p className="text-sm text-gray-400 max-w-md mx-auto">
-                {language === 'en'
-                  ? 'Visual renderings of the renovated Enerxenia Arena will be added here as the design evolves.'
-                  : "I rendering visivi dell'Enerxenia Arena ristrutturata saranno aggiunti qui man mano che il design evolve."}
-              </p>
+            <div id="rend-carousel" className={`max-w-4xl mx-auto ${fadeClass('rend-carousel')}`}>
+              <div className="relative rounded-xl overflow-hidden bg-gray-900 shadow-2xl">
+                <img
+                  src={tx.renders[arenaRenderIdx].src}
+                  alt={tx.renders[arenaRenderIdx].caption}
+                  className="w-full h-[300px] sm:h-[420px] md:h-[500px] object-cover transition-opacity duration-500"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <p className="text-white font-semibold text-sm md:text-base">{tx.renders[arenaRenderIdx].caption}</p>
+                  <p className="text-white/50 text-xs mt-1">{arenaRenderIdx + 1} / {tx.renders.length}</p>
+                </div>
+                <button
+                  onClick={() => setArenaRenderIdx(i => (i - 1 + tx.renders.length) % tx.renders.length)}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
+                >
+                  <ChevronLeft size={22} />
+                </button>
+                <button
+                  onClick={() => setArenaRenderIdx(i => (i + 1) % tx.renders.length)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
+                >
+                  <ChevronRight size={22} />
+                </button>
+              </div>
+              <div className="flex gap-2 mt-4 justify-center flex-wrap">
+                {tx.renders.map((r: any, i: number) => (
+                  <button
+                    key={i}
+                    onClick={() => setArenaRenderIdx(i)}
+                    className={`rounded-lg overflow-hidden border-2 transition-all duration-200 ${i === arenaRenderIdx ? 'border-blue-500 shadow-lg scale-105' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                  >
+                    <img src={r.src} alt={r.caption} className="w-16 h-11 sm:w-20 sm:h-14 object-cover" loading="lazy" />
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </section>
