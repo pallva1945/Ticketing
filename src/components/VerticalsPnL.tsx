@@ -125,7 +125,7 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding, onH
   const laborProrated = Math.round(511145 * 6 / 12) + dynProfServices;
   const sharedSga = laborProrated + dynTeamOps + dynMarketing + dynOffice + dynUtilities + dynFinancial + dynContingencies;
 
-  const vbSales = vbPnl ? Math.round(vbPnl.revenue.reduce((s, l) => s + l.total, 0)) : 386020;
+  const vbSales = vbPnl ? Math.round(vbPnl.revenueSections.reduce((s, sec) => s + sec.total, 0)) : 386020;
   const vbCos = vbPnl ? Math.round(vbPnl.cos.reduce((s, l) => s + l.total, 0)) : 260635;
   const vbSga = vbPnl ? Math.round(vbPnl.sga.reduce((s, l) => s + l.total, 0)) : VB_SGA_DEFAULT;
   const TOTAL_SGA = sharedSga + vbSga;

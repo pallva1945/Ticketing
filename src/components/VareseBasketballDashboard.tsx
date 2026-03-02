@@ -65,10 +65,20 @@ export interface VbPnlLine {
   label: string;
   values: number[];
   total: number;
+  section?: string;
+}
+
+export interface VbRevenueSection {
+  key: string;
+  label: string;
+  values: number[];
+  total: number;
+  lines: VbPnlLine[];
 }
 
 export interface VbPnlData {
   revenue: VbPnlLine[];
+  revenueSections: VbRevenueSection[];
   cos: VbPnlLine[];
   sga: VbPnlLine[];
   monthCount: number;
@@ -100,6 +110,7 @@ export function parseVbPnlSheetData(rows: string[][]): VbPnlData | null {
   const sga: VbPnlLine[] = [];
 
   let currentSection: 'revenue' | 'cos' | 'sga' | null = null;
+  let currentRevenueCategory: string | null = null;
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
@@ -110,11 +121,29 @@ export function parseVbPnlSheetData(rows: string[][]): VbPnlData | null {
 
     if (SECTION_ALIASES[lowerLabel]) {
       currentSection = SECTION_ALIASES[lowerLabel] as any;
+      currentRevenueCategory = null;
       continue;
     }
 
     if (['total', 'totale', 'gross profit', 'ebitda', 'net income', 'subtotal'].some(skip => lowerLabel.startsWith(skip))) continue;
     if (!currentSection) continue;
+
+    if (currentSection === 'revenue' && REVENUE_LINE_ALIASES[lowerLabel]) {
+      const values = new Array(12).fill(0);
+      let hasValue = false;
+      for (const [colStr, monthIdx] of Object.entries(monthIndices)) {
+        const col = parseInt(colStr);
+        const val = parseEuro(row[col] || '');
+        values[monthIdx] = val;
+        if (val !== 0) hasValue = true;
+      }
+      currentRevenueCategory = REVENUE_LINE_ALIASES[lowerLabel];
+      if (hasValue) {
+        const total = values.reduce((s: number, v: number) => s + v, 0);
+        revenue.push({ key: lowerLabel.replace(/\s+/g, '_'), label, values, total, section: currentRevenueCategory });
+      }
+      continue;
+    }
 
     const values = new Array(12).fill(0);
     let hasValue = false;
@@ -130,8 +159,8 @@ export function parseVbPnlSheetData(rows: string[][]): VbPnlData | null {
     const total = values.reduce((s: number, v: number) => s + v, 0);
 
     if (currentSection === 'revenue') {
-      const key = REVENUE_LINE_ALIASES[lowerLabel] || lowerLabel.replace(/\s+/g, '_');
-      revenue.push({ key, label, values, total });
+      const key = lowerLabel.replace(/\s+/g, '_');
+      revenue.push({ key, label, values, total, section: currentRevenueCategory || undefined });
     } else if (currentSection === 'cos') {
       const key = COS_LINE_ALIASES[lowerLabel] || `cos_${lowerLabel.replace(/\s+/g, '_')}`;
       cos.push({ key, label, values, total });
@@ -143,7 +172,19 @@ export function parseVbPnlSheetData(rows: string[][]): VbPnlData | null {
 
   if (revenue.length === 0 && cos.length === 0 && sga.length === 0) return null;
 
-  return { revenue, cos, sga, monthCount };
+  const sectionOrder = ['sponsorship', 'bops', 'gameday', 'ebp'];
+  const sectionLabels: Record<string, string> = { sponsorship: 'Sponsorship', bops: 'BOps', gameday: 'GameDay', ebp: 'EBP' };
+  const revenueSections: VbRevenueSection[] = [];
+  for (const sKey of sectionOrder) {
+    const sectionLines = revenue.filter(l => l.section === sKey);
+    if (sectionLines.length === 0) continue;
+    const aggValues = new Array(12).fill(0);
+    sectionLines.forEach(l => l.values.forEach((v, i) => aggValues[i] += v));
+    const aggTotal = aggValues.reduce((s, v) => s + v, 0);
+    revenueSections.push({ key: sKey, label: sectionLabels[sKey] || sKey, values: aggValues, total: aggTotal, lines: sectionLines });
+  }
+
+  return { revenue, revenueSections, cos, sga, monthCount };
 }
 
 const COLORS = {
@@ -252,18 +293,11 @@ export const VareseBasketballDashboard: React.FC = () => {
     setTimeout(() => setSyncMessage(''), 4000);
   };
 
-  const totalRevenue = pnlData ? pnlData.revenue.reduce((s, l) => s + l.total, 0) : 0;
+  const totalRevenue = pnlData ? pnlData.revenueSections.reduce((s, sec) => s + sec.total, 0) : 0;
   const monthCount = pnlData?.monthCount || 7;
   const periodLabel = monthCount <= 6 ? 'Jul–Dec 2025' : `Jul 2025–${SEASON_MONTHS[monthCount - 1]} 2026`;
 
-  const getLineByKey = (key: string) => pnlData?.revenue.find(l => l.key === key);
-
-  const monthlyChartForLine = (line: VbPnlLine) => {
-    return SEASON_MONTHS.slice(0, monthCount).map((m, i) => ({
-      month: m,
-      value: line.values[i],
-    }));
-  };
+  const getSectionByKey = (key: string) => pnlData?.revenueSections.find(s => s.key === key);
 
   if (loading) {
     return (
@@ -298,16 +332,16 @@ export const VareseBasketballDashboard: React.FC = () => {
   );
 
   const renderSectionDetail = (key: string) => {
-    const line = getLineByKey(key);
-    if (!line) return (
+    const section = getSectionByKey(key);
+    if (!section) return (
       <div className={`rounded-xl border p-12 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
         <p className="text-gray-400">{t('No data available for this section. Sync the Google Sheet to load data.')}</p>
       </div>
     );
     const Icon = SECTION_ICONS[key] || Flag;
     const colors = SECTION_COLORS[key] || SECTION_COLORS.sponsorship;
-    const chartData = monthlyChartForLine(line);
-    const pctOfTotal = totalRevenue > 0 ? (line.total / totalRevenue * 100).toFixed(1) : '0';
+    const chartData = SEASON_MONTHS.slice(0, monthCount).map((m, i) => ({ month: m, value: section.values[i] }));
+    const pctOfTotal = totalRevenue > 0 ? (section.total / totalRevenue * 100).toFixed(1) : '0';
 
     return (
       <>
@@ -319,7 +353,7 @@ export const VareseBasketballDashboard: React.FC = () => {
             <Icon size={22} className={colors.text} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{line.label}</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{section.label}</h2>
             <p className="text-xs text-gray-500 dark:text-gray-400">{t('Revenue')} · {periodLabel}</p>
           </div>
         </div>
@@ -327,7 +361,7 @@ export const VareseBasketballDashboard: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">{t('YTD Revenue')}</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(line.total)}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(section.total)}</p>
             <p className="text-xs text-gray-400 mt-1">{periodLabel}</p>
           </div>
           <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
@@ -337,7 +371,7 @@ export const VareseBasketballDashboard: React.FC = () => {
           </div>
           <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">{t('Monthly Avg')}</p>
-            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(Math.round(line.total / Math.max(1, monthCount)))}</p>
+            <p className="text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(Math.round(section.total / Math.max(1, monthCount)))}</p>
             <p className="text-xs text-gray-400 mt-1">{monthCount} {t('months')}</p>
           </div>
         </div>
@@ -358,23 +392,34 @@ export const VareseBasketballDashboard: React.FC = () => {
         </div>
 
         <div className={`p-5 rounded-xl border shadow-sm ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
-          <p className="text-sm font-bold text-gray-900 dark:text-white mb-3">{t('Monthly Detail')}</p>
+          <p className="text-sm font-bold text-gray-900 dark:text-white mb-3">{t('Detail by Line Item')}</p>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="text-left py-2 px-2 font-semibold text-gray-500">{t('Item')}</th>
                   {SEASON_MONTHS.slice(0, monthCount).map(m => (
-                    <th key={m} className="text-center py-2 px-3 font-semibold text-gray-500">{m}</th>
+                    <th key={m} className="text-right py-2 px-2 font-semibold text-gray-500">{m}</th>
                   ))}
-                  <th className="text-center py-2 px-3 font-bold text-gray-700 dark:text-gray-300">{t('Total')}</th>
+                  <th className="text-right py-2 px-2 font-bold text-gray-700 dark:text-gray-300">{t('Total')}</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  {line.values.slice(0, monthCount).map((v, i) => (
-                    <td key={i} className="text-center py-2 px-3 text-gray-700 dark:text-gray-300 font-medium">{v > 0 ? formatCurrency(v) : '-'}</td>
+                {section.lines.map(line => (
+                  <tr key={line.key} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <td className="py-2 px-2 font-medium text-gray-900 dark:text-white">{line.label}</td>
+                    {line.values.slice(0, monthCount).map((v, i) => (
+                      <td key={i} className="text-right py-2 px-2 text-gray-600 dark:text-gray-400">{v > 0 ? formatCurrency(v) : '-'}</td>
+                    ))}
+                    <td className="text-right py-2 px-2 font-bold text-gray-900 dark:text-white">{formatCurrency(line.total)}</td>
+                  </tr>
+                ))}
+                <tr className="border-t-2 border-gray-300 dark:border-gray-600 font-bold">
+                  <td className="py-2 px-2 text-gray-900 dark:text-white">{t('Total')}</td>
+                  {section.values.slice(0, monthCount).map((v, i) => (
+                    <td key={i} className="text-right py-2 px-2 text-gray-900 dark:text-white">{v > 0 ? formatCurrency(v) : '-'}</td>
                   ))}
-                  <td className="text-center py-2 px-3 font-bold text-teal-600">{formatCurrency(line.total)}</td>
+                  <td className="text-right py-2 px-2 text-teal-600">{formatCurrency(section.total)}</td>
                 </tr>
               </tbody>
             </table>
@@ -456,30 +501,28 @@ export const VareseBasketballDashboard: React.FC = () => {
               </div>
               <div>
                 <p className="text-[10px] font-bold text-teal-300 uppercase tracking-wider mb-1">{t('Categories')}</p>
-                <p className="text-3xl sm:text-4xl font-bold text-teal-200">{pnlData.revenue.length}</p>
+                <p className="text-3xl sm:text-4xl font-bold text-teal-200">{pnlData.revenueSections.length}</p>
                 <p className="text-xs text-teal-300/70 mt-1">{t('revenue streams')}</p>
               </div>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {(['sponsorship', 'bops', 'gameday', 'ebp'] as const).map(key => {
-              const line = getLineByKey(key);
-              const Icon = SECTION_ICONS[key] || Flag;
-              const colors = SECTION_COLORS[key] || SECTION_COLORS.sponsorship;
-              const amount = line?.total || 0;
-              const pct = totalRevenue > 0 ? (amount / totalRevenue * 100) : 0;
+            {pnlData.revenueSections.map(section => {
+              const Icon = SECTION_ICONS[section.key] || Flag;
+              const colors = SECTION_COLORS[section.key] || SECTION_COLORS.sponsorship;
+              const pct = totalRevenue > 0 ? (section.total / totalRevenue * 100) : 0;
 
               return (
-                <button key={key} onClick={() => line && setActiveView(key)}
-                  className={`text-left p-5 rounded-xl border shadow-sm transition-all hover:shadow-md ${line ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'} ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
+                <button key={section.key} onClick={() => setActiveView(section.key as ActiveView)}
+                  className={`text-left p-5 rounded-xl border shadow-sm transition-all hover:shadow-md cursor-pointer ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-100'}`}>
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{key === 'bops' ? t('BOps') : key === 'ebp' ? t('EBP') : key === 'gameday' ? t('GameDay') : t('Sponsorship')}</p>
+                    <p className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{section.label}</p>
                     <div className={`p-2 rounded-lg ${colors.bg}`}>
                       <Icon size={16} className={colors.text} />
                     </div>
                   </div>
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(amount)}</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">{formatCurrency(section.total)}</p>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{pct.toFixed(1)}% {t('of total')}</p>
                   <div className="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full mt-3 overflow-hidden">
                     <div className={`h-full rounded-full ${colors.bar}`} style={{ width: `${Math.min(100, pct)}%` }} />
@@ -495,15 +538,15 @@ export const VareseBasketballDashboard: React.FC = () => {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={SEASON_MONTHS.slice(0, monthCount).map((m, i) => {
                   const entry: any = { month: m };
-                  pnlData.revenue.forEach(line => { entry[line.label] = line.values[i]; });
+                  pnlData.revenueSections.forEach(sec => { entry[sec.label] = sec.values[i]; });
                   return entry;
                 })}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                   <XAxis dataKey="month" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                   <YAxis tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={v => `€${Math.round(v/1000)}K`} />
                   <Tooltip formatter={(val: number) => formatCurrency(val)} contentStyle={{ backgroundColor: isDark ? '#1f2937' : '#fff', border: 'none', borderRadius: '8px', fontSize: '11px' }} />
-                  {pnlData.revenue.map(line => (
-                    <Bar key={line.key} dataKey={line.label} stackId="rev" fill={getColor(line.key)} radius={[0, 0, 0, 0]} />
+                  {pnlData.revenueSections.map(sec => (
+                    <Bar key={sec.key} dataKey={sec.label} stackId="rev" fill={getColor(sec.key)} radius={[0, 0, 0, 0]} />
                   ))}
                 </BarChart>
               </ResponsiveContainer>
