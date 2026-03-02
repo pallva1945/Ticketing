@@ -36,6 +36,15 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 
+app.use((req, res, next) => {
+  const host = req.hostname || req.headers.host || '';
+  if (process.env.NODE_ENV !== 'development' && host.includes('replit.app')) {
+    const target = `https://pallva.it${req.originalUrl}`;
+    return res.redirect(301, target);
+  }
+  next();
+});
+
 app.use(compression());
 app.use(cors());
 app.use(cookieParser());
