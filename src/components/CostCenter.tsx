@@ -21,7 +21,7 @@ export interface CostLine {
 
 export type CostData = Record<string, CostLine[]>;
 
-type CostModule = 'overview' | 'gameday' | 'sponsorship' | 'bops' | 'venue_ops' | 'merchandising' | 'ebp' | 'varese_basketball' | 'sga_labor' | 'sga_other';
+type CostModule = 'overview' | 'gameday' | 'sponsorship' | 'bops' | 'venue_ops' | 'merchandising' | 'ebp' | 'varese_basketball' | 'sga_labor' | 'sga_other' | 'vb_sga';
 
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 
@@ -161,6 +161,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
   const SGA_MODULES: { id: CostModule; label: string; icon: any }[] = [
     { id: 'sga_labor', label: t('Labor'), icon: HardHat },
     { id: 'sga_other', label: t('General & Administrative'), icon: Building2 },
+    { id: 'vb_sga', label: t('Varese Basketball'), icon: GraduationCap },
   ];
 
   const MODULES: { id: CostModule; label: string; icon: any }[] = [
@@ -448,6 +449,31 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
                     </div>
                   </div>
                 </button>
+                {vbPnl && vbPnl.sgaSections && vbPnl.sgaSections.length > 0 && (
+                  <button
+                    onClick={() => setActiveModule('vb_sga')}
+                    className={`text-left p-5 rounded-xl border transition-all hover:shadow-lg cursor-pointer ${
+                      isDark ? 'bg-gray-900 border-gray-800 hover:border-gray-700' : 'bg-white border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-9 h-9 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center">
+                        <GraduationCap size={18} className="text-orange-600" />
+                      </div>
+                      <h3 className="font-semibold text-sm text-gray-800 dark:text-white">{t('Varese Basketball')}</h3>
+                    </div>
+                    <div className="mt-2 space-y-2">
+                      <div className="flex items-baseline gap-2">
+                        <div className="text-lg font-bold text-gray-900 dark:text-white">{formatCurrency(Math.round(vbPnl.sgaSections.reduce((s, sec) => s + sec.total, 0)))}</div>
+                      </div>
+                      <div className="text-[10px] text-gray-400 dark:text-gray-500">{vbPnl.sgaSections.map(s => s.label).join(' · ')}</div>
+                      <div className="text-[10px] text-gray-400 dark:text-gray-500">{period}</div>
+                      <div className="mt-1 px-1.5 py-0.5 border rounded text-[9px] inline-block bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400">
+                        {t('Google Sheet')}
+                      </div>
+                    </div>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -500,6 +526,54 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
               <p className="text-xs text-gray-500">{t('Total Cost of Sales')} — {period}</p>
             </div>
             {vbPnl.cosSections.map(section => (
+              <div key={section.key} className={`rounded-xl border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+                <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">{section.label}</h3>
+                  <span className="text-sm font-bold text-red-600">{formatCurrency(section.total)}</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-200 dark:border-gray-700">
+                        <th className="text-left py-2 px-4 font-semibold text-gray-500">{t('Item')}</th>
+                        {['Jul','Aug','Sep','Oct','Nov','Dec','Jan'].slice(0, vbPnl.monthCount).map(m => (
+                          <th key={m} className="text-right py-2 px-2 font-semibold text-gray-500">{m}</th>
+                        ))}
+                        <th className="text-right py-2 px-4 font-bold text-gray-700 dark:text-gray-300">{t('Total')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {section.lines.map(line => (
+                        <tr key={line.key} className="border-b border-gray-100 dark:border-gray-800">
+                          <td className="py-2 px-4 font-medium text-gray-900 dark:text-white">{line.label}</td>
+                          {line.values.slice(0, vbPnl.monthCount).map((v, i) => (
+                            <td key={i} className="text-right py-2 px-2 text-gray-600 dark:text-gray-400">{v > 0 ? formatCurrency(v) : '-'}</td>
+                          ))}
+                          <td className="text-right py-2 px-4 font-bold text-red-600">{formatCurrency(line.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : activeModule === 'vb_sga' && vbPnl && vbPnl.sgaSections && vbPnl.sgaSections.length > 0 ? (
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-red-100 dark:bg-red-900/20 rounded-xl">
+                <ActiveIcon className="text-red-600" size={22} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('Varese Basketball')} — SG&A</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('VB P&L Sheet')} · {period}</p>
+              </div>
+            </div>
+            <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+              <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{formatCurrency(Math.round(vbPnl.sgaSections.reduce((s, sec) => s + sec.total, 0)))}</div>
+              <p className="text-xs text-gray-500">{t('Total SG&A')} — {period}</p>
+            </div>
+            {vbPnl.sgaSections.map(section => (
               <div key={section.key} className={`rounded-xl border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
                 <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
                   <h3 className="text-sm font-bold text-gray-900 dark:text-white">{section.label}</h3>

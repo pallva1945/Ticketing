@@ -45,13 +45,13 @@ const REVENUE_LINE_ALIASES: Record<string, string> = {
   'ebp': 'ebp', 'elite basketball program': 'ebp', 'elite basketball': 'ebp',
 };
 
-const SGA_LINE_ALIASES: Record<string, string> = {
+const SGA_CATEGORY_ALIASES: Record<string, string> = {
   'team ops': 'team_ops', 'team operations': 'team_ops', 'team oops': 'team_ops',
-  'labor': 'labor', 'labour': 'labor', 'lavoro': 'labor', 'salaries': 'labor', 'stipendi': 'labor',
+  'labor': 'labor_ps', 'labour': 'labor_ps', 'lavoro': 'labor_ps', 'salaries': 'labor_ps', 'stipendi': 'labor_ps',
+  'professional services': 'labor_ps', 'prof services': 'labor_ps', 'consulenze': 'labor_ps',
   'marketing': 'marketing', 'mktg': 'marketing',
   'office': 'office', 'ufficio': 'office',
-  'utilities': 'utilities', 'utenze': 'utilities', 'maintenance': 'utilities',
-  'professional services': 'professional_services', 'prof services': 'professional_services', 'consulenze': 'professional_services',
+  'utilities': 'utilities_maint', 'utenze': 'utilities_maint', 'maintenance': 'utilities_maint',
   'financial': 'financial', 'finance': 'financial', 'finanziario': 'financial',
 };
 
@@ -77,6 +77,7 @@ export interface VbPnlData {
   cos: VbPnlLine[];
   cosSections: VbPnlSection[];
   sga: VbPnlLine[];
+  sgaSections: VbPnlSection[];
   monthCount: number;
 }
 
@@ -163,6 +164,23 @@ export function parseVbPnlSheetData(rows: string[][]): VbPnlData | null {
       continue;
     }
 
+    if (currentSection === 'sga' && SGA_CATEGORY_ALIASES[lowerLabel]) {
+      const values = new Array(12).fill(0);
+      let hasValue = false;
+      for (const [colStr, monthIdx] of Object.entries(monthIndices)) {
+        const col = parseInt(colStr);
+        const val = parseEuro(row[col] || '');
+        values[monthIdx] = val;
+        if (val !== 0) hasValue = true;
+      }
+      currentSubCategory = SGA_CATEGORY_ALIASES[lowerLabel];
+      if (hasValue) {
+        const total = values.reduce((s: number, v: number) => s + v, 0);
+        sga.push({ key: lowerLabel.replace(/\s+/g, '_'), label, values, total, section: currentSubCategory });
+      }
+      continue;
+    }
+
     const values = new Array(12).fill(0);
     let hasValue = false;
     for (const [colStr, monthIdx] of Object.entries(monthIndices)) {
@@ -183,8 +201,8 @@ export function parseVbPnlSheetData(rows: string[][]): VbPnlData | null {
       const key = `cos_${lowerLabel.replace(/\s+/g, '_')}`;
       cos.push({ key, label, values, total, section: currentSubCategory || undefined });
     } else if (currentSection === 'sga') {
-      const key = SGA_LINE_ALIASES[lowerLabel] || `sga_${lowerLabel.replace(/\s+/g, '_')}`;
-      sga.push({ key, label, values, total });
+      const key = `sga_${lowerLabel.replace(/\s+/g, '_')}`;
+      sga.push({ key, label, values, total, section: currentSubCategory || undefined });
     }
   }
 
@@ -209,7 +227,10 @@ export function parseVbPnlSheetData(rows: string[][]): VbPnlData | null {
   const cosSections = buildSections(cos, ['bops', 'ebp'],
     { bops: 'BOps', ebp: 'EBP' });
 
-  return { revenue, revenueSections, cos, cosSections, sga, monthCount };
+  const sgaSections = buildSections(sga, ['team_ops', 'labor_ps', 'marketing', 'office', 'utilities_maint', 'financial'],
+    { team_ops: 'Team Operations', labor_ps: 'Labor & Professional Services', marketing: 'Marketing', office: 'Office', utilities_maint: 'Utilities & Maintenance', financial: 'Financial' });
+
+  return { revenue, revenueSections, cos, cosSections, sga, sgaSections, monthCount };
 }
 
 const COLORS = {
@@ -221,9 +242,11 @@ const COLORS = {
   cos_ebp: '#f97316',
   team_ops: '#ec4899',
   labor: '#8b5cf6',
+  labor_ps: '#8b5cf6',
   marketing: '#f59e0b',
   office: '#06b6d4',
   utilities: '#84cc16',
+  utilities_maint: '#84cc16',
   professional_services: '#64748b',
   financial: '#d946ef',
 };
