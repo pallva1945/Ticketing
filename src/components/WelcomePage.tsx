@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Sun, Moon } from 'lucide-react';
+import { ArrowRight, Sun, Moon, Construction } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
@@ -83,21 +83,21 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onEnterPV, onEnterVB }
             </p>
           </div>
 
-          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-10 max-w-2xl transition-all duration-1000 ease-out ${phase >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-8 max-w-4xl transition-all duration-1000 ease-out ${phase >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             <button
               onClick={onEnterPV}
-              className={`group relative flex flex-col items-center text-center px-10 py-10 sm:px-12 sm:py-14 rounded-2xl border transition-all duration-500 hover:shadow-2xl ${
+              className={`group relative flex flex-col items-center text-center px-8 py-8 sm:px-10 sm:py-12 rounded-2xl border transition-all duration-500 hover:shadow-2xl ${
                 isDark
                   ? 'bg-gray-900/50 border-gray-800 hover:border-red-800/60 hover:shadow-red-950/10'
                   : 'bg-white border-gray-200 hover:border-red-300 hover:shadow-red-100/30'
               }`}
             >
               <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-red-600 to-red-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-2xl`}></div>
-              <img src={PV_LOGO_URL} alt="Pallacanestro Varese" className="w-20 h-20 sm:w-24 sm:h-24 object-contain mb-6 group-hover:scale-105 transition-transform duration-500" />
-              <h2 className={`text-lg sm:text-xl font-semibold tracking-[0.05em] mb-2 whitespace-nowrap ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <img src={PV_LOGO_URL} alt="Pallacanestro Varese" className="w-16 h-16 sm:w-20 sm:h-20 object-contain mb-5 group-hover:scale-105 transition-transform duration-500" />
+              <h2 className={`text-base sm:text-lg font-semibold tracking-[0.05em] mb-2 whitespace-nowrap ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 Pallacanestro Varese
               </h2>
-              <p className={`text-xs sm:text-sm mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              <p className={`text-xs sm:text-sm mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                 Corp · BOps
               </p>
               <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-red-500' : 'text-red-600'}`}>
@@ -108,18 +108,18 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onEnterPV, onEnterVB }
 
             <button
               onClick={onEnterVB}
-              className={`group relative flex flex-col items-center text-center px-10 py-10 sm:px-12 sm:py-14 rounded-2xl border transition-all duration-500 hover:shadow-2xl ${
+              className={`group relative flex flex-col items-center text-center px-8 py-8 sm:px-10 sm:py-12 rounded-2xl border transition-all duration-500 hover:shadow-2xl ${
                 isDark
                   ? 'bg-gray-900/50 border-gray-800 hover:border-orange-800/60 hover:shadow-orange-950/10'
                   : 'bg-white border-gray-200 hover:border-orange-300 hover:shadow-orange-100/30'
               }`}
             >
               <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-orange-500 to-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-2xl`}></div>
-              <img src={VB_LOGO_URL} alt="Varese Basketball" className="w-20 h-20 sm:w-24 sm:h-24 object-contain mb-6 group-hover:scale-105 transition-transform duration-500" />
-              <h2 className={`text-lg sm:text-xl font-semibold tracking-[0.05em] mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <img src={VB_LOGO_URL} alt="Varese Basketball" className="w-16 h-16 sm:w-20 sm:h-20 object-contain mb-5 group-hover:scale-105 transition-transform duration-500" />
+              <h2 className={`text-base sm:text-lg font-semibold tracking-[0.05em] mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 Varese Basketball
               </h2>
-              <p className={`text-xs sm:text-sm mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              <p className={`text-xs sm:text-sm mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                 {t('Youth Development')}
               </p>
               <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-orange-500' : 'text-orange-600'}`}>
@@ -127,6 +127,27 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onEnterPV, onEnterVB }
                 <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </div>
             </button>
+
+            <div
+              className={`group relative flex flex-col items-center text-center px-8 py-8 sm:px-10 sm:py-12 rounded-2xl border transition-all duration-500 ${
+                isDark
+                  ? 'bg-gray-900/30 border-gray-800/50 opacity-60'
+                  : 'bg-white/60 border-gray-200/60 opacity-60'
+              }`}
+            >
+              <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mb-5 ${isDark ? 'bg-gray-800/50' : 'bg-gray-100'}`}>
+                <Construction size={28} className={`${isDark ? 'text-gray-500' : 'text-gray-400'} sm:w-[32px] sm:h-[32px]`} />
+              </div>
+              <h2 className={`text-base sm:text-lg font-semibold tracking-[0.05em] mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {t('Our Projects')}
+              </h2>
+              <p className={`text-xs sm:text-sm mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                {t('Coming Soon')}
+              </p>
+              <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>
+                {t('Coming Soon')}
+              </div>
+            </div>
           </div>
         </div>
 

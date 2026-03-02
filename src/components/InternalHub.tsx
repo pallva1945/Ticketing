@@ -146,17 +146,6 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       actionIcon: ExternalLink,
       external: true,
     },
-    {
-      id: 'projects',
-      label: t('Our Projects'),
-      desc: t('Coming Soon'),
-      icon: Construction,
-      color: 'orange',
-      action: undefined,
-      actionLabel: t('Coming Soon'),
-      actionIcon: undefined,
-      external: false,
-    },
   ];
 
   const colorMap: Record<string, { bg: string; hoverBorder: string; hoverShadow: string; iconBg: string; text: string; topBar: string }> = {
@@ -183,14 +172,6 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       iconBg: isDark ? 'bg-emerald-900/20' : 'bg-emerald-50',
       text: isDark ? 'text-emerald-500' : 'text-emerald-600',
       topBar: 'from-emerald-600 to-emerald-400',
-    },
-    orange: {
-      bg: isDark ? 'bg-gray-900/50' : 'bg-white',
-      hoverBorder: isDark ? 'hover:border-orange-800/60' : 'hover:border-orange-300',
-      hoverShadow: isDark ? 'hover:shadow-orange-950/10' : 'hover:shadow-orange-100/30',
-      iconBg: isDark ? 'bg-orange-900/20' : 'bg-orange-50',
-      text: isDark ? 'text-orange-500' : 'text-orange-600',
-      topBar: 'from-orange-500 to-orange-400',
     },
   };
 
@@ -256,7 +237,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             </p>
           </div>
 
-          <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-5 w-full transition-all duration-1000 ease-out ${phase >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 w-full max-w-3xl transition-all duration-1000 ease-out ${phase >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
             {cards.map((card) => {
               const colors = colorMap[card.color];
               const Icon = card.icon;
