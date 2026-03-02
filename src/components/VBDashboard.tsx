@@ -6864,6 +6864,14 @@ export const VBDashboard: React.FC<{ onBack: () => void; onHome?: () => void }> 
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [selectedPlayer, setSelectedPlayer] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
+  const [lastFetched, setLastFetched] = useState<Date | null>(null);
+  const [sessionCount, setSessionCount] = useState(0);
+  const [, forceUpdate] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => forceUpdate(n => n + 1), 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchData = async (refresh = false) => {
     try {
@@ -6882,6 +6890,7 @@ export const VBDashboard: React.FC<{ onBack: () => void; onHome?: () => void }> 
       if (json.success) {
         setSessions(json.data);
         setPlayers(json.players);
+        setSessionCount(json.data?.length || 0);
         if (json.players.length > 0 && !selectedPlayer) setSelectedPlayer(json.players[0]);
         if (json.playerAttributes) {
           setPlayerAttrs(json.playerAttributes);
@@ -6895,6 +6904,7 @@ export const VBDashboard: React.FC<{ onBack: () => void; onHome?: () => void }> 
       if (prospectsJson.success) {
         setProspects(prospectsJson.data);
       }
+      setLastFetched(new Date());
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -7017,13 +7027,6 @@ export const VBDashboard: React.FC<{ onBack: () => void; onHome?: () => void }> 
                 </div>
               </div>
             </div>
-            <button
-              onClick={() => fetchData(true)}
-              disabled={refreshing}
-              className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}
-            >
-              <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
-            </button>
             {onHome && (
               <button
                 onClick={onHome}
