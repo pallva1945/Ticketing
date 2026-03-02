@@ -283,6 +283,9 @@ const arenaText = (lang: string) => {
       { src: '/arena/renderings/piazza_overview.jpg', caption: 'Arena Piazza — Bar, Store & Fan Area' },
       { src: '/arena/renderings/parking_fanzone.png', caption: 'Parking & Fan Zone — Multi-Level Facility' },
       { src: '/arena/renderings/tourism_bar.png', caption: 'PV Tourism Center & Bar — Street View' },
+      { src: '/arena/renderings/arena_aerial.png', caption: 'Arena Aerial — Full Exterior View' },
+      { src: '/arena/renderings/museo_facade.png', caption: 'Basket Museo — Museum Facade' },
+      { src: 'youtube:bNir570yS0U', caption: 'Arena Flythrough — 3D Video Tour', video: true },
     ] : [
       { src: '/arena/renderings/tribuna_ovest.png', caption: 'Tribuna Ovest — Ingresso Store & Bar' },
       { src: '/arena/renderings/bar.png', caption: 'Bar Premium — Operativo 24/7' },
@@ -295,6 +298,9 @@ const arenaText = (lang: string) => {
       { src: '/arena/renderings/piazza_overview.jpg', caption: 'Piazza Arena — Bar, Store & Area Fan' },
       { src: '/arena/renderings/parking_fanzone.png', caption: 'Parcheggio & Fan Zone — Struttura Multi-Livello' },
       { src: '/arena/renderings/tourism_bar.png', caption: 'Centro Turismo PV & Bar — Vista Strada' },
+      { src: '/arena/renderings/arena_aerial.png', caption: 'Arena Aerea — Vista Esterna Completa' },
+      { src: '/arena/renderings/museo_facade.png', caption: 'Basket Museo — Facciata Museo' },
+      { src: 'youtube:bNir570yS0U', caption: 'Arena Flythrough — Tour Video 3D', video: true },
     ],
     contactTitle: isEN ? 'Contact' : 'Contatti',
     contactDesc: isEN
@@ -503,42 +509,68 @@ const ArenaDetailPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <p id="rend-desc" className={`text-base text-gray-600 ${fadeClass('rend-desc')}`}>{tx.rendersDesc}</p>
             </div>
             <div id="rend-carousel" className={`max-w-4xl mx-auto ${fadeClass('rend-carousel')}`}>
-              <div className="relative rounded-xl overflow-hidden bg-gray-900 shadow-2xl">
-                <img
-                  src={tx.renders[arenaRenderIdx].src}
-                  alt={tx.renders[arenaRenderIdx].caption}
-                  className="w-full h-[300px] sm:h-[420px] md:h-[500px] object-cover transition-opacity duration-500"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-6">
-                  <p className="text-white font-semibold text-sm md:text-base">{tx.renders[arenaRenderIdx].caption}</p>
-                  <p className="text-white/50 text-xs mt-1">{arenaRenderIdx + 1} / {tx.renders.length}</p>
-                </div>
-                <button
-                  onClick={() => setArenaRenderIdx(i => (i - 1 + tx.renders.length) % tx.renders.length)}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
-                >
-                  <ChevronLeft size={22} />
-                </button>
-                <button
-                  onClick={() => setArenaRenderIdx(i => (i + 1) % tx.renders.length)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors backdrop-blur-sm"
-                >
-                  <ChevronRight size={22} />
-                </button>
-              </div>
-              <div className="flex gap-2 mt-4 justify-center flex-wrap">
-                {tx.renders.map((r: any, i: number) => (
-                  <button
-                    key={i}
-                    onClick={() => setArenaRenderIdx(i)}
-                    className={`rounded-lg overflow-hidden border-2 transition-all duration-200 ${i === arenaRenderIdx ? 'border-blue-500 shadow-lg scale-105' : 'border-transparent opacity-60 hover:opacity-100'}`}
-                  >
-                    <img src={r.src} alt={r.caption} className="w-16 h-11 sm:w-20 sm:h-14 object-cover" loading="lazy" />
-                  </button>
-                ))}
-              </div>
+              {(() => {
+                const cur = tx.renders[arenaRenderIdx] as any;
+                const isVideo = cur.video && cur.src.startsWith('youtube:');
+                const ytId = isVideo ? cur.src.replace('youtube:', '') : '';
+                return (
+                  <>
+                    <div className="relative rounded-xl overflow-hidden bg-gray-900 shadow-2xl">
+                      {isVideo ? (
+                        <div className="w-full h-[300px] sm:h-[420px] md:h-[500px] relative">
+                          <iframe
+                            src={`https://www.youtube-nocookie.com/embed/${ytId}?rel=0&modestbranding=1&showinfo=0&controls=0&disablekb=1&fs=0&iv_load_policy=3&loop=1&playlist=${ytId}&autoplay=1&mute=1`}
+                            className="absolute inset-0 w-full h-full"
+                            allow="autoplay; encrypted-media"
+                            allowFullScreen
+                            style={{ border: 'none' }}
+                          />
+                        </div>
+                      ) : (
+                        <img
+                          src={cur.src}
+                          alt={cur.caption}
+                          className="w-full h-[300px] sm:h-[420px] md:h-[500px] object-cover transition-opacity duration-500"
+                          loading="lazy"
+                        />
+                      )}
+                      {!isVideo && <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />}
+                      <div className={`${isVideo ? '' : 'absolute bottom-0 left-0 right-0'} p-6 ${isVideo ? 'bg-gray-900' : ''}`}>
+                        <p className="text-white font-semibold text-sm md:text-base">{cur.caption}</p>
+                        <p className="text-white/50 text-xs mt-1">{arenaRenderIdx + 1} / {tx.renders.length}</p>
+                      </div>
+                      <button
+                        onClick={() => setArenaRenderIdx(i => (i - 1 + tx.renders.length) % tx.renders.length)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors backdrop-blur-sm z-10"
+                      >
+                        <ChevronLeft size={22} />
+                      </button>
+                      <button
+                        onClick={() => setArenaRenderIdx(i => (i + 1) % tx.renders.length)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/40 hover:bg-black/60 text-white rounded-full p-2 transition-colors backdrop-blur-sm z-10"
+                      >
+                        <ChevronRight size={22} />
+                      </button>
+                    </div>
+                    <div className="flex gap-2 mt-4 justify-center flex-wrap">
+                      {tx.renders.map((r: any, i: number) => {
+                        const isVidThumb = r.video && r.src.startsWith('youtube:');
+                        const thumbSrc = isVidThumb ? `https://img.youtube.com/vi/${r.src.replace('youtube:', '')}/mqdefault.jpg` : r.src;
+                        return (
+                          <button
+                            key={i}
+                            onClick={() => setArenaRenderIdx(i)}
+                            className={`rounded-lg overflow-hidden border-2 transition-all duration-200 relative ${i === arenaRenderIdx ? 'border-blue-500 shadow-lg scale-105' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                          >
+                            <img src={thumbSrc} alt={r.caption} className="w-16 h-11 sm:w-20 sm:h-14 object-cover" loading="lazy" />
+                            {isVidThumb && <div className="absolute inset-0 flex items-center justify-center"><div className="w-5 h-5 bg-white/90 rounded-full flex items-center justify-center"><div className="w-0 h-0 border-l-[6px] border-l-gray-900 border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent ml-0.5" /></div></div>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </section>
