@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Flag, Activity, Landmark, ShoppingBag, Users, GraduationCap, Construction, Sun, Moon, PieChart, TrendingUp, Briefcase, Building2, HardHat, Check, Loader2, Settings, X, FileSpreadsheet } from 'lucide-react';
+import { ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
@@ -511,53 +512,77 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
             </div>
           </div>
         ) : activeModule === 'varese_basketball' && vbPnl && vbPnl.cosSections.length > 0 ? (
-          <div className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-red-100 dark:bg-red-900/20 rounded-xl">
-                <ActiveIcon className="text-red-600" size={22} />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('Varese Basketball')} — {t('Cost of Sales')}</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{t('VB P&L Sheet')} · {period}</p>
-              </div>
-            </div>
-            <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
-              <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{formatCurrency(Math.round(vbPnl.cosSections.reduce((s, sec) => s + sec.total, 0)))}</div>
-              <p className="text-xs text-gray-500">{t('Total Cost of Sales')} — {period}</p>
-            </div>
-            {vbPnl.cosSections.map(section => (
-              <div key={section.key} className={`rounded-xl border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
-                <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">{section.label}</h3>
-                  <span className="text-sm font-bold text-red-600">{formatCurrency(section.total)}</span>
+          (() => {
+            const cosGrand = vbPnl.cosSections.reduce((s, sec) => s + sec.total, 0);
+            const VB_COS_COLORS: Record<string, string> = { bops: '#ef4444', ebp: '#f97316' };
+            const pieData = vbPnl.cosSections.map(sec => ({ name: sec.label, value: Math.round(sec.total) }));
+            const SEASON_MONTHS = ['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];
+            const barData = SEASON_MONTHS.slice(0, vbPnl.monthCount).map((m, idx) => {
+              const point: Record<string, any> = { month: m };
+              vbPnl.cosSections.forEach(sec => { point[sec.label] = Math.round(sec.values[idx]); });
+              return point;
+            });
+            return (
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-red-100 dark:bg-red-900/20 rounded-xl">
+                    <ActiveIcon className="text-red-600" size={22} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('Varese Basketball')} — {t('Cost of Sales')}</h2>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('VB P&L Sheet')} · {period}</p>
+                  </div>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-gray-200 dark:border-gray-700">
-                        <th className="text-left py-2 px-4 font-semibold text-gray-500">{t('Item')}</th>
-                        {['Jul','Aug','Sep','Oct','Nov','Dec','Jan'].slice(0, vbPnl.monthCount).map(m => (
-                          <th key={m} className="text-right py-2 px-2 font-semibold text-gray-500">{m}</th>
-                        ))}
-                        <th className="text-right py-2 px-4 font-bold text-gray-700 dark:text-gray-300">{t('Total')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {section.lines.map(line => (
-                        <tr key={line.key} className="border-b border-gray-100 dark:border-gray-800">
-                          <td className="py-2 px-4 font-medium text-gray-900 dark:text-white">{line.label}</td>
-                          {line.values.slice(0, vbPnl.monthCount).map((v, i) => (
-                            <td key={i} className="text-right py-2 px-2 text-gray-600 dark:text-gray-400">{v > 0 ? formatCurrency(v) : '-'}</td>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+                    <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">{t('Total CoS')}</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(Math.round(cosGrand))}</p>
+                    <p className="text-xs text-gray-400 mt-1">{period}</p>
+                  </div>
+                  {vbPnl.cosSections.map(sec => (
+                    <div key={sec.key} className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+                      <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: VB_COS_COLORS[sec.key] || '#6b7280' }}>{sec.label}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCurrency(Math.round(sec.total))}</p>
+                      <p className="text-xs text-gray-400 mt-1">{cosGrand > 0 ? ((sec.total / cosGrand) * 100).toFixed(1) : '0'}% {t('of total')}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white mb-3">{t('CoS Split')}</p>
+                    <div className="h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RePieChart>
+                          <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value">
+                            {pieData.map((_, i) => <Cell key={i} fill={Object.values(VB_COS_COLORS)[i] || '#6b7280'} />)}
+                          </Pie>
+                          <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                          <Legend wrapperStyle={{ fontSize: '11px' }} />
+                        </RePieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                  <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white mb-3">{t('Monthly Trend')}</p>
+                    <div className="h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={barData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                          <XAxis dataKey="month" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                          <YAxis tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => `€${(v/1000).toFixed(0)}k`} />
+                          <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                          {vbPnl.cosSections.map(sec => (
+                            <Bar key={sec.key} dataKey={sec.label} stackId="cos" fill={VB_COS_COLORS[sec.key] || '#6b7280'} radius={sec.key === vbPnl.cosSections[vbPnl.cosSections.length - 1].key ? [3,3,0,0] : [0,0,0,0]} />
                           ))}
-                          <td className="text-right py-2 px-4 font-bold text-red-600">{formatCurrency(line.total)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                          <Legend wrapperStyle={{ fontSize: '11px' }} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })()
         ) : activeModule === 'vb_sga' && vbPnl && vbPnl.sgaSections && vbPnl.sgaSections.length > 0 ? (
           <div className="space-y-6">
             <div className="flex items-center gap-3">
