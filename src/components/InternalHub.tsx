@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, ChevronLeft, ChevronRight, UserCircle2, Trophy, Crown, Heart, Landmark, Briefcase, Star, Layers, Globe, Leaf, Lightbulb, BarChart3, Rocket, TrendingUp, Settings, ExternalLink, Activity } from 'lucide-react';
+import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, ChevronLeft, ChevronRight, UserCircle2, Trophy, Crown, Heart, Landmark, Briefcase, Star, Layers, Globe, Leaf, Lightbulb, BarChart3, Rocket, TrendingUp, Settings, ExternalLink, Activity, Construction } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { PV_LOGO_URL } from '../constants';
 
-const TEAM_SLIDES = 6;
+const TEAM_SLIDES = 8;
 
 const OWNERSHIP_DATA = [
   { name: 'Varese Sports & Entertainment', value: 51.5, color: '#E30613' },
@@ -238,7 +238,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
     setActiveNav(index);
     setVisible(prev => { const n = [...prev]; n[index] = true; return n; });
 
-    if (index !== 2) {
+    if (index !== 0) {
       currentTeamSlide.current = 0;
       setTeamSlide(0);
     }
@@ -268,7 +268,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       accumulated += e.deltaY;
 
       if (Math.abs(accumulated) >= THRESHOLD) {
-        if (currentSection.current === 2) {
+        if (currentSection.current === 0) {
           if (accumulated > 0 && currentTeamSlide.current < TEAM_SLIDES - 1) {
             goToTeamSlide(currentTeamSlide.current + 1);
             accumulated = 0;
@@ -299,7 +299,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       const deltaY = touchStartY - e.changedTouches[0].clientY;
       const deltaX = touchStartX - e.changedTouches[0].clientX;
 
-      if (currentSection.current === 2 && Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
+      if (currentSection.current === 0 && Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
         if (deltaX > 0 && currentTeamSlide.current < TEAM_SLIDES - 1) {
           goToTeamSlide(currentTeamSlide.current + 1);
         } else if (deltaX < 0 && currentTeamSlide.current > 0) {
@@ -309,7 +309,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       }
 
       if (Math.abs(deltaY) > 40) {
-        if (currentSection.current === 2) {
+        if (currentSection.current === 0) {
           if (deltaY > 0 && currentTeamSlide.current < TEAM_SLIDES - 1) {
             goToTeamSlide(currentTeamSlide.current + 1);
             return;
@@ -327,7 +327,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (currentSection.current === 2) {
+      if (currentSection.current === 0) {
         if (e.key === 'ArrowRight') {
           e.preventDefault();
           goToTeamSlide(currentTeamSlide.current + 1);
@@ -378,10 +378,10 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
   }, [goToSection, goToTeamSlide]);
 
   const navItems = [
-    t('Vision, Mission & Values'),
-    t('About Us'),
-    t('Our Team'),
-    t('Departments'),
+    t('Us'),
+    t('Corp'),
+    t('Bops'),
+    t('Our Projects'),
   ];
 
   return (
@@ -446,206 +446,9 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
         ))}
       </div>
 
-      {/* Section 1: Vision, Mission & Values */}
-      <div className="h-screen flex flex-col justify-center px-3 sm:px-6 relative pt-14">
-        <div className={`transition-all duration-[1s] ease-out ${visible[0] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="max-w-6xl mx-auto w-full">
-            <div className="text-center mb-3 sm:mb-6">
-              <div className={`inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs tracking-[0.2em] uppercase font-medium mb-2 sm:mb-4 ${
-                isDark ? 'bg-amber-900/15 text-amber-500 border border-amber-800/20' : 'bg-amber-50 text-amber-600 border border-amber-100'
-              }`}>
-                <Compass size={12} className="sm:w-[14px] sm:h-[14px]" />
-                {t('Vision, Mission & Values')}
-              </div>
-              <p className={`text-sm sm:text-lg italic max-w-lg mx-auto ${isDark ? 'text-amber-400/80' : 'text-amber-600/80'}`}>
-                {t('brand_promise')}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-4">
-              <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
-                  <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
-                    <Rocket size={14} className="text-red-500 sm:w-[18px] sm:h-[18px]" />
-                  </div>
-                  <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {t('Mission')}
-                  </h3>
-                </div>
-                <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {t('mission_statement')}
-                </p>
-                <div className="hidden sm:block space-y-2">
-                  {['mission_1', 'mission_2', 'mission_3', 'mission_4'].map((key) => (
-                    <div key={key} className="flex items-start gap-2.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-[7px] flex-shrink-0" />
-                      <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t(key)}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
-                  <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
-                    <Compass size={14} className="text-blue-500 sm:w-[18px] sm:h-[18px]" />
-                  </div>
-                  <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {t('Vision')}
-                  </h3>
-                </div>
-                <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {t('vision_statement')}
-                </p>
-                <div className="hidden sm:block space-y-2">
-                  {['vision_1', 'vision_2', 'vision_3', 'vision_4'].map((key) => (
-                    <div key={key} className="flex items-start gap-2.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-[7px] flex-shrink-0" />
-                      <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t(key)}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
-                  <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
-                    <Star size={14} className="text-amber-500 sm:w-[18px] sm:h-[18px]" />
-                  </div>
-                  <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {t('Core Values')}
-                  </h3>
-                </div>
-                <div className="space-y-1.5 sm:space-y-3.5">
-                  <div>
-                    <p className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-0.5 sm:mb-1.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('values_athlete_title')}</p>
-                    <p className={`text-[10px] sm:text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_athlete_desc')}</p>
-                  </div>
-                  <div>
-                    <p className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-0.5 sm:mb-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{t('values_citizen_title')}</p>
-                    <p className={`text-[10px] sm:text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_citizen_desc')}</p>
-                  </div>
-                  <div>
-                    <p className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-0.5 sm:mb-1.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{t('values_org_title')}</p>
-                    <p className={`text-[10px] sm:text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_org_desc')}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={() => goToSection(1)}
-          className={`absolute bottom-4 sm:bottom-8 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
-        >
-          <ChevronDown size={20} />
-        </button>
-      </div>
-
-      {/* Section 2: About Us */}
-      <div className="h-screen flex flex-col justify-center px-3 sm:px-6 relative pt-14">
-        <div className={`transition-all duration-[1s] ease-out ${visible[1] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-3 sm:mb-8">
-              <div className={`inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs tracking-[0.2em] uppercase font-medium mb-2 sm:mb-4 ${
-                isDark ? 'bg-red-900/15 text-red-400 border border-red-800/20' : 'bg-red-50 text-red-600 border border-red-100'
-              }`}>
-                <Users size={12} className="sm:w-[14px] sm:h-[14px]" />
-                {t('About Us')}
-              </div>
-              <h2 className={`text-xl sm:text-3xl lg:text-4xl font-light tracking-tight leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                {t('about_headline')}
-              </h2>
-              <p className={`text-xs sm:text-base leading-relaxed max-w-2xl mx-auto mt-2 sm:mt-3 hidden sm:block ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                {t('about_subheadline')}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-4 mb-3 sm:mb-8">
-              <div className={`rounded-xl border p-3 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-emerald-900/25' : 'bg-emerald-50'}`}>
-                  <Leaf size={14} className="text-emerald-500 sm:w-[18px] sm:h-[18px]" />
-                </div>
-                <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {t('Sustainability')}
-                </h3>
-                <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {t('pillar_sustainability')}
-                </p>
-              </div>
-
-              <div className={`rounded-xl border p-3 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
-                  <Lightbulb size={14} className="text-amber-500 sm:w-[18px] sm:h-[18px]" />
-                </div>
-                <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {t('Innovation')}
-                </h3>
-                <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {t('pillar_innovation')}
-                </p>
-              </div>
-
-              <div className={`rounded-xl border p-3 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
-                  <BarChart3 size={14} className="text-blue-500 sm:w-[18px] sm:h-[18px]" />
-                </div>
-                <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {t('Data-Driven')}
-                </h3>
-                <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {t('pillar_datadriven')}
-                </p>
-              </div>
-
-              <div className={`rounded-xl border p-3 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
-                  <Rocket size={14} className="text-red-500 sm:w-[18px] sm:h-[18px]" />
-                </div>
-                <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {t('Ambition')}
-                </h3>
-                <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {t('pillar_ambition')}
-                </p>
-              </div>
-
-              <div className={`rounded-xl border p-3 sm:p-5 col-span-2 sm:col-span-1 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
-                <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-purple-900/25' : 'bg-purple-50'}`}>
-                  <TrendingUp size={14} className="text-purple-500 sm:w-[18px] sm:h-[18px]" />
-                </div>
-                <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {t('Development')}
-                </h3>
-                <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {t('pillar_development')}
-                </p>
-              </div>
-            </div>
-
-            <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/40 border-gray-800/40' : 'bg-gray-50/80 border-gray-200/60'}`}>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-8">
-                <StatCounter target={10} label={t('League Titles')} active={visible[1]} isDark={isDark} />
-                <StatCounter target={5} label={t('EuroLeague Titles')} active={visible[1]} isDark={isDark} />
-                <StatCounter target={3} label={t('Intercontinental Cups')} active={visible[1]} isDark={isDark} />
-                <StatCounter target={80} label={t('Years of History')} active={visible[1]} isDark={isDark} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <button
-          onClick={() => goToSection(2)}
-          className={`absolute bottom-4 sm:bottom-8 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
-        >
-          <ChevronDown size={20} />
-        </button>
-      </div>
-
-      {/* Section 3: Our Team — Sub-slide carousel */}
+      {/* Section 0: Us — Sub-slide carousel (VMV + About Us + 6 team slides) */}
       <div className="h-screen relative overflow-hidden">
-        <div className={`transition-all duration-[1s] ease-out h-full ${visible[2] ? 'opacity-100' : 'opacity-0'}`}>
+        <div className={`transition-all duration-[1s] ease-out h-full ${visible[0] ? 'opacity-100' : 'opacity-0'}`}>
 
           <div
             className="flex h-full"
@@ -657,7 +460,186 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               backfaceVisibility: 'hidden' as const,
             }}
           >
-            {/* Sub-slide 1: Ownership */}
+            {/* Sub-slide 0: VMV */}
+            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-3 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+              <div className="max-w-6xl mx-auto w-full">
+                <div className="text-center mb-3 sm:mb-6">
+                  <div className={`inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs tracking-[0.2em] uppercase font-medium mb-2 sm:mb-4 ${
+                    isDark ? 'bg-amber-900/15 text-amber-500 border border-amber-800/20' : 'bg-amber-50 text-amber-600 border border-amber-100'
+                  }`}>
+                    <Compass size={12} className="sm:w-[14px] sm:h-[14px]" />
+                    {t('Vision, Mission & Values')}
+                  </div>
+                  <p className={`text-sm sm:text-lg italic max-w-lg mx-auto ${isDark ? 'text-amber-400/80' : 'text-amber-600/80'}`}>
+                    {t('brand_promise')}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-4">
+                  <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                    <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
+                      <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
+                        <Rocket size={14} className="text-red-500 sm:w-[18px] sm:h-[18px]" />
+                      </div>
+                      <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {t('Mission')}
+                      </h3>
+                    </div>
+                    <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {t('mission_statement')}
+                    </p>
+                    <div className="hidden sm:block space-y-2">
+                      {['mission_1', 'mission_2', 'mission_3', 'mission_4'].map((key) => (
+                        <div key={key} className="flex items-start gap-2.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-[7px] flex-shrink-0" />
+                          <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t(key)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                    <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
+                      <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
+                        <Compass size={14} className="text-blue-500 sm:w-[18px] sm:h-[18px]" />
+                      </div>
+                      <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {t('Vision')}
+                      </h3>
+                    </div>
+                    <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {t('vision_statement')}
+                    </p>
+                    <div className="hidden sm:block space-y-2">
+                      {['vision_1', 'vision_2', 'vision_3', 'vision_4'].map((key) => (
+                        <div key={key} className="flex items-start gap-2.5">
+                          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-[7px] flex-shrink-0" />
+                          <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t(key)}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                    <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
+                      <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
+                        <Star size={14} className="text-amber-500 sm:w-[18px] sm:h-[18px]" />
+                      </div>
+                      <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {t('Core Values')}
+                      </h3>
+                    </div>
+                    <div className="space-y-1.5 sm:space-y-3.5">
+                      <div>
+                        <p className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-0.5 sm:mb-1.5 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>{t('values_athlete_title')}</p>
+                        <p className={`text-[10px] sm:text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_athlete_desc')}</p>
+                      </div>
+                      <div>
+                        <p className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-0.5 sm:mb-1.5 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{t('values_citizen_title')}</p>
+                        <p className={`text-[10px] sm:text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_citizen_desc')}</p>
+                      </div>
+                      <div>
+                        <p className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider mb-0.5 sm:mb-1.5 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{t('values_org_title')}</p>
+                        <p className={`text-[10px] sm:text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('values_org_desc')}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-slide 1: About Us */}
+            <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-3 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
+              <div className="max-w-6xl mx-auto">
+                <div className="text-center mb-3 sm:mb-8">
+                  <div className={`inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full text-[10px] sm:text-xs tracking-[0.2em] uppercase font-medium mb-2 sm:mb-4 ${
+                    isDark ? 'bg-red-900/15 text-red-400 border border-red-800/20' : 'bg-red-50 text-red-600 border border-red-100'
+                  }`}>
+                    <Users size={12} className="sm:w-[14px] sm:h-[14px]" />
+                    {t('About Us')}
+                  </div>
+                  <h2 className={`text-xl sm:text-3xl lg:text-4xl font-light tracking-tight leading-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {t('about_headline')}
+                  </h2>
+                  <p className={`text-xs sm:text-base leading-relaxed max-w-2xl mx-auto mt-2 sm:mt-3 hidden sm:block ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {t('about_subheadline')}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-4 mb-3 sm:mb-8">
+                  <div className={`rounded-xl border p-3 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                    <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-emerald-900/25' : 'bg-emerald-50'}`}>
+                      <Leaf size={14} className="text-emerald-500 sm:w-[18px] sm:h-[18px]" />
+                    </div>
+                    <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {t('Sustainability')}
+                    </h3>
+                    <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {t('pillar_sustainability')}
+                    </p>
+                  </div>
+
+                  <div className={`rounded-xl border p-3 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                    <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
+                      <Lightbulb size={14} className="text-amber-500 sm:w-[18px] sm:h-[18px]" />
+                    </div>
+                    <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {t('Innovation')}
+                    </h3>
+                    <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {t('pillar_innovation')}
+                    </p>
+                  </div>
+
+                  <div className={`rounded-xl border p-3 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                    <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
+                      <BarChart3 size={14} className="text-blue-500 sm:w-[18px] sm:h-[18px]" />
+                    </div>
+                    <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {t('Data-Driven')}
+                    </h3>
+                    <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {t('pillar_datadriven')}
+                    </p>
+                  </div>
+
+                  <div className={`rounded-xl border p-3 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                    <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
+                      <Rocket size={14} className="text-red-500 sm:w-[18px] sm:h-[18px]" />
+                    </div>
+                    <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {t('Ambition')}
+                    </h3>
+                    <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {t('pillar_ambition')}
+                    </p>
+                  </div>
+
+                  <div className={`rounded-xl border p-3 sm:p-5 col-span-2 sm:col-span-1 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
+                    <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-purple-900/25' : 'bg-purple-50'}`}>
+                      <TrendingUp size={14} className="text-purple-500 sm:w-[18px] sm:h-[18px]" />
+                    </div>
+                    <h3 className={`text-xs sm:text-base font-semibold mb-0.5 sm:mb-1.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {t('Development')}
+                    </h3>
+                    <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                      {t('pillar_development')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/40 border-gray-800/40' : 'bg-gray-50/80 border-gray-200/60'}`}>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-8">
+                    <StatCounter target={10} label={t('League Titles')} active={visible[0]} isDark={isDark} />
+                    <StatCounter target={5} label={t('EuroLeague Titles')} active={visible[0]} isDark={isDark} />
+                    <StatCounter target={3} label={t('Intercontinental Cups')} active={visible[0]} isDark={isDark} />
+                    <StatCounter target={80} label={t('Years of History')} active={visible[0]} isDark={isDark} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-slide 2: Ownership */}
             <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-3 sm:px-8 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
               <div className="max-w-6xl mx-auto w-full">
                 <div className="text-center mb-3 sm:mb-6">
@@ -718,7 +700,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               </div>
             </div>
 
-            {/* Sub-slide 2: Board */}
+            {/* Sub-slide 3: Board */}
             <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-3 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
               <div className="max-w-6xl mx-auto w-full">
                 <div className="text-center mb-3 sm:mb-6">
@@ -762,7 +744,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               </div>
             </div>
 
-            {/* Sub-slide 3: Special Advisors */}
+            {/* Sub-slide 4: Special Advisors */}
             <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-3 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
               <div className="max-w-5xl mx-auto w-full">
                 <div className="text-center mb-3 sm:mb-6">
@@ -810,7 +792,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               </div>
             </div>
 
-            {/* Sub-slide 4: ELT */}
+            {/* Sub-slide 5: ELT */}
             <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-3 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
               <div className="max-w-5xl mx-auto w-full">
                 <div className="text-center mb-3 sm:mb-6">
@@ -855,7 +837,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               </div>
             </div>
 
-            {/* Sub-slide 5: Departments */}
+            {/* Sub-slide 6: Departments */}
             <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-3 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
               <div className="max-w-6xl mx-auto w-full">
                 <div className="text-center mb-3 sm:mb-6">
@@ -895,7 +877,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               </div>
             </div>
 
-            {/* Sub-slide 6: External Services */}
+            {/* Sub-slide 7: External Services */}
             <div className="w-full flex-shrink-0 h-full flex flex-col justify-center px-3 sm:px-6 pt-14" style={{ width: `${100 / TEAM_SLIDES}%` }}>
               <div className="max-w-5xl mx-auto w-full">
                 <div className="text-center mb-3 sm:mb-6">
@@ -951,7 +933,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             </button>
 
             <div className="flex items-center gap-2">
-              {[t('Ownership'), t('Board'), t('Advisors'), t('ELT'), t('Depts'), t('External')].map((label, i) => (
+              {[t('VMV'), t('About'), t('Ownership'), t('Board'), t('Advisors'), t('ELT'), t('Depts'), t('External')].map((label, i) => (
                 <button
                   key={i}
                   onClick={() => goToTeamSlide(i)}
@@ -999,7 +981,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             if (teamSlide < TEAM_SLIDES - 1) {
               goToTeamSlide(teamSlide + 1);
             } else {
-              goToSection(3);
+              goToSection(1);
             }
           }}
           className={`absolute bottom-1 sm:bottom-3 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
@@ -1008,72 +990,97 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
         </button>
       </div>
 
-      {/* Section 4: Departments */}
+      {/* Section 1: Corp */}
       <div className="h-screen flex flex-col items-center justify-center px-4 sm:px-6 relative">
-        <div className={`transition-all duration-[1s] ease-out ${visible[3] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="max-w-3xl mx-auto text-center mb-8 sm:mb-16">
-            <p className={`text-[10px] sm:text-xs tracking-[0.3em] uppercase font-medium mb-2 sm:mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-              {t('Departments')}
-            </p>
-            <h2 className={`text-xl sm:text-3xl lg:text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              {t('Choose your area')}
-            </h2>
-            <div className="flex justify-center mt-4 sm:mt-6">
-              <div className={`h-px line-grow ${isDark ? 'bg-gray-700' : 'bg-gray-300'}`}></div>
-            </div>
-          </div>
-
-          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-3xl mx-auto`}>
+        <div className={`transition-all duration-[1s] ease-out ${visible[1] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="max-w-lg mx-auto">
             <button
               onClick={() => onNavigate('landing')}
-              className={`group relative text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl ${
+              className={`group relative text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl w-full ${
                 isDark ? 'bg-gray-900 border-gray-800 hover:border-red-800/60' : 'bg-white border-gray-200 hover:border-red-300'
               }`}
             >
               <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-red-600 to-red-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
-              <div className="p-5 sm:p-8">
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center mb-3 sm:mb-5 ${isDark ? 'bg-red-900/20' : 'bg-red-50'}`}>
-                  <Building2 size={20} className="text-red-600 sm:w-[22px] sm:h-[22px]" />
+              <div className="p-8 sm:p-12">
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-5 sm:mb-6 ${isDark ? 'bg-red-900/20' : 'bg-red-50'}`}>
+                  <Building2 size={28} className="text-red-600 sm:w-[32px] sm:h-[32px]" />
                 </div>
-                <h3 className={`text-lg sm:text-xl font-semibold mb-1 sm:mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-2xl sm:text-3xl font-semibold mb-2 sm:mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   Corp
                 </h3>
-                <p className={`text-xs sm:text-sm leading-relaxed mb-3 sm:mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                <p className={`text-sm sm:text-base leading-relaxed mb-5 sm:mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                   {t('Financial Center — Revenue, Costs & Verticals P&L')}
                 </p>
-                <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-red-500' : 'text-red-600'}`}>
+                <div className={`inline-flex items-center gap-2 text-sm font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-red-500' : 'text-red-600'}`}>
                   {t('Enter')}
-                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
             </button>
+          </div>
+        </div>
 
+        <button
+          onClick={() => goToSection(2)}
+          className={`absolute bottom-4 sm:bottom-8 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
+        >
+          <ChevronDown size={20} />
+        </button>
+      </div>
+
+      {/* Section 2: Bops */}
+      <div className="h-screen flex flex-col items-center justify-center px-4 sm:px-6 relative">
+        <div className={`transition-all duration-[1s] ease-out ${visible[2] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="max-w-lg mx-auto">
             <a
               href="https://basket.pallacanestrovarese.club"
               target="_blank"
               rel="noopener noreferrer"
-              className={`group relative text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl block ${
+              className={`group relative text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl block w-full ${
                 isDark ? 'bg-gray-900 border-gray-800 hover:border-emerald-800/60' : 'bg-white border-gray-200 hover:border-emerald-300'
               }`}
             >
               <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-600 to-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
-              <div className="p-5 sm:p-8">
-                <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center mb-3 sm:mb-5 ${isDark ? 'bg-emerald-900/20' : 'bg-emerald-50'}`}>
-                  <Shield size={20} className="text-emerald-600 sm:w-[22px] sm:h-[22px]" />
+              <div className="p-8 sm:p-12">
+                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-5 sm:mb-6 ${isDark ? 'bg-emerald-900/20' : 'bg-emerald-50'}`}>
+                  <Shield size={28} className="text-emerald-600 sm:w-[32px] sm:h-[32px]" />
                 </div>
-                <h3 className={`text-lg sm:text-xl font-semibold mb-1 sm:mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-2xl sm:text-3xl font-semibold mb-2 sm:mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   BOps
                 </h3>
-                <p className={`text-xs sm:text-sm leading-relaxed mb-3 sm:mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                <p className={`text-sm sm:text-base leading-relaxed mb-5 sm:mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                   {t('Basketball Operations — Team management, roster & performance')}
                 </p>
-                <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-emerald-500' : 'text-emerald-600'}`}>
+                <div className={`inline-flex items-center gap-2 text-sm font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-emerald-500' : 'text-emerald-600'}`}>
                   {t('Open')}
-                  <ExternalLink size={13} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                  <ExternalLink size={15} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                 </div>
               </div>
             </a>
+          </div>
+        </div>
 
+        <button
+          onClick={() => goToSection(3)}
+          className={`absolute bottom-4 sm:bottom-8 left-1/2 bounce-arrow ${isDark ? 'text-gray-600' : 'text-gray-300'}`}
+        >
+          <ChevronDown size={20} />
+        </button>
+      </div>
+
+      {/* Section 3: Our Projects */}
+      <div className="h-screen flex flex-col items-center justify-center px-4 sm:px-6 relative">
+        <div className={`transition-all duration-[1s] ease-out ${visible[3] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="max-w-lg mx-auto text-center">
+            <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mx-auto mb-5 sm:mb-6 ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
+              <Construction size={32} className="text-orange-500 sm:w-[40px] sm:h-[40px]" />
+            </div>
+            <h2 className={`text-2xl sm:text-3xl lg:text-4xl font-light tracking-tight mb-3 sm:mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {t('Our Projects')}
+            </h2>
+            <p className={`text-sm sm:text-base leading-relaxed ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              {t('Coming Soon')}
+            </p>
           </div>
         </div>
 

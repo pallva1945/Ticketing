@@ -21,6 +21,8 @@ The application uses a modern web stack: React 18 and TypeScript for the fronten
     *   Responsive design optimized for mobile devices.
     *   Full-page snap-scroll experience with quintic ease animation, sticky navigation, and section indicators for Internal Hub and VB Hub.
     *   Hash-based routing with a split landing page allowing users to choose between Pallacanestro Varese (PV) or Varese Basketball (VB) post-login.
+    *   **InternalHub (PV)**: 4 snap-scroll sections — "Us" (8 sub-slides: VMV, About Us, Ownership, Board, Advisors, ELT, Departments, External Services), "Corp" (entry card), "Bops" (entry card), "Our Projects" (placeholder).
+    *   **VBHub (VB)**: 2 snap-scroll sections — "Us" (4 sub-slides: VMV, About Us, Our Method, Our Team), "BOps" (Youth Development entry card). Sub-slides use fade transitions with scroll/touch/keyboard interception.
     *   Color coding for scores (blue ≥100, emerald ≥80, amber ≥60, orange ≥40, red <40).
 *   **Financial & Analytics Features**:
     *   **Financial Metric Adjustments**: Toggle for "Accounting" vs. "Realistic" views for corporate ticket reclassification (default: "Realistic").
