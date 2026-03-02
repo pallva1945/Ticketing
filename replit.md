@@ -22,8 +22,8 @@ The application uses a modern web stack: React 18 and TypeScript for the fronten
     *   Full-page snap-scroll experience with quintic ease animation, sticky navigation, and section indicators for Internal Hub and VB Hub.
     *   Hash-based routing with a split landing page allowing users to choose between Pallacanestro Varese (PV) or Varese Basketball (VB) post-login.
     *   **Landing Page**: 3 cards — Pallacanestro Varese, Varese Basketball, Our Projects (coming soon).
-    *   **InternalHub (PV)**: 4 snap-scroll sections — "Us" (8 horizontal sub-slides: VMV, About Us, Ownership, Board, Advisors, ELT, Departments, External Services), "Corp" (Financial Center entry card), "BOps" (external link entry card), "Our Projects" (coming soon placeholder). Section 0 intercepts scroll for sub-slide navigation.
-    *   **VBHub (VB)**: 2 snap-scroll sections — "Us" (4 fade sub-slides: VMV, About Us, Our Method, Our Team), "BOps" (Youth Development entry card). Section 0 intercepts scroll for sub-slide navigation.
+    *   **InternalHub (PV)**: Card picker page with 3 cards — "Us" (navigates to PVUsPage with 8 horizontal sub-slides: VMV, About Us, Ownership, Board, Advisors, ELT, Departments, External Services), "Corp" (navigates to Financial Center), "Bops" (external link).
+    *   **VBHub (VB)**: 2 snap-scroll sections — "Us" (4 sub-slides: VMV, About Us, Our Method, Our Team), "BOps" (Youth Development entry card). Sub-slides use fade transitions with scroll/touch/keyboard interception.
     *   Color coding for scores (blue ≥100, emerald ≥80, amber ≥60, orange ≥40, red <40).
 *   **Financial & Analytics Features**:
     *   **Financial Metric Adjustments**: Toggle for "Accounting" vs. "Realistic" views for corporate ticket reclassification (default: "Realistic").
