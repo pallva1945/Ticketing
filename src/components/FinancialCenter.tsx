@@ -87,7 +87,7 @@ export const FinancialCenter: React.FC<FinancialCenterProps> = ({ onNavigate, on
         )}
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-16 sm:py-24">
+      <div className="max-w-6xl mx-auto px-4 py-16 sm:py-24">
         <div className="text-center mb-16">
           <div className="flex items-center justify-center mb-6">
             <button onClick={() => onNavigate('hub')} className="hover:opacity-70 transition-opacity">
@@ -102,7 +102,7 @@ export const FinancialCenter: React.FC<FinancialCenterProps> = ({ onNavigate, on
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
           {sections.map((section) => {
             const Icon = section.icon;
             return (
@@ -116,7 +116,7 @@ export const FinancialCenter: React.FC<FinancialCenterProps> = ({ onNavigate, on
                     : 'bg-gray-100 dark:bg-gray-900/50 border-gray-200 dark:border-gray-800/50 cursor-not-allowed opacity-60'
                 }`}
               >
-                <div className="p-8">
+                <div className="p-5 sm:p-8">
                   <div className="flex items-center justify-between mb-6">
                     <div className={`w-14 h-14 rounded-xl ${section.iconBg} flex items-center justify-center`}>
                       <Icon size={28} className={section.iconColor} />
