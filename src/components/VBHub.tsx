@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { ArrowRight, Sun, Moon, ChevronLeft, Eye, Heart, Target, Users, GraduationCap, Activity, Shield, Construction, Layers, BookOpen, ExternalLink, Globe, Rocket, Star, Compass, ChevronRight } from 'lucide-react';
+import { ArrowRight, Sun, Moon, ChevronLeft, Eye, Heart, Target, Users, GraduationCap, Activity, Shield, Construction, Layers, BookOpen, ExternalLink, Globe, Rocket, Star, Compass, ChevronRight, ChevronDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -50,6 +50,20 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
     requestAnimationFrame(step);
   }, []);
 
+  const goToSection = useCallback((index: number) => {
+    if (isScrolling.current || !containerRef.current || index < 0 || index >= TOTAL_SECTIONS) return;
+    isScrolling.current = true;
+    currentSection.current = index;
+    setActiveNav(index);
+    const target = index * window.innerHeight;
+    smoothScrollTo(containerRef.current, target, 900);
+    setVisible(prev => {
+      const next = [...prev];
+      next[index] = true;
+      return next;
+    });
+  }, [smoothScrollTo]);
+
   const goToUsSlide = useCallback((index: number) => {
     if (isSliding.current || index < 0 || index >= US_SUB_SLIDES) return;
     isSliding.current = true;
@@ -58,61 +72,48 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
     setTimeout(() => { isSliding.current = false; }, 600);
   }, []);
 
-  const goToSection = useCallback((index: number) => {
-    if (isScrolling.current || index < 0 || index > TOTAL_SECTIONS - 1) return;
-    isScrolling.current = true;
-    currentSection.current = index;
-    setActiveNav(index);
-    setVisible(prev => {
-      const next = [...prev];
-      next[index] = true;
-      return next;
-    });
-
-    if (index !== 0) {
-      currentUsSlide.current = 0;
-      setUsSlide(0);
-    }
-
-    const container = containerRef.current;
-    if (container) {
-      smoothScrollTo(container, index * window.innerHeight, 1200);
-    }
-  }, [smoothScrollTo]);
-
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
     let accumulated = 0;
-    let lastTime = 0;
+    let lastWheelTime = 0;
+    const THRESHOLD = 80;
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       if (isScrolling.current || isSliding.current) return;
-      const now = Date.now();
-      if (now - lastTime > 800) accumulated = 0;
-      lastTime = now;
-      accumulated += e.deltaY;
-      const threshold = 80;
 
-      if (Math.abs(accumulated) >= threshold) {
+      const now = Date.now();
+      if (now - lastWheelTime > 800) accumulated = 0;
+      lastWheelTime = now;
+      accumulated += e.deltaY;
+
+      if (Math.abs(accumulated) >= THRESHOLD) {
         if (currentSection.current === 0) {
-          if (accumulated > 0 && currentUsSlide.current < US_SUB_SLIDES - 1) {
-            goToUsSlide(currentUsSlide.current + 1);
-            accumulated = 0;
-            return;
-          } else if (accumulated < 0 && currentUsSlide.current > 0) {
-            goToUsSlide(currentUsSlide.current - 1);
-            accumulated = 0;
-            return;
+          if (accumulated > 0) {
+            if (currentUsSlide.current < US_SUB_SLIDES - 1) {
+              goToUsSlide(currentUsSlide.current + 1);
+            } else {
+              goToSection(1);
+            }
+          } else {
+            if (currentUsSlide.current > 0) {
+              goToUsSlide(currentUsSlide.current - 1);
+            }
           }
-        }
-        if (accumulated > 0 && currentSection.current < TOTAL_SECTIONS - 1) {
-          accumulated = 0;
-          goToSection(currentSection.current + 1);
-        } else if (accumulated < 0 && currentSection.current > 0) {
-          accumulated = 0;
-          goToSection(currentSection.current - 1);
+        } else {
+          if (accumulated > 0 && currentSection.current < TOTAL_SECTIONS - 1) {
+            goToSection(currentSection.current + 1);
+          } else if (accumulated < 0) {
+            if (currentSection.current === 1) {
+              currentUsSlide.current = US_SUB_SLIDES - 1;
+              setUsSlide(US_SUB_SLIDES - 1);
+              goToSection(0);
+            } else if (currentSection.current > 0) {
+              goToSection(currentSection.current - 1);
+            }
+          }
         }
         accumulated = 0;
       }
@@ -124,60 +125,57 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
       if (isScrolling.current || isSliding.current) return;
       const deltaY = touchStartY - e.changedTouches[0].clientY;
 
-      if (Math.abs(deltaY) > 50) {
+      if (Math.abs(deltaY) > 40) {
         if (currentSection.current === 0) {
-          if (deltaY > 0 && currentUsSlide.current < US_SUB_SLIDES - 1) {
-            goToUsSlide(currentUsSlide.current + 1);
-            return;
-          } else if (deltaY < 0 && currentUsSlide.current > 0) {
-            goToUsSlide(currentUsSlide.current - 1);
-            return;
+          if (deltaY > 0) {
+            if (currentUsSlide.current < US_SUB_SLIDES - 1) goToUsSlide(currentUsSlide.current + 1);
+            else goToSection(1);
+          } else {
+            if (currentUsSlide.current > 0) goToUsSlide(currentUsSlide.current - 1);
           }
-        }
-        if (deltaY > 0 && currentSection.current < TOTAL_SECTIONS - 1) {
-          goToSection(currentSection.current + 1);
-        } else if (deltaY < 0 && currentSection.current > 0) {
-          goToSection(currentSection.current - 1);
+        } else {
+          if (deltaY > 0 && currentSection.current < TOTAL_SECTIONS - 1) goToSection(currentSection.current + 1);
+          else if (deltaY < 0) {
+            if (currentSection.current === 1) {
+              currentUsSlide.current = US_SUB_SLIDES - 1;
+              setUsSlide(US_SUB_SLIDES - 1);
+              goToSection(0);
+            } else if (currentSection.current > 0) goToSection(currentSection.current - 1);
+          }
         }
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isScrolling.current || isSliding.current) return;
+      const isDown = e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === 'PageDown';
+      const isUp = e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'PageUp';
+      if (!isDown && !isUp) return;
+      e.preventDefault();
+
       if (currentSection.current === 0) {
-        if (e.key === 'ArrowRight') {
-          e.preventDefault();
+        if (isDown) {
           if (currentUsSlide.current < US_SUB_SLIDES - 1) goToUsSlide(currentUsSlide.current + 1);
-          return;
-        } else if (e.key === 'ArrowLeft') {
-          e.preventDefault();
+          else goToSection(1);
+        } else {
           if (currentUsSlide.current > 0) goToUsSlide(currentUsSlide.current - 1);
-          return;
         }
-        if (e.key === 'ArrowDown' || e.key === 'PageDown') {
-          e.preventDefault();
-          if (currentUsSlide.current < US_SUB_SLIDES - 1) {
-            goToUsSlide(currentUsSlide.current + 1);
-          } else {
-            goToSection(currentSection.current + 1);
-          }
-          return;
-        } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-          e.preventDefault();
-          if (currentUsSlide.current > 0) {
-            goToUsSlide(currentUsSlide.current - 1);
-          }
-          return;
+      } else {
+        if (isDown && currentSection.current < TOTAL_SECTIONS - 1) goToSection(currentSection.current + 1);
+        else if (isUp) {
+          if (currentSection.current === 1) {
+            currentUsSlide.current = US_SUB_SLIDES - 1;
+            setUsSlide(US_SUB_SLIDES - 1);
+            goToSection(0);
+          } else if (currentSection.current > 0) goToSection(currentSection.current - 1);
         }
       }
-      if (e.key === 'ArrowDown' && currentSection.current < TOTAL_SECTIONS - 1) goToSection(currentSection.current + 1);
-      if (e.key === 'ArrowUp' && currentSection.current > 0) goToSection(currentSection.current - 1);
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
-    container.addEventListener('touchstart', handleTouchStart);
-    container.addEventListener('touchend', handleTouchEnd);
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    container.addEventListener('touchend', handleTouchEnd, { passive: true });
     document.addEventListener('keydown', handleKeyDown);
-
     return () => {
       container.removeEventListener('wheel', handleWheel);
       container.removeEventListener('touchstart', handleTouchStart);
@@ -268,7 +266,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
         <div className={`transition-all duration-[1s] ease-out absolute inset-0 ${visible[0] ? 'opacity-100' : 'opacity-0'}`}>
           {/* Sub-slide 0: VMV */}
           <div className={`absolute inset-0 flex flex-col items-center justify-center px-4 sm:px-6 transition-opacity duration-500 ${usSlide === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-            <div className="max-w-6xl mx-auto w-full">
+            <div className="max-w-6xl mx-auto w-full pt-14">
               <div className="text-center mb-3 sm:mb-6">
                 <div className="flex items-center justify-center gap-3 mb-2 sm:mb-4">
                   <img src={VB_LOGO_URL} alt="VB" className="w-12 h-12 sm:w-14 sm:h-14 object-contain" />
@@ -290,13 +288,9 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                     <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-orange-900/25' : 'bg-orange-50'}`}>
                       <Rocket size={14} className="text-orange-500 sm:w-[18px] sm:h-[18px]" />
                     </div>
-                    <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      {t('Mission')}
-                    </h3>
+                    <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Mission')}</h3>
                   </div>
-                  <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                    {t('vb_mission_statement')}
-                  </p>
+                  <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{t('vb_mission_statement')}</p>
                   <div className="hidden sm:block space-y-2">
                     {['vb_mission_1', 'vb_mission_2', 'vb_mission_3', 'vb_mission_4'].map((key) => (
                       <div key={key} className="flex items-start gap-2.5">
@@ -312,13 +306,9 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                     <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
                       <Eye size={14} className="text-blue-500 sm:w-[18px] sm:h-[18px]" />
                     </div>
-                    <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      {t('Vision')}
-                    </h3>
+                    <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Vision')}</h3>
                   </div>
-                  <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                    {t('vb_vision_statement')}
-                  </p>
+                  <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{t('vb_vision_statement')}</p>
                   <div className="hidden sm:block space-y-2">
                     {['vb_vision_1', 'vb_vision_2', 'vb_vision_3', 'vb_vision_4'].map((key) => (
                       <div key={key} className="flex items-start gap-2.5">
@@ -334,9 +324,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                     <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
                       <Star size={14} className="text-amber-500 sm:w-[18px] sm:h-[18px]" />
                     </div>
-                    <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      {t('Core Values')}
-                    </h3>
+                    <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Core Values')}</h3>
                   </div>
                   <div className="space-y-1.5 sm:space-y-3.5">
                     <div>
@@ -359,7 +347,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
 
           {/* Sub-slide 1: About Us */}
           <div className={`absolute inset-0 flex flex-col items-center justify-center px-4 sm:px-6 transition-opacity duration-500 ${usSlide === 1 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-            <div className="max-w-3xl mx-auto text-center">
+            <div className="max-w-3xl mx-auto text-center pt-14">
               <p className={`text-[10px] sm:text-xs tracking-[0.3em] uppercase font-medium mb-3 sm:mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                 {t('About Us')}
               </p>
@@ -395,7 +383,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
 
           {/* Sub-slide 2: Our Method */}
           <div className={`absolute inset-0 flex flex-col items-center justify-center px-4 sm:px-6 transition-opacity duration-500 ${usSlide === 2 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-            <div className="max-w-3xl mx-auto text-center">
+            <div className="max-w-3xl mx-auto text-center pt-14">
               <p className={`text-[10px] sm:text-xs tracking-[0.3em] uppercase font-medium mb-3 sm:mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                 {t('Our Method')}
               </p>
@@ -429,7 +417,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
 
           {/* Sub-slide 3: Our Team */}
           <div className={`absolute inset-0 flex flex-col items-center justify-center px-4 sm:px-6 transition-opacity duration-500 ${usSlide === 3 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-            <div className="max-w-4xl mx-auto text-center">
+            <div className="max-w-4xl mx-auto text-center pt-14">
               <p className={`text-[10px] sm:text-xs tracking-[0.3em] uppercase font-medium mb-3 sm:mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                 {t('Our Team')}
               </p>
@@ -445,9 +433,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
                       <Shield size={16} className="text-orange-500" />
                     </div>
-                    <h3 className={`text-xs font-semibold tracking-[0.15em] uppercase ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
-                      {t('Executive Leadership')}
-                    </h3>
+                    <h3 className={`text-xs font-semibold tracking-[0.15em] uppercase ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{t('Executive Leadership')}</h3>
                   </div>
                   <div className="space-y-3">
                     {[
@@ -470,9 +456,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
                       <Users size={16} className="text-orange-500" />
                     </div>
-                    <h3 className={`text-xs font-semibold tracking-[0.15em] uppercase ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
-                      {t('Coaching Staff')}
-                    </h3>
+                    <h3 className={`text-xs font-semibold tracking-[0.15em] uppercase ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{t('Coaching Staff')}</h3>
                   </div>
                   <div className="space-y-3">
                     {[
@@ -495,9 +479,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
                       <Activity size={16} className="text-orange-500" />
                     </div>
-                    <h3 className={`text-xs font-semibold tracking-[0.15em] uppercase ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
-                      {t('Strength & Conditioning')}
-                    </h3>
+                    <h3 className={`text-xs font-semibold tracking-[0.15em] uppercase ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{t('Strength & Conditioning')}</h3>
                   </div>
                   <div className="space-y-3">
                     {[
@@ -530,7 +512,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                   onClick={() => goToUsSlide(i)}
                   className={`w-2 h-2 rounded-full transition-all duration-500 ${
                     usSlide === i
-                      ? isDark ? 'bg-orange-500 scale-125' : 'bg-orange-500 scale-125'
+                      ? 'bg-orange-500 scale-125'
                       : isDark ? 'bg-gray-700 hover:bg-gray-500' : 'bg-gray-300 hover:bg-gray-400'
                   }`}
                   title={label}
@@ -551,6 +533,12 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
               {usSubLabels[usSlide]}
             </p>
           </div>
+
+          {usSlide === US_SUB_SLIDES - 1 && (
+            <div className="bounce-arrow absolute bottom-2 left-1/2 z-10">
+              <ChevronDown size={18} className={isDark ? 'text-gray-600' : 'text-gray-300'} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -584,8 +572,8 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                 <h3 className={`text-lg sm:text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {t('Youth Development')}
                 </h3>
-                <p className={`text-xs sm:text-sm leading-relaxed mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                  {t('Player profiles, session tracking, progression analytics & scouting database')}
+                <p className={`text-xs sm:text-sm leading-relaxed mb-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {t('Player profiles, session data, progression tracking & scouting database')}
                 </p>
                 <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-orange-500' : 'text-orange-600'}`}>
                   {t('Enter')}
