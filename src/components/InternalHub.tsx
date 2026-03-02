@@ -257,7 +257,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                     <p className={`text-[10px] sm:text-xs leading-relaxed mb-4 sm:mb-5 min-h-[2rem] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                       {card.desc}
                     </p>
-                    {ActionIcon && !isDisabled ? (
+                    {!isDisabled ? (
                       <div className={`inline-flex items-center gap-2 text-[10px] sm:text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${colors.text}`}>
                         {card.actionLabel}
                         {card.external ? (
