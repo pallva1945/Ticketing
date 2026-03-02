@@ -45,6 +45,7 @@ The application uses a modern web stack: React 18 and TypeScript for the fronten
     *   **CAS (Composite Athleticism Score)**: NBA-benchmarked (100 = NBA Draft Combine Average) based on archetypes (Playmaker, 3&D, Center) and age factor.
     *   **APS (Anthropometric Potential Score)**: NBA-benchmarked (100 = NBA Draft Combine Average) using projected measurements and age factor.
     *   **PVB Potential Score**: Composite 5-pillar player evaluation (Size/APS, Athleticism/CAS, Work Ethic, Talent, Character) with weighted factors and age adjustment.
+    *   **Search**: Compound query parser supports player name, date, month, season, category, role, and **week numbers** (e.g., `w28`, `scola prato w28 w29`). Weeks are relative to season start dates with player-specific overrides.
 *   **Game Performance Dashboard**:
     *   Sources individual and team game statistics from BigQuery.
     *   Features Team Performance, Player Performance (with advanced stats like eFG%, TS%, USG%, PPP, Win Shares), and a powerful Stats Search engine.

@@ -5269,8 +5269,43 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
     return categoryKeywords[lower] || null;
   };
 
-  const parseCompoundQuery = (raw: string): { nameTokens: string[]; year: number | null; month: number | null; day: number | null; role: string | null; category: string | null } => {
-    const result = { nameTokens: [] as string[], year: null as number | null, month: null as number | null, day: null as number | null, role: null as string | null, category: null as string | null };
+  const getCurrentSeason = (): string => {
+    const now = new Date();
+    const season = getSeason(now.toISOString().split('T')[0]);
+    return season || allSeasons[0] || '2025/26';
+  };
+
+  const getWeekDateRange = (weekNum: number, season?: string): { start: Date; end: Date } | null => {
+    if (weekNum < 1 || weekNum > 52) return null;
+    const targetSeason = season || getCurrentSeason();
+    const seasonStart = getSeasonStartDate(targetSeason);
+    if (!seasonStart) return null;
+    const seasonEnd = SEASON_END_DATES[targetSeason];
+    const start = new Date(seasonStart);
+    start.setDate(start.getDate() + (weekNum - 1) * 7);
+    if (seasonEnd && start > seasonEnd) return null;
+    const end = new Date(start);
+    end.setDate(end.getDate() + 6);
+    if (seasonEnd && end > seasonEnd) {
+      end.setTime(seasonEnd.getTime());
+    }
+    return { start, end };
+  };
+
+  const getWeekNumber = (dateStr: string, player?: string): number | null => {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return null;
+    const season = getSeason(dateStr);
+    if (!season) return null;
+    const seasonStart = getSeasonStartDate(season, player);
+    if (!seasonStart) return null;
+    const diff = d.getTime() - seasonStart.getTime();
+    if (diff < 0) return null;
+    return Math.floor(diff / (7 * 24 * 60 * 60 * 1000)) + 1;
+  };
+
+  const parseCompoundQuery = (raw: string): { nameTokens: string[]; year: number | null; month: number | null; day: number | null; role: string | null; category: string | null; weeks: number[] } => {
+    const result = { nameTokens: [] as string[], year: null as number | null, month: null as number | null, day: null as number | null, role: null as string | null, category: null as string | null, weeks: [] as number[] };
     const q = raw.trim();
     if (!q) return result;
 
@@ -5315,6 +5350,9 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
 
     for (const token of tokens) {
       const lower = token.toLowerCase();
+
+      const weekMatch = lower.match(/^w(\d{1,2})$/);
+      if (weekMatch) { result.weeks.push(parseInt(weekMatch[1])); continue; }
 
       const cat = isCategoryToken(lower);
       if (cat) { result.category = cat; continue; }
@@ -5400,6 +5438,10 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
     }
     if (parsed.role && getPlayerPosition(s.player, profiles).toLowerCase() !== parsed.role.toLowerCase()) return false;
     if (parsed.category && getPlayerCategory(s.player, profiles) !== parsed.category) return false;
+    if (parsed.weeks.length > 0) {
+      const sessionWeek = getWeekNumber(s.date, s.player);
+      if (sessionWeek === null || !parsed.weeks.includes(sessionWeek)) return false;
+    }
     const [sy, sm, sd] = s.date.split('-').map(Number);
     if (parsed.year !== null && sy !== parsed.year) return false;
     if (parsed.month !== null && sm !== parsed.month) return false;
@@ -5414,17 +5456,34 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
 
     const parsed = parseCompoundQuery(query);
     const hasDate = parsed.year !== null || parsed.month !== null || parsed.day !== null;
+    const hasWeeks = parsed.weeks.length > 0;
     const hasName = parsed.nameTokens.length > 0;
     const hasRole = parsed.role !== null;
     const hasCategory = parsed.category !== null;
-    const hasContext = hasDate || hasName || hasRole || hasCategory;
+    const hasContext = hasDate || hasWeeks || hasName || hasRole || hasCategory;
 
     const buildLabel = (parts: string[]) => parts.filter(Boolean).join(' · ');
     const roleLabel = parsed.role || '';
     const catLabel = parsed.category || '';
     const nameLabel = hasName ? players.find(p => parsed.nameTokens.every(nt => p.toLowerCase().includes(nt))) || parsed.nameTokens.join(' ') : '';
+    const weekLabel = hasWeeks ? parsed.weeks.map(w => `W${w}`).join(', ') : '';
 
-    const dateLabel = hasDate
+    const dateLabel = hasWeeks
+      ? (() => {
+          const parts: string[] = [];
+          for (const w of parsed.weeks) {
+            const range = getWeekDateRange(w);
+            if (range) {
+              const s = range.start;
+              const e = range.end;
+              parts.push(`W${w} (${String(s.getDate()).padStart(2,'0')}/${String(s.getMonth()+1).padStart(2,'0')}-${String(e.getDate()).padStart(2,'0')}/${String(e.getMonth()+1).padStart(2,'0')})`);
+            } else {
+              parts.push(`W${w}`);
+            }
+          }
+          return parts.join(', ');
+        })()
+      : hasDate
       ? (parsed.day !== null && parsed.month !== null && parsed.year !== null
         ? `${String(parsed.day).padStart(2, '0')}/${String(parsed.month).padStart(2, '0')}/${parsed.year}`
         : parsed.month !== null && parsed.year !== null
@@ -5475,7 +5534,25 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
       }
     }
 
-    if (!hasDate) {
+    if (hasWeeks) {
+      const label = buildLabel([roleLabel, catLabel, nameLabel, dateLabel].filter(Boolean));
+      items.push({ type: 'week', label, value: `compound:${q}`, sortKey: -0.5 });
+    }
+
+    const weekTokenMatch = lastToken.match(/^w(\d{1,2})$/);
+    if (weekTokenMatch && !hasWeeks) {
+      const wNum = parseInt(weekTokenMatch[1]);
+      const range = getWeekDateRange(wNum);
+      if (range) {
+        const s = range.start;
+        const e = range.end;
+        const wLabel = `W${wNum} (${String(s.getDate()).padStart(2,'0')}/${String(s.getMonth()+1).padStart(2,'0')}-${String(e.getDate()).padStart(2,'0')}/${String(e.getMonth()+1).padStart(2,'0')})`;
+        const label = buildLabel([roleLabel, catLabel, nameLabel, wLabel].filter(Boolean));
+        items.push({ type: 'week', label, value: `compound:${q}`, sortKey: -0.5 });
+      }
+    }
+
+    if (!hasDate && !hasWeeks) {
       const mi = parseMonthName(lastToken);
       if (mi !== null) {
         allMonths.filter(m => parseInt(m.split('-')[1]) === mi + 1).slice(0, 4).forEach(m => {
@@ -5489,7 +5566,7 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
         const label = buildLabel([roleLabel, catLabel, nameLabel, `${t('Season')} ${s}`].filter(Boolean));
         items.push({ type: 'season', label, value: `season:${s}`, sortKey: 1 });
       });
-    } else {
+    } else if (hasDate) {
       if (parsed.year !== null && parsed.month !== null && parsed.day !== null) {
         const iso = `${parsed.year}-${String(parsed.month).padStart(2, '0')}-${String(parsed.day).padStart(2, '0')}`;
         if (allDates.includes(iso)) {
@@ -5546,6 +5623,24 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
   };
 
   const generateDateRange = (parsed: ReturnType<typeof parseCompoundQuery>): string[] => {
+    if (parsed.weeks.length > 0) {
+      const dates: string[] = [];
+      const today = new Date();
+      for (const w of parsed.weeks) {
+        const range = getWeekDateRange(w);
+        if (range) {
+          const cur = new Date(range.start);
+          while (cur <= range.end && cur <= today) {
+            const y = cur.getFullYear();
+            const m = String(cur.getMonth() + 1).padStart(2, '0');
+            const d = String(cur.getDate()).padStart(2, '0');
+            dates.push(`${y}-${m}-${d}`);
+            cur.setDate(cur.getDate() + 1);
+          }
+        }
+      }
+      return dates;
+    }
     if (parsed.year !== null && parsed.month !== null && parsed.day !== null) {
       return [`${parsed.year}-${String(parsed.month).padStart(2, '0')}-${String(parsed.day).padStart(2, '0')}`];
     }
@@ -5571,6 +5666,7 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
       : searchValue.startsWith('season:') || searchValue.startsWith('month:') || searchValue.startsWith('date:') ? '' : searchValue;
     const parsed = parseCompoundQuery(searchText || searchValue);
     const hasDate = parsed.year !== null || parsed.month !== null || parsed.day !== null;
+    const hasWeeks = parsed.weeks.length > 0;
     const hasName = parsed.nameTokens.length > 0;
     const hasRoleOrCat = parsed.role !== null || parsed.category !== null;
     const targetPlayers = getMatchingPlayers(parsed);
@@ -5584,7 +5680,7 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
     } else if (searchValue.startsWith('date:')) {
       const date = searchValue.replace('date:', '');
       filtered = sessions.filter(s => s.date === date);
-    } else if (hasDate || hasName || hasRoleOrCat) {
+    } else if (hasDate || hasWeeks || hasName || hasRoleOrCat) {
       filtered = sessions.filter(s => matchesSession(s, parsed));
     } else {
       const q = searchValue.toLowerCase();
@@ -5595,7 +5691,7 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
       filtered = filtered.filter(s => targetPlayers.includes(s.player));
     }
 
-    const dates = hasDate ? generateDateRange(parsed) : [];
+    const dates = (hasDate || hasWeeks) ? generateDateRange(parsed) : [];
 
     if (dates.length > 0 && (hasName || hasRoleOrCat)) {
       for (const p of targetPlayers) {
@@ -5667,7 +5763,7 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
                 if (e.key === 'Enter') { executeSearch(query); }
                 if (e.key === 'Escape') { setShowSuggestions(false); }
               }}
-              placeholder={t('Search player, date, month, season, category, role...')}
+              placeholder={t('Search player, date, week (w28), season, category, role...')}
               className={`flex-1 px-4 py-2.5 rounded-lg text-sm border outline-none transition-all ${isDark ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500 focus:border-orange-500' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400 focus:border-orange-500'}`}
             />
             <button onClick={() => executeSearch(query)} className="px-4 py-2.5 rounded-lg bg-orange-500 text-white text-sm font-medium hover:bg-orange-600 transition-colors">
@@ -5687,11 +5783,12 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
                     item.type === 'category' ? 'bg-cyan-500/10 text-cyan-500' :
                     item.type === 'role' ? 'bg-pink-500/10 text-pink-500' :
                     item.type === 'player' ? 'bg-orange-500/10 text-orange-500' :
+                    item.type === 'week' ? 'bg-amber-500/10 text-amber-500' :
                     item.type === 'season' ? 'bg-blue-500/10 text-blue-500' :
                     item.type === 'month' ? 'bg-purple-500/10 text-purple-500' :
                     'bg-emerald-500/10 text-emerald-500'
                   }`}>
-                    {item.type === 'category' ? '🏷️' : item.type === 'role' ? '🏀' : item.type === 'player' ? '👤' : item.type === 'season' ? '📅' : item.type === 'month' ? '📆' : '📌'}
+                    {item.type === 'category' ? '🏷️' : item.type === 'role' ? '🏀' : item.type === 'player' ? '👤' : item.type === 'week' ? '📋' : item.type === 'season' ? '📅' : item.type === 'month' ? '📆' : '📌'}
                   </span>
                   <span className={isDark ? 'text-gray-200' : 'text-gray-700'}>{item.label}</span>
                 </button>
