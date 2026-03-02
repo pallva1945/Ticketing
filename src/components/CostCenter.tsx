@@ -333,7 +333,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
                     { id: 'merchandising', amount: dynMerch, detail: `${t('Stock')}: 82.6%`, badge: hasDynamic && costData.merchandising ? t('Google Sheet') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
                     { id: 'venue_ops', amount: dynVenueOps, detail: `${t('Campus - Rental')}: 79.7%`, badge: hasDynamic && costData.venue_ops ? t('Google Sheet') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
                     { id: 'sponsorship', amount: dynSponsorship, detail: `${t('Events')}: 66.3% · ${t('Materials & Ads')}: 33.7%`, badge: hasDynamic && costData.sponsorship ? t('Google Sheet') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
-                    { id: 'ebp', amount: vbPnl ? Math.round(vbPnl.cos.reduce((s, l) => s + l.total, 0)) : 0, detail: vbPnl ? `${vbPnl.cos.length} ${t('line items')}` : t('No costs recorded YTD'), badge: vbPnl ? t('VB P&L Sheet') : t('Zero Activity'), badgeStyle: vbPnl ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400' },
+                    { id: 'ebp', amount: vbPnl ? Math.round(vbPnl.cosSections.reduce((s, sec) => s + sec.total, 0)) : 0, detail: vbPnl ? `${vbPnl.cosSections.length} ${t('categories')}` : t('No costs recorded YTD'), badge: vbPnl ? t('VB P&L Sheet') : t('Zero Activity'), badgeStyle: vbPnl ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400' },
                     { id: 'varese_basketball', amount: vbPnl ? Math.round(vbPnl.sga.reduce((s, l) => s + l.total, 0)) : -1, detail: vbPnl ? `${vbPnl.sga.length} ${t('SG&A items')}` : '', badge: vbPnl ? t('VB P&L Sheet') : t('Coming Soon'), badgeStyle: vbPnl ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' : '' },
                   ];
                   const sorted = [...COST_CARDS].sort((a, b) => b.amount - a.amount);
@@ -476,36 +476,44 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
                 <p className="text-xs text-gray-500 dark:text-gray-400">{vbPnl ? t('VB P&L Sheet') : t('Monthly Actuals')} · {period}</p>
               </div>
             </div>
-            {vbPnl && vbPnl.cos.length > 0 ? (
-              <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
-                <div className="p-5">
-                  <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{formatCurrency(Math.round(vbPnl.cos.reduce((s, l) => s + l.total, 0)))}</div>
+            {vbPnl && vbPnl.cosSections.length > 0 ? (
+              <div className="space-y-4">
+                <div className={`rounded-xl border p-5 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+                  <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{formatCurrency(Math.round(vbPnl.cosSections.reduce((s, sec) => s + sec.total, 0)))}</div>
                   <p className="text-xs text-gray-500">{t('Total Cost of Sales')} — {period}</p>
                 </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-t border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                        <th className="text-left py-2 px-4 font-semibold text-gray-500">{t('Item')}</th>
-                        {['Jul','Aug','Sep','Oct','Nov','Dec','Jan'].slice(0, vbPnl.monthCount).map(m => (
-                          <th key={m} className="text-right py-2 px-2 font-semibold text-gray-500">{m}</th>
-                        ))}
-                        <th className="text-right py-2 px-4 font-bold text-gray-700 dark:text-gray-300">{t('Total')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {vbPnl.cos.map(line => (
-                        <tr key={line.key} className="border-b border-gray-100 dark:border-gray-800">
-                          <td className="py-2 px-4 font-medium text-gray-900 dark:text-white">{line.label}</td>
-                          {line.values.slice(0, vbPnl.monthCount).map((v, i) => (
-                            <td key={i} className="text-right py-2 px-2 text-gray-600 dark:text-gray-400">{v > 0 ? formatCurrency(v) : '-'}</td>
+                {vbPnl.cosSections.map(section => (
+                  <div key={section.key} className={`rounded-xl border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+                    <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white">{section.label}</h3>
+                      <span className="text-sm font-bold text-red-600">{formatCurrency(section.total)}</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-gray-200 dark:border-gray-700">
+                            <th className="text-left py-2 px-4 font-semibold text-gray-500">{t('Item')}</th>
+                            {['Jul','Aug','Sep','Oct','Nov','Dec','Jan'].slice(0, vbPnl.monthCount).map(m => (
+                              <th key={m} className="text-right py-2 px-2 font-semibold text-gray-500">{m}</th>
+                            ))}
+                            <th className="text-right py-2 px-4 font-bold text-gray-700 dark:text-gray-300">{t('Total')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {section.lines.map(line => (
+                            <tr key={line.key} className="border-b border-gray-100 dark:border-gray-800">
+                              <td className="py-2 px-4 font-medium text-gray-900 dark:text-white">{line.label}</td>
+                              {line.values.slice(0, vbPnl.monthCount).map((v, i) => (
+                                <td key={i} className="text-right py-2 px-2 text-gray-600 dark:text-gray-400">{v > 0 ? formatCurrency(v) : '-'}</td>
+                              ))}
+                              <td className="text-right py-2 px-4 font-bold text-red-600">{formatCurrency(line.total)}</td>
+                            </tr>
                           ))}
-                          <td className="text-right py-2 px-4 font-bold text-red-600">{formatCurrency(line.total)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className={`rounded-xl border p-12 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>

@@ -45,11 +45,6 @@ const REVENUE_LINE_ALIASES: Record<string, string> = {
   'ebp': 'ebp', 'elite basketball program': 'ebp', 'elite basketball': 'ebp',
 };
 
-const COS_LINE_ALIASES: Record<string, string> = {
-  'bops': 'cos_bops', 'basketball operations': 'cos_bops', 'b.ops': 'cos_bops', 'basketball ops': 'cos_bops',
-  'ebp': 'cos_ebp', 'elite basketball program': 'cos_ebp', 'elite basketball': 'cos_ebp',
-};
-
 const SGA_LINE_ALIASES: Record<string, string> = {
   'team ops': 'team_ops', 'team operations': 'team_ops', 'team oops': 'team_ops',
   'labor': 'labor', 'labour': 'labor', 'lavoro': 'labor', 'salaries': 'labor', 'stipendi': 'labor',
@@ -68,7 +63,7 @@ export interface VbPnlLine {
   section?: string;
 }
 
-export interface VbRevenueSection {
+export interface VbPnlSection {
   key: string;
   label: string;
   values: number[];
@@ -78,8 +73,9 @@ export interface VbRevenueSection {
 
 export interface VbPnlData {
   revenue: VbPnlLine[];
-  revenueSections: VbRevenueSection[];
+  revenueSections: VbPnlSection[];
   cos: VbPnlLine[];
+  cosSections: VbPnlSection[];
   sga: VbPnlLine[];
   monthCount: number;
 }
@@ -110,7 +106,12 @@ export function parseVbPnlSheetData(rows: string[][]): VbPnlData | null {
   const sga: VbPnlLine[] = [];
 
   let currentSection: 'revenue' | 'cos' | 'sga' | null = null;
-  let currentRevenueCategory: string | null = null;
+  let currentSubCategory: string | null = null;
+
+  const COS_CATEGORY_ALIASES: Record<string, string> = {
+    'bops': 'bops', 'basketball operations': 'bops', 'b.ops': 'bops', 'basketball ops': 'bops',
+    'ebp': 'ebp', 'elite basketball program': 'ebp', 'elite basketball': 'ebp',
+  };
 
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
@@ -121,7 +122,7 @@ export function parseVbPnlSheetData(rows: string[][]): VbPnlData | null {
 
     if (SECTION_ALIASES[lowerLabel]) {
       currentSection = SECTION_ALIASES[lowerLabel] as any;
-      currentRevenueCategory = null;
+      currentSubCategory = null;
       continue;
     }
 
@@ -137,10 +138,27 @@ export function parseVbPnlSheetData(rows: string[][]): VbPnlData | null {
         values[monthIdx] = val;
         if (val !== 0) hasValue = true;
       }
-      currentRevenueCategory = REVENUE_LINE_ALIASES[lowerLabel];
+      currentSubCategory = REVENUE_LINE_ALIASES[lowerLabel];
       if (hasValue) {
         const total = values.reduce((s: number, v: number) => s + v, 0);
-        revenue.push({ key: lowerLabel.replace(/\s+/g, '_'), label, values, total, section: currentRevenueCategory });
+        revenue.push({ key: lowerLabel.replace(/\s+/g, '_'), label, values, total, section: currentSubCategory });
+      }
+      continue;
+    }
+
+    if (currentSection === 'cos' && COS_CATEGORY_ALIASES[lowerLabel]) {
+      const values = new Array(12).fill(0);
+      let hasValue = false;
+      for (const [colStr, monthIdx] of Object.entries(monthIndices)) {
+        const col = parseInt(colStr);
+        const val = parseEuro(row[col] || '');
+        values[monthIdx] = val;
+        if (val !== 0) hasValue = true;
+      }
+      currentSubCategory = COS_CATEGORY_ALIASES[lowerLabel];
+      if (hasValue) {
+        const total = values.reduce((s: number, v: number) => s + v, 0);
+        cos.push({ key: lowerLabel.replace(/\s+/g, '_'), label, values, total, section: currentSubCategory });
       }
       continue;
     }
@@ -160,10 +178,10 @@ export function parseVbPnlSheetData(rows: string[][]): VbPnlData | null {
 
     if (currentSection === 'revenue') {
       const key = lowerLabel.replace(/\s+/g, '_');
-      revenue.push({ key, label, values, total, section: currentRevenueCategory || undefined });
+      revenue.push({ key, label, values, total, section: currentSubCategory || undefined });
     } else if (currentSection === 'cos') {
-      const key = COS_LINE_ALIASES[lowerLabel] || `cos_${lowerLabel.replace(/\s+/g, '_')}`;
-      cos.push({ key, label, values, total });
+      const key = `cos_${lowerLabel.replace(/\s+/g, '_')}`;
+      cos.push({ key, label, values, total, section: currentSubCategory || undefined });
     } else if (currentSection === 'sga') {
       const key = SGA_LINE_ALIASES[lowerLabel] || `sga_${lowerLabel.replace(/\s+/g, '_')}`;
       sga.push({ key, label, values, total });
@@ -172,19 +190,26 @@ export function parseVbPnlSheetData(rows: string[][]): VbPnlData | null {
 
   if (revenue.length === 0 && cos.length === 0 && sga.length === 0) return null;
 
-  const sectionOrder = ['sponsorship', 'bops', 'gameday', 'ebp'];
-  const sectionLabels: Record<string, string> = { sponsorship: 'Sponsorship', bops: 'BOps', gameday: 'GameDay', ebp: 'EBP' };
-  const revenueSections: VbRevenueSection[] = [];
-  for (const sKey of sectionOrder) {
-    const sectionLines = revenue.filter(l => l.section === sKey);
-    if (sectionLines.length === 0) continue;
-    const aggValues = new Array(12).fill(0);
-    sectionLines.forEach(l => l.values.forEach((v, i) => aggValues[i] += v));
-    const aggTotal = aggValues.reduce((s, v) => s + v, 0);
-    revenueSections.push({ key: sKey, label: sectionLabels[sKey] || sKey, values: aggValues, total: aggTotal, lines: sectionLines });
-  }
+  const buildSections = (lines: VbPnlLine[], orderKeys: string[], labels: Record<string, string>): VbPnlSection[] => {
+    const sections: VbPnlSection[] = [];
+    for (const sKey of orderKeys) {
+      const sectionLines = lines.filter(l => l.section === sKey);
+      if (sectionLines.length === 0) continue;
+      const aggValues = new Array(12).fill(0);
+      sectionLines.forEach(l => l.values.forEach((v, idx) => aggValues[idx] += v));
+      const aggTotal = aggValues.reduce((s, v) => s + v, 0);
+      sections.push({ key: sKey, label: labels[sKey] || sKey, values: aggValues, total: aggTotal, lines: sectionLines });
+    }
+    return sections;
+  };
 
-  return { revenue, revenueSections, cos, sga, monthCount };
+  const revenueSections = buildSections(revenue, ['sponsorship', 'bops', 'gameday', 'ebp'],
+    { sponsorship: 'Sponsorship', bops: 'BOps', gameday: 'GameDay', ebp: 'EBP' });
+
+  const cosSections = buildSections(cos, ['bops', 'ebp'],
+    { bops: 'BOps', ebp: 'EBP' });
+
+  return { revenue, revenueSections, cos, cosSections, sga, monthCount };
 }
 
 const COLORS = {
