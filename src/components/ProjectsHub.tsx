@@ -511,7 +511,7 @@ const ArenaDetailPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             <div id="rend-video" className={`max-w-5xl mx-auto mb-16 ${fadeClass('rend-video')}`}>
               <div className="relative rounded-xl overflow-hidden bg-black shadow-2xl" style={{ aspectRatio: '16/9' }}>
                 <iframe
-                  src={`https://www.youtube.com/embed/${tx.videoId}?modestbranding=1&controls=0&rel=0&loop=0&autoplay=1&mute=1&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&cc_load_policy=0&playsinline=1&enablejsapi=1`}
+                  src={`https://www.youtube.com/embed/${tx.videoId}?modestbranding=1&controls=0&rel=0&loop=0&playlist=${tx.videoId}&autoplay=1&mute=1&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&cc_load_policy=0&playsinline=1&enablejsapi=1`}
                   onLoad={(e) => { const f = e.target as HTMLIFrameElement; setTimeout(() => { f.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'setPlaybackRate', args: [1.5] }), '*'); }, 1000); }}
                   className="absolute inset-0 w-full h-full"
                   allow="autoplay; encrypted-media"
