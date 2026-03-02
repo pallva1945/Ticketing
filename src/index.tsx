@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { WelcomePage } from './components/WelcomePage';
 import { InternalHub, PVUsPage } from './components/InternalHub';
-import { VBHub } from './components/VBHub';
+import { VBHub, VBUsPage } from './components/VBHub';
 import { FinancialCenter } from './components/FinancialCenter';
 import { CostCenter } from './components/CostCenter';
 import { VerticalsPnL } from './components/VerticalsPnL';
@@ -130,6 +130,10 @@ const Root: React.FC = () => {
     return <FinancialCenter onNavigate={(section) => {
       if (canAccessPage(section)) handleNavigate(section);
     }} onHome={handleBackToWelcome} />;
+  }
+
+  if (currentView === 'vb-us' && canAccessPage('hub')) {
+    return <VBUsPage onBack={handleBackToVBHub} onHome={handleBackToWelcome} onNavigate={handleNavigate} />;
   }
 
   if (currentView === 'vb-hub' && canAccessPage('hub')) {
