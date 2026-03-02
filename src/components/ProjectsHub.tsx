@@ -179,6 +179,330 @@ const campusText = (lang: string) => {
 const FLOORPLAN_IMGS = ['/campus/floorplan_rilazato.png', '/campus/floorplan_palestra.png', '/campus/floorplan_negozio.png'];
 const DOC_ICONS = [LayoutGrid, FileSignature, Banknote, FileCheck2, FileLock2];
 
+const arenaText = (lang: string) => {
+  const isEN = lang === 'en';
+  return {
+    nav: isEN
+      ? [['#arena-upgrades', 'Upgrades'], ['#arena-plans', 'Floor Plans'], ['#arena-milestones', 'Milestones']]
+      : [['#arena-upgrades', 'Interventi'], ['#arena-plans', 'Planimetrie'], ['#arena-milestones', 'Fasi']],
+    heroTitle: isEN ? 'Remodeling the Heart of Varese Basketball' : 'La Riqualificazione del Cuore del Basket Varesino',
+    heroDesc: isEN
+      ? 'A comprehensive renovation of the Enerxenia Arena to enhance fan experience, unlock 24/7 commercial potential, and bring the venue up to modern European standards.'
+      : "Una riqualificazione completa dell'Enerxenia Arena per migliorare l'esperienza dei tifosi, sbloccare il potenziale commerciale 24/7 e portare la struttura agli standard europei moderni.",
+    kpis: isEN
+      ? [
+          { label: 'New Seats', value: '+1,500', color: 'text-white' },
+          { label: 'Commercial Space', value: '1,030 m²', color: 'text-white' },
+          { label: 'New Revenue Streams', value: '24/7', color: 'text-blue-400' },
+        ]
+      : [
+          { label: 'Nuovi Posti', value: '+1.500', color: 'text-white' },
+          { label: 'Spazi Commerciali', value: '1.030 m²', color: 'text-white' },
+          { label: 'Nuovi Flussi di Ricavo', value: '24/7', color: 'text-blue-400' },
+        ],
+    upgradesTitle: isEN ? 'Key Upgrades' : 'Interventi Principali',
+    upgradesDesc: isEN
+      ? 'The renovation addresses every aspect of the arena — from hospitality and commercial spaces to acoustics, energy, and seating capacity.'
+      : "La ristrutturazione affronta ogni aspetto dell'arena — dall'ospitalità e spazi commerciali all'acustica, energia e capacità di posti.",
+    upgrades: isEN ? [
+      { icon: '🍽️', title: 'Premium Restaurant', detail: '400 m² · 24/7 Operation', desc: 'Full-service premium dining available year-round, not just on game days.' },
+      { icon: '🍸', title: 'Bar with Terrace', detail: '300 m² · 24/7 Operation', desc: 'A modern bar with outdoor terrace space for events and daily service.' },
+      { icon: '🏢', title: 'Office Space', detail: '330 m² · 24/7 Access', desc: 'Modern office facilities within the arena complex for club operations and tenants.' },
+      { icon: '🛍️', title: '6 New Selling Points', detail: 'Game Day Revenue', desc: 'Six additional retail and food concession points to boost in-arena spending.' },
+      { icon: '⭐', title: 'New VIP Area', detail: 'Game Day Premium', desc: 'Redesigned VIP hospitality zone with premium seating and exclusive services.' },
+      { icon: '💺', title: '+1,500 Extra Seats', detail: 'Expanded Capacity', desc: 'Significant capacity increase through structural additions and optimized layouts.' },
+      { icon: '🎵', title: 'Concert-Ready Acoustics', detail: 'Multi-Use Venue', desc: 'Professional acoustic treatment enabling concerts, shows, and live events.' },
+      { icon: '☀️', title: 'Solar Panels & Energy', detail: 'Sustainability', desc: 'Rooftop solar installation and energy optimization for reduced operating costs.' },
+    ] : [
+      { icon: '🍽️', title: 'Ristorante Premium', detail: '400 m² · Operativo 24/7', desc: 'Ristorazione premium disponibile tutto l\'anno, non solo nei giorni di gara.' },
+      { icon: '🍸', title: 'Bar con Terrazza', detail: '300 m² · Operativo 24/7', desc: 'Bar moderno con terrazza esterna per eventi e servizio giornaliero.' },
+      { icon: '🏢', title: 'Uffici', detail: '330 m² · Accesso 24/7', desc: 'Spazi ufficio moderni nel complesso dell\'arena per operazioni del club e locatari.' },
+      { icon: '🛍️', title: '6 Nuovi Punti Vendita', detail: 'Ricavi Game Day', desc: 'Sei punti vendita aggiuntivi per incrementare la spesa in arena.' },
+      { icon: '⭐', title: 'Nuova Area VIP', detail: 'Premium Game Day', desc: 'Zona ospitalità VIP ridisegnata con posti premium e servizi esclusivi.' },
+      { icon: '💺', title: '+1.500 Posti Extra', detail: 'Capacità Ampliata', desc: 'Aumento significativo della capacità attraverso aggiunte strutturali e layout ottimizzati.' },
+      { icon: '🎵', title: 'Acustica da Concerto', detail: 'Venue Multi-Uso', desc: 'Trattamento acustico professionale per concerti, spettacoli ed eventi dal vivo.' },
+      { icon: '☀️', title: 'Pannelli Solari & Energia', detail: 'Sostenibilità', desc: 'Installazione solare sul tetto e ottimizzazione energetica per ridurre i costi operativi.' },
+    ],
+    plansTitle: isEN ? 'Architectural Plans' : 'Planimetrie Architettoniche',
+    plansDesc: isEN
+      ? 'Detailed floor plans from the definitive architectural project by Studio Brusa Pasquè. Click to download the full PDF.'
+      : 'Planimetrie dettagliate dal progetto architettonico definitivo dello Studio Brusa Pasquè. Clicca per scaricare il PDF completo.',
+    plans: isEN ? [
+      { title: 'Ground Floor (+0.85)', desc: 'Main entry level, concessions, team facilities, emergency generator.', file: '/arena/floorplans/piano_0_85.pdf' },
+      { title: 'First Floor (+3.80)', desc: 'Skyboxes 5–7, Gold tribunes, camera positions, VIP corridors.', file: '/arena/floorplans/piano_3_80.pdf' },
+      { title: 'Second Floor (+7.35)', desc: 'Offices (330 m²), distribution areas, stairwells, technical spaces.', file: '/arena/floorplans/piano_7_35.pdf' },
+      { title: 'Third Floor (+9.25)', desc: 'Additional offices, skybox level (63 seats), distribution areas.', file: '/arena/floorplans/piano_9_25.pdf' },
+      { title: 'Seating Comparison (+9.25)', desc: 'New seating additions, metal risers, parapets, emergency exits.', file: '/arena/floorplans/comp_piano_9_25.pdf' },
+      { title: 'North-East Elevation', desc: 'External facade details, metalwork parapets, glazing specifications.', file: '/arena/floorplans/prospetto_nord_est.pdf' },
+      { title: 'Visibility Curves', desc: 'Sightline analysis ensuring optimal viewing angles from all sections.', file: '/arena/floorplans/curve_visibilita.pdf' },
+    ] : [
+      { title: 'Piano Terra (+0,85)', desc: 'Livello d\'ingresso principale, punti vendita, strutture squadra, gruppo elettrogeno.', file: '/arena/floorplans/piano_0_85.pdf' },
+      { title: 'Primo Piano (+3,80)', desc: 'Skybox 5–7, tribune Gold, posizioni telecamere, corridoi VIP.', file: '/arena/floorplans/piano_3_80.pdf' },
+      { title: 'Secondo Piano (+7,35)', desc: 'Uffici (330 m²), aree di distribuzione, scale, spazi tecnici.', file: '/arena/floorplans/piano_7_35.pdf' },
+      { title: 'Terzo Piano (+9,25)', desc: 'Uffici aggiuntivi, livello skybox (63 posti), aree di distribuzione.', file: '/arena/floorplans/piano_9_25.pdf' },
+      { title: 'Confronto Sedute (+9,25)', desc: 'Nuove sedute aggiuntive, rialzi metallici, parapetti, uscite di sicurezza.', file: '/arena/floorplans/comp_piano_9_25.pdf' },
+      { title: 'Prospetto Nord-Est', desc: 'Dettagli facciata esterna, parapetti in lamiera, specifiche vetrate.', file: '/arena/floorplans/prospetto_nord_est.pdf' },
+      { title: 'Curve di Visibilità', desc: 'Analisi delle linee visive per angoli di visione ottimali da tutte le sezioni.', file: '/arena/floorplans/curve_visibilita.pdf' },
+    ],
+    milestonesTitle: isEN ? 'Project Milestones' : 'Fasi del Progetto',
+    milestonesDesc: isEN
+      ? 'A phased approach to renovation ensuring minimal disruption to ongoing operations.'
+      : 'Un approccio graduale alla ristrutturazione per garantire minime interruzioni alle operazioni in corso.',
+    milestones: isEN ? [
+      { label: 'Concept & Vision', done: true },
+      { label: 'Definitive Architectural Project', done: true },
+      { label: 'Stakeholder Alignment', done: false, current: true },
+      { label: 'Permits & Approvals', done: false },
+      { label: 'Funding & Partnerships', done: false },
+      { label: 'Phased Renovation', done: false },
+      { label: 'Completion & Inauguration', done: false },
+    ] : [
+      { label: 'Concept & Visione', done: true },
+      { label: 'Progetto Architettonico Definitivo', done: true },
+      { label: 'Allineamento Stakeholder', done: false, current: true },
+      { label: 'Permessi & Approvazioni', done: false },
+      { label: 'Finanziamenti & Partnership', done: false },
+      { label: 'Ristrutturazione a Fasi', done: false },
+      { label: 'Completamento & Inaugurazione', done: false },
+    ],
+    rendersTitle: isEN ? 'Renderings' : 'Rendering',
+    rendersDesc: isEN
+      ? 'Visual renderings of the renovated arena will be added as the design progresses.'
+      : 'I rendering visivi dell\'arena ristrutturata saranno aggiunti man mano che il progetto avanza.',
+    contactTitle: isEN ? 'Contact' : 'Contatti',
+    contactDesc: isEN
+      ? 'For inquiries about the arena renovation project, please reach out to us.'
+      : 'Per informazioni sul progetto di ristrutturazione dell\'arena, non esitate a contattarci.',
+    rights: isEN ? 'All rights reserved.' : 'Tutti i diritti riservati.',
+    projectInfo: isEN ? 'Project Information' : 'Informazioni Progetto',
+    architect: isEN ? 'Architect' : 'Architetto',
+    structEng: isEN ? 'Structural Eng.' : 'Ing. Strutturista',
+    mepEng: isEN ? 'MEP Engineering' : 'Ing. Impianti',
+    location: isEN ? 'Location' : 'Luogo',
+    projectType: isEN ? 'Project Type' : 'Tipo di Intervento',
+    buildingRenovation: isEN ? 'Building Renovation' : 'Ristrutturazione Edilizia',
+  };
+};
+
+const ArenaDetailPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
+  const { language, t } = useLanguage();
+  const tx = arenaText(language);
+  const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            setVisibleSections(prev => new Set(prev).add(entry.target.id));
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+    document.querySelectorAll('.arena-fade').forEach(el => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
+  const fadeClass = (id: string) =>
+    `arena-fade transition-all duration-700 ${visibleSections.has(id) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-5'}`;
+
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    const id = href.replace('#', '');
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const progress = Math.round((tx.milestones.filter(m => m.done).length / tx.milestones.length) * 100);
+
+  return (
+    <div className="bg-gray-50 text-gray-800 min-h-screen" style={{ fontFamily: "'Inter', sans-serif" }}>
+      <header className="bg-white/90 backdrop-blur-lg sticky top-0 z-50 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <button onClick={onBack} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors mr-2">
+              <ArrowLeft size={16} />
+              {t('Projects')}
+            </button>
+            <Building2 size={24} className="text-blue-600" />
+            <span className="text-lg font-bold text-gray-800">Enerxenia Arena</span>
+          </div>
+          <nav className="hidden md:flex items-center gap-8 text-sm font-semibold text-gray-600">
+            {tx.nav.map(([href, label]) => (
+              <a key={href} href={href} onClick={(e) => scrollToSection(e, href)} className="relative pb-1 hover:text-blue-600 transition-colors group">
+                {label}
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-blue-600 group-hover:w-full transition-all duration-300" />
+              </a>
+            ))}
+          </nav>
+        </div>
+      </header>
+
+      <main>
+        <section className="bg-gradient-to-br from-blue-950 to-indigo-900 text-white">
+          <div className="max-w-7xl mx-auto px-6 py-20 md:py-28 text-center">
+            <h1 className="text-3xl md:text-5xl lg:text-6xl font-black tracking-tight leading-tight mb-4">{tx.heroTitle}</h1>
+            <p className="text-base md:text-lg text-blue-200/80 max-w-3xl mx-auto mb-8">{tx.heroDesc}</p>
+            <a href="#arena-upgrades" onClick={(e) => scrollToSection(e, '#arena-upgrades')} className="inline-block bg-blue-600 text-white font-bold px-8 py-3.5 rounded-md hover:bg-blue-700 transition-all text-base shadow-lg">{language === 'en' ? 'View Upgrades' : 'Vedi Interventi'}</a>
+          </div>
+          <div className="max-w-5xl mx-auto px-6 pb-20 md:pb-28">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {tx.kpis.map((kpi, i) => (
+                <div key={i} className="bg-white/5 border border-white/10 p-6 rounded-lg text-center hover:bg-white/10 hover:-translate-y-1 transition-all duration-300">
+                  <h3 className="text-blue-300/70 text-xs font-medium uppercase tracking-wider">{kpi.label}</h3>
+                  <p className={`text-3xl md:text-4xl font-bold mt-2 ${kpi.color}`}>{kpi.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="arena-upgrades" className="py-20 md:py-28 bg-white">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center max-w-3xl mx-auto mb-14">
+              <h2 id="upg-title" className={`text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 ${fadeClass('upg-title')}`}>{tx.upgradesTitle}</h2>
+              <p id="upg-desc" className={`text-base text-gray-600 ${fadeClass('upg-desc')}`}>{tx.upgradesDesc}</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {tx.upgrades.map((u, i) => (
+                <div key={i} id={`upg-${i}`} className={`bg-white border border-gray-200 p-5 rounded-lg hover:-translate-y-1 hover:shadow-xl hover:border-blue-500 transition-all duration-300 ${fadeClass(`upg-${i}`)}`}>
+                  <div className="text-3xl mb-3">{u.icon}</div>
+                  <h3 className="text-sm font-bold text-gray-900 mb-1">{u.title}</h3>
+                  <p className="text-xs font-semibold text-blue-600 mb-2">{u.detail}</p>
+                  <p className="text-xs text-gray-500 leading-relaxed">{u.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="arena-plans" className="py-20 md:py-28 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center max-w-3xl mx-auto mb-14">
+              <h2 id="plans-title" className={`text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 ${fadeClass('plans-title')}`}>{tx.plansTitle}</h2>
+              <p id="plans-desc" className={`text-base text-gray-600 ${fadeClass('plans-desc')}`}>{tx.plansDesc}</p>
+            </div>
+
+            <div id="proj-info" className={`bg-white border border-gray-200 rounded-lg p-6 mb-8 ${fadeClass('proj-info')}`}>
+              <h3 className="text-sm font-bold text-gray-900 mb-4">{tx.projectInfo}</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 text-xs">
+                <div>
+                  <p className="text-gray-400 font-medium uppercase tracking-wider mb-0.5">{tx.architect}</p>
+                  <p className="font-semibold text-gray-900">Arch. Elena Brusa Pasquè</p>
+                  <p className="text-gray-500">Studio Brusa Pasquè, Varese</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-medium uppercase tracking-wider mb-0.5">{tx.structEng}</p>
+                  <p className="font-semibold text-gray-900">Ing. Riccardo Aceti</p>
+                  <p className="text-gray-500">Studio Aceti, Varese</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-medium uppercase tracking-wider mb-0.5">{tx.mepEng}</p>
+                  <p className="font-semibold text-gray-900">SEINGIM</p>
+                  <p className="text-gray-500">Milano</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-medium uppercase tracking-wider mb-0.5">{tx.location}</p>
+                  <p className="font-semibold text-gray-900">Piazza Antonio Gramsci</p>
+                  <p className="text-gray-500">Varese</p>
+                </div>
+                <div>
+                  <p className="text-gray-400 font-medium uppercase tracking-wider mb-0.5">{tx.projectType}</p>
+                  <p className="font-semibold text-gray-900">{tx.buildingRenovation}</p>
+                  <p className="text-gray-500">CUP: B37H21001160002</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {tx.plans.map((plan, i) => (
+                <a key={i} href={plan.file} target="_blank" rel="noopener noreferrer" id={`plan-a-${i}`} className={`bg-white border border-gray-200 p-5 rounded-lg hover:-translate-y-1 hover:shadow-xl hover:border-blue-500 transition-all duration-300 block ${fadeClass(`plan-a-${i}`)}`}>
+                  <div className="flex items-center mb-3">
+                    <div className="bg-blue-100 p-2.5 rounded-full mr-3">
+                      <FileText size={18} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-900">{plan.title}</h3>
+                      <p className="text-[10px] text-blue-600 font-medium">PDF</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 leading-relaxed">{plan.desc}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="arena-milestones" className="py-20 md:py-28 bg-white">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center max-w-3xl mx-auto mb-14">
+              <h2 id="mile-title" className={`text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 ${fadeClass('mile-title')}`}>{tx.milestonesTitle}</h2>
+              <p id="mile-desc" className={`text-base text-gray-600 ${fadeClass('mile-desc')}`}>{tx.milestonesDesc}</p>
+            </div>
+
+            <div id="mile-card" className={`max-w-2xl mx-auto bg-white border border-gray-200 rounded-xl p-8 shadow-sm ${fadeClass('mile-card')}`}>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-sm font-bold text-gray-900">{tx.milestonesTitle}</h3>
+                <span className="text-xs font-bold text-blue-600">{progress}% {language === 'en' ? 'complete' : 'completato'}</span>
+              </div>
+              <div className="h-2 rounded-full bg-gray-100 mb-8">
+                <div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-1000" style={{ width: `${progress}%` }} />
+              </div>
+              <div className="space-y-4">
+                {tx.milestones.map((m: any, i: number) => (
+                  <div key={i} className="flex items-center gap-4">
+                    {m.done ? (
+                      <CheckCircle2 size={20} className="text-blue-500 flex-shrink-0" />
+                    ) : m.current ? (
+                      <AlertCircle size={20} className="text-amber-500 flex-shrink-0" />
+                    ) : (
+                      <Circle size={20} className="text-gray-300 flex-shrink-0" />
+                    )}
+                    <span className={`text-sm font-medium ${m.done ? 'text-gray-900' : m.current ? 'text-gray-700' : 'text-gray-400'}`}>{m.label}</span>
+                    {m.current && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full ml-auto">{language === 'en' ? 'Current' : 'Attuale'}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-20 md:py-28 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center max-w-3xl mx-auto mb-14">
+              <h2 id="rend-title" className={`text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 ${fadeClass('rend-title')}`}>{tx.rendersTitle}</h2>
+              <p id="rend-desc" className={`text-base text-gray-600 ${fadeClass('rend-desc')}`}>{tx.rendersDesc}</p>
+            </div>
+            <div id="rend-placeholder" className={`max-w-2xl mx-auto rounded-xl border-2 border-dashed border-gray-200 bg-white p-12 text-center ${fadeClass('rend-placeholder')}`}>
+              <Clock size={40} className="mx-auto text-gray-300 mb-4" />
+              <h3 className="text-base font-bold text-gray-400 mb-2">{language === 'en' ? 'Coming Soon' : 'In Arrivo'}</h3>
+              <p className="text-sm text-gray-400 max-w-md mx-auto">
+                {language === 'en'
+                  ? 'Visual renderings of the renovated Enerxenia Arena will be added here as the design evolves.'
+                  : "I rendering visivi dell'Enerxenia Arena ristrutturata saranno aggiunti qui man mano che il design evolve."}
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="bg-gray-900 text-white">
+        <div className="max-w-7xl mx-auto px-6 py-10 text-center">
+          <h2 className="text-xl font-bold mb-3">{tx.contactTitle}</h2>
+          <p className="text-gray-400 mb-4 max-w-xl mx-auto text-sm">{tx.contactDesc}</p>
+          <p className="font-medium text-sm">Pallacanestro Varese S.R.L.</p>
+          <p className="text-gray-400 text-sm">Piazzale Gramsci snc, 21100 Varese</p>
+          <a href="mailto:info@pallacanestrovarese.it" className="text-blue-400 hover:text-blue-300 transition text-sm">info@pallacanestrovarese.it</a>
+          <div className="mt-6 border-t border-gray-800 pt-6">
+            <p className="text-xs text-gray-500">&copy; 2025 Pallacanestro Varese S.R.L. {tx.rights}</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
+
 const CampusDetailPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const { language, t } = useLanguage();
   const tx = campusText(language);
@@ -488,86 +812,7 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onBackToWelcome }) => 
   }
 
   if (selectedProject === 'arena') {
-    return (
-      <div className={`min-h-screen ${isDark ? 'dark bg-gray-950' : 'bg-gray-50'}`}>
-        <div className="fixed top-0 left-0 w-full bg-white/80 dark:bg-gray-950/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800 z-50 px-4">
-          <div className="flex items-center justify-between py-2.5 max-w-5xl mx-auto">
-            <button onClick={() => setSelectedProject(null)} className="flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
-              <ArrowLeft size={16} />
-              {t('Projects')}
-            </button>
-            <div className="flex items-center gap-2">
-              <Building2 size={18} className="text-blue-600" />
-              <span className="text-sm font-bold text-gray-900 dark:text-white">{t('Arena Remodelation')}</span>
-            </div>
-            <div className="w-20" />
-          </div>
-        </div>
-        <div className="pt-16 pb-12 max-w-5xl mx-auto px-4">
-          <div className="relative rounded-2xl overflow-hidden mb-8 h-48 sm:h-64">
-            <img src={ARENA_IMAGE} alt="Arena" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-blue-950/90 via-blue-950/40 to-transparent" />
-            <div className="absolute bottom-0 left-0 p-6 sm:p-8">
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-bold mb-3 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400">{t('Concept Phase')}</span>
-              <h1 className="text-2xl sm:text-4xl font-bold text-white mb-1">{t('Arena Remodelation')}</h1>
-              <p className="text-sm text-white/70">Palazzetto dello Sport</p>
-            </div>
-          </div>
-          <p className={`text-sm leading-relaxed mb-8 max-w-3xl ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            {t('Comprehensive renovation of the arena to enhance the fan experience, modernize facilities, and increase revenue potential.')}
-          </p>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-            {[
-              { icon: MapPin, label: t('Location'), value: 'Via Marzorati, Masnago' },
-              { icon: Calendar, label: t('Timeline'), value: t('2026–2029') },
-              { icon: Target, label: t('Scope'), value: t('Seating, Hospitality, Tech, Accessibility') },
-              { icon: DollarSign, label: t('Focus'), value: t('Fan Experience & Revenue Growth') },
-            ].map(d => {
-              const DIcon = d.icon;
-              return (
-                <div key={d.label} className={`rounded-xl border p-4 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
-                  <DIcon size={16} className="mb-2 text-blue-500" />
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{d.label}</p>
-                  <p className="text-xs font-semibold text-gray-900 dark:text-white">{d.value}</p>
-                </div>
-              );
-            })}
-          </div>
-          <div className={`rounded-xl border p-6 mb-6 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t('Project Milestones')}</h3>
-              <span className="text-xs font-bold text-blue-600">17% {t('complete')}</span>
-            </div>
-            <div className={`h-2 rounded-full mb-6 ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-              <div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600" style={{ width: '17%' }} />
-            </div>
-            <div className="space-y-3">
-              {[
-                { label: t('Concept & Vision'), done: true },
-                { label: t('Stakeholder Alignment'), done: false, current: true },
-                { label: t('Engineering Assessment'), done: false },
-                { label: t('Funding & Partnerships'), done: false },
-                { label: t('Phased Renovation'), done: false },
-                { label: t('Completion'), done: false },
-              ].map((m, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  {m.done ? <CheckCircle2 size={18} className="text-blue-500" /> : m.current ? <AlertCircle size={18} className="text-amber-500" /> : <Circle size={18} className="text-gray-300 dark:text-gray-700" />}
-                  <span className={`text-sm font-medium ${m.done ? (isDark ? 'text-white' : 'text-gray-900') : (isDark ? 'text-gray-500' : 'text-gray-400')}`}>{m.label}</span>
-                  {m.current && <span className="text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-900/20 px-2 py-0.5 rounded-full">{t('Current')}</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className={`rounded-xl border-2 border-dashed p-10 text-center ${isDark ? 'border-gray-800 bg-gray-900/30' : 'border-gray-200 bg-gray-50'}`}>
-            <Clock size={32} className="mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-            <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 mb-1">{t('More details coming soon')}</h3>
-            <p className="text-xs text-gray-400 dark:text-gray-600 max-w-md mx-auto">
-              {t('Financial projections, design renders, and detailed timelines will be added as the project progresses.')}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <ArenaDetailPage onBack={() => setSelectedProject(null)} />;
   }
 
   const projects = [
