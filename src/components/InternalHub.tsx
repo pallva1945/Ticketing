@@ -100,34 +100,6 @@ interface InternalHubProps {
 
 const TOTAL_SECTIONS = 4;
 
-const easeInOutQuint = (t: number): number => {
-  return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
-};
-
-const smoothScrollTo = (
-  container: HTMLDivElement,
-  targetY: number,
-  duration: number,
-  onComplete?: () => void
-) => {
-  const startY = container.scrollTop;
-  const diff = targetY - startY;
-  let startTime: number | null = null;
-
-  const step = (timestamp: number) => {
-    if (!startTime) startTime = timestamp;
-    const elapsed = timestamp - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    container.scrollTop = startY + diff * easeInOutQuint(progress);
-    if (progress < 1) {
-      requestAnimationFrame(step);
-    } else {
-      onComplete?.();
-    }
-  };
-  requestAnimationFrame(step);
-};
-
 export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWelcome }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
@@ -135,35 +107,77 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
   const isDark = theme === 'dark';
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [currentSection, setCurrentSection] = useState(0);
+  const [activeSection, setActiveSection] = useState(0);
   const [teamSlide, setTeamSlide] = useState(0);
+  const [visible, setVisible] = useState<boolean[]>(Array(TOTAL_SECTIONS).fill(false));
   const isScrolling = useRef(false);
-  const currentSectionRef = useRef(0);
-  const currentTeamSlideRef = useRef(0);
-  const isSubSliding = useRef(false);
+  const currentSection = useRef(0);
+  const currentTeamSlide = useRef(0);
+  const isSliding = useRef(false);
 
-  const navItems = ['Us', 'Corp', 'BOps', t('Our Projects')];
-  const slideLabels = [t('VMV'), t('About'), t('Ownership'), t('Board'), t('Advisors'), t('ELT'), t('Depts'), t('External')];
+  const easeInOutQuint = (t: number) => t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
 
-  const scrollToSection = useCallback((index: number, skipSubSlideReset?: boolean) => {
-    if (isScrolling.current || index < 0 || index >= TOTAL_SECTIONS) return;
-    const container = containerRef.current;
-    if (!container) return;
-    isScrolling.current = true;
-    currentSectionRef.current = index;
-    setCurrentSection(index);
-    const targetY = index * window.innerHeight;
-    smoothScrollTo(container, targetY, 800, () => {
-      isScrolling.current = false;
-    });
+  const smoothScrollTo = useCallback((container: HTMLDivElement, target: number, duration: number) => {
+    const start = container.scrollTop;
+    const distance = target - start;
+    if (distance === 0) { isScrolling.current = false; return; }
+    let startTime: number | null = null;
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      container.scrollTop = start + distance * easeInOutQuint(progress);
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        isScrolling.current = false;
+      }
+    };
+    requestAnimationFrame(step);
   }, []);
 
+  const goToSection = useCallback((index: number) => {
+    if (isScrolling.current || index < 0 || index >= TOTAL_SECTIONS) return;
+    isScrolling.current = true;
+    currentSection.current = index;
+    setActiveSection(index);
+    const container = containerRef.current;
+    if (container) {
+      smoothScrollTo(container, index * window.innerHeight, 900);
+    }
+  }, [smoothScrollTo]);
+
   const goToTeamSlide = useCallback((index: number) => {
-    if (isSubSliding.current || index < 0 || index >= TEAM_SLIDES) return;
-    isSubSliding.current = true;
-    currentTeamSlideRef.current = index;
+    if (isSliding.current || index < 0 || index >= TEAM_SLIDES) return;
+    isSliding.current = true;
+    currentTeamSlide.current = index;
     setTeamSlide(index);
-    setTimeout(() => { isSubSliding.current = false; }, 1400);
+    setTimeout(() => { isSliding.current = false; }, 1400);
+  }, []);
+
+  useEffect(() => {
+    setVisible(prev => { const n = [...prev]; n[0] = true; return n; });
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const idx = Number(entry.target.getAttribute('data-section'));
+          if (!isNaN(idx)) {
+            setVisible(prev => { const n = [...prev]; n[idx] = true; return n; });
+            setActiveSection(idx);
+            currentSection.current = idx;
+          }
+        }
+      });
+    }, { threshold: 0.5 });
+
+    const container = containerRef.current;
+    if (container) {
+      container.querySelectorAll('[data-section]').forEach(el => observer.observe(el));
+    }
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -172,42 +186,39 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
 
     let accumulated = 0;
     let lastWheelTime = 0;
-    const THRESHOLD = 60;
+    const THRESHOLD = 80;
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      if (isScrolling.current || isSubSliding.current) return;
+      if (isScrolling.current || isSliding.current) return;
       const now = Date.now();
-      if (now - lastWheelTime > 200) accumulated = 0;
+      if (now - lastWheelTime > 800) accumulated = 0;
       lastWheelTime = now;
       accumulated += e.deltaY;
 
       if (Math.abs(accumulated) >= THRESHOLD) {
-        const section = currentSectionRef.current;
-        const slide = currentTeamSlideRef.current;
-
+        const section = currentSection.current;
         if (section === 0) {
           if (accumulated > 0) {
-            if (slide < TEAM_SLIDES - 1) {
-              goToTeamSlide(slide + 1);
+            if (currentTeamSlide.current < TEAM_SLIDES - 1) {
+              goToTeamSlide(currentTeamSlide.current + 1);
             } else {
-              scrollToSection(1);
+              goToSection(1);
             }
           } else {
-            if (slide > 0) {
-              goToTeamSlide(slide - 1);
+            if (currentTeamSlide.current > 0) {
+              goToTeamSlide(currentTeamSlide.current - 1);
             }
           }
         } else {
-          if (accumulated > 0) {
-            scrollToSection(section + 1);
-          } else {
+          if (accumulated > 0 && section < TOTAL_SECTIONS - 1) {
+            goToSection(section + 1);
+          } else if (accumulated < 0) {
             if (section === 1) {
-              currentTeamSlideRef.current = TEAM_SLIDES - 1;
-              setTeamSlide(TEAM_SLIDES - 1);
-              scrollToSection(0);
-            } else {
-              scrollToSection(section - 1);
+              goToTeamSlide(TEAM_SLIDES - 1);
+              goToSection(0);
+            } else if (section > 0) {
+              goToSection(section - 1);
             }
           }
         }
@@ -216,83 +227,43 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
     };
 
     let touchStartY = 0;
-    let touchStartX = 0;
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0].clientY;
-      touchStartX = e.touches[0].clientX;
-    };
+    const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
     const handleTouchEnd = (e: TouchEvent) => {
-      if (isScrolling.current || isSubSliding.current) return;
+      if (isScrolling.current || isSliding.current) return;
       const deltaY = touchStartY - e.changedTouches[0].clientY;
-      const deltaX = touchStartX - e.changedTouches[0].clientX;
-      const section = currentSectionRef.current;
-      const slide = currentTeamSlideRef.current;
-
-      if (section === 0 && Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 40) {
-        if (deltaX > 0 && slide < TEAM_SLIDES - 1) goToTeamSlide(slide + 1);
-        else if (deltaX < 0 && slide > 0) goToTeamSlide(slide - 1);
-        return;
-      }
-
-      if (Math.abs(deltaY) > 40) {
-        if (section === 0) {
-          if (deltaY > 0) {
-            if (slide < TEAM_SLIDES - 1) goToTeamSlide(slide + 1);
-            else scrollToSection(1);
-          } else {
-            if (slide > 0) goToTeamSlide(slide - 1);
-          }
+      if (Math.abs(deltaY) < 40) return;
+      const section = currentSection.current;
+      if (section === 0) {
+        if (deltaY > 0) {
+          if (currentTeamSlide.current < TEAM_SLIDES - 1) goToTeamSlide(currentTeamSlide.current + 1);
+          else goToSection(1);
         } else {
-          if (deltaY > 0) {
-            scrollToSection(section + 1);
-          } else {
-            if (section === 1) {
-              currentTeamSlideRef.current = TEAM_SLIDES - 1;
-              setTeamSlide(TEAM_SLIDES - 1);
-              scrollToSection(0);
-            } else {
-              scrollToSection(section - 1);
-            }
-          }
+          if (currentTeamSlide.current > 0) goToTeamSlide(currentTeamSlide.current - 1);
+        }
+      } else {
+        if (deltaY > 0 && section < TOTAL_SECTIONS - 1) goToSection(section + 1);
+        else if (deltaY < 0) {
+          if (section === 1) { goToTeamSlide(TEAM_SLIDES - 1); goToSection(0); }
+          else if (section > 0) goToSection(section - 1);
         }
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (isScrolling.current || isSubSliding.current) return;
-      const section = currentSectionRef.current;
-      const slide = currentTeamSlideRef.current;
-
-      if (e.key === 'ArrowRight' && section === 0) {
+      if (['ArrowDown', 'ArrowRight', 'PageDown'].includes(e.key)) {
         e.preventDefault();
-        if (slide < TEAM_SLIDES - 1) goToTeamSlide(slide + 1);
-        else scrollToSection(1);
-        return;
-      }
-      if (e.key === 'ArrowLeft' && section === 0) {
-        e.preventDefault();
-        if (slide > 0) goToTeamSlide(slide - 1);
-        return;
-      }
-      if (e.key === 'ArrowDown' || e.key === 'PageDown') {
-        e.preventDefault();
+        const section = currentSection.current;
         if (section === 0) {
-          if (slide < TEAM_SLIDES - 1) goToTeamSlide(slide + 1);
-          else scrollToSection(1);
-        } else {
-          scrollToSection(section + 1);
-        }
-      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+          if (currentTeamSlide.current < TEAM_SLIDES - 1) goToTeamSlide(currentTeamSlide.current + 1);
+          else goToSection(1);
+        } else if (section < TOTAL_SECTIONS - 1) goToSection(section + 1);
+      } else if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(e.key)) {
         e.preventDefault();
+        const section = currentSection.current;
         if (section === 0) {
-          if (slide > 0) goToTeamSlide(slide - 1);
-        } else if (section === 1) {
-          currentTeamSlideRef.current = TEAM_SLIDES - 1;
-          setTeamSlide(TEAM_SLIDES - 1);
-          scrollToSection(0);
-        } else {
-          scrollToSection(section - 1);
-        }
+          if (currentTeamSlide.current > 0) goToTeamSlide(currentTeamSlide.current - 1);
+        } else if (section === 1) { goToTeamSlide(TEAM_SLIDES - 1); goToSection(0); }
+        else if (section > 0) goToSection(section - 1);
       }
     };
 
@@ -306,7 +277,10 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       container.removeEventListener('touchend', handleTouchEnd);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [goToTeamSlide, scrollToSection]);
+  }, [goToSection, goToTeamSlide]);
+
+  const navItems = ['Us', 'Corp', 'BOps', t('Our Projects')];
+  const slideLabels = [t('VMV'), t('About'), t('Ownership'), t('Board'), t('Advisors'), t('ELT'), t('Depts'), t('External')];
 
   return (
     <div
@@ -318,42 +292,33 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
         .bounce-arrow { animation: bounce-subtle 2s ease-in-out infinite; }
       `}</style>
 
-      <div className={`absolute top-0 left-0 w-full h-px z-50 ${isDark ? 'bg-gradient-to-r from-transparent via-red-800/40 to-transparent' : 'bg-gradient-to-r from-transparent via-red-200 to-transparent'}`}></div>
+      <div className={`fixed top-0 left-0 w-full h-px z-50 ${isDark ? 'bg-gradient-to-r from-transparent via-red-800/40 to-transparent' : 'bg-gradient-to-r from-transparent via-red-200 to-transparent'}`}></div>
 
       <nav className={`fixed top-0 left-0 w-full z-40 backdrop-blur-xl ${isDark ? 'bg-[#0a0a0a]/90 border-b border-gray-800/50' : 'bg-[#fafafa]/90 border-b border-gray-200/50'}`}>
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={onBackToWelcome} className="hover:opacity-70 transition-opacity">
+            <button onClick={onBackToWelcome} className="hover:opacity-70 transition-opacity flex items-center gap-2">
+              <ChevronLeft size={16} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
               <img src={PV_LOGO_URL} alt="PV" className="w-7 h-7 object-contain" />
             </button>
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2">
-            {navItems.map((label, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  if (i === 0) {
-                    currentTeamSlideRef.current = 0;
-                    setTeamSlide(0);
-                  }
-                  scrollToSection(i);
-                }}
-                className={`rounded-full transition-all duration-500 ${
-                  currentSection === i
-                    ? isDark ? 'bg-white/10 text-white' : 'bg-gray-900/10 text-gray-900'
-                    : isDark ? 'text-gray-600 hover:text-gray-400' : 'text-gray-300 hover:text-gray-500'
-                }`}
-              >
-                <span className="hidden sm:inline px-3 py-1.5 text-xs tracking-[0.15em] uppercase font-medium">{label}</span>
-                <span className={`sm:hidden flex items-center justify-center w-8 h-8`}>
-                  <span className={`block w-2.5 h-2.5 rounded-full transition-all ${
-                    currentSection === i
-                      ? isDark ? 'bg-white scale-125' : 'bg-gray-900 scale-125'
-                      : isDark ? 'bg-gray-600' : 'bg-gray-300'
-                  }`} />
-                </span>
-              </button>
-            ))}
+            <div className={`h-4 w-px ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
+            <span className={`text-xs tracking-[0.15em] uppercase font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Pallacanestro Varese</span>
+            <div className={`h-4 w-px hidden sm:block ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
+            <div className="hidden sm:flex items-center gap-1">
+              {navItems.map((label, i) => (
+                <button
+                  key={i}
+                  onClick={() => goToSection(i)}
+                  className={`px-3 py-1.5 rounded-lg text-xs tracking-[0.15em] uppercase font-medium transition-all duration-300 ${
+                    activeSection === i
+                      ? isDark ? 'text-white bg-gray-800' : 'text-gray-900 bg-gray-100'
+                      : isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={toggleLanguage} className={`px-3 py-1.5 rounded-lg text-xs tracking-wider uppercase transition-all ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}>
@@ -366,9 +331,23 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
         </div>
       </nav>
 
-      <div style={{ height: `${TOTAL_SECTIONS * 100}vh` }}>
-        {/* Section 0: Us - Horizontal sub-slides */}
-        <div className="h-screen relative overflow-hidden">
+      <div className={`fixed right-6 top-1/2 -translate-y-1/2 z-40 hidden sm:flex flex-col gap-3`}>
+        {Array.from({ length: TOTAL_SECTIONS }).map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goToSection(i)}
+            className={`w-2 h-2 rounded-full transition-all duration-500 ${
+              activeSection === i
+                ? isDark ? 'bg-white scale-125' : 'bg-gray-900 scale-125'
+                : isDark ? 'bg-gray-700 hover:bg-gray-500' : 'bg-gray-300 hover:bg-gray-400'
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Section 0: Us (8 horizontal sub-slides) */}
+      <div data-section="0" className="h-screen relative overflow-hidden">
+        <div className={`transition-all duration-[1s] ease-out absolute inset-0 ${visible[0] ? 'opacity-100' : 'opacity-0'}`}>
           <div
             className="flex h-full"
             style={{
@@ -393,20 +372,15 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                     {t('brand_promise')}
                   </p>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-4">
                   <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
                     <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
                       <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-red-900/25' : 'bg-red-50'}`}>
                         <Rocket size={14} className="text-red-500 sm:w-[18px] sm:h-[18px]" />
                       </div>
-                      <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        {t('Mission')}
-                      </h3>
+                      <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Mission')}</h3>
                     </div>
-                    <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                      {t('mission_statement')}
-                    </p>
+                    <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{t('mission_statement')}</p>
                     <div className="hidden sm:block space-y-2">
                       {['mission_1', 'mission_2', 'mission_3', 'mission_4'].map((key) => (
                         <div key={key} className="flex items-start gap-2.5">
@@ -416,19 +390,14 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                       ))}
                     </div>
                   </div>
-
                   <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
                     <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
                       <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
                         <Compass size={14} className="text-blue-500 sm:w-[18px] sm:h-[18px]" />
                       </div>
-                      <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        {t('Vision')}
-                      </h3>
+                      <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Vision')}</h3>
                     </div>
-                    <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                      {t('vision_statement')}
-                    </p>
+                    <p className={`text-xs sm:text-sm leading-relaxed sm:mb-4 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{t('vision_statement')}</p>
                     <div className="hidden sm:block space-y-2">
                       {['vision_1', 'vision_2', 'vision_3', 'vision_4'].map((key) => (
                         <div key={key} className="flex items-start gap-2.5">
@@ -438,15 +407,12 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                       ))}
                     </div>
                   </div>
-
                   <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
                     <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
                       <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
                         <Star size={14} className="text-amber-500 sm:w-[18px] sm:h-[18px]" />
                       </div>
-                      <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        {t('Core Values')}
-                      </h3>
+                      <h3 className={`text-sm sm:text-base font-semibold uppercase tracking-wider ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Core Values')}</h3>
                     </div>
                     <div className="space-y-1.5 sm:space-y-3.5">
                       <div>
@@ -484,7 +450,6 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                     {t('about_subheadline')}
                   </p>
                 </div>
-
                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-4 mb-3 sm:mb-8">
                   <div className={`rounded-xl border p-3 sm:p-5 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
                     <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center mb-2 sm:mb-3 ${isDark ? 'bg-emerald-900/25' : 'bg-emerald-50'}`}>
@@ -522,13 +487,12 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                     <p className={`text-[10px] sm:text-xs leading-relaxed hidden sm:block ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('pillar_development')}</p>
                   </div>
                 </div>
-
                 <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/40 border-gray-800/40' : 'bg-gray-50/80 border-gray-200/60'}`}>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-8">
-                    <StatCounter target={10} label={t('League Titles')} active={currentSection === 0 && teamSlide >= 1} isDark={isDark} />
-                    <StatCounter target={5} label={t('EuroLeague Titles')} active={currentSection === 0 && teamSlide >= 1} isDark={isDark} />
-                    <StatCounter target={3} label={t('Intercontinental Cups')} active={currentSection === 0 && teamSlide >= 1} isDark={isDark} />
-                    <StatCounter target={80} label={t('Years of History')} active={currentSection === 0 && teamSlide >= 1} isDark={isDark} />
+                    <StatCounter target={10} label={t('League Titles')} active={visible[0]} isDark={isDark} />
+                    <StatCounter target={5} label={t('EuroLeague Titles')} active={visible[0]} isDark={isDark} />
+                    <StatCounter target={3} label={t('Intercontinental Cups')} active={visible[0]} isDark={isDark} />
+                    <StatCounter target={80} label={t('Years of History')} active={visible[0]} isDark={isDark} />
                   </div>
                 </div>
               </div>
@@ -551,7 +515,6 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                     {t('ownership_subtitle')}
                   </p>
                 </div>
-
                 <div className="flex flex-col md:flex-row items-center gap-3 sm:gap-6 md:gap-10">
                   <div className="flex-shrink-0" style={{ width: 'min(200px, 50vw)', height: 'min(200px, 50vw)' }}>
                     <ResponsiveContainer width="100%" height="100%">
@@ -750,7 +713,6 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             >
               <ChevronLeft size={18} />
             </button>
-
             <div className="flex items-center gap-2">
               {slideLabels.map((label, i) => (
                 <button
@@ -773,17 +735,12 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 </button>
               ))}
             </div>
-
             <button
-              onClick={() => {
-                if (teamSlide === TEAM_SLIDES - 1) {
-                  scrollToSection(1);
-                } else {
-                  goToTeamSlide(teamSlide + 1);
-                }
-              }}
+              onClick={() => goToTeamSlide(teamSlide + 1)}
               className={`p-2 rounded-full transition-all duration-300 ${
-                isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
+                teamSlide === TEAM_SLIDES - 1
+                  ? 'opacity-0 pointer-events-none'
+                  : isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
               <ChevronRight size={18} />
@@ -798,105 +755,132 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             />
           </div>
         </div>
+      </div>
 
-        {/* Section 1: Corp */}
-        <div className="h-screen flex items-center justify-center relative">
-          <button
-            onClick={() => onNavigate('landing')}
-            className={`group relative rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl w-full max-w-sm mx-6 ${
-              isDark ? 'bg-gray-900/50 border-gray-800 hover:border-blue-800/60 hover:shadow-blue-950/10' : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-blue-100/30'
-            }`}
-          >
-            <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-600 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
-            <div className="p-5 sm:p-8 flex flex-col items-center text-center">
-              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 ${isDark ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
-                <Building2 size={24} className={`${isDark ? 'text-blue-500' : 'text-blue-600'} sm:w-[28px] sm:h-[28px]`} />
-              </div>
-              <h3 className={`text-base sm:text-xl font-semibold mb-1.5 sm:mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Corp
-              </h3>
-              <p className={`text-[10px] sm:text-xs leading-relaxed mb-4 sm:mb-5 min-h-[2rem] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                {t('Financial Center — Revenue, Costs & Verticals P&L')}
-              </p>
-              <div className={`inline-flex items-center gap-2 text-[10px] sm:text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-blue-500' : 'text-blue-600'}`}>
-                {t('Enter')}
-                <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          </button>
-        </div>
-
-        {/* Section 2: BOps */}
-        <div className="h-screen flex items-center justify-center relative">
-          <a
-            href="https://basket.pallacanestrovarese.club"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`group relative rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl w-full max-w-sm mx-6 ${
-              isDark ? 'bg-gray-900/50 border-gray-800 hover:border-emerald-800/60 hover:shadow-emerald-950/10' : 'bg-white border-gray-200 hover:border-emerald-300 hover:shadow-emerald-100/30'
-            }`}
-          >
-            <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-600 to-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
-            <div className="p-5 sm:p-8 flex flex-col items-center text-center">
-              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 ${isDark ? 'bg-emerald-900/20' : 'bg-emerald-50'}`}>
-                <Shield size={24} className={`${isDark ? 'text-emerald-500' : 'text-emerald-600'} sm:w-[28px] sm:h-[28px]`} />
-              </div>
-              <h3 className={`text-base sm:text-xl font-semibold mb-1.5 sm:mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                BOps
-              </h3>
-              <p className={`text-[10px] sm:text-xs leading-relaxed mb-4 sm:mb-5 min-h-[2rem] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                {t('Basketball Operations — Team management, roster & performance')}
-              </p>
-              <div className={`inline-flex items-center gap-2 text-[10px] sm:text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-emerald-500' : 'text-emerald-600'}`}>
-                {t('Open')}
-                <ExternalLink size={12} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-              </div>
-            </div>
-          </a>
-        </div>
-
-        {/* Section 3: Our Projects */}
-        <div className="h-screen flex items-center justify-center relative">
-          <div className={`group relative rounded-2xl border transition-all duration-500 overflow-hidden w-full max-w-sm mx-6 ${
-            isDark ? 'bg-gray-900/30 border-gray-800/50 opacity-60' : 'bg-white/60 border-gray-200/60 opacity-60'
-          }`}>
-            <div className="p-5 sm:p-8 flex flex-col items-center text-center">
-              <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 ${isDark ? 'bg-gray-800/30' : 'bg-gray-100'}`}>
-                <Construction size={24} className={`${isDark ? 'text-gray-600' : 'text-gray-400'} sm:w-[28px] sm:h-[28px]`} />
-              </div>
-              <h3 className={`text-base sm:text-xl font-semibold mb-1.5 sm:mb-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                {t('Our Projects')}
-              </h3>
-              <p className={`text-[10px] sm:text-xs leading-relaxed mb-4 sm:mb-5 ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>
-                Coming Soon
-              </p>
-              <div className={`inline-flex items-center gap-2 text-[10px] sm:text-xs font-medium tracking-wider uppercase ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>
-                <Lock size={12} />
-              </div>
+      {/* Section 1: Corp */}
+      <div data-section="1" className="h-screen flex flex-col items-center justify-center px-4 sm:px-6 relative">
+        <div className={`transition-all duration-[1s] ease-out ${visible[1] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="max-w-3xl mx-auto text-center mb-8 sm:mb-16">
+            <p className={`text-[10px] sm:text-xs tracking-[0.3em] uppercase font-medium mb-2 sm:mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              Corp
+            </p>
+            <h2 className={`text-xl sm:text-3xl lg:text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {t('Financial Center')}
+            </h2>
+            <div className="flex justify-center mt-4 sm:mt-6">
+              <div className={`h-px w-[60px] ${isDark ? 'bg-gray-700' : 'bg-gray-300'}`}></div>
             </div>
           </div>
-
-          {/* Footer */}
-          <div className={`absolute bottom-8 left-1/2 -translate-x-1/2`}>
-            <div className={`flex items-center gap-4 text-[10px] tracking-[0.25em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
-              <span>{t('Season')} 2025/26</span>
-              <span className="w-px h-3 bg-current"></span>
-              <span>pallva.it</span>
-            </div>
-          </div>
-
-          {isAdmin && (
+          <div className="max-w-md mx-auto">
             <button
-              onClick={() => onNavigate('admin')}
-              className={`absolute bottom-5 right-5 z-50 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 opacity-40 hover:opacity-100 ${
-                isDark ? 'bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-white' : 'bg-gray-200/80 hover:bg-gray-300 text-gray-400 hover:text-gray-700'
+              onClick={() => onNavigate('landing')}
+              className={`group relative w-full text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl ${
+                isDark ? 'bg-gray-900 border-gray-800 hover:border-blue-800/60' : 'bg-white border-gray-200 hover:border-blue-300'
               }`}
-              title="Access Management"
             >
-              <Settings size={16} />
+              <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-600 to-blue-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+              <div className="p-6 sm:p-8">
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 ${isDark ? 'bg-blue-900/20' : 'bg-blue-50'}`}>
+                  <Building2 size={24} className={`${isDark ? 'text-blue-500' : 'text-blue-600'} sm:w-[28px] sm:h-[28px]`} />
+                </div>
+                <h3 className={`text-base sm:text-xl font-semibold mb-1.5 sm:mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {t('Financial Center')}
+                </h3>
+                <p className={`text-[10px] sm:text-xs leading-relaxed mb-4 sm:mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {t('Financial Center — Revenue, Costs & Verticals P&L')}
+                </p>
+                <div className={`inline-flex items-center gap-2 text-[10px] sm:text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-blue-500' : 'text-blue-600'}`}>
+                  {t('Enter')}
+                  <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
             </button>
-          )}
+          </div>
         </div>
+      </div>
+
+      {/* Section 2: BOps */}
+      <div data-section="2" className="h-screen flex flex-col items-center justify-center px-4 sm:px-6 relative">
+        <div className={`transition-all duration-[1s] ease-out ${visible[2] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="max-w-3xl mx-auto text-center mb-8 sm:mb-16">
+            <p className={`text-[10px] sm:text-xs tracking-[0.3em] uppercase font-medium mb-2 sm:mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              BOps
+            </p>
+            <h2 className={`text-xl sm:text-3xl lg:text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {t('Basketball Operations')}
+            </h2>
+            <div className="flex justify-center mt-4 sm:mt-6">
+              <div className={`h-px w-[60px] ${isDark ? 'bg-gray-700' : 'bg-gray-300'}`}></div>
+            </div>
+          </div>
+          <div className="max-w-md mx-auto">
+            <a
+              href="https://basket.pallacanestrovarese.club"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`group relative w-full text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl block ${
+                isDark ? 'bg-gray-900 border-gray-800 hover:border-emerald-800/60' : 'bg-white border-gray-200 hover:border-emerald-300'
+              }`}
+            >
+              <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-600 to-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+              <div className="p-6 sm:p-8">
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 ${isDark ? 'bg-emerald-900/20' : 'bg-emerald-50'}`}>
+                  <Shield size={24} className={`${isDark ? 'text-emerald-500' : 'text-emerald-600'} sm:w-[28px] sm:h-[28px]`} />
+                </div>
+                <h3 className={`text-base sm:text-xl font-semibold mb-1.5 sm:mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {t('Basketball Operations')}
+                </h3>
+                <p className={`text-[10px] sm:text-xs leading-relaxed mb-4 sm:mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  {t('Basketball Operations — Team management, roster & performance')}
+                </p>
+                <div className={`inline-flex items-center gap-2 text-[10px] sm:text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-emerald-500' : 'text-emerald-600'}`}>
+                  {t('Open')}
+                  <ExternalLink size={12} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      {/* Section 3: Our Projects */}
+      <div data-section="3" className="h-screen flex flex-col items-center justify-center px-4 sm:px-6 relative">
+        <div className={`transition-all duration-[1s] ease-out ${visible[3] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="max-w-3xl mx-auto text-center">
+            <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 sm:mb-8 ${isDark ? 'bg-gray-800/50' : 'bg-gray-100'}`}>
+              <Construction size={32} className={`${isDark ? 'text-gray-600' : 'text-gray-300'} sm:w-[40px] sm:h-[40px]`} />
+            </div>
+            <p className={`text-[10px] sm:text-xs tracking-[0.3em] uppercase font-medium mb-2 sm:mb-4 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+              {t('Our Projects')}
+            </p>
+            <h2 className={`text-xl sm:text-3xl lg:text-4xl font-light tracking-tight mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              {t('Coming Soon')}
+            </h2>
+            <p className={`text-xs sm:text-sm ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
+              {t('This section is under development')}
+            </p>
+          </div>
+        </div>
+
+        <div className={`absolute bottom-8 left-1/2 -translate-x-1/2`}>
+          <div className={`flex items-center gap-4 text-[10px] tracking-[0.25em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
+            <span>{t('Season')} 2025/26</span>
+            <span className="w-px h-3 bg-current"></span>
+            <span>pallva.it</span>
+          </div>
+        </div>
+
+        {isAdmin && (
+          <button
+            onClick={() => onNavigate('admin')}
+            className={`absolute bottom-5 right-5 z-50 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 opacity-40 hover:opacity-100 ${
+              isDark ? 'bg-gray-800/80 hover:bg-gray-700 text-gray-400 hover:text-white' : 'bg-gray-200/80 hover:bg-gray-300 text-gray-400 hover:text-gray-700'
+            }`}
+            title="Access Management"
+          >
+            <Settings size={16} />
+          </button>
+        )}
       </div>
     </div>
   );

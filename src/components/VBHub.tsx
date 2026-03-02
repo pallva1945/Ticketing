@@ -6,41 +6,13 @@ import { useLanguage } from '../contexts/LanguageContext';
 const VB_LOGO_URL = "https://i.imgur.com/e7khORs.png";
 
 const US_SUB_SLIDES = 4;
-const TOTAL_SECTIONS = 2;
-
-const easeInOutQuint = (t: number): number => {
-  return t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
-};
-
-const smoothScrollTo = (
-  element: HTMLElement,
-  targetY: number,
-  duration: number = 800
-): Promise<void> => {
-  return new Promise((resolve) => {
-    const startY = element.scrollTop;
-    const diff = targetY - startY;
-    if (Math.abs(diff) < 1) { resolve(); return; }
-    let startTime: number | null = null;
-    const step = (timestamp: number) => {
-      if (!startTime) startTime = timestamp;
-      const elapsed = timestamp - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      element.scrollTop = startY + diff * easeInOutQuint(progress);
-      if (progress < 1) {
-        requestAnimationFrame(step);
-      } else {
-        resolve();
-      }
-    };
-    requestAnimationFrame(step);
-  });
-};
 
 interface VBHubProps {
   onNavigate: (section: string) => void;
   onBackToWelcome: () => void;
 }
+
+const VB_TOTAL_SECTIONS = 2;
 
 export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => {
   const { theme, toggleTheme } = useTheme();
@@ -48,40 +20,77 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
   const isDark = theme === 'dark';
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [currentSection, setCurrentSection] = useState(0);
-  const currentSectionRef = useRef(0);
+  const [activeNav, setActiveNav] = useState(0);
   const [usSlide, setUsSlide] = useState(0);
+  const [visible, setVisible] = useState<boolean[]>(Array(VB_TOTAL_SECTIONS).fill(false));
+  const isScrolling = useRef(false);
+  const currentSection = useRef(0);
   const currentUsSlide = useRef(0);
-  const isAnimating = useRef(false);
+  const isSliding = useRef(false);
 
-  const navLabels = ['Us', 'BOps'];
+  const easeInOutQuint = (t: number) => t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2;
 
-  const usSubLabels = [
-    t('Vision, Mission & Values'),
-    t('About Us'),
-    t('Our Method'),
-    t('Our Team'),
-  ];
-
-  const goToUsSlide = useCallback((index: number) => {
-    if (isAnimating.current || index < 0 || index >= US_SUB_SLIDES) return;
-    isAnimating.current = true;
-    currentUsSlide.current = index;
-    setUsSlide(index);
-    setTimeout(() => { isAnimating.current = false; }, 600);
+  const smoothScrollTo = useCallback((container: HTMLDivElement, target: number, duration: number) => {
+    const start = container.scrollTop;
+    const distance = target - start;
+    if (distance === 0) { isScrolling.current = false; return; }
+    let startTime: number | null = null;
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      container.scrollTop = start + distance * easeInOutQuint(progress);
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      } else {
+        isScrolling.current = false;
+      }
+    };
+    requestAnimationFrame(step);
   }, []);
 
   const goToSection = useCallback((index: number) => {
-    if (isAnimating.current || index < 0 || index >= TOTAL_SECTIONS) return;
-    isAnimating.current = true;
+    if (isScrolling.current || index < 0 || index >= VB_TOTAL_SECTIONS) return;
+    isScrolling.current = true;
+    currentSection.current = index;
+    setActiveNav(index);
     const container = containerRef.current;
-    if (!container) { isAnimating.current = false; return; }
-    currentSectionRef.current = index;
-    setCurrentSection(index);
-    const targetY = index * window.innerHeight;
-    smoothScrollTo(container, targetY, 800).then(() => {
-      isAnimating.current = false;
-    });
+    if (container) {
+      smoothScrollTo(container, index * window.innerHeight, 900);
+    }
+  }, [smoothScrollTo]);
+
+  const goToUsSlide = useCallback((index: number) => {
+    if (isSliding.current || index < 0 || index >= US_SUB_SLIDES) return;
+    isSliding.current = true;
+    currentUsSlide.current = index;
+    setUsSlide(index);
+    setTimeout(() => { isSliding.current = false; }, 600);
+  }, []);
+
+  useEffect(() => {
+    setVisible(prev => { const n = [...prev]; n[0] = true; return n; });
+  }, []);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const idx = Number(entry.target.getAttribute('data-section'));
+          if (!isNaN(idx)) {
+            setVisible(prev => { const n = [...prev]; n[idx] = true; return n; });
+            setActiveNav(idx);
+            currentSection.current = idx;
+          }
+        }
+      });
+    }, { threshold: 0.5 });
+
+    const container = containerRef.current;
+    if (container) {
+      container.querySelectorAll('[data-section]').forEach(el => observer.observe(el));
+    }
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -94,31 +103,30 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
 
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
-      if (isAnimating.current) return;
+      if (isScrolling.current || isSliding.current) return;
       const now = Date.now();
       if (now - lastWheelTime > 800) accumulated = 0;
       lastWheelTime = now;
       accumulated += e.deltaY;
 
       if (Math.abs(accumulated) >= THRESHOLD) {
-        const section = currentSectionRef.current;
-        if (accumulated > 0) {
-          if (section === 0) {
+        const section = currentSection.current;
+        if (section === 0) {
+          if (accumulated > 0) {
             if (currentUsSlide.current < US_SUB_SLIDES - 1) {
               goToUsSlide(currentUsSlide.current + 1);
             } else {
               goToSection(1);
             }
+          } else {
+            if (currentUsSlide.current > 0) {
+              goToUsSlide(currentUsSlide.current - 1);
+            }
           }
         } else {
-          if (section === 1) {
+          if (accumulated < 0) {
+            goToUsSlide(US_SUB_SLIDES - 1);
             goToSection(0);
-            setTimeout(() => {
-              currentUsSlide.current = US_SUB_SLIDES - 1;
-              setUsSlide(US_SUB_SLIDES - 1);
-            }, 50);
-          } else if (section === 0 && currentUsSlide.current > 0) {
-            goToUsSlide(currentUsSlide.current - 1);
           }
         }
         accumulated = 0;
@@ -128,54 +136,38 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
     let touchStartY = 0;
     const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
     const handleTouchEnd = (e: TouchEvent) => {
-      if (isAnimating.current) return;
+      if (isScrolling.current || isSliding.current) return;
       const deltaY = touchStartY - e.changedTouches[0].clientY;
-      if (Math.abs(deltaY) > 40) {
-        const section = currentSectionRef.current;
+      if (Math.abs(deltaY) < 40) return;
+      const section = currentSection.current;
+      if (section === 0) {
         if (deltaY > 0) {
-          if (section === 0) {
-            if (currentUsSlide.current < US_SUB_SLIDES - 1) {
-              goToUsSlide(currentUsSlide.current + 1);
-            } else {
-              goToSection(1);
-            }
-          }
+          if (currentUsSlide.current < US_SUB_SLIDES - 1) goToUsSlide(currentUsSlide.current + 1);
+          else goToSection(1);
         } else {
-          if (section === 1) {
-            goToSection(0);
-            setTimeout(() => {
-              currentUsSlide.current = US_SUB_SLIDES - 1;
-              setUsSlide(US_SUB_SLIDES - 1);
-            }, 50);
-          } else if (section === 0 && currentUsSlide.current > 0) {
-            goToUsSlide(currentUsSlide.current - 1);
-          }
+          if (currentUsSlide.current > 0) goToUsSlide(currentUsSlide.current - 1);
         }
+      } else {
+        if (deltaY < 0) { goToUsSlide(US_SUB_SLIDES - 1); goToSection(0); }
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (['ArrowDown', 'ArrowRight', 'PageDown'].includes(e.key)) {
         e.preventDefault();
-        const section = currentSectionRef.current;
+        const section = currentSection.current;
         if (section === 0) {
-          if (currentUsSlide.current < US_SUB_SLIDES - 1) {
-            goToUsSlide(currentUsSlide.current + 1);
-          } else {
-            goToSection(1);
-          }
+          if (currentUsSlide.current < US_SUB_SLIDES - 1) goToUsSlide(currentUsSlide.current + 1);
+          else goToSection(1);
         }
       } else if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(e.key)) {
         e.preventDefault();
-        const section = currentSectionRef.current;
-        if (section === 1) {
+        const section = currentSection.current;
+        if (section === 0) {
+          if (currentUsSlide.current > 0) goToUsSlide(currentUsSlide.current - 1);
+        } else {
+          goToUsSlide(US_SUB_SLIDES - 1);
           goToSection(0);
-          setTimeout(() => {
-            currentUsSlide.current = US_SUB_SLIDES - 1;
-            setUsSlide(US_SUB_SLIDES - 1);
-          }, 50);
-        } else if (section === 0 && currentUsSlide.current > 0) {
-          goToUsSlide(currentUsSlide.current - 1);
         }
       }
     };
@@ -190,7 +182,15 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
       container.removeEventListener('touchend', handleTouchEnd);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [goToUsSlide, goToSection]);
+  }, [goToSection, goToUsSlide]);
+
+  const navItems = [t('Us'), 'BOps'];
+  const usSubLabels = [
+    t('Vision, Mission & Values'),
+    t('About Us'),
+    t('Our Method'),
+    t('Our Team'),
+  ];
 
   return (
     <div
@@ -199,42 +199,38 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
     >
       <style>{`
         @keyframes line-grow { from { width: 0; } to { width: 60px; } }
+        @keyframes bounce-subtle { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(6px); } }
         .line-grow { animation: line-grow 0.8s ease-out 0.3s forwards; width: 0; }
+        .bounce-arrow { animation: bounce-subtle 2s ease-in-out infinite; }
       `}</style>
 
-      <div className={`absolute top-0 left-0 w-full h-px z-50 ${isDark ? 'bg-gradient-to-r from-transparent via-orange-800/40 to-transparent' : 'bg-gradient-to-r from-transparent via-orange-200 to-transparent'}`}></div>
+      <div className={`fixed top-0 left-0 w-full h-px z-50 ${isDark ? 'bg-gradient-to-r from-transparent via-orange-800/40 to-transparent' : 'bg-gradient-to-r from-transparent via-orange-200 to-transparent'}`}></div>
 
       <nav className={`fixed top-0 left-0 w-full z-40 backdrop-blur-xl ${isDark ? 'bg-[#0a0a0a]/90 border-b border-gray-800/50' : 'bg-[#fafafa]/90 border-b border-gray-200/50'}`}>
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button onClick={onBackToWelcome} className="hover:opacity-70 transition-opacity">
+            <button onClick={onBackToWelcome} className="hover:opacity-70 transition-opacity flex items-center gap-2">
+              <ChevronLeft size={16} className={isDark ? 'text-gray-500' : 'text-gray-400'} />
               <img src={VB_LOGO_URL} alt="VB" className="w-7 h-7 object-contain" />
             </button>
-          </div>
-          <div className="flex items-center gap-1">
-            {navLabels.map((label, i) => (
-              <button
-                key={label}
-                onClick={() => {
-                  if (i === 0) {
-                    goToSection(0);
-                    setTimeout(() => { currentUsSlide.current = 0; setUsSlide(0); }, 50);
-                  } else {
-                    goToSection(i);
-                  }
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs tracking-[0.15em] uppercase font-medium transition-all ${
-                  currentSection === i
-                    ? isDark ? 'text-orange-400 bg-orange-900/20' : 'text-orange-600 bg-orange-50'
-                    : isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                <span className="hidden sm:inline">{label}</span>
-                <span className={`sm:hidden w-2 h-2 rounded-full inline-block ${
-                  currentSection === i ? 'bg-orange-500' : isDark ? 'bg-gray-600' : 'bg-gray-300'
-                }`}></span>
-              </button>
-            ))}
+            <div className={`h-4 w-px ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
+            <span className={`text-xs tracking-[0.15em] uppercase font-medium ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Varese Basketball</span>
+            <div className={`h-4 w-px hidden sm:block ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
+            <div className="hidden sm:flex items-center gap-1">
+              {navItems.map((label, i) => (
+                <button
+                  key={i}
+                  onClick={() => goToSection(i)}
+                  className={`px-3 py-1.5 rounded-lg text-xs tracking-[0.15em] uppercase font-medium transition-all duration-300 ${
+                    activeNav === i
+                      ? isDark ? 'text-white bg-gray-800' : 'text-gray-900 bg-gray-100'
+                      : isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={toggleLanguage} className={`px-3 py-1.5 rounded-lg text-xs tracking-wider uppercase transition-all ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}>
@@ -247,8 +243,24 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
         </div>
       </nav>
 
-      <div style={{ height: `${TOTAL_SECTIONS * 100}vh` }}>
-        <div className="h-screen relative">
+      <div className={`fixed right-6 top-1/2 -translate-y-1/2 z-40 hidden sm:flex flex-col gap-3`}>
+        {Array.from({ length: VB_TOTAL_SECTIONS }).map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goToSection(i)}
+            className={`w-2 h-2 rounded-full transition-all duration-500 ${
+              activeNav === i
+                ? isDark ? 'bg-white scale-125' : 'bg-gray-900 scale-125'
+                : isDark ? 'bg-gray-700 hover:bg-gray-500' : 'bg-gray-300 hover:bg-gray-400'
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Section 0: Us (with fade sub-slides) */}
+      <div data-section="0" className="h-screen relative overflow-hidden">
+        <div className={`transition-all duration-[1s] ease-out absolute inset-0 ${visible[0] ? 'opacity-100' : 'opacity-0'}`}>
+          {/* Sub-slide 0: VMV */}
           <div className={`absolute inset-0 flex flex-col items-center justify-center px-4 sm:px-6 transition-opacity duration-500 ${usSlide === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
             <div className="max-w-6xl mx-auto w-full pt-14">
               <div className="text-center mb-3 sm:mb-6">
@@ -265,7 +277,6 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                   {t('vb_brand_promise')}
                 </p>
               </div>
-
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 sm:gap-4">
                 <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
                   <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
@@ -284,7 +295,6 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                     ))}
                   </div>
                 </div>
-
                 <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
                   <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
                     <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-blue-900/25' : 'bg-blue-50'}`}>
@@ -302,7 +312,6 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                     ))}
                   </div>
                 </div>
-
                 <div className={`rounded-xl border p-3 sm:p-6 ${isDark ? 'bg-gray-900/60 border-gray-800/60' : 'bg-white border-gray-200/80'}`}>
                   <div className="flex items-center gap-2.5 sm:gap-3 mb-2 sm:mb-4">
                     <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-amber-900/25' : 'bg-amber-50'}`}>
@@ -329,6 +338,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
             </div>
           </div>
 
+          {/* Sub-slide 1: About Us */}
           <div className={`absolute inset-0 flex flex-col items-center justify-center px-4 sm:px-6 transition-opacity duration-500 ${usSlide === 1 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
             <div className="max-w-3xl mx-auto text-center pt-14">
               <p className={`text-[10px] sm:text-xs tracking-[0.3em] uppercase font-medium mb-3 sm:mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
@@ -364,6 +374,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
             </div>
           </div>
 
+          {/* Sub-slide 2: Our Method */}
           <div className={`absolute inset-0 flex flex-col items-center justify-center px-4 sm:px-6 transition-opacity duration-500 ${usSlide === 2 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
             <div className="max-w-3xl mx-auto text-center pt-14">
               <p className={`text-[10px] sm:text-xs tracking-[0.3em] uppercase font-medium mb-3 sm:mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
@@ -397,6 +408,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
             </div>
           </div>
 
+          {/* Sub-slide 3: Our Team */}
           <div className={`absolute inset-0 flex flex-col items-center justify-center px-4 sm:px-6 transition-opacity duration-500 ${usSlide === 3 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
             <div className="max-w-4xl mx-auto text-center pt-14">
               <p className={`text-[10px] sm:text-xs tracking-[0.3em] uppercase font-medium mb-3 sm:mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
@@ -431,7 +443,6 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                     ))}
                   </div>
                 </div>
-
                 <div className={`rounded-2xl border p-5 sm:p-6 text-left ${isDark ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'}`}>
                   <div className="flex items-center gap-2 mb-4">
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
@@ -454,7 +465,6 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
                     ))}
                   </div>
                 </div>
-
                 <div className={`rounded-2xl border p-5 sm:p-6 text-left ${isDark ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200'}`}>
                   <div className="flex items-center gap-2 mb-4">
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
@@ -477,12 +487,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
             </div>
           </div>
 
-          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20">
-            <p className={`text-[10px] tracking-[0.2em] uppercase ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
-              {usSubLabels[usSlide]}
-            </p>
-          </div>
-
+          {/* Sub-slide indicators */}
           <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4">
             <button
               onClick={() => goToUsSlide(usSlide - 1)}
@@ -513,41 +518,60 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
               <ChevronRight size={16} />
             </button>
           </div>
+          <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-20">
+            <p className={`text-[10px] tracking-[0.2em] uppercase ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+              {usSubLabels[usSlide]}
+            </p>
+          </div>
         </div>
+      </div>
 
-        <div className="h-screen relative flex flex-col items-center justify-center px-6">
-          <div className="flex flex-col items-center text-center w-full max-w-md">
+      {/* Section 1: BOps (Youth Development) */}
+      <div data-section="1" className="h-screen flex flex-col items-center justify-center px-4 sm:px-6 relative">
+        <div className={`transition-all duration-[1s] ease-out ${visible[1] ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="max-w-3xl mx-auto text-center mb-8 sm:mb-16">
+            <p className={`text-[10px] sm:text-xs tracking-[0.3em] uppercase font-medium mb-2 sm:mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+              BOps
+            </p>
+            <h2 className={`text-xl sm:text-3xl lg:text-4xl font-light tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {t('Basketball Operations')}
+            </h2>
+            <div className="flex justify-center mt-4 sm:mt-6">
+              <div className={`h-px w-[60px] ${isDark ? 'bg-gray-700' : 'bg-gray-300'}`}></div>
+            </div>
+          </div>
+          <div className="max-w-md mx-auto">
             <button
               onClick={() => onNavigate('vb')}
-              className={`group relative rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl text-left w-full ${
-                isDark ? 'bg-gray-900/50 border-gray-800 hover:border-orange-800/60 hover:shadow-orange-950/10' : 'bg-white border-gray-200 hover:border-orange-300 hover:shadow-orange-100/30'
+              className={`group relative w-full text-left rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl ${
+                isDark ? 'bg-gray-900 border-gray-800 hover:border-orange-800/60' : 'bg-white border-gray-200 hover:border-orange-300'
               }`}
             >
-              <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-orange-500 to-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="p-6 sm:p-10 flex flex-col items-center text-center">
-                <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-5 sm:mb-6 ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
-                  <Activity size={26} className={`${isDark ? 'text-orange-500' : 'text-orange-600'} sm:w-[30px] sm:h-[30px]`} />
+              <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-orange-500 to-orange-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+              <div className="p-6 sm:p-8">
+                <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 ${isDark ? 'bg-orange-900/20' : 'bg-orange-50'}`}>
+                  <Activity size={24} className={`${isDark ? 'text-orange-500' : 'text-orange-600'} sm:w-[28px] sm:h-[28px]`} />
                 </div>
-                <h3 className={`text-lg sm:text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <h3 className={`text-base sm:text-xl font-semibold mb-1.5 sm:mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {t('Youth Development')}
                 </h3>
-                <p className={`text-[10px] sm:text-xs leading-relaxed mb-5 min-h-[2rem] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                <p className={`text-[10px] sm:text-xs leading-relaxed mb-4 sm:mb-5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                   {t('Player profiles, session tracking, progression analytics & scouting database')}
                 </p>
-                <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-orange-500' : 'text-orange-600'}`}>
+                <div className={`inline-flex items-center gap-2 text-[10px] sm:text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-orange-500' : 'text-orange-600'}`}>
                   {t('Enter')}
-                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
             </button>
           </div>
+        </div>
 
-          <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-            <div className={`flex items-center gap-4 text-[10px] tracking-[0.25em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
-              <span>Varese Basketball</span>
-              <span className="w-px h-3 bg-current"></span>
-              <span>{t('Season')} 2025/26</span>
-            </div>
+        <div className={`absolute bottom-8 left-1/2 -translate-x-1/2`}>
+          <div className={`flex items-center gap-4 text-[10px] tracking-[0.25em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
+            <span>Varese Basketball</span>
+            <span className="w-px h-3 bg-current"></span>
+            <span>{t('Season')} 2025/26</span>
           </div>
         </div>
       </div>
