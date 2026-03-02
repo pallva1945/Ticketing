@@ -573,38 +573,28 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
               <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{formatCurrency(Math.round(vbPnl.sgaSections.reduce((s, sec) => s + sec.total, 0)))}</div>
               <p className="text-xs text-gray-500">{t('Total SG&A')} — {period}</p>
             </div>
-            {vbPnl.sgaSections.map(section => (
-              <div key={section.key} className={`rounded-xl border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
-                <div className="px-5 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">{section.label}</h3>
-                  <span className="text-sm font-bold text-red-600">{formatCurrency(section.total)}</span>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-gray-200 dark:border-gray-700">
-                        <th className="text-left py-2 px-4 font-semibold text-gray-500">{t('Item')}</th>
-                        {['Jul','Aug','Sep','Oct','Nov','Dec','Jan'].slice(0, vbPnl.monthCount).map(m => (
-                          <th key={m} className="text-right py-2 px-2 font-semibold text-gray-500">{m}</th>
-                        ))}
-                        <th className="text-right py-2 px-4 font-bold text-gray-700 dark:text-gray-300">{t('Total')}</th>
+            <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                      <th className="text-left py-3 px-5 font-semibold text-gray-500">{t('Category')}</th>
+                      <th className="text-right py-3 px-5 font-semibold text-gray-500">{t('Total')}</th>
+                      <th className="text-right py-3 px-5 font-semibold text-gray-500">%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(() => { const sgaGrand = vbPnl.sgaSections.reduce((s, sec) => s + sec.total, 0); return vbPnl.sgaSections.map(section => (
+                      <tr key={section.key} className="border-b border-gray-100 dark:border-gray-800">
+                        <td className="py-3 px-5 font-medium text-gray-900 dark:text-white">{section.label}</td>
+                        <td className="text-right py-3 px-5 font-bold text-red-600">{formatCurrency(Math.round(section.total))}</td>
+                        <td className="text-right py-3 px-5 text-gray-500">{sgaGrand > 0 ? ((section.total / sgaGrand) * 100).toFixed(1) : '0'}%</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {section.lines.map(line => (
-                        <tr key={line.key} className="border-b border-gray-100 dark:border-gray-800">
-                          <td className="py-2 px-4 font-medium text-gray-900 dark:text-white">{line.label}</td>
-                          {line.values.slice(0, vbPnl.monthCount).map((v, i) => (
-                            <td key={i} className="text-right py-2 px-2 text-gray-600 dark:text-gray-400">{v > 0 ? formatCurrency(v) : '-'}</td>
-                          ))}
-                          <td className="text-right py-2 px-4 font-bold text-red-600">{formatCurrency(line.total)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                    )); })()}
+                  </tbody>
+                </table>
               </div>
-            ))}
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
