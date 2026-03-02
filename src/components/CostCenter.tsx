@@ -333,7 +333,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
                     { id: 'merchandising', amount: dynMerch, detail: `${t('Stock')}: 82.6%`, badge: hasDynamic && costData.merchandising ? t('Google Sheet') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
                     { id: 'venue_ops', amount: dynVenueOps, detail: `${t('Campus - Rental')}: 79.7%`, badge: hasDynamic && costData.venue_ops ? t('Google Sheet') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
                     { id: 'sponsorship', amount: dynSponsorship, detail: `${t('Events')}: 66.3% · ${t('Materials & Ads')}: 33.7%`, badge: hasDynamic && costData.sponsorship ? t('Google Sheet') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
-                    { id: 'ebp', amount: vbPnl ? Math.round((vbPnl.cosSections.find(s => s.key === 'ebp')?.total || 0)) : 0, detail: vbPnl ? `${(vbPnl.cosSections.find(s => s.key === 'ebp')?.lines.length || 0)} ${t('line items')}` : t('No costs recorded YTD'), badge: vbPnl ? t('VB P&L Sheet') : t('Zero Activity'), badgeStyle: vbPnl ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400' },
+                    { id: 'ebp', amount: 0, detail: t('No costs recorded YTD'), badge: t('Zero Activity'), badgeStyle: 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400' },
                     { id: 'varese_basketball', amount: vbPnl ? Math.round(vbPnl.cosSections.reduce((s, sec) => s + sec.total, 0)) : -1, detail: vbPnl ? `${t('BOps')} + ${t('EBP')}` : '', badge: vbPnl ? t('VB P&L Sheet') : t('Coming Soon'), badgeStyle: vbPnl ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' : '' },
                   ];
                   const sorted = [...COST_CARDS].sort((a, b) => b.amount - a.amount);
@@ -472,55 +472,17 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
                 <ActiveIcon className="text-red-600" size={22} />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">EBP — {t('Cost of Sales')}</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{vbPnl ? t('VB P&L Sheet') : t('Monthly Actuals')} · {period}</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">EBP — {t('Cost Structure')}</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Monthly Actuals')} · {period}</p>
               </div>
             </div>
-            {vbPnl && vbPnl.cosSections.find(s => s.key === 'ebp') ? (
-              (() => {
-                const ebpSection = vbPnl.cosSections.find(s => s.key === 'ebp')!;
-                return (
-                  <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
-                    <div className="p-5">
-                      <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{formatCurrency(ebpSection.total)}</div>
-                      <p className="text-xs text-gray-500">{t('EBP Cost of Sales')} — {period}</p>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="border-t border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                            <th className="text-left py-2 px-4 font-semibold text-gray-500">{t('Item')}</th>
-                            {['Jul','Aug','Sep','Oct','Nov','Dec','Jan'].slice(0, vbPnl.monthCount).map(m => (
-                              <th key={m} className="text-right py-2 px-2 font-semibold text-gray-500">{m}</th>
-                            ))}
-                            <th className="text-right py-2 px-4 font-bold text-gray-700 dark:text-gray-300">{t('Total')}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {ebpSection.lines.map(line => (
-                            <tr key={line.key} className="border-b border-gray-100 dark:border-gray-800">
-                              <td className="py-2 px-4 font-medium text-gray-900 dark:text-white">{line.label}</td>
-                              {line.values.slice(0, vbPnl.monthCount).map((v, i) => (
-                                <td key={i} className="text-right py-2 px-2 text-gray-600 dark:text-gray-400">{v > 0 ? formatCurrency(v) : '-'}</td>
-                              ))}
-                              <td className="text-right py-2 px-4 font-bold text-red-600">{formatCurrency(line.total)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })()
-            ) : (
-              <div className={`rounded-xl border p-12 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
-                <div className="text-5xl font-bold text-gray-300 dark:text-gray-600 mb-3">€0</div>
-                <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('No costs recorded YTD')}</h3>
-                <p className="text-sm text-gray-400 dark:text-gray-500 max-w-sm mx-auto">
-                  {t('Sync the VB P&L Google Sheet to populate EBP cost data.')}
-                </p>
-              </div>
-            )}
+            <div className={`rounded-xl border p-12 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+              <div className="text-5xl font-bold text-gray-300 dark:text-gray-600 mb-3">€0</div>
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('No costs recorded YTD')}</h3>
+              <p className="text-sm text-gray-400 dark:text-gray-500 max-w-sm mx-auto">
+                {t('No EBP expenses have been recorded for the')} {period} {t('period.')}
+              </p>
+            </div>
           </div>
         ) : activeModule === 'varese_basketball' && vbPnl && vbPnl.cosSections.length > 0 ? (
           <div className="space-y-6">
