@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documenti</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        /* Styles from the original index.html header for consistency */
+        .nav-link {
+             position: relative;
+             padding-bottom: 4px;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background-color: #c53030; /* Red color from original */
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after {
+            width: 100%;
+        }
+    </style>
+</head>
+<body class="antialiased bg-gray-50 text-gray-800">
+
+    <!-- Header from index.html -->
+    <header class="bg-white/90 backdrop-blur-lg sticky top-0 z-50 border-b border-gray-200">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="text-red-700">
+                    <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 7L12 12L22 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 22V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="text-xl font-bold text-gray-800">Varese Campus</span>
+            </div>
+            <nav class="hidden md:flex items-center space-x-8 text-sm font-semibold text-gray-600">
+                <a href="index.html#vision" class="nav-link">La Visione</a>
+                <a href="index.html#project" class="nav-link">Il Progetto</a>
+                <a href="index.html#financials" class="nav-link">Dati Finanziari</a>
+                <a href="index.html#leadership" class="nav-link">Leadership</a>
+                <a href="index.html#documents" class="nav-link">Documenti</a>
+            </nav>
+            <button id="mobile-menu-button" class="md:hidden p-2 rounded-md text-gray-600 hover:bg-gray-100">
+                <i data-lucide="menu"></i>
+            </button>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4 border-t">
+            <a href="index.html#vision" class="block py-2 text-gray-600 hover:text-red-700">La Visione</a>
+            <a href="index.html#project" class="block py-2 text-gray-600 hover:text-red-700">Il Progetto</a>
+            <a href="index.html#financials" class="block py-2 text-gray-600 hover:text-red-700">Dati Finanziari</a>
+            <a href="index.html#leadership" class="block py-2 text-gray-600 hover:text-red-700">Leadership</a>
+            <a href="index.html#documents" class="block py-2 text-gray-600 hover:text-red-700">Documenti</a>
+        </div>
+    </header>
+
+    <div class="min-h-screen flex flex-col items-center py-8 px-4 sm:px-6 lg:px-8">
+        <!-- Page Title -->
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-12 text-center">
+            Documenti
+        </h1>
+
+        <!-- Lettere di Intenti (LOI) Section -->
+        <section class="w-full max-w-6xl bg-white p-6 sm:p-8 rounded-xl shadow-lg mb-12">
+            <h2 class="text-2xl sm:text-3xl font-semibold text-gray-800 mb-6 border-b-2 border-indigo-500 pb-2">
+                Lettere di Intenti (LOI)
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- LOI Box 1 -->
+                <div class="bg-indigo-50 p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                    <a href="./LOI_BAP.html" class="block text-lg font-medium text-indigo-700 hover:text-indigo-900">
+                        Buenos Aires Pilates
+                        <span class="block text-sm text-gray-500 mt-1">Cliccare per vedere</span>
+                    </a>
+                </div>
+                <!-- LOI Box 2 -->
+                <div class="bg-indigo-50 p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                    <a href="./LOI_GYM.html" class="block text-lg font-medium text-indigo-700 hover:text-indigo-900">
+                        Pallacanestro Varese Palestra
+                        <span class="block text-sm text-gray-500 mt-1">Cliccare per vedere</span>
+                    </a>
+                </div>
+                <!-- LOI Box 3 -->
+                <div class="bg-indigo-50 p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                    <a href="./LOI_Ivolution.html" class="block text-lg font-medium text-indigo-700 hover:text-indigo-900">
+                        Ivolution
+                        <span class="block text-sm text-gray-500 mt-1">Cliccare per vedere</span>
+                    </a>
+                </div>
+                <!-- LOI Box 4 -->
+                <div class="bg-indigo-50 p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                    <a href="./LOI_LSG.html" class="block text-lg font-medium text-indigo-700 hover:text-indigo-900">
+                        Luis Scola Group (LSG)
+                        <span class="block text-sm text-gray-500 mt-1">Cliccare per vedere</span>
+                    </a>
+                </div>
+                <!-- LOI Box 5 -->
+                <div class="bg-indigo-50 p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                    <a href="./LOI_Ristorante.html" class="block text-lg font-medium text-indigo-700 hover:text-indigo-900">
+                        Albyeale di Pescarino Elio (Ristorante)
+                        <span class="block text-sm text-gray-500 mt-1">Cliccare per vedere</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Planimetrie Architettoniche Section -->
+        <section class="w-full max-w-6xl bg-white p-6 sm:p-8 rounded-xl shadow-lg">
+            <h2 class="text-2xl sm:text-3xl font-semibold text-gray-800 mb-6 border-b-2 border-purple-500 pb-2">
+                Planimetrie Architettoniche
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+                <!-- Planimetrie Box 1 -->
+                <div class="bg-purple-50 p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                    <a href="./Arc_Quote.html" class="block text-lg font-medium text-purple-700 hover:text-purple-900">
+                        Preventivo del Architteto
+                        <span class="block text-sm text-gray-500 mt-1">Cliccare per vedere</span>
+                    </a>
+                </div>
+                <!-- Planimetrie Box 2 -->
+                <div class="bg-purple-50 p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                    <a href="./02.1_Intervento_PIANTA_PIANO SEMINTERRATO (Palestre).pdf" class="block text-lg font-medium text-purple-700 hover:text-purple-900">
+                        Disegno - Palestra
+                        <span class="block text-sm text-gray-500 mt-1">Cliccare per vedere</span>
+                    </a>
+                </div>
+                <!-- Planimetrie Box 3 -->
+                <div class="bg-purple-50 p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                    <a href="./02.2_Intervento_PIANTA_PIANO SEMINTERRATO_Negozi.pdf" class="block text-lg font-medium text-purple-700 hover:text-purple-900">
+                        Disegno - Negozi
+                        <span class="block text-sm text-gray-500 mt-1">Cliccare per vedere</span>
+                    </a>
+                </div>
+                <!-- Planimetrie Box 4 -->
+                <div class="bg-purple-50 p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                    <a href="./03_Intervento_PIANTA_PIANO RIALZATO.pdf" class="block text-lg font-medium text-purple-700 hover:text-purple-900">
+                        Disegno - Rialzato
+                        <span class="block text-sm text-gray-500 mt-1">Cliccare per vedere</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Lucide icons
+            lucide.createIcons();
+
+            // Mobile menu toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+        });
+    </script>
+</body>
+</html>

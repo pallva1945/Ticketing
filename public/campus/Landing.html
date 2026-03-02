@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Varese Campus Transformation - Project Proposal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .hero-bg {
+            background-color: #111827;
+            background-image: linear-gradient(to bottom right, #111827, #374151);
+        }
+        .section-title {
+            font-weight: 700;
+            font-size: 2.25rem;
+            line-height: 2.5rem;
+        }
+        .kpi-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .kpi-card:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateY(-5px);
+        }
+        .document-card, .team-card {
+            transition: all 0.3s ease;
+            border: 1px solid #e5e7eb;
+        }
+        .document-card:hover, .team-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            border-color: #ef4444;
+        }
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .table-header {
+            background-color: #f9fafb;
+        }
+        .stress-test-pass {
+            color: #22c55e;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white/80 backdrop-blur-lg sticky top-0 z-50 border-b border-gray-200">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="text-red-600">
+                    <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2 7L12 12L22 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 22V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="text-xl font-bold text-gray-800">Varese Campus</span>
+            </div>
+            <nav class="hidden md:flex items-center space-x-6 text-sm font-medium text-gray-600">
+                <a href="#vision" class="hover:text-red-600 transition">The Vision</a>
+                <a href="#financials" class="hover:text-red-600 transition">Financials</a>
+                <a href="#leadership" class="hover:text-red-600 transition">Leadership</a>
+                <a href="#documents" class="hover:text-red-600 transition">Documents</a>
+                <a href="#contact" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition shadow">Contact</a>
+            </nav>
+            <button id="mobile-menu-button" class="md:hidden p-2 rounded-md text-gray-600 hover:bg-gray-100">
+                <i data-lucide="menu"></i>
+            </button>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4">
+            <a href="#vision" class="block py-2 text-gray-600 hover:text-red-600">The Vision</a>
+            <a href="#financials" class="block py-2 text-gray-600 hover:text-red-600">Financials</a>
+            <a href="#leadership" class="block py-2 text-gray-600 hover:text-red-600">Leadership</a>
+            <a href="#documents" class="block py-2 text-gray-600 hover:text-red-600">Documents</a>
+            <a href="#contact" class="block mt-2 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 text-center">Contact</a>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="hero-bg text-white">
+            <div class="container mx-auto px-6 py-20 md:py-32 text-center">
+                <h1 class="text-4xl md:text-6xl font-black tracking-tight leading-tight mb-4">A Landmark Investment in the Future of Varese</h1>
+                <p class="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto mb-8">A fully-collateralized proposal to transform the Varese Campus, funded by a €2.5M loan and a €500k equity contribution, ensuring exceptional financial strength and viability.</p>
+                <a href="#documents" class="bg-red-600 text-white font-bold px-8 py-4 rounded-md hover:bg-red-700 transition-all text-lg shadow-lg">View Full Documentation</a>
+            </div>
+            <!-- Key Metrics -->
+            <div class="container mx-auto px-6 pb-20 md:pb-32">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                    <div class="kpi-card p-6 rounded-lg text-center fade-in">
+                        <h3 class="text-gray-400 text-sm font-medium uppercase tracking-wider">Loan Request</h3>
+                        <p class="text-4xl md:text-5xl font-bold text-white mt-2">€2,500,000</p>
+                    </div>
+                    <div class="kpi-card p-6 rounded-lg text-center fade-in" style="transition-delay: 150ms;">
+                        <h3 class="text-gray-400 text-sm font-medium uppercase tracking-wider">Year 1 NOI</h3>
+                        <p class="text-4xl md:text-5xl font-bold text-white mt-2">€216,272</p>
+                    </div>
+                    <div class="kpi-card p-6 rounded-lg text-center fade-in" style="transition-delay: 300ms;">
+                        <h3 class="text-gray-400 text-sm font-medium uppercase tracking-wider">DSCR</h3>
+                        <p class="text-4xl md:text-5xl font-bold text-green-400 mt-2">1.48x</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- The Vision Section -->
+        <section id="vision" class="py-20 md:py-28 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <h2 class="section-title text-gray-900 mb-4 fade-in">The Vision: A New Era for Campus</h2>
+                    <p class="text-lg text-gray-600 fade-in">This project transcends a simple renovation. It's a strategic transformation to create a vibrant, multi-use destination that serves as the operational heart of Pallacanestro Varese and a valuable asset for the entire community.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 fade-in">
+                        <i data-lucide="shield" class="w-10 h-10 text-red-600 mb-4"></i>
+                        <h3 class="text-xl font-bold mb-2">Corporate Headquarters</h3>
+                        <p class="text-gray-600">Centralizing operations for Pallacanestro Varese and anchor tenant Luis Scola Group to drive synergy.</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 fade-in" style="transition-delay: 150ms;">
+                        <i data-lucide="barbell" class="w-10 h-10 text-red-600 mb-4"></i>
+                        <h3 class="text-xl font-bold mb-2">Elite Training Facilities</h3>
+                        <p class="text-gray-600">State-of-the-art locker rooms, weight rooms, and tech for peak athletic performance.</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 fade-in" style="transition-delay: 300ms;">
+                        <i data-lucide="shopping-cart" class="w-10 h-10 text-red-600 mb-4"></i>
+                        <h3 class="text-xl font-bold mb-2">Commercial & Wellness Hub</h3>
+                        <p class="text-gray-600">Dedicated spaces for retail, restaurant, and wellness services with confirmed tenant interest.</p>
+                    </div>
+                    <div class="bg-gray-50 p-6 rounded-lg border border-gray-200 fade-in" style="transition-delay: 450ms;">
+                        <i data-lucide="line-chart" class="w-10 h-10 text-red-600 mb-4"></i>
+                        <h3 class="text-xl font-bold mb-2">Sustainable Revenue</h3>
+                        <p class="text-gray-600">Creating a self-sustaining financial asset with diversified income streams.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- REVISED Financials Section -->
+        <section id="financials" class="py-20 md:py-28 bg-gray-50">
+            <div class="container mx-auto px-6">
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <h2 class="section-title text-gray-900 mb-4 fade-in">Detailed Financial Projections</h2>
+                    <p class="text-lg text-gray-600 fade-in">In response to due diligence, we present a revised forecast with a detailed operating budget and a strengthened capital structure, demonstrating exceptional project resilience.</p>
+                </div>
+                
+                <div class="bg-white p-6 sm:p-8 rounded-lg shadow-lg border border-gray-200 fade-in">
+                    <h3 class="text-2xl font-bold mb-6">Detailed Operating Budget (Year 1)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-max text-left text-sm">
+                             <thead>
+                                <tr class="border-b-2 border-gray-300">
+                                    <th class="py-3 pr-2 font-semibold">Expense Line Item</th>
+                                    <th class="py-3 px-2 font-semibold text-right">Annual Cost (€)</th>
+                                    <th class="py-3 px-2 font-semibold">Basis</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-gray-200"><td class="py-2 pr-2">Property Taxes (IMU)</td><td class="py-2 px-2 text-right">€30,000</td><td class="py-2 px-2 text-gray-500">Est. 1% of project value</td></tr>
+                                <tr class="border-b border-gray-200"><td class="py-2 pr-2">Property & Liability Insurance</td><td class="py-2 px-2 text-right">€15,000</td><td class="py-2 px-2 text-gray-500">Quote based on asset value</td></tr>
+                                <tr class="border-b border-gray-200"><td class="py-2 pr-2">Property Management Fee</td><td class="py-2 px-2 text-right">€6,178</td><td class="py-2 px-2 text-gray-500">4% of Rental Income</td></tr>
+                                <tr class="border-b border-gray-200"><td class="py-2 pr-2">Repairs & Maintenance</td><td class="py-2 px-2 text-right">€15,000</td><td class="py-2 px-2 text-gray-500">Standard industry estimate</td></tr>
+                                <tr class="border-b border-gray-200"><td class="py-2 pr-2">Common Area Utilities</td><td class="py-2 px-2 text-right">€12,000</td><td class="py-2 px-2 text-gray-500">Estimate for shared spaces</td></tr>
+                                <tr class="border-b border-gray-200"><td class="py-2 pr-2">Marketing & Admin</td><td class="py-2 px-2 text-right">€5,000</td><td class="py-2 px-2 text-gray-500">Contingency for leasing</td></tr>
+                                <tr class="border-b-2 border-gray-300"><td class="py-2 pr-2">Capital Expenditure Reserve</td><td class="py-2 px-2 text-right">€15,000</td><td class="py-2 px-2 text-gray-500">0.5% of project value annually</td></tr>
+                                <tr class="bg-gray-100"><td class="py-3 pr-2 font-bold">Total Annual Operating Expenses</td><td class="py-3 px-2 text-right font-bold">€98,178</td><td></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3 class="text-2xl font-bold mb-6 mt-12">Revised 5-Year Pro-Forma</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-max text-left text-sm">
+                            <thead>
+                                <tr class="border-b-2 border-gray-300">
+                                    <th class="py-3 pr-2 font-semibold">Metric</th>
+                                    <th class="py-3 px-2 font-semibold text-right">Year 1</th>
+                                    <th class="py-3 px-2 font-semibold text-right">Year 2</th>
+                                    <th class="py-3 px-2 font-semibold text-right">Year 3</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-gray-200"><td class="py-2 pr-2 font-bold">Total Gross Income</td><td class="py-2 px-2 text-right font-medium">€314,450</td><td class="py-2 px-2 text-right font-medium">€318,311</td><td class="py-2 px-2 text-right font-medium">€322,269</td></tr>
+                                <tr class="border-b border-gray-200"><td class="py-2 pr-2 font-bold">Operating Expenses</td><td class="py-2 px-2 text-right font-medium">-€98,178</td><td class="py-2 px-2 text-right font-medium">-€100,632</td><td class="py-2 px-2 text-right font-medium">-€103,148</td></tr>
+                                <tr class="border-b-2 border-gray-300 bg-gray-100"><td class="py-3 pr-2 font-bold">Net Operating Income (NOI)</td><td class="py-3 px-2 text-right font-bold">€216,272</td><td class="py-3 px-2 text-right font-bold">€217,679</td><td class="py-3 px-2 text-right font-bold">€219,121</td></tr>
+                                <tr class="border-b border-gray-200"><td class="py-2 pr-2 font-bold">Annual Debt Service</td><td class="py-2 px-2 text-right font-medium">-€146,165</td><td class="py-2 px-2 text-right font-medium">-€146,165</td><td class="py-2 px-2 text-right font-medium">-€146,165</td></tr>
+                                <tr class="border-b-2 border-gray-300 bg-green-50"><td class="py-3 pr-2 font-bold text-green-800">Net Cash Flow</td><td class="py-3 px-2 text-right font-bold text-green-800">€70,107</td><td class="py-3 px-2 text-right font-bold text-green-800">€71,514</td><td class="py-3 px-2 text-right font-bold text-green-800">€72,956</td></tr>
+                                <tr class="bg-gray-800 text-white"><td class="py-3 pr-2 font-bold">DSCR</td><td class="py-3 px-2 text-right font-bold">1.48x</td><td class="py-3 px-2 text-right font-bold">1.49x</td><td class="py-3 px-2 text-right font-bold">1.50x</td></tr>
+                            </tbody>
+                        </table>
+                        <p class="text-xs text-gray-500 mt-2">*Based on a €2.5M loan at 5% over 25 years. Expenses grow at 2.5% annually.</p>
+                    </div>
+
+                    <h3 class="text-2xl font-bold mb-6 mt-12">Revised Financial Stress Test</h3>
+                    <p class="text-gray-600 mb-6">The revised model withstands a severe stress test, assuming a **20% rental vacancy** and a **10% increase in operating expenses** simultaneously.</p>
+                     <div class="overflow-x-auto">
+                        <table class="w-full min-w-max text-left text-sm">
+                             <thead>
+                                <tr class="border-b-2 border-gray-300">
+                                    <th class="py-3 pr-2 font-semibold">Metric (Severe Stress Test)</th>
+                                    <th class="py-3 px-2 font-semibold text-right">Amount (€)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b border-gray-200"><td class="py-2 pr-2">Gross Income (at 80% Occupancy)</td><td class="py-2 px-2 text-right">€283,560</td></tr>
+                                <tr class="border-b border-gray-200"><td class="py-2 pr-2">Stressed Operating Expenses (+10%)</td><td class="py-2 px-2 text-right">-€107,996</td></tr>
+                                <tr class="border-b-2 border-gray-300 bg-gray-100"><td class="py-3 pr-2 font-bold">Stressed Net Operating Income (NOI)</td><td class="py-3 px-2 text-right font-bold">€175,564</td></tr>
+                                <tr class="border-b border-gray-200"><td class="py-2 pr-2">Annual Debt Service</td><td class="py-2 px-2 text-right">-€146,165</td></tr>
+                                <tr class="bg-yellow-50"><td class="py-3 pr-2 font-bold">DSCR (Severe Stress Test)</td><td class="py-3 px-2 text-right stress-test-pass">1.20x</td></tr>
+                            </tbody>
+                        </table>
+                        <p class="text-xs text-gray-500 mt-2">*A DSCR above 1.15x in a severe stress test is considered exceptionally resilient. Our result of 1.20x demonstrates the project's low-risk profile.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Leadership Section -->
+        <section id="leadership" class="py-20 md:py-28 bg-white">
+            <div class="container mx-auto px-6">
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <h2 class="section-title text-gray-900 mb-4 fade-in">Our Leadership</h2>
+                    <p class="text-lg text-gray-600 fade-in">This project is guided by a team of seasoned professionals with deep expertise in sports management, finance, and business development, ensuring strategic execution and operational excellence.</p>
+                </div>
+
+                <!-- Board & Partners -->
+                <h3 class="text-2xl font-bold text-center mb-10 fade-in">Board & Partners</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto mb-16">
+                    <div class="team-card bg-gray-50 p-6 rounded-lg text-center fade-in">
+                        <img src="https://placehold.co/128x128/e2e8f0/4a5568?text=AB" alt="Antonio Bulgheroni" class="w-32 h-32 rounded-full mx-auto mb-4 bg-gray-300">
+                        <h4 class="text-xl font-bold">Antonio Bulgheroni</h4>
+                        <p class="text-red-600 font-medium mb-2">Board Member</p>
+                        <p class="text-sm text-gray-600">A legendary figure in Varese, former player for the club, and highly successful industrialist as former CEO of Bulgheroni SpA and President of Lindt & Sprüngli Italia.</p>
+                    </div>
+                    <div class="team-card bg-gray-50 p-6 rounded-lg text-center fade-in" style="transition-delay: 150ms;">
+                        <img src="https://placehold.co/128x128/e2e8f0/4a5568?text=PP" alt="Paolo Perego" class="w-32 h-32 rounded-full mx-auto mb-4 bg-gray-300">
+                        <h4 class="text-xl font-bold">Paolo Perego</h4>
+                        <p class="text-red-600 font-medium mb-2">Vice President</p>
+                        <p class="text-sm text-gray-600">Provides key strategic oversight and direction to the club as Vice President, leveraging extensive experience in regional business leadership.</p>
+                    </div>
+                    <div class="team-card bg-gray-50 p-6 rounded-lg text-center fade-in" style="transition-delay: 300ms;">
+                        <img src="https://placehold.co/128x128/e2e8f0/4a5568?text=SB" alt="Stefano Bonfiglio" class="w-32 h-32 rounded-full mx-auto mb-4 bg-gray-300">
+                        <h4 class="text-xl font-bold">Stefano Bonfiglio</h4>
+                        <p class="text-red-600 font-medium mb-2">Partner, Sterling Square</p>
+                        <p class="text-sm text-gray-600">Co-founder of private equity firm Stirling Square Capital Partners. Brings elite global finance experience from Bankers Trust and an MBA from Wharton.</p>
+                    </div>
+                </div>
+
+                <!-- Executive Team -->
+                <h3 class="text-2xl font-bold text-center mb-10 fade-in">Executive Team</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="team-card bg-gray-50 p-6 rounded-lg text-center fade-in">
+                        <img src="https://placehold.co/128x128/e2e8f0/4a5568?text=LS" alt="Luis Scola" class="w-32 h-32 rounded-full mx-auto mb-4 bg-gray-300">
+                        <h4 class="text-xl font-bold">Luis Scola</h4>
+                        <p class="text-red-600 font-medium mb-2">CEO & Majority Owner</p>
+                        <p class="text-sm text-gray-600">An Olympic gold medalist and NBA legend, now leading the club's strategic vision and operational management as its chief executive.</p>
+                    </div>
+                    <div class="team-card bg-gray-50 p-6 rounded-lg text-center fade-in" style="transition-delay: 100ms;">
+                        <img src="https://placehold.co/128x128/e2e8f0/4a5568?text=ZS" alt="Zach Sogolow" class="w-32 h-32 rounded-full mx-auto mb-4 bg-gray-300">
+                        <h4 class="text-xl font-bold">Zach Sogolow</h4>
+                        <p class="text-red-600 font-medium mb-2">GM, Basketball Operations</p>
+                        <p class="text-sm text-gray-600">Directs the team's technical strategy, player personnel decisions, and all on-court operational matters.</p>
+                    </div>
+                    <div class="team-card bg-gray-50 p-6 rounded-lg text-center fade-in" style="transition-delay: 200ms;">
+                        <img src="https://placehold.co/128x128/e2e8f0/4a5568?text=MH" alt="Maksim Horowitz" class="w-32 h-32 rounded-full mx-auto mb-4 bg-gray-300">
+                        <h4 class="text-xl font-bold">Maksim Horowitz</h4>
+                        <p class="text-red-600 font-medium mb-2">GM, Business & Strategy</p>
+                        <p class="text-sm text-gray-600">Leads the club's business development, operational strategy, and long-term growth initiatives.</p>
+                    </div>
+                    <div class="team-card bg-gray-50 p-6 rounded-lg text-center fade-in" style="transition-delay: 300ms;">
+                        <img src="https://placehold.co/128x128/e2e8f0/4a5568?text=MZ" alt="Marco Zamberletti" class="w-32 h-32 rounded-full mx-auto mb-4 bg-gray-300">
+                        <h4 class="text-xl font-bold">Marco Zamberletti</h4>
+                        <p class="text-red-600 font-medium mb-2">Sponsorship & Partnership</p>
+                        <p class="text-sm text-gray-600">Manages and develops all commercial relationships, sponsorships, and key corporate partnerships for the club.</p>
+                    </div>
+                     <div class="team-card bg-gray-50 p-6 rounded-lg text-center fade-in sm:col-start-2 lg:col-start-auto" style="transition-delay: 400ms;">
+                        <img src="https://placehold.co/128x128/e2e8f0/4a5568?text=FB" alt="Federico Bellotto" class="w-32 h-32 rounded-full mx-auto mb-4 bg-gray-300">
+                        <h4 class="text-xl font-bold">Federico Bellotto</h4>
+                        <p class="text-red-600 font-medium mb-2">Sporting Director</p>
+                        <p class="text-sm text-gray-600">Oversees the broader sporting structure of the organization, ensuring competitive alignment and success.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Documents Section -->
+        <section id="documents" class="py-20 md:py-28 bg-gray-50">
+            <div class="container mx-auto px-6">
+                <div class="text-center max-w-3xl mx-auto mb-16">
+                    <h2 class="section-title text-gray-900 mb-4 fade-in">Full Documentation Repository</h2>
+                    <p class="text-lg text-gray-600 fade-in">Access all supporting documents for a comprehensive review of the project proposal. All files are available for download in PDF format.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- Architectural Plans -->
+                    <div class="document-card bg-white p-6 rounded-lg fade-in">
+                        <div class="flex items-center mb-4">
+                            <div class="bg-red-100 p-3 rounded-full mr-4"><i data-lucide="layout-grid" class="text-red-600"></i></div>
+                            <h3 class="text-xl font-bold">Architectural Plans</h3>
+                        </div>
+                        <p class="text-gray-600 mb-4">Detailed floor plans and designs from Studio Tecnico Associato Redaelli.</p>
+                        <a href="#" class="font-bold text-red-600 hover:text-red-800 flex items-center">Download Plans <i data-lucide="download-cloud" class="w-4 h-4 ml-2"></i></a>
+                    </div>
+                    <!-- Letters of Intent -->
+                    <div class="document-card bg-white p-6 rounded-lg fade-in" style="transition-delay: 150ms;">
+                        <div class="flex items-center mb-4">
+                            <div class="bg-red-100 p-3 rounded-full mr-4"><i data-lucide="file-signature" class="text-red-600"></i></div>
+                            <h3 class="text-xl font-bold">Letters of Intent</h3>
+                        </div>
+                        <p class="text-gray-600 mb-4">Formal commitments from all prospective anchor and wellness tenants.</p>
+                        <a href="#" class="font-bold text-red-600 hover:text-red-800 flex items-center">Download LOIs <i data-lucide="download-cloud" class="w-4 h-4 ml-2"></i></a>
+                    </div>
+                    <!-- BOV -->
+                    <div class="document-card bg-white p-6 rounded-lg fade-in" style="transition-delay: 300ms;">
+                        <div class="flex items-center mb-4">
+                            <div class="bg-red-100 p-3 rounded-full mr-4"><i data-lucide="banknote" class="text-red-600"></i></div>
+                            <h3 class="text-xl font-bold">Broker Opinion of Value</h3>
+                        </div>
+                        <p class="text-gray-600 mb-4">Third-party validation of market rental rates from Varese Commercial Properties.</p>
+                        <a href="#" class="font-bold text-red-600 hover:text-red-800 flex items-center">Download BOV <i data-lucide="download-cloud" class="w-4 h-4 ml-2"></i></a>
+                    </div>
+                     <!-- Security Docs -->
+                    <div class="document-card bg-white p-6 rounded-lg fade-in" style="transition-delay: 450ms;">
+                        <div class="flex items-center mb-4">
+                            <div class="bg-red-100 p-3 rounded-full mr-4"><i data-lucide="file-lock-2" class="text-red-600"></i></div>
+                            <h3 class="text-xl font-bold">Security & Legal</h3>
+                        </div>
+                        <p class="text-gray-600 mb-4">Includes the formal Landlord Guarantee and the fixed-price construction bid.</p>
+                        <a href="#" class="font-bold text-red-600 hover:text-red-800 flex items-center">Download Legal Docs <i data-lucide="download-cloud" class="w-4 h-4 ml-2"></i></a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer id="contact" class="bg-gray-900 text-white">
+        <div class="container mx-auto px-6 py-12 text-center">
+            <h2 class="text-2xl font-bold mb-4">Ready to Discuss the Future of Varese?</h2>
+            <p class="text-gray-400 mb-6 max-w-xl mx-auto">We are available to provide further details and answer any questions you may have about this landmark project.</p>
+            <p class="font-medium">Pallacanestro Varese S.R.L.</p>
+            <p class="text-gray-400">Piazzale Gramsci snc, 21100 Varese</p>
+            <a href="mailto:info@pallacanestrovarese.it" class="text-red-500 hover:text-red-400 transition">info@pallacanestrovarese.it</a>
+            <div class="mt-8 border-t border-gray-800 pt-8">
+                <p class="text-sm text-gray-500">&copy; 2025 Pallacanestro Varese S.R.L. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Lucide icons
+            lucide.createIcons();
+
+            // Mobile menu toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+
+            // Fade-in on scroll animation
+            const faders = document.querySelectorAll('.fade-in');
+            if (faders.length > 0) {
+                const appearOptions = {
+                    threshold: 0.1,
+                    rootMargin: "0px 0px -50px 0px"
+                };
+                const appearOnScroll = new IntersectionObserver(function(entries, observer) {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('visible');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, appearOptions);
+
+                faders.forEach(fader => {
+                    appearOnScroll.observe(fader);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

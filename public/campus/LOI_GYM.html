@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lettera d'Intenti - Varese Pallacanestro</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for a professional look */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* A light gray background */
+        }
+        .letter-container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 3rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        @media (max-width: 768px) {
+            .letter-container {
+                padding: 1.5rem;
+                margin: 1rem;
+            }
+        }
+        h1 {
+            color: #1e3a8a; /* A deep blue for the main title */
+        }
+        h2 {
+            border-bottom: 2px solid #e5e7eb; /* A light underline for sections */
+            padding-bottom: 0.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #dc2626; /* A bold red for the logo text */
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <div class="letter-container">
+        <!-- Header Section -->
+        <header class="text-center mb-12">
+            <div class="logo-text">Varese Pallacanestro</div>
+            <h1 class="text-3xl font-bold text-gray-800">LETTERA D'INTENTI</h1>
+        </header>
+
+        <!-- Recipient Information -->
+        <section class="mb-8">
+            <p class="font-semibold">Spett.le Pallacanestro Varese S.R.L.</p>
+            <p>Piazzale Gramsci snc</p>
+            <p>21100 Varese</p>
+            <p>P.IVA 00338980121</p>
+        </section>
+
+        <!-- Subject Line -->
+        <section class="mb-8">
+            <p><span class="font-semibold">Oggetto:</span> Manifestazione d'interesse per l'affitto di spazi commerciali presso la struttura "Campus" in Via Pirandello 31, 21100 Varese.</p>
+        </section>
+
+        <!-- Body of the Letter -->
+        <main>
+            <p class="mb-4">
+                Con la presente, la società sportiva desidera esprimere il proprio forte interesse e la volontà di instaurare un rapporto di locazione con la Vostra stimata società.
+            </p>
+            <p class="mb-4">
+                La nostra proposta riguarda l'affitto della nuova area specificamente dedicata al nostro settore di attività all'interno della struttura "Campus" (indicata nella planimetria allegata), sita in Via Pirandello 31, 21100 Varese. Siamo venuti a conoscenza dei Vostri piani di ristrutturazione e siamo estremamente interessati a stabilire la nostra attività in questi nuovi spazi, una volta completati i lavori.
+            </p>
+            <p class="mb-4">
+                Confermiamo la nostra piena disponibilità a negoziare e a definire un contratto di locazione che preveda un canone di <strong>€9/mq al mese</strong> per i <strong>620mq</strong> per un totale di locazione annuale di <strong>€ 67.000 + Iva + spese</strong>, per gli spazi destinati all'attività.
+            </p>
+            <p class="mb-4 text-sm text-gray-600 italic">
+                La presente lettera ha il solo scopo di manifestare una chiara intenzione ad affittare gli spazi e non costituisce un accordo vincolante per le parti. Qualsiasi impegno definitivo sarà soggetto alla successiva sottoscrizione di un contratto di locazione formale, il quale regolerà in dettaglio tutti i termini e le condizioni concordate, inclusi, ma non limitati a: durata della locazione, canone, oneri accessori, responsabilità delle parti, e tempistiche precise per la consegna degli spazi ristrutturati e l'inizio dell'attività.
+            </p>
+            <p class="mb-8">
+                Siamo ansiosi di avere l'opportunità di discutere ulteriormente questa proposta con Voi e di avviare il processo di negoziazione. Restiamo a Vostra completa disposizione for un incontro a Vostro più presto.
+            </p>
+        </main>
+
+        <!-- Closing -->
+        <footer class="mb-12">
+            <p>Confidando in un Vostro positivo riscontro, porgiamo i nostri più cordiali saluti.</p>
+        </footer>
+
+        <!-- Floor Plan Image Section -->
+        <section>
+            <h2 class="text-xl font-bold text-gray-800 border-b pb-2 mb-4">Planimetria Allegata</h2>
+            <div class="bg-gray-100 p-4 rounded-lg border border-gray-200">
+                <img src="./floorplan_palestra.png" 
+                     alt="Planimetria della struttura Campus" 
+                     class="w-full h-auto rounded-md shadow-md"
+                     onerror="this.onerror=null;this.src='https://placehold.co/800x600/e2e8f0/4a5568?text=Image+Not+Available';">
+                <!-- The image source is set to the one from the provided document. -->
+                <!-- A placeholder will be shown if the image fails to load. -->
+            </div>
+        </section>
+
+    </div>
+
+</body>
+</html>

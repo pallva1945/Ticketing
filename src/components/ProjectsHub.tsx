@@ -10,8 +10,7 @@ interface ProjectsHubProps {
 
 const ARENA_IMAGE = 'https://images.unsplash.com/photo-1505666287802-931dc83948e5?w=800&q=80';
 
-const RENDERING_BASE = 'https://raw.githubusercontent.com/pallacanestro-varese/camps3m/main/renderings/';
-const RENDERINGS = Array.from({ length: 22 }, (_, i) => `${RENDERING_BASE}render${i + 1}.jpg`);
+const RENDERINGS = Array.from({ length: 25 }, (_, i) => `/campus/renderings/render${i + 1}.jpg`);
 
 const REVENUE_TABLE = [
   { category: true, label: 'Risparmi Operativi Diretti' },
@@ -46,11 +45,14 @@ const PROFORMA = [
 ];
 
 const LEADERSHIP = [
-  { name: 'Luca Milanesi', role: 'CEO, Pallacanestro Varese', desc: 'Guida la visione strategica e la crescita del club.', img: 'https://raw.githubusercontent.com/pallacanestro-varese/camps3m/main/milanesi.png' },
-  { name: 'Giovanni Raimondi', role: 'Finance & Administration', desc: 'Responsabile della pianificazione finanziaria e governance.', img: 'https://raw.githubusercontent.com/pallacanestro-varese/camps3m/main/raimondi.jpg' },
-  { name: 'Alberto Bardelli', role: 'Real Estate & Development', desc: 'Supervisiona la pianificazione e lo sviluppo del campus.', img: 'https://raw.githubusercontent.com/pallacanestro-varese/camps3m/main/bardelli.jpeg' },
-  { name: 'Marco Zamberletti', role: 'Sponsorship & Partnership', desc: 'Gestisce le relazioni commerciali e le sponsorizzazioni chiave.', img: 'https://raw.githubusercontent.com/pallacanestro-varese/camps3m/main/zamberletti.jpg' },
-  { name: 'Federico Bellotto', role: 'CEO, Varese Basket', desc: 'Organizza e gestisce tutti i progetti collegato a Varese Basket.', img: 'https://raw.githubusercontent.com/pallacanestro-varese/camps3m/main/bellotto.jpeg' },
+  { name: 'Luis Scola', role: 'CEO & Proprietario', desc: 'Leggenda del basket mondiale, guida la visione strategica e la gestione operativa del club.', img: '/campus/scola.png' },
+  { name: 'Antonio Bulgheroni', role: 'Consiglio di Amministrazione', desc: 'Figura storica di Varese, ex giocatore e industriale di successo.', img: '/campus/bulgheroni.jpg' },
+  { name: 'Paolo Perego', role: 'Vice Presidente', desc: 'Fornisce una supervisione strategica chiave al club.', img: '/campus/perego.jpeg' },
+  { name: 'Stefano Bonfiglio', role: 'Partner, Sterling Square', desc: "Co-fondatore del fondo di private equity Stirling Square, porta un'esperienza elitaria nella finanza globale.", img: '/campus/bonfiglio.png' },
+  { name: 'Zach Sogolow', role: 'GM, Basketball Operations', desc: 'Dirige la strategia tecnica e le operazioni sportive del club.', img: '/campus/sogolow.jpeg' },
+  { name: 'Maksim Horowitz', role: 'GM, Business & Strategy', desc: 'Guida lo sviluppo del business e le iniziative di crescita a lungo termine.', img: '/campus/horowitz.jpeg' },
+  { name: 'Marco Zamberletti', role: 'Sponsorship & Partnership', desc: 'Gestisce le relazioni commerciali e le sponsorizzazioni chiave.', img: '/campus/zamberletti.jpg' },
+  { name: 'Federico Bellotto', role: 'CEO, Varese Basket', desc: 'Organizza e gestisce tutti i progetti collegati a Varese Basket.', img: '/campus/bellotto.jpeg' },
 ];
 
 const CampusDetailPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -165,9 +167,9 @@ const CampusDetailPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { title: 'Piano Rialzato', desc: 'Aree direzionali, uffici e spazi comuni.', img: 'https://raw.githubusercontent.com/pallacanestro-varese/camps3m/main/floorplan_rilazato.png' },
-                { title: 'Piano Seminterrato (Palestre)', desc: 'Aree dedicate a palestra, pilates e spogliatoi.', img: 'https://raw.githubusercontent.com/pallacanestro-varese/camps3m/main/floorplan_palestra.png' },
-                { title: 'Piano Seminterrato (Negozi)', desc: 'Spazi commerciali e area ristorazione.', img: 'https://raw.githubusercontent.com/pallacanestro-varese/camps3m/main/floorplan_negozio.png' },
+                { title: 'Piano Rialzato', desc: 'Aree direzionali, uffici e spazi comuni.', img: '/campus/floorplan_rilazato.png' },
+                { title: 'Piano Seminterrato (Palestre)', desc: 'Aree dedicate a palestra, pilates e spogliatoi.', img: '/campus/floorplan_palestra.png' },
+                { title: 'Piano Seminterrato (Negozi)', desc: 'Spazi commerciali e area ristorazione.', img: '/campus/floorplan_negozio.png' },
               ].map((plan, i) => (
                 <div key={i} id={`plan-${i}`} className={`bg-white border border-gray-200 p-5 rounded-lg hover:-translate-y-1 hover:shadow-xl hover:border-red-700 transition-all duration-300 ${fadeClass(`plan-${i}`)}`}>
                   <img src={plan.img} alt={plan.title} className="rounded-md mb-4 w-full h-44 object-cover object-top" loading="lazy" />
@@ -301,7 +303,7 @@ const CampusDetailPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
               <h2 id="lead-title" className={`text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 ${fadeClass('lead-title')}`}>Leadership</h2>
               <p id="lead-desc" className={`text-base text-gray-600 ${fadeClass('lead-desc')}`}>Un team esperto e dedicato guida ogni fase del progetto Varese Campus.</p>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
               {LEADERSHIP.map((person, i) => (
                 <div key={i} id={`lead-${i}`} className={`bg-white border border-gray-200 p-5 rounded-lg text-center hover:-translate-y-1 hover:shadow-xl hover:border-red-700 transition-all duration-300 ${fadeClass(`lead-${i}`)}`}>
                   <img src={person.img} alt={person.name} className="w-20 h-20 rounded-full mx-auto mb-3 object-cover bg-gray-200" loading="lazy" />
