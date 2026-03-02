@@ -26,7 +26,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
   const cards = [
     {
       id: 'us',
-      label: 'Us',
+      label: t('About Us'),
       desc: t('Vision, Mission, Values & Our Team'),
       icon: Users,
       color: 'orange',

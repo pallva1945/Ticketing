@@ -115,7 +115,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
   const cards = [
     {
       id: 'us',
-      label: 'Us',
+      label: t('About Us'),
       desc: t('Vision, Mission, Values & Our Team'),
       icon: Users,
       color: 'red',
