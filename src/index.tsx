@@ -8,6 +8,7 @@ import { FinancialCenter } from './components/FinancialCenter';
 import { CostCenter } from './components/CostCenter';
 import { VerticalsPnL } from './components/VerticalsPnL';
 import { CostControlCenter } from './components/CostControlCenter';
+import { ProjectsHub } from './components/ProjectsHub';
 import { LoginPage } from './components/LoginPage';
 import { AdminPanel } from './components/AdminPanel';
 import { InviteAcceptPage } from './components/InviteAcceptPage';
@@ -144,11 +145,15 @@ const Root: React.FC = () => {
     return <PVUsPage onBack={handleBackToHub} onHome={handleBackToWelcome} />;
   }
 
+  if (currentView === 'projects') {
+    return <ProjectsHub onBackToWelcome={handleBackToWelcome} />;
+  }
+
   if (currentView === 'hub' && canAccessPage('hub')) {
     return <InternalHub onNavigate={handleNavigate} onBackToWelcome={handleBackToWelcome} />;
   }
 
-  return <WelcomePage onEnterPV={() => handleNavigate('hub')} onEnterVB={() => handleNavigate('vb-hub')} />;
+  return <WelcomePage onEnterPV={() => handleNavigate('hub')} onEnterVB={() => handleNavigate('vb-hub')} onEnterProjects={() => handleNavigate('projects')} />;
 };
 
 const rootElement = document.getElementById('root');

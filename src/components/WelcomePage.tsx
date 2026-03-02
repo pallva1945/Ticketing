@@ -9,9 +9,10 @@ const VB_LOGO_URL = "https://i.imgur.com/e7khORs.png";
 interface WelcomePageProps {
   onEnterPV: () => void;
   onEnterVB: () => void;
+  onEnterProjects?: () => void;
 }
 
-export const WelcomePage: React.FC<WelcomePageProps> = ({ onEnterPV, onEnterVB }) => {
+export const WelcomePage: React.FC<WelcomePageProps> = ({ onEnterPV, onEnterVB, onEnterProjects }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
   const isDark = theme === 'dark';
@@ -128,26 +129,29 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({ onEnterPV, onEnterVB }
               </div>
             </button>
 
-            <div
-              className={`group relative flex flex-col items-center text-center px-8 py-8 sm:px-10 sm:py-12 rounded-2xl border transition-all duration-500 ${
+            <button
+              onClick={onEnterProjects}
+              className={`group relative flex flex-col items-center text-center px-8 py-8 sm:px-10 sm:py-12 rounded-2xl border transition-all duration-500 hover:shadow-2xl ${
                 isDark
-                  ? 'bg-gray-900/30 border-gray-800/50 opacity-60'
-                  : 'bg-white/60 border-gray-200/60 opacity-60'
+                  ? 'bg-gray-900/50 border-gray-800 hover:border-purple-800/60 hover:shadow-purple-950/10'
+                  : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-purple-100/30'
               }`}
             >
-              <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mb-5 ${isDark ? 'bg-gray-800/50' : 'bg-gray-100'}`}>
-                <Construction size={28} className={`${isDark ? 'text-gray-500' : 'text-gray-400'} sm:w-[32px] sm:h-[32px]`} />
+              <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-purple-600 to-violet-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-t-2xl`}></div>
+              <div className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mb-5 ${isDark ? 'bg-purple-900/30' : 'bg-purple-50'}`}>
+                <Construction size={28} className={`text-purple-500 sm:w-[32px] sm:h-[32px]`} />
               </div>
               <h2 className={`text-base sm:text-lg font-semibold tracking-[0.05em] mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 {t('Our Projects')}
               </h2>
               <p className={`text-xs sm:text-sm mb-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                {t('Coming Soon')}
+                {t('Campus & Arena')}
               </p>
-              <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>
-                {t('Coming Soon')}
+              <div className={`inline-flex items-center gap-2 text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${isDark ? 'text-purple-500' : 'text-purple-600'}`}>
+                {t('Enter')}
+                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
               </div>
-            </div>
+            </button>
           </div>
         </div>
 
