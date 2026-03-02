@@ -8,7 +8,7 @@ interface ProjectsHubProps {
   onBackToWelcome: () => void;
 }
 
-const ARENA_IMAGE = '/arena/renderings/tribuna_ovest.png';
+const ARENA_IMAGE = '/arena/renderings/museo_facade.png';
 const CAMPUS_HERO = '/campus/campus_hero.png';
 
 const RENDERINGS = Array.from({ length: 25 }, (_, i) => `/campus/renderings/render${i + 1}.jpg`);
@@ -272,6 +272,7 @@ const arenaText = (lang: string) => {
       ? 'A preview of the renovated Enerxenia Arena — more renderings will be added as the design evolves.'
       : "Un'anteprima dell'Enerxenia Arena ristrutturata — altri rendering verranno aggiunti man mano che il progetto evolve.",
     renders: isEN ? [
+      { src: '/arena/renderings/museo_facade.png', caption: 'Basket Museo — Museum Facade' },
       { src: '/arena/renderings/tribuna_ovest.png', caption: 'Tribuna Ovest — Store & Bar Entrance' },
       { src: '/arena/renderings/bar.png', caption: 'Premium Bar — 24/7 Operation' },
       { src: '/arena/renderings/terrace.png', caption: 'Outdoor Terrace — Lounge & Events' },
@@ -284,8 +285,8 @@ const arenaText = (lang: string) => {
       { src: '/arena/renderings/parking_fanzone.png', caption: 'Parking & Fan Zone — Multi-Level Facility' },
       { src: '/arena/renderings/tourism_bar.png', caption: 'PV Tourism Center & Bar — Street View' },
       { src: '/arena/renderings/arena_aerial.png', caption: 'Arena Aerial — Full Exterior View' },
-      { src: '/arena/renderings/museo_facade.png', caption: 'Basket Museo — Museum Facade' },
     ] : [
+      { src: '/arena/renderings/museo_facade.png', caption: 'Basket Museo — Facciata Museo' },
       { src: '/arena/renderings/tribuna_ovest.png', caption: 'Tribuna Ovest — Ingresso Store & Bar' },
       { src: '/arena/renderings/bar.png', caption: 'Bar Premium — Operativo 24/7' },
       { src: '/arena/renderings/terrace.png', caption: 'Terrazza Esterna — Lounge & Eventi' },
@@ -298,7 +299,6 @@ const arenaText = (lang: string) => {
       { src: '/arena/renderings/parking_fanzone.png', caption: 'Parcheggio & Fan Zone — Struttura Multi-Livello' },
       { src: '/arena/renderings/tourism_bar.png', caption: 'Centro Turismo PV & Bar — Vista Strada' },
       { src: '/arena/renderings/arena_aerial.png', caption: 'Arena Aerea — Vista Esterna Completa' },
-      { src: '/arena/renderings/museo_facade.png', caption: 'Basket Museo — Facciata Museo' },
     ],
     videoId: 'bNir570yS0U',
     contactTitle: isEN ? 'Contact' : 'Contatti',
