@@ -8,7 +8,7 @@ interface ProjectsHubProps {
   onBackToWelcome: () => void;
 }
 
-const ARENA_IMAGE = 'https://images.unsplash.com/photo-1505666287802-931dc83948e5?w=800&q=80';
+const ARENA_IMAGE = '/arena/renderings/tribuna_ovest.png';
 const CAMPUS_HERO = '/campus/campus_hero.png';
 
 const RENDERINGS = Array.from({ length: 25 }, (_, i) => `/campus/renderings/render${i + 1}.jpg`);
