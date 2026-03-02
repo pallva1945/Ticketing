@@ -10,6 +10,7 @@ import { VenueOpsCostDashboard } from './VenueOpsCostDashboard';
 import { MerchandisingCostDashboard } from './MerchandisingCostDashboard';
 import { LaborCostDashboard } from './LaborCostDashboard';
 import { SGACombinedDashboard } from './SGACombinedDashboard';
+import { parseVbPnlSheetData, VbPnlData } from './VareseBasketballDashboard';
 
 export interface CostLine {
   name: string;
@@ -54,6 +55,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
   const [sheetId, setSheetId] = useState('');
   const [sheetName, setSheetName] = useState('SG&A (No Labor)');
   const [sheetConfigured, setSheetConfigured] = useState(false);
+  const [vbPnl, setVbPnl] = useState<VbPnlData | null>(null);
 
   useEffect(() => {
     fetch('/api/costs/data')
@@ -68,6 +70,15 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
         if (res.success) {
           if (res.sheetId) { setSheetId(res.sheetId); setSheetConfigured(true); }
           if (res.sheetName) setSheetName(res.sheetName);
+        }
+      })
+      .catch(() => {});
+    fetch('/api/revenue/sheet-data/vb_pnl')
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && res.data) {
+          const parsed = parseVbPnlSheetData(res.data);
+          if (parsed) setVbPnl(parsed);
         }
       })
       .catch(() => {});
@@ -322,8 +333,8 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
                     { id: 'merchandising', amount: dynMerch, detail: `${t('Stock')}: 82.6%`, badge: hasDynamic && costData.merchandising ? t('Google Sheet') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
                     { id: 'venue_ops', amount: dynVenueOps, detail: `${t('Campus - Rental')}: 79.7%`, badge: hasDynamic && costData.venue_ops ? t('Google Sheet') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
                     { id: 'sponsorship', amount: dynSponsorship, detail: `${t('Events')}: 66.3% · ${t('Materials & Ads')}: 33.7%`, badge: hasDynamic && costData.sponsorship ? t('Google Sheet') : t('Monthly Actuals'), badgeStyle: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' },
-                    { id: 'ebp', amount: 0, detail: t('No costs recorded YTD'), badge: t('Zero Activity'), badgeStyle: 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400' },
-                    { id: 'varese_basketball', amount: -1, detail: '', badge: t('Coming Soon'), badgeStyle: '' },
+                    { id: 'ebp', amount: vbPnl ? Math.round(vbPnl.cos.reduce((s, l) => s + l.total, 0)) : 0, detail: vbPnl ? `${vbPnl.cos.length} ${t('line items')}` : t('No costs recorded YTD'), badge: vbPnl ? t('VB P&L Sheet') : t('Zero Activity'), badgeStyle: vbPnl ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400' },
+                    { id: 'varese_basketball', amount: vbPnl ? Math.round(vbPnl.sga.reduce((s, l) => s + l.total, 0)) : -1, detail: vbPnl ? `${vbPnl.sga.length} ${t('SG&A items')}` : '', badge: vbPnl ? t('VB P&L Sheet') : t('Coming Soon'), badgeStyle: vbPnl ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400' : '' },
                   ];
                   const sorted = [...COST_CARDS].sort((a, b) => b.amount - a.amount);
                   const totalCOS = COST_CARDS.filter(c => c.amount >= 0).reduce((s, c) => s + c.amount, 0);
@@ -461,16 +472,91 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
                 <ActiveIcon className="text-red-600" size={22} />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">EBP — {t('Cost Structure')}</h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{t('Monthly Actuals')} · {period}</p>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">EBP — {t('Cost of Sales')}</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{vbPnl ? t('VB P&L Sheet') : t('Monthly Actuals')} · {period}</p>
               </div>
             </div>
-            <div className={`rounded-xl border p-12 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
-              <div className="text-5xl font-bold text-gray-300 dark:text-gray-600 mb-3">€0</div>
-              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('No costs recorded YTD')}</h3>
-              <p className="text-sm text-gray-400 dark:text-gray-500 max-w-sm mx-auto">
-                {t('No EBP expenses have been recorded for the')} {period} {t('period.')}
-              </p>
+            {vbPnl && vbPnl.cos.length > 0 ? (
+              <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+                <div className="p-5">
+                  <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{formatCurrency(Math.round(vbPnl.cos.reduce((s, l) => s + l.total, 0)))}</div>
+                  <p className="text-xs text-gray-500">{t('Total Cost of Sales')} — {period}</p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-t border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                        <th className="text-left py-2 px-4 font-semibold text-gray-500">{t('Item')}</th>
+                        {['Jul','Aug','Sep','Oct','Nov','Dec','Jan'].slice(0, vbPnl.monthCount).map(m => (
+                          <th key={m} className="text-right py-2 px-2 font-semibold text-gray-500">{m}</th>
+                        ))}
+                        <th className="text-right py-2 px-4 font-bold text-gray-700 dark:text-gray-300">{t('Total')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {vbPnl.cos.map(line => (
+                        <tr key={line.key} className="border-b border-gray-100 dark:border-gray-800">
+                          <td className="py-2 px-4 font-medium text-gray-900 dark:text-white">{line.label}</td>
+                          {line.values.slice(0, vbPnl.monthCount).map((v, i) => (
+                            <td key={i} className="text-right py-2 px-2 text-gray-600 dark:text-gray-400">{v > 0 ? formatCurrency(v) : '-'}</td>
+                          ))}
+                          <td className="text-right py-2 px-4 font-bold text-red-600">{formatCurrency(line.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : (
+              <div className={`rounded-xl border p-12 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+                <div className="text-5xl font-bold text-gray-300 dark:text-gray-600 mb-3">€0</div>
+                <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">{t('No costs recorded YTD')}</h3>
+                <p className="text-sm text-gray-400 dark:text-gray-500 max-w-sm mx-auto">
+                  {t('Sync the VB P&L Google Sheet to populate EBP cost data.')}
+                </p>
+              </div>
+            )}
+          </div>
+        ) : activeModule === 'varese_basketball' && vbPnl && vbPnl.sga.length > 0 ? (
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-red-100 dark:bg-red-900/20 rounded-xl">
+                <ActiveIcon className="text-red-600" size={22} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('Varese Basketball')} — {t('SG&A')}</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('VB P&L Sheet')} · {period}</p>
+              </div>
+            </div>
+            <div className={`rounded-xl border overflow-hidden ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+              <div className="p-5">
+                <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{formatCurrency(Math.round(vbPnl.sga.reduce((s, l) => s + l.total, 0)))}</div>
+                <p className="text-xs text-gray-500">{t('Total SG&A')} — {period}</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-t border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                      <th className="text-left py-2 px-4 font-semibold text-gray-500">{t('Item')}</th>
+                      {['Jul','Aug','Sep','Oct','Nov','Dec','Jan'].slice(0, vbPnl.monthCount).map(m => (
+                        <th key={m} className="text-right py-2 px-2 font-semibold text-gray-500">{m}</th>
+                      ))}
+                      <th className="text-right py-2 px-4 font-bold text-gray-700 dark:text-gray-300">{t('Total')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {vbPnl.sga.map(line => (
+                      <tr key={line.key} className="border-b border-gray-100 dark:border-gray-800">
+                        <td className="py-2 px-4 font-medium text-gray-900 dark:text-white">{line.label}</td>
+                        {line.values.slice(0, vbPnl.monthCount).map((v, i) => (
+                          <td key={i} className="text-right py-2 px-2 text-gray-600 dark:text-gray-400">{v > 0 ? formatCurrency(v) : '-'}</td>
+                        ))}
+                        <td className="text-right py-2 px-4 font-bold text-red-600">{formatCurrency(line.total)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         ) : (
@@ -490,7 +576,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
                 {activeModuleInfo?.label} — {t('Cost Center')}
               </h2>
               <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                {t('This cost vertical is currently being integrated into the PV Financial Center.')} {t('Data pipelines are under construction.')}
+                {t('Sync the VB P&L Google Sheet to populate this data.')}
               </p>
             </div>
           </div>

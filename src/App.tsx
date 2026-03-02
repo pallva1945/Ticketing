@@ -22,7 +22,7 @@ import { CRMView } from './components/CRMView';
 import { SponsorshipDashboard } from './components/SponsorshipDashboard';
 import { MerchandisingView } from './components/MerchandisingView';
 import { VenueOpsDashboard, parseVenueOpsSheetData } from './components/VenueOpsDashboard';
-import { VareseBasketballDashboard } from './components/VareseBasketballDashboard';
+import { VareseBasketballDashboard, parseVbPnlSheetData } from './components/VareseBasketballDashboard';
 import { BOpsDashboard, parseBopsSheetData } from './components/BOpsDashboard';
 import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, FIXED_CORP_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, SponsorData, CRMRecord, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
@@ -166,6 +166,8 @@ const RevenueHome = ({
     const [corpTixInSponsorship, setCorpTixInSponsorship] = useState(true);
     const [bopsYTD, setBopsYTD] = useState(0);
     const [venueOpsYTD, setVenueOpsYTD] = useState(0);
+    const [vbRevenueYTD, setVbRevenueYTD] = useState(366315);
+    const [vbHasSheetData, setVbHasSheetData] = useState(false);
 
     useEffect(() => {
       fetch('/api/revenue/sheet-data/bops')
@@ -188,6 +190,19 @@ const RevenueHome = ({
             if (parsed) {
               const ytd = parsed.monthlyRevenue.reduce((s: number, item: any) => s + item.values.reduce((a: number, b: number) => a + b, 0), 0);
               setVenueOpsYTD(ytd);
+            }
+          }
+        })
+        .catch(() => {});
+      fetch('/api/revenue/sheet-data/vb_pnl')
+        .then(r => r.json())
+        .then(res => {
+          if (res.success && res.data) {
+            const parsed = parseVbPnlSheetData(res.data);
+            if (parsed) {
+              const ytd = parsed.revenue.reduce((s: number, l: any) => s + l.total, 0);
+              setVbRevenueYTD(ytd);
+              setVbHasSheetData(true);
             }
           }
         })
@@ -235,10 +250,10 @@ const RevenueHome = ({
       { 
           id: 'sg', 
           name: 'Varese Basketball', 
-          current: 366315, 
+          current: vbRevenueYTD, 
           target: 930465, 
           pacingType: 'h1' as const,
-          icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false, isProrated: false, hasData: true 
+          icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false, isProrated: false, hasData: vbHasSheetData 
       },
       { 
           id: 'bops', 

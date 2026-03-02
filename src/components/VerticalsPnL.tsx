@@ -7,6 +7,7 @@ import { PV_LOGO_URL } from '../constants';
 import type { CostData } from './CostCenter';
 import { parseBopsSheetData } from './BOpsDashboard';
 import { parseVenueOpsSheetData } from './VenueOpsDashboard';
+import { parseVbPnlSheetData, VbPnlData } from './VareseBasketballDashboard';
 
 const formatCurrency = (val: number) => `€${Math.abs(val).toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 const formatCurrencySign = (val: number) => val < 0 ? `(${formatCurrency(val)})` : formatCurrency(val);
@@ -50,6 +51,7 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding, onH
   const [bopsYTD, setBopsYTD] = useState(0);
   const [venueOpsYTD, setVenueOpsYTD] = useState(0);
   const [merchSales, setMerchSales] = useState(91742);
+  const [vbPnl, setVbPnl] = useState<VbPnlData | null>(null);
 
   useEffect(() => {
     fetch('/api/costs/data')
@@ -79,6 +81,15 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding, onH
             const ytd = parsed.monthlyRevenue.reduce((s, item) => s + item.values.reduce((a, b) => a + b, 0), 0);
             setVenueOpsYTD(ytd);
           }
+        }
+      })
+      .catch(() => {});
+    fetch('/api/revenue/sheet-data/vb_pnl')
+      .then(r => r.json())
+      .then(res => {
+        if (res.success && res.data) {
+          const parsed = parseVbPnlSheetData(res.data);
+          if (parsed) setVbPnl(parsed);
         }
       })
       .catch(() => {});
@@ -113,15 +124,18 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding, onH
 
   const laborProrated = Math.round(511145 * 6 / 12) + dynProfServices;
   const sharedSga = laborProrated + dynTeamOps + dynMarketing + dynOffice + dynUtilities + dynFinancial + dynContingencies;
-  const VB_SGA = VB_SGA_DEFAULT;
-  const TOTAL_SGA = sharedSga + VB_SGA;
+
+  const vbSales = vbPnl ? Math.round(vbPnl.revenue.reduce((s, l) => s + l.total, 0)) : 386020;
+  const vbCos = vbPnl ? Math.round(vbPnl.cos.reduce((s, l) => s + l.total, 0)) : 260635;
+  const vbSga = vbPnl ? Math.round(vbPnl.sga.reduce((s, l) => s + l.total, 0)) : VB_SGA_DEFAULT;
+  const TOTAL_SGA = sharedSga + vbSga;
 
   const VERTICALS: Vertical[] = [
     { id: 'gameday_bops', labelKey: 'GameDay & BOps', color: '#ef4444', sales: 1177289 + bopsYTD, cos: dynGamedayCos + BOPS_COS, sgaPct: 0.60, sgaFixed: null },
     { id: 'sponsorship', labelKey: 'Sponsorship', color: '#f97316', sales: 1097254, cos: dynSponsorshipCos, sgaPct: 0.30, sgaFixed: null },
     { id: 'merchandising', labelKey: 'Merchandising', color: '#3b82f6', sales: merchSales, cos: dynMerchCos, sgaPct: 0.05, sgaFixed: null },
     { id: 'venue_ops', labelKey: 'Venue Ops', color: '#8b5cf6', sales: venueOpsYTD, cos: dynVenueOpsCos, sgaPct: 0.05, sgaFixed: null },
-    { id: 'varese_basketball', labelKey: 'Varese Basketball', color: '#14b8a6', sales: 386020, cos: 260635, sgaPct: null, sgaFixed: VB_SGA },
+    { id: 'varese_basketball', labelKey: 'Varese Basketball', color: '#14b8a6', sales: vbSales, cos: vbCos, sgaPct: null, sgaFixed: vbSga },
   ];
 
   const computed = (() => {
