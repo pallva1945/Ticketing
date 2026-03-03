@@ -183,8 +183,8 @@ const arenaText = (lang: string) => {
   const isEN = lang === 'en';
   return {
     nav: isEN
-      ? [['#arena-upgrades', 'Upgrades'], ['#arena-plans', 'Floor Plans'], ['#arena-milestones', 'Milestones'], ['#arena-renderings', 'Renderings']]
-      : [['#arena-upgrades', 'Interventi'], ['#arena-plans', 'Planimetrie'], ['#arena-milestones', 'Fasi'], ['#arena-renderings', 'Rendering']],
+      ? [['#arena-upgrades', 'Upgrades'], ['#arena-plans', 'Floor Plans'], ['#arena-financials', 'Financials'], ['#arena-milestones', 'Milestones'], ['#arena-renderings', 'Renderings']]
+      : [['#arena-upgrades', 'Interventi'], ['#arena-plans', 'Planimetrie'], ['#arena-financials', 'Finanziari'], ['#arena-milestones', 'Fasi'], ['#arena-renderings', 'Rendering']],
     heroTitle: isEN ? 'Remodeling the Heart of Varese Basketball' : 'La Riqualificazione del Cuore del Basket Varesino',
     heroDesc: isEN
       ? 'A comprehensive renovation of the Enerxenia Arena to enhance fan experience, unlock 24/7 commercial potential, and bring the venue up to modern European standards.'
@@ -271,6 +271,40 @@ const arenaText = (lang: string) => {
       { label: 'Fase 2 — Ristrutturazione', done: false },
       { label: 'Completamento & Inaugurazione', done: false },
     ],
+    financialsTitle: isEN ? 'Financial Overview' : 'Panoramica Finanziaria',
+    financialsDesc: isEN
+      ? 'Investment structure and projected revenue uplift across three scenarios.'
+      : 'Struttura dell\'investimento e proiezioni di aumento dei ricavi in tre scenari.',
+    investmentLabel: isEN ? 'Total Investment' : 'Investimento Totale',
+    publicFundingLabel: isEN ? 'Public Funding (Sought)' : 'Finanziamento Pubblico (Richiesto)',
+    confidenceLabel: isEN ? 'Confidence' : 'Fiducia',
+    confidenceValue: isEN ? 'High' : 'Alta',
+    netInvestmentLabel: isEN ? 'Net Private Investment' : 'Investimento Privato Netto',
+    revenueTableTitle: isEN ? 'Projected Revenue Uplift' : 'Proiezioni Aumento Ricavi',
+    scenarioLabels: isEN ? ['Conservative', 'Realistic', 'Aggressive'] : ['Conservativo', 'Realistico', 'Aggressivo'],
+    revenueSourceLabel: isEN ? 'Revenue Source' : 'Fonte di Ricavo',
+    revenueRows: isEN ? [
+      { source: 'Energy Efficiency', values: ['70.000', '150.000', '200.000'] },
+      { source: 'Bar', values: ['15.000', '20.000', '24.000'] },
+      { source: 'Restaurant', values: ['72.000', '84.000', '108.000'] },
+      { source: 'Offices', values: ['30.000', '36.000', '48.000'] },
+      { source: 'Ticket Sales — New Section', values: ['60.000', '81.000', '96.000'] },
+      { source: 'Ticket Sales — Extra Seats', values: ['18.000', '25.000', '28.500'] },
+      { source: 'Hospitality Remodeling', values: ['0', '15.000', '25.000'] },
+      { source: 'Facility Operations Upgrade', values: ['50.000', '75.000', '100.000'] },
+      { source: 'Selling Points', values: ['5.000', '20.000', '40.000'] },
+    ] : [
+      { source: 'Efficienza Energetica', values: ['70.000', '150.000', '200.000'] },
+      { source: 'Bar', values: ['15.000', '20.000', '24.000'] },
+      { source: 'Ristorante', values: ['72.000', '84.000', '108.000'] },
+      { source: 'Uffici', values: ['30.000', '36.000', '48.000'] },
+      { source: 'Vendite Biglietti — Nuova Sezione', values: ['60.000', '81.000', '96.000'] },
+      { source: 'Vendite Biglietti — Posti Extra', values: ['18.000', '25.000', '28.500'] },
+      { source: 'Rimodellamento Hospitality', values: ['0', '15.000', '25.000'] },
+      { source: 'Aggiornamento Operazioni Struttura', values: ['50.000', '75.000', '100.000'] },
+      { source: 'Selling Points', values: ['5.000', '20.000', '40.000'] },
+    ],
+    revenueTotals: ['320.000', '536.000', '708.500'],
     rendersTitle: isEN ? 'Renderings' : 'Rendering',
     rendersDesc: isEN
       ? 'A preview of the renovated Enerxenia Arena — more renderings will be added as the design evolves.'
@@ -505,7 +539,72 @@ const ArenaDetailPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </div>
         </section>
 
-        <section id="arena-renderings" className="py-20 md:py-28 bg-gray-50">
+        <section id="arena-financials" className="py-20 md:py-28 bg-gray-50">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center max-w-3xl mx-auto mb-14">
+              <h2 id="fin-title" className={`text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 ${fadeClass('fin-title')}`}>{tx.financialsTitle}</h2>
+              <p id="fin-desc" className={`text-base text-gray-600 ${fadeClass('fin-desc')}`}>{tx.financialsDesc}</p>
+            </div>
+
+            <div id="fin-invest" className={`max-w-3xl mx-auto mb-12 ${fadeClass('fin-invest')}`}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                <div className="bg-white border border-gray-200 rounded-lg p-6 text-center hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{tx.investmentLabel}</p>
+                  <p className="text-3xl font-black text-gray-900">€4M</p>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-lg p-6 text-center hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{tx.publicFundingLabel}</p>
+                  <p className="text-3xl font-black text-blue-600">€2M</p>
+                  <p className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-2">{tx.confidenceLabel}: {tx.confidenceValue}</p>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-lg p-6 text-center hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{tx.netInvestmentLabel}</p>
+                  <p className="text-3xl font-black text-gray-900">€2M</p>
+                </div>
+              </div>
+            </div>
+
+            <div id="fin-table" className={`max-w-4xl mx-auto ${fadeClass('fin-table')}`}>
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                <div className="bg-blue-950 px-6 py-4">
+                  <h3 className="text-sm font-bold text-white">{tx.revenueTableTitle}</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200">
+                        <th className="text-left px-5 py-3 font-bold text-gray-600 text-xs uppercase tracking-wider">{tx.revenueSourceLabel}</th>
+                        {tx.scenarioLabels.map((s: string, i: number) => (
+                          <th key={i} className="text-right px-5 py-3 font-bold text-xs uppercase tracking-wider" style={{ color: i === 0 ? '#6b7280' : i === 1 ? '#2563eb' : '#059669' }}>{s} (€)</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tx.revenueRows.map((row: any, i: number) => (
+                        <tr key={i} className={`border-b border-gray-100 ${i % 2 === 0 ? '' : 'bg-gray-50/50'} hover:bg-blue-50/40 transition-colors`}>
+                          <td className="px-5 py-3 font-medium text-gray-800">{row.source}</td>
+                          {row.values.map((v: string, j: number) => (
+                            <td key={j} className="text-right px-5 py-3 font-mono text-gray-700">{v}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-blue-950">
+                        <td className="px-5 py-3.5 font-bold text-white text-sm">TOTALE</td>
+                        {tx.revenueTotals.map((t: string, i: number) => (
+                          <td key={i} className="text-right px-5 py-3.5 font-bold font-mono text-white text-sm">{t}</td>
+                        ))}
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="arena-renderings" className="py-20 md:py-28 bg-white">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center max-w-3xl mx-auto mb-14">
               <h2 id="rend-title" className={`text-3xl md:text-4xl font-extrabold text-gray-900 mb-4 ${fadeClass('rend-title')}`}>{tx.rendersTitle}</h2>
