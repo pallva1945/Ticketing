@@ -486,13 +486,16 @@ export const VBUsPage: React.FC<VBUsPageProps> = ({ onBack, onHome, onNavigate }
                     <Shield size={16} className="text-orange-500" />
                   </div>
                   <h3 className={`text-xs font-semibold tracking-[0.15em] uppercase ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>
-                    {t('Executive Leadership')}
+                    {t('Leaders')}
                   </h3>
                 </div>
                 <div className="space-y-3">
                   {[
-                    { name: 'Federico Bellotto', role: 'CEO · Head of Business Opportunities' },
-                    { name: 'Luis Scola', role: 'Elite Development Leader' },
+                    { name: 'Luis Scola', role: 'Project Leader' },
+                    { name: 'Federico Bellotto', role: 'COO' },
+                    { name: 'Massimo Ferrariuolo', role: 'Senior Advisor' },
+                    { name: 'Giovanni Todisco', role: 'RSG' },
+                    { name: 'Francesco Zambelli', role: 'GM' },
                   ].map((p) => (
                     <div key={p.name}>
                       <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{p.name}</p>
@@ -508,15 +511,16 @@ export const VBUsPage: React.FC<VBUsPageProps> = ({ onBack, onHome, onNavigate }
                     <Target size={16} className="text-blue-500" />
                   </div>
                   <h3 className={`text-xs font-semibold tracking-[0.15em] uppercase ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
-                    {t('Coaching Staff')}
+                    {t('Full Time Coaches')}
                   </h3>
                 </div>
                 <div className="space-y-3">
                   {[
-                    { name: 'Marco Legovich', role: 'Head Coach' },
-                    { name: 'Paolo Mara', role: 'Asst. Coach' },
-                    { name: 'Mattia Vanni', role: 'Asst. Coach' },
-                    { name: 'Salvatore Zasa', role: 'Asst. Coach' },
+                    { name: 'Tommasso Sacchetti', role: 'Serie B / Under 19' },
+                    { name: 'Stefano Bianchi', role: 'Under 19 / Under 17' },
+                    { name: 'Federico Besio', role: 'Under 15' },
+                    { name: 'Andrea Longoni', role: 'Under 17' },
+                    { name: 'Giovanni Todisco', role: 'Under 17 / Under 15' },
                   ].map((p) => (
                     <div key={p.name}>
                       <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{p.name}</p>
@@ -532,14 +536,16 @@ export const VBUsPage: React.FC<VBUsPageProps> = ({ onBack, onHome, onNavigate }
                     <Heart size={16} className="text-emerald-500" />
                   </div>
                   <h3 className={`text-xs font-semibold tracking-[0.15em] uppercase ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                    {t('Support Staff')}
+                    {t('Performance')}
                   </h3>
                 </div>
                 <div className="space-y-3">
                   {[
-                    { name: 'Lorenzo Gaudina', role: 'Performance Coach' },
-                    { name: 'Alberto Lazzaro', role: 'Team Manager' },
-                    { name: 'Nicolò Vella', role: 'Video Analyst' },
+                    { name: 'Marcelo Lopez', role: 'HSC' },
+                    { name: 'Neri Lopez', role: 'ASC' },
+                    { name: 'Luca Rigamonti', role: 'ASC' },
+                    { name: 'Luca Vanoni', role: 'Physio' },
+                    { name: 'Michele Mazzola', role: 'Physio' },
                   ].map((p) => (
                     <div key={p.name}>
                       <p className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{p.name}</p>
