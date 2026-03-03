@@ -1,0 +1,43 @@
+9. Descrizione Dettagliata delle Fonti di Ricavo
+Efficienza Energetica
+Descrizione: Aggiunta di pannelli solari, pompe di calore e batterie. I numeri si basano sul consumo attuale dell'arena.
+Conservativo: Valore attuale della produzione di energia.
+Realistico: Valore attuale della produzione di energia + trasformazione del sistema di riscaldamento da gas a elettricità.
+Aggressivo: Valore attuale della produzione di energia + trasformazione del riscaldamento + vendita di energia alla comunità regionale tramite CER (Comunità Energetica Regionale).
+Bar
+Descrizione: Costruzione di un bar (circa 70 mq) nel piazzale esterno, con terrazza all'aperto (circa 80 mq).
+Conservativo: Sotto prezzo di mercato (€8,3/mq).
+Realistico: Prezzo di mercato (€11/mq).
+Aggressivo: Sopra prezzo di mercato (€13,3/mq).
+Ristorante
+Descrizione: Completamento di uno spazio ristorante (circa 380 mq), attualmente "al grezzo" dopo la prima fase di costruzione.
+Conservativo: Sotto prezzo di mercato (€15,8/mq).
+Realistico: Prezzo di mercato (€18,4/mq).
+Aggressivo: Sopra prezzo di mercato (€23,7/mq).
+Uffici
+Descrizione: Completamento di uno spazio ufficio (circa 300 mq), attualmente "al grezzo" dopo la prima fase di costruzione. L'obiettivo primario è trasferire gli uffici di PV in questo spazio, riducendo i costi delle utenze e potenzialmente subaffittando spazio aggiuntivo se necessario.
+Conservativo: Sotto prezzo di mercato (€8,3/mq).
+Realistico: Prezzo di mercato (€10/mq).
+Aggressivo: Sopra prezzo di mercato (€13,3/mq).
+Aumento Vendite Biglietti - Nuova Sezione
+Descrizione: Espansione della sezione "Curva Nord" con 500 posti aggiuntivi. Il progetto è già sviluppato e attende l'approvazione del CONI. Le differenze negli scenari si basano sul tasso di occupazione e non sulla differenza di prezzo (€10/biglietto, sotto la media).
+Conservativo: 60% di capacità (300 posti * 15 partite * €10/biglietto).
+Realistico: 80% di capacità (400 posti * 15 partite * €10/biglietto).
+Aggressivo: 95% di capacità (475 posti * 15 partite * €10/biglietto).
+Eventuali partite extra (play-off, competizioni europee) non sono incluse.
+Aumento Vendite Biglietti - Posti Extra
+Descrizione: Il progetto include l'aggiunta di 200 posti extra tra la sezione ospiti, il bordo campo e le aree inutilizzate dell'arena. Le differenze negli scenari si basano sul tasso di occupazione e non sulla differenza di prezzo (€10/biglietto).
+Conservativo: 60% di capacità (120 posti * 15 partite * €10/biglietto).
+Realistico: 80% di capacità (160 posti * 15 partite * €10/biglietto).
+Aggressivo: 95% di capacità (190 posti * 15 partite * €10/biglietto).
+Eventuali partite extra (play-off, competizioni europee) non sono incluse.
+Rimodellamento Hospitality
+Descrizione: Spostando gli uffici di PV nei nuovi spazi, si libereranno circa 100 mq che potranno essere utilizzati per una nuova area VIP o per l'espansione di quella attuale. Questo aggiornamento consentirà la vendita di più pass hospitality a prezzi più elevati e la ricerca di uno sponsor per l'area hospitality.
+Conservativo: Pareggio.
+Realistico: €15.000.
+Aggressivo: €25.000.
+Aggiornamento Operazioni Struttura
+Descrizione: L'aggiornamento acustico del tetto, dell'impianto audio e l'innalzamento del videoboard renderanno la struttura più attraente per diversi tipi di eventi (tennis, pallavolo, concerti, festival).
+Conservativo: 10 eventi extra a €5.000/ciascuno dopo le spese.
+Realistico: 15 eventi extra a €5.000/ciascuno dopo le spese.
+Aggressivo: 20 eventi extra a €5.000/ciascuno dopo le spese.

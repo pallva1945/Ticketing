@@ -284,24 +284,56 @@ const arenaText = (lang: string) => {
     scenarioLabels: isEN ? ['Conservative', 'Realistic', 'Aggressive'] : ['Conservativo', 'Realistico', 'Aggressivo'],
     revenueSourceLabel: isEN ? 'Revenue Source' : 'Fonte di Ricavo',
     revenueRows: isEN ? [
-      { source: 'Energy Efficiency', values: ['70.000', '150.000', '200.000'] },
-      { source: 'Bar', values: ['15.000', '20.000', '24.000'] },
-      { source: 'Restaurant', values: ['72.000', '84.000', '108.000'] },
-      { source: 'Offices', values: ['30.000', '36.000', '48.000'] },
-      { source: 'Ticket Sales — New Section', values: ['60.000', '81.000', '96.000'] },
-      { source: 'Ticket Sales — Extra Seats', values: ['18.000', '25.000', '28.500'] },
-      { source: 'Hospitality Remodeling', values: ['0', '15.000', '25.000'] },
-      { source: 'Facility Operations Upgrade', values: ['50.000', '75.000', '100.000'] },
+      { source: 'Energy Efficiency', values: ['70.000', '150.000', '200.000'],
+        desc: 'Solar panels, heat pumps, and batteries based on current arena consumption.',
+        assumptions: ['Current energy production value.', 'Energy production + heating conversion from gas to electric.', 'Energy production + heating conversion + energy sales to Regional Energy Community (CER).'] },
+      { source: 'Bar', values: ['15.000', '20.000', '24.000'],
+        desc: 'New bar (~70 m²) in the external piazza with outdoor terrace (~80 m²).',
+        assumptions: ['Below market rate (€8.3/m²).', 'Market rate (€11/m²).', 'Above market rate (€13.3/m²).'] },
+      { source: 'Restaurant', values: ['72.000', '84.000', '108.000'],
+        desc: 'Completion of restaurant space (~380 m²), currently shell-state after Phase 1.',
+        assumptions: ['Below market rate (€15.8/m²).', 'Market rate (€18.4/m²).', 'Above market rate (€23.7/m²).'] },
+      { source: 'Offices', values: ['30.000', '36.000', '48.000'],
+        desc: 'Completion of office space (~300 m²), currently shell-state. Primary goal: relocate PV offices, reducing utility costs and potentially subletting additional space.',
+        assumptions: ['Below market rate (€8.3/m²).', 'Market rate (€10/m²).', 'Above market rate (€13.3/m²).'] },
+      { source: 'Ticket Sales — New Section', values: ['60.000', '81.000', '96.000'],
+        desc: 'Expansion of "Curva Nord" with 500 additional seats. Project developed, awaiting CONI approval. Scenarios based on occupancy rate (€10/ticket, below average). Playoff/European games not included.',
+        assumptions: ['60% capacity (300 seats × 15 games × €10).', '80% capacity (400 seats × 15 games × €10).', '95% capacity (475 seats × 15 games × €10).'] },
+      { source: 'Ticket Sales — Extra Seats', values: ['18.000', '25.000', '28.500'],
+        desc: '200 extra seats across away section, courtside, and unused areas. Scenarios based on occupancy (€10/ticket). Playoff/European games not included.',
+        assumptions: ['60% capacity (120 seats × 15 games × €10).', '80% capacity (160 seats × 15 games × €10).', '95% capacity (190 seats × 15 games × €10).'] },
+      { source: 'Hospitality Remodeling', values: ['0', '15.000', '25.000'],
+        desc: 'Relocating PV offices frees ~100 m² for a new or expanded VIP area, enabling more hospitality passes at higher prices and potential area sponsorship.',
+        assumptions: ['Break-even.', '€15,000 from additional hospitality sales.', '€25,000 from hospitality sales + area sponsorship.'] },
+      { source: 'Facility Operations Upgrade', values: ['50.000', '75.000', '100.000'],
+        desc: 'Acoustic roof upgrade, sound system, and raised videoboard make the venue attractive for diverse events (tennis, volleyball, concerts, festivals).',
+        assumptions: ['10 extra events × €5,000 net each.', '15 extra events × €5,000 net each.', '20 extra events × €5,000 net each.'] },
       { source: 'Selling Points', values: ['5.000', '20.000', '40.000'] },
     ] : [
-      { source: 'Efficienza Energetica', values: ['70.000', '150.000', '200.000'] },
-      { source: 'Bar', values: ['15.000', '20.000', '24.000'] },
-      { source: 'Ristorante', values: ['72.000', '84.000', '108.000'] },
-      { source: 'Uffici', values: ['30.000', '36.000', '48.000'] },
-      { source: 'Vendite Biglietti — Nuova Sezione', values: ['60.000', '81.000', '96.000'] },
-      { source: 'Vendite Biglietti — Posti Extra', values: ['18.000', '25.000', '28.500'] },
-      { source: 'Rimodellamento Hospitality', values: ['0', '15.000', '25.000'] },
-      { source: 'Aggiornamento Operazioni Struttura', values: ['50.000', '75.000', '100.000'] },
+      { source: 'Efficienza Energetica', values: ['70.000', '150.000', '200.000'],
+        desc: 'Pannelli solari, pompe di calore e batterie basati sul consumo attuale dell\'arena.',
+        assumptions: ['Valore attuale della produzione di energia.', 'Produzione di energia + conversione riscaldamento da gas a elettricità.', 'Produzione di energia + conversione riscaldamento + vendita energia alla Comunità Energetica Regionale (CER).'] },
+      { source: 'Bar', values: ['15.000', '20.000', '24.000'],
+        desc: 'Nuovo bar (~70 m²) nel piazzale esterno con terrazza all\'aperto (~80 m²).',
+        assumptions: ['Sotto prezzo di mercato (€8,3/m²).', 'Prezzo di mercato (€11/m²).', 'Sopra prezzo di mercato (€13,3/m²).'] },
+      { source: 'Ristorante', values: ['72.000', '84.000', '108.000'],
+        desc: 'Completamento spazio ristorante (~380 m²), attualmente "al grezzo" dopo la Fase 1.',
+        assumptions: ['Sotto prezzo di mercato (€15,8/m²).', 'Prezzo di mercato (€18,4/m²).', 'Sopra prezzo di mercato (€23,7/m²).'] },
+      { source: 'Uffici', values: ['30.000', '36.000', '48.000'],
+        desc: 'Completamento spazio ufficio (~300 m²), attualmente "al grezzo". Obiettivo primario: trasferire uffici PV, riducendo costi utenze e potenzialmente subaffittando.',
+        assumptions: ['Sotto prezzo di mercato (€8,3/m²).', 'Prezzo di mercato (€10/m²).', 'Sopra prezzo di mercato (€13,3/m²).'] },
+      { source: 'Vendite Biglietti — Nuova Sezione', values: ['60.000', '81.000', '96.000'],
+        desc: 'Espansione "Curva Nord" con 500 posti aggiuntivi. Progetto sviluppato, in attesa approvazione CONI. Scenari basati su tasso di occupazione (€10/biglietto). Play-off/europee escluse.',
+        assumptions: ['60% capacità (300 posti × 15 partite × €10).', '80% capacità (400 posti × 15 partite × €10).', '95% capacità (475 posti × 15 partite × €10).'] },
+      { source: 'Vendite Biglietti — Posti Extra', values: ['18.000', '25.000', '28.500'],
+        desc: '200 posti extra tra sezione ospiti, bordo campo e aree inutilizzate. Scenari basati su occupazione (€10/biglietto). Play-off/europee escluse.',
+        assumptions: ['60% capacità (120 posti × 15 partite × €10).', '80% capacità (160 posti × 15 partite × €10).', '95% capacità (190 posti × 15 partite × €10).'] },
+      { source: 'Rimodellamento Hospitality', values: ['0', '15.000', '25.000'],
+        desc: 'Lo spostamento degli uffici PV libera ~100 m² per una nuova area VIP o espansione di quella attuale, con più pass hospitality a prezzi più alti e potenziale sponsor d\'area.',
+        assumptions: ['Pareggio.', '€15.000 da vendite hospitality aggiuntive.', '€25.000 da vendite hospitality + sponsor d\'area.'] },
+      { source: 'Aggiornamento Operazioni Struttura', values: ['50.000', '75.000', '100.000'],
+        desc: 'Aggiornamento acustico del tetto, impianto audio e innalzamento videoboard rendono la struttura attraente per diversi eventi (tennis, pallavolo, concerti, festival).',
+        assumptions: ['10 eventi extra × €5.000 netti ciascuno.', '15 eventi extra × €5.000 netti ciascuno.', '20 eventi extra × €5.000 netti ciascuno.'] },
       { source: 'Selling Points', values: ['5.000', '20.000', '40.000'] },
     ],
     revenueTotals: ['320.000', '536.000', '708.500'],
@@ -359,6 +391,7 @@ const ArenaDetailPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const tx = arenaText(language);
   const [visibleSections, setVisibleSections] = useState<Set<string>>(new Set());
   const [arenaRenderIdx, setArenaRenderIdx] = useState(0);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -580,14 +613,45 @@ const ArenaDetailPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {tx.revenueRows.map((row: any, i: number) => (
-                        <tr key={i} className={`border-b border-gray-100 ${i % 2 === 0 ? '' : 'bg-gray-50/50'} hover:bg-blue-50/40 transition-colors`}>
-                          <td className="px-5 py-3 font-medium text-gray-800">{row.source}</td>
-                          {row.values.map((v: string, j: number) => (
-                            <td key={j} className="text-right px-5 py-3 font-mono text-gray-700">{v}</td>
-                          ))}
-                        </tr>
-                      ))}
+                      {tx.revenueRows.map((row: any, i: number) => {
+                        const hasDetail = row.desc || row.assumptions;
+                        const isOpen = expandedRows.has(i);
+                        return (
+                          <React.Fragment key={i}>
+                            <tr
+                              className={`border-b border-gray-100 ${i % 2 === 0 ? '' : 'bg-gray-50/50'} ${hasDetail ? 'cursor-pointer hover:bg-blue-50/40' : ''} transition-colors`}
+                              onClick={() => { if (!hasDetail) return; setExpandedRows(prev => { const n = new Set(prev); if (n.has(i)) n.delete(i); else n.add(i); return n; }); }}
+                            >
+                              <td className="px-5 py-3 font-medium text-gray-800">
+                                <span className="flex items-center gap-2">
+                                  {hasDetail && <ChevronRight size={14} className={`text-gray-400 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-90' : ''}`} />}
+                                  {row.source}
+                                </span>
+                              </td>
+                              {row.values.map((v: string, j: number) => (
+                                <td key={j} className="text-right px-5 py-3 font-mono text-gray-700">{v}</td>
+                              ))}
+                            </tr>
+                            {isOpen && hasDetail && (
+                              <tr className="bg-blue-50/30">
+                                <td colSpan={4} className="px-5 py-4">
+                                  {row.desc && <p className="text-xs text-gray-600 mb-3 leading-relaxed">{row.desc}</p>}
+                                  {row.assumptions && (
+                                    <div className="grid grid-cols-3 gap-3">
+                                      {row.assumptions.map((a: string, j: number) => (
+                                        <div key={j} className="bg-white rounded-md px-3 py-2 border border-gray-200">
+                                          <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: j === 0 ? '#6b7280' : j === 1 ? '#2563eb' : '#059669' }}>{tx.scenarioLabels[j]}</p>
+                                          <p className="text-xs text-gray-700">{a}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
                     </tbody>
                     <tfoot>
                       <tr className="bg-blue-950">
