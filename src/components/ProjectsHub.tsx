@@ -280,7 +280,7 @@ const arenaText = (lang: string) => {
     confidenceLabel: isEN ? 'Confidence' : 'Fiducia',
     confidenceValue: isEN ? 'High' : 'Alta',
     netInvestmentLabel: isEN ? 'Net Private Investment' : 'Investimento Privato Netto',
-    revenueTableTitle: isEN ? 'Projected Revenue Uplift' : 'Proiezioni Aumento Ricavi',
+    revenueTableTitle: isEN ? 'Projected Annual Revenue Uplift' : 'Proiezioni Aumento Ricavi Annuali',
     scenarioLabels: isEN ? ['Conservative', 'Realistic', 'Aggressive'] : ['Conservativo', 'Realistico', 'Aggressivo'],
     revenueSourceLabel: isEN ? 'Revenue Source' : 'Fonte di Ricavo',
     revenueRows: isEN ? [
