@@ -3493,7 +3493,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                     <LineChart data={speedData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                       <XAxis dataKey="date" tick={tickStyle} />
-                      <YAxis tick={tickStyle} domain={['dataMin - 0.5', 'dataMax + 0.5']} />
+                      <YAxis tick={tickStyle} domain={[(dataMin: number) => Math.floor((dataMin - 0.1) * 10) / 10, (dataMax: number) => Math.ceil((dataMax + 0.1) * 10) / 10]} />
                       <Tooltip contentStyle={tipStyle} />
                       <Legend wrapperStyle={{ fontSize: 10 }} />
                       <Line type="monotone" dataKey={t('Sprint')} stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} connectNulls />
@@ -3510,7 +3510,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                     <LineChart data={verticalsData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                       <XAxis dataKey="date" tick={tickStyle} />
-                      <YAxis tick={tickStyle} domain={['dataMin - 2', 'dataMax + 2']} />
+                      <YAxis tick={tickStyle} domain={[(dataMin: number) => Math.floor(dataMin - 1), (dataMax: number) => Math.ceil(dataMax + 1)]} />
                       <Tooltip contentStyle={tipStyle} />
                       <Legend wrapperStyle={{ fontSize: 10 }} />
                       <Line type="monotone" dataKey={t('Pure Vertical')} stroke="#06b6d4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
@@ -3546,7 +3546,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                     <ComposedChart data={relStrengthData}>
                       <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                       <XAxis dataKey="date" tick={tickStyle} />
-                      <YAxis tick={tickStyle} domain={['dataMin - 0.1', 'dataMax + 0.1']} />
+                      <YAxis tick={tickStyle} domain={[(dataMin: number) => Math.floor((dataMin - 0.05) * 20) / 20, (dataMax: number) => Math.ceil((dataMax + 0.05) * 20) / 20]} />
                       <Tooltip contentStyle={tipStyle} />
                       <Bar dataKey={t('Rel. Strength')} fill="#10b981" opacity={0.7} radius={[4, 4, 0, 0]} />
                     </ComposedChart>
@@ -6509,7 +6509,7 @@ function ProgressionChart({ sessions, lines, metric, profiles, isDark, convertVa
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
             <XAxis dataKey="date" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-            <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => { if (isNaN(dataMin)) return 0; const pad = Math.max(1, Math.abs(dataMin) * 0.1); return Math.floor(dataMin - pad); }, (dataMax: number) => { if (isNaN(dataMax)) return 100; const pad = Math.max(1, Math.abs(dataMax) * 0.1); return Math.ceil(dataMax + pad); }]} />
+            <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => { if (isNaN(dataMin)) return 0; const pad = Math.max(0.5, Math.abs(dataMin) * 0.02); return Math.floor((dataMin - pad) * 10) / 10; }, (dataMax: number) => { if (isNaN(dataMax)) return 100; const pad = Math.max(0.5, Math.abs(dataMax) * 0.02); return Math.ceil((dataMax + pad) * 10) / 10; }]} />
             <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
             <Legend wrapperStyle={{ fontSize: 10 }} />
             {lines.map((line, i) => (
