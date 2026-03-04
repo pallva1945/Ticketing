@@ -3494,7 +3494,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                       <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                       <XAxis dataKey="date" tick={tickStyle} />
                       <YAxis tick={tickStyle} domain={[(dataMin: number) => Math.floor((dataMin - 0.1) * 10) / 10, (dataMax: number) => Math.ceil((dataMax + 0.1) * 10) / 10]} />
-                      <Tooltip contentStyle={tipStyle} />
+                      <Tooltip contentStyle={tipStyle} formatter={(v: number) => v != null ? v.toFixed(2) : '—'} />
                       <Legend wrapperStyle={{ fontSize: 10 }} />
                       <Line type="monotone" dataKey={t('Sprint')} stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                       <Line type="monotone" dataKey={t('Cone Drill')} stroke="#ec4899" strokeWidth={2} dot={{ r: 3 }} connectNulls />
@@ -3511,7 +3511,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                       <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                       <XAxis dataKey="date" tick={tickStyle} />
                       <YAxis tick={tickStyle} domain={[(dataMin: number) => Math.floor(dataMin - 1), (dataMax: number) => Math.ceil(dataMax + 1)]} />
-                      <Tooltip contentStyle={tipStyle} />
+                      <Tooltip contentStyle={tipStyle} formatter={(v: number) => v != null ? v.toFixed(2) : '—'} />
                       <Legend wrapperStyle={{ fontSize: 10 }} />
                       <Line type="monotone" dataKey={t('Pure Vertical')} stroke="#06b6d4" strokeWidth={2} dot={{ r: 3 }} connectNulls />
                       <Line type="monotone" dataKey={t('No-Step Vertical')} stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3 }} connectNulls />
@@ -3529,7 +3529,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                       <XAxis dataKey="date" tick={tickStyle} />
                       <YAxis yAxisId="left" tick={tickStyle} />
                       <YAxis yAxisId="right" orientation="right" tick={tickStyle} domain={[0, 100]} />
-                      <Tooltip contentStyle={tipStyle} />
+                      <Tooltip contentStyle={tipStyle} formatter={(v: number) => v != null ? v.toFixed(2) : '—'} />
                       <Legend wrapperStyle={{ fontSize: 10 }} />
                       <Bar yAxisId="left" dataKey={t('Shots Taken')} fill="#3b82f6" opacity={0.7} />
                       <Bar yAxisId="left" dataKey={t('Shots Made')} fill="#10b981" opacity={0.7} />
@@ -3547,7 +3547,7 @@ function PlayerProfileTab({ sessions, players, initialPlayer, profiles, playerAt
                       <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                       <XAxis dataKey="date" tick={tickStyle} />
                       <YAxis tick={tickStyle} domain={[(dataMin: number) => Math.floor((dataMin - 0.05) * 20) / 20, (dataMax: number) => Math.ceil((dataMax + 0.05) * 20) / 20]} />
-                      <Tooltip contentStyle={tipStyle} />
+                      <Tooltip contentStyle={tipStyle} formatter={(v: number) => v != null ? v.toFixed(2) : '—'} />
                       <Bar dataKey={t('Rel. Strength')} fill="#10b981" opacity={0.7} radius={[4, 4, 0, 0]} />
                     </ComposedChart>
                   </ResponsiveContainer>
@@ -6510,7 +6510,7 @@ function ProgressionChart({ sessions, lines, metric, profiles, isDark, convertVa
             <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
             <XAxis dataKey="date" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
             <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dataMin: number) => { if (isNaN(dataMin)) return 0; const pad = Math.max(0.5, Math.abs(dataMin) * 0.02); return Math.floor((dataMin - pad) * 10) / 10; }, (dataMax: number) => { if (isNaN(dataMax)) return 100; const pad = Math.max(0.5, Math.abs(dataMax) * 0.02); return Math.ceil((dataMax + pad) * 10) / 10; }]} />
-            <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} />
+            <Tooltip contentStyle={{ borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' }} formatter={(v: number) => v != null ? v.toFixed(2) : '—'} />
             <Legend wrapperStyle={{ fontSize: 10 }} />
             {lines.map((line, i) => (
               <Line key={line.key} type="monotone" dataKey={line.key} name={line.label} stroke={METRIC_COLORS[i % METRIC_COLORS.length]} strokeWidth={2} dot={{ r: 2 }} connectNulls />
