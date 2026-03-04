@@ -4451,7 +4451,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         blk_pct: t.blk_per_count > 0 ? (t.blk_per_sum / t.blk_per_count).toFixed(1) : (t.poss > 0 ? ((t.blk / t.poss) * 100).toFixed(1) : null),
         to_pct: t.poss > 0 ? ((t.to / t.poss) * 100).toFixed(1) : null,
         ast_40: hasMin && totalMin > 0 ? ((t.ast / totalMin) * 40).toFixed(1) : (gp > 0 ? (t.ast / gp).toFixed(1) : '0.0'),
-        mpg: hasMin ? (totalMin / gp).toFixed(1) : null,
+        mpg: hasMin ? Math.round(totalMin / gp).toString() : null,
         pts_min: hasMin && totalMin > 0 ? (t.pts / totalMin).toFixed(2) : null,
         reb_min: hasMin && totalMin > 0 ? (t.reb / totalMin).toFixed(2) : null,
         ast_min: hasMin && totalMin > 0 ? (t.ast / totalMin).toFixed(2) : null,
@@ -4608,7 +4608,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                         <td className={`py-1.5 px-1.5 whitespace-nowrap ${subtext}`}>{formatDateDMY(g.game_date_iso)}</td>
                         <td className={`py-1.5 px-1.5 font-medium whitespace-nowrap ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.side === 'home' ? 'vs' : '@'} {displayTeamName(g.opponent_name)}</td>
                         <td className={`py-1.5 px-1.5 font-semibold whitespace-nowrap ${g.win_lose === 'win' ? 'text-green-500' : 'text-red-500'}`}>{g.win_lose === 'win' ? 'W' : 'L'} {g.team_score}-{g.opponent_score}</td>
-                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.minute != null ? parseFloat(String(g.minute)).toFixed(1) : (g.minutes_calc != null ? parseFloat(g.minutes_calc).toFixed(1) : '—')}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.minute != null ? Math.round(parseFloat(String(g.minute))) : (g.minutes_calc != null ? Math.round(parseFloat(g.minutes_calc)) : '—')}</td>
                         <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{g.pts}</td>
                         <td className={`py-1.5 px-1.5 ${subtext}`}>{g.total_rebounds}</td>
                         <td className={`py-1.5 px-1.5 ${subtext}`}>{g.assist}</td>
@@ -4645,7 +4645,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                   const tTs = (2 * (tFga + 0.44 * tot.fta)) > 0 ? ((tot.pts / (2 * (tFga + 0.44 * tot.fta))) * 100).toFixed(1) : '—';
                   const tPpp = tot.poss > 0 ? (tot.pts / tot.poss).toFixed(2) : '—';
                   const tAstTo = tot.to > 0 ? (tot.ast / tot.to).toFixed(1) : (tot.ast > 0 ? '∞' : '—');
-                  const tMin = tot.minG > 0 ? (tot.min / gp).toFixed(1) : '—';
+                  const tMin = tot.minG > 0 ? Math.round(tot.min / gp).toString() : '—';
                   const boldCell = `py-1.5 px-1.5 font-bold ${isDark ? 'text-gray-200' : 'text-gray-800'}`;
                   return (
                     <tfoot>
@@ -4736,7 +4736,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
           { label: 'VAL', value: g.val },
         ]},
         { title: 'Advanced', stats: [
-          { label: 'Minutes', value: g.minute != null ? parseFloat(String(g.minute)).toFixed(1) : (g.minutes_calc != null ? parseFloat(g.minutes_calc).toFixed(1) : null) },
+          { label: 'Minutes', value: g.minute != null ? Math.round(parseFloat(String(g.minute))).toString() : (g.minutes_calc != null ? Math.round(parseFloat(g.minutes_calc)).toString() : null) },
           { label: 'USG%', value: g.usg_per != null && g.usg_per > 0 ? `${parseFloat(g.usg_per).toFixed(1)}%` : null },
           { label: 'OFF Rtg', value: g.off_rtg != null ? parseFloat(g.off_rtg).toFixed(1) : null },
           { label: 'DEF Rtg', value: g.def_rtg != null ? parseFloat(g.def_rtg).toFixed(1) : null },
