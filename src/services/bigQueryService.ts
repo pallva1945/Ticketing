@@ -320,6 +320,8 @@ export interface VBIndGame {
   win_lose: string | null;
   starter: number;
   minutes_calc: string | null;
+  minute: number | null;
+  seconds: number | null;
   pts: number;
   pts2_made: number;
   pts2_all: number;
@@ -355,6 +357,8 @@ export async function fetchVBIndGamesFromBigQuery(): Promise<{ success: boolean;
     const data = rows.map((r: any) => ({
       ...r,
       game_date_iso: r.game_date ? excelDateToISO(r.game_date) : null,
+      minute: r.minute != null ? parseFloat(r.minute) : null,
+      seconds: r.seconds != null ? parseFloat(r.seconds) : null,
       pts: r.pts || 0,
       pts2_made: r.pts2_made || 0,
       pts2_all: r.pts2_all || 0,

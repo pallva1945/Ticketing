@@ -3880,7 +3880,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
       blk: 'block', blocks: 'block', b: 'block',
       to: 'turnover', turnovers: 'turnover',
       val: 'val', eff: 'val',
-      min: 'minutes_calc', minutes: 'minutes_calc',
+      min: 'minute', minutes: 'minute',
       oreb: 'offensive_rebound', dreb: 'defensive_rebound',
       pf: 'personal_foul', fouls: 'personal_foul',
       plusminus: 'plusminus_bs', pm: 'plusminus_bs',
@@ -4416,7 +4416,10 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         if (g.steal_chance != null && g.steal_chance > 0) { a.stl_per_sum += g.steal_chance; a.stl_per_count++; }
         if (g.block_chance != null && g.block_chance > 0) { a.blk_per_sum += g.block_chance; a.blk_per_count++; }
         if (g.usg_per != null && g.usg_per > 0) { a.usg_sum += parseFloat(g.usg_per); a.usg_count++; }
-        if (g.minutes_calc != null) {
+        if (g.minute != null) {
+          const minVal = typeof g.minute === 'number' ? g.minute : parseFloat(g.minute);
+          if (!isNaN(minVal)) { a.min_sum += minVal; a.min_count++; }
+        } else if (g.minutes_calc != null) {
           const mc = String(g.minutes_calc);
           const minVal = mc.includes(':') ? (() => { const [mm, ss] = mc.split(':').map(Number); return mm + (ss || 0) / 60; })() : parseFloat(mc);
           if (!isNaN(minVal)) { a.min_sum += minVal; a.min_count++; }
@@ -4448,6 +4451,13 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
         blk_pct: t.blk_per_count > 0 ? (t.blk_per_sum / t.blk_per_count).toFixed(1) : (t.poss > 0 ? ((t.blk / t.poss) * 100).toFixed(1) : null),
         to_pct: t.poss > 0 ? ((t.to / t.poss) * 100).toFixed(1) : null,
         ast_40: hasMin && totalMin > 0 ? ((t.ast / totalMin) * 40).toFixed(1) : (gp > 0 ? (t.ast / gp).toFixed(1) : '0.0'),
+        mpg: hasMin ? (totalMin / gp).toFixed(1) : null,
+        pts_min: hasMin && totalMin > 0 ? (t.pts / totalMin).toFixed(2) : null,
+        reb_min: hasMin && totalMin > 0 ? (t.reb / totalMin).toFixed(2) : null,
+        ast_min: hasMin && totalMin > 0 ? (t.ast / totalMin).toFixed(2) : null,
+        stl_min: hasMin && totalMin > 0 ? (t.stl / totalMin).toFixed(2) : null,
+        blk_min: hasMin && totalMin > 0 ? (t.blk / totalMin).toFixed(2) : null,
+        val_min: hasMin && totalMin > 0 ? (t.val / totalMin).toFixed(2) : null,
       };
     })() : null;
 
@@ -4486,6 +4496,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
               <StatCard label="PPG" value={totalRow.ppg} sub={`${totalRow.gp} ${t('games')}`} color="orange" />
               <StatCard label="RPG" value={totalRow.rpg} color="sky" />
               <StatCard label="APG" value={totalRow.apg} color="green" />
+              <StatCard label="MPG" value={totalRow.mpg ?? '—'} color="slate" />
               <StatCard label="VAL" value={totalRow.val} color="purple" />
             </div>
 
@@ -4507,6 +4518,10 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                   { label: 'TO%', value: totalRow.to_pct ? `${totalRow.to_pct}%` : null, desc: 'Turnover %' },
                   { label: 'AST/40', value: totalRow.ast_40, desc: 'Assists per 40 min' },
                   { label: 'WS', value: playerWinShares, desc: 'Win Shares' },
+                  { label: 'PTS/Min', value: totalRow.pts_min, desc: 'Points per Minute' },
+                  { label: 'REB/Min', value: totalRow.reb_min, desc: 'Rebounds per Minute' },
+                  { label: 'AST/Min', value: totalRow.ast_min, desc: 'Assists per Minute' },
+                  { label: 'VAL/Min', value: totalRow.val_min, desc: 'Valuation per Minute' },
                 ].map((s, i) => (
                   <div key={i} className="flex items-center justify-between py-1">
                     <span className={`text-[11px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`} title={s.desc}>{s.label}</span>
@@ -4593,7 +4608,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                         <td className={`py-1.5 px-1.5 whitespace-nowrap ${subtext}`}>{formatDateDMY(g.game_date_iso)}</td>
                         <td className={`py-1.5 px-1.5 font-medium whitespace-nowrap ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{g.side === 'home' ? 'vs' : '@'} {displayTeamName(g.opponent_name)}</td>
                         <td className={`py-1.5 px-1.5 font-semibold whitespace-nowrap ${g.win_lose === 'win' ? 'text-green-500' : 'text-red-500'}`}>{g.win_lose === 'win' ? 'W' : 'L'} {g.team_score}-{g.opponent_score}</td>
-                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.minutes_calc != null ? parseFloat(g.minutes_calc).toFixed(1) : '—'}</td>
+                        <td className={`py-1.5 px-1.5 ${subtext}`}>{g.minute != null ? parseFloat(String(g.minute)).toFixed(1) : (g.minutes_calc != null ? parseFloat(g.minutes_calc).toFixed(1) : '—')}</td>
                         <td className={`py-1.5 px-1.5 font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{g.pts}</td>
                         <td className={`py-1.5 px-1.5 ${subtext}`}>{g.total_rebounds}</td>
                         <td className={`py-1.5 px-1.5 ${subtext}`}>{g.assist}</td>
@@ -4620,7 +4635,8 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
                     a.fg3m += g.pts3_made; a.fg3a += g.pts3_all;
                     a.ftm += g.ft_made; a.fta += g.ft_all;
                     a.poss += g.poss || 0;
-                    if (g.minutes_calc != null) { const mv = parseFloat(g.minutes_calc); if (!isNaN(mv)) { a.min += mv; a.minG++; } }
+                    if (g.minute != null) { const mv = parseFloat(String(g.minute)); if (!isNaN(mv)) { a.min += mv; a.minG++; } }
+                    else if (g.minutes_calc != null) { const mv = parseFloat(g.minutes_calc); if (!isNaN(mv)) { a.min += mv; a.minG++; } }
                     return a;
                   }, { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, to: 0, val: 0, fg2m: 0, fg2a: 0, fg3m: 0, fg3a: 0, ftm: 0, fta: 0, poss: 0, min: 0, minG: 0 });
                   const tFgm = tot.fg2m + tot.fg3m;
@@ -4720,7 +4736,7 @@ function GamePerformanceTab({ sessions, players, profiles }: { sessions: VBSessi
           { label: 'VAL', value: g.val },
         ]},
         { title: 'Advanced', stats: [
-          { label: 'Minutes', value: g.minutes_calc != null ? parseFloat(g.minutes_calc).toFixed(1) : null },
+          { label: 'Minutes', value: g.minute != null ? parseFloat(String(g.minute)).toFixed(1) : (g.minutes_calc != null ? parseFloat(g.minutes_calc).toFixed(1) : null) },
           { label: 'USG%', value: g.usg_per != null && g.usg_per > 0 ? `${parseFloat(g.usg_per).toFixed(1)}%` : null },
           { label: 'OFF Rtg', value: g.off_rtg != null ? parseFloat(g.off_rtg).toFixed(1) : null },
           { label: 'DEF Rtg', value: g.def_rtg != null ? parseFloat(g.def_rtg).toFixed(1) : null },
