@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, ChevronLeft, ChevronRight, UserCircle2, Trophy, Crown, Heart, Landmark, Briefcase, Star, Layers, Globe, Leaf, Lightbulb, BarChart3, Rocket, TrendingUp, Settings, ExternalLink, Activity, Construction } from 'lucide-react';
+import { Compass, Users, Building2, Shield, ArrowRight, Lock, Sun, Moon, ChevronDown, ChevronLeft, ChevronRight, UserCircle2, Trophy, Crown, Heart, Landmark, Briefcase, Star, Layers, Globe, Leaf, Lightbulb, BarChart3, Rocket, TrendingUp, Settings, ExternalLink, Activity, Construction, Eye } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -104,7 +104,6 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
   const { isAdmin } = useAuth();
   const isDark = theme === 'dark';
   const [phase, setPhase] = useState(0);
-  const [bopsExpanded, setBopsExpanded] = useState(false);
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase(1), 150);
@@ -142,14 +141,10 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       desc: t('Basketball Operations — Team management, roster & performance'),
       icon: Shield,
       color: 'emerald',
-      action: () => setBopsExpanded(!bopsExpanded),
+      action: () => onNavigate('bops'),
       actionLabel: t('Enter'),
       actionIcon: ArrowRight,
       external: false,
-      subItems: [
-        { label: t('BOps Internal Portal'), action: () => window.open('https://basket.pallacanestrovarese.club', '_blank'), external: true },
-        { label: t('Market Watch'), action: () => {}, external: false, comingSoon: true },
-      ],
     },
   ];
 
@@ -246,14 +241,11 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
             {cards.map((card) => {
               const colors = colorMap[card.color];
               const Icon = card.icon;
-              const ActionIcon = card.actionIcon;
               const isDisabled = !card.action;
-              const hasSubItems = card.subItems && card.subItems.length > 0;
-              const isExpanded = card.id === 'bops' && bopsExpanded;
 
               const content = (
                 <>
-                  <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r ${colors.topBar} ${isExpanded ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-500`}></div>
+                  <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r ${colors.topBar} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
                   <div className="p-5 sm:p-8 flex flex-col items-center text-center">
                     <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 ${colors.iconBg}`}>
                       <Icon size={24} className={`${colors.text} sm:w-[28px] sm:h-[28px]`} />
@@ -261,34 +253,10 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                     <h3 className={`text-base sm:text-xl font-semibold mb-1.5 sm:mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                       {card.label}
                     </h3>
-                    <p className={`text-[10px] sm:text-xs leading-relaxed ${isExpanded ? 'mb-3' : 'mb-4 sm:mb-5'} min-h-[2rem] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    <p className={`text-[10px] sm:text-xs leading-relaxed mb-4 sm:mb-5 min-h-[2rem] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                       {card.desc}
                     </p>
-                    {isExpanded && hasSubItems ? (
-                      <div className="w-full space-y-2 mt-1">
-                        {card.subItems!.map((sub, si) => (
-                          <button
-                            key={si}
-                            onClick={(e) => { e.stopPropagation(); sub.action(); }}
-                            disabled={sub.comingSoon}
-                            className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-medium transition-all ${
-                              sub.comingSoon
-                                ? isDark ? 'bg-gray-800/50 text-gray-600 cursor-not-allowed' : 'bg-gray-100/50 text-gray-300 cursor-not-allowed'
-                                : isDark ? 'bg-gray-800/80 text-gray-200 hover:bg-emerald-900/30 hover:text-emerald-400 border border-gray-700 hover:border-emerald-800' : 'bg-gray-50 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 border border-gray-200 hover:border-emerald-300'
-                            }`}
-                          >
-                            <span>{sub.label}</span>
-                            {sub.comingSoon ? (
-                              <span className={`text-[9px] tracking-wider uppercase ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>{t('Soon')}</span>
-                            ) : sub.external ? (
-                              <ExternalLink size={12} />
-                            ) : (
-                              <ArrowRight size={12} />
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    ) : !isDisabled ? (
+                    {!isDisabled ? (
                       <div className={`inline-flex items-center gap-2 text-[10px] sm:text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${colors.text}`}>
                         {card.actionLabel}
                         {card.external ? (
@@ -325,7 +293,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                   onClick={card.action}
                   className={`group relative rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl text-left ${colors.bg} ${
                     isDark ? 'border-gray-800' : 'border-gray-200'
-                  } ${colors.hoverBorder} ${colors.hoverShadow} ${isExpanded ? (isDark ? 'border-emerald-800/60 shadow-2xl' : 'border-emerald-300 shadow-2xl') : ''}`}
+                  } ${colors.hoverBorder} ${colors.hoverShadow}`}
                 >
                   {content}
                 </button>
@@ -926,6 +894,179 @@ export const PVUsPage: React.FC<PVUsPageProps> = ({ onBack, onHome }) => {
           <span>Pallacanestro Varese</span>
           <span className="w-px h-2.5 bg-current"></span>
           <span>{t('Season')} 2025/26</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const BOpsHub: React.FC<{ onBack: () => void; onHome: () => void }> = ({ onBack, onHome }) => {
+  const { theme, toggleTheme } = useTheme();
+  const { language, toggleLanguage, t } = useLanguage();
+  const isDark = theme === 'dark';
+  const [phase, setPhase] = useState(0);
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setPhase(1), 150);
+    const t2 = setTimeout(() => setPhase(2), 400);
+    const t3 = setTimeout(() => setPhase(3), 700);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, []);
+
+  const cards = [
+    {
+      id: 'internal-portal',
+      label: t('Internal Portal'),
+      desc: t('Team management, roster & performance tracking'),
+      icon: Shield,
+      color: 'emerald',
+      action: () => window.open('https://basket.pallacanestrovarese.club', '_blank'),
+      actionLabel: t('Open'),
+      external: true,
+    },
+    {
+      id: 'market-watch',
+      label: t('Market Watch'),
+      desc: t('Player market intelligence & scouting insights'),
+      icon: Eye,
+      color: 'blue',
+      action: null as (() => void) | null,
+      actionLabel: t('Coming Soon'),
+      external: false,
+    },
+  ];
+
+  const colorMap: Record<string, { bg: string; hoverBorder: string; hoverShadow: string; iconBg: string; text: string; topBar: string }> = {
+    emerald: {
+      bg: isDark ? 'bg-gray-900/50' : 'bg-white',
+      hoverBorder: isDark ? 'hover:border-emerald-800/60' : 'hover:border-emerald-300',
+      hoverShadow: isDark ? 'hover:shadow-emerald-950/10' : 'hover:shadow-emerald-100/30',
+      iconBg: isDark ? 'bg-emerald-900/20' : 'bg-emerald-50',
+      text: isDark ? 'text-emerald-500' : 'text-emerald-600',
+      topBar: 'from-emerald-600 to-emerald-400',
+    },
+    blue: {
+      bg: isDark ? 'bg-gray-900/50' : 'bg-white',
+      hoverBorder: isDark ? 'hover:border-blue-800/60' : 'hover:border-blue-300',
+      hoverShadow: isDark ? 'hover:shadow-blue-950/10' : 'hover:shadow-blue-100/30',
+      iconBg: isDark ? 'bg-blue-900/20' : 'bg-blue-50',
+      text: isDark ? 'text-blue-500' : 'text-blue-600',
+      topBar: 'from-blue-600 to-blue-400',
+    },
+  };
+
+  return (
+    <div className={`fixed inset-0 overflow-hidden ${isDark ? 'bg-gray-950' : 'bg-gray-50'}`}>
+      <style>{`
+        @keyframes subtle-pulse-bops { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.05); } }
+        @keyframes line-draw-bops { from { width: 0; } to { width: 80px; } }
+        .animate-line-bops { animation: line-draw-bops 1s ease-out 0.8s forwards; width: 0; }
+        .animate-glow-bops { animation: subtle-pulse-bops 4s ease-in-out infinite; }
+      `}</style>
+
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full animate-glow-bops ${isDark ? 'bg-emerald-950/20' : 'bg-emerald-50/80'}`} style={{ filter: 'blur(120px)' }}></div>
+      </div>
+
+      <div className={`absolute top-0 left-0 w-full h-px ${isDark ? 'bg-gradient-to-r from-transparent via-emerald-800/40 to-transparent' : 'bg-gradient-to-r from-transparent via-emerald-200 to-transparent'}`}></div>
+
+      <div className="absolute top-5 left-5 z-20">
+        <button onClick={onBack} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium tracking-wider uppercase transition-all ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}>
+          <ChevronLeft size={14} />
+          {t('Back')}
+        </button>
+      </div>
+
+      <div className="absolute top-5 right-5 flex items-center gap-2 z-20">
+        <button onClick={toggleLanguage} className={`px-3 py-2 rounded-lg text-xs font-medium tracking-wider uppercase transition-all ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}>
+          {language === 'en' ? 'IT' : 'EN'}
+        </button>
+        <button onClick={toggleTheme} className={`p-2 rounded-lg transition-all ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}>
+          {isDark ? <Sun size={14} /> : <Moon size={14} />}
+        </button>
+      </div>
+
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6">
+        <div className="flex flex-col items-center text-center w-full max-w-3xl">
+          <div className={`transition-all duration-[1s] ease-out ${phase >= 1 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            <button onClick={onHome} className="hover:opacity-70 transition-opacity mb-4">
+              <img src={PV_LOGO_URL} alt="PV" className="w-14 h-14 sm:w-16 sm:h-16 object-contain mx-auto" />
+            </button>
+            <h1 className={`text-lg sm:text-xl font-semibold tracking-tight mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Basketball Operations
+            </h1>
+            <p className={`text-xs tracking-[0.25em] uppercase font-medium mb-6 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+              BOps
+            </p>
+            <div className="flex justify-center mb-8">
+              <div className={`h-px animate-line-bops ${isDark ? 'bg-emerald-700' : 'bg-emerald-400'}`}></div>
+            </div>
+          </div>
+
+          <div className={`transition-all duration-[1s] ease-out delay-300 ${phase >= 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+            <p className={`text-xs tracking-[0.25em] uppercase font-medium mb-8 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+              {t('Choose your area')}
+            </p>
+          </div>
+
+          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full max-w-2xl transition-all duration-1000 ease-out ${phase >= 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+            {cards.map((card) => {
+              const colors = colorMap[card.color];
+              const Icon = card.icon;
+              const isDisabled = !card.action;
+
+              const content = (
+                <>
+                  <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r ${colors.topBar} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                  <div className="p-6 sm:p-8 flex flex-col items-center text-center">
+                    <div className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-5 sm:mb-6 ${colors.iconBg}`}>
+                      <Icon size={28} className={colors.text} />
+                    </div>
+                    <h3 className={`text-lg sm:text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{card.label}</h3>
+                    <p className={`text-[10px] sm:text-xs leading-relaxed mb-5 sm:mb-6 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{card.desc}</p>
+                    {!isDisabled ? (
+                      <div className={`inline-flex items-center gap-2 text-[10px] sm:text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${colors.text}`}>
+                        {card.actionLabel}
+                        {card.external ? <ExternalLink size={12} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" /> : <ArrowRight size={12} className="group-hover:translate-x-1 transition-transform" />}
+                      </div>
+                    ) : (
+                      <div className={`inline-flex items-center gap-2 text-[10px] sm:text-xs font-medium tracking-wider uppercase ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>{card.actionLabel}</div>
+                    )}
+                  </div>
+                </>
+              );
+
+              if (isDisabled) {
+                return (
+                  <div key={card.id} className={`group relative rounded-2xl border transition-all duration-500 overflow-hidden ${isDark ? 'bg-gray-900/30 border-gray-800/50 opacity-60' : 'bg-white/60 border-gray-200/60 opacity-60'}`}>
+                    {content}
+                  </div>
+                );
+              }
+
+              if (card.external) {
+                return (
+                  <a key={card.id} href="https://basket.pallacanestrovarese.club" target="_blank" rel="noopener noreferrer" className={`group relative rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl ${colors.bg} ${isDark ? 'border-gray-800' : 'border-gray-200'} ${colors.hoverBorder} ${colors.hoverShadow}`}>
+                    {content}
+                  </a>
+                );
+              }
+
+              return (
+                <button key={card.id} onClick={card.action!} className={`group relative rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl text-left ${colors.bg} ${isDark ? 'border-gray-800' : 'border-gray-200'} ${colors.hoverBorder} ${colors.hoverShadow}`}>
+                  {content}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-all duration-1000 ${phase >= 3 ? 'opacity-100' : 'opacity-0'}`}>
+          <div className={`flex items-center gap-4 text-[10px] tracking-[0.25em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
+            <span>{t('Season')} 2025/26</span>
+            <span className="w-px h-3 bg-current"></span>
+            <span>pallva.it</span>
+          </div>
         </div>
       </div>
     </div>

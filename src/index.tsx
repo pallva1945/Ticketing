@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import { WelcomePage } from './components/WelcomePage';
-import { InternalHub, PVUsPage } from './components/InternalHub';
+import { InternalHub, PVUsPage, BOpsHub } from './components/InternalHub';
 import { VBHub, VBUsPage } from './components/VBHub';
 import { FinancialCenter } from './components/FinancialCenter';
 import { CostCenter } from './components/CostCenter';
@@ -143,6 +143,10 @@ const Root: React.FC = () => {
 
   if (currentView === 'pv-us' && canAccessPage('hub')) {
     return <PVUsPage onBack={handleBackToHub} onHome={handleBackToWelcome} />;
+  }
+
+  if (currentView === 'bops' && canAccessPage('hub')) {
+    return <BOpsHub onBack={handleBackToHub} onHome={handleBackToWelcome} />;
   }
 
   if (currentView === 'projects') {
