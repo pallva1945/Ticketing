@@ -124,12 +124,51 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     else { setSortKey(key); setSortDir('desc'); }
   };
 
+  const parseNumericFilter = (token: string): { field: string; op: '>' | '<'; value: number } | null => {
+    const aliases: Record<string, string> = { salary: 'yearly_salary_norm', net: 'net_paid', min: 'min_play', ws: 'ws', ws40: 'ws_40', cost: 'cost_per_ws' };
+    const match = token.match(/^(salary|net|min|ws40|ws|cost)\s*([+\-])\s*([0-9]*\.?[0-9]+)(k|m)?$/i);
+    if (!match) return null;
+    const field = aliases[match[1].toLowerCase()] || match[1].toLowerCase();
+    const op = match[2] === '+' ? '>' : '<';
+    let value = parseFloat(match[3]);
+    const suffix = (match[4] || '').toLowerCase();
+    if (suffix === 'k') value *= 1000;
+    if (suffix === 'm') value *= 1000000;
+    return { field, op, value };
+  };
+
   const filteredPlayers = useMemo(() => {
     let p = seasonData.filter(p => p.yearly_salary_norm > 0 || p.min_play > 0);
     if (selectedTeam !== 'all') p = p.filter(pp => pp.team_name === selectedTeam);
     if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      p = p.filter(pp => pp.player.toLowerCase().includes(q) || pp.team_name.toLowerCase().includes(q) || (pp.nationality || '').toLowerCase().includes(q));
+      const tokens = searchQuery.trim().split(/\s+/);
+      const numericFilters: { field: string; op: '>' | '<'; value: number }[] = [];
+      const textParts: string[] = [];
+      let i = 0;
+      while (i < tokens.length) {
+        const fieldToken = tokens[i].toLowerCase();
+        if (['salary', 'net', 'min', 'ws', 'ws40', 'cost'].includes(fieldToken) && i + 1 < tokens.length) {
+          const combined = fieldToken + tokens[i + 1];
+          const parsed = parseNumericFilter(combined);
+          if (parsed) { numericFilters.push(parsed); i += 2; continue; }
+        }
+        const parsed = parseNumericFilter(tokens[i]);
+        if (parsed) { numericFilters.push(parsed); }
+        else { textParts.push(tokens[i].toLowerCase()); }
+        i++;
+      }
+      if (textParts.length > 0) {
+        const textQ = textParts.join(' ');
+        p = p.filter(pp => pp.player.toLowerCase().includes(textQ) || pp.team_name.toLowerCase().includes(textQ) || (pp.nationality || '').toLowerCase().includes(textQ));
+      }
+      for (const f of numericFilters) {
+        p = p.filter(pp => {
+          let val: number;
+          if (f.field === 'cost_per_ws') val = pp.ws > 0 && pp.net_paid > 0 ? pp.net_paid / pp.ws : 0;
+          else val = (pp as any)[f.field] || 0;
+          return f.op === '>' ? val >= f.value : val <= f.value;
+        });
+      }
     }
     const enriched = p.map(pp => ({ ...pp, cost_per_ws: pp.ws > 0 && pp.net_paid > 0 ? pp.net_paid / pp.ws : 0 }));
     enriched.sort((a, b) => {
@@ -699,7 +738,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder={t('Search player, team, nationality...')}
+            placeholder={t('Search: name, team, nat | salary +2m | ws +1 | min -500 | net +1m | cost -100k')}
             className={`w-full pl-9 pr-3 py-2 text-xs rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-white border-gray-200 text-gray-700'}`}
           />
         </div>
