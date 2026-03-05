@@ -484,8 +484,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                <XAxis type="number" dataKey="netPaid" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name="Net Paid" />
-                <YAxis type="number" dataKey="ws" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Win Shares" />
+                <XAxis type="number" dataKey="netPaid" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name="Net Paid" domain={[(dm: number) => Math.max(0, dm * 0.85), (dm: number) => dm * 1.05]} />
+                <YAxis type="number" dataKey="ws" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Win Shares" domain={[(dm: number) => Math.max(0, dm * 0.85), (dm: number) => dm * 1.05]} />
                 <Tooltip content={({ payload }) => {
                   if (!payload || !payload.length) return null;
                   const d = payload[0]?.payload;
@@ -821,8 +821,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                <XAxis type="number" dataKey="netPaid" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name="Net Paid" />
-                <YAxis type="number" dataKey="ws" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Win Shares" />
+                <XAxis type="number" dataKey="netPaid" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name="Net Paid" domain={[(dm: number) => Math.max(0, dm * 0.9), (dm: number) => dm * 1.05]} />
+                <YAxis type="number" dataKey="ws" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Win Shares" domain={[(dm: number) => Math.max(0, dm * 0.9), (dm: number) => dm * 1.05]} />
                 <Tooltip content={({ payload }) => {
                   if (!payload || !payload.length) return null;
                   const d = payload[0]?.payload;
