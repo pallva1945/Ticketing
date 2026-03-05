@@ -87,13 +87,13 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
   const payrollTrend = useMemo(() => {
     return seasons.map(s => {
-      const sd = data.filter(d => d.season === s);
+      const sd = data.filter(d => d.season === s && !(d.season === '2025-26' && d.team_name === 'Trapani Shark'));
       const teamMap = new Map<string, number>();
-      sd.forEach(p => teamMap.set(p.team_name, (teamMap.get(p.team_name) || 0) + p.yearly_salary_norm));
+      sd.forEach(p => teamMap.set(p.team_name, (teamMap.get(p.team_name) || 0) + p.net_paid));
       const payrolls = [...teamMap.values()];
       const avg = payrolls.length > 0 ? payrolls.reduce((a, b) => a + b, 0) / payrolls.length : 0;
-      const varesePayroll = sd.filter(p => p.team_name.includes('Varese')).reduce((s, p) => s + p.yearly_salary_norm, 0);
-      return { season: s, avg: Math.round(avg), varese: varesePayroll };
+      const vareseNetPaid = sd.filter(p => p.team_name.includes('Varese')).reduce((s, p) => s + p.net_paid, 0);
+      return { season: s, avg: Math.round(avg), varese: vareseNetPaid };
     }).reverse();
   }, [data, seasons]);
 
@@ -322,7 +322,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         </div>
 
         <div className={`${card} p-4`}>
-          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Payroll Trend')}</h3>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Net Paid Trend')}</h3>
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={payrollTrend}>
