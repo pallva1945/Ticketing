@@ -77,12 +77,17 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
   const leagueAvg = useMemo(() => {
     const paid = seasonData.filter(p => p.yearly_salary_norm > 0);
+    const totalWs = seasonData.filter(p => p.ws > 0).reduce((s, p) => s + p.ws, 0);
+    const totalNetPaid = paid.reduce((s, p) => s + p.net_paid, 0);
+    const highestPaid = paid.length > 0 ? paid.reduce((max, p) => p.yearly_salary_norm > max.yearly_salary_norm ? p : max, paid[0]) : null;
     return {
       avgSalary: paid.length > 0 ? paid.reduce((s, p) => s + p.yearly_salary_norm, 0) / paid.length : 0,
       medianSalary: (() => { const sorted = paid.map(p => p.yearly_salary_norm).sort((a, b) => a - b); return sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : 0; })(),
       avgWs40: (() => { const ws40s = paid.filter(p => p.ws_40 !== null); return ws40s.length > 0 ? ws40s.reduce((s, p) => s + (p.ws_40 || 0), 0) / ws40s.length : 0; })(),
       totalPayroll: paid.reduce((s, p) => s + p.yearly_salary_norm, 0),
       teamCount: teams.length,
+      highestPaid,
+      costPerWs: totalWs > 0 ? totalNetPaid / totalWs : 0,
     };
   }, [seasonData, teams]);
 
@@ -243,10 +248,12 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
   const renderOverview = () => (
     <div className="space-y-5">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard label={t('Teams')} value={teams.length} color="blue" />
         <StatCard label={t('Players')} value={seasonData.length} color="emerald" />
         <StatCard label={t('Avg Salary')} value={fmt(leagueAvg.avgSalary)} sub={`Median: ${fmt(leagueAvg.medianSalary)}`} color="orange" />
+        <StatCard label={t('Highest Salary')} value={leagueAvg.highestPaid ? fmt(leagueAvg.highestPaid.yearly_salary_norm) : '—'} sub={leagueAvg.highestPaid ? `${leagueAvg.highestPaid.player}` : ''} color="red" />
+        <StatCard label={t('Cost per WS')} value={fmt(leagueAvg.costPerWs)} sub={t('Net Paid / WS')} color="sky" />
         <StatCard label={t('Avg WS/40')} value={leagueAvg.avgWs40.toFixed(3)} sub={t('League average')} color="purple" />
       </div>
 
