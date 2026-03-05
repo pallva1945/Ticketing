@@ -46,7 +46,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       setSelectedSeason(seasons[0]);
     }
   }, [seasons]);
-  const seasonData = useMemo(() => data.filter(d => d.season === selectedSeason), [data, selectedSeason]);
+  const seasonData = useMemo(() => data.filter(d => d.season === selectedSeason && !(d.season === '2025-26' && d.team_name === 'Trapani Shark')), [data, selectedSeason]);
   const teams = useMemo(() => [...new Set(seasonData.map(d => d.team_name))].sort(), [seasonData]);
 
   const teamStats = useMemo(() => {
