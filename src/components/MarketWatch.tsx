@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, Sun, Moon, TrendingUp, DollarSign, Users, Award, Search, ChevronDown, ArrowUpDown, Shield, Eye, BarChart3 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, Cell, Legend, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, Cell, Legend, LineChart, Line, ComposedChart, ReferenceLine } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
@@ -201,10 +201,17 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       .map(p => ({
         label: `${p.player} (${shortName(p.team_name)})`,
         netPaid: p.net_paid,
+        ws: p.ws,
+        ws40: p.ws_40,
         isVarese: p.team_name.includes('Varese'),
       }))
       .sort((a, b) => b.netPaid - a.netPaid);
   }, [seasonData, wsRank]);
+
+  const wsRankAvgNetPaid = useMemo(() => {
+    if (wsRankChart.length === 0) return 0;
+    return wsRankChart.reduce((s, p) => s + p.netPaid, 0) / wsRankChart.length;
+  }, [wsRankChart]);
 
   if (loading) {
     return (
@@ -275,19 +282,40 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
               <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
             </div>
           </div>
-          <div style={{ height: Math.max(350, wsRankChart.length * 28) }}>
+          <div style={{ height: Math.max(380, wsRankChart.length * 32) }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={wsRankChart} layout="vertical" margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                <XAxis type="number" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
+              <ComposedChart data={wsRankChart} layout="vertical" margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} horizontal={false} />
+                <XAxis xAxisId="paid" type="number" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} orientation="bottom" />
+                <XAxis xAxisId="ws" type="number" tick={{ fontSize: 9, fill: isDark ? '#60a5fa' : '#3b82f6' }} orientation="top" hide />
                 <YAxis type="category" dataKey="label" tick={{ fontSize: 8, fill: isDark ? '#9ca3af' : '#6b7280' }} width={140} interval={0} />
-                <Tooltip contentStyle={tipStyle} formatter={(v: number) => fmtFull(v)} />
-                <Bar dataKey="netPaid" name={t('Net Paid')} radius={[0, 4, 4, 0]}>
+                <Tooltip content={({ payload }) => {
+                  if (!payload || !payload.length) return null;
+                  const d = payload[0]?.payload;
+                  if (!d) return null;
+                  return (
+                    <div style={tipStyle as any} className="p-2">
+                      <p className="font-semibold text-xs mb-1">{d.label}</p>
+                      <p className="text-[10px]">Net Paid: {fmtFull(d.netPaid)}</p>
+                      <p className="text-[10px]">WS: {d.ws.toFixed(2)}</p>
+                      {d.ws40 !== null && <p className="text-[10px]">WS/40: {d.ws40.toFixed(3)}</p>}
+                      {d.netPaid > 0 && <p className="text-[10px]">WS/€M: {(d.ws / (d.netPaid / 1000000)).toFixed(1)}</p>}
+                    </div>
+                  );
+                }} />
+                <ReferenceLine xAxisId="paid" x={wsRankAvgNetPaid} stroke={isDark ? '#f59e0b' : '#d97706'} strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `Avg ${fmt(wsRankAvgNetPaid)}`, position: 'top', fill: isDark ? '#f59e0b' : '#d97706', fontSize: 9 }} />
+                <Bar xAxisId="paid" dataKey="netPaid" name={t('Net Paid')} radius={[0, 4, 4, 0]} barSize={14}>
                   {wsRankChart.map((e, i) => (
                     <Cell key={i} fill={e.isVarese ? VARESE_COLOR : (isDark ? '#6366f1' : '#4f46e5')} opacity={e.isVarese ? 1 : 0.7} />
                   ))}
                 </Bar>
-              </BarChart>
+                <Scatter xAxisId="ws" dataKey="ws" name="WS" fill={isDark ? '#34d399' : '#059669'} shape="diamond" legendType="diamond">
+                  {wsRankChart.map((e, i) => (
+                    <Cell key={i} fill={e.isVarese ? VARESE_COLOR : (isDark ? '#34d399' : '#059669')} r={5} />
+                  ))}
+                </Scatter>
+                <Legend wrapperStyle={{ fontSize: 10 }} />
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         </div>
