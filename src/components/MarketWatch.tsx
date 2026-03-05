@@ -225,6 +225,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       const top1Share = n > 0 && tm.netPaid > 0 ? (salaries[0] / tm.netPaid) * 100 : 0;
       const top3Share = n >= 3 && tm.netPaid > 0 ? (salaries.slice(0, 3).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
       const top5Share = n >= 5 && tm.netPaid > 0 ? (salaries.slice(0, 5).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
+      const top8Share = n >= 8 && tm.netPaid > 0 ? (salaries.slice(0, 8).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
       const maxSalary = salaries[0] || 0;
       const medianSalary = n > 0 ? salaries[Math.floor(n / 2)] : 0;
       const avgSalary = n > 0 ? salaries.reduce((s, v) => s + v, 0) / n : 0;
@@ -249,6 +250,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         top1Share,
         top3Share,
         top5Share,
+        top8Share,
         maxSalary,
         medianSalary,
         avgSalary,
@@ -563,6 +565,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                 <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Top 1')}</th>
                 <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Top 3')}</th>
                 <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Top 5')}</th>
+                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Top 8')}</th>
                 <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Max/Avg')}</th>
                 <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Cost/WS')}</th>
                 <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>WS</th>
@@ -579,6 +582,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.top1Share.toFixed(0)}%</td>
                   <td className={`py-2 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{tm.top3Share.toFixed(0)}%</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.top5Share.toFixed(0)}%</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.top8Share > 0 ? `${tm.top8Share.toFixed(0)}%` : '—'}</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.maxAvgRatio.toFixed(1)}x</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{tm.costPerWs > 0 ? fmt(tm.costPerWs) : '—'}</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{tm.ws.toFixed(1)}</td>
