@@ -99,7 +99,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
   const payrollTrend = useMemo(() => {
     return seasons.map(s => {
-      const sd = data.filter(d => d.season === s && !(d.season === '2025-26' && d.team_name === 'Trapani Shark'));
+      const sd = data.filter(d => d.season === s && !(d.season === '2025-26' && d.team_name === 'Trapani Shark') && (!excludeOutliers || !OUTLIER_TEAMS.includes(d.team_name)));
       const teamMap = new Map<string, number>();
       sd.forEach(p => teamMap.set(p.team_name, (teamMap.get(p.team_name) || 0) + p.net_paid));
       const payrolls = [...teamMap.values()];
@@ -107,7 +107,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       const vareseNetPaid = sd.filter(p => p.team_name.includes('Varese')).reduce((s, p) => s + p.net_paid, 0);
       return { season: s, avg: Math.round(avg), varese: vareseNetPaid };
     }).reverse();
-  }, [data, seasons]);
+  }, [data, seasons, excludeOutliers]);
 
   const card = isDark ? 'bg-gray-900/60 border border-gray-800 rounded-xl' : 'bg-white border border-gray-200 rounded-xl shadow-sm';
   const subtext = isDark ? 'text-gray-500' : 'text-gray-400';
