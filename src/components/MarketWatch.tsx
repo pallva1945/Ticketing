@@ -998,7 +998,13 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setExcludeOutliers(v => !v)}
+                onClick={() => setExcludeOutliers(v => {
+                  if (!v && seasons.length > 1) {
+                    const idx = seasons.indexOf(selectedSeason);
+                    if (idx < seasons.length - 1) setSelectedSeason(seasons[idx + 1]);
+                  }
+                  return !v;
+                })}
                 className={`px-2 py-1.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all border ${
                   excludeOutliers
                     ? isDark ? 'bg-red-900/40 text-red-400 border-red-800' : 'bg-red-50 text-red-600 border-red-200'
