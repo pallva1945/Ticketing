@@ -505,7 +505,6 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   };
 
   const renderTeams = () => {
-    const efficiencyScatter = teamSpendingAnalysis.filter(t => t.netPaid > 0 && t.ws > 0);
     const concentrationChart = [...teamSpendingAnalysis].sort((a, b) => b.top3Share - a.top3Share).map(t => ({
       team: t.team,
       top3: Math.round(t.top3Share),
@@ -546,35 +545,24 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           </div>
 
           <div className={`${card} p-4`}>
-            <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Spending Efficiency')} — {t('Gini vs Cost/WS')}</h3>
+            <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('WS Concentration')} — {t('Top 3 Players Share')}</h3>
             <div className="h-[350px]">
               <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                <BarChart data={[...teamSpendingAnalysis].sort((a, b) => b.top3WsShare - a.top3WsShare).map(t => ({ team: t.team, top3: Math.round(t.top3WsShare), rest: Math.round(100 - t.top3WsShare), isVarese: t.isVarese }))} layout="vertical" margin={{ left: 0, right: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                  <XAxis type="number" dataKey="gini" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Gini" domain={['auto', 'auto']} tickFormatter={(v: number) => v.toFixed(2)} label={{ value: t('Gini (Concentration)'), position: 'insideBottom', offset: -5, fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                  <YAxis type="number" dataKey="costPerWs" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Cost/WS" tickFormatter={(v: number) => fmt(v)} label={{ value: t('Cost/WS (Efficiency)'), angle: -90, position: 'insideLeft', offset: 10, fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                  <Tooltip content={({ payload }) => {
-                    if (!payload || !payload.length) return null;
-                    const d = payload[0]?.payload;
-                    return d ? (
-                      <div style={tipStyle as any} className="p-2">
-                        <p className="font-semibold text-xs">{d.team}</p>
-                        <p className="text-[10px]">{t('Gini')}: {d.gini.toFixed(3)}</p>
-                        <p className="text-[10px]">{t('Cost/WS')}: {fmt(d.costPerWs)}</p>
-                        <p className="text-[10px]">{t('Top 3 Share')}: {d.top3Share.toFixed(0)}%</p>
-                        <p className="text-[10px]">{t('Net Paid')}: {fmt(d.netPaid)} | WS: {d.ws.toFixed(1)}</p>
-                      </div>
-                    ) : null;
-                  }} />
-                  <Scatter data={efficiencyScatter}>
-                    {efficiencyScatter.map((e, i) => (
-                      <Cell key={i} fill={e.isVarese ? VARESE_COLOR : (isDark ? '#6366f1' : '#4f46e5')} r={e.isVarese ? 7 : 5} opacity={e.isVarese ? 1 : 0.7} />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => `${v}%`} />
+                  <YAxis type="category" dataKey="team" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} width={80} />
+                  <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => [`${v}%`, name === 'top3' ? t('Top 3') : t('Rest')]} />
+                  <Bar dataKey="top3" name={t('Top 3')} stackId="a" fill={isDark ? '#3b82f6' : '#2563eb'}>
+                    {[...teamSpendingAnalysis].sort((a, b) => b.top3WsShare - a.top3WsShare).map((e, i) => (
+                      <Cell key={i} fill={e.isVarese ? VARESE_COLOR : (isDark ? '#3b82f6' : '#2563eb')} />
                     ))}
-                  </Scatter>
-                </ScatterChart>
+                  </Bar>
+                  <Bar dataKey="rest" name={t('Rest')} stackId="a" fill={isDark ? '#374151' : '#e5e7eb'} radius={[0, 4, 4, 0]} />
+                  <ReferenceLine x={(() => { const vals = teamSpendingAnalysis.filter(t => t.top3WsShare > 0); return vals.length > 0 ? Math.round(vals.reduce((s, t) => s + t.top3WsShare, 0) / vals.length) : 0; })()} stroke={isDark ? '#9ca3af' : '#6b7280'} strokeDasharray="3 3" label={{ value: `${t('Avg')}: ${(() => { const vals = teamSpendingAnalysis.filter(t => t.top3WsShare > 0); return vals.length > 0 ? Math.round(vals.reduce((s, t) => s + t.top3WsShare, 0) / vals.length) : 0; })()}%`, position: 'top', fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
-            <p className={`text-[10px] mt-1 ${subtext}`}>{t('Bottom-left = spread spending + efficient · Top-right = concentrated + expensive')}</p>
           </div>
         </div>
 
