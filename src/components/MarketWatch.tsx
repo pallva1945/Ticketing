@@ -30,6 +30,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   const [sortKey, setSortKey] = useState<SortKey>('yearly_salary_norm');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
+  const [wsRank, setWsRank] = useState<number>(1);
 
   useEffect(() => {
     fetch('/api/market')
@@ -189,21 +190,21 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     return { slope, intercept, r2, line: [{ netPaid: minX, ws: slope * minX + intercept }, { netPaid: maxX, ws: slope * maxX + intercept }] };
   }, [scatterData]);
 
-  const salaryDistribution = useMemo(() => {
-    const brackets = [
-      { label: '<50K', min: 0, max: 50000 },
-      { label: '50-100K', min: 50000, max: 100000 },
-      { label: '100-200K', min: 100000, max: 200000 },
-      { label: '200-400K', min: 200000, max: 400000 },
-      { label: '400K-1M', min: 400000, max: 1000000 },
-      { label: '>1M', min: 1000000, max: Infinity },
-    ];
-    return brackets.map(b => ({
-      bracket: b.label,
-      league: seasonData.filter(p => p.yearly_salary_norm >= b.min && p.yearly_salary_norm < b.max).length,
-      varese: seasonData.filter(p => p.team_name.includes('Varese') && p.yearly_salary_norm >= b.min && p.yearly_salary_norm < b.max).length,
-    }));
+  const maxWsRank = useMemo(() => {
+    const ranks = seasonData.map(p => p.tm_ws_rk).filter(r => r > 0);
+    return ranks.length > 0 ? Math.max(...ranks) : 10;
   }, [seasonData]);
+
+  const wsRankChart = useMemo(() => {
+    const playersAtRank = seasonData.filter(p => p.tm_ws_rk === wsRank && p.yearly_salary_norm > 0);
+    return playersAtRank
+      .map(p => ({
+        label: `${p.player} (${shortName(p.team_name)})`,
+        salary: p.yearly_salary_norm,
+        isVarese: p.team_name.includes('Varese'),
+      }))
+      .sort((a, b) => b.salary - a.salary);
+  }, [seasonData, wsRank]);
 
   if (loading) {
     return (
@@ -263,11 +264,42 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         </div>
 
         <div className={`${card} p-4`}>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Salary by WS Team Rank')} — {selectedSeason}</h3>
+            <div className="relative">
+              <select value={wsRank} onChange={e => setWsRank(Number(e.target.value))} className={selectClass}>
+                {Array.from({ length: maxWsRank }, (_, i) => i + 1).map(r => (
+                  <option key={r} value={r}>WS Rk #{r}</option>
+                ))}
+              </select>
+              <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+            </div>
+          </div>
+          <div style={{ height: Math.max(350, wsRankChart.length * 28) }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={wsRankChart} layout="vertical" margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                <XAxis type="number" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
+                <YAxis type="category" dataKey="label" tick={{ fontSize: 8, fill: isDark ? '#9ca3af' : '#6b7280' }} width={140} interval={0} />
+                <Tooltip contentStyle={tipStyle} formatter={(v: number) => fmtFull(v)} />
+                <Bar dataKey="salary" name={t('Salary')} radius={[0, 4, 4, 0]}>
+                  {wsRankChart.map((e, i) => (
+                    <Cell key={i} fill={e.isVarese ? VARESE_COLOR : (isDark ? '#6366f1' : '#4f46e5')} opacity={e.isVarese ? 1 : 0.7} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className={`${card} p-4`}>
           <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
             {t('Net Paid vs Win Shares')}
             {regression && <span className={`ml-2 font-normal ${subtext}`}>R² = {regression.r2.toFixed(3)}</span>}
           </h3>
-          <div className="h-[300px]">
+          <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
@@ -301,29 +333,10 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className={`${card} p-4`}>
-          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Salary Distribution')}</h3>
-          <div className="h-[220px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={salaryDistribution}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                <XAxis dataKey="bracket" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                <Tooltip contentStyle={tipStyle} />
-                <Bar dataKey="league" name={t('League')} fill={isDark ? '#6366f1' : '#4f46e5'} opacity={0.7} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="varese" name="Varese" fill={VARESE_COLOR} opacity={0.9} radius={[4, 4, 0, 0]} />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
 
         <div className={`${card} p-4`}>
           <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Net Paid Trend')}</h3>
-          <div className="h-[220px]">
+          <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={payrollTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
