@@ -158,9 +158,9 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   };
   const teamPayrollChart = useMemo(() => teamStats.map(t => ({
     team: shortName(t.team),
-    payroll: t.payroll,
+    netPaid: t.netPaid,
     isVarese: t.team.includes('Varese'),
-  })), [teamStats]);
+  })).sort((a, b) => b.netPaid - a.netPaid), [teamStats]);
 
   const scatterData = useMemo(() => {
     return teamStats.map(t => ({
@@ -196,14 +196,14 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   }, [seasonData]);
 
   const wsRankChart = useMemo(() => {
-    const playersAtRank = seasonData.filter(p => p.tm_ws_rk === wsRank && p.yearly_salary_norm > 0);
+    const playersAtRank = seasonData.filter(p => p.tm_ws_rk === wsRank && p.net_paid > 0);
     return playersAtRank
       .map(p => ({
         label: `${p.player} (${shortName(p.team_name)})`,
-        salary: p.yearly_salary_norm,
+        netPaid: p.net_paid,
         isVarese: p.team_name.includes('Varese'),
       }))
-      .sort((a, b) => b.salary - a.salary);
+      .sort((a, b) => b.netPaid - a.netPaid);
   }, [seasonData, wsRank]);
 
   if (loading) {
@@ -245,7 +245,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={`${card} p-4`}>
-          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Team Payrolls')} — {selectedSeason}</h3>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Team Net Paid')} — {selectedSeason}</h3>
           <div style={{ height: Math.max(350, teamPayrollChart.length * 28) }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={teamPayrollChart} layout="vertical" margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
@@ -253,7 +253,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                 <XAxis type="number" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
                 <YAxis type="category" dataKey="team" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} width={120} interval={0} />
                 <Tooltip contentStyle={tipStyle} formatter={(v: number) => fmtFull(v)} />
-                <Bar dataKey="payroll" radius={[0, 4, 4, 0]}>
+                <Bar dataKey="netPaid" name={t('Net Paid')} radius={[0, 4, 4, 0]}>
                   {teamPayrollChart.map((e, i) => (
                     <Cell key={i} fill={e.isVarese ? VARESE_COLOR : (isDark ? '#10b981' : '#059669')} opacity={e.isVarese ? 1 : 0.7} />
                   ))}
@@ -282,7 +282,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                 <XAxis type="number" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
                 <YAxis type="category" dataKey="label" tick={{ fontSize: 8, fill: isDark ? '#9ca3af' : '#6b7280' }} width={140} interval={0} />
                 <Tooltip contentStyle={tipStyle} formatter={(v: number) => fmtFull(v)} />
-                <Bar dataKey="salary" name={t('Salary')} radius={[0, 4, 4, 0]}>
+                <Bar dataKey="netPaid" name={t('Net Paid')} radius={[0, 4, 4, 0]}>
                   {wsRankChart.map((e, i) => (
                     <Cell key={i} fill={e.isVarese ? VARESE_COLOR : (isDark ? '#6366f1' : '#4f46e5')} opacity={e.isVarese ? 1 : 0.7} />
                   ))}
