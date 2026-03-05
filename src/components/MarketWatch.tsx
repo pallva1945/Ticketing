@@ -31,6 +31,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [wsRank, setWsRank] = useState<number>(1);
+  const [teamSortKey, setTeamSortKey] = useState<string>('gini');
+  const [teamSortDir, setTeamSortDir] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     fetch('/api/market')
@@ -273,6 +275,15 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     return tops.length > 0 ? tops.reduce((s, t) => s + t.top3Share, 0) / tops.length : 0;
   }, [teamSpendingAnalysis]);
 
+  const sortedTeamData = useMemo(() => {
+    return [...teamSpendingAnalysis].sort((a, b) => {
+      const aVal = (a as any)[teamSortKey] ?? 0;
+      const bVal = (b as any)[teamSortKey] ?? 0;
+      if (typeof aVal === 'string') return teamSortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      return teamSortDir === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+  }, [teamSpendingAnalysis, teamSortKey, teamSortDir]);
+
   if (loading) {
     return (
       <div className={`fixed inset-0 flex items-center justify-center ${isDark ? 'bg-gray-950' : 'bg-gray-50'}`}>
@@ -444,9 +455,12 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     </div>
   );
 
+  const handleTeamSort = (key: string) => {
+    if (teamSortKey === key) setTeamSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setTeamSortKey(key); setTeamSortDir('desc'); }
+  };
+
   const renderTeams = () => {
-    const byGini = [...teamSpendingAnalysis].sort((a, b) => b.gini - a.gini);
-    const byTop3 = [...teamSpendingAnalysis].sort((a, b) => b.top3Share - a.top3Share);
     const efficiencyScatter = teamSpendingAnalysis.filter(t => t.netPaid > 0 && t.ws > 0);
     const concentrationChart = [...teamSpendingAnalysis].sort((a, b) => b.top3Share - a.top3Share).map(t => ({
       team: t.team,
@@ -558,21 +572,27 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
             <thead>
               <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                 <th className={`py-2 px-2 text-left font-semibold ${subtext}`}>#</th>
-                <th className={`py-2 px-2 text-left font-semibold ${subtext}`}>{t('Team')}</th>
-                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Net Paid')}</th>
-                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Roster')}</th>
-                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Gini')}</th>
-                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Top 1')}</th>
-                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Top 3')}</th>
-                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Top 5')}</th>
-                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Top 8')}</th>
-                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Max/Avg')}</th>
-                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Cost/WS')}</th>
-                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>WS</th>
+                {[
+                  { key: 'team', label: t('Team'), align: 'left' },
+                  { key: 'netPaid', label: t('Net Paid') },
+                  { key: 'rosterSize', label: t('Roster') },
+                  { key: 'gini', label: t('Gini') },
+                  { key: 'top1Share', label: t('Top 1') },
+                  { key: 'top3Share', label: t('Top 3') },
+                  { key: 'top5Share', label: t('Top 5') },
+                  { key: 'top8Share', label: t('Top 8') },
+                  { key: 'maxAvgRatio', label: t('Max/Avg') },
+                  { key: 'costPerWs', label: t('Cost/WS') },
+                  { key: 'ws', label: 'WS' },
+                ].map(col => (
+                  <th key={col.key} className={`py-2 px-2 ${col.align === 'left' ? 'text-left' : 'text-right'} font-semibold cursor-pointer select-none whitespace-nowrap ${subtext}`} onClick={() => handleTeamSort(col.key)}>
+                    <span className="inline-flex items-center gap-1">{col.label} {teamSortKey === col.key && <ArrowUpDown size={10} className={teamSortDir === 'asc' ? 'rotate-180' : ''} />}</span>
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {byGini.map((tm, i) => (
+              {sortedTeamData.map((tm, i) => (
                 <tr key={tm.fullTeam} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'} ${tm.isVarese ? (isDark ? 'bg-red-950/20' : 'bg-red-50/50') : ''}`}>
                   <td className={`py-2 px-2 ${subtext}`}>{i + 1}</td>
                   <td className={`py-2 px-2 font-medium whitespace-nowrap ${tm.isVarese ? 'text-red-500 font-bold' : isDark ? 'text-gray-200' : 'text-gray-800'}`}>{tm.team}</td>
