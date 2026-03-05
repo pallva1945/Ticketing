@@ -99,7 +99,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
   const payrollTrend = useMemo(() => {
     return seasons.map(s => {
-      const sd = data.filter(d => d.season === s && !(d.season === '2025-26' && d.team_name === 'Trapani Shark') && (!excludeOutliers || !OUTLIER_TEAMS.includes(d.team_name)));
+      const sd = data.filter(d => d.season === s && d.team_name !== 'Trapani Shark' && (!excludeOutliers || !OUTLIER_TEAMS.includes(d.team_name)));
       const teamMap = new Map<string, number>();
       sd.forEach(p => teamMap.set(p.team_name, (teamMap.get(p.team_name) || 0) + p.net_paid));
       const payrolls = [...teamMap.values()];
