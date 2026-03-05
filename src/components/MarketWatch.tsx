@@ -612,8 +612,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   const renderVarese = () => {
     if (!varese) return <div className={`${card} p-8 text-center ${subtext}`}>{t('No Varese data for this season')}</div>;
     const vPlayers = varese.players.sort((a, b) => b.yearly_salary_norm - a.yearly_salary_norm);
-    const wsPerMillion = varese.payroll > 0 ? (varese.ws / (varese.payroll / 1000000)).toFixed(1) : '—';
-    const leagueWsPerM = leagueAvg.totalPayroll > 0 ? (seasonData.reduce((s, p) => s + p.ws, 0) / (leagueAvg.totalPayroll / 1000000)).toFixed(1) : '—';
+    const vareseCostPerWs = varese.ws > 0 ? varese.netPaid / varese.ws : 0;
+    const leagueCostPerWs = leagueAvg.costPerWs;
 
     return (
       <div className="space-y-5">
@@ -621,7 +621,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           <StatCard label={t('Payroll')} value={fmt(varese.payroll)} sub={`#${vareseRank} ${t('of')} ${teamStats.length}`} color="red" />
           <StatCard label={t('Net Paid')} value={fmt(varese.netPaid)} sub={`${((varese.netPaid / varese.payroll) * 100).toFixed(0)}% ${t('of payroll')}`} color="orange" />
           <StatCard label="WS" value={varese.ws.toFixed(1)} sub={`Avg WS/40: ${varese.avgWs40.toFixed(3)}`} color="blue" />
-          <StatCard label="WS/€M" value={wsPerMillion} sub={`${t('League')}: ${leagueWsPerM}`} color="emerald" />
+          <StatCard label={t('Cost/WS')} value={fmt(vareseCostPerWs)} sub={`${t('League')}: ${fmt(leagueCostPerWs)}`} color="emerald" />
           <StatCard label={t('Roster')} value={varese.rosterSize.toString()} sub={`${varese.itaCount} ITA · ${varese.visaCount} Visa · ${varese.youthCount} Youth`} color="purple" />
         </div>
 
@@ -650,14 +650,14 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           <table className="w-full text-xs">
             <thead>
               <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                {[t('Player'), t('Salary'), t('Net Paid'), t('Months'), 'MIN', 'WS', 'WS/40', 'WS/€M', t('NAT'), t('Tm Salary Rk'), t('Tm WS Rk'), t('Status')].map(h => (
+                {[t('Player'), t('Salary'), t('Net Paid'), t('Months'), 'MIN', 'WS', 'WS/40', t('Cost/WS'), t('NAT'), t('Tm Salary Rk'), t('Tm WS Rk'), t('Status')].map(h => (
                   <th key={h} className={`py-2 px-2 text-left font-semibold whitespace-nowrap ${subtext}`}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {vPlayers.map((p, i) => {
-                const wsPerM = p.yearly_salary_norm > 0 ? (p.ws / (p.yearly_salary_norm / 1000000)).toFixed(1) : '—';
+                const costPerWs = p.ws > 0 && p.net_paid > 0 ? fmt(p.net_paid / p.ws) : '—';
                 return (
                   <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
                     <td className={`py-1.5 px-2 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.player}</td>
@@ -667,7 +667,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                     <td className={`py-1.5 px-2 tabular-nums ${subtext}`}>{p.min_play}</td>
                     <td className={`py-1.5 px-2 tabular-nums ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{p.ws.toFixed(2)}</td>
                     <td className={`py-1.5 px-2 tabular-nums ${subtext}`}>{p.ws_40 !== null ? p.ws_40.toFixed(3) : '—'}</td>
-                    <td className={`py-1.5 px-2 tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{wsPerM}</td>
+                    <td className={`py-1.5 px-2 tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{costPerWs}</td>
                     <td className={`py-1.5 px-2 ${subtext}`}>{p.nationality || '—'}</td>
                     <td className={`py-1.5 px-2 text-center ${subtext}`}>{p.tm_ys_rk}</td>
                     <td className={`py-1.5 px-2 text-center ${subtext}`}>{p.tm_ws_rk}</td>
