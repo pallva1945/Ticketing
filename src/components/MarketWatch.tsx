@@ -35,6 +35,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   const [teamSortDir, setTeamSortDir] = useState<'asc' | 'desc'>('desc');
   const [wsSortKey, setWsSortKey] = useState<string>('wsGini');
   const [wsSortDir, setWsSortDir] = useState<'asc' | 'desc'>('desc');
+  const [excludeOutliers, setExcludeOutliers] = useState(false);
 
   useEffect(() => {
     fetch('/api/market')
@@ -51,7 +52,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       setSelectedSeason(seasons[0]);
     }
   }, [seasons]);
-  const seasonData = useMemo(() => data.filter(d => d.season === selectedSeason && !(d.season === '2025-26' && d.team_name === 'Trapani Shark')), [data, selectedSeason]);
+  const OUTLIER_TEAMS = ['EA7 Emporio Armani Milano', 'Virtus Segafredo Bologna'];
+  const seasonData = useMemo(() => data.filter(d => d.season === selectedSeason && !(d.season === '2025-26' && d.team_name === 'Trapani Shark') && (!excludeOutliers || !OUTLIER_TEAMS.includes(d.team_name))), [data, selectedSeason, excludeOutliers]);
   const teams = useMemo(() => [...new Set(seasonData.map(d => d.team_name))].sort(), [seasonData]);
 
   const teamStats = useMemo(() => {
@@ -997,6 +999,17 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setExcludeOutliers(v => !v)}
+                className={`px-2 py-1.5 rounded-lg text-[10px] font-medium whitespace-nowrap transition-all border ${
+                  excludeOutliers
+                    ? isDark ? 'bg-red-900/40 text-red-400 border-red-800' : 'bg-red-50 text-red-600 border-red-200'
+                    : isDark ? 'text-gray-500 border-gray-700 hover:text-gray-300' : 'text-gray-400 border-gray-200 hover:text-gray-600'
+                }`}
+                title={t('Exclude Olimpia Milano & Virtus Bologna')}
+              >
+                {excludeOutliers ? `✕ ${t('No MIL/BOL')}` : `${t('No MIL/BOL')}`}
+              </button>
               <div className="relative">
                 <select value={selectedSeason} onChange={e => setSelectedSeason(e.target.value)} className={selectClass}>
                   {seasons.map(s => <option key={s} value={s}>{s}</option>)}
