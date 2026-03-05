@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
 import type { MarketPlayer } from '../services/bigQueryService';
 
-type SortKey = 'yearly_salary_norm' | 'ws' | 'ws_40' | 'ws_per_million' | 'net_paid' | 'min_play' | 'player' | 'team_name';
+type SortKey = 'yearly_salary_norm' | 'ws' | 'ws_40' | 'cost_per_ws' | 'net_paid' | 'min_play' | 'player' | 'team_name';
 type Tab = 'overview' | 'teams' | 'players' | 'efficiency' | 'varese';
 
 const fmt = (n: number) => {
@@ -127,10 +127,10 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       const q = searchQuery.toLowerCase();
       p = p.filter(pp => pp.player.toLowerCase().includes(q) || pp.team_name.toLowerCase().includes(q) || (pp.nationality || '').toLowerCase().includes(q));
     }
-    const enriched = p.map(pp => ({ ...pp, ws_per_million: pp.yearly_salary_norm > 0 ? pp.ws / (pp.yearly_salary_norm / 1000000) : 0 }));
+    const enriched = p.map(pp => ({ ...pp, cost_per_ws: pp.ws > 0 && pp.net_paid > 0 ? pp.net_paid / pp.ws : 0 }));
     enriched.sort((a, b) => {
-      const aVal = sortKey === 'ws_per_million' ? a.ws_per_million : (a as any)[sortKey];
-      const bVal = sortKey === 'ws_per_million' ? b.ws_per_million : (b as any)[sortKey];
+      const aVal = sortKey === 'cost_per_ws' ? a.cost_per_ws : (a as any)[sortKey];
+      const bVal = sortKey === 'cost_per_ws' ? b.cost_per_ws : (b as any)[sortKey];
       if (typeof aVal === 'string') return sortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       return sortDir === 'asc' ? (aVal || 0) - (bVal || 0) : (bVal || 0) - (aVal || 0);
     });
@@ -306,7 +306,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                       <p className="text-[10px]">Net Paid: {fmtFull(d.netPaid)}</p>
                       <p className="text-[10px]">WS: {d.ws.toFixed(2)}</p>
                       {d.ws40 !== null && <p className="text-[10px]">WS/40: {d.ws40.toFixed(3)}</p>}
-                      {d.netPaid > 0 && <p className="text-[10px]">WS/€M: {(d.ws / (d.netPaid / 1000000)).toFixed(1)}</p>}
+                      {d.netPaid > 0 && d.ws > 0 && <p className="text-[10px]">{t('Cost/WS')}: {fmt(d.netPaid / d.ws)}</p>}
                     </div>
                   );
                 }} />
@@ -349,7 +349,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                       <p className="font-semibold text-xs">{d.team}</p>
                       <p className="text-[10px]">Net Paid: {fmtFull(d.netPaid)}</p>
                       <p className="text-[10px]">Win Shares: {d.ws.toFixed(2)}</p>
-                      {d.netPaid > 0 && <p className="text-[10px]">WS/€M (Net): {(d.ws / (d.netPaid / 1000000)).toFixed(1)}</p>}
+                      {d.netPaid > 0 && d.ws > 0 && <p className="text-[10px]">{t('Cost/WS')}: {fmt(d.netPaid / d.ws)}</p>}
                     </div>
                   );
                 }} />
@@ -389,51 +389,208 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     </div>
   );
 
-  const renderTeams = () => (
-    <div className={`${card} p-4 overflow-x-auto`}>
-      <table className="w-full text-xs">
-        <thead>
-          <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-            <th className={`py-2 px-2 text-left font-semibold ${subtext}`}>#</th>
-            <th className={`py-2 px-2 text-left font-semibold ${subtext}`}>{t('Team')}</th>
-            <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Roster')}</th>
-            <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Payroll')}</th>
-            <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Net Paid')}</th>
-            <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Avg Salary')}</th>
-            <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>WS</th>
-            <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>WS/40</th>
-            <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>WS/€M</th>
-            <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>ITA</th>
-            <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Visa')}</th>
-            <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Youth')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {teamStats.map((t, i) => {
-            const isV = t.team.includes('Varese');
-            const rowBg = isV ? (isDark ? 'bg-red-950/20' : 'bg-red-50/50') : '';
-            const wsPerMillion = t.payroll > 0 ? (t.ws / (t.payroll / 1000000)).toFixed(1) : '—';
-            return (
-              <tr key={t.team} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'} ${rowBg}`}>
-                <td className={`py-2 px-2 ${subtext}`}>{i + 1}</td>
-                <td className={`py-2 px-2 font-medium whitespace-nowrap ${isV ? 'text-red-500 font-bold' : isDark ? 'text-gray-200' : 'text-gray-800'}`}>{t.team}</td>
-                <td className={`py-2 px-2 text-right ${subtext}`}>{t.rosterSize}</td>
-                <td className={`py-2 px-2 text-right font-semibold tabular-nums ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{fmt(t.payroll)}</td>
-                <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{fmt(t.netPaid)}</td>
-                <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{fmt(t.avgSalary)}</td>
-                <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{t.ws.toFixed(1)}</td>
-                <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{t.avgWs40.toFixed(3)}</td>
-                <td className={`py-2 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{wsPerMillion}</td>
-                <td className={`py-2 px-2 text-right ${subtext}`}>{t.itaCount}</td>
-                <td className={`py-2 px-2 text-right ${subtext}`}>{t.visaCount}</td>
-                <td className={`py-2 px-2 text-right ${subtext}`}>{t.youthCount}</td>
+  const teamSpendingAnalysis = useMemo(() => {
+    return teamStats.map(tm => {
+      const salaries = tm.players.map(p => p.net_paid).filter(s => s > 0).sort((a, b) => b - a);
+      const n = salaries.length;
+      const top1Share = n > 0 && tm.netPaid > 0 ? (salaries[0] / tm.netPaid) * 100 : 0;
+      const top3Share = n >= 3 && tm.netPaid > 0 ? (salaries.slice(0, 3).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
+      const top5Share = n >= 5 && tm.netPaid > 0 ? (salaries.slice(0, 5).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
+      const maxSalary = salaries[0] || 0;
+      const medianSalary = n > 0 ? salaries[Math.floor(n / 2)] : 0;
+      const avgSalary = n > 0 ? salaries.reduce((s, v) => s + v, 0) / n : 0;
+      const maxAvgRatio = avgSalary > 0 ? maxSalary / avgSalary : 0;
+      let gini = 0;
+      if (n > 1) {
+        let sumDiff = 0;
+        for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) sumDiff += Math.abs(salaries[i] - salaries[j]);
+        const mean = salaries.reduce((s, v) => s + v, 0) / n;
+        gini = mean > 0 ? sumDiff / (2 * n * n * mean) : 0;
+      }
+      const costPerWs = tm.ws > 0 ? tm.netPaid / tm.ws : 0;
+      const wsPlayers = tm.players.filter(p => p.ws > 0 && p.net_paid > 0);
+      const top3Paid = tm.players.slice().sort((a, b) => b.net_paid - a.net_paid).slice(0, 3);
+      const top3WsShare = tm.ws > 0 ? (top3Paid.reduce((s, p) => s + p.ws, 0) / tm.ws) * 100 : 0;
+      return {
+        team: shortName(tm.team),
+        fullTeam: tm.team,
+        netPaid: tm.netPaid,
+        payroll: tm.payroll,
+        ws: tm.ws,
+        rosterSize: tm.rosterSize,
+        top1Share,
+        top3Share,
+        top5Share,
+        maxSalary,
+        medianSalary,
+        avgSalary,
+        maxAvgRatio,
+        gini,
+        costPerWs,
+        top3WsShare,
+        isVarese: tm.team.includes('Varese'),
+      };
+    });
+  }, [teamStats]);
+
+  const leagueAvgGini = useMemo(() => {
+    const ginis = teamSpendingAnalysis.filter(t => t.gini > 0);
+    return ginis.length > 0 ? ginis.reduce((s, t) => s + t.gini, 0) / ginis.length : 0;
+  }, [teamSpendingAnalysis]);
+
+  const leagueAvgTop3 = useMemo(() => {
+    const tops = teamSpendingAnalysis.filter(t => t.top3Share > 0);
+    return tops.length > 0 ? tops.reduce((s, t) => s + t.top3Share, 0) / tops.length : 0;
+  }, [teamSpendingAnalysis]);
+
+  const renderTeams = () => {
+    const byGini = [...teamSpendingAnalysis].sort((a, b) => b.gini - a.gini);
+    const byTop3 = [...teamSpendingAnalysis].sort((a, b) => b.top3Share - a.top3Share);
+    const efficiencyScatter = teamSpendingAnalysis.filter(t => t.netPaid > 0 && t.ws > 0);
+    const concentrationChart = [...teamSpendingAnalysis].sort((a, b) => b.top3Share - a.top3Share).map(t => ({
+      team: t.team,
+      top3: Math.round(t.top3Share),
+      rest: Math.round(100 - t.top3Share),
+      isVarese: t.isVarese,
+    }));
+    const vareseData = teamSpendingAnalysis.find(t => t.isVarese);
+
+    return (
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard label={t('Avg Gini Index')} value={leagueAvgGini.toFixed(2)} sub={t('0 = equal, 1 = concentrated')} color="blue" />
+          <StatCard label={t('Avg Top 3 Share')} value={`${leagueAvgTop3.toFixed(0)}%`} sub={t('of total net paid')} color="orange" />
+          {vareseData && <StatCard label={t('Varese Gini')} value={vareseData.gini.toFixed(2)} sub={`${t('League Avg')}: ${leagueAvgGini.toFixed(2)}`} color="red" />}
+          {vareseData && <StatCard label={t('Varese Top 3')} value={`${vareseData.top3Share.toFixed(0)}%`} sub={`${t('League Avg')}: ${leagueAvgTop3.toFixed(0)}%`} color="red" />}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className={`${card} p-4`}>
+            <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Salary Concentration')} — {t('Top 3 Players Share')}</h3>
+            <div className="h-[350px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={concentrationChart} layout="vertical" margin={{ left: 0, right: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                  <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => `${v}%`} />
+                  <YAxis type="category" dataKey="team" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} width={80} />
+                  <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => [`${v}%`, name === 'top3' ? t('Top 3') : t('Rest')]} />
+                  <Bar dataKey="top3" name={t('Top 3')} stackId="a" fill={isDark ? '#f59e0b' : '#d97706'}>
+                    {concentrationChart.map((e, i) => (
+                      <Cell key={i} fill={e.isVarese ? VARESE_COLOR : (isDark ? '#f59e0b' : '#d97706')} />
+                    ))}
+                  </Bar>
+                  <Bar dataKey="rest" name={t('Rest')} stackId="a" fill={isDark ? '#374151' : '#e5e7eb'} radius={[0, 4, 4, 0]} />
+                  <ReferenceLine x={leagueAvgTop3} stroke={isDark ? '#9ca3af' : '#6b7280'} strokeDasharray="3 3" label={{ value: `${t('Avg')}: ${leagueAvgTop3.toFixed(0)}%`, position: 'top', fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className={`${card} p-4`}>
+            <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Spending Efficiency')} — {t('Gini vs Cost/WS')}</h3>
+            <div className="h-[350px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                  <XAxis type="number" dataKey="gini" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Gini" domain={['auto', 'auto']} tickFormatter={(v: number) => v.toFixed(2)} label={{ value: t('Gini (Concentration)'), position: 'insideBottom', offset: -5, fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                  <YAxis type="number" dataKey="costPerWs" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Cost/WS" tickFormatter={(v: number) => fmt(v)} label={{ value: t('Cost/WS (Efficiency)'), angle: -90, position: 'insideLeft', offset: 10, fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                  <Tooltip content={({ payload }) => {
+                    if (!payload || !payload.length) return null;
+                    const d = payload[0]?.payload;
+                    return d ? (
+                      <div style={tipStyle as any} className="p-2">
+                        <p className="font-semibold text-xs">{d.team}</p>
+                        <p className="text-[10px]">{t('Gini')}: {d.gini.toFixed(3)}</p>
+                        <p className="text-[10px]">{t('Cost/WS')}: {fmt(d.costPerWs)}</p>
+                        <p className="text-[10px]">{t('Top 3 Share')}: {d.top3Share.toFixed(0)}%</p>
+                        <p className="text-[10px]">{t('Net Paid')}: {fmt(d.netPaid)} | WS: {d.ws.toFixed(1)}</p>
+                      </div>
+                    ) : null;
+                  }} />
+                  <Scatter data={efficiencyScatter}>
+                    {efficiencyScatter.map((e, i) => (
+                      <Cell key={i} fill={e.isVarese ? VARESE_COLOR : (isDark ? '#6366f1' : '#4f46e5')} r={e.isVarese ? 7 : 5} opacity={e.isVarese ? 1 : 0.7} />
+                    ))}
+                  </Scatter>
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
+            <p className={`text-[10px] mt-1 ${subtext}`}>{t('Bottom-left = spread spending + efficient · Top-right = concentrated + expensive')}</p>
+          </div>
+        </div>
+
+        <div className={`${card} p-4`}>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Top 3 Salary Share vs Top 3 WS Share')}</h3>
+          <div className="h-[350px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                <XAxis type="number" dataKey="top3Share" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => `${v.toFixed(0)}%`} label={{ value: t('Top 3 Salary Share %'), position: 'insideBottom', offset: -5, fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                <YAxis type="number" dataKey="top3WsShare" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => `${v.toFixed(0)}%`} label={{ value: t('Top 3 WS Share %'), angle: -90, position: 'insideLeft', offset: 10, fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                <Tooltip content={({ payload }) => {
+                  if (!payload || !payload.length) return null;
+                  const d = payload[0]?.payload;
+                  return d ? (
+                    <div style={tipStyle as any} className="p-2">
+                      <p className="font-semibold text-xs">{d.team}</p>
+                      <p className="text-[10px]">{t('Salary Share (Top 3)')}: {d.top3Share.toFixed(1)}%</p>
+                      <p className="text-[10px]">{t('WS Share (Top 3)')}: {d.top3WsShare.toFixed(1)}%</p>
+                      <p className="text-[10px]">{t('ROI')}: {d.top3WsShare > 0 && d.top3Share > 0 ? (d.top3WsShare / d.top3Share).toFixed(2) + 'x' : '—'}</p>
+                    </div>
+                  ) : null;
+                }} />
+                <ReferenceLine segment={[{ x: 0, y: 0 }, { x: 100, y: 100 }]} stroke={isDark ? '#4b5563' : '#9ca3af'} strokeDasharray="5 5" />
+                <Scatter data={teamSpendingAnalysis.filter(t => t.top3Share > 0)}>
+                  {teamSpendingAnalysis.filter(t => t.top3Share > 0).map((e, i) => (
+                    <Cell key={i} fill={e.isVarese ? VARESE_COLOR : (isDark ? '#10b981' : '#059669')} r={e.isVarese ? 7 : 5} opacity={e.isVarese ? 1 : 0.7} />
+                  ))}
+                </Scatter>
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+          <p className={`text-[10px] mt-1 ${subtext}`}>{t('Above the line = top players outperform their salary share · Below = overpaid stars')}</p>
+        </div>
+
+        <div className={`${card} p-4 overflow-x-auto`}>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Spending Distribution Table')}</h3>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                <th className={`py-2 px-2 text-left font-semibold ${subtext}`}>#</th>
+                <th className={`py-2 px-2 text-left font-semibold ${subtext}`}>{t('Team')}</th>
+                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Net Paid')}</th>
+                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Roster')}</th>
+                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Gini')}</th>
+                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Top 1')}</th>
+                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Top 3')}</th>
+                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Top 5')}</th>
+                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Max/Avg')}</th>
+                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>{t('Cost/WS')}</th>
+                <th className={`py-2 px-2 text-right font-semibold ${subtext}`}>WS</th>
               </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
+            </thead>
+            <tbody>
+              {byGini.map((tm, i) => (
+                <tr key={tm.fullTeam} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'} ${tm.isVarese ? (isDark ? 'bg-red-950/20' : 'bg-red-50/50') : ''}`}>
+                  <td className={`py-2 px-2 ${subtext}`}>{i + 1}</td>
+                  <td className={`py-2 px-2 font-medium whitespace-nowrap ${tm.isVarese ? 'text-red-500 font-bold' : isDark ? 'text-gray-200' : 'text-gray-800'}`}>{tm.team}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{fmt(tm.netPaid)}</td>
+                  <td className={`py-2 px-2 text-right ${subtext}`}>{tm.rosterSize}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums font-bold ${tm.gini > leagueAvgGini ? (isDark ? 'text-amber-400' : 'text-amber-600') : (isDark ? 'text-blue-400' : 'text-blue-600')}`}>{tm.gini.toFixed(3)}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.top1Share.toFixed(0)}%</td>
+                  <td className={`py-2 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{tm.top3Share.toFixed(0)}%</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.top5Share.toFixed(0)}%</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.maxAvgRatio.toFixed(1)}x</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{tm.costPerWs > 0 ? fmt(tm.costPerWs) : '—'}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{tm.ws.toFixed(1)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
 
   const renderPlayers = () => (
     <div className="space-y-3">
@@ -467,7 +624,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
               <SortHeader label={t('MIN')} sortId="min_play" />
               <SortHeader label="WS" sortId="ws" />
               <SortHeader label="WS/40" sortId="ws_40" />
-              <SortHeader label="WS/€M" sortId="ws_per_million" />
+              <SortHeader label={t('Cost/WS')} sortId="cost_per_ws" />
               <th className={`py-2 px-2 text-left font-semibold ${subtext}`}>{t('NAT')}</th>
               <th className={`py-2 px-2 text-left font-semibold ${subtext}`}>{t('Status')}</th>
             </tr>
@@ -484,7 +641,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                   <td className={`py-1.5 px-2 text-right tabular-nums ${subtext}`}>{p.min_play}</td>
                   <td className={`py-1.5 px-2 text-right tabular-nums ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{p.ws.toFixed(2)}</td>
                   <td className={`py-1.5 px-2 text-right tabular-nums ${subtext}`}>{p.ws_40 !== null ? p.ws_40.toFixed(3) : '—'}</td>
-                  <td className={`py-1.5 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{p.ws_per_million > 0 ? p.ws_per_million.toFixed(1) : '—'}</td>
+                  <td className={`py-1.5 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{p.ws > 0 && p.net_paid > 0 ? fmt(p.net_paid / p.ws) : '—'}</td>
                   <td className={`py-1.5 px-2 ${subtext}`}>{p.nationality || '—'}</td>
                   <td className={`py-1.5 px-2 whitespace-nowrap ${subtext}`}>
                     {p.situation ? <span className={`text-[9px] px-1.5 py-0.5 rounded ${p.situation.includes('Cut') || p.situation.includes('Buyout') || p.situation.includes('Released') ? 'bg-red-500/10 text-red-400' : p.situation.includes('Mid-season') ? 'bg-blue-500/10 text-blue-400' : p.situation.includes('Youth') ? 'bg-purple-500/10 text-purple-400' : 'bg-gray-500/10 text-gray-400'}`}>{p.situation}</span> : ''}
