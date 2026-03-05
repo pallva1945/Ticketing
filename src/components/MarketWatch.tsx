@@ -218,6 +218,59 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     return wsRankChart.reduce((s, p) => s + p.netPaid, 0) / wsRankChart.length;
   }, [wsRankChart]);
 
+  const teamSpendingAnalysis = useMemo(() => {
+    return teamStats.map(tm => {
+      const salaries = tm.players.map(p => p.net_paid).filter(s => s > 0).sort((a, b) => b - a);
+      const n = salaries.length;
+      const top1Share = n > 0 && tm.netPaid > 0 ? (salaries[0] / tm.netPaid) * 100 : 0;
+      const top3Share = n >= 3 && tm.netPaid > 0 ? (salaries.slice(0, 3).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
+      const top5Share = n >= 5 && tm.netPaid > 0 ? (salaries.slice(0, 5).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
+      const maxSalary = salaries[0] || 0;
+      const medianSalary = n > 0 ? salaries[Math.floor(n / 2)] : 0;
+      const avgSalary = n > 0 ? salaries.reduce((s, v) => s + v, 0) / n : 0;
+      const maxAvgRatio = avgSalary > 0 ? maxSalary / avgSalary : 0;
+      let gini = 0;
+      if (n > 1) {
+        let sumDiff = 0;
+        for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) sumDiff += Math.abs(salaries[i] - salaries[j]);
+        const mean = salaries.reduce((s, v) => s + v, 0) / n;
+        gini = mean > 0 ? sumDiff / (2 * n * n * mean) : 0;
+      }
+      const costPerWs = tm.ws > 0 ? tm.netPaid / tm.ws : 0;
+      const top3Paid = tm.players.slice().sort((a, b) => b.net_paid - a.net_paid).slice(0, 3);
+      const top3WsShare = tm.ws > 0 ? (top3Paid.reduce((s, p) => s + p.ws, 0) / tm.ws) * 100 : 0;
+      return {
+        team: shortName(tm.team),
+        fullTeam: tm.team,
+        netPaid: tm.netPaid,
+        payroll: tm.payroll,
+        ws: tm.ws,
+        rosterSize: tm.rosterSize,
+        top1Share,
+        top3Share,
+        top5Share,
+        maxSalary,
+        medianSalary,
+        avgSalary,
+        maxAvgRatio,
+        gini,
+        costPerWs,
+        top3WsShare,
+        isVarese: tm.team.includes('Varese'),
+      };
+    });
+  }, [teamStats]);
+
+  const leagueAvgGini = useMemo(() => {
+    const ginis = teamSpendingAnalysis.filter(t => t.gini > 0);
+    return ginis.length > 0 ? ginis.reduce((s, t) => s + t.gini, 0) / ginis.length : 0;
+  }, [teamSpendingAnalysis]);
+
+  const leagueAvgTop3 = useMemo(() => {
+    const tops = teamSpendingAnalysis.filter(t => t.top3Share > 0);
+    return tops.length > 0 ? tops.reduce((s, t) => s + t.top3Share, 0) / tops.length : 0;
+  }, [teamSpendingAnalysis]);
+
   if (loading) {
     return (
       <div className={`fixed inset-0 flex items-center justify-center ${isDark ? 'bg-gray-950' : 'bg-gray-50'}`}>
@@ -388,60 +441,6 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       </div>
     </div>
   );
-
-  const teamSpendingAnalysis = useMemo(() => {
-    return teamStats.map(tm => {
-      const salaries = tm.players.map(p => p.net_paid).filter(s => s > 0).sort((a, b) => b - a);
-      const n = salaries.length;
-      const top1Share = n > 0 && tm.netPaid > 0 ? (salaries[0] / tm.netPaid) * 100 : 0;
-      const top3Share = n >= 3 && tm.netPaid > 0 ? (salaries.slice(0, 3).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
-      const top5Share = n >= 5 && tm.netPaid > 0 ? (salaries.slice(0, 5).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
-      const maxSalary = salaries[0] || 0;
-      const medianSalary = n > 0 ? salaries[Math.floor(n / 2)] : 0;
-      const avgSalary = n > 0 ? salaries.reduce((s, v) => s + v, 0) / n : 0;
-      const maxAvgRatio = avgSalary > 0 ? maxSalary / avgSalary : 0;
-      let gini = 0;
-      if (n > 1) {
-        let sumDiff = 0;
-        for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) sumDiff += Math.abs(salaries[i] - salaries[j]);
-        const mean = salaries.reduce((s, v) => s + v, 0) / n;
-        gini = mean > 0 ? sumDiff / (2 * n * n * mean) : 0;
-      }
-      const costPerWs = tm.ws > 0 ? tm.netPaid / tm.ws : 0;
-      const wsPlayers = tm.players.filter(p => p.ws > 0 && p.net_paid > 0);
-      const top3Paid = tm.players.slice().sort((a, b) => b.net_paid - a.net_paid).slice(0, 3);
-      const top3WsShare = tm.ws > 0 ? (top3Paid.reduce((s, p) => s + p.ws, 0) / tm.ws) * 100 : 0;
-      return {
-        team: shortName(tm.team),
-        fullTeam: tm.team,
-        netPaid: tm.netPaid,
-        payroll: tm.payroll,
-        ws: tm.ws,
-        rosterSize: tm.rosterSize,
-        top1Share,
-        top3Share,
-        top5Share,
-        maxSalary,
-        medianSalary,
-        avgSalary,
-        maxAvgRatio,
-        gini,
-        costPerWs,
-        top3WsShare,
-        isVarese: tm.team.includes('Varese'),
-      };
-    });
-  }, [teamStats]);
-
-  const leagueAvgGini = useMemo(() => {
-    const ginis = teamSpendingAnalysis.filter(t => t.gini > 0);
-    return ginis.length > 0 ? ginis.reduce((s, t) => s + t.gini, 0) / ginis.length : 0;
-  }, [teamSpendingAnalysis]);
-
-  const leagueAvgTop3 = useMemo(() => {
-    const tops = teamSpendingAnalysis.filter(t => t.top3Share > 0);
-    return tops.length > 0 ? tops.reduce((s, t) => s + t.top3Share, 0) / tops.length : 0;
-  }, [teamSpendingAnalysis]);
 
   const renderTeams = () => {
     const byGini = [...teamSpendingAnalysis].sort((a, b) => b.gini - a.gini);
