@@ -8,7 +8,7 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV, fetchVBDataFromBigQuery, fetchVBProfilesFromBigQuery, fetchVBProspectsFromBigQuery, fetchVBIndGamesFromBigQuery, fetchVBTeamGamesFromBigQuery } from "../src/services/bigQueryService";
+import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQuery, fetchCRMFromBigQuery, fetchSponsorshipFromBigQuery, convertBigQueryRowsToSponsorCSV, fetchGameDayFromBigQuery, convertBigQueryRowsToGameDayCSV, fetchVBDataFromBigQuery, fetchVBProfilesFromBigQuery, fetchVBProspectsFromBigQuery, fetchVBIndGamesFromBigQuery, fetchVBTeamGamesFromBigQuery, fetchEuropeanMarketFromBigQuery } from "../src/services/bigQueryService";
 import { initDatabase, upsertUser, getUserByEmail, getUserPermissions, createAccessRequest, getAccessRequestByEmail, saveCostCenterData, getLatestCostCenterData, getSetting, setSetting } from "./db.js";
 import { getUncachableGoogleSheetClient } from "./googleSheets.js";
 import { registerAdminRoutes } from "./adminRoutes.js";
@@ -1840,12 +1840,33 @@ app.get("/api/vb/team-games", async (_req, res) => {
   }
 });
 
+let marketCache: any[] | null = null;
+let marketCacheTime = 0;
+const MARKET_CACHE_TTL = 600000;
+
+app.get("/api/market", async (_req, res) => {
+  try {
+    if (marketCache && Date.now() - marketCacheTime < MARKET_CACHE_TTL) {
+      return res.json({ success: true, data: marketCache });
+    }
+    const result = await fetchEuropeanMarketFromBigQuery();
+    if (result.success) {
+      marketCache = result.data;
+      marketCacheTime = Date.now();
+    }
+    res.json(result);
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 app.post("/api/cache/clear", (req, res) => {
   ticketingCache = null;
   crmCache = null;
   sponsorshipCache = null;
   gameDayCache = null;
   shopifyCache = null;
+  marketCache = null;
   console.log('All server caches cleared by user request');
   res.json({ success: true, message: 'All caches cleared' });
 });

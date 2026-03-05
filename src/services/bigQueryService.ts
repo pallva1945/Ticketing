@@ -1205,3 +1205,55 @@ export function convertBigQueryRowsToCSV(rows: any[]): string {
   
   return [headerRow, ...dataRows].join('\n');
 }
+
+const EUROPEAN_MARKET_TABLE = 'ticketing-migration.ticketing_migration.european_market';
+
+export interface MarketPlayer {
+  season: string;
+  league: string;
+  competition_team_id: number;
+  team_name: string;
+  player_id: string;
+  player: string;
+  min_play: number;
+  ws: number;
+  ws_40: number | null;
+  tm_min_rk: number;
+  tm_ws_rk: number;
+  tm_ys_rk: number;
+  tm_np_rk: number;
+  nationality: string | null;
+  ita: number | null;
+  visa: number | null;
+  youth: number | null;
+  yearly_salary_usd: number | null;
+  yearly_salary_eur: number | null;
+  yearly_salary_norm: number;
+  net_paid: number;
+  source: string | null;
+  varese_source: string | null;
+  months: number | null;
+  situation: string | null;
+  confidence: number | null;
+}
+
+export async function fetchEuropeanMarketFromBigQuery(): Promise<{ success: boolean; data: MarketPlayer[] }> {
+  try {
+    const client = getBigQueryClient();
+    const query = `SELECT * FROM \`${EUROPEAN_MARKET_TABLE}\` ORDER BY season DESC, team_name, tm_ys_rk`;
+    const [rows] = await client.query({ query });
+    const data = rows.map((r: any) => ({
+      ...r,
+      min_play: r.min_play || 0,
+      ws: r.ws || 0,
+      ws_40: r.ws_40 != null ? parseFloat(r.ws_40) : null,
+      yearly_salary_norm: r.yearly_salary_norm || 0,
+      net_paid: r.net_paid || 0,
+    }));
+    console.log(`Fetched ${data.length} european market records from BigQuery`);
+    return { success: true, data };
+  } catch (error: any) {
+    console.error('European Market BigQuery fetch error:', error.message);
+    return { success: false, data: [] };
+  }
+}

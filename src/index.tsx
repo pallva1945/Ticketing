@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { WelcomePage } from './components/WelcomePage';
 import { InternalHub, PVUsPage, BOpsHub } from './components/InternalHub';
+import { MarketWatch } from './components/MarketWatch';
 import { VBHub, VBUsPage } from './components/VBHub';
 import { FinancialCenter } from './components/FinancialCenter';
 import { CostCenter } from './components/CostCenter';
@@ -146,7 +147,11 @@ const Root: React.FC = () => {
   }
 
   if (currentView === 'bops' && canAccessPage('hub')) {
-    return <BOpsHub onBack={handleBackToHub} onHome={handleBackToWelcome} />;
+    return <BOpsHub onBack={handleBackToHub} onHome={handleBackToWelcome} onNavigate={handleNavigate} />;
+  }
+
+  if (currentView === 'market-watch' && canAccessPage('hub')) {
+    return <MarketWatch onBack={() => handleNavigate('bops')} onHome={handleBackToWelcome} />;
   }
 
   if (currentView === 'projects') {

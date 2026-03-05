@@ -900,7 +900,7 @@ export const PVUsPage: React.FC<PVUsPageProps> = ({ onBack, onHome }) => {
   );
 };
 
-export const BOpsHub: React.FC<{ onBack: () => void; onHome: () => void }> = ({ onBack, onHome }) => {
+export const BOpsHub: React.FC<{ onBack: () => void; onHome: () => void; onNavigate: (view: string) => void }> = ({ onBack, onHome, onNavigate }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
   const isDark = theme === 'dark';
@@ -930,8 +930,8 @@ export const BOpsHub: React.FC<{ onBack: () => void; onHome: () => void }> = ({ 
       desc: t('Player market intelligence & scouting insights'),
       icon: Eye,
       color: 'blue',
-      action: null as (() => void) | null,
-      actionLabel: t('Coming Soon'),
+      action: () => onNavigate('market-watch'),
+      actionLabel: t('Enter'),
       external: false,
     },
   ];

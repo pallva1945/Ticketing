@@ -54,6 +54,7 @@ The application uses a modern web stack: React 18 and TypeScript for the fronten
     *   Includes a `Skill Score (Talent)` metric, NBA-benchmarked, derived from game stats (3PT%, FT%, AST/TO, USG%, Intensity, Win Shares per game), which feeds into the PVB Potential Score.
     *   Data fetched via `/api/vb/ind-games` with a 10-minute server-side cache.
 *   **Community Intelligence Hub**: Integrates Shopify order history for behavioral insights, including RFM segmentation, gateway analysis, bundle analysis, and cohort retention heatmaps.
+*   **Market Watch (BOps)**: LBA player market intelligence dashboard sourced from BigQuery `european_market` table (954 rows, 4 seasons, 41 teams). Five tabs: Overview (league stats, payroll charts, salary distribution, payroll trends), Teams (comparative payroll/WS/roster table), Players (searchable/sortable/filterable player database), Value Map (salary vs performance scatter, best/worst value rankings by WS/€M), Varese (detailed roster breakdown with salary/performance analysis). Route: `#market-watch`, API: `/api/market` with 10-min cache. Component: `src/components/MarketWatch.tsx`.
 
 ## External Dependencies
 *   **Firebase**: Primary data source for ticketing, cloud storage.
