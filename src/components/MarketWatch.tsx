@@ -33,6 +33,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   const [wsRank, setWsRank] = useState<number>(1);
   const [teamSortKey, setTeamSortKey] = useState<string>('gini');
   const [teamSortDir, setTeamSortDir] = useState<'asc' | 'desc'>('desc');
+  const [wsSortKey, setWsSortKey] = useState<string>('wsGini');
+  const [wsSortDir, setWsSortDir] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     fetch('/api/market')
@@ -242,6 +244,23 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       const costPerWs = tm.ws > 0 ? tm.netPaid / tm.ws : 0;
       const top3Paid = tm.players.slice().sort((a, b) => b.net_paid - a.net_paid).slice(0, 3);
       const top3WsShare = tm.ws > 0 ? (top3Paid.reduce((s, p) => s + p.ws, 0) / tm.ws) * 100 : 0;
+      const wsValues = tm.players.map(p => p.ws).filter(w => w > 0).sort((a, b) => b - a);
+      const wn = wsValues.length;
+      const totalWs = wn > 0 ? wsValues.reduce((s, v) => s + v, 0) : 0;
+      const wsTop1Share = wn > 0 && totalWs > 0 ? (wsValues[0] / totalWs) * 100 : 0;
+      const wsTop3Share = wn >= 3 && totalWs > 0 ? (wsValues.slice(0, 3).reduce((s, v) => s + v, 0) / totalWs) * 100 : 0;
+      const wsTop5Share = wn >= 5 && totalWs > 0 ? (wsValues.slice(0, 5).reduce((s, v) => s + v, 0) / totalWs) * 100 : 0;
+      const wsTop8Share = wn >= 8 && totalWs > 0 ? (wsValues.slice(0, 8).reduce((s, v) => s + v, 0) / totalWs) * 100 : 0;
+      const wsMax = wsValues[0] || 0;
+      const wsAvg = wn > 0 ? totalWs / wn : 0;
+      const wsMaxAvgRatio = wsAvg > 0 ? wsMax / wsAvg : 0;
+      let wsGini = 0;
+      if (wn > 1) {
+        let wsDiff = 0;
+        for (let i = 0; i < wn; i++) for (let j = 0; j < wn; j++) wsDiff += Math.abs(wsValues[i] - wsValues[j]);
+        const wsMean = totalWs / wn;
+        wsGini = wsMean > 0 ? wsDiff / (2 * wn * wn * wsMean) : 0;
+      }
       return {
         team: shortName(tm.team),
         fullTeam: tm.team,
@@ -260,6 +279,12 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         gini,
         costPerWs,
         top3WsShare,
+        wsGini,
+        wsTop1Share,
+        wsTop3Share,
+        wsTop5Share,
+        wsTop8Share,
+        wsMaxAvgRatio,
         isVarese: tm.team.includes('Varese'),
       };
     });
@@ -283,6 +308,20 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       return teamSortDir === 'asc' ? aVal - bVal : bVal - aVal;
     });
   }, [teamSpendingAnalysis, teamSortKey, teamSortDir]);
+
+  const sortedWsData = useMemo(() => {
+    return [...teamSpendingAnalysis].sort((a, b) => {
+      const aVal = (a as any)[wsSortKey] ?? 0;
+      const bVal = (b as any)[wsSortKey] ?? 0;
+      if (typeof aVal === 'string') return wsSortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      return wsSortDir === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+  }, [teamSpendingAnalysis, wsSortKey, wsSortDir]);
+
+  const leagueAvgWsGini = useMemo(() => {
+    const ginis = teamSpendingAnalysis.filter(t => t.wsGini > 0);
+    return ginis.length > 0 ? ginis.reduce((s, t) => s + t.wsGini, 0) / ginis.length : 0;
+  }, [teamSpendingAnalysis]);
 
   if (loading) {
     return (
@@ -460,6 +499,11 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     else { setTeamSortKey(key); setTeamSortDir('desc'); }
   };
 
+  const handleWsSort = (key: string) => {
+    if (wsSortKey === key) setWsSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setWsSortKey(key); setWsSortDir('desc'); }
+  };
+
   const renderTeams = () => {
     const efficiencyScatter = teamSpendingAnalysis.filter(t => t.netPaid > 0 && t.ws > 0);
     const concentrationChart = [...teamSpendingAnalysis].sort((a, b) => b.top3Share - a.top3Share).map(t => ({
@@ -566,36 +610,6 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           <p className={`text-[10px] mt-1 ${subtext}`}>{t('Above the line = top players outperform their salary share · Below = overpaid stars')}</p>
         </div>
 
-        <div className={`${card} p-4`}>
-          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Win Shares Distribution')}</h3>
-          <div className="h-[380px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={[...teamSpendingAnalysis].sort((a, b) => b.ws - a.ws).map(t => ({ team: t.team, ws: parseFloat(t.ws.toFixed(1)), costPerWs: t.costPerWs, netPaid: t.netPaid, isVarese: t.isVarese }))} layout="vertical" margin={{ left: 0, right: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                <XAxis type="number" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                <YAxis type="category" dataKey="team" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} width={80} />
-                <Tooltip content={({ payload }) => {
-                  if (!payload || !payload.length) return null;
-                  const d = payload[0]?.payload;
-                  return d ? (
-                    <div style={tipStyle as any} className="p-2">
-                      <p className="font-semibold text-xs">{d.team}</p>
-                      <p className="text-[10px]">WS: {d.ws}</p>
-                      <p className="text-[10px]">{t('Net Paid')}: {fmt(d.netPaid)}</p>
-                      <p className="text-[10px]">{t('Cost/WS')}: {d.costPerWs > 0 ? fmt(d.costPerWs) : '—'}</p>
-                    </div>
-                  ) : null;
-                }} />
-                <Bar dataKey="ws" name="WS" radius={[0, 4, 4, 0]} barSize={14}>
-                  {[...teamSpendingAnalysis].sort((a, b) => b.ws - a.ws).map((e, i) => (
-                    <Cell key={i} fill={e.isVarese ? VARESE_COLOR : (isDark ? '#3b82f6' : '#2563eb')} opacity={e.isVarese ? 1 : 0.7} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
         <div className={`${card} p-4 overflow-x-auto`}>
           <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Spending Distribution Table')}</h3>
           <table className="w-full text-xs">
@@ -636,6 +650,50 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.maxAvgRatio.toFixed(1)}x</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{tm.costPerWs > 0 ? fmt(tm.costPerWs) : '—'}</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{tm.ws.toFixed(1)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className={`${card} p-4 overflow-x-auto`}>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Win Share Distribution Table')}</h3>
+          <table className="w-full text-xs">
+            <thead>
+              <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                <th className={`py-2 px-2 text-left font-semibold ${subtext}`}>#</th>
+                {[
+                  { key: 'team', label: t('Team'), align: 'left' },
+                  { key: 'ws', label: 'WS' },
+                  { key: 'wsGini', label: t('Gini') },
+                  { key: 'wsTop1Share', label: t('Top 1') },
+                  { key: 'wsTop3Share', label: t('Top 3') },
+                  { key: 'wsTop5Share', label: t('Top 5') },
+                  { key: 'wsTop8Share', label: t('Top 8') },
+                  { key: 'wsMaxAvgRatio', label: t('Max/Avg') },
+                  { key: 'costPerWs', label: t('Cost/WS') },
+                  { key: 'netPaid', label: t('Net Paid') },
+                ].map(col => (
+                  <th key={col.key} className={`py-2 px-2 ${col.align === 'left' ? 'text-left' : 'text-right'} font-semibold cursor-pointer select-none whitespace-nowrap ${subtext}`} onClick={() => handleWsSort(col.key)}>
+                    <span className="inline-flex items-center gap-1">{col.label} {wsSortKey === col.key && <ArrowUpDown size={10} className={wsSortDir === 'asc' ? 'rotate-180' : ''} />}</span>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {sortedWsData.map((tm, i) => (
+                <tr key={tm.fullTeam} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'} ${tm.isVarese ? (isDark ? 'bg-red-950/20' : 'bg-red-50/50') : ''}`}>
+                  <td className={`py-2 px-2 ${subtext}`}>{i + 1}</td>
+                  <td className={`py-2 px-2 font-medium whitespace-nowrap ${tm.isVarese ? 'text-red-500 font-bold' : isDark ? 'text-gray-200' : 'text-gray-800'}`}>{tm.team}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{tm.ws.toFixed(1)}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums font-bold ${tm.wsGini > leagueAvgWsGini ? (isDark ? 'text-amber-400' : 'text-amber-600') : (isDark ? 'text-blue-400' : 'text-blue-600')}`}>{tm.wsGini.toFixed(3)}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.wsTop1Share.toFixed(0)}%</td>
+                  <td className={`py-2 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{tm.wsTop3Share.toFixed(0)}%</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.wsTop5Share.toFixed(0)}%</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.wsTop8Share > 0 ? `${tm.wsTop8Share.toFixed(0)}%` : '—'}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.wsMaxAvgRatio.toFixed(1)}x</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{tm.costPerWs > 0 ? fmt(tm.costPerWs) : '—'}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{fmt(tm.netPaid)}</td>
                 </tr>
               ))}
             </tbody>
