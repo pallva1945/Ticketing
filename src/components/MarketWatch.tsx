@@ -155,7 +155,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       'Vanoli Basket Cremona': 'Cremona',
       'Acqua San Bernardo Cantu': 'Cantù',
       'Old Wild West Udine': 'Udine',
-      'UNAHOTELS Reggio Emilia': 'Reggio Emilia',
+      'UNAHOTELS Reggio Emilia': 'Reggio',
       'Trapani Shark': 'Trapani',
       'Napoli Basket': 'Napoli',
     };
