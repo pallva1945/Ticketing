@@ -566,6 +566,36 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           <p className={`text-[10px] mt-1 ${subtext}`}>{t('Above the line = top players outperform their salary share · Below = overpaid stars')}</p>
         </div>
 
+        <div className={`${card} p-4`}>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Win Shares Distribution')}</h3>
+          <div className="h-[380px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={[...teamSpendingAnalysis].sort((a, b) => b.ws - a.ws).map(t => ({ team: t.team, ws: parseFloat(t.ws.toFixed(1)), costPerWs: t.costPerWs, netPaid: t.netPaid, isVarese: t.isVarese }))} layout="vertical" margin={{ left: 0, right: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                <XAxis type="number" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                <YAxis type="category" dataKey="team" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} width={80} />
+                <Tooltip content={({ payload }) => {
+                  if (!payload || !payload.length) return null;
+                  const d = payload[0]?.payload;
+                  return d ? (
+                    <div style={tipStyle as any} className="p-2">
+                      <p className="font-semibold text-xs">{d.team}</p>
+                      <p className="text-[10px]">WS: {d.ws}</p>
+                      <p className="text-[10px]">{t('Net Paid')}: {fmt(d.netPaid)}</p>
+                      <p className="text-[10px]">{t('Cost/WS')}: {d.costPerWs > 0 ? fmt(d.costPerWs) : '—'}</p>
+                    </div>
+                  ) : null;
+                }} />
+                <Bar dataKey="ws" name="WS" radius={[0, 4, 4, 0]} barSize={14}>
+                  {[...teamSpendingAnalysis].sort((a, b) => b.ws - a.ws).map((e, i) => (
+                    <Cell key={i} fill={e.isVarese ? VARESE_COLOR : (isDark ? '#3b82f6' : '#2563eb')} opacity={e.isVarese ? 1 : 0.7} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         <div className={`${card} p-4 overflow-x-auto`}>
           <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Spending Distribution Table')}</h3>
           <table className="w-full text-xs">
