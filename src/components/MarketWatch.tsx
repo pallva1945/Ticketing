@@ -584,8 +584,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                <XAxis type="number" dataKey="top3Share" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => `${v.toFixed(0)}%`} label={{ value: t('Top 3 Salary Share %'), position: 'insideBottom', offset: -5, fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                <YAxis type="number" dataKey="top3WsShare" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => `${v.toFixed(0)}%`} label={{ value: t('Top 3 WS Share %'), angle: -90, position: 'insideLeft', offset: 10, fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                <XAxis type="number" dataKey="top3Share" domain={['dataMin - 5', 'dataMax + 5']} tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => `${v.toFixed(0)}%`} label={{ value: t('Top 3 Salary Share %'), position: 'insideBottom', offset: -5, fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                <YAxis type="number" dataKey="top3WsShare" domain={['dataMin - 5', 'dataMax + 5']} tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => `${v.toFixed(0)}%`} label={{ value: t('Top 3 WS Share %'), angle: -90, position: 'insideLeft', offset: 10, fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                 <Tooltip content={({ payload }) => {
                   if (!payload || !payload.length) return null;
                   const d = payload[0]?.payload;
@@ -598,7 +598,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                     </div>
                   ) : null;
                 }} />
-                <ReferenceLine segment={[{ x: 0, y: 0 }, { x: 100, y: 100 }]} stroke={isDark ? '#4b5563' : '#9ca3af'} strokeDasharray="5 5" />
+                <ReferenceLine segment={[{ x: 20, y: 20 }, { x: 80, y: 80 }]} stroke={isDark ? '#4b5563' : '#9ca3af'} strokeDasharray="5 5" />
                 <Scatter data={teamSpendingAnalysis.filter(t => t.top3Share > 0)}>
                   {teamSpendingAnalysis.filter(t => t.top3Share > 0).map((e, i) => (
                     <Cell key={i} fill={e.isVarese ? VARESE_COLOR : (isDark ? '#10b981' : '#059669')} r={e.isVarese ? 7 : 5} opacity={e.isVarese ? 1 : 0.7} />
