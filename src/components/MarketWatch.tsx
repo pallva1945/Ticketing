@@ -134,20 +134,60 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   const tipStyle = { borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' };
 
   const VARESE_COLOR = '#E30613';
+  const shortName = (name: string) => {
+    const map: Record<string, string> = {
+      'EA7 Emporio Armani Milano': 'Milano',
+      'Virtus Segafredo Bologna': 'Bologna',
+      'Umana Reyer Venezia': 'Venezia',
+      'Openjobmetis Varese': 'Varese',
+      'Germani Brescia': 'Brescia',
+      'Bertram Derthona Tortona': 'Tortona',
+      'Nutribullet Treviso Basket': 'Treviso',
+      'Banco di Sardegna Sassari': 'Sassari',
+      'Dolomiti Energia Trentino': 'Trentino',
+      'Pallacanestro Trieste': 'Trieste',
+      'Vanoli Basket Cremona': 'Cremona',
+      'Acqua San Bernardo Cantu': 'Cantù',
+      'Old Wild West Udine': 'Udine',
+      'UNAHOTELS Reggio Emilia': 'Reggio Emilia',
+      'Trapani Shark': 'Trapani',
+      'Napoli Basket': 'Napoli',
+    };
+    return map[name] || name;
+  };
   const teamPayrollChart = useMemo(() => teamStats.map(t => ({
-    team: t.team.replace(/^(EA7 Emporio Armani |Virtus Segafredo |Umana Reyer |Openjobmetis |Germani |Bertram Derthona |Nutribullet |Banco di Sardegna |Dolomiti Energia |Pallacanestro |Vanoli Basket |Acqua San Bernardo |Old Wild West |UNAHOTELS )/, '').replace(/ Basket$/, ''),
+    team: shortName(t.team),
     payroll: t.payroll,
     isVarese: t.team.includes('Varese'),
   })), [teamStats]);
 
   const scatterData = useMemo(() => {
     return teamStats.map(t => ({
-      team: t.team.replace(/^(EA7 Emporio Armani |Virtus Segafredo |Umana Reyer |Openjobmetis |Germani |Bertram Derthona |Nutribullet |Banco di Sardegna |Dolomiti Energia |Pallacanestro |Vanoli Basket |Acqua San Bernardo |Old Wild West |UNAHOTELS )/, '').replace(/ Basket$/, ''),
-      payroll: t.payroll,
+      team: shortName(t.team),
+      netPaid: t.netPaid,
       ws: t.ws,
       isVarese: t.team.includes('Varese'),
     }));
   }, [teamStats]);
+
+  const regression = useMemo(() => {
+    const pts = scatterData.filter(d => d.netPaid > 0 && d.ws > 0);
+    if (pts.length < 2) return null;
+    const n = pts.length;
+    const sumX = pts.reduce((s, p) => s + p.netPaid, 0);
+    const sumY = pts.reduce((s, p) => s + p.ws, 0);
+    const sumXY = pts.reduce((s, p) => s + p.netPaid * p.ws, 0);
+    const sumX2 = pts.reduce((s, p) => s + p.netPaid * p.netPaid, 0);
+    const sumY2 = pts.reduce((s, p) => s + p.ws * p.ws, 0);
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+    const rNum = n * sumXY - sumX * sumY;
+    const rDen = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+    const r2 = rDen > 0 ? (rNum / rDen) ** 2 : 0;
+    const minX = Math.min(...pts.map(p => p.netPaid));
+    const maxX = Math.max(...pts.map(p => p.netPaid));
+    return { slope, intercept, r2, line: [{ netPaid: minX, ws: slope * minX + intercept }, { netPaid: maxX, ws: slope * maxX + intercept }] };
+  }, [scatterData]);
 
   const salaryDistribution = useMemo(() => {
     const brackets = [
@@ -205,12 +245,12 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={`${card} p-4`}>
           <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Team Payrolls')} — {selectedSeason}</h3>
-          <div className="h-[300px]">
+          <div style={{ height: Math.max(350, teamPayrollChart.length * 28) }}>
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={teamPayrollChart} layout="vertical" margin={{ left: 0, right: 10 }}>
+              <BarChart data={teamPayrollChart} layout="vertical" margin={{ left: 5, right: 10, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                 <XAxis type="number" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
-                <YAxis type="category" dataKey="team" tick={{ fontSize: 8, fill: isDark ? '#9ca3af' : '#6b7280' }} width={80} />
+                <YAxis type="category" dataKey="team" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} width={120} interval={0} />
                 <Tooltip contentStyle={tipStyle} formatter={(v: number) => fmtFull(v)} />
                 <Bar dataKey="payroll" radius={[0, 4, 4, 0]}>
                   {teamPayrollChart.map((e, i) => (
@@ -223,30 +263,40 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         </div>
 
         <div className={`${card} p-4`}>
-          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Payroll vs Win Shares')}</h3>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            {t('Net Paid vs Win Shares')}
+            {regression && <span className={`ml-2 font-normal ${subtext}`}>R² = {regression.r2.toFixed(3)}</span>}
+          </h3>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                <XAxis type="number" dataKey="payroll" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name="Payroll" />
+                <XAxis type="number" dataKey="netPaid" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name="Net Paid" />
                 <YAxis type="number" dataKey="ws" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Win Shares" />
-                <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => name === 'Payroll' ? fmtFull(v) : v.toFixed(2)} labelFormatter={() => ''} content={({ payload }) => {
+                <Tooltip content={({ payload }) => {
                   if (!payload || !payload.length) return null;
                   const d = payload[0]?.payload;
-                  return d ? (
+                  if (!d || d.isRegLine) return null;
+                  return (
                     <div style={tipStyle as any} className="p-2">
                       <p className="font-semibold text-xs">{d.team}</p>
-                      <p className="text-[10px]">Payroll: {fmtFull(d.payroll)}</p>
+                      <p className="text-[10px]">Net Paid: {fmtFull(d.netPaid)}</p>
                       <p className="text-[10px]">Win Shares: {d.ws.toFixed(2)}</p>
-                      <p className="text-[10px]">WS/€M: {(d.ws / (d.payroll / 1000000)).toFixed(1)}</p>
+                      {d.netPaid > 0 && <p className="text-[10px]">WS/€M (Net): {(d.ws / (d.netPaid / 1000000)).toFixed(1)}</p>}
                     </div>
-                  ) : null;
+                  );
                 }} />
-                <Scatter data={scatterData}>
+                <Scatter data={scatterData} name={t('Teams')}>
                   {scatterData.map((e, i) => (
                     <Cell key={i} fill={e.isVarese ? VARESE_COLOR : (isDark ? '#3b82f6' : '#2563eb')} r={e.isVarese ? 8 : 5} />
                   ))}
                 </Scatter>
+                {regression && (
+                  <Scatter data={regression.line.map(p => ({ ...p, isRegLine: true }))} name={t('Regression')} line={{ stroke: isDark ? '#f59e0b' : '#d97706', strokeWidth: 2, strokeDasharray: '6 3' }} fill="transparent" legendType="line">
+                    {regression.line.map((_, i) => <Cell key={i} fill="transparent" r={0} />)}
+                  </Scatter>
+                )}
+                <Legend wrapperStyle={{ fontSize: 10 }} />
               </ScatterChart>
             </ResponsiveContainer>
           </div>
@@ -380,7 +430,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
               return (
                 <tr key={`${p.player_id}-${i}`} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'} ${isV ? (isDark ? 'bg-red-950/20' : 'bg-red-50/30') : ''}`}>
                   <td className={`py-1.5 px-2 font-medium whitespace-nowrap ${isV ? 'text-red-500' : isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.player}</td>
-                  <td className={`py-1.5 px-2 whitespace-nowrap ${subtext}`}>{p.team_name.replace(/^(EA7 Emporio Armani |Virtus Segafredo |Umana Reyer |Openjobmetis |Germani |Bertram Derthona |Nutribullet |Banco di Sardegna |Dolomiti Energia |Pallacanestro |Vanoli Basket |Acqua San Bernardo |Old Wild West |UNAHOTELS )/, '')}</td>
+                  <td className={`py-1.5 px-2 whitespace-nowrap ${subtext}`}>{shortName(p.team_name)}</td>
                   <td className={`py-1.5 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{fmt(p.yearly_salary_norm)}</td>
                   <td className={`py-1.5 px-2 text-right tabular-nums ${subtext}`}>{fmt(p.net_paid)}</td>
                   <td className={`py-1.5 px-2 text-right tabular-nums ${subtext}`}>{p.min_play}</td>
@@ -405,7 +455,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       .filter(p => p.yearly_salary_norm > 10000 && p.ws > 0 && p.min_play > 50)
       .map(p => ({
         player: p.player,
-        team: p.team_name.replace(/^(EA7 Emporio Armani |Virtus Segafredo |Umana Reyer |Openjobmetis |Germani |Bertram Derthona |Nutribullet |Banco di Sardegna |Dolomiti Energia |Pallacanestro |Vanoli Basket |Acqua San Bernardo |Old Wild West |UNAHOTELS )/, '').replace(/ Basket$/, ''),
+        team: shortName(p.team_name),
         salary: p.yearly_salary_norm,
         ws: p.ws,
         ws40: p.ws_40 || 0,
