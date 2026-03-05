@@ -102,7 +102,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       const sd = data.filter(d => d.season === s && !(d.season === '2025-26' && d.team_name === 'Trapani Shark') && (!excludeOutliers || !OUTLIER_TEAMS.includes(d.team_name)));
       const teamMap = new Map<string, number>();
       sd.forEach(p => teamMap.set(p.team_name, (teamMap.get(p.team_name) || 0) + p.net_paid));
-      const payrolls = [...teamMap.values()];
+      const payrolls = [...teamMap.values()].filter(v => v > 0);
       const avg = payrolls.length > 0 ? payrolls.reduce((a, b) => a + b, 0) / payrolls.length : 0;
       const vareseNetPaid = sd.filter(p => p.team_name.includes('Varese')).reduce((s, p) => s + p.net_paid, 0);
       return { season: s, avg: Math.round(avg), varese: vareseNetPaid };
