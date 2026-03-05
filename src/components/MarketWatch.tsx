@@ -500,30 +500,31 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
   const renderEfficiency = () => {
     const effData = seasonData
-      .filter(p => p.yearly_salary_norm > 10000 && p.ws > 0 && p.min_play > 50)
+      .filter(p => p.net_paid > 0 && p.ws > 0 && p.min_play > 50)
       .map(p => ({
         player: p.player,
         team: shortName(p.team_name),
+        netPaid: p.net_paid,
         salary: p.yearly_salary_norm,
         ws: p.ws,
         ws40: p.ws_40 || 0,
-        wsPerMillion: p.ws / (p.yearly_salary_norm / 1000000),
+        costPerWs: p.net_paid / p.ws,
         isVarese: p.team_name.includes('Varese'),
         min_play: p.min_play,
       }));
 
-    const topValue = [...effData].sort((a, b) => b.wsPerMillion - a.wsPerMillion).slice(0, 15);
-    const worstValue = [...effData].sort((a, b) => a.wsPerMillion - b.wsPerMillion).slice(0, 15);
+    const bestValue = [...effData].sort((a, b) => a.costPerWs - b.costPerWs).slice(0, 15);
+    const worstValue = [...effData].sort((a, b) => b.costPerWs - a.costPerWs).slice(0, 15);
 
     return (
       <div className="space-y-5">
         <div className={`${card} p-4`}>
-          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Salary vs Performance')} <span className={`font-normal ${subtext}`}>({t('min 50 min played')})</span></h3>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Net Paid vs Performance')} <span className={`font-normal ${subtext}`}>({t('min 50 min played')})</span></h3>
           <div className="h-[350px]">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                <XAxis type="number" dataKey="salary" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name="Salary" />
+                <XAxis type="number" dataKey="netPaid" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name="Net Paid" />
                 <YAxis type="number" dataKey="ws" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Win Shares" />
                 <Tooltip content={({ payload }) => {
                   if (!payload || !payload.length) return null;
@@ -531,9 +532,9 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                   return d ? (
                     <div style={tipStyle as any} className="p-2">
                       <p className="font-semibold text-xs">{d.player} <span className="font-normal text-gray-400">({d.team})</span></p>
-                      <p className="text-[10px]">Salary: {fmtFull(d.salary)}</p>
+                      <p className="text-[10px]">Net Paid: {fmtFull(d.netPaid)}</p>
                       <p className="text-[10px]">WS: {d.ws.toFixed(2)} | WS/40: {d.ws40.toFixed(3)}</p>
-                      <p className="text-[10px]">WS/€M: {d.wsPerMillion.toFixed(1)} | MIN: {d.min_play}</p>
+                      <p className="text-[10px]">Cost/WS: {fmt(d.costPerWs)} | MIN: {d.min_play}</p>
                     </div>
                   ) : null;
                 }} />
@@ -549,27 +550,27 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className={`${card} p-4`}>
-            <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{t('Best Value')} — WS/€M</h3>
+            <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{t('Best Value')} — {t('Cost/WS')}</h3>
             <table className="w-full text-xs">
               <thead>
                 <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                   <th className={`py-1.5 px-2 text-left ${subtext}`}>#</th>
                   <th className={`py-1.5 px-2 text-left ${subtext}`}>{t('Player')}</th>
                   <th className={`py-1.5 px-2 text-left ${subtext}`}>{t('Team')}</th>
-                  <th className={`py-1.5 px-2 text-right ${subtext}`}>{t('Salary')}</th>
+                  <th className={`py-1.5 px-2 text-right ${subtext}`}>{t('Net Paid')}</th>
                   <th className={`py-1.5 px-2 text-right ${subtext}`}>WS</th>
-                  <th className={`py-1.5 px-2 text-right font-bold ${subtext}`}>WS/€M</th>
+                  <th className={`py-1.5 px-2 text-right font-bold ${subtext}`}>{t('Cost/WS')}</th>
                 </tr>
               </thead>
               <tbody>
-                {topValue.map((p, i) => (
+                {bestValue.map((p, i) => (
                   <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'} ${p.isVarese ? (isDark ? 'bg-red-950/20' : 'bg-red-50/30') : ''}`}>
                     <td className={`py-1.5 px-2 ${subtext}`}>{i + 1}</td>
                     <td className={`py-1.5 px-2 font-medium ${p.isVarese ? 'text-red-500' : isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.player}</td>
                     <td className={`py-1.5 px-2 ${subtext}`}>{p.team}</td>
-                    <td className={`py-1.5 px-2 text-right tabular-nums ${subtext}`}>{fmt(p.salary)}</td>
+                    <td className={`py-1.5 px-2 text-right tabular-nums ${subtext}`}>{fmt(p.netPaid)}</td>
                     <td className={`py-1.5 px-2 text-right tabular-nums ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{p.ws.toFixed(2)}</td>
-                    <td className={`py-1.5 px-2 text-right tabular-nums font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{p.wsPerMillion.toFixed(1)}</td>
+                    <td className={`py-1.5 px-2 text-right tabular-nums font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{fmt(p.costPerWs)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -577,16 +578,16 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           </div>
 
           <div className={`${card} p-4`}>
-            <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-red-400' : 'text-red-600'}`}>{t('Worst Value')} — WS/€M</h3>
+            <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-red-400' : 'text-red-600'}`}>{t('Worst Value')} — {t('Cost/WS')}</h3>
             <table className="w-full text-xs">
               <thead>
                 <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                   <th className={`py-1.5 px-2 text-left ${subtext}`}>#</th>
                   <th className={`py-1.5 px-2 text-left ${subtext}`}>{t('Player')}</th>
                   <th className={`py-1.5 px-2 text-left ${subtext}`}>{t('Team')}</th>
-                  <th className={`py-1.5 px-2 text-right ${subtext}`}>{t('Salary')}</th>
+                  <th className={`py-1.5 px-2 text-right ${subtext}`}>{t('Net Paid')}</th>
                   <th className={`py-1.5 px-2 text-right ${subtext}`}>WS</th>
-                  <th className={`py-1.5 px-2 text-right font-bold ${subtext}`}>WS/€M</th>
+                  <th className={`py-1.5 px-2 text-right font-bold ${subtext}`}>{t('Cost/WS')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -595,9 +596,9 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                     <td className={`py-1.5 px-2 ${subtext}`}>{i + 1}</td>
                     <td className={`py-1.5 px-2 font-medium ${p.isVarese ? 'text-red-500' : isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.player}</td>
                     <td className={`py-1.5 px-2 ${subtext}`}>{p.team}</td>
-                    <td className={`py-1.5 px-2 text-right tabular-nums ${subtext}`}>{fmt(p.salary)}</td>
+                    <td className={`py-1.5 px-2 text-right tabular-nums ${subtext}`}>{fmt(p.netPaid)}</td>
                     <td className={`py-1.5 px-2 text-right tabular-nums ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{p.ws.toFixed(2)}</td>
-                    <td className={`py-1.5 px-2 text-right tabular-nums font-bold ${isDark ? 'text-red-400' : 'text-red-600'}`}>{p.wsPerMillion.toFixed(1)}</td>
+                    <td className={`py-1.5 px-2 text-right tabular-nums font-bold ${isDark ? 'text-red-400' : 'text-red-600'}`}>{fmt(p.costPerWs)}</td>
                   </tr>
                 ))}
               </tbody>
