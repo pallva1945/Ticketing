@@ -27,7 +27,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   const [selectedSeason, setSelectedSeason] = useState('2025-26');
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('yearly_salary_norm');
+  const [sortKey, setSortKey] = useState<SortKey>('net_paid');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [wsRank, setWsRank] = useState<number>(1);
@@ -740,7 +740,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           <input
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            placeholder={t('Search: name, team, nat | salary +2m | ws +1 | min -500 | net +1m | cost -100k')}
+            placeholder={t('Search: name, team, nat | net +2m | ws +1 | min -500 | cost -100k')}
             className={`w-full pl-9 pr-3 py-2 text-xs rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-white border-gray-200 text-gray-700'}`}
           />
         </div>
@@ -759,7 +759,6 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
             <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
               <SortHeader label={t('Player')} sortId="player" />
               <SortHeader label={t('Team')} sortId="team_name" />
-              <SortHeader label={t('Salary')} sortId="yearly_salary_norm" />
               <SortHeader label={t('Net Paid')} sortId="net_paid" />
               <SortHeader label={t('MIN')} sortId="min_play" />
               <SortHeader label="WS" sortId="ws" />
@@ -776,8 +775,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                 <tr key={`${p.player_id}-${i}`} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'} ${isV ? (isDark ? 'bg-red-950/20' : 'bg-red-50/30') : ''}`}>
                   <td className={`py-1.5 px-2 font-medium whitespace-nowrap ${isV ? 'text-red-500' : isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.player}</td>
                   <td className={`py-1.5 px-2 whitespace-nowrap ${subtext}`}>{shortName(p.team_name)}</td>
-                  <td className={`py-1.5 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{fmt(p.yearly_salary_norm)}</td>
-                  <td className={`py-1.5 px-2 text-right tabular-nums ${subtext}`}>{fmt(p.net_paid)}</td>
+                  <td className={`py-1.5 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{fmt(p.net_paid)}</td>
                   <td className={`py-1.5 px-2 text-right tabular-nums ${subtext}`}>{p.min_play}</td>
                   <td className={`py-1.5 px-2 text-right tabular-nums ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{p.ws.toFixed(2)}</td>
                   <td className={`py-1.5 px-2 text-right tabular-nums ${subtext}`}>{p.ws_40 !== null ? p.ws_40.toFixed(3) : '—'}</td>
