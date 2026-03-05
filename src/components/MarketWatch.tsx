@@ -52,8 +52,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       setSelectedSeason(seasons[0]);
     }
   }, [seasons]);
-  const OUTLIER_TEAMS = ['EA7 Emporio Armani Milano', 'Virtus Segafredo Bologna'];
-  const seasonData = useMemo(() => data.filter(d => d.season === selectedSeason && !(d.season === '2025-26' && d.team_name === 'Trapani Shark') && (!excludeOutliers || !OUTLIER_TEAMS.includes(d.team_name))), [data, selectedSeason, excludeOutliers]);
+  const isOutlierTeam = (name: string) => /milano/i.test(name) || /bologna/i.test(name);
+  const seasonData = useMemo(() => data.filter(d => d.season === selectedSeason && !(d.season === '2025-26' && d.team_name === 'Trapani Shark') && (!excludeOutliers || !isOutlierTeam(d.team_name))), [data, selectedSeason, excludeOutliers]);
   const teams = useMemo(() => [...new Set(seasonData.map(d => d.team_name))].sort(), [seasonData]);
 
   const teamStats = useMemo(() => {
@@ -99,7 +99,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
   const payrollTrend = useMemo(() => {
     return seasons.map(s => {
-      const sd = data.filter(d => d.season === s && !(d.season === '2025-26' && d.team_name === 'Trapani Shark') && (!excludeOutliers || !OUTLIER_TEAMS.includes(d.team_name)));
+      const sd = data.filter(d => d.season === s && !(d.season === '2025-26' && d.team_name === 'Trapani Shark') && (!excludeOutliers || !isOutlierTeam(d.team_name)));
       const teamMap = new Map<string, number>();
       sd.forEach(p => teamMap.set(p.team_name, (teamMap.get(p.team_name) || 0) + p.net_paid));
       const payrolls = [...teamMap.values()].filter(v => v > 0);
