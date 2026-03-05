@@ -104,6 +104,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
   const { isAdmin } = useAuth();
   const isDark = theme === 'dark';
   const [phase, setPhase] = useState(0);
+  const [bopsExpanded, setBopsExpanded] = useState(false);
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase(1), 150);
@@ -141,10 +142,14 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
       desc: t('Basketball Operations — Team management, roster & performance'),
       icon: Shield,
       color: 'emerald',
-      action: () => window.open('https://basket.pallacanestrovarese.club', '_blank'),
-      actionLabel: t('Open'),
-      actionIcon: ExternalLink,
-      external: true,
+      action: () => setBopsExpanded(!bopsExpanded),
+      actionLabel: t('Enter'),
+      actionIcon: ArrowRight,
+      external: false,
+      subItems: [
+        { label: t('BOps Internal Portal'), action: () => window.open('https://basket.pallacanestrovarese.club', '_blank'), external: true },
+        { label: t('Market Watch'), action: () => {}, external: false, comingSoon: true },
+      ],
     },
   ];
 
@@ -243,10 +248,12 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
               const Icon = card.icon;
               const ActionIcon = card.actionIcon;
               const isDisabled = !card.action;
+              const hasSubItems = card.subItems && card.subItems.length > 0;
+              const isExpanded = card.id === 'bops' && bopsExpanded;
 
               const content = (
                 <>
-                  <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r ${colors.topBar} opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                  <div className={`absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r ${colors.topBar} ${isExpanded ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-500`}></div>
                   <div className="p-5 sm:p-8 flex flex-col items-center text-center">
                     <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center mb-4 sm:mb-5 ${colors.iconBg}`}>
                       <Icon size={24} className={`${colors.text} sm:w-[28px] sm:h-[28px]`} />
@@ -254,10 +261,34 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                     <h3 className={`text-base sm:text-xl font-semibold mb-1.5 sm:mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                       {card.label}
                     </h3>
-                    <p className={`text-[10px] sm:text-xs leading-relaxed mb-4 sm:mb-5 min-h-[2rem] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    <p className={`text-[10px] sm:text-xs leading-relaxed ${isExpanded ? 'mb-3' : 'mb-4 sm:mb-5'} min-h-[2rem] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                       {card.desc}
                     </p>
-                    {!isDisabled ? (
+                    {isExpanded && hasSubItems ? (
+                      <div className="w-full space-y-2 mt-1">
+                        {card.subItems!.map((sub, si) => (
+                          <button
+                            key={si}
+                            onClick={(e) => { e.stopPropagation(); sub.action(); }}
+                            disabled={sub.comingSoon}
+                            className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-medium transition-all ${
+                              sub.comingSoon
+                                ? isDark ? 'bg-gray-800/50 text-gray-600 cursor-not-allowed' : 'bg-gray-100/50 text-gray-300 cursor-not-allowed'
+                                : isDark ? 'bg-gray-800/80 text-gray-200 hover:bg-emerald-900/30 hover:text-emerald-400 border border-gray-700 hover:border-emerald-800' : 'bg-gray-50 text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 border border-gray-200 hover:border-emerald-300'
+                            }`}
+                          >
+                            <span>{sub.label}</span>
+                            {sub.comingSoon ? (
+                              <span className={`text-[9px] tracking-wider uppercase ${isDark ? 'text-gray-600' : 'text-gray-300'}`}>{t('Soon')}</span>
+                            ) : sub.external ? (
+                              <ExternalLink size={12} />
+                            ) : (
+                              <ArrowRight size={12} />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    ) : !isDisabled ? (
                       <div className={`inline-flex items-center gap-2 text-[10px] sm:text-xs font-medium tracking-wider uppercase group-hover:gap-3 transition-all ${colors.text}`}>
                         {card.actionLabel}
                         {card.external ? (
@@ -288,29 +319,13 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
                 );
               }
 
-              if (card.external) {
-                return (
-                  <a
-                    key={card.id}
-                    href="https://basket.pallacanestrovarese.club"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`group relative rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl ${colors.bg} ${
-                      isDark ? 'border-gray-800' : 'border-gray-200'
-                    } ${colors.hoverBorder} ${colors.hoverShadow}`}
-                  >
-                    {content}
-                  </a>
-                );
-              }
-
               return (
                 <button
                   key={card.id}
                   onClick={card.action}
                   className={`group relative rounded-2xl border transition-all duration-500 overflow-hidden hover:shadow-2xl text-left ${colors.bg} ${
                     isDark ? 'border-gray-800' : 'border-gray-200'
-                  } ${colors.hoverBorder} ${colors.hoverShadow}`}
+                  } ${colors.hoverBorder} ${colors.hoverShadow} ${isExpanded ? (isDark ? 'border-emerald-800/60 shadow-2xl' : 'border-emerald-300 shadow-2xl') : ''}`}
                 >
                   {content}
                 </button>
