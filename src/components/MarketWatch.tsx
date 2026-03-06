@@ -291,7 +291,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       const benchNp = benchPlayers.reduce((s, p) => s + adjNp(p.net_paid), 0);
       const benchWs = benchPlayers.reduce((s, p) => s + p.ws, 0);
       const benchCount = benchPlayers.length;
-      const benchCostPerWs = benchWs > 0 ? benchNp / benchWs : 0;
+      const benchCostPerWs = benchWs !== 0 ? benchNp / benchWs : 0;
       const top3Paid = sortedByNp.slice(0, 3);
       const top3WsShare = tm.ws > 0 ? (top3Paid.reduce((s, p) => s + p.ws, 0) / tm.ws) * 100 : 0;
       const wsValues = tm.players.map(p => p.ws).filter(w => w > 0).sort((a, b) => b - a);
@@ -782,7 +782,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                       <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.benchCount}</td>
                       <td className={`py-2 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{fmt(tm.benchNp)}</td>
                       <td className={`py-2 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{tm.benchWs.toFixed(2)}</td>
-                      <td className={`py-2 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{tm.benchCostPerWs > 0 ? fmt(tm.benchCostPerWs) : '—'}</td>
+                      <td className={`py-2 px-2 text-right tabular-nums font-semibold ${tm.benchCostPerWs < 0 ? 'text-red-500' : isDark ? 'text-orange-400' : 'text-orange-600'}`}>{tm.benchCostPerWs !== 0 ? (tm.benchCostPerWs < 0 ? `−${fmt(Math.abs(tm.benchCostPerWs))}` : fmt(tm.benchCostPerWs)) : '—'}</td>
                       <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{benchWsPct.toFixed(1)}%</td>
                       <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{benchNpPct > 0 ? `${benchNpPct.toFixed(1)}%` : '—'}</td>
                     </tr>
