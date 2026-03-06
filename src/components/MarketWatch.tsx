@@ -16,6 +16,8 @@ const fmt = (n: number) => {
 };
 
 const fmtFull = (n: number) => `€${n.toLocaleString('en-US')}`;
+const MIN_NET_PAID = 25000;
+const adjNp = (np: number) => Math.max(0, np - MIN_NET_PAID);
 
 export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> = ({ onBack, onHome }) => {
   const { theme, toggleTheme } = useTheme();
@@ -93,7 +95,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       totalPayroll: paid.reduce((s, p) => s + p.yearly_salary_norm, 0),
       teamCount: teams.length,
       highestPaid,
-      costPerWs: totalWs > 0 ? totalNetPaid / totalWs : 0,
+      costPerWs: totalWs > 0 ? paid.reduce((s, p) => s + adjNp(p.net_paid), 0) / totalWs : 0,
     };
   }, [seasonData, teams]);
 
@@ -166,13 +168,13 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       for (const f of numericFilters) {
         p = p.filter(pp => {
           let val: number;
-          if (f.field === 'cost_per_ws') val = pp.ws > 0 && pp.net_paid > 0 ? pp.net_paid / pp.ws : 0;
+          if (f.field === 'cost_per_ws') val = pp.ws > 0 && pp.net_paid > 0 ? adjNp(pp.net_paid) / pp.ws : 0;
           else val = (pp as any)[f.field] || 0;
           return f.op === '>' ? val >= f.value : val <= f.value;
         });
       }
     }
-    const enriched = p.map(pp => ({ ...pp, cost_per_ws: pp.ws > 0 && pp.net_paid > 0 ? pp.net_paid / pp.ws : 0 }));
+    const enriched = p.map(pp => ({ ...pp, cost_per_ws: pp.ws > 0 && pp.net_paid > 0 ? adjNp(pp.net_paid) / pp.ws : 0 }));
     enriched.sort((a, b) => {
       const aVal = sortKey === 'cost_per_ws' ? a.cost_per_ws : (a as any)[sortKey];
       const bVal = sortKey === 'cost_per_ws' ? b.cost_per_ws : (b as any)[sortKey];
@@ -282,7 +284,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         const mean = salaries.reduce((s, v) => s + v, 0) / n;
         gini = mean > 0 ? sumDiff / (2 * n * n * mean) : 0;
       }
-      const costPerWs = tm.ws > 0 ? tm.netPaid / tm.ws : 0;
+      const adjTeamNp = tm.players.reduce((s, p) => s + adjNp(p.net_paid), 0);
+      const costPerWs = tm.ws > 0 ? adjTeamNp / tm.ws : 0;
       const top3Paid = tm.players.slice().sort((a, b) => b.net_paid - a.net_paid).slice(0, 3);
       const top3WsShare = tm.ws > 0 ? (top3Paid.reduce((s, p) => s + p.ws, 0) / tm.ws) * 100 : 0;
       const wsValues = tm.players.map(p => p.ws).filter(w => w > 0).sort((a, b) => b - a);
@@ -495,7 +498,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                       <p className="font-semibold text-xs">{d.team}</p>
                       <p className="text-[10px]">Net Paid: {fmtFull(d.netPaid)}</p>
                       <p className="text-[10px]">Win Shares: {d.ws.toFixed(2)}</p>
-                      {d.netPaid > 0 && d.ws > 0 && <p className="text-[10px]">{t('Cost/WS')}: {fmt(d.netPaid / d.ws)}</p>}
+                      {d.netPaid > 0 && d.ws > 0 && <p className="text-[10px]">{t('Cost/WS')}: {fmt(adjNp(d.netPaid) / d.ws)}</p>}
                     </div>
                   );
                 }} />
@@ -779,7 +782,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                   <td className={`py-1.5 px-2 text-right tabular-nums ${subtext}`}>{p.min_play}</td>
                   <td className={`py-1.5 px-2 text-right tabular-nums ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{p.ws.toFixed(2)}</td>
                   <td className={`py-1.5 px-2 text-right tabular-nums ${subtext}`}>{p.ws_40 !== null ? p.ws_40.toFixed(3) : '—'}</td>
-                  <td className={`py-1.5 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{p.ws > 0 && p.net_paid > 0 ? fmt(p.net_paid / p.ws) : '—'}</td>
+                  <td className={`py-1.5 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{p.ws > 0 && p.net_paid > 0 ? fmt(adjNp(p.net_paid) / p.ws) : '—'}</td>
                   <td className={`py-1.5 px-2 ${subtext}`}>{p.nationality || '—'}</td>
                   <td className={`py-1.5 px-2 whitespace-nowrap ${subtext}`}>
                     {p.situation ? <span className={`text-[9px] px-1.5 py-0.5 rounded ${p.situation.includes('Cut') || p.situation.includes('Buyout') || p.situation.includes('Released') ? 'bg-red-500/10 text-red-400' : p.situation.includes('Mid-season') ? 'bg-blue-500/10 text-blue-400' : p.situation.includes('Youth') ? 'bg-purple-500/10 text-purple-400' : 'bg-gray-500/10 text-gray-400'}`}>{p.situation}</span> : ''}
@@ -803,7 +806,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         salary: p.yearly_salary_norm,
         ws: p.ws,
         ws40: p.ws_40 || 0,
-        costPerWs: p.net_paid / p.ws,
+        costPerWs: adjNp(p.net_paid) / p.ws,
         isVarese: p.team_name.includes('Varese'),
         min_play: p.min_play,
       }));
@@ -907,7 +910,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   const renderVarese = () => {
     if (!varese) return <div className={`${card} p-8 text-center ${subtext}`}>{t('No Varese data for this season')}</div>;
     const vPlayers = varese.players.sort((a, b) => b.net_paid - a.net_paid);
-    const vareseCostPerWs = varese.ws > 0 ? varese.netPaid / varese.ws : 0;
+    const vareseCostPerWs = varese.ws > 0 ? varese.players.reduce((s, p) => s + adjNp(p.net_paid), 0) / varese.ws : 0;
     const leagueCostPerWs = leagueAvg.costPerWs;
     const vReg = (() => {
       const pts = vPlayers.filter(p => p.net_paid > 0 && p.ws > 0);
@@ -978,7 +981,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                       <p className="font-semibold text-xs">{d.player}</p>
                       <p className="text-[10px]">{t('Net Paid')}: {fmtFull(d.netPaid)}</p>
                       <p className="text-[10px]">WS: {d.ws.toFixed(2)} | WS/40: {d.ws40 !== null ? d.ws40.toFixed(3) : '—'}</p>
-                      <p className="text-[10px]">{t('Cost/WS')}: {d.ws > 0 && d.netPaid > 0 ? fmt(d.netPaid / d.ws) : '—'}</p>
+                      <p className="text-[10px]">{t('Cost/WS')}: {d.ws > 0 && d.netPaid > 0 ? fmt(adjNp(d.netPaid) / d.ws) : '—'}</p>
                       <p className="text-[10px]">MIN: {d.min}</p>
                     </div>
                   ) : null;
@@ -1011,7 +1014,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
             </thead>
             <tbody>
               {vPlayers.map((p, i) => {
-                const costPerWs = p.ws > 0 && p.net_paid > 0 ? fmt(p.net_paid / p.ws) : '—';
+                const costPerWs = p.ws > 0 && p.net_paid > 0 ? fmt(adjNp(p.net_paid) / p.ws) : '—';
                 return (
                   <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
                     <td className={`py-1.5 px-2 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.player}</td>
