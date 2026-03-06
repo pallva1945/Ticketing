@@ -906,9 +906,27 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
   const renderVarese = () => {
     if (!varese) return <div className={`${card} p-8 text-center ${subtext}`}>{t('No Varese data for this season')}</div>;
-    const vPlayers = varese.players.sort((a, b) => b.yearly_salary_norm - a.yearly_salary_norm);
+    const vPlayers = varese.players.sort((a, b) => b.net_paid - a.net_paid);
     const vareseCostPerWs = varese.ws > 0 ? varese.netPaid / varese.ws : 0;
     const leagueCostPerWs = leagueAvg.costPerWs;
+    const vReg = (() => {
+      const pts = vPlayers.filter(p => p.net_paid > 0 && p.ws > 0);
+      if (pts.length < 2) return null;
+      const n = pts.length;
+      const sX = pts.reduce((s, p) => s + p.net_paid, 0);
+      const sY = pts.reduce((s, p) => s + p.ws, 0);
+      const sXY = pts.reduce((s, p) => s + p.net_paid * p.ws, 0);
+      const sX2 = pts.reduce((s, p) => s + p.net_paid ** 2, 0);
+      const sY2 = pts.reduce((s, p) => s + p.ws ** 2, 0);
+      const slope = (n * sXY - sX * sY) / (n * sX2 - sX * sX);
+      const intercept = (sY - slope * sX) / n;
+      const rNum = n * sXY - sX * sY;
+      const rDen = Math.sqrt((n * sX2 - sX * sX) * (n * sY2 - sY * sY));
+      const r2 = rDen > 0 ? (rNum / rDen) ** 2 : 0;
+      const mnX = Math.min(...pts.map(p => p.net_paid));
+      const mxX = Math.max(...pts.map(p => p.net_paid));
+      return { r2, line: [{ netPaid: mnX, ws: slope * mnX + intercept }, { netPaid: mxX, ws: slope * mxX + intercept }] };
+    })();
 
     return (
       <div className="space-y-5">
@@ -922,26 +940,30 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
         <div className={`${card} p-4`}>
           <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Roster Breakdown')} — {selectedSeason}</h3>
-          <div className="h-[250px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={vPlayers.filter(p => p.yearly_salary_norm > 0).map(p => ({
-                player: p.player,
-                salary: p.yearly_salary_norm,
-                ws: p.ws,
-              }))} layout="vertical" margin={{ left: 0, right: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
-                <XAxis type="number" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
-                <YAxis type="category" dataKey="player" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} width={90} />
-                <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => name === 'salary' ? fmtFull(v) : v.toFixed(2)} />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
-                <Bar dataKey="salary" name={t('Salary')} fill={VARESE_COLOR} opacity={0.8} radius={[0, 4, 4, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+          {(() => {
+            const rosterData = vPlayers.filter(p => p.net_paid > 0).map(p => ({ player: p.player, netPaid: p.net_paid, ws: p.ws }));
+            const chartH = Math.max(250, rosterData.length * 28);
+            return (
+              <div style={{ height: chartH }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={rosterData} layout="vertical" margin={{ left: 0, right: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                    <XAxis type="number" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
+                    <YAxis type="category" dataKey="player" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} width={100} interval={0} />
+                    <Tooltip contentStyle={tipStyle} formatter={(v: number) => fmtFull(v)} />
+                    <Bar dataKey="netPaid" name={t('Net Paid')} fill={VARESE_COLOR} opacity={0.8} radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            );
+          })()}
         </div>
 
         <div className={`${card} p-4`}>
-          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Net Paid vs Win Shares')}</h3>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            {t('Net Paid vs Win Shares')}
+            {vReg && <span className={`ml-2 font-normal ${subtext}`}>R² = {vReg.r2.toFixed(3)}</span>}
+          </h3>
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
@@ -966,6 +988,11 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                     <Cell key={i} fill={VARESE_COLOR} r={6} />
                   ))}
                 </Scatter>
+                {vReg && (
+                  <Scatter data={vReg.line} line={{ stroke: isDark ? '#f59e0b' : '#d97706', strokeWidth: 2, strokeDasharray: '6 3' }} fill="transparent" legendType="none">
+                    {vReg.line.map((_, i) => <Cell key={i} fill="transparent" r={0} />)}
+                  </Scatter>
+                )}
               </ScatterChart>
             </ResponsiveContainer>
           </div>
@@ -977,7 +1004,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           <table className="w-full text-xs">
             <thead>
               <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                {[t('Player'), t('Salary'), t('Net Paid'), t('Months'), 'MIN', 'WS', 'WS/40', t('Cost/WS'), t('NAT'), t('Tm Salary Rk'), t('Tm WS Rk'), t('Status')].map(h => (
+                {[t('Player'), t('Net Paid'), t('Months'), 'MIN', 'WS', 'WS/40', t('Cost/WS'), t('NAT'), t('Tm NP Rk'), t('Tm WS Rk'), t('Status')].map(h => (
                   <th key={h} className={`py-2 px-2 text-left font-semibold whitespace-nowrap ${subtext}`}>{h}</th>
                 ))}
               </tr>
@@ -988,15 +1015,14 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                 return (
                   <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'}`}>
                     <td className={`py-1.5 px-2 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{p.player}</td>
-                    <td className={`py-1.5 px-2 tabular-nums font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{fmt(p.yearly_salary_norm)}</td>
-                    <td className={`py-1.5 px-2 tabular-nums ${subtext}`}>{fmt(p.net_paid)}</td>
+                    <td className={`py-1.5 px-2 tabular-nums font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{fmt(p.net_paid)}</td>
                     <td className={`py-1.5 px-2 ${subtext}`}>{p.months || '—'}</td>
                     <td className={`py-1.5 px-2 tabular-nums ${subtext}`}>{p.min_play}</td>
                     <td className={`py-1.5 px-2 tabular-nums ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{p.ws.toFixed(2)}</td>
                     <td className={`py-1.5 px-2 tabular-nums ${subtext}`}>{p.ws_40 !== null ? p.ws_40.toFixed(3) : '—'}</td>
                     <td className={`py-1.5 px-2 tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{costPerWs}</td>
                     <td className={`py-1.5 px-2 ${subtext}`}>{p.nationality || '—'}</td>
-                    <td className={`py-1.5 px-2 text-center ${subtext}`}>{p.tm_ys_rk}</td>
+                    <td className={`py-1.5 px-2 text-center ${subtext}`}>{p.tm_np_rk}</td>
                     <td className={`py-1.5 px-2 text-center ${subtext}`}>{p.tm_ws_rk}</td>
                     <td className={`py-1.5 px-2 whitespace-nowrap`}>
                       {p.situation ? <span className={`text-[9px] px-1.5 py-0.5 rounded ${p.situation.includes('Cut') || p.situation.includes('Buyout') || p.situation.includes('Released') ? 'bg-red-500/10 text-red-400' : p.situation.includes('Mid-season') ? 'bg-blue-500/10 text-blue-400' : p.situation.includes('Youth') ? 'bg-purple-500/10 text-purple-400' : 'bg-gray-500/10 text-gray-400'}`}>{p.situation}</span> : ''}
