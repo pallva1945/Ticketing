@@ -272,7 +272,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       const top1Share = n > 0 && tm.netPaid > 0 ? (salaries[0] / tm.netPaid) * 100 : 0;
       const top3Share = n >= 3 && tm.netPaid > 0 ? (salaries.slice(0, 3).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
       const top5Share = n >= 5 && tm.netPaid > 0 ? (salaries.slice(0, 5).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
-      const top8Share = n >= 8 && tm.netPaid > 0 ? (salaries.slice(0, 8).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
+      const top9Share = n >= 9 && tm.netPaid > 0 ? (salaries.slice(0, 9).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
+      const benchNpShare = tm.netPaid > 0 ? (benchPlayers.reduce((s, p) => s + p.net_paid, 0) / tm.netPaid) * 100 : 0;
       const maxSalary = salaries[0] || 0;
       const medianSalary = n > 0 ? salaries[Math.floor(n / 2)] : 0;
       const avgSalary = n > 0 ? salaries.reduce((s, v) => s + v, 0) / n : 0;
@@ -300,7 +301,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       const wsTop1 = wn > 0 ? wsValues[0] : 0;
       const wsTop3 = wn >= 3 ? wsValues.slice(0, 3).reduce((s, v) => s + v, 0) : 0;
       const wsTop5 = wn >= 5 ? wsValues.slice(0, 5).reduce((s, v) => s + v, 0) : 0;
-      const wsTop8 = wn >= 8 ? wsValues.slice(0, 8).reduce((s, v) => s + v, 0) : 0;
+      const wsTop9 = wn >= 9 ? wsValues.slice(0, 9).reduce((s, v) => s + v, 0) : 0;
       const wsMax = wsValues[0] || 0;
       const wsAvg = wn > 0 ? totalWs / wn : 0;
       const wsMaxAvgRatio = wsAvg > 0 ? wsMax / wsAvg : 0;
@@ -321,7 +322,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         top1Share,
         top3Share,
         top5Share,
-        top8Share,
+        top9Share,
+        benchNpShare,
         maxSalary,
         medianSalary,
         avgSalary,
@@ -333,7 +335,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         wsTop1,
         wsTop3,
         wsTop5,
-        wsTop8,
+        wsTop9,
         wsMaxAvgRatio,
         benchNp,
         benchWs,
@@ -667,7 +669,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                   { key: 'top1Share', label: t('Top 1') },
                   { key: 'top3Share', label: t('Top 3') },
                   { key: 'top5Share', label: t('Top 5') },
-                  { key: 'top8Share', label: t('Top 8') },
+                  { key: 'top9Share', label: t('Top 9') },
+                  { key: 'benchNpShare', label: t('Bench') },
                   { key: 'maxAvgRatio', label: t('Max/Avg') },
                   { key: 'costPerWs', label: t('Cost/WS') },
                   { key: 'ws', label: 'WS' },
@@ -689,7 +692,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.top1Share.toFixed(0)}%</td>
                   <td className={`py-2 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{tm.top3Share.toFixed(0)}%</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.top5Share.toFixed(0)}%</td>
-                  <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.top8Share > 0 ? `${tm.top8Share.toFixed(0)}%` : '—'}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.top9Share > 0 ? `${tm.top9Share.toFixed(0)}%` : '—'}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.benchNpShare > 0 ? `${tm.benchNpShare.toFixed(0)}%` : '—'}</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.maxAvgRatio.toFixed(1)}x</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{tm.costPerWs > 0 ? fmt(tm.costPerWs) : '—'}</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{tm.ws.toFixed(1)}</td>
@@ -712,7 +716,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                   { key: 'wsTop1', label: t('Top 1') },
                   { key: 'wsTop3', label: t('Top 3') },
                   { key: 'wsTop5', label: t('Top 5') },
-                  { key: 'wsTop8', label: t('Top 8') },
+                  { key: 'wsTop9', label: t('Top 9') },
+                  { key: 'benchWs', label: t('Bench') },
                   { key: 'wsMaxAvgRatio', label: t('Max/Avg') },
                   { key: 'costPerWs', label: t('Cost/WS') },
                   { key: 'netPaid', label: t('Net Paid') },
@@ -733,7 +738,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.wsTop1.toFixed(2)}</td>
                   <td className={`py-2 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{tm.wsTop3.toFixed(2)}</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.wsTop5.toFixed(2)}</td>
-                  <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.wsTop8 > 0 ? tm.wsTop8.toFixed(2) : '—'}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.wsTop9 > 0 ? tm.wsTop9.toFixed(2) : '—'}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${tm.benchWs < 0 ? 'text-red-500' : subtext}`}>{tm.benchWs.toFixed(2)}</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.wsMaxAvgRatio.toFixed(1)}x</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{tm.costPerWs > 0 ? fmt(tm.costPerWs) : '—'}</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{fmt(tm.netPaid)}</td>
