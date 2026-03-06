@@ -273,7 +273,6 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       const top3Share = n >= 3 && tm.netPaid > 0 ? (salaries.slice(0, 3).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
       const top5Share = n >= 5 && tm.netPaid > 0 ? (salaries.slice(0, 5).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
       const top9Share = n >= 9 && tm.netPaid > 0 ? (salaries.slice(0, 9).reduce((s, v) => s + v, 0) / tm.netPaid) * 100 : 0;
-      const benchNpShare = tm.netPaid > 0 ? (benchPlayers.reduce((s, p) => s + p.net_paid, 0) / tm.netPaid) * 100 : 0;
       const maxSalary = salaries[0] || 0;
       const medianSalary = n > 0 ? salaries[Math.floor(n / 2)] : 0;
       const avgSalary = n > 0 ? salaries.reduce((s, v) => s + v, 0) / n : 0;
@@ -293,6 +292,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       const benchWs = benchPlayers.reduce((s, p) => s + p.ws, 0);
       const benchCount = benchPlayers.length;
       const benchCostPerWs = benchWs !== 0 ? benchNp / benchWs : 0;
+      const benchNpShare = tm.netPaid > 0 ? (benchPlayers.reduce((s, p) => s + p.net_paid, 0) / tm.netPaid) * 100 : 0;
       const top3Paid = sortedByNp.slice(0, 3);
       const top3WsShare = tm.ws > 0 ? (top3Paid.reduce((s, p) => s + p.ws, 0) / tm.ws) * 100 : 0;
       const wsValues = tm.players.map(p => p.ws).filter(w => w > 0).sort((a, b) => b - a);
