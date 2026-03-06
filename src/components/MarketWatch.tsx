@@ -894,7 +894,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           };
           const medNp = median(sortedNp);
           const medWs = median(sortedWs);
-          const xMin = sortedNp[sortedNp.length - 1] * 1.02;
+          const xMin = sortedNp[sortedNp.length - 1] * 1.005;
           const xMax = sortedNp[0] * 0.95;
           const yMin = sortedWs[0] * 0.98;
           const yMax = sortedWs[sortedWs.length - 1] * 1.02;
