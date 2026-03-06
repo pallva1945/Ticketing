@@ -894,10 +894,10 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           };
           const medNp = median(sortedNp);
           const medWs = median(sortedWs);
-          const xMin = sortedNp[sortedNp.length - 1] * 1.05;
-          const xMax = sortedNp[0] * 0.5;
-          const yMin = sortedWs[0] * 0.9;
-          const yMax = sortedWs[sortedWs.length - 1] * 1.1;
+          const xMin = sortedNp[sortedNp.length - 1] * 1.02;
+          const xMax = sortedNp[0] * 0.95;
+          const yMin = sortedWs[0] * 0.98;
+          const yMax = sortedWs[sortedWs.length - 1] * 1.02;
           return (
             <div className={`${card} p-4`}>
               <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Value Quadrant')} <span className={`font-normal ${subtext}`}>({t('min 50 min played')} | {t('median lines')})</span></h3>
