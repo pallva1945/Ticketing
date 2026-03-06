@@ -287,7 +287,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       const adjTeamNp = tm.players.reduce((s, p) => s + adjNp(p.net_paid), 0);
       const costPerWs = tm.ws > 0 ? adjTeamNp / tm.ws : 0;
       const sortedByNp = tm.players.slice().sort((a, b) => b.net_paid - a.net_paid);
-      const benchPlayers = sortedByNp.slice(9);
+      const benchPlayers = tm.players.filter(p => p.tm_min_rk >= 10);
       const benchNp = benchPlayers.reduce((s, p) => s + adjNp(p.net_paid), 0);
       const benchWs = benchPlayers.reduce((s, p) => s + p.ws, 0);
       const benchCount = benchPlayers.length;
@@ -744,7 +744,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         </div>
 
         <div className={`${card} p-4`}>
-          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Bench Analysis')} — {t('Players ranked 10th+ by Net Paid')}</h3>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Bench Analysis')} — {t('Players ranked 10th+ by Minutes')}</h3>
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -791,7 +791,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
               </tbody>
             </table>
           </div>
-          <p className={`text-[10px] mt-2 ${subtext}`}>{t('Bench = players ranked 10th+ by net paid. Adj. Spent = net paid minus €25K min per player. WS % = bench share of team WS. Spend % = bench share of team adjusted total.')}</p>
+          <p className={`text-[10px] mt-2 ${subtext}`}>{t('Bench = players ranked 10th+ by team minutes. Adj. Spent = net paid minus €25K min per player. WS % = bench share of team WS. Spend % = bench share of team adjusted total.')}</p>
         </div>
       </div>
     );
