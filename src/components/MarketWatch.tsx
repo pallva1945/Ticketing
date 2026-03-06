@@ -893,6 +893,9 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           };
           const medNp = median(sortedNp);
           const medWs = median(sortedWs);
+          const maxNp = sortedNp[sortedNp.length - 1] * 1.05;
+          const maxWs = sortedWs[sortedWs.length - 1] * 1.1;
+          const minWs = Math.min(0, sortedWs[0]);
           return (
             <div className={`${card} p-4`}>
               <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Value Quadrant')} <span className={`font-normal ${subtext}`}>({t('min 50 min played')} | {t('median lines')})</span></h3>
@@ -900,14 +903,14 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart margin={{ top: 20, right: 20, bottom: 10, left: 10 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
-                    <XAxis type="number" dataKey="netPaid" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name="Net Paid" domain={[(dm: number) => dm * 1.05, 0]} reversed label={{ value: `← ${t('Net Paid')}`, position: 'insideBottomLeft', offset: -5, fontSize: 10, fill: isDark ? '#6b7280' : '#9ca3af' }} />
-                    <YAxis type="number" dataKey="ws" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Win Shares" domain={[(dm: number) => Math.min(0, dm), (dm: number) => dm * 1.1]} tickFormatter={(v: number) => v % 1 === 0 ? String(v) : v.toFixed(1)} label={{ value: t('Win Shares →'), position: 'insideTopLeft', offset: 0, fontSize: 10, fill: isDark ? '#6b7280' : '#9ca3af', angle: -90 }} />
+                    <XAxis type="number" dataKey="netPaid" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name="Net Paid" domain={[maxNp, 0]} reversed label={{ value: `← ${t('Net Paid')}`, position: 'insideBottomLeft', offset: -5, fontSize: 10, fill: isDark ? '#6b7280' : '#9ca3af' }} />
+                    <YAxis type="number" dataKey="ws" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Win Shares" domain={[minWs, maxWs]} tickFormatter={(v: number) => v % 1 === 0 ? String(v) : v.toFixed(1)} label={{ value: t('Win Shares →'), position: 'insideTopLeft', offset: 0, fontSize: 10, fill: isDark ? '#6b7280' : '#9ca3af', angle: -90 }} />
+                    <ReferenceArea x1={0} x2={medNp} y1={medWs} y2={maxWs} fill={isDark ? '#10b981' : '#86efac'} fillOpacity={isDark ? 0.12 : 0.18} />
+                    <ReferenceArea x1={medNp} x2={maxNp} y1={medWs} y2={maxWs} fill={isDark ? '#3b82f6' : '#93c5fd'} fillOpacity={isDark ? 0.1 : 0.15} />
+                    <ReferenceArea x1={0} x2={medNp} y1={minWs} y2={medWs} fill={isDark ? '#f97316' : '#fdba74'} fillOpacity={isDark ? 0.1 : 0.15} />
+                    <ReferenceArea x1={medNp} x2={maxNp} y1={minWs} y2={medWs} fill={isDark ? '#ef4444' : '#fca5a5'} fillOpacity={isDark ? 0.12 : 0.18} />
                     <ReferenceLine x={medNp} stroke={isDark ? '#6b7280' : '#9ca3af'} strokeDasharray="6 4" strokeWidth={1.5} label={{ value: `${t('Med')}: ${fmt(medNp)}`, position: 'top', fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                     <ReferenceLine y={medWs} stroke={isDark ? '#6b7280' : '#9ca3af'} strokeDasharray="6 4" strokeWidth={1.5} label={{ value: `${t('Med')}: ${medWs.toFixed(2)}`, position: 'right', fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                    <ReferenceArea x1={0} x2={medNp} y1={medWs} y2={sortedWs[sortedWs.length - 1] * 1.1} fill={isDark ? '#10b981' : '#d1fae5'} fillOpacity={isDark ? 0.08 : 0.3} />
-                    <ReferenceArea x1={medNp} x2={sortedNp[sortedNp.length - 1] * 1.05} y1={medWs} y2={sortedWs[sortedWs.length - 1] * 1.1} fill={isDark ? '#3b82f6' : '#dbeafe'} fillOpacity={isDark ? 0.06 : 0.2} />
-                    <ReferenceArea x1={0} x2={medNp} y1={Math.min(0, sortedWs[0])} y2={medWs} fill={isDark ? '#f97316' : '#ffedd5'} fillOpacity={isDark ? 0.06 : 0.2} />
-                    <ReferenceArea x1={medNp} x2={sortedNp[sortedNp.length - 1] * 1.05} y1={Math.min(0, sortedWs[0])} y2={medWs} fill={isDark ? '#ef4444' : '#fee2e2'} fillOpacity={isDark ? 0.08 : 0.3} />
 
                     <Tooltip content={({ payload }) => {
                       if (!payload || !payload.length) return null;
