@@ -940,6 +940,45 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           </div>
         </div>
 
+        <div className={`${card} p-4`}>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Salary vs Net Paid')}</h3>
+          <div className="h-[320px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
+                <XAxis type="number" dataKey="salary" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name={t('Salary')} label={{ value: t('Salary (Contract Value)'), position: 'insideBottom', offset: -5, fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dm: number) => Math.max(0, dm * 0.85), (dm: number) => dm * 1.1]} />
+                <YAxis type="number" dataKey="netPaid" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name={t('Net Paid')} label={{ value: t('Net Paid (Actual)'), angle: -90, position: 'insideLeft', offset: 10, fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dm: number) => Math.max(0, dm * 0.85), (dm: number) => dm * 1.1]} />
+                <Tooltip content={({ payload }) => {
+                  if (!payload || !payload.length) return null;
+                  const d = payload[0]?.payload;
+                  return d ? (
+                    <div style={tipStyle as any} className="p-2">
+                      <p className="font-semibold text-xs">{d.player}</p>
+                      <p className="text-[10px]">{t('Salary')}: {fmtFull(d.salary)}</p>
+                      <p className="text-[10px]">{t('Net Paid')}: {fmtFull(d.netPaid)}</p>
+                      <p className="text-[10px]">{t('Ratio')}: {d.salary > 0 ? ((d.netPaid / d.salary) * 100).toFixed(0) : 0}%</p>
+                      <p className="text-[10px]">{t('Months')}: {d.months || '—'} | WS: {d.ws.toFixed(2)}</p>
+                    </div>
+                  ) : null;
+                }} />
+                <Scatter data={vPlayers.filter(p => p.yearly_salary_norm > 0).map(p => ({ player: p.player, salary: p.yearly_salary_norm, netPaid: p.net_paid, months: p.months, ws: p.ws }))} fill={VARESE_COLOR}>
+                  {vPlayers.filter(p => p.yearly_salary_norm > 0).map((_, i) => (
+                    <Cell key={i} fill={VARESE_COLOR} r={6} />
+                  ))}
+                </Scatter>
+                {(() => {
+                  const salaries = vPlayers.filter(p => p.yearly_salary_norm > 0).map(p => p.yearly_salary_norm);
+                  const maxVal = Math.max(...salaries, ...vPlayers.filter(p => p.yearly_salary_norm > 0).map(p => p.net_paid));
+                  return <Scatter data={[{ salary: 0, netPaid: 0 }, { salary: maxVal * 1.1, netPaid: maxVal * 1.1 }]} line={{ stroke: isDark ? '#6b7280' : '#9ca3af', strokeWidth: 1, strokeDasharray: '6 3' }} fill="transparent" legendType="none">
+                    {[0, 1].map(i => <Cell key={i} fill="transparent" r={0} />)}
+                  </Scatter>;
+                })()}
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+          <p className={`text-[10px] mt-1 ${subtext}`}>{t('Above diagonal = paid more than contract value · Below = paid less (partial season, cut, etc.)')}</p>
+        </div>
+
         <div className={`${card} p-4 overflow-x-auto`}>
           <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Full Roster')}</h3>
           <table className="w-full text-xs">
