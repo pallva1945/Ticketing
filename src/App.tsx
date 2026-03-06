@@ -220,7 +220,7 @@ const RevenueHome = ({
     // 7 Revenue Verticals with actual data for Ticketing, GameDay, Sponsorship
     // isProrated: Sponsorship contracts are signed for the full year but recognized over time
     // hasData: indicates if this vertical has real data connected
-    // pacingType: 'monthly' (time-based), 'games' (by games played), 'h1' (50% half-year), 'fourTen' (4/10 = 40%), 'daily' (day of season)
+    // pacingType: 'monthly' (time-based), 'games' (by games played), 'daily' (day of season)
     const verticalPerformance = [
       { 
           id: 'sponsorship', 
@@ -307,16 +307,6 @@ const RevenueHome = ({
                 expectedAtThisPoint = v.target * seasonProgressFraction;
                 paceMarkerPct = seasonProgressPct;
                 break;
-            case 'h1':
-                // H1 report: data covers first half only, pace marker at 50%
-                expectedAtThisPoint = v.target * 0.5;
-                paceMarkerPct = 50;
-                break;
-            case 'fourTen':
-                // 4/10 month accounting: pace marker at 40%
-                expectedAtThisPoint = v.target * 0.4;
-                paceMarkerPct = 40;
-                break;
             case 'daily':
                 // Daily: pace by actual day of the season
                 expectedAtThisPoint = v.target * dailyProgressFraction;
@@ -332,10 +322,6 @@ const RevenueHome = ({
             projectedFinish = (v.current / gamesCount) * TOTAL_GAMES_SEASON;
         } else if (v.isProrated && 'signedValue' in v) {
             projectedFinish = v.signedValue as number;
-        } else if (v.pacingType === 'h1') {
-            projectedFinish = v.current * 2; // Extrapolate H1 to full year
-        } else if (v.pacingType === 'fourTen') {
-            projectedFinish = v.current / 0.4 ; // Extrapolate 4/10 to full year
         } else if (v.pacingType === 'daily') {
             projectedFinish = dailyProgressFraction > 0 ? v.current / dailyProgressFraction : v.current;
         } else {
