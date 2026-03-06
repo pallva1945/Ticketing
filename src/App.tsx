@@ -252,7 +252,7 @@ const RevenueHome = ({
           name: 'Varese Basketball', 
           current: vbRevenueYTD, 
           target: 930465, 
-          pacingType: 'h1' as const,
+          pacingType: 'daily' as const,
           icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false, isProrated: false, hasData: vbHasSheetData 
       },
       { 
@@ -260,7 +260,7 @@ const RevenueHome = ({
           name: 'BOps', 
           current: bopsYTD, 
           target: 525000, 
-          pacingType: 'fourTen' as const,
+          pacingType: 'daily' as const,
           icon: Activity, colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', barClass: 'bg-emerald-500', isVariable: false, isProrated: false, hasData: bopsYTD > 0 
       },
       { 
@@ -268,7 +268,7 @@ const RevenueHome = ({
           name: 'Venue Ops', 
           current: venueOpsYTD, 
           target: 262364, 
-          pacingType: 'h1' as const,
+          pacingType: 'daily' as const,
           icon: Landmark, colorClass: 'text-slate-600', bgClass: 'bg-slate-50', barClass: 'bg-slate-500', isVariable: false, isProrated: false, hasData: venueOpsYTD > 0 
       },
       { 
