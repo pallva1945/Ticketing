@@ -286,7 +286,13 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       }
       const adjTeamNp = tm.players.reduce((s, p) => s + adjNp(p.net_paid), 0);
       const costPerWs = tm.ws > 0 ? adjTeamNp / tm.ws : 0;
-      const top3Paid = tm.players.slice().sort((a, b) => b.net_paid - a.net_paid).slice(0, 3);
+      const sortedByNp = tm.players.slice().sort((a, b) => b.net_paid - a.net_paid);
+      const benchPlayers = sortedByNp.slice(9);
+      const benchNp = benchPlayers.reduce((s, p) => s + adjNp(p.net_paid), 0);
+      const benchWs = benchPlayers.reduce((s, p) => s + p.ws, 0);
+      const benchCount = benchPlayers.length;
+      const benchCostPerWs = benchWs > 0 ? benchNp / benchWs : 0;
+      const top3Paid = sortedByNp.slice(0, 3);
       const top3WsShare = tm.ws > 0 ? (top3Paid.reduce((s, p) => s + p.ws, 0) / tm.ws) * 100 : 0;
       const wsValues = tm.players.map(p => p.ws).filter(w => w > 0).sort((a, b) => b - a);
       const wn = wsValues.length;
@@ -329,6 +335,11 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         wsTop5,
         wsTop8,
         wsMaxAvgRatio,
+        benchNp,
+        benchWs,
+        benchCount,
+        benchCostPerWs,
+        adjTeamNp,
         isVarese: tm.team.includes('Varese'),
       };
     });
@@ -730,6 +741,57 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className={`${card} p-4`}>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Bench Analysis')} — {t('Players ranked 10th+ by Net Paid')}</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                  {[
+                    { key: '#', label: '#' },
+                    { key: 'team', label: t('Team'), align: 'left' },
+                    { key: 'benchCount', label: t('Players') },
+                    { key: 'benchNp', label: t('Adj. Spent') },
+                    { key: 'benchWs', label: 'WS' },
+                    { key: 'benchCostPerWs', label: t('Cost/WS') },
+                    { key: 'benchWsPct', label: t('WS %') },
+                    { key: 'benchNpPct', label: t('Spend %') },
+                  ].map(col => (
+                    <th key={col.key} className={`py-2 px-2 ${col.align === 'left' ? 'text-left' : 'text-right'} font-semibold cursor-pointer select-none whitespace-nowrap ${subtext}`}
+                      onClick={() => col.key !== '#' && handleTeamSort(col.key)}>
+                      <span className="inline-flex items-center gap-1">{col.label} {teamSortKey === col.key && <ArrowUpDown size={10} className={teamSortDir === 'asc' ? 'rotate-180' : ''} />}</span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {[...teamSpendingAnalysis].sort((a, b) => {
+                  const aVal = (a as any)[teamSortKey] ?? 0;
+                  const bVal = (b as any)[teamSortKey] ?? 0;
+                  if (typeof aVal === 'string') return teamSortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                  return teamSortDir === 'asc' ? aVal - bVal : bVal - aVal;
+                }).map((tm, i) => {
+                  const benchWsPct = tm.ws > 0 ? (tm.benchWs / tm.ws) * 100 : 0;
+                  const benchNpPct = tm.adjTeamNp > 0 ? (tm.benchNp / tm.adjTeamNp) * 100 : 0;
+                  return (
+                    <tr key={tm.fullTeam} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'} ${tm.isVarese ? (isDark ? 'bg-red-950/20' : 'bg-red-50/50') : ''}`}>
+                      <td className={`py-2 px-2 ${subtext}`}>{i + 1}</td>
+                      <td className={`py-2 px-2 font-medium whitespace-nowrap ${tm.isVarese ? 'text-red-500 font-bold' : isDark ? 'text-gray-200' : 'text-gray-800'}`}>{tm.team}</td>
+                      <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.benchCount}</td>
+                      <td className={`py-2 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{fmt(tm.benchNp)}</td>
+                      <td className={`py-2 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{tm.benchWs.toFixed(2)}</td>
+                      <td className={`py-2 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-orange-400' : 'text-orange-600'}`}>{tm.benchCostPerWs > 0 ? fmt(tm.benchCostPerWs) : '—'}</td>
+                      <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{benchWsPct.toFixed(1)}%</td>
+                      <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{benchNpPct > 0 ? `${benchNpPct.toFixed(1)}%` : '—'}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p className={`text-[10px] mt-2 ${subtext}`}>{t('Bench = players ranked 10th+ by net paid. Adj. Spent = net paid minus €25K min per player. WS % = bench share of team WS. Spend % = bench share of team adjusted total.')}</p>
         </div>
       </div>
     );
