@@ -287,7 +287,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       const adjTeamNp = tm.players.reduce((s, p) => s + adjNp(p.net_paid), 0);
       const costPerWs = tm.ws > 0 ? adjTeamNp / tm.ws : 0;
       const sortedByNp = tm.players.slice().sort((a, b) => b.net_paid - a.net_paid);
-      const benchPlayers = tm.players.filter(p => p.tm_min_rk >= 10);
+      const benchPlayers = tm.players.filter(p => p.tm_min_rk >= 10 && !(p.situation && (p.situation.includes('Cut') || p.situation.includes('Buyout') || p.situation.includes('Released') || p.situation.includes('Mid-season'))));
       const benchNp = benchPlayers.reduce((s, p) => s + adjNp(p.net_paid), 0);
       const benchWs = benchPlayers.reduce((s, p) => s + p.ws, 0);
       const benchCount = benchPlayers.length;
