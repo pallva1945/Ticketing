@@ -135,7 +135,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   }, [data, seasons, excludeOutliers]);
 
   const historicData = useMemo(() => {
-    const allSeasons = [...new Set(data.map(d => d.season))].filter(s => s !== '2026-27').sort();
+    const allSeasons = [...new Set(data.map(d => d.season))].filter(s => s && s !== '2026-27').sort();
     const filterSeason = (s: string) => data.filter(d => d.season === s && d.team_name && !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name)));
 
     const teamsBySeason = allSeasons.map(s => {
@@ -545,8 +545,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 10, right: 20, bottom: 10, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
-                <XAxis type="number" dataKey="netPaid" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name="Net Paid" label={{ value: t('Net Paid'), position: 'insideBottomRight', offset: -5, fontSize: 10, fill: isDark ? '#6b7280' : '#9ca3af' }} />
-                <YAxis type="number" dataKey="ws" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Win Shares" label={{ value: t('Win Shares'), position: 'insideTopLeft', offset: 0, fontSize: 10, fill: isDark ? '#6b7280' : '#9ca3af', angle: -90 }} />
+                <XAxis type="number" dataKey="netPaid" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name="Net Paid" label={{ value: t('Net Paid'), position: 'insideBottomRight', offset: -5, fontSize: 10, fill: isDark ? '#6b7280' : '#9ca3af' }} domain={[0, (dm: number) => Math.ceil(dm * 1.02 / 50000) * 50000]} />
+                <YAxis type="number" dataKey="ws" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Win Shares" label={{ value: t('Win Shares'), position: 'insideTopLeft', offset: 0, fontSize: 10, fill: isDark ? '#6b7280' : '#9ca3af', angle: -90 }} domain={[(dm: number) => Math.floor(dm * 0.95 * 10) / 10, (dm: number) => Math.ceil(dm * 1.05 * 10) / 10]} />
                 {regLine.length === 2 && (
                   <ReferenceLine
                     segment={[{ x: regLine[0].netPaid, y: regLine[0].ws }, { x: regLine[1].netPaid, y: regLine[1].ws }]}
