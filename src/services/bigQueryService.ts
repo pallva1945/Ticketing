@@ -1235,6 +1235,7 @@ export interface MarketPlayer {
   months: number | null;
   situation: string | null;
   confidence: number | null;
+  tm_wins: number | null;
 }
 
 export async function fetchEuropeanMarketFromBigQuery(): Promise<{ success: boolean; data: MarketPlayer[] }> {
@@ -1249,6 +1250,7 @@ export async function fetchEuropeanMarketFromBigQuery(): Promise<{ success: bool
       ws_40: r.ws_40 != null ? parseFloat(r.ws_40) : null,
       yearly_salary_norm: r.yearly_salary_norm || 0,
       net_paid: r.net_paid || 0,
+      tm_wins: r.tm_wins != null ? parseFloat(r.tm_wins) : null,
     }));
     console.log(`Fetched ${data.length} european market records from BigQuery`);
     return { success: true, data };

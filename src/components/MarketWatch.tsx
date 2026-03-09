@@ -81,14 +81,15 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   const teams = useMemo(() => [...new Set(seasonData.map(d => d.team_name))].sort(), [seasonData]);
 
   const teamStats = useMemo(() => {
-    const map = new Map<string, { team: string; players: MarketPlayer[]; payroll: number; netPaid: number; ws: number; avgWs40: number; avgSalary: number; rosterSize: number; itaCount: number; visaCount: number; youthCount: number }>();
+    const map = new Map<string, { team: string; players: MarketPlayer[]; payroll: number; netPaid: number; ws: number; tmWins: number; avgWs40: number; avgSalary: number; rosterSize: number; itaCount: number; visaCount: number; youthCount: number }>();
     seasonData.forEach(p => {
-      if (!map.has(p.team_name)) map.set(p.team_name, { team: p.team_name, players: [], payroll: 0, netPaid: 0, ws: 0, avgWs40: 0, avgSalary: 0, rosterSize: 0, itaCount: 0, visaCount: 0, youthCount: 0 });
+      if (!map.has(p.team_name)) map.set(p.team_name, { team: p.team_name, players: [], payroll: 0, netPaid: 0, ws: 0, tmWins: p.tm_wins || 0, avgWs40: 0, avgSalary: 0, rosterSize: 0, itaCount: 0, visaCount: 0, youthCount: 0 });
       const t = map.get(p.team_name)!;
       t.players.push(p);
       t.payroll += p.yearly_salary_norm;
       t.netPaid += p.net_paid;
       t.ws += p.ws;
+      if (p.tm_wins != null && p.tm_wins > t.tmWins) t.tmWins = p.tm_wins;
       t.rosterSize++;
       if (p.ita) t.itaCount++;
       if (p.visa) t.visaCount++;
@@ -107,9 +108,9 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
   const leagueAvg = useMemo(() => {
     const paid = seasonData.filter(p => p.yearly_salary_norm > 0);
-    const totalWs = seasonData.filter(p => p.ws > 0).reduce((s, p) => s + p.ws, 0);
     const totalNetPaid = paid.reduce((s, p) => s + p.net_paid, 0);
     const highestPaid = paid.length > 0 ? paid.reduce((max, p) => p.yearly_salary_norm > max.yearly_salary_norm ? p : max, paid[0]) : null;
+    const totalTmWins = teamStats.reduce((s, t) => s + t.tmWins, 0);
     return {
       avgSalary: paid.length > 0 ? paid.reduce((s, p) => s + p.yearly_salary_norm, 0) / paid.length : 0,
       medianSalary: (() => { const sorted = paid.map(p => p.yearly_salary_norm).sort((a, b) => a - b); return sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : 0; })(),
@@ -117,9 +118,9 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       totalPayroll: paid.reduce((s, p) => s + p.yearly_salary_norm, 0),
       teamCount: teams.length,
       highestPaid,
-      costPerWs: totalWs > 0 ? paid.reduce((s, p) => s + adjNp(p.net_paid), 0) / totalWs : 0,
+      costPerWin: totalTmWins > 0 ? teamStats.reduce((s, t) => s + t.netPaid, 0) / totalTmWins : 0,
     };
-  }, [seasonData, teams]);
+  }, [seasonData, teams, teamStats]);
 
   const payrollTrend = useMemo(() => {
     return seasons.map(s => {
@@ -135,29 +136,30 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
   const historicData = useMemo(() => {
     const allSeasons = [...new Set(data.map(d => d.season))].sort();
-    const filterSeason = (s: string) => data.filter(d => d.season === s && !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name)));
+    const filterSeason = (s: string) => data.filter(d => d.season === s && d.team_name && !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name)));
 
     const teamsBySeason = allSeasons.map(s => {
       const sd = filterSeason(s);
-      const teamMap = new Map<string, { team: string; netPaid: number; ws: number; players: number }>();
+      const teamMap = new Map<string, { team: string; netPaid: number; ws: number; tmWins: number; players: number }>();
       sd.forEach(p => {
-        if (!teamMap.has(p.team_name)) teamMap.set(p.team_name, { team: p.team_name, netPaid: 0, ws: 0, players: 0 });
+        if (!teamMap.has(p.team_name)) teamMap.set(p.team_name, { team: p.team_name, netPaid: 0, ws: 0, tmWins: p.tm_wins || 0, players: 0 });
         const t = teamMap.get(p.team_name)!;
         t.netPaid += p.net_paid;
         t.ws += p.ws;
+        if (p.tm_wins && p.tm_wins > t.tmWins) t.tmWins = p.tm_wins;
         t.players++;
       });
-      return { season: s, teams: [...teamMap.values()].map(t => ({ ...t, costPerWs: t.ws > 0 ? t.netPaid / t.ws : 0 })) };
+      return { season: s, teams: [...teamMap.values()].map(t => ({ ...t, costPerWin: t.tmWins > 0 ? t.netPaid / t.tmWins : 0 })) };
     });
 
-    const allTeamNames = [...new Set(data.filter(d => !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name))).map(d => d.team_name))].sort();
+    const allTeamNames = [...new Set(data.filter(d => d.team_name && !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name))).map(d => d.team_name))].sort();
 
-    const costPerWsTable = allTeamNames.map(team => {
+    const costPerWinTable = allTeamNames.map(team => {
       const row: Record<string, any> = { team };
       allSeasons.forEach(s => {
         const entry = teamsBySeason.find(ts => ts.season === s)?.teams.find(t => t.team === team);
-        row[s] = entry ? entry.costPerWs : null;
-        row[`${s}_ws`] = entry ? entry.ws : null;
+        row[s] = entry ? entry.costPerWin : null;
+        row[`${s}_wins`] = entry ? entry.tmWins : null;
         row[`${s}_np`] = entry ? entry.netPaid : null;
       });
       const vals = allSeasons.map(s => row[s]).filter((v: number | null) => v !== null && v > 0) as number[];
@@ -166,21 +168,20 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     }).filter(r => r.avg > 0).sort((a, b) => a.avg - b.avg);
 
     const leagueTrend = allSeasons.map(s => {
-      const sd = filterSeason(s);
-      const totalNp = sd.reduce((sum, p) => sum + p.net_paid, 0);
-      const totalWs = sd.filter(p => p.ws > 0).reduce((sum, p) => sum + p.ws, 0);
-      const avgCostPerWs = totalWs > 0 ? totalNp / totalWs : 0;
+      const teamsInSeason = teamsBySeason.find(ts2 => ts2.season === s)?.teams.filter(t => t.tmWins > 0) || [];
+      const totalNp = teamsInSeason.reduce((sum, t) => sum + t.netPaid, 0);
+      const totalWins = teamsInSeason.reduce((sum, t) => sum + t.tmWins, 0);
+      const avgCostPerWin = totalWins > 0 ? totalNp / totalWins : 0;
       const medianCpw = (() => {
-        const ts = teamsBySeason.find(ts2 => ts2.season === s)?.teams.filter(t => t.costPerWs > 0) || [];
-        const sorted = ts.map(t => t.costPerWs).sort((a, b) => a - b);
-        return sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : 0;
+        const cpws = teamsInSeason.filter(t => t.costPerWin > 0).map(t => t.costPerWin).sort((a, b) => a - b);
+        return cpws.length > 0 ? cpws[Math.floor(cpws.length / 2)] : 0;
       })();
-      const varese = teamsBySeason.find(ts2 => ts2.season === s)?.teams.find(t => t.team.includes('Varese'));
-      return { season: s, avgCostPerWs: Math.round(avgCostPerWs), medianCpw: Math.round(medianCpw), vareseCpw: varese && varese.ws > 0 ? Math.round(varese.costPerWs) : null, totalNp, totalWs };
+      const varese = teamsInSeason.find(t => t.team.includes('Varese'));
+      return { season: s, avgCostPerWin: Math.round(avgCostPerWin), medianCpw: Math.round(medianCpw), vareseCpw: varese && varese.tmWins > 0 ? Math.round(varese.costPerWin) : null, totalNp, totalWins };
     });
 
     const regressionAll = (() => {
-      const pts = data.filter(d => d.net_paid > 0 && d.ws > 0 && d.min_play > 50 && !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name))).map(p => ({
+      const pts = data.filter(d => d.net_paid > 0 && d.ws > 0 && d.min_play > 50 && d.team_name && !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name))).map(p => ({
         player: p.player, team: shortName(p.team_name), season: p.season,
         netPaid: p.net_paid, ws: p.ws, isVarese: p.team_name.includes('Varese'),
       }));
@@ -199,7 +200,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       return { pts, slope, intercept, r2 };
     })();
 
-    return { allSeasons, costPerWsTable, leagueTrend, regressionAll, teamsBySeason };
+    return { allSeasons, costPerWinTable, leagueTrend, regressionAll, teamsBySeason };
   }, [data, seasons, excludeOutliers]);
 
   const [historicSortKey, setHistoricSortKey] = useState<string>('avg');
@@ -292,20 +293,20 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     return teamStats.map(t => ({
       team: shortName(t.team),
       netPaid: t.netPaid,
-      ws: t.ws,
+      wins: t.tmWins,
       isVarese: t.team.includes('Varese'),
     }));
   }, [teamStats]);
 
   const regression = useMemo(() => {
-    const pts = scatterData.filter(d => d.netPaid > 0 && d.ws > 0);
+    const pts = scatterData.filter(d => d.netPaid > 0 && d.wins > 0);
     if (pts.length < 2) return null;
     const n = pts.length;
     const sumX = pts.reduce((s, p) => s + p.netPaid, 0);
-    const sumY = pts.reduce((s, p) => s + p.ws, 0);
-    const sumXY = pts.reduce((s, p) => s + p.netPaid * p.ws, 0);
+    const sumY = pts.reduce((s, p) => s + p.wins, 0);
+    const sumXY = pts.reduce((s, p) => s + p.netPaid * p.wins, 0);
     const sumX2 = pts.reduce((s, p) => s + p.netPaid * p.netPaid, 0);
-    const sumY2 = pts.reduce((s, p) => s + p.ws * p.ws, 0);
+    const sumY2 = pts.reduce((s, p) => s + p.wins * p.wins, 0);
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
     const intercept = (sumY - slope * sumX) / n;
     const rNum = n * sumXY - sumX * sumY;
@@ -313,7 +314,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     const r2 = rDen > 0 ? (rNum / rDen) ** 2 : 0;
     const minX = Math.min(...pts.map(p => p.netPaid));
     const maxX = Math.max(...pts.map(p => p.netPaid));
-    return { slope, intercept, r2, line: [{ netPaid: minX, ws: slope * minX + intercept }, { netPaid: maxX, ws: slope * maxX + intercept }] };
+    return { slope, intercept, r2, line: [{ netPaid: minX, wins: slope * minX + intercept }, { netPaid: maxX, wins: slope * maxX + intercept }] };
   }, [scatterData]);
 
   const maxWsRank = useMemo(() => {
@@ -359,7 +360,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         gini = mean > 0 ? sumDiff / (2 * n * n * mean) : 0;
       }
       const adjTeamNp = tm.players.reduce((s, p) => s + adjNp(p.net_paid), 0);
-      const costPerWs = tm.ws > 0 ? adjTeamNp / tm.ws : 0;
+      const costPerWin = tm.tmWins > 0 ? tm.netPaid / tm.tmWins : 0;
       const sortedByNp = tm.players.slice().sort((a, b) => b.net_paid - a.net_paid);
       const benchPlayers = tm.players.filter(p => p.tm_min_rk >= 10 && !(p.situation && (p.situation.includes('Cut') || p.situation.includes('Buyout') || p.situation.includes('Released') || p.situation.includes('Mid-season'))));
       const benchNp = benchPlayers.reduce((s, p) => s + adjNp(p.net_paid), 0);
@@ -403,7 +404,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         avgSalary,
         maxAvgRatio,
         gini,
-        costPerWs,
+        costPerWin,
+        tmWins: tm.tmWins,
         top3WsShare,
         wsGini,
         wsTop1,
@@ -483,10 +485,10 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   );
 
   const renderHistoric = () => {
-    const { allSeasons, costPerWsTable, leagueTrend, regressionAll } = historicData;
+    const { allSeasons, costPerWinTable, leagueTrend, regressionAll } = historicData;
     const SEASON_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
 
-    const sortedTable = [...costPerWsTable].sort((a, b) => {
+    const sortedTable = [...costPerWinTable].sort((a, b) => {
       const av = historicSortKey === 'team' ? 0 : (a[historicSortKey] ?? Infinity);
       const bv = historicSortKey === 'team' ? 0 : (b[historicSortKey] ?? Infinity);
       if (historicSortKey === 'team') return historicSortDir === 'asc' ? a.team.localeCompare(b.team) : b.team.localeCompare(a.team);
@@ -529,7 +531,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                     </div>
                   );
                 }} />
-                <Bar dataKey="avgCostPerWs" name={t('League Avg Cost/WS')} fill={isDark ? '#6366f1' : '#818cf8'} radius={[4, 4, 0, 0]} barSize={30} opacity={0.6} />
+                <Bar dataKey="avgCostPerWin" name={t('League Avg Cost/Win')} fill={isDark ? '#6366f1' : '#818cf8'} radius={[4, 4, 0, 0]} barSize={30} opacity={0.6} />
                 <Line type="monotone" dataKey="medianCpw" name={t('League Median')} stroke={isDark ? '#a78bfa' : '#7c3aed'} strokeWidth={2} strokeDasharray="5 3" dot={{ r: 3 }} />
                 <Line type="monotone" dataKey="vareseCpw" name="Varese" stroke={VARESE_COLOR} strokeWidth={2.5} dot={{ r: 4, fill: VARESE_COLOR }} />
               </ComposedChart>
@@ -587,7 +589,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         </div>
 
         <div className={`${card} p-4 overflow-x-auto`}>
-          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Individual Players Historic Cost Per Win Share')} <span className={`font-normal ${subtext}`}>({t('Team Net Paid / Win Shares by Season')})</span></h3>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Historic Cost Per Win')} <span className={`font-normal ${subtext}`}>({t('Team Net Paid / Wins by Season')})</span></h3>
           <table className="w-full text-xs min-w-[600px]">
             <thead>
               <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
@@ -633,7 +635,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         <StatCard label={t('Players')} value={seasonData.length} color="emerald" />
         <StatCard label={t('Avg Salary')} value={fmt(leagueAvg.avgSalary)} sub={`Median: ${fmt(leagueAvg.medianSalary)}`} color="orange" />
         <StatCard label={t('Highest Salary')} value={leagueAvg.highestPaid ? fmt(leagueAvg.highestPaid.yearly_salary_norm) : '—'} sub={leagueAvg.highestPaid ? `${leagueAvg.highestPaid.player}` : ''} color="red" />
-        <StatCard label={t('Cost per WS')} value={fmt(leagueAvg.costPerWs)} sub={t('Net Paid / WS')} color="sky" />
+        <StatCard label={t('Cost per Win')} value={fmt(leagueAvg.costPerWin)} sub={t('Net Paid / Wins')} color="sky" />
         <StatCard label={t('Avg WS/40')} value={leagueAvg.avgWs40.toFixed(3)} sub={t('League average')} color="purple" />
       </div>
 
@@ -711,7 +713,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className={`${card} p-4`}>
           <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-            {t('Net Paid vs Win Shares')}
+            {t('Net Paid vs Wins')}
             {regression && <span className={`ml-2 font-normal ${subtext}`}>R² = {regression.r2.toFixed(3)}</span>}
           </h3>
           <div className="h-[280px]">
@@ -719,7 +721,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
               <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} />
                 <XAxis type="number" dataKey="netPaid" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name="Net Paid" domain={[(dm: number) => Math.max(0, dm * 0.85), (dm: number) => dm * 1.05]} />
-                <YAxis type="number" dataKey="ws" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Win Shares" domain={[(dm: number) => Math.max(0, dm * 0.85), (dm: number) => dm * 1.05]} tickFormatter={(v: number) => v % 1 === 0 ? String(v) : v.toFixed(1)} />
+                <YAxis type="number" dataKey="wins" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Wins" domain={[(dm: number) => Math.max(0, dm * 0.85), (dm: number) => dm * 1.05]} tickFormatter={(v: number) => v % 1 === 0 ? String(v) : v.toFixed(1)} />
                 <Tooltip content={({ payload }) => {
                   if (!payload || !payload.length) return null;
                   const d = payload[0]?.payload;
@@ -728,8 +730,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                     <div style={tipStyle as any} className="p-2">
                       <p className="font-semibold text-xs">{d.team}</p>
                       <p className="text-[10px]">Net Paid: {fmtFull(d.netPaid)}</p>
-                      <p className="text-[10px]">Win Shares: {d.ws.toFixed(2)}</p>
-                      {d.netPaid > 0 && d.ws > 0 && <p className="text-[10px]">{t('Cost/WS')}: {fmt(adjNp(d.netPaid) / d.ws)}</p>}
+                      <p className="text-[10px]">{t('Wins')}: {d.wins.toFixed(1)}</p>
+                      {d.netPaid > 0 && d.wins > 0 && <p className="text-[10px]">{t('Cost/Win')}: {fmt(d.netPaid / d.wins)}</p>}
                     </div>
                   );
                 }} />
@@ -890,8 +892,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                   { key: 'top9Share', label: t('Top 9') },
                   { key: 'benchNpShare', label: t('Bench') },
                   { key: 'maxAvgRatio', label: t('Max/Avg') },
-                  { key: 'costPerWs', label: t('Cost/WS') },
-                  { key: 'ws', label: 'WS' },
+                  { key: 'costPerWin', label: t('Cost/Win') },
+                  { key: 'tmWins', label: t('Wins') },
                 ].map(col => (
                   <th key={col.key} className={`py-2 px-2 ${col.align === 'left' ? 'text-left' : 'text-right'} font-semibold cursor-pointer select-none whitespace-nowrap ${subtext}`} onClick={() => handleTeamSort(col.key)}>
                     <span className="inline-flex items-center gap-1">{col.label} {teamSortKey === col.key && <ArrowUpDown size={10} className={teamSortDir === 'asc' ? 'rotate-180' : ''} />}</span>
@@ -913,8 +915,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.top9Share > 0 ? `${tm.top9Share.toFixed(0)}%` : '—'}</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.benchNpShare > 0 ? `${tm.benchNpShare.toFixed(0)}%` : '—'}</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.maxAvgRatio.toFixed(1)}x</td>
-                  <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{tm.costPerWs > 0 ? fmt(tm.costPerWs) : '—'}</td>
-                  <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{tm.ws.toFixed(1)}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{tm.costPerWin > 0 ? fmt(tm.costPerWin) : '—'}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{tm.tmWins > 0 ? tm.tmWins.toFixed(1) : '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -937,7 +939,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                   { key: 'wsTop9', label: t('Top 9') },
                   { key: 'benchWs', label: t('Bench') },
                   { key: 'wsMaxAvgRatio', label: t('Max/Avg') },
-                  { key: 'costPerWs', label: t('Cost/WS') },
+                  { key: 'costPerWin', label: t('Cost/Win') },
                   { key: 'netPaid', label: t('Net Paid') },
                 ].map(col => (
                   <th key={col.key} className={`py-2 px-2 ${col.align === 'left' ? 'text-left' : 'text-right'} font-semibold cursor-pointer select-none whitespace-nowrap ${subtext}`} onClick={() => handleWsSort(col.key)}>
@@ -959,7 +961,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.wsTop9 > 0 ? tm.wsTop9.toFixed(2) : '—'}</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${tm.benchWs < 0 ? 'text-red-500' : subtext}`}>{tm.benchWs.toFixed(2)}</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${subtext}`}>{tm.wsMaxAvgRatio.toFixed(1)}x</td>
-                  <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{tm.costPerWs > 0 ? fmt(tm.costPerWs) : '—'}</td>
+                  <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-sky-400' : 'text-sky-600'}`}>{tm.costPerWin > 0 ? fmt(tm.costPerWin) : '—'}</td>
                   <td className={`py-2 px-2 text-right tabular-nums ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{fmt(tm.netPaid)}</td>
                 </tr>
               ))}
@@ -1226,8 +1228,8 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   const renderVarese = () => {
     if (!varese) return <div className={`${card} p-8 text-center ${subtext}`}>{t('No Varese data for this season')}</div>;
     const vPlayers = varese.players.sort((a, b) => b.net_paid - a.net_paid);
-    const vareseCostPerWs = varese.ws > 0 ? varese.players.reduce((s, p) => s + adjNp(p.net_paid), 0) / varese.ws : 0;
-    const leagueCostPerWs = leagueAvg.costPerWs;
+    const vareseCostPerWin = varese.tmWins > 0 ? varese.netPaid / varese.tmWins : 0;
+    const leagueCostPerWin = leagueAvg.costPerWin;
     const vReg = (() => {
       const pts = vPlayers.filter(p => p.net_paid > 0 && p.ws > 0);
       if (pts.length < 2) return null;
@@ -1253,7 +1255,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           <StatCard label={t('Payroll')} value={fmt(varese.payroll)} sub={`#${vareseRank} ${t('of')} ${teamStats.length}`} color="red" />
           <StatCard label={t('Net Paid')} value={fmt(varese.netPaid)} sub={`${((varese.netPaid / varese.payroll) * 100).toFixed(0)}% ${t('of payroll')}`} color="orange" />
           <StatCard label="WS" value={varese.ws.toFixed(1)} sub={`Avg WS/40: ${varese.avgWs40.toFixed(3)}`} color="blue" />
-          <StatCard label={t('Cost/WS')} value={fmt(vareseCostPerWs)} sub={`${t('League')}: ${fmt(leagueCostPerWs)}`} color="emerald" />
+          <StatCard label={t('Cost/Win')} value={fmt(vareseCostPerWin)} sub={`${t('League')}: ${fmt(leagueCostPerWin)}`} color="emerald" />
           <StatCard label={t('Roster')} value={varese.rosterSize.toString()} sub={`${varese.itaCount} ITA · ${varese.visaCount} Visa · ${varese.youthCount} Youth`} color="purple" />
         </div>
 
