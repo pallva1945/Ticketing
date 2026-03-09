@@ -178,7 +178,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       })();
       const varese = teamsInSeason.find(t => t.team.includes('Varese'));
       return { season: s, avgCostPerWin: Math.round(avgCostPerWin), medianCpw: Math.round(medianCpw), vareseCpw: varese && varese.tmWins > 0 ? Math.round(varese.costPerWin) : null, totalNp, totalWins };
-    });
+    }).filter(d => d.totalNp > 0 || d.totalWins > 0);
 
     const regressionAll = (() => {
       const pts = data.filter(d => d.net_paid > 0 && d.ws > 0 && d.min_play > 50 && d.team_name && !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name))).map(p => ({
