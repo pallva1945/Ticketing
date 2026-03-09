@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, Sun, Moon, TrendingUp, DollarSign, Users, Award, Search, ChevronDown, ArrowUpDown, Shield, Eye, BarChart3 } from 'lucide-react';
+import { ChevronLeft, Sun, Moon, TrendingUp, DollarSign, Users, Award, Search, ChevronDown, ArrowUpDown, Shield, Eye, BarChart3, History } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, Cell, Legend, LineChart, Line, ComposedChart, ReferenceLine, ReferenceArea } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -7,7 +7,7 @@ import { PV_LOGO_URL } from '../constants';
 import type { MarketPlayer } from '../services/bigQueryService';
 
 type SortKey = 'yearly_salary_norm' | 'ws' | 'ws_40' | 'cost_per_ws' | 'net_paid' | 'min_play' | 'player' | 'team_name';
-type Tab = 'overview' | 'teams' | 'players' | 'efficiency' | 'varese';
+type Tab = 'overview' | 'teams' | 'players' | 'efficiency' | 'varese' | 'historic';
 
 const fmt = (n: number) => {
   if (n >= 1000000) return `€${(n / 1000000).toFixed(1)}M`;
@@ -18,6 +18,28 @@ const fmt = (n: number) => {
 const fmtFull = (n: number) => `€${n.toLocaleString('en-US')}`;
 const MIN_NET_PAID = 25000;
 const adjNp = (np: number) => Math.max(0, np - MIN_NET_PAID);
+
+const shortName = (name: string) => {
+  const map: Record<string, string> = {
+    'EA7 Emporio Armani Milano': 'Milano',
+    'Virtus Segafredo Bologna': 'Bologna',
+    'Umana Reyer Venezia': 'Venezia',
+    'Openjobmetis Varese': 'Varese',
+    'Germani Brescia': 'Brescia',
+    'Bertram Derthona Tortona': 'Tortona',
+    'Nutribullet Treviso Basket': 'Treviso',
+    'Banco di Sardegna Sassari': 'Sassari',
+    'Dolomiti Energia Trentino': 'Trentino',
+    'Pallacanestro Trieste': 'Trieste',
+    'Vanoli Basket Cremona': 'Cremona',
+    'Acqua San Bernardo Cantu': 'Cantù',
+    'Old Wild West Udine': 'Udine',
+    'UNAHOTELS Reggio Emilia': 'Reggio',
+    'Trapani Shark': 'Trapani',
+    'Napoli Basket': 'Napoli',
+  };
+  return map[name] || name;
+};
 
 export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> = ({ onBack, onHome }) => {
   const { theme, toggleTheme } = useTheme();
@@ -111,6 +133,78 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     }).reverse();
   }, [data, seasons, excludeOutliers]);
 
+  const historicData = useMemo(() => {
+    const allSeasons = [...new Set(data.map(d => d.season))].sort();
+    const filterSeason = (s: string) => data.filter(d => d.season === s && !(d.season === '2025-26' && d.team_name === 'Trapani Shark') && (!excludeOutliers || !isOutlierTeam(d.team_name)));
+
+    const teamsBySeason = allSeasons.map(s => {
+      const sd = filterSeason(s);
+      const teamMap = new Map<string, { team: string; netPaid: number; ws: number; players: number }>();
+      sd.forEach(p => {
+        if (!teamMap.has(p.team_name)) teamMap.set(p.team_name, { team: p.team_name, netPaid: 0, ws: 0, players: 0 });
+        const t = teamMap.get(p.team_name)!;
+        t.netPaid += p.net_paid;
+        t.ws += p.ws;
+        t.players++;
+      });
+      return { season: s, teams: [...teamMap.values()].map(t => ({ ...t, costPerWs: t.ws > 0 ? t.netPaid / t.ws : 0 })) };
+    });
+
+    const allTeamNames = [...new Set(data.filter(d => !excludeOutliers || !isOutlierTeam(d.team_name)).map(d => d.team_name))].sort();
+
+    const costPerWsTable = allTeamNames.map(team => {
+      const row: Record<string, any> = { team };
+      allSeasons.forEach(s => {
+        const entry = teamsBySeason.find(ts => ts.season === s)?.teams.find(t => t.team === team);
+        row[s] = entry ? entry.costPerWs : null;
+        row[`${s}_ws`] = entry ? entry.ws : null;
+        row[`${s}_np`] = entry ? entry.netPaid : null;
+      });
+      const vals = allSeasons.map(s => row[s]).filter((v: number | null) => v !== null && v > 0) as number[];
+      row.avg = vals.length > 0 ? vals.reduce((a: number, b: number) => a + b, 0) / vals.length : 0;
+      return row;
+    }).filter(r => r.avg > 0).sort((a, b) => a.avg - b.avg);
+
+    const leagueTrend = allSeasons.map(s => {
+      const sd = filterSeason(s);
+      const totalNp = sd.reduce((sum, p) => sum + p.net_paid, 0);
+      const totalWs = sd.filter(p => p.ws > 0).reduce((sum, p) => sum + p.ws, 0);
+      const avgCostPerWs = totalWs > 0 ? totalNp / totalWs : 0;
+      const medianCpw = (() => {
+        const ts = teamsBySeason.find(ts2 => ts2.season === s)?.teams.filter(t => t.costPerWs > 0) || [];
+        const sorted = ts.map(t => t.costPerWs).sort((a, b) => a - b);
+        return sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : 0;
+      })();
+      const varese = teamsBySeason.find(ts2 => ts2.season === s)?.teams.find(t => t.team.includes('Varese'));
+      return { season: s, avgCostPerWs: Math.round(avgCostPerWs), medianCpw: Math.round(medianCpw), vareseCpw: varese && varese.ws > 0 ? Math.round(varese.costPerWs) : null, totalNp, totalWs };
+    });
+
+    const regressionAll = (() => {
+      const pts = data.filter(d => d.net_paid > 0 && d.ws > 0 && d.min_play > 50 && (!excludeOutliers || !isOutlierTeam(d.team_name))).map(p => ({
+        player: p.player, team: shortName(p.team_name), season: p.season,
+        netPaid: p.net_paid, ws: p.ws, isVarese: p.team_name.includes('Varese'),
+      }));
+      if (pts.length < 2) return { pts, slope: 0, intercept: 0, r2: 0 };
+      const n = pts.length;
+      const sumX = pts.reduce((s, p) => s + p.netPaid, 0);
+      const sumY = pts.reduce((s, p) => s + p.ws, 0);
+      const sumXY = pts.reduce((s, p) => s + p.netPaid * p.ws, 0);
+      const sumX2 = pts.reduce((s, p) => s + p.netPaid * p.netPaid, 0);
+      const sumY2 = pts.reduce((s, p) => s + p.ws * p.ws, 0);
+      const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+      const intercept = (sumY - slope * sumX) / n;
+      const ssRes = pts.reduce((s, p) => s + Math.pow(p.ws - (slope * p.netPaid + intercept), 2), 0);
+      const ssTot = pts.reduce((s, p) => s + Math.pow(p.ws - sumY / n, 2), 0);
+      const r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+      return { pts, slope, intercept, r2 };
+    })();
+
+    return { allSeasons, costPerWsTable, leagueTrend, regressionAll, teamsBySeason };
+  }, [data, seasons, excludeOutliers]);
+
+  const [historicSortKey, setHistoricSortKey] = useState<string>('avg');
+  const [historicSortDir, setHistoricSortDir] = useState<'asc' | 'desc'>('asc');
+
   const card = isDark ? 'bg-gray-900/60 border border-gray-800 rounded-xl' : 'bg-white border border-gray-200 rounded-xl shadow-sm';
   const subtext = isDark ? 'text-gray-500' : 'text-gray-400';
   const selectClass = `text-xs rounded-lg px-3 py-2 appearance-none pr-7 ${isDark ? 'bg-gray-800 text-gray-300 border-gray-700' : 'bg-white text-gray-700 border-gray-200'} border`;
@@ -121,6 +215,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     { id: 'players', label: t('Players'), icon: Users },
     { id: 'efficiency', label: t('Value Map'), icon: TrendingUp },
     { id: 'varese', label: 'Varese', icon: Eye },
+    { id: 'historic', label: t('Historic Values'), icon: History },
   ];
 
   const handleSort = (key: SortKey) => {
@@ -187,27 +282,6 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   const tipStyle = { borderRadius: 8, fontSize: 11, backgroundColor: isDark ? '#1f2937' : '#fff', border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`, color: isDark ? '#f3f4f6' : '#111827' };
 
   const VARESE_COLOR = '#E30613';
-  const shortName = (name: string) => {
-    const map: Record<string, string> = {
-      'EA7 Emporio Armani Milano': 'Milano',
-      'Virtus Segafredo Bologna': 'Bologna',
-      'Umana Reyer Venezia': 'Venezia',
-      'Openjobmetis Varese': 'Varese',
-      'Germani Brescia': 'Brescia',
-      'Bertram Derthona Tortona': 'Tortona',
-      'Nutribullet Treviso Basket': 'Treviso',
-      'Banco di Sardegna Sassari': 'Sassari',
-      'Dolomiti Energia Trentino': 'Trentino',
-      'Pallacanestro Trieste': 'Trieste',
-      'Vanoli Basket Cremona': 'Cremona',
-      'Acqua San Bernardo Cantu': 'Cantù',
-      'Old Wild West Udine': 'Udine',
-      'UNAHOTELS Reggio Emilia': 'Reggio',
-      'Trapani Shark': 'Trapani',
-      'Napoli Basket': 'Napoli',
-    };
-    return map[name] || name;
-  };
   const teamPayrollChart = useMemo(() => teamStats.map(t => ({
     team: shortName(t.team),
     netPaid: t.netPaid,
@@ -407,6 +481,150 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       <span className="inline-flex items-center gap-1">{label} {sortKey === sortId && <ArrowUpDown size={10} className={sortDir === 'asc' ? 'rotate-180' : ''} />}</span>
     </th>
   );
+
+  const renderHistoric = () => {
+    const { allSeasons, costPerWsTable, leagueTrend, regressionAll } = historicData;
+    const SEASON_COLORS = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6'];
+
+    const sortedTable = [...costPerWsTable].sort((a, b) => {
+      const av = historicSortKey === 'team' ? 0 : (a[historicSortKey] ?? Infinity);
+      const bv = historicSortKey === 'team' ? 0 : (b[historicSortKey] ?? Infinity);
+      if (historicSortKey === 'team') return historicSortDir === 'asc' ? a.team.localeCompare(b.team) : b.team.localeCompare(a.team);
+      return historicSortDir === 'asc' ? av - bv : bv - av;
+    });
+
+    const handleHistoricSort = (key: string) => {
+      if (historicSortKey === key) setHistoricSortDir(d => d === 'asc' ? 'desc' : 'asc');
+      else { setHistoricSortKey(key); setHistoricSortDir('asc'); }
+    };
+
+    const regLine = regressionAll.pts.length > 1 ? (() => {
+      const xVals = regressionAll.pts.map(p => p.netPaid);
+      const xMin = Math.min(...xVals);
+      const xMax = Math.max(...xVals);
+      return [
+        { netPaid: xMin, ws: regressionAll.slope * xMin + regressionAll.intercept },
+        { netPaid: xMax, ws: regressionAll.slope * xMax + regressionAll.intercept },
+      ];
+    })() : [];
+
+    return (
+      <div className="space-y-5">
+        <div className={`${card} p-4`}>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Cost Per Win Over Time')} <span className={`font-normal ${subtext}`}>({t('League Avg vs Varese')})</span></h3>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={leagueTrend} margin={{ top: 10, right: 20, bottom: 5, left: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
+                <XAxis dataKey="season" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
+                <Tooltip content={({ payload, label }) => {
+                  if (!payload?.length) return null;
+                  return (
+                    <div style={tipStyle as any} className="p-2">
+                      <p className="font-semibold text-xs mb-1">{label}</p>
+                      {payload.map((p: any, i: number) => (
+                        <p key={i} className="text-[10px]" style={{ color: p.color }}>{p.name}: {fmtFull(p.value)}</p>
+                      ))}
+                    </div>
+                  );
+                }} />
+                <Bar dataKey="avgCostPerWs" name={t('League Avg Cost/WS')} fill={isDark ? '#6366f1' : '#818cf8'} radius={[4, 4, 0, 0]} barSize={30} opacity={0.6} />
+                <Line type="monotone" dataKey="medianCpw" name={t('League Median')} stroke={isDark ? '#a78bfa' : '#7c3aed'} strokeWidth={2} strokeDasharray="5 3" dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="vareseCpw" name="Varese" stroke={VARESE_COLOR} strokeWidth={2.5} dot={{ r: 4, fill: VARESE_COLOR }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className={`${card} p-4`}>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Historical Regression')}: {t('Net Paid')} vs {t('Win Shares')} <span className={`font-normal ${subtext}`}>(R² = {regressionAll.r2.toFixed(3)} · {regressionAll.pts.length} {t('players')} · {allSeasons.length} {t('seasons')})</span></h3>
+          <div className="h-[400px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart margin={{ top: 10, right: 20, bottom: 10, left: 10 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
+                <XAxis type="number" dataKey="netPaid" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name="Net Paid" label={{ value: t('Net Paid'), position: 'insideBottomRight', offset: -5, fontSize: 10, fill: isDark ? '#6b7280' : '#9ca3af' }} />
+                <YAxis type="number" dataKey="ws" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} name="Win Shares" label={{ value: t('Win Shares'), position: 'insideTopLeft', offset: 0, fontSize: 10, fill: isDark ? '#6b7280' : '#9ca3af', angle: -90 }} />
+                {regLine.length === 2 && (
+                  <ReferenceLine
+                    segment={[{ x: regLine[0].netPaid, y: regLine[0].ws }, { x: regLine[1].netPaid, y: regLine[1].ws }]}
+                    stroke={isDark ? '#f59e0b' : '#d97706'}
+                    strokeWidth={2}
+                    strokeDasharray="8 4"
+                    label={{ value: `y = ${regressionAll.slope.toFixed(6)}x + ${regressionAll.intercept.toFixed(2)}`, position: 'insideTopRight', fontSize: 9, fill: isDark ? '#f59e0b' : '#d97706' }}
+                  />
+                )}
+                <Tooltip content={({ payload }) => {
+                  if (!payload?.length) return null;
+                  const d = payload[0]?.payload;
+                  return d ? (
+                    <div style={tipStyle as any} className="p-2">
+                      <p className="font-semibold text-xs">{d.player} <span className="font-normal text-gray-400">({d.team})</span></p>
+                      <p className="text-[10px]">{d.season}</p>
+                      <p className="text-[10px]">Net Paid: {fmtFull(d.netPaid)}</p>
+                      <p className="text-[10px]">WS: {d.ws.toFixed(2)}</p>
+                    </div>
+                  ) : null;
+                }} />
+                <Scatter data={regressionAll.pts}>
+                  {regressionAll.pts.map((p, i) => (
+                    <Cell key={i} fill={p.isVarese ? VARESE_COLOR : SEASON_COLORS[allSeasons.indexOf(p.season) % SEASON_COLORS.length]} r={p.isVarese ? 5 : 2.5} opacity={p.isVarese ? 1 : 0.4} />
+                  ))}
+                </Scatter>
+              </ScatterChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
+            {allSeasons.map((s, i) => (
+              <span key={s} className={`text-[10px] flex items-center gap-1 ${subtext}`}>
+                <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: SEASON_COLORS[i % SEASON_COLORS.length] }} /> {s}
+              </span>
+            ))}
+            <span className={`text-[10px] flex items-center gap-1 ${subtext}`}>
+              <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: VARESE_COLOR }} /> Varese
+            </span>
+          </div>
+        </div>
+
+        <div className={`${card} p-4 overflow-x-auto`}>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Historic Cost Per Win')} <span className={`font-normal ${subtext}`}>({t('Team Net Paid / Win Shares by Season')})</span></h3>
+          <table className="w-full text-xs min-w-[600px]">
+            <thead>
+              <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                <th className={`py-2 px-2 text-left cursor-pointer select-none ${subtext}`} onClick={() => handleHistoricSort('team')}>
+                  <span className="inline-flex items-center gap-1">{t('Team')} {historicSortKey === 'team' && <ArrowUpDown size={10} />}</span>
+                </th>
+                {allSeasons.map(s => (
+                  <th key={s} className={`py-2 px-2 text-right cursor-pointer select-none ${subtext}`} onClick={() => handleHistoricSort(s)}>
+                    <span className="inline-flex items-center gap-1 justify-end">{s} {historicSortKey === s && <ArrowUpDown size={10} />}</span>
+                  </th>
+                ))}
+                <th className={`py-2 px-2 text-right cursor-pointer select-none font-bold ${subtext}`} onClick={() => handleHistoricSort('avg')}>
+                  <span className="inline-flex items-center gap-1 justify-end">{t('Avg')} {historicSortKey === 'avg' && <ArrowUpDown size={10} />}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedTable.map((row, i) => {
+                const isVarese = row.team.includes('Varese');
+                return (
+                  <tr key={i} className={`border-b ${isDark ? 'border-gray-800/50' : 'border-gray-100'} ${isVarese ? (isDark ? 'bg-red-950/20' : 'bg-red-50/30') : ''}`}>
+                    <td className={`py-1.5 px-2 font-medium whitespace-nowrap ${isVarese ? 'text-red-500' : isDark ? 'text-gray-200' : 'text-gray-800'}`}>{shortName(row.team)}</td>
+                    {allSeasons.map(s => (
+                      <td key={s} className={`py-1.5 px-2 text-right tabular-nums ${row[s] != null ? (isDark ? 'text-gray-300' : 'text-gray-700') : subtext}`}>
+                        {row[s] != null ? fmt(row[s]) : '—'}
+                      </td>
+                    ))}
+                    <td className={`py-1.5 px-2 text-right tabular-nums font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>{fmt(row.avg)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
 
   const renderOverview = () => (
     <div className="space-y-5">
@@ -1210,6 +1428,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         {activeTab === 'players' && renderPlayers()}
         {activeTab === 'efficiency' && renderEfficiency()}
         {activeTab === 'varese' && renderVarese()}
+        {activeTab === 'historic' && renderHistoric()}
       </div>
     </div>
   );

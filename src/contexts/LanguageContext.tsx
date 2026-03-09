@@ -1354,6 +1354,15 @@ const translations: Record<string, Record<Language, string>> = {
   'Signed in as': { en: 'Signed in as', it: 'Connesso come' },
   'Sign in with your @pallacanestrovarese.it Google account': { en: 'Sign in with your @pallacanestrovarese.it Google account', it: 'Accedi con il tuo account Google @pallacanestrovarese.it' },
   'Signing in...': { en: 'Signing in...', it: 'Accesso in corso...' },
+  'Historic Values': { en: 'Historic Values', it: 'Valori Storici' },
+  'Cost Per Win Over Time': { en: 'Cost Per Win Over Time', it: 'Costo Per Vittoria nel Tempo' },
+  'League Avg vs Varese': { en: 'League Avg vs Varese', it: 'Media Lega vs Varese' },
+  'Historic Cost Per Win': { en: 'Historic Cost Per Win', it: 'Costo Storico Per Vittoria' },
+  'Historical Regression': { en: 'Historical Regression', it: 'Regressione Storica' },
+  'League Avg Cost/WS': { en: 'League Avg Cost/WS', it: 'Costo/WS Medio Lega' },
+  'League Median': { en: 'League Median', it: 'Mediana Lega' },
+  'Team Net Paid / Win Shares by Season': { en: 'Team Net Paid / Win Shares by Season', it: 'Net Paid / Win Shares per Stagione' },
+  'Avg': { en: 'Avg', it: 'Media' },
 };
 
 interface LanguageContextType {
