@@ -168,8 +168,20 @@ const RevenueHome = ({
     const [venueOpsYTD, setVenueOpsYTD] = useState(0);
     const [vbRevenueYTD, setVbRevenueYTD] = useState(366315);
     const [vbHasSheetData, setVbHasSheetData] = useState(false);
+    const [sheetDataMonths, setSheetDataMonths] = useState(7);
+
+    const detectLastDataMonth = (items: { values: number[] }[]): number => {
+      let lastMonth = 0;
+      for (const item of items) {
+        for (let m = 11; m >= 0; m--) {
+          if (item.values[m] !== 0 && m + 1 > lastMonth) { lastMonth = m + 1; break; }
+        }
+      }
+      return lastMonth || 7;
+    };
 
     useEffect(() => {
+      const dataMonths: number[] = [];
       fetch('/api/revenue/sheet-data/bops')
         .then(r => r.json())
         .then(res => {
@@ -178,6 +190,8 @@ const RevenueHome = ({
             if (parsed) {
               const ytd = parsed.monthlyRevenue.reduce((s: number, item: any) => s + item.values.reduce((a: number, b: number) => a + b, 0), 0);
               setBopsYTD(ytd);
+              dataMonths.push(detectLastDataMonth(parsed.monthlyRevenue));
+              setSheetDataMonths(Math.max(...dataMonths));
             }
           }
         })
@@ -190,6 +204,8 @@ const RevenueHome = ({
             if (parsed) {
               const ytd = parsed.monthlyRevenue.reduce((s: number, item: any) => s + item.values.reduce((a: number, b: number) => a + b, 0), 0);
               setVenueOpsYTD(ytd);
+              dataMonths.push(detectLastDataMonth(parsed.monthlyRevenue));
+              setSheetDataMonths(Math.max(...dataMonths));
             }
           }
         })
@@ -203,6 +219,9 @@ const RevenueHome = ({
               const ytd = parsed.revenue.reduce((s: number, l: any) => s + l.total, 0);
               setVbRevenueYTD(ytd);
               setVbHasSheetData(true);
+              const vbItems = parsed.revenue.map((l: any) => ({ values: l.values || new Array(12).fill(0) }));
+              dataMonths.push(detectLastDataMonth(vbItems));
+              setSheetDataMonths(Math.max(...dataMonths));
             }
           }
         })
@@ -290,12 +309,8 @@ const RevenueHome = ({
     const daysIntoSeason = Math.round((today.getTime() - seasonStart.getTime()) / (1000 * 60 * 60 * 24));
     const dailyProgressFraction = Math.min(daysIntoSeason / totalSeasonDays, 1);
 
-    // Month-closed pacing: last closed accounting month (2-month lag: Mar→Jan=7/12, Apr→Feb=8/12)
-    // Season runs Jul-Jun: Jul=1/12, Aug=2/12, ..., Jan=7/12, ..., Jun=12/12
-    const lastClosedMonth = new Date(today.getFullYear(), today.getMonth() - 2, 1); // 2-month accounting lag
-    const lcm = lastClosedMonth.getMonth(); // 0=Jan,1=Feb,...,6=Jul,...,11=Dec
-    const closedMonths = lcm >= 6 ? lcm - 5 : lcm + 7; // Jul=1,Aug=2,...,Dec=6,Jan=7,...,Jun=12
-    const monthClosedFraction = closedMonths / 12;
+    // Month-closed pacing: uses actual loaded data months (e.g. Jan data = 7/12)
+    const monthClosedFraction = sheetDataMonths / 12;
 
     // Calculate pacing for each vertical with differential logic
     const verticalsWithPacing = verticalPerformance.map(v => {
