@@ -220,7 +220,7 @@ const RevenueHome = ({
     // 7 Revenue Verticals with actual data for Ticketing, GameDay, Sponsorship
     // isProrated: Sponsorship contracts are signed for the full year but recognized over time
     // hasData: indicates if this vertical has real data connected
-    // pacingType: 'monthly' (time-based), 'games' (by games played), 'daily' (day of season)
+    // pacingType: 'monthly' (time-based), 'games' (by games played), 'monthClosed' (last closed month), 'daily' (day of season)
     const verticalPerformance = [
       { 
           id: 'sponsorship', 
@@ -252,7 +252,7 @@ const RevenueHome = ({
           name: 'Varese Basketball', 
           current: vbRevenueYTD, 
           target: 930465, 
-          pacingType: 'daily' as const,
+          pacingType: 'monthClosed' as const,
           icon: GraduationCap, colorClass: 'text-teal-600', bgClass: 'bg-teal-50', barClass: 'bg-teal-500', isVariable: false, isProrated: false, hasData: vbHasSheetData 
       },
       { 
@@ -260,7 +260,7 @@ const RevenueHome = ({
           name: 'BOps', 
           current: bopsYTD, 
           target: 525000, 
-          pacingType: 'daily' as const,
+          pacingType: 'monthClosed' as const,
           icon: Activity, colorClass: 'text-emerald-600', bgClass: 'bg-emerald-50', barClass: 'bg-emerald-500', isVariable: false, isProrated: false, hasData: bopsYTD > 0 
       },
       { 
@@ -268,7 +268,7 @@ const RevenueHome = ({
           name: 'Venue Ops', 
           current: venueOpsYTD, 
           target: 262364, 
-          pacingType: 'daily' as const,
+          pacingType: 'monthClosed' as const,
           icon: Landmark, colorClass: 'text-slate-600', bgClass: 'bg-slate-50', barClass: 'bg-slate-500', isVariable: false, isProrated: false, hasData: venueOpsYTD > 0 
       },
       { 
@@ -290,6 +290,13 @@ const RevenueHome = ({
     const daysIntoSeason = Math.round((today.getTime() - seasonStart.getTime()) / (1000 * 60 * 60 * 24));
     const dailyProgressFraction = Math.min(daysIntoSeason / totalSeasonDays, 1);
 
+    // Month-closed pacing: last closed accounting month (2-month lag: Mar→Jan=7/12, Apr→Feb=8/12)
+    // Season runs Jul-Jun: Jul=1/12, Aug=2/12, ..., Jan=7/12, ..., Jun=12/12
+    const lastClosedMonth = new Date(today.getFullYear(), today.getMonth() - 2, 1); // 2-month accounting lag
+    const lcm = lastClosedMonth.getMonth(); // 0=Jan,1=Feb,...,6=Jul,...,11=Dec
+    const closedMonths = lcm >= 6 ? lcm - 5 : lcm + 7; // Jul=1,Aug=2,...,Dec=6,Jan=7,...,Jun=12
+    const monthClosedFraction = closedMonths / 12;
+
     // Calculate pacing for each vertical with differential logic
     const verticalsWithPacing = verticalPerformance.map(v => {
         let pacePct: number;
@@ -307,6 +314,11 @@ const RevenueHome = ({
                 expectedAtThisPoint = v.target * seasonProgressFraction;
                 paceMarkerPct = seasonProgressPct;
                 break;
+            case 'monthClosed':
+                // Month-closed: pace by last closed month (Jan=7/12, Feb=8/12, etc.)
+                expectedAtThisPoint = v.target * monthClosedFraction;
+                paceMarkerPct = monthClosedFraction * 100;
+                break;
             case 'daily':
                 // Daily: pace by actual day of the season
                 expectedAtThisPoint = v.target * dailyProgressFraction;
@@ -322,6 +334,8 @@ const RevenueHome = ({
             projectedFinish = (v.current / gamesCount) * TOTAL_GAMES_SEASON;
         } else if (v.isProrated && 'signedValue' in v) {
             projectedFinish = v.signedValue as number;
+        } else if (v.pacingType === 'monthClosed') {
+            projectedFinish = monthClosedFraction > 0 ? v.current / monthClosedFraction : v.current;
         } else if (v.pacingType === 'daily') {
             projectedFinish = dailyProgressFraction > 0 ? v.current / dailyProgressFraction : v.current;
         } else {
