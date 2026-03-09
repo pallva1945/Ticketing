@@ -587,7 +587,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
         </div>
 
         <div className={`${card} p-4 overflow-x-auto`}>
-          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Historic Cost Per Win')} <span className={`font-normal ${subtext}`}>({t('Team Net Paid / Win Shares by Season')})</span></h3>
+          <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Individual Players Historic Cost Per Win Share')} <span className={`font-normal ${subtext}`}>({t('Team Net Paid / Win Shares by Season')})</span></h3>
           <table className="w-full text-xs min-w-[600px]">
             <thead>
               <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>

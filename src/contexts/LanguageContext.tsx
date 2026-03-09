@@ -1357,7 +1357,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Historic Values': { en: 'Historic Values', it: 'Valori Storici' },
   'Cost Per Win Over Time': { en: 'Cost Per Win Over Time', it: 'Costo Per Vittoria nel Tempo' },
   'League Avg vs Varese': { en: 'League Avg vs Varese', it: 'Media Lega vs Varese' },
-  'Historic Cost Per Win': { en: 'Historic Cost Per Win', it: 'Costo Storico Per Vittoria' },
+  'Individual Players Historic Cost Per Win Share': { en: 'Individual Players Historic Cost Per Win Share', it: 'Costo Storico Per Win Share — Giocatori Individuali' },
   'Historical Regression': { en: 'Historical Regression', it: 'Regressione Storica' },
   'League Avg Cost/WS': { en: 'League Avg Cost/WS', it: 'Costo/WS Medio Lega' },
   'League Median': { en: 'League Median', it: 'Mediana Lega' },
