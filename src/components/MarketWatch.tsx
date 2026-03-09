@@ -1320,6 +1320,66 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
           <p className={`text-[10px] mt-1 ${subtext}`}>{t('Top-left = high value (low cost, high WS) · Bottom-right = low value (high cost, low WS)')}</p>
         </div>
 
+        {(() => {
+          const histPts = data.filter(d => d.team_name && d.team_name.includes('Varese') && d.net_paid > 0 && d.ws > 0 && d.season && d.season !== '2026-27').map(p => ({
+            player: p.player, season: p.season, netPaid: p.net_paid, ws: p.ws, min: p.min_play,
+          }));
+          if (histPts.length < 2) return null;
+          const n = histPts.length;
+          const sX = histPts.reduce((s, p) => s + p.netPaid, 0);
+          const sY = histPts.reduce((s, p) => s + p.ws, 0);
+          const sXY = histPts.reduce((s, p) => s + p.netPaid * p.ws, 0);
+          const sX2 = histPts.reduce((s, p) => s + p.netPaid ** 2, 0);
+          const sY2 = histPts.reduce((s, p) => s + p.ws ** 2, 0);
+          const slope = (n * sXY - sX * sY) / (n * sX2 - sX * sX);
+          const intercept = (sY - slope * sX) / n;
+          const ssRes = histPts.reduce((s, p) => s + Math.pow(p.ws - (slope * p.netPaid + intercept), 2), 0);
+          const ssTot = histPts.reduce((s, p) => s + Math.pow(p.ws - sY / n, 2), 0);
+          const r2 = ssTot > 0 ? 1 - ssRes / ssTot : 0;
+          const mnX = Math.min(...histPts.map(p => p.netPaid));
+          const mxX = Math.max(...histPts.map(p => p.netPaid));
+          const regLine = [{ netPaid: mnX, ws: slope * mnX + intercept }, { netPaid: mxX, ws: slope * mxX + intercept }];
+          const histSeasons = [...new Set(histPts.map(p => p.season))].sort();
+          return (
+            <div className={`${card} p-4`}>
+              <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                {t('Net Paid vs Win Shares')} — {t('Historical')}
+                <span className={`ml-2 font-normal ${subtext}`}>R² = {r2.toFixed(3)} · {histPts.length} {t('players')} · {histSeasons.length} {t('seasons')}</span>
+              </h3>
+              <div className="h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ScatterChart margin={{ top: 10, right: 20, bottom: 10, left: 10 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
+                    <XAxis type="number" dataKey="netPaid" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} name={t('Net Paid')} label={{ value: t('Net Paid'), position: 'insideBottom', offset: -5, fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[0, (dm: number) => Math.ceil(dm * 1.02 / 50000) * 50000]} />
+                    <YAxis type="number" dataKey="ws" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => v % 1 === 0 ? String(v) : v.toFixed(1)} name="WS" label={{ value: t('Win Shares'), angle: -90, position: 'insideLeft', offset: 10, fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} domain={[(dm: number) => Math.floor(dm * 0.95 * 10) / 10, (dm: number) => Math.ceil(dm * 1.05 * 10) / 10]} />
+                    <Tooltip content={({ payload }) => {
+                      if (!payload || !payload.length) return null;
+                      const d = payload[0]?.payload;
+                      if (!d || d.isRegLine) return null;
+                      return (
+                        <div style={tipStyle as any} className="p-2">
+                          <p className="font-semibold text-xs">{d.player} <span className="font-normal text-gray-400">({d.season})</span></p>
+                          <p className="text-[10px]">{t('Net Paid')}: {fmtFull(d.netPaid)}</p>
+                          <p className="text-[10px]">WS: {d.ws.toFixed(2)}</p>
+                          <p className="text-[10px]">{t('Cost/WS')}: {d.ws > 0 ? fmt(adjNp(d.netPaid) / d.ws) : '—'}</p>
+                          <p className="text-[10px]">MIN: {d.min}</p>
+                        </div>
+                      );
+                    }} />
+                    <Scatter data={histPts} fill={VARESE_COLOR}>
+                      {histPts.map((_, i) => <Cell key={i} fill={VARESE_COLOR} r={6} />)}
+                    </Scatter>
+                    <Scatter data={regLine.map(p => ({ ...p, isRegLine: true }))} line={{ stroke: isDark ? '#f59e0b' : '#d97706', strokeWidth: 2, strokeDasharray: '6 3' }} fill="transparent" legendType="none">
+                      {regLine.map((_, i) => <Cell key={i} fill="transparent" r={0} />)}
+                    </Scatter>
+                  </ScatterChart>
+                </ResponsiveContainer>
+              </div>
+              <p className={`text-[10px] mt-1 ${subtext}`}>{t('Top-left = high value (low cost, high WS) · Bottom-right = low value (high cost, low WS)')}</p>
+            </div>
+          );
+        })()}
+
         <div className={`${card} p-4 overflow-x-auto`}>
           <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Full Roster')}</h3>
           <table className="w-full text-xs">

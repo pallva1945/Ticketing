@@ -1365,6 +1365,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Cost/Win': { en: 'Cost/Win', it: 'Costo/Vittoria' },
   'Wins': { en: 'Wins', it: 'Vittorie' },
   'Net Paid vs Wins': { en: 'Net Paid vs Wins', it: 'Net Paid vs Vittorie' },
+  'Historical': { en: 'Historical', it: 'Storico' },
   'Cost per Win': { en: 'Cost per Win', it: 'Costo per Vittoria' },
   'Net Paid / Wins': { en: 'Net Paid / Wins', it: 'Net Paid / Vittorie' },
   'Avg': { en: 'Avg', it: 'Media' },
