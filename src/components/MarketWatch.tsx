@@ -135,7 +135,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
   }, [data, seasons, excludeOutliers]);
 
   const historicData = useMemo(() => {
-    const allSeasons = [...new Set(data.map(d => d.season))].sort();
+    const allSeasons = [...new Set(data.map(d => d.season))].filter(s => s !== '2026-27').sort();
     const filterSeason = (s: string) => data.filter(d => d.season === s && d.team_name && !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name)));
 
     const teamsBySeason = allSeasons.map(s => {
@@ -181,7 +181,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     }).filter(d => d.totalNp > 0 || d.totalWins > 0);
 
     const regressionAll = (() => {
-      const pts = data.filter(d => d.net_paid > 0 && d.ws > 0 && d.min_play > 50 && d.team_name && !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name))).map(p => ({
+      const pts = data.filter(d => d.net_paid > 0 && d.ws > 0 && d.min_play > 50 && d.team_name && d.season !== '2026-27' && !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name))).map(p => ({
         player: p.player, team: shortName(p.team_name), season: p.season,
         netPaid: p.net_paid, ws: p.ws, isVarese: p.team_name.includes('Varese'),
       }));
