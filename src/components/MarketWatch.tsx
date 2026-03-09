@@ -77,7 +77,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     }
   }, [seasons]);
   const isOutlierTeam = (name: string) => /milano/i.test(name) || /bologna/i.test(name);
-  const seasonData = useMemo(() => data.filter(d => d.season === selectedSeason && !(d.season === '2025-26' && d.team_name === 'Trapani Shark') && (!excludeOutliers || !isOutlierTeam(d.team_name))), [data, selectedSeason, excludeOutliers]);
+  const seasonData = useMemo(() => data.filter(d => d.season === selectedSeason && !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name))), [data, selectedSeason, excludeOutliers]);
   const teams = useMemo(() => [...new Set(seasonData.map(d => d.team_name))].sort(), [seasonData]);
 
   const teamStats = useMemo(() => {
@@ -123,7 +123,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
   const payrollTrend = useMemo(() => {
     return seasons.map(s => {
-      const sd = data.filter(d => d.season === s && !(d.season === '2025-26' && d.team_name === 'Trapani Shark') && (!excludeOutliers || !isOutlierTeam(d.team_name)));
+      const sd = data.filter(d => d.season === s && !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name)));
       const teamMap = new Map<string, number>();
       sd.forEach(p => teamMap.set(p.team_name, (teamMap.get(p.team_name) || 0) + p.net_paid));
       const payrolls = [...teamMap.values()].filter(v => v > 0);
@@ -135,7 +135,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
   const historicData = useMemo(() => {
     const allSeasons = [...new Set(data.map(d => d.season))].sort();
-    const filterSeason = (s: string) => data.filter(d => d.season === s && !(d.season === '2025-26' && d.team_name === 'Trapani Shark') && (!excludeOutliers || !isOutlierTeam(d.team_name)));
+    const filterSeason = (s: string) => data.filter(d => d.season === s && !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name)));
 
     const teamsBySeason = allSeasons.map(s => {
       const sd = filterSeason(s);
@@ -150,7 +150,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       return { season: s, teams: [...teamMap.values()].map(t => ({ ...t, costPerWs: t.ws > 0 ? t.netPaid / t.ws : 0 })) };
     });
 
-    const allTeamNames = [...new Set(data.filter(d => !(d.season === '2025-26' && d.team_name === 'Trapani Shark') && (!excludeOutliers || !isOutlierTeam(d.team_name))).map(d => d.team_name))].sort();
+    const allTeamNames = [...new Set(data.filter(d => !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name))).map(d => d.team_name))].sort();
 
     const costPerWsTable = allTeamNames.map(team => {
       const row: Record<string, any> = { team };
@@ -180,7 +180,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
     });
 
     const regressionAll = (() => {
-      const pts = data.filter(d => d.net_paid > 0 && d.ws > 0 && d.min_play > 50 && !(d.season === '2025-26' && d.team_name === 'Trapani Shark') && (!excludeOutliers || !isOutlierTeam(d.team_name))).map(p => ({
+      const pts = data.filter(d => d.net_paid > 0 && d.ws > 0 && d.min_play > 50 && !(d.season === '2025-26' && d.team_name === 'Trapani') && (!excludeOutliers || !isOutlierTeam(d.team_name))).map(p => ({
         player: p.player, team: shortName(p.team_name), season: p.season,
         netPaid: p.net_paid, ws: p.ws, isVarese: p.team_name.includes('Varese'),
       }));
