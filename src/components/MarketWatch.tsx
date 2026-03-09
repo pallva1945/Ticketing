@@ -131,7 +131,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       const avg = payrolls.length > 0 ? payrolls.reduce((a, b) => a + b, 0) / payrolls.length : 0;
       const vareseNetPaid = sd.filter(p => p.team_name.includes('Varese')).reduce((s, p) => s + p.net_paid, 0);
       return { season: s, avg: Math.round(avg), varese: vareseNetPaid };
-    }).reverse();
+    }).filter(d => d.avg > 0 || d.varese > 0).reverse();
   }, [data, seasons, excludeOutliers]);
 
   const historicData = useMemo(() => {
