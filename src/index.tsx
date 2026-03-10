@@ -9,6 +9,7 @@ import { FinancialCenter } from './components/FinancialCenter';
 import { CostCenter } from './components/CostCenter';
 import { VerticalsPnL } from './components/VerticalsPnL';
 import { CostControlCenter } from './components/CostControlCenter';
+import { FiveYearPlan } from './components/FiveYearPlan';
 import { ProjectsHub } from './components/ProjectsHub';
 import { LoginPage } from './components/LoginPage';
 import { AdminPanel } from './components/AdminPanel';
@@ -126,6 +127,10 @@ const Root: React.FC = () => {
 
   if (currentView === 'cost-control') {
     return <CostControlCenter onBackToLanding={handleBackToFinancial} onHome={handleBackToWelcome} />;
+  }
+
+  if (currentView === 'five-year') {
+    return <FiveYearPlan onBackToLanding={handleBackToFinancial} onHome={handleBackToWelcome} />;
   }
 
   if (currentView === 'landing') {

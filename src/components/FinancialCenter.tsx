@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingUp, TrendingDown, BarChart3, ArrowRight, Lock, Shield } from 'lucide-react';
+import { TrendingUp, TrendingDown, BarChart3, ArrowRight, Lock, Shield, Target } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
@@ -55,6 +55,16 @@ export const FinancialCenter: React.FC<FinancialCenterProps> = ({ onNavigate, on
       iconColor: 'text-purple-600',
       available: true,
     },
+    {
+      id: 'five-year',
+      title: t('5 Year Financial Plan'),
+      description: t('Long-term financial projections, revenue targets, and strategic budget planning across five seasons.'),
+      icon: Target,
+      color: 'from-amber-500 to-orange-600',
+      iconBg: 'bg-amber-100 dark:bg-amber-900/30',
+      iconColor: 'text-amber-600',
+      available: true,
+    },
   ];
 
   return (
@@ -102,7 +112,7 @@ export const FinancialCenter: React.FC<FinancialCenterProps> = ({ onNavigate, on
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6">
           {sections.map((section) => {
             const Icon = section.icon;
             return (
