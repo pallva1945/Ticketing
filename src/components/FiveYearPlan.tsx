@@ -1,11 +1,55 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Home, FileSpreadsheet, Loader2, Check, X, RefreshCw, ChevronDown, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
+import { ArrowLeft, Home, FileSpreadsheet, Loader2, Check, X, RefreshCw, ChevronDown, ChevronRight, TrendingUp, TrendingDown, Info, AlertTriangle, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
 import { ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, Area, ReferenceLine, Cell } from 'recharts';
 
 const MODULE_KEY = 'five_year';
+
+interface Annotation {
+  year: string;
+  marker: string;
+  title: string;
+  description: string;
+  impact?: string;
+  color: string;
+}
+
+const ANNOTATIONS: Annotation[] = [
+  {
+    year: 'Jun-22',
+    marker: '1',
+    title: 'Previous Ownership Sponsorship Settlement',
+    description: 'Sponsorship revenue artificially inflated by a deal from previous owners to cover accumulated losses. This also distorted the Net Income figure for the period.',
+    impact: 'Sponsorship Rev & NI distorted',
+    color: '#f59e0b',
+  },
+  {
+    year: 'Jun-22',
+    marker: '2',
+    title: 'Legacy Contract Penalties (2016)',
+    description: 'Penalized for unpaid player contracts dating back to 2016 under prior management. Resulted in approximately €100K in legal costs and an estimated €300K in missed playoff revenue.',
+    impact: '~€400K total impact',
+    color: '#ef4444',
+  },
+  {
+    year: 'Jun-25',
+    marker: '3',
+    title: 'First Amortization Year',
+    description: 'Jun-25 was the first fiscal year that included depreciation/amortization charges. COVID-era regulations had allowed Italian basketball clubs to defer these costs to ease financial pressure.',
+    impact: 'Explains Jun-24 → Jun-25 jump in costs',
+    color: '#8b5cf6',
+  },
+  {
+    year: 'Jun-22',
+    marker: '4',
+    title: 'Prior Period Adjustments',
+    description: 'P&L costs discovered over time from previous management. Although assumed and paid, these are not considered reflective of current operational performance and should be excluded from performance evaluation.',
+    impact: 'Excluded in adjusted view',
+    color: '#06b6d4',
+  },
+];
 
 interface FiveYearPlanProps {
   onBackToLanding: () => void;
@@ -282,20 +326,6 @@ const fmtFull = (v: number) => {
 
 type TabKey = 'pnl' | 'balance' | 'cashflow';
 
-const CustomBarShape = (props: any) => {
-  const { x, y, width, height, fill, isProjection } = props;
-  if (height === 0) return null;
-  const actualHeight = Math.abs(height);
-  const actualY = height < 0 ? y : y;
-  return (
-    <rect
-      x={x} y={actualY} width={width} height={actualHeight}
-      fill={fill}
-      opacity={isProjection ? 0.55 : 0.9}
-      rx={0} ry={0}
-    />
-  );
-};
 
 export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onHome }) => {
   const { theme } = useTheme();
@@ -311,6 +341,8 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [sheetConfigured, setSheetConfigured] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<TabKey>('pnl');
+  const [showAdjusted, setShowAdjusted] = useState(false);
+  const [showContext, setShowContext] = useState(true);
 
   useEffect(() => {
     fetch(`/api/revenue/sheet-config/${MODULE_KEY}`)
@@ -388,6 +420,36 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
 
   const projIdx = rawData?.projectionStartIndex ?? 0;
 
+  const priorPeriodValues = useMemo(() => {
+    if (!rawData) return null;
+    const ppSection = rawData.pnl.find(s =>
+      s.name.toLowerCase().includes('past contingenc') ||
+      s.name.toLowerCase().includes('prior period')
+    );
+    if (!ppSection) return null;
+    const totalRow = ppSection.rows.find(r => r.isTotal);
+    return totalRow ? totalRow.values : ppSection.rows.reduce((acc, r) => {
+      return r.values.map((v, i) => (acc[i] || 0) + v);
+    }, new Array(rawData.headers.length).fill(0) as number[]);
+  }, [rawData]);
+
+  const adjustedKeyMetrics = useMemo(() => {
+    if (!rawData || !showAdjusted || !priorPeriodValues) return rawData?.keyMetrics || [];
+    return rawData.keyMetrics.map(m => ({
+      ...m,
+      values: m.values.map((v, i) => v + Math.abs(priorPeriodValues[i])),
+    }));
+  }, [rawData, showAdjusted, priorPeriodValues]);
+
+  const activeKeyMetrics = showAdjusted && priorPeriodValues ? adjustedKeyMetrics : (rawData?.keyMetrics || []);
+
+  const annotationYearIndices = useMemo(() => {
+    if (!rawData) return new Map<string, number>();
+    const map = new Map<string, number>();
+    rawData.headers.forEach((h, i) => map.set(h, i));
+    return map;
+  }, [rawData]);
+
   const revenueChartData = useMemo(() => {
     if (!rawData) return [];
     const salesSection = rawData.pnl.find(s => s.name.toLowerCase().includes('sales') && !s.name.toLowerCase().includes('cost'));
@@ -410,13 +472,15 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   }, [rawData]);
 
   const profitabilityData = useMemo(() => {
-    if (!rawData || rawData.keyMetrics.length === 0) return [];
+    if (!rawData || activeKeyMetrics.length === 0) return [];
     return rawData.headers.map((h, hi) => {
       const entry: Record<string, any> = { name: h, isProjection: hi >= projIdx };
-      rawData.keyMetrics.forEach(m => { entry[m.label] = m.values[hi]; });
+      activeKeyMetrics.forEach(m => { entry[m.label] = m.values[hi]; });
+      const hasAnnotation = ANNOTATIONS.some(a => a.year === h);
+      if (hasAnnotation) entry._annotated = true;
       return entry;
     });
-  }, [rawData, projIdx]);
+  }, [rawData, projIdx, activeKeyMetrics]);
 
   const costBreakdownData = useMemo(() => {
     if (!rawData) return [];
@@ -522,62 +586,130 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
           </div>
         ) : (
           <>
-            {rawData.keyMetrics.length > 0 && (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                {rawData.keyMetrics.map(metric => {
-                  const lastActualIdx = Math.min(projIdx, metric.values.length) - 1;
-                  const lastProjIdx = metric.values.length - 1;
-                  const currentVal = lastActualIdx >= 0 ? metric.values[lastActualIdx] : 0;
-                  const projectedVal = metric.values[lastProjIdx];
-                  const improving = projectedVal > currentVal;
-                  const currentHeader = lastActualIdx >= 0 ? rawData.headers[lastActualIdx] : '';
-                  const projectedHeader = rawData.headers[lastProjIdx];
+            {activeKeyMetrics.length > 0 && (
+              <>
+                <div className="flex items-center justify-between">
+                  <div />
+                  {priorPeriodValues && (
+                    <button
+                      onClick={() => setShowAdjusted(!showAdjusted)}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                        showAdjusted
+                          ? isDark ? 'bg-cyan-900/30 text-cyan-400 border border-cyan-800' : 'bg-cyan-50 text-cyan-700 border border-cyan-200'
+                          : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
+                      }`}
+                    >
+                      {showAdjusted ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                      {showAdjusted ? t('Adjusted Performance') : t('Reported Performance')}
+                      {showAdjusted && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-cyan-900/50 text-cyan-300' : 'bg-cyan-100 text-cyan-600'}`}>{t('excl. Prior Period Adj.')}</span>}
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  {activeKeyMetrics.map(metric => {
+                    const lastActualIdx = Math.min(projIdx, metric.values.length) - 1;
+                    const lastProjIdx = metric.values.length - 1;
+                    const currentVal = lastActualIdx >= 0 ? metric.values[lastActualIdx] : 0;
+                    const projectedVal = metric.values[lastProjIdx];
+                    const improving = projectedVal > currentVal;
+                    const currentHeader = lastActualIdx >= 0 ? rawData.headers[lastActualIdx] : '';
+                    const projectedHeader = rawData.headers[lastProjIdx];
 
-                  const sparkPoints = metric.values.map((v, i) => {
-                    const minV = Math.min(...metric.values);
-                    const maxV = Math.max(...metric.values);
-                    const range = maxV - minV || 1;
-                    return { x: (i / (metric.values.length - 1)) * 100, y: 28 - ((v - minV) / range) * 24, isProj: i >= projIdx };
-                  });
-                  const sparkPath = sparkPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
-                  const actualPath = sparkPoints.filter(p => !p.isProj).map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
-                  const projPath = sparkPoints.filter((p, i) => i >= projIdx - 1).map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+                    const sparkPoints = metric.values.map((v, i) => {
+                      const minV = Math.min(...metric.values);
+                      const maxV = Math.max(...metric.values);
+                      const range = maxV - minV || 1;
+                      return { x: (i / (metric.values.length - 1)) * 100, y: 28 - ((v - minV) / range) * 24, isProj: i >= projIdx };
+                    });
+                    const actualPath = sparkPoints.filter(p => !p.isProj).map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+                    const projPath = sparkPoints.filter((_p, i) => i >= projIdx - 1).map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
 
-                  return (
-                    <div key={metric.label} className={`${card} p-4`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <p className={`text-[10px] font-semibold uppercase tracking-wider ${subtext}`}>{metric.label}</p>
-                        <div className={`flex items-center gap-0.5 text-[10px] font-medium ${improving ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {improving ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                    const annotatedIndices = new Set(
+                      ANNOTATIONS.map(a => annotationYearIndices.get(a.year)).filter((v): v is number => v !== undefined)
+                    );
+
+                    return (
+                      <div key={metric.label} className={`${card} p-4 ${showAdjusted ? (isDark ? 'ring-1 ring-cyan-800/50' : 'ring-1 ring-cyan-200') : ''}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className={`text-[10px] font-semibold uppercase tracking-wider ${subtext}`}>{metric.label}</p>
+                          <div className={`flex items-center gap-0.5 text-[10px] font-medium ${improving ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {improving ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                          </div>
+                        </div>
+                        <svg viewBox="0 0 100 32" className="w-full h-8 mb-2">
+                          <path d={actualPath} fill="none" stroke={isDark ? '#9ca3af' : '#6b7280'} strokeWidth="1.5" />
+                          {projPath && <path d={projPath} fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 2" />}
+                          {sparkPoints.map((p, i) => (
+                            <React.Fragment key={i}>
+                              <circle cx={p.x} cy={p.y} r={i === lastActualIdx ? 2.5 : annotatedIndices.has(i) ? 2 : 1.2}
+                                fill={annotatedIndices.has(i) ? '#f59e0b' : i >= projIdx ? '#f59e0b' : isDark ? '#d1d5db' : '#4b5563'}
+                                stroke={i === lastActualIdx ? (isDark ? '#fff' : '#111') : annotatedIndices.has(i) ? '#f59e0b' : 'none'}
+                                strokeWidth={i === lastActualIdx ? 1 : annotatedIndices.has(i) ? 0.5 : 0} />
+                            </React.Fragment>
+                          ))}
+                          {projIdx > 0 && projIdx < sparkPoints.length && (
+                            <line x1={sparkPoints[projIdx].x} y1="0" x2={sparkPoints[projIdx].x} y2="32" stroke={isDark ? '#374151' : '#d1d5db'} strokeWidth="0.5" strokeDasharray="2 1" />
+                          )}
+                        </svg>
+                        <div className="flex items-end justify-between">
+                          <div>
+                            <p className={`text-[8px] ${subtext}`}>{currentHeader} {t('(actual)')}</p>
+                            <p className={`text-sm font-bold tabular-nums ${currentVal < 0 ? 'text-red-500' : isDark ? 'text-white' : 'text-gray-900'}`}>{fmt(currentVal)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className={`text-[8px] ${subtext}`}>{projectedHeader} {t('(target)')}</p>
+                            <p className={`text-sm font-bold tabular-nums ${projectedVal < 0 ? 'text-red-500' : 'text-emerald-500'}`}>{fmt(projectedVal)}</p>
+                          </div>
                         </div>
                       </div>
-                      <svg viewBox="0 0 100 32" className="w-full h-8 mb-2">
-                        <path d={actualPath} fill="none" stroke={isDark ? '#9ca3af' : '#6b7280'} strokeWidth="1.5" />
-                        {projPath && <path d={projPath} fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 2" />}
-                        {sparkPoints.map((p, i) => (
-                          <circle key={i} cx={p.x} cy={p.y} r={i === lastActualIdx ? 2.5 : 1.2}
-                            fill={i >= projIdx ? '#f59e0b' : isDark ? '#d1d5db' : '#4b5563'}
-                            stroke={i === lastActualIdx ? (isDark ? '#fff' : '#111') : 'none'} strokeWidth={i === lastActualIdx ? 1 : 0} />
-                        ))}
-                        {projIdx > 0 && projIdx < sparkPoints.length && (
-                          <line x1={sparkPoints[projIdx].x} y1="0" x2={sparkPoints[projIdx].x} y2="32" stroke={isDark ? '#374151' : '#d1d5db'} strokeWidth="0.5" strokeDasharray="2 1" />
-                        )}
-                      </svg>
-                      <div className="flex items-end justify-between">
-                        <div>
-                          <p className={`text-[8px] ${subtext}`}>{currentHeader} {t('(actual)')}</p>
-                          <p className={`text-sm font-bold tabular-nums ${currentVal < 0 ? 'text-red-500' : isDark ? 'text-white' : 'text-gray-900'}`}>{fmt(currentVal)}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className={`text-[8px] ${subtext}`}>{projectedHeader} {t('(target)')}</p>
-                          <p className={`text-sm font-bold tabular-nums ${projectedVal < 0 ? 'text-red-500' : 'text-emerald-500'}`}>{fmt(projectedVal)}</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
+
+            <div className={`${card} overflow-hidden transition-all`}>
+              <button
+                onClick={() => setShowContext(!showContext)}
+                className={`w-full flex items-center justify-between px-5 py-3 text-left transition-colors ${isDark ? 'hover:bg-gray-800/40' : 'hover:bg-gray-50'}`}
+              >
+                <div className="flex items-center gap-2">
+                  <Info size={14} className={isDark ? 'text-amber-400' : 'text-amber-600'} />
+                  <span className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Historical Context & Adjustments')}</span>
+                  <span className={`text-[9px] px-2 py-0.5 rounded-full ${isDark ? 'bg-amber-900/30 text-amber-400' : 'bg-amber-100 text-amber-700'}`}>{ANNOTATIONS.length} {t('notes')}</span>
+                </div>
+                {showContext ? <ChevronDown size={14} className={subtext} /> : <ChevronRight size={14} className={subtext} />}
+              </button>
+              {showContext && (
+                <div className={`px-5 pb-5 border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                  <div className="relative mt-4">
+                    <div className={`absolute left-[19px] top-0 bottom-0 w-px ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                    <div className="space-y-4">
+                      {ANNOTATIONS.map((ann, i) => (
+                        <div key={i} className="relative flex gap-4 pl-0">
+                          <div className="relative z-10 flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: ann.color }}>
+                            {ann.marker}
+                          </div>
+                          <div className="flex-1 pt-0.5">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>{ann.year}</span>
+                              <span className={`text-xs font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{t(ann.title)}</span>
+                            </div>
+                            <p className={`text-[11px] leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{t(ann.description)}</p>
+                            {ann.impact && (
+                              <div className="mt-1.5 flex items-center gap-1">
+                                <AlertTriangle size={10} style={{ color: ann.color }} />
+                                <span className="text-[10px] font-medium" style={{ color: ann.color }}>{t(ann.impact)}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {revenueChartData.length > 0 && (
@@ -602,7 +734,25 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                           ))}
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
-                        <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                        <XAxis dataKey="name" tick={({ x, y, payload }: any) => {
+                          const yearAnns = ANNOTATIONS.filter(a => a.year === payload.value);
+                          const hasAnnotation = yearAnns.length > 0;
+                          return (
+                            <g>
+                              <text x={x} y={y + 12} textAnchor="middle" fontSize={9} fill={isDark ? '#9ca3af' : '#6b7280'}>{payload.value}</text>
+                              {hasAnnotation && (
+                                <g>
+                                  {yearAnns.map((ann, ai) => (
+                                    <circle key={ai} cx={x + (ai - (yearAnns.length - 1) / 2) * 8} cy={y + 24} r={3.5} fill={ann.color} />
+                                  ))}
+                                  {yearAnns.map((ann, ai) => (
+                                    <text key={`t${ai}`} x={x + (ai - (yearAnns.length - 1) / 2) * 8} y={y + 27} textAnchor="middle" fontSize={5.5} fill="white" fontWeight="bold">{ann.marker}</text>
+                                  ))}
+                                </g>
+                              )}
+                            </g>
+                          );
+                        }} height={38} />
                         <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
                         <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => [fmtFull(v), name]} />
                         <Legend wrapperStyle={{ fontSize: 9 }} />
@@ -626,7 +776,10 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
               {profitabilityData.length > 0 && (
                 <div className={`${card} p-4`}>
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Profitability Path')}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Profitability Path')}</h3>
+                      {showAdjusted && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-cyan-900/30 text-cyan-400' : 'bg-cyan-50 text-cyan-700'}`}>{t('Adjusted')}</span>}
+                    </div>
                     <div className="flex items-center gap-3 text-[9px]">
                       <span className={`flex items-center gap-1 ${subtext}`}><span className="w-6 border-t border-gray-400 inline-block" /> {t('Actual')}</span>
                       <span className={`flex items-center gap-1 ${subtext}`}><span className="w-6 border-t border-dashed border-amber-500 inline-block" /> {t('Projected')}</span>
@@ -634,9 +787,27 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                   </div>
                   <div className="h-[320px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={profitabilityData} margin={{ top: 10, right: 10, bottom: 5, left: 5 }}>
+                      <ComposedChart data={profitabilityData} margin={{ top: 20, right: 10, bottom: 5, left: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
-                        <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                        <XAxis dataKey="name" tick={({ x, y, payload }: any) => {
+                          const yearAnns = ANNOTATIONS.filter(a => a.year === payload.value);
+                          const hasAnnotation = yearAnns.length > 0;
+                          return (
+                            <g>
+                              <text x={x} y={y + 12} textAnchor="middle" fontSize={9} fill={isDark ? '#9ca3af' : '#6b7280'}>{payload.value}</text>
+                              {hasAnnotation && (
+                                <g>
+                                  {yearAnns.map((ann, ai) => (
+                                    <circle key={ai} cx={x + (ai - (yearAnns.length - 1) / 2) * 8} cy={y + 24} r={4} fill={ann.color} />
+                                  ))}
+                                  {yearAnns.map((ann, ai) => (
+                                    <text key={`t${ai}`} x={x + (ai - (yearAnns.length - 1) / 2) * 8} y={y + 27} textAnchor="middle" fontSize={6} fill="white" fontWeight="bold">{ann.marker}</text>
+                                  ))}
+                                </g>
+                              )}
+                            </g>
+                          );
+                        }} height={40} />
                         <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
                         <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => [fmtFull(v), name]} />
                         <Legend wrapperStyle={{ fontSize: 9 }} />
@@ -644,7 +815,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                           <ReferenceLine x={projectionDividerHeader} stroke={isDark ? '#f59e0b' : '#d97706'} strokeDasharray="4 3" strokeWidth={1} />
                         )}
                         <ReferenceLine y={0} stroke={isDark ? '#4b5563' : '#9ca3af'} strokeWidth={1} />
-                        {rawData.keyMetrics.map((m, i) => {
+                        {activeKeyMetrics.map((m, i) => {
                           const colors = ['#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6'];
                           return <Line key={m.label} type="monotone" dataKey={m.label} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 2.5 }} />;
                         })}
@@ -710,19 +881,31 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                   <thead>
                     <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
                       <th className={`py-2 px-3 text-left font-semibold ${subtext} w-[280px] sticky left-0 z-10 ${isDark ? 'bg-gray-900/90' : 'bg-white/90'}`}></th>
-                      {rawData.headers.map((h, hi) => (
-                        <th key={h} className={`py-2 px-2 text-right font-semibold whitespace-nowrap ${
-                          isCurrentYear(hi) 
-                            ? isDark ? 'text-amber-400 bg-amber-500/5' : 'text-amber-700 bg-amber-50'
-                            : isProjectionCol(hi)
-                              ? isDark ? 'text-gray-600 italic' : 'text-gray-400 italic'
-                              : subtext
-                        }`}>
-                          {h}
-                          {isCurrentYear(hi) && <span className="block text-[7px] font-normal not-italic">{t('CURRENT')}</span>}
-                          {hi === projIdx && <span className="block text-[7px] font-normal text-amber-500 not-italic">{t('PROJECTED')}</span>}
-                        </th>
-                      ))}
+                      {rawData.headers.map((h, hi) => {
+                        const yearAnns = ANNOTATIONS.filter(a => a.year === h);
+                        return (
+                          <th key={h} className={`py-2 px-2 text-right font-semibold whitespace-nowrap ${
+                            isCurrentYear(hi) 
+                              ? isDark ? 'text-amber-400 bg-amber-500/5' : 'text-amber-700 bg-amber-50'
+                              : isProjectionCol(hi)
+                                ? isDark ? 'text-gray-600 italic' : 'text-gray-400 italic'
+                                : subtext
+                          }`}>
+                            <span className="flex items-center justify-end gap-1">
+                              {yearAnns.length > 0 && (
+                                <span className="flex gap-0.5">
+                                  {yearAnns.map((ann, ai) => (
+                                    <span key={ai} className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[7px] font-bold text-white not-italic" style={{ backgroundColor: ann.color }}>{ann.marker}</span>
+                                  ))}
+                                </span>
+                              )}
+                              {h}
+                            </span>
+                            {isCurrentYear(hi) && <span className="block text-[7px] font-normal not-italic">{t('CURRENT')}</span>}
+                            {hi === projIdx && <span className="block text-[7px] font-normal text-amber-500 not-italic">{t('PROJECTED')}</span>}
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody>
