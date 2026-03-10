@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Home, FileSpreadsheet, Loader2, Check, X, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Home, FileSpreadsheet, Loader2, Check, X, RefreshCw, ChevronDown, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, ComposedChart } from 'recharts';
+import { ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, AreaChart, Area, BarChart } from 'recharts';
 
 const MODULE_KEY = 'five_year';
 
@@ -14,84 +14,256 @@ interface FiveYearPlanProps {
 
 interface ParsedRow {
   label: string;
-  section: string;
+  depth: number;
   values: number[];
+  isTotal: boolean;
+  isSummary: boolean;
+}
+
+interface FinancialSection {
+  name: string;
+  rows: ParsedRow[];
+  statement: string;
 }
 
 interface FiveYearData {
   headers: string[];
-  rows: ParsedRow[];
-  sections: string[];
+  pnl: FinancialSection[];
+  balanceSheet: FinancialSection[];
+  cashFlow: FinancialSection[];
+  keyMetrics: {
+    label: string;
+    values: number[];
+    isPercentage?: boolean;
+  }[];
+}
+
+function parseNum(v: string | undefined | null): number {
+  if (!v || v === '' || v === '-' || v === '—' || v === '_') return 0;
+  let s = String(v).trim();
+  if (s === '0') return 0;
+  if (s.endsWith('%')) return 0;
+
+  let neg = false;
+  if (s.startsWith('(') && s.endsWith(')')) {
+    neg = true;
+    s = s.slice(1, -1);
+  } else if (s.startsWith('-')) {
+    neg = true;
+    s = s.slice(1);
+  }
+  s = s.replace(/[€$£\s"]/g, '').trim();
+  if (!s || s === '_' || s === 'ok') return 0;
+
+  if (s.includes(',') && s.includes('.')) {
+    const lastComma = s.lastIndexOf(',');
+    const lastDot = s.lastIndexOf('.');
+    if (lastComma > lastDot) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      s = s.replace(/,/g, '');
+    }
+  } else if (s.includes(',')) {
+    const parts = s.split(',');
+    if (parts.length === 2 && parts[1].length <= 2) {
+      s = s.replace(',', '.');
+    } else {
+      s = s.replace(/,/g, '');
+    }
+  }
+
+  const num = parseFloat(s);
+  if (isNaN(num)) return 0;
+  return neg ? -num : num;
 }
 
 function parseFiveYearData(raw: string[][]): FiveYearData | null {
-  if (!raw || raw.length < 2) return null;
+  if (!raw || raw.length < 5) return null;
 
-  const headerRow = raw[0];
-  const headers = headerRow.slice(1).map(h => (h || '').trim()).filter(h => h.length > 0);
-  if (headers.length === 0) return null;
+  let headerRowIdx = -1;
+  let valueCols: number[] = [];
+  let yearRowIdx = -1;
+  let yearCols: number[] = [];
 
-  const rows: ParsedRow[] = [];
-  let currentSection = 'General';
-
-  for (let i = 1; i < raw.length; i++) {
+  for (let i = 0; i < Math.min(raw.length, 10); i++) {
     const row = raw[i];
-    if (!row || row.length === 0) continue;
-
-    const label = (row[0] || '').trim();
-    if (!label) continue;
-
-    const numericValues = row.slice(1, headers.length + 1).map(v => {
-      if (!v || v === '' || v === '-' || v === '—') return 0;
-      const s = String(v).replace(/[€$£\s]/g, '').trim();
-      let num: number;
-      if (s.includes(',') && s.includes('.')) {
-        const lastComma = s.lastIndexOf(',');
-        const lastDot = s.lastIndexOf('.');
-        if (lastComma > lastDot) {
-          num = parseFloat(s.replace(/\./g, '').replace(',', '.'));
-        } else {
-          num = parseFloat(s.replace(/,/g, ''));
-        }
-      } else if (s.includes(',')) {
-        const parts = s.split(',');
-        if (parts.length === 2 && parts[1].length <= 2) {
-          num = parseFloat(s.replace(',', '.'));
-        } else {
-          num = parseFloat(s.replace(/,/g, ''));
-        }
-      } else {
-        num = parseFloat(s);
+    if (!row) continue;
+    const junCols: number[] = [];
+    const yrCols: number[] = [];
+    for (let c = 0; c < row.length; c++) {
+      const cell = (row[c] || '').trim();
+      if (/^[A-Za-z]{3}-\d{2}$/i.test(cell)) junCols.push(c);
+      if (/^20\d{2}$/.test(cell)) yrCols.push(c);
+    }
+    if (junCols.length >= 4) {
+      const firstSet = [junCols[0]];
+      for (let j = 1; j < junCols.length; j++) {
+        if (junCols[j] - junCols[j - 1] <= 2) firstSet.push(junCols[j]);
+        else break;
       }
-      return isNaN(num) ? 0 : num;
-    });
+      if (firstSet.length >= 4) {
+        headerRowIdx = i;
+        valueCols = firstSet;
+      }
+    }
+    if (yrCols.length >= 4 && yearRowIdx < 0) {
+      const firstSet = [yrCols[0]];
+      for (let j = 1; j < yrCols.length; j++) {
+        if (yrCols[j] - yrCols[j - 1] <= 2) firstSet.push(yrCols[j]);
+        else break;
+      }
+      if (firstSet.length >= 4) {
+        yearRowIdx = i;
+        yearCols = firstSet;
+      }
+    }
+  }
 
-    const hasValues = numericValues.some(v => v !== 0);
+  if (headerRowIdx < 0 && yearRowIdx >= 0) {
+    headerRowIdx = yearRowIdx;
+    valueCols = yearCols;
+  }
 
-    if (!hasValues && label.length > 0) {
-      currentSection = label;
+  if (headerRowIdx < 0 || valueCols.length === 0) return null;
+
+  const dataStartRow = Math.max(headerRowIdx, yearRowIdx) + 1;
+  const headers = valueCols.map(c => (raw[headerRowIdx][c] || '').trim());
+  const maxLabelCol = valueCols[0];
+
+  const TOTAL_PATTERNS = /^(total|ebitda|ebit|ebt|ni|gross profit|depreciation$|interest$)/i;
+  const SUMMARY_KEYS = ['EBITDA', 'EBIT', 'EBT', 'NI', 'Gross Profit'];
+
+  interface PreRow {
+    label: string;
+    depth: number;
+    values: number[];
+    allZero: boolean;
+    statement: string;
+  }
+
+  const preRows: PreRow[] = [];
+  let currentStatement = 'pnl';
+
+  for (let i = dataStartRow; i < raw.length; i++) {
+    const row = raw[i];
+    if (!row) continue;
+
+    let label = '';
+    let depth = 0;
+    for (let c = 0; c < maxLabelCol; c++) {
+      const cell = (row[c] || '').trim();
+      if (cell && cell !== '_' && cell !== 'ok' && cell !== 'Check' && cell !== 'check') {
+        label = cell;
+        if (c <= 1) depth = 0;
+        else if (c === 2) depth = 1;
+        else depth = 2;
+        break;
+      }
+    }
+
+    if (!label || label === '_') continue;
+    const ll = label.toLowerCase();
+    if (ll === 'p&l') continue;
+    if (ll === 'balance sheet') { currentStatement = 'bs'; continue; }
+    if (ll === 'cf statement') { currentStatement = 'cf'; continue; }
+    if (ll === 'assets' || ll === 'liabilities') continue;
+    if (ll.includes('margin') && label.includes('%') === false) {
+      const hasPercentValues = valueCols.some(c => {
+        const cell = (row[c] || '').trim();
+        return cell.endsWith('%') || (cell.startsWith('(') && cell.endsWith('%)'));
+      });
+      if (hasPercentValues) continue;
+    }
+
+    const values = valueCols.map(c => parseNum(row[c]));
+    const allZero = values.every(v => v === 0);
+
+    preRows.push({ label, depth, values, allZero, statement: currentStatement });
+  }
+
+  function isSectionHeader(idx: number): boolean {
+    const r = preRows[idx];
+    if (!r.allZero) return false;
+    if (TOTAL_PATTERNS.test(r.label) || r.label.startsWith('Total ') || r.label.startsWith('TOTAL ')) return false;
+    for (let j = idx + 1; j < preRows.length; j++) {
+      const next = preRows[j];
+      if (next.statement !== r.statement) return false;
+      if (next.allZero && next.depth <= r.depth) return false;
+      if (!next.allZero) return next.depth > r.depth;
+      if (next.depth > r.depth) return true;
+    }
+    return false;
+  }
+
+  const pnlSections: FinancialSection[] = [];
+  const bsSections: FinancialSection[] = [];
+  const cfSections: FinancialSection[] = [];
+  const keyMetrics: FiveYearData['keyMetrics'] = [];
+
+  let currentSection: FinancialSection | null = null;
+  let prevStatement = '';
+
+  function pushSection() {
+    if (!currentSection || currentSection.rows.length === 0) return;
+    const st = currentSection.statement;
+    if (st === 'pnl') pnlSections.push(currentSection);
+    else if (st === 'bs') bsSections.push(currentSection);
+    else cfSections.push(currentSection);
+    currentSection = null;
+  }
+
+  for (let idx = 0; idx < preRows.length; idx++) {
+    const r = preRows[idx];
+
+    if (r.statement !== prevStatement) {
+      pushSection();
+      prevStatement = r.statement;
+    }
+
+    if (isSectionHeader(idx)) {
+      pushSection();
+      currentSection = { name: r.label, rows: [], statement: r.statement };
       continue;
     }
 
-    rows.push({
-      label,
-      section: currentSection,
-      values: numericValues,
-    });
+    if (!currentSection) {
+      const defaultName = r.statement === 'pnl' ? 'P&L' : r.statement === 'bs' ? 'Balance Sheet' : 'Cash Flow';
+      currentSection = { name: defaultName, rows: [], statement: r.statement };
+    }
+
+    const isTotal = TOTAL_PATTERNS.test(r.label) || r.label.startsWith('Total ') || r.label.startsWith('TOTAL ');
+    const isSummary = SUMMARY_KEYS.some(k => r.label.toUpperCase().startsWith(k));
+
+    if (isSummary && r.statement === 'pnl') {
+      keyMetrics.push({ label: r.label, values: r.values });
+    }
+
+    if (r.allZero && !isTotal) continue;
+
+    currentSection.rows.push({ label: r.label, depth: r.depth, values: r.values, isTotal, isSummary });
   }
+  pushSection();
 
-  const sections = [...new Set(rows.map(r => r.section))];
-
-  return { headers, rows, sections };
+  return { headers, pnl: pnlSections, balanceSheet: bsSections, cashFlow: cfSections, keyMetrics };
 }
 
 const fmt = (v: number) => {
-  if (Math.abs(v) >= 1000000) return `€${(v / 1000000).toFixed(1)}M`;
-  if (Math.abs(v) >= 1000) return `€${Math.round(v / 1000)}K`;
-  return `€${Math.round(v)}`;
+  const abs = Math.abs(v);
+  const sign = v < 0 ? '-' : '';
+  if (abs >= 1000000) return `${sign}€${(abs / 1000000).toFixed(1)}M`;
+  if (abs >= 1000) return `${sign}€${Math.round(abs / 1000)}K`;
+  return `${sign}€${Math.round(abs)}`;
 };
 
-const fmtFull = (v: number) => `€${v.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
+const fmtFull = (v: number) => {
+  const abs = Math.abs(v);
+  const formatted = abs.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  return v < 0 ? `-€${formatted}` : `€${formatted}`;
+};
+
+const fmtPct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
+
+type TabKey = 'pnl' | 'balance' | 'cashflow';
 
 export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onHome }) => {
   const { theme } = useTheme();
@@ -103,9 +275,10 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [syncSuccess, setSyncSuccess] = useState(false);
   const [showSheetConfig, setShowSheetConfig] = useState(false);
   const [sheetId, setSheetId] = useState('');
-  const [sheetName, setSheetName] = useState('5Y Plan');
+  const [sheetName, setSheetName] = useState('Yearly');
   const [sheetConfigured, setSheetConfigured] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<TabKey>('pnl');
 
   useEffect(() => {
     fetch(`/api/revenue/sheet-config/${MODULE_KEY}`)
@@ -172,48 +345,65 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
     }
   };
 
-  const toggleSection = (section: string) => {
+  const toggleSection = (key: string) => {
     setExpandedSections(prev => {
       const next = new Set(prev);
-      if (next.has(section)) next.delete(section);
-      else next.add(section);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
 
-  const sectionTotals = useMemo(() => {
+  const revenueChartData = useMemo(() => {
     if (!rawData) return [];
-    return rawData.sections.map(section => {
-      const sectionRows = rawData.rows.filter(r => r.section === section);
-      const totals = rawData.headers.map((_, hi) => sectionRows.reduce((s, r) => s + (r.values[hi] || 0), 0));
-      return { section, totals };
+    const salesSection = rawData.pnl.find(s => s.name.toLowerCase().includes('sales') && !s.name.toLowerCase().includes('cost'));
+    if (!salesSection) return [];
+    const items = salesSection.rows.filter(r => !r.isTotal && !r.isSummary);
+    return rawData.headers.map((h, hi) => {
+      const entry: Record<string, any> = { name: h };
+      items.forEach(item => { entry[item.label] = item.values[hi]; });
+      const totalRow = salesSection.rows.find(r => r.isTotal);
+      entry.total = totalRow ? totalRow.values[hi] : items.reduce((s, item) => s + item.values[hi], 0);
+      return entry;
     });
   }, [rawData]);
 
-  const chartData = useMemo(() => {
-    if (!rawData || sectionTotals.length === 0) return [];
+  const revenueItems = useMemo(() => {
+    if (!rawData) return [];
+    const salesSection = rawData.pnl.find(s => s.name.toLowerCase().includes('sales') && !s.name.toLowerCase().includes('cost'));
+    if (!salesSection) return [];
+    return salesSection.rows.filter(r => !r.isTotal && !r.isSummary).map(r => r.label);
+  }, [rawData]);
+
+  const profitabilityData = useMemo(() => {
+    if (!rawData || rawData.keyMetrics.length === 0) return [];
     return rawData.headers.map((h, hi) => {
       const entry: Record<string, any> = { name: h };
-      sectionTotals.forEach(st => {
-        entry[st.section] = st.totals[hi];
-      });
-      entry.total = sectionTotals.reduce((s, st) => s + st.totals[hi], 0);
+      rawData.keyMetrics.forEach(m => { entry[m.label] = m.values[hi]; });
       return entry;
     });
-  }, [rawData, sectionTotals]);
+  }, [rawData]);
 
-  const SECTION_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316'];
+  const sections = activeTab === 'pnl' ? rawData?.pnl : activeTab === 'balance' ? rawData?.balanceSheet : rawData?.cashFlow;
+
+  const REVENUE_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#ef4444', '#14b8a6', '#a855f7'];
 
   const card = isDark ? 'bg-gray-900/60 border border-gray-800 rounded-xl' : 'bg-white border border-gray-200 rounded-xl shadow-sm';
   const subtext = isDark ? 'text-gray-500' : 'text-gray-400';
 
-  const tipStyle = {
+  const tipStyle: React.CSSProperties = {
     backgroundColor: isDark ? '#1f2937' : '#ffffff',
     border: `1px solid ${isDark ? '#374151' : '#e5e7eb'}`,
     borderRadius: '8px',
     fontSize: '11px',
     color: isDark ? '#e5e7eb' : '#374151',
   };
+
+  const tabs: { key: TabKey; label: string }[] = [
+    { key: 'pnl', label: t('P&L') },
+    { key: 'balance', label: t('Balance Sheet') },
+    { key: 'cashflow', label: t('Cash Flow') },
+  ];
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
@@ -226,7 +416,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
             <img src={PV_LOGO_URL} alt="PV" className="w-8 h-8 object-contain" />
             <div>
               <h1 className="text-sm font-bold">{t('5 Year Financial Plan')}</h1>
-              <p className={`text-[10px] ${subtext}`}>{t('Long-term projections')}</p>
+              <p className={`text-[10px] ${subtext}`}>{t('Varese Pallacanestro — Financing Case')}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -238,13 +428,12 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                   ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                   : isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
               }`}
-              title={sheetConfigured ? t('Sync from Google Sheets') : t('Connect Google Sheet')}
             >
               {isSyncing ? <Loader2 size={14} className="animate-spin" /> : syncSuccess ? <Check size={14} /> : <FileSpreadsheet size={14} />}
               {isSyncing ? t('Syncing...') : syncSuccess ? t('Synced') : sheetConfigured ? t('Sync Sheet') : t('Connect Sheet')}
             </button>
             {sheetConfigured && (
-              <button onClick={() => setShowSheetConfig(true)} className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-500' : 'hover:bg-gray-200 text-gray-400'}`} title={t('Sheet Settings')}>
+              <button onClick={() => setShowSheetConfig(true)} className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-500' : 'hover:bg-gray-200 text-gray-400'}`}>
                 <RefreshCw size={14} />
               </button>
             )}
@@ -272,102 +461,158 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
           </div>
         ) : (
           <>
-            {chartData.length > 0 && (
-              <div className={`${card} p-4`}>
-                <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Revenue & Cost Projections')}</h3>
-                <div className="h-[350px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={chartData} margin={{ top: 10, right: 20, bottom: 5, left: 10 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
-                      <XAxis dataKey="name" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                      <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
-                      <Tooltip contentStyle={tipStyle} formatter={(v: number) => fmtFull(v)} />
-                      <Legend wrapperStyle={{ fontSize: 10 }} />
-                      {rawData.sections.map((section, i) => (
-                        <Bar key={section} dataKey={section} name={section} fill={SECTION_COLORS[i % SECTION_COLORS.length]} stackId="a" opacity={0.85} radius={i === rawData.sections.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]} />
-                      ))}
-                      <Line type="monotone" dataKey="total" name={t('Total')} stroke={isDark ? '#f59e0b' : '#d97706'} strokeWidth={2.5} dot={{ r: 4 }} />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            )}
-
-            {sectionTotals.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                {rawData.headers.map((h, hi) => {
-                  const total = sectionTotals.reduce((s, st) => s + st.totals[hi], 0);
-                  const prevTotal = hi > 0 ? sectionTotals.reduce((s, st) => s + st.totals[hi - 1], 0) : 0;
-                  const growth = hi > 0 && prevTotal > 0 ? ((total - prevTotal) / prevTotal) * 100 : 0;
+            {rawData.keyMetrics.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {rawData.keyMetrics.map(metric => {
+                  const lastVal = metric.values[metric.values.length - 1];
+                  const firstVal = metric.values[0];
+                  const improving = lastVal > firstVal;
                   return (
-                    <div key={h} className={`${card} p-4`}>
-                      <p className={`text-[10px] font-medium ${subtext} mb-1`}>{h}</p>
-                      <p className="text-lg font-bold">{fmt(total)}</p>
-                      {hi > 0 && prevTotal > 0 && (
-                        <p className={`text-[10px] font-medium ${growth >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {growth >= 0 ? '+' : ''}{growth.toFixed(1)}% vs {rawData.headers[hi - 1]}
-                        </p>
-                      )}
+                    <div key={metric.label} className={`${card} p-4`}>
+                      <p className={`text-[10px] font-medium ${subtext} mb-1`}>{metric.label}</p>
+                      <div className="flex items-end justify-between">
+                        <div>
+                          <p className={`text-[9px] ${subtext}`}>{rawData.headers[0]}</p>
+                          <p className={`text-sm font-bold ${firstVal < 0 ? 'text-red-500' : isDark ? 'text-white' : 'text-gray-900'}`}>{fmt(firstVal)}</p>
+                        </div>
+                        <div className={`flex items-center gap-0.5 ${improving ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {improving ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-[9px] ${subtext}`}>{rawData.headers[rawData.headers.length - 1]}</p>
+                          <p className={`text-sm font-bold ${lastVal < 0 ? 'text-red-500' : 'text-emerald-500'}`}>{fmt(lastVal)}</p>
+                        </div>
+                      </div>
                     </div>
                   );
                 })}
               </div>
             )}
 
-            <div className={`${card} p-4 overflow-x-auto`}>
-              <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Detailed Breakdown')}</h3>
-              <table className="w-full text-xs min-w-[600px]">
-                <thead>
-                  <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                    <th className={`py-2 px-3 text-left font-semibold ${subtext}`}>{t('Item')}</th>
-                    {rawData.headers.map(h => (
-                      <th key={h} className={`py-2 px-3 text-right font-semibold ${subtext}`}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rawData.sections.map((section, si) => {
-                    const sectionRows = rawData.rows.filter(r => r.section === section);
-                    const totals = sectionTotals.find(st => st.section === section)?.totals || [];
-                    const isExpanded = expandedSections.has(section);
-                    const color = SECTION_COLORS[si % SECTION_COLORS.length];
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {revenueChartData.length > 0 && (
+                <div className={`${card} p-4`}>
+                  <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Revenue Breakdown')}</h3>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={revenueChartData} margin={{ top: 10, right: 10, bottom: 5, left: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                        <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
+                        <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => [fmtFull(v), name]} />
+                        <Legend wrapperStyle={{ fontSize: 9 }} />
+                        {revenueItems.map((item, i) => (
+                          <Bar key={item} dataKey={item} name={item.replace(' Rev', '')} fill={REVENUE_COLORS[i % REVENUE_COLORS.length]} stackId="a" opacity={0.85} radius={i === revenueItems.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]} />
+                        ))}
+                        <Line type="monotone" dataKey="total" name={t('Total Sales')} stroke={isDark ? '#fbbf24' : '#d97706'} strokeWidth={2.5} dot={{ r: 3, fill: isDark ? '#fbbf24' : '#d97706' }} />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
 
-                    return (
-                      <React.Fragment key={section}>
-                        <tr
-                          className={`border-b cursor-pointer ${isDark ? 'border-gray-800 hover:bg-gray-800/50' : 'border-gray-100 hover:bg-gray-50'}`}
-                          onClick={() => toggleSection(section)}
-                        >
-                          <td className="py-2.5 px-3 font-bold" style={{ color }}>
-                            <span className="inline-flex items-center gap-1.5">
-                              <span className="text-[10px]">{isExpanded ? '▼' : '▶'}</span>
-                              {section}
-                            </span>
-                          </td>
-                          {totals.map((v, vi) => (
-                            <td key={vi} className="py-2.5 px-3 text-right tabular-nums font-bold" style={{ color }}>{fmt(v)}</td>
-                          ))}
-                        </tr>
-                        {isExpanded && sectionRows.map((row, ri) => (
-                          <tr key={ri} className={`border-b ${isDark ? 'border-gray-800/30' : 'border-gray-50'}`}>
-                            <td className={`py-1.5 px-3 pl-8 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{row.label}</td>
-                            {row.values.map((v, vi) => (
-                              <td key={vi} className={`py-1.5 px-3 text-right tabular-nums ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{v !== 0 ? fmt(v) : '—'}</td>
+              {profitabilityData.length > 0 && (
+                <div className={`${card} p-4`}>
+                  <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Profitability Path')}</h3>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={profitabilityData} margin={{ top: 10, right: 10, bottom: 5, left: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
+                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                        <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
+                        <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => [fmtFull(v), name]} />
+                        <Legend wrapperStyle={{ fontSize: 9 }} />
+                        {rawData.keyMetrics.map((m, i) => {
+                          const colors = ['#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6'];
+                          return <Line key={m.label} type="monotone" dataKey={m.label} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 3 }} />;
+                        })}
+                        <Area type="monotone" dataKey="EBITDA" fill={isDark ? '#f59e0b20' : '#f59e0b15'} stroke="transparent" />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className={`${card} overflow-hidden`}>
+              <div className={`flex border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                {tabs.map(tab => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`px-5 py-3 text-xs font-semibold transition-all border-b-2 ${
+                      activeTab === tab.key
+                        ? isDark ? 'border-amber-500 text-amber-400 bg-amber-500/5' : 'border-amber-600 text-amber-700 bg-amber-50'
+                        : isDark ? 'border-transparent text-gray-500 hover:text-gray-300' : 'border-transparent text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-4 overflow-x-auto">
+                <table className="w-full text-xs min-w-[700px]">
+                  <thead>
+                    <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
+                      <th className={`py-2 px-3 text-left font-semibold ${subtext} w-[280px]`}></th>
+                      {rawData.headers.map(h => (
+                        <th key={h} className={`py-2 px-3 text-right font-semibold ${subtext}`}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(sections || []).map((section, si) => {
+                      const sectionKey = `${activeTab}-${section.name}`;
+                      const isExpanded = expandedSections.has(sectionKey);
+                      const detailRows = section.rows.filter(r => !r.isTotal);
+                      const totalRow = section.rows.find(r => r.isTotal);
+
+                      return (
+                        <React.Fragment key={si}>
+                          <tr
+                            className={`border-b cursor-pointer transition-colors ${isDark ? 'border-gray-800 hover:bg-gray-800/40' : 'border-gray-100 hover:bg-gray-50/80'}`}
+                            onClick={() => toggleSection(sectionKey)}
+                          >
+                            <td className={`py-2.5 px-3 font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                              <span className="inline-flex items-center gap-1.5">
+                                {detailRows.length > 0 ? (
+                                  isExpanded ? <ChevronDown size={12} className="text-amber-500" /> : <ChevronRight size={12} className="text-gray-400" />
+                                ) : <span className="w-3" />}
+                                {section.name}
+                              </span>
+                            </td>
+                            {totalRow ? totalRow.values.map((v, vi) => (
+                              <td key={vi} className={`py-2.5 px-3 text-right tabular-nums font-bold ${v < 0 ? 'text-red-500' : isDark ? 'text-white' : 'text-gray-900'}`}>{fmt(v)}</td>
+                            )) : rawData.headers.map((_, vi) => (
+                              <td key={vi} className="py-2.5 px-3 text-right tabular-nums font-bold">—</td>
                             ))}
                           </tr>
-                        ))}
-                      </React.Fragment>
-                    );
-                  })}
-                  <tr className={`border-t-2 ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
-                    <td className={`py-2.5 px-3 font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Total')}</td>
-                    {rawData.headers.map((_, hi) => {
-                      const total = sectionTotals.reduce((s, st) => s + st.totals[hi], 0);
-                      return <td key={hi} className={`py-2.5 px-3 text-right tabular-nums font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{fmt(total)}</td>;
+                          {isExpanded && detailRows.map((row, ri) => (
+                            <tr key={ri} className={`border-b transition-colors ${
+                              row.isSummary
+                                ? isDark ? 'border-gray-700 bg-gray-800/30' : 'border-gray-200 bg-gray-50'
+                                : isDark ? 'border-gray-800/30' : 'border-gray-50'
+                            }`}>
+                              <td className={`py-1.5 px-3 ${row.isSummary ? 'font-semibold' : ''} ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                                  style={{ paddingLeft: `${(row.depth + 1) * 16 + 12}px` }}>
+                                {row.label}
+                              </td>
+                              {row.values.map((v, vi) => (
+                                <td key={vi} className={`py-1.5 px-3 text-right tabular-nums ${
+                                  row.isSummary ? 'font-semibold' : ''
+                                } ${v < 0 ? 'text-red-400' : isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                  {v !== 0 ? fmt(v) : '—'}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </React.Fragment>
+                      );
                     })}
-                  </tr>
-                </tbody>
-              </table>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </>
         )}
@@ -403,7 +648,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                   type="text"
                   value={sheetName}
                   onChange={e => setSheetName(e.target.value)}
-                  placeholder="5Y Plan"
+                  placeholder="Yearly"
                   className={`w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
                 />
               </div>

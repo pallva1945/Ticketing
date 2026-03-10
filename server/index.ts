@@ -545,6 +545,7 @@ app.get("/api/revenue/sheet-data/:module", async (req, res) => {
   }
 });
 
+
 const validateBigQueryRequest = (req: express.Request, res: express.Response): boolean => {
   const isInternalRequest = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip?.includes('127.0.0.1') || req.ip === '::ffff:127.0.0.1';
   
