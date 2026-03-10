@@ -423,8 +423,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const priorPeriodValues = useMemo(() => {
     if (!rawData) return null;
     const ppSection = rawData.pnl.find(s =>
-      s.name.toLowerCase().includes('past contingenc') ||
-      s.name.toLowerCase().includes('deferred')
+      s.name.toLowerCase().includes('past contingenc')
     );
     if (!ppSection) return null;
     const totalRow = ppSection.rows.find(r => r.isTotal);
