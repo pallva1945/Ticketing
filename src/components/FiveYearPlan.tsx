@@ -3,7 +3,7 @@ import { ArrowLeft, Home, FileSpreadsheet, Loader2, Check, X, RefreshCw, Chevron
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { PV_LOGO_URL } from '../constants';
-import { ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, AreaChart, Area, BarChart } from 'recharts';
+import { ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, Area, ReferenceLine, Cell } from 'recharts';
 
 const MODULE_KEY = 'five_year';
 
@@ -34,8 +34,8 @@ interface FiveYearData {
   keyMetrics: {
     label: string;
     values: number[];
-    isPercentage?: boolean;
   }[];
+  projectionStartIndex: number;
 }
 
 function parseNum(v: string | undefined | null): number {
@@ -130,6 +130,25 @@ function parseFiveYearData(raw: string[][]): FiveYearData | null {
   const headers = valueCols.map(c => (raw[headerRowIdx][c] || '').trim());
   const maxLabelCol = valueCols[0];
 
+  let projectionStartIndex = headers.length;
+  const now = new Date();
+  const currentFiscalYear = now.getMonth() >= 6 ? now.getFullYear() + 1 : now.getFullYear();
+  for (let i = 0; i < headers.length; i++) {
+    const h = headers[i];
+    let yr = 0;
+    const match2 = h.match(/(\d{2})$/);
+    const match4 = h.match(/(20\d{2})/);
+    if (match4) {
+      yr = parseInt(match4[1]);
+    } else if (match2) {
+      yr = 2000 + parseInt(match2[1]);
+    }
+    if (yr > 0 && yr > currentFiscalYear) {
+      projectionStartIndex = i;
+      break;
+    }
+  }
+
   const TOTAL_PATTERNS = /^(total|ebitda|ebit|ebt|ni|gross profit|depreciation$|interest$)/i;
   const SUMMARY_KEYS = ['EBITDA', 'EBIT', 'EBT', 'NI', 'Gross Profit'];
 
@@ -167,7 +186,7 @@ function parseFiveYearData(raw: string[][]): FiveYearData | null {
     if (ll === 'balance sheet') { currentStatement = 'bs'; continue; }
     if (ll === 'cf statement') { currentStatement = 'cf'; continue; }
     if (ll === 'assets' || ll === 'liabilities') continue;
-    if (ll.includes('margin') && label.includes('%') === false) {
+    if (ll.includes('margin')) {
       const hasPercentValues = valueCols.some(c => {
         const cell = (row[c] || '').trim();
         return cell.endsWith('%') || (cell.startsWith('(') && cell.endsWith('%)'));
@@ -244,7 +263,7 @@ function parseFiveYearData(raw: string[][]): FiveYearData | null {
   }
   pushSection();
 
-  return { headers, pnl: pnlSections, balanceSheet: bsSections, cashFlow: cfSections, keyMetrics };
+  return { headers, pnl: pnlSections, balanceSheet: bsSections, cashFlow: cfSections, keyMetrics, projectionStartIndex };
 }
 
 const fmt = (v: number) => {
@@ -261,9 +280,22 @@ const fmtFull = (v: number) => {
   return v < 0 ? `-€${formatted}` : `€${formatted}`;
 };
 
-const fmtPct = (v: number) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`;
-
 type TabKey = 'pnl' | 'balance' | 'cashflow';
+
+const CustomBarShape = (props: any) => {
+  const { x, y, width, height, fill, isProjection } = props;
+  if (height === 0) return null;
+  const actualHeight = Math.abs(height);
+  const actualY = height < 0 ? y : y;
+  return (
+    <rect
+      x={x} y={actualY} width={width} height={actualHeight}
+      fill={fill}
+      opacity={isProjection ? 0.55 : 0.9}
+      rx={0} ry={0}
+    />
+  );
+};
 
 export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onHome }) => {
   const { theme } = useTheme();
@@ -354,19 +386,21 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
     });
   };
 
+  const projIdx = rawData?.projectionStartIndex ?? 0;
+
   const revenueChartData = useMemo(() => {
     if (!rawData) return [];
     const salesSection = rawData.pnl.find(s => s.name.toLowerCase().includes('sales') && !s.name.toLowerCase().includes('cost'));
     if (!salesSection) return [];
     const items = salesSection.rows.filter(r => !r.isTotal && !r.isSummary);
     return rawData.headers.map((h, hi) => {
-      const entry: Record<string, any> = { name: h };
+      const entry: Record<string, any> = { name: h, isProjection: hi >= projIdx };
       items.forEach(item => { entry[item.label] = item.values[hi]; });
       const totalRow = salesSection.rows.find(r => r.isTotal);
       entry.total = totalRow ? totalRow.values[hi] : items.reduce((s, item) => s + item.values[hi], 0);
       return entry;
     });
-  }, [rawData]);
+  }, [rawData, projIdx]);
 
   const revenueItems = useMemo(() => {
     if (!rawData) return [];
@@ -378,15 +412,39 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const profitabilityData = useMemo(() => {
     if (!rawData || rawData.keyMetrics.length === 0) return [];
     return rawData.headers.map((h, hi) => {
-      const entry: Record<string, any> = { name: h };
+      const entry: Record<string, any> = { name: h, isProjection: hi >= projIdx };
       rawData.keyMetrics.forEach(m => { entry[m.label] = m.values[hi]; });
       return entry;
     });
-  }, [rawData]);
+  }, [rawData, projIdx]);
+
+  const costBreakdownData = useMemo(() => {
+    if (!rawData) return [];
+    const cosSection = rawData.pnl.find(s => s.name.toLowerCase().includes('cost of sales'));
+    const sgnaSection = rawData.pnl.find(s => s.name.toLowerCase().includes('sgna') || s.name.toLowerCase().includes('sg&a') || s.name.toLowerCase().includes('sgna'));
+    if (!cosSection && !sgnaSection) return [];
+    return rawData.headers.map((h, hi) => {
+      const cosTotal = cosSection?.rows.find(r => r.isTotal);
+      const sgnaTotal = sgnaSection?.rows.find(r => r.isTotal);
+      const salesSection = rawData.pnl.find(s => s.name.toLowerCase().includes('sales') && !s.name.toLowerCase().includes('cost'));
+      const salesTotal = salesSection?.rows.find(r => r.isTotal);
+      const revenue = salesTotal ? salesTotal.values[hi] : 0;
+      const cos = cosTotal ? cosTotal.values[hi] : 0;
+      const sgna = sgnaTotal ? sgnaTotal.values[hi] : 0;
+      return {
+        name: h,
+        isProjection: hi >= projIdx,
+        'Cost of Sales': cos,
+        'SG&A': sgna,
+        'Gross Margin': revenue > 0 ? ((revenue - cos) / revenue * 100) : 0,
+      };
+    });
+  }, [rawData, projIdx]);
 
   const sections = activeTab === 'pnl' ? rawData?.pnl : activeTab === 'balance' ? rawData?.balanceSheet : rawData?.cashFlow;
 
   const REVENUE_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#ef4444', '#14b8a6', '#a855f7'];
+  const projectionDividerHeader = rawData && projIdx > 0 && projIdx < rawData.headers.length ? rawData.headers[projIdx] : null;
 
   const card = isDark ? 'bg-gray-900/60 border border-gray-800 rounded-xl' : 'bg-white border border-gray-200 rounded-xl shadow-sm';
   const subtext = isDark ? 'text-gray-500' : 'text-gray-400';
@@ -404,6 +462,9 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
     { key: 'balance', label: t('Balance Sheet') },
     { key: 'cashflow', label: t('Cash Flow') },
   ];
+
+  const isProjectionCol = (hi: number) => hi >= projIdx;
+  const isCurrentYear = (hi: number) => hi === projIdx - 1;
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
@@ -446,7 +507,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-6">
         {!rawData ? (
           <div className={`${card} p-12 text-center`}>
             <FileSpreadsheet size={48} className={`mx-auto mb-4 ${subtext}`} />
@@ -462,25 +523,54 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
         ) : (
           <>
             {rawData.keyMetrics.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 {rawData.keyMetrics.map(metric => {
-                  const lastVal = metric.values[metric.values.length - 1];
-                  const firstVal = metric.values[0];
-                  const improving = lastVal > firstVal;
+                  const lastActualIdx = Math.min(projIdx, metric.values.length) - 1;
+                  const lastProjIdx = metric.values.length - 1;
+                  const currentVal = lastActualIdx >= 0 ? metric.values[lastActualIdx] : 0;
+                  const projectedVal = metric.values[lastProjIdx];
+                  const improving = projectedVal > currentVal;
+                  const currentHeader = lastActualIdx >= 0 ? rawData.headers[lastActualIdx] : '';
+                  const projectedHeader = rawData.headers[lastProjIdx];
+
+                  const sparkPoints = metric.values.map((v, i) => {
+                    const minV = Math.min(...metric.values);
+                    const maxV = Math.max(...metric.values);
+                    const range = maxV - minV || 1;
+                    return { x: (i / (metric.values.length - 1)) * 100, y: 28 - ((v - minV) / range) * 24, isProj: i >= projIdx };
+                  });
+                  const sparkPath = sparkPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+                  const actualPath = sparkPoints.filter(p => !p.isProj).map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+                  const projPath = sparkPoints.filter((p, i) => i >= projIdx - 1).map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
+
                   return (
                     <div key={metric.label} className={`${card} p-4`}>
-                      <p className={`text-[10px] font-medium ${subtext} mb-1`}>{metric.label}</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className={`text-[10px] font-semibold uppercase tracking-wider ${subtext}`}>{metric.label}</p>
+                        <div className={`flex items-center gap-0.5 text-[10px] font-medium ${improving ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {improving ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                        </div>
+                      </div>
+                      <svg viewBox="0 0 100 32" className="w-full h-8 mb-2">
+                        <path d={actualPath} fill="none" stroke={isDark ? '#9ca3af' : '#6b7280'} strokeWidth="1.5" />
+                        {projPath && <path d={projPath} fill="none" stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 2" />}
+                        {sparkPoints.map((p, i) => (
+                          <circle key={i} cx={p.x} cy={p.y} r={i === lastActualIdx ? 2.5 : 1.2}
+                            fill={i >= projIdx ? '#f59e0b' : isDark ? '#d1d5db' : '#4b5563'}
+                            stroke={i === lastActualIdx ? (isDark ? '#fff' : '#111') : 'none'} strokeWidth={i === lastActualIdx ? 1 : 0} />
+                        ))}
+                        {projIdx > 0 && projIdx < sparkPoints.length && (
+                          <line x1={sparkPoints[projIdx].x} y1="0" x2={sparkPoints[projIdx].x} y2="32" stroke={isDark ? '#374151' : '#d1d5db'} strokeWidth="0.5" strokeDasharray="2 1" />
+                        )}
+                      </svg>
                       <div className="flex items-end justify-between">
                         <div>
-                          <p className={`text-[9px] ${subtext}`}>{rawData.headers[0]}</p>
-                          <p className={`text-sm font-bold ${firstVal < 0 ? 'text-red-500' : isDark ? 'text-white' : 'text-gray-900'}`}>{fmt(firstVal)}</p>
-                        </div>
-                        <div className={`flex items-center gap-0.5 ${improving ? 'text-emerald-500' : 'text-red-500'}`}>
-                          {improving ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                          <p className={`text-[8px] ${subtext}`}>{currentHeader} {t('(actual)')}</p>
+                          <p className={`text-sm font-bold tabular-nums ${currentVal < 0 ? 'text-red-500' : isDark ? 'text-white' : 'text-gray-900'}`}>{fmt(currentVal)}</p>
                         </div>
                         <div className="text-right">
-                          <p className={`text-[9px] ${subtext}`}>{rawData.headers[rawData.headers.length - 1]}</p>
-                          <p className={`text-sm font-bold ${lastVal < 0 ? 'text-red-500' : 'text-emerald-500'}`}>{fmt(lastVal)}</p>
+                          <p className={`text-[8px] ${subtext}`}>{projectedHeader} {t('(target)')}</p>
+                          <p className={`text-sm font-bold tabular-nums ${projectedVal < 0 ? 'text-red-500' : 'text-emerald-500'}`}>{fmt(projectedVal)}</p>
                         </div>
                       </div>
                     </div>
@@ -492,17 +582,39 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {revenueChartData.length > 0 && (
                 <div className={`${card} p-4`}>
-                  <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Revenue Breakdown')}</h3>
-                  <div className="h-[300px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Revenue Breakdown')}</h3>
+                    <div className="flex items-center gap-3 text-[9px]">
+                      <span className={`flex items-center gap-1 ${subtext}`}><span className="w-2 h-2 rounded-sm bg-gray-400 inline-block" /> {t('Actual')}</span>
+                      <span className={`flex items-center gap-1 ${subtext}`}><span className="w-2 h-2 rounded-sm bg-amber-500/50 inline-block" style={{ border: '1px dashed #f59e0b' }} /> {t('Projected')}</span>
+                    </div>
+                  </div>
+                  <div className="h-[320px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={revenueChartData} margin={{ top: 10, right: 10, bottom: 5, left: 5 }}>
+                        <defs>
+                          {revenueItems.map((item, i) => (
+                            <React.Fragment key={item}>
+                              <pattern id={`stripe-${i}`} patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)">
+                                <rect width="2" height="4" fill={REVENUE_COLORS[i % REVENUE_COLORS.length]} opacity={0.5} />
+                              </pattern>
+                            </React.Fragment>
+                          ))}
+                        </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
-                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                        <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                         <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
                         <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => [fmtFull(v), name]} />
                         <Legend wrapperStyle={{ fontSize: 9 }} />
+                        {projectionDividerHeader && (
+                          <ReferenceLine x={projectionDividerHeader} stroke={isDark ? '#f59e0b' : '#d97706'} strokeDasharray="4 3" strokeWidth={1} label={{ value: t('Projected'), position: 'top', fontSize: 8, fill: '#f59e0b' }} />
+                        )}
                         {revenueItems.map((item, i) => (
-                          <Bar key={item} dataKey={item} name={item.replace(' Rev', '')} fill={REVENUE_COLORS[i % REVENUE_COLORS.length]} stackId="a" opacity={0.85} radius={i === revenueItems.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]} />
+                          <Bar key={item} dataKey={item} name={item.replace(' Rev', '')} fill={REVENUE_COLORS[i % REVENUE_COLORS.length]} stackId="a" radius={i === revenueItems.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}>
+                            {revenueChartData.map((entry, idx) => (
+                              <Cell key={idx} fillOpacity={entry.isProjection ? 0.45 : 0.9} />
+                            ))}
+                          </Bar>
                         ))}
                         <Line type="monotone" dataKey="total" name={t('Total Sales')} stroke={isDark ? '#fbbf24' : '#d97706'} strokeWidth={2.5} dot={{ r: 3, fill: isDark ? '#fbbf24' : '#d97706' }} />
                       </ComposedChart>
@@ -513,18 +625,28 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
 
               {profitabilityData.length > 0 && (
                 <div className={`${card} p-4`}>
-                  <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Profitability Path')}</h3>
-                  <div className="h-[300px]">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Profitability Path')}</h3>
+                    <div className="flex items-center gap-3 text-[9px]">
+                      <span className={`flex items-center gap-1 ${subtext}`}><span className="w-6 border-t border-gray-400 inline-block" /> {t('Actual')}</span>
+                      <span className={`flex items-center gap-1 ${subtext}`}><span className="w-6 border-t border-dashed border-amber-500 inline-block" /> {t('Projected')}</span>
+                    </div>
+                  </div>
+                  <div className="h-[320px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={profitabilityData} margin={{ top: 10, right: 10, bottom: 5, left: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
-                        <XAxis dataKey="name" tick={{ fontSize: 10, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                        <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                         <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
                         <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => [fmtFull(v), name]} />
                         <Legend wrapperStyle={{ fontSize: 9 }} />
+                        {projectionDividerHeader && (
+                          <ReferenceLine x={projectionDividerHeader} stroke={isDark ? '#f59e0b' : '#d97706'} strokeDasharray="4 3" strokeWidth={1} />
+                        )}
+                        <ReferenceLine y={0} stroke={isDark ? '#4b5563' : '#9ca3af'} strokeWidth={1} />
                         {rawData.keyMetrics.map((m, i) => {
                           const colors = ['#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6'];
-                          return <Line key={m.label} type="monotone" dataKey={m.label} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 3 }} />;
+                          return <Line key={m.label} type="monotone" dataKey={m.label} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 2.5 }} />;
                         })}
                         <Area type="monotone" dataKey="EBITDA" fill={isDark ? '#f59e0b20' : '#f59e0b15'} stroke="transparent" />
                       </ComposedChart>
@@ -533,6 +655,38 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                 </div>
               )}
             </div>
+
+            {costBreakdownData.length > 0 && (
+              <div className={`${card} p-4`}>
+                <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Cost Structure & Gross Margin')}</h3>
+                <div className="h-[280px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ComposedChart data={costBreakdownData} margin={{ top: 10, right: 40, bottom: 5, left: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
+                      <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                      <YAxis yAxisId="left" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
+                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => `${v.toFixed(0)}%`} domain={['auto', 'auto']} />
+                      <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => name === 'Gross Margin' ? [`${v.toFixed(1)}%`, name] : [fmtFull(v), name]} />
+                      <Legend wrapperStyle={{ fontSize: 9 }} />
+                      {projectionDividerHeader && (
+                        <ReferenceLine yAxisId="left" x={projectionDividerHeader} stroke={isDark ? '#f59e0b' : '#d97706'} strokeDasharray="4 3" strokeWidth={1} />
+                      )}
+                      <Bar yAxisId="left" dataKey="Cost of Sales" fill="#ef4444" stackId="costs" opacity={0.7}>
+                        {costBreakdownData.map((entry, idx) => (
+                          <Cell key={idx} fillOpacity={entry.isProjection ? 0.4 : 0.7} />
+                        ))}
+                      </Bar>
+                      <Bar yAxisId="left" dataKey="SG&A" fill="#8b5cf6" stackId="costs" radius={[3, 3, 0, 0]} opacity={0.7}>
+                        {costBreakdownData.map((entry, idx) => (
+                          <Cell key={idx} fillOpacity={entry.isProjection ? 0.4 : 0.7} />
+                        ))}
+                      </Bar>
+                      <Line yAxisId="right" type="monotone" dataKey="Gross Margin" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: '#10b981' }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
 
             <div className={`${card} overflow-hidden`}>
               <div className={`flex border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
@@ -552,12 +706,22 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
               </div>
 
               <div className="p-4 overflow-x-auto">
-                <table className="w-full text-xs min-w-[700px]">
+                <table className="w-full text-xs" style={{ minWidth: `${280 + rawData.headers.length * 90}px` }}>
                   <thead>
                     <tr className={`border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
-                      <th className={`py-2 px-3 text-left font-semibold ${subtext} w-[280px]`}></th>
-                      {rawData.headers.map(h => (
-                        <th key={h} className={`py-2 px-3 text-right font-semibold ${subtext}`}>{h}</th>
+                      <th className={`py-2 px-3 text-left font-semibold ${subtext} w-[280px] sticky left-0 z-10 ${isDark ? 'bg-gray-900/90' : 'bg-white/90'}`}></th>
+                      {rawData.headers.map((h, hi) => (
+                        <th key={h} className={`py-2 px-2 text-right font-semibold whitespace-nowrap ${
+                          isCurrentYear(hi) 
+                            ? isDark ? 'text-amber-400 bg-amber-500/5' : 'text-amber-700 bg-amber-50'
+                            : isProjectionCol(hi)
+                              ? isDark ? 'text-gray-600 italic' : 'text-gray-400 italic'
+                              : subtext
+                        }`}>
+                          {h}
+                          {isCurrentYear(hi) && <span className="block text-[7px] font-normal not-italic">{t('CURRENT')}</span>}
+                          {hi === projIdx && <span className="block text-[7px] font-normal text-amber-500 not-italic">{t('PROJECTED')}</span>}
+                        </th>
                       ))}
                     </tr>
                   </thead>
@@ -574,7 +738,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                             className={`border-b cursor-pointer transition-colors ${isDark ? 'border-gray-800 hover:bg-gray-800/40' : 'border-gray-100 hover:bg-gray-50/80'}`}
                             onClick={() => toggleSection(sectionKey)}
                           >
-                            <td className={`py-2.5 px-3 font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                            <td className={`py-2.5 px-3 font-bold sticky left-0 z-10 ${isDark ? 'text-white bg-gray-900/90' : 'text-gray-900 bg-white/90'}`}>
                               <span className="inline-flex items-center gap-1.5">
                                 {detailRows.length > 0 ? (
                                   isExpanded ? <ChevronDown size={12} className="text-amber-500" /> : <ChevronRight size={12} className="text-gray-400" />
@@ -583,9 +747,11 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                               </span>
                             </td>
                             {totalRow ? totalRow.values.map((v, vi) => (
-                              <td key={vi} className={`py-2.5 px-3 text-right tabular-nums font-bold ${v < 0 ? 'text-red-500' : isDark ? 'text-white' : 'text-gray-900'}`}>{fmt(v)}</td>
+                              <td key={vi} className={`py-2.5 px-2 text-right tabular-nums font-bold ${
+                                isCurrentYear(vi) ? (isDark ? 'bg-amber-500/5' : 'bg-amber-50') : ''
+                              } ${v < 0 ? 'text-red-500' : isProjectionCol(vi) ? (isDark ? 'text-gray-400' : 'text-gray-500') : isDark ? 'text-white' : 'text-gray-900'}`}>{fmt(v)}</td>
                             )) : rawData.headers.map((_, vi) => (
-                              <td key={vi} className="py-2.5 px-3 text-right tabular-nums font-bold">—</td>
+                              <td key={vi} className={`py-2.5 px-2 text-right tabular-nums font-bold ${isCurrentYear(vi) ? (isDark ? 'bg-amber-500/5' : 'bg-amber-50') : ''}`}>—</td>
                             ))}
                           </tr>
                           {isExpanded && detailRows.map((row, ri) => (
@@ -594,14 +760,15 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                                 ? isDark ? 'border-gray-700 bg-gray-800/30' : 'border-gray-200 bg-gray-50'
                                 : isDark ? 'border-gray-800/30' : 'border-gray-50'
                             }`}>
-                              <td className={`py-1.5 px-3 ${row.isSummary ? 'font-semibold' : ''} ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+                              <td className={`py-1.5 px-3 ${row.isSummary ? 'font-semibold' : ''} ${isDark ? 'text-gray-300' : 'text-gray-700'} sticky left-0 z-10 ${isDark ? 'bg-gray-900/90' : 'bg-white/90'}`}
                                   style={{ paddingLeft: `${(row.depth + 1) * 16 + 12}px` }}>
                                 {row.label}
                               </td>
                               {row.values.map((v, vi) => (
-                                <td key={vi} className={`py-1.5 px-3 text-right tabular-nums ${
+                                <td key={vi} className={`py-1.5 px-2 text-right tabular-nums ${
                                   row.isSummary ? 'font-semibold' : ''
-                                } ${v < 0 ? 'text-red-400' : isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                } ${isCurrentYear(vi) ? (isDark ? 'bg-amber-500/5' : 'bg-amber-50') : ''
+                                } ${v < 0 ? 'text-red-400' : isProjectionCol(vi) ? (isDark ? 'text-gray-500' : 'text-gray-400') : isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                                   {v !== 0 ? fmt(v) : '—'}
                                 </td>
                               ))}
