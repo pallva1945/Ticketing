@@ -44,7 +44,7 @@ const ANNOTATIONS: Annotation[] = [
   {
     year: 'Jun-22',
     marker: '4',
-    title: 'Prior Period Adjustments',
+    title: 'Past Contingencies & Deferred',
     description: 'P&L costs discovered over time from previous management. Although assumed and paid, these are not considered reflective of current operational performance and should be excluded from performance evaluation.',
     impact: 'Excluded in adjusted view',
     color: '#06b6d4',
@@ -424,7 +424,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
     if (!rawData) return null;
     const ppSection = rawData.pnl.find(s =>
       s.name.toLowerCase().includes('past contingenc') ||
-      s.name.toLowerCase().includes('prior period')
+      s.name.toLowerCase().includes('deferred')
     );
     if (!ppSection) return null;
     const totalRow = ppSection.rows.find(r => r.isTotal);
@@ -601,7 +601,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                     >
                       {showAdjusted ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                       {showAdjusted ? t('Adjusted Performance') : t('Reported Performance')}
-                      {showAdjusted && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-cyan-900/50 text-cyan-300' : 'bg-cyan-100 text-cyan-600'}`}>{t('excl. Prior Period Adj.')}</span>}
+                      {showAdjusted && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-cyan-900/50 text-cyan-300' : 'bg-cyan-100 text-cyan-600'}`}>{t('excl. Past Contingencies')}</span>}
                     </button>
                   )}
                 </div>
