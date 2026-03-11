@@ -517,15 +517,62 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
     }, new Array(rawData.headers.length).fill(0) as number[]);
   }, [rawData]);
 
-  const adjustedKeyMetrics = useMemo(() => {
-    if (!rawData || !showAdjusted || !priorPeriodValues) return rawData?.keyMetrics || [];
-    return rawData.keyMetrics.map(m => ({
-      ...m,
-      values: m.values.map((v, i) => v + Math.abs(priorPeriodValues[i])),
-    }));
-  }, [rawData, showAdjusted, priorPeriodValues]);
+  const depreciationShift = useMemo(() => {
+    if (!rawData) return null;
+    const depSection = rawData.pnl.find(s =>
+      s.name.toLowerCase().includes('depreciation') || s.name.toLowerCase().includes('amortization')
+    );
+    if (!depSection) return null;
+    const depRow = depSection.rows.find(r =>
+      r.label.toLowerCase().includes('depreciation') || r.label.toLowerCase().includes('amortization')
+    );
+    if (!depRow) return null;
+    const original = depRow.values;
+    const n = original.length;
+    const SHIFT = 3;
+    const firstAmortIdx = original.findIndex(v => v > 0);
+    if (firstAmortIdx < SHIFT) return null;
+    const shifted = new Array(n).fill(0);
+    for (let i = firstAmortIdx; i < n; i++) {
+      shifted[i - SHIFT] = original[i];
+    }
+    const availableEnd = n - SHIFT;
+    if (availableEnd < n) {
+      const trendWindow = Math.min(3, availableEnd);
+      const lastValues = shifted.slice(availableEnd - trendWindow, availableEnd);
+      if (lastValues.length >= 2) {
+        const avgChange = (lastValues[lastValues.length - 1] - lastValues[0]) / (lastValues.length - 1);
+        for (let i = availableEnd; i < n; i++) {
+          shifted[i] = Math.max(0, shifted[availableEnd - 1] + avgChange * (i - availableEnd + 1));
+        }
+      } else if (lastValues.length === 1) {
+        for (let i = availableEnd; i < n; i++) {
+          shifted[i] = lastValues[0];
+        }
+      }
+    }
+    const delta = original.map((orig, i) => orig - shifted[i]);
+    return { original, shifted, delta };
+  }, [rawData]);
 
-  const activeKeyMetrics = showAdjusted && priorPeriodValues ? adjustedKeyMetrics : (rawData?.keyMetrics || []);
+  const adjustedKeyMetrics = useMemo(() => {
+    if (!rawData || !showAdjusted) return rawData?.keyMetrics || [];
+    return rawData.keyMetrics.map(m => {
+      const label = m.label.toUpperCase();
+      let values = [...m.values];
+      if (priorPeriodValues) {
+        values = values.map((v, i) => v + Math.abs(priorPeriodValues[i]));
+      }
+      if (depreciationShift && (label.startsWith('EBIT') || label.startsWith('EBT') || label.startsWith('NI'))) {
+        if (!label.startsWith('EBITDA')) {
+          values = values.map((v, i) => v + depreciationShift.delta[i]);
+        }
+      }
+      return { ...m, values };
+    });
+  }, [rawData, showAdjusted, priorPeriodValues, depreciationShift]);
+
+  const activeKeyMetrics = showAdjusted ? adjustedKeyMetrics : (rawData?.keyMetrics || []);
 
   const annotationYearIndices = useMemo(() => {
     if (!rawData) return new Map<string, number>();
@@ -731,7 +778,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                     >
                       {showAdjusted ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
                       {showAdjusted ? t('Adjusted Performance') : t('Reported Performance')}
-                      {showAdjusted && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-cyan-900/50 text-cyan-300' : 'bg-cyan-100 text-cyan-600'}`}>{t('excl. Past Contingencies')}</span>}
+                      {showAdjusted && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-cyan-900/50 text-cyan-300' : 'bg-cyan-100 text-cyan-600'}`}>{t('excl. Past Contingencies + Amort. from 2022')}</span>}
                     </button>
                   )}
                 </div>
