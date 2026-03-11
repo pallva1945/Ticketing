@@ -349,6 +349,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [soloProfit, setSoloProfit] = useState<string | null>(null);
   const [showAssumptions, setShowAssumptions] = useState(true);
   const [showCostModel, setShowCostModel] = useState(true);
+  const [winsHungry, setWinsHungry] = useState(false);
 
   const SCENARIO_ASSUMPTIONS_LIST: { title: string; description: string; color: string; sections: { label: string; icon: string; points: string[] }[] }[] = [
     {
@@ -726,6 +727,33 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
       };
     });
   }, [rawData, projIdx]);
+
+  const bopsChartData = useMemo(() => {
+    if (!rawData) return [];
+    const cosSection = rawData.pnl.find(s => s.name.toLowerCase().includes('cost of sales'));
+    if (!cosSection) return [];
+    const bopsRow = cosSection.rows.find(r => r.label.toLowerCase() === 'bops' || r.label.toLowerCase().includes('basketball op'));
+    if (!bopsRow) return [];
+    const ebitdaMetric = rawData.keyMetrics.find(m => m.label === 'EBITDA');
+    return rawData.headers.map((h, hi) => {
+      let bopsCost = bopsRow.values[hi];
+      let reinvested = 0;
+      if (winsHungry && ebitdaMetric && hi > 0) {
+        const prevEbitda = ebitdaMetric.values[hi - 1];
+        if (prevEbitda > 0) {
+          reinvested = prevEbitda;
+          bopsCost = bopsCost + reinvested;
+        }
+      }
+      return {
+        name: h,
+        isProjection: hi >= projIdx,
+        'BOps Cost': bopsCost,
+        'Reinvested EBITDA': reinvested,
+        'Base BOps': bopsRow.values[hi],
+      };
+    });
+  }, [rawData, projIdx, winsHungry]);
 
   const filteredCostBreakdownData = useMemo(() => {
     if (!soloCost || soloCost === 'Gross Margin') return costBreakdownData;
@@ -1218,58 +1246,103 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                   </div>
                 </div>
               )}
-            </div>
 
-            {filteredCostBreakdownData.length > 0 && (
-              <div className={`${card} p-4`}>
-                <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Cost Structure & Gross Margin')}</h3>
-                <div className="h-[280px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={filteredCostBreakdownData} margin={{ top: 10, right: 40, bottom: 5, left: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
-                      <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
-                      <YAxis yAxisId="left" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
-                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => `${v.toFixed(0)}%`} domain={['auto', 'auto']} />
-                      <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string, props: any) => {
-                        if (soloCost && props.dataKey !== soloCost) return [null, null];
-                        return name === 'Gross Margin' ? [`${v.toFixed(1)}%`, name] : [fmtFull(v), name];
-                      }} itemStyle={{ fontSize: 10 }} />
-                      <Legend wrapperStyle={{ fontSize: 9, cursor: 'pointer' }} onClick={(e: any) => {
-                        if (!e || !e.dataKey) return;
-                        setSoloCost(prev => prev === e.dataKey ? null : e.dataKey);
-                      }} formatter={(value: string, entry: any) => {
-                        const isSolo = soloCost === entry.dataKey;
-                        const isDimmed = soloCost !== null && !isSolo;
-                        return <span style={{ color: isDimmed ? (isDark ? '#4b5563' : '#d1d5db') : (isDark ? '#d1d5db' : '#374151'), fontWeight: isSolo ? 700 : 400, cursor: 'pointer' }}>{value}</span>;
-                      }} />
-                      {projectionDividerHeader && (
-                        <ReferenceLine yAxisId="left" x={projectionDividerHeader} stroke={isDark ? '#f59e0b' : '#d97706'} strokeDasharray="4 3" strokeWidth={1} />
-                      )}
-                      {(() => {
-                        const cosVisible = !soloCost || soloCost === 'Cost of Sales';
-                        const sgaVisible = !soloCost || soloCost === 'SG&A';
-                        const gmVisible = !soloCost || soloCost === 'Gross Margin';
-                        return (
-                          <>
-                            <Bar yAxisId="left" dataKey="Cost of Sales" fill={cosVisible ? '#ef4444' : 'transparent'} stackId="costs" opacity={0.7}>
-                              {filteredCostBreakdownData.map((entry, idx) => (
-                                <Cell key={idx} fillOpacity={cosVisible ? (entry.isProjection ? 0.4 : 0.7) : 0} />
-                              ))}
-                            </Bar>
-                            <Bar yAxisId="left" dataKey="SG&A" fill={sgaVisible ? '#8b5cf6' : 'transparent'} stackId="costs" radius={[3, 3, 0, 0]} opacity={0.7}>
-                              {filteredCostBreakdownData.map((entry, idx) => (
-                                <Cell key={idx} fillOpacity={sgaVisible ? (entry.isProjection ? 0.4 : 0.7) : 0} />
-                              ))}
-                            </Bar>
-                            <Line yAxisId="right" type="monotone" dataKey="Gross Margin" stroke="#10b981" strokeWidth={gmVisible ? 2.5 : 0.5} dot={gmVisible ? { r: 3, fill: '#10b981' } : false} opacity={gmVisible ? 1 : 0.1} />
-                          </>
-                        );
-                      })()}
-                    </ComposedChart>
-                  </ResponsiveContainer>
+              {filteredCostBreakdownData.length > 0 && (
+                <div className={`${card} p-4`}>
+                  <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Cost Structure & Gross Margin')}</h3>
+                  <div className="h-[320px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={filteredCostBreakdownData} margin={{ top: 10, right: 40, bottom: 5, left: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
+                        <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                        <YAxis yAxisId="left" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
+                        <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => `${v.toFixed(0)}%`} domain={['auto', 'auto']} />
+                        <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string, props: any) => {
+                          if (soloCost && props.dataKey !== soloCost) return [null, null];
+                          return name === 'Gross Margin' ? [`${v.toFixed(1)}%`, name] : [fmtFull(v), name];
+                        }} itemStyle={{ fontSize: 10 }} />
+                        <Legend wrapperStyle={{ fontSize: 9, cursor: 'pointer' }} onClick={(e: any) => {
+                          if (!e || !e.dataKey) return;
+                          setSoloCost(prev => prev === e.dataKey ? null : e.dataKey);
+                        }} formatter={(value: string, entry: any) => {
+                          const isSolo = soloCost === entry.dataKey;
+                          const isDimmed = soloCost !== null && !isSolo;
+                          return <span style={{ color: isDimmed ? (isDark ? '#4b5563' : '#d1d5db') : (isDark ? '#d1d5db' : '#374151'), fontWeight: isSolo ? 700 : 400, cursor: 'pointer' }}>{value}</span>;
+                        }} />
+                        {projectionDividerHeader && (
+                          <ReferenceLine yAxisId="left" x={projectionDividerHeader} stroke={isDark ? '#f59e0b' : '#d97706'} strokeDasharray="4 3" strokeWidth={1} />
+                        )}
+                        {(() => {
+                          const cosVisible = !soloCost || soloCost === 'Cost of Sales';
+                          const sgaVisible = !soloCost || soloCost === 'SG&A';
+                          const gmVisible = !soloCost || soloCost === 'Gross Margin';
+                          return (
+                            <>
+                              <Bar yAxisId="left" dataKey="Cost of Sales" fill={cosVisible ? '#ef4444' : 'transparent'} stackId="costs" opacity={0.7}>
+                                {filteredCostBreakdownData.map((entry, idx) => (
+                                  <Cell key={idx} fillOpacity={cosVisible ? (entry.isProjection ? 0.4 : 0.7) : 0} />
+                                ))}
+                              </Bar>
+                              <Bar yAxisId="left" dataKey="SG&A" fill={sgaVisible ? '#8b5cf6' : 'transparent'} stackId="costs" radius={[3, 3, 0, 0]} opacity={0.7}>
+                                {filteredCostBreakdownData.map((entry, idx) => (
+                                  <Cell key={idx} fillOpacity={sgaVisible ? (entry.isProjection ? 0.4 : 0.7) : 0} />
+                                ))}
+                              </Bar>
+                              <Line yAxisId="right" type="monotone" dataKey="Gross Margin" stroke="#10b981" strokeWidth={gmVisible ? 2.5 : 0.5} dot={gmVisible ? { r: 3, fill: '#10b981' } : false} opacity={gmVisible ? 1 : 0.1} />
+                            </>
+                          );
+                        })()}
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+
+              {bopsChartData.length > 0 && (
+                <div className={`${card} p-4`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Team Investment (BOps)')}</h3>
+                    <button
+                      onClick={() => setWinsHungry(!winsHungry)}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium transition-all ${
+                        winsHungry
+                          ? isDark ? 'bg-orange-900/30 text-orange-400 border border-orange-800' : 'bg-orange-50 text-orange-700 border border-orange-200'
+                          : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
+                      }`}
+                    >
+                      {winsHungry ? <ToggleRight size={13} /> : <ToggleLeft size={13} />}
+                      {t('Wins Hungry')}
+                    </button>
+                  </div>
+                  <div className="h-[320px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ComposedChart data={bopsChartData} margin={{ top: 10, right: 10, bottom: 5, left: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
+                        <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
+                        <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
+                        <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => [fmtFull(v), name]} itemStyle={{ fontSize: 10 }} />
+                        <Legend wrapperStyle={{ fontSize: 9 }} />
+                        {projectionDividerHeader && (
+                          <ReferenceLine x={projectionDividerHeader} stroke={isDark ? '#f59e0b' : '#d97706'} strokeDasharray="4 3" strokeWidth={1} />
+                        )}
+                        <Bar dataKey="Base BOps" fill="#3b82f6" stackId="bops" radius={winsHungry ? [0, 0, 0, 0] : [3, 3, 0, 0]}>
+                          {bopsChartData.map((entry, idx) => (
+                            <Cell key={idx} fillOpacity={entry.isProjection ? 0.4 : 0.8} />
+                          ))}
+                        </Bar>
+                        {winsHungry && (
+                          <Bar dataKey="Reinvested EBITDA" fill="#f97316" stackId="bops" radius={[3, 3, 0, 0]}>
+                            {bopsChartData.map((entry, idx) => (
+                              <Cell key={idx} fillOpacity={entry.isProjection ? 0.5 : 0.85} />
+                            ))}
+                          </Bar>
+                        )}
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className={`${card} overflow-hidden`}>
               <div className={`flex border-b ${isDark ? 'border-gray-800' : 'border-gray-200'}`}>
