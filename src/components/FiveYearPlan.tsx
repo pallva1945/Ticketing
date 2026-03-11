@@ -193,7 +193,7 @@ function parseFiveYearData(raw: string[][]): FiveYearData | null {
     }
   }
 
-  const TOTAL_PATTERNS = /^(total|ebitda|ebit|ebt|ni|gross profit|depreciation$|interest$)/i;
+  const TOTAL_PATTERNS = /^(total|ebitda|ebit|ebt|ni|gross profit|depreciation$)/i;
   const SUMMARY_KEYS = ['EBITDA', 'EBIT', 'EBT', 'NI', 'Gross Profit'];
 
   interface PreRow {
@@ -1147,8 +1147,8 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                     {(sections || []).map((section, si) => {
                       const sectionKey = `${activeTab}-${section.name}`;
                       const isExpanded = expandedSections.has(sectionKey);
-                      const detailRows = section.rows.filter(r => !r.isTotal);
-                      const totalRow = section.rows.find(r => r.isTotal);
+                      const detailRows = section.rows.filter(r => !r.isTotal && !r.isSummary);
+                      const totalRow = section.rows.find(r => r.isTotal && r.label.startsWith('Total ')) || section.rows.find(r => r.isTotal);
 
                       return (
                         <React.Fragment key={si}>
