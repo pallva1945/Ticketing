@@ -348,13 +348,13 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [soloProfit, setSoloProfit] = useState<string | null>(null);
 
   const DEFAULT_SCENARIOS = [
+    { key: 'financial', tabName: 'Financial', label: 'Financial' },
     { key: 'base', tabName: 'Base', label: 'Base' },
-    { key: 'conservative', tabName: 'Conservative', label: 'Conservative' },
-    { key: 'optimistic', tabName: 'Optimistic', label: 'Optimistic' },
+    { key: 'downside', tabName: 'Downside', label: 'Downside' },
   ];
   const [scenarios, setScenarios] = useState(DEFAULT_SCENARIOS);
   const [scenarioData, setScenarioData] = useState<Record<string, FiveYearData | null>>({});
-  const [activeScenario, setActiveScenario] = useState('base');
+  const [activeScenario, setActiveScenario] = useState('financial');
   const [hasScenarios, setHasScenarios] = useState(false);
 
   useEffect(() => {
