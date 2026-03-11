@@ -721,32 +721,63 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
         </div>
       </div>
 
-      {hasScenarios && Object.keys(scenarioData).length > 0 && (
-        <div className="max-w-[1400px] mx-auto px-4 pt-4 pb-0">
-          <div className={`inline-flex rounded-lg p-1 ${isDark ? 'bg-gray-900/80 border border-gray-800' : 'bg-gray-100 border border-gray-200'}`}>
-            {scenarios.map(s => {
-              const isActive = activeScenario === s.key;
-              const hasData = !!scenarioData[s.key];
-              return (
-                <button
-                  key={s.key}
-                  onClick={() => hasData && switchScenario(s.key)}
-                  disabled={!hasData}
-                  className={`px-4 py-2 rounded-md text-xs font-semibold transition-all ${
-                    isActive
-                      ? isDark ? 'bg-amber-600 text-white shadow-md' : 'bg-amber-600 text-white shadow-md'
-                      : hasData
-                        ? isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'
-                        : isDark ? 'text-gray-700 cursor-not-allowed' : 'text-gray-300 cursor-not-allowed'
-                  }`}
-                >
-                  {s.label}
-                </button>
-              );
-            })}
+      <div className={`max-w-[1400px] mx-auto px-4 pt-4 pb-0`}>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          {hasScenarios && Object.keys(scenarioData).length > 0 ? (
+            <div className={`inline-flex rounded-lg p-0.5 ${isDark ? 'bg-gray-900/80 border border-gray-800' : 'bg-gray-100 border border-gray-200'}`}>
+              {scenarios.map(s => {
+                const isActive = activeScenario === s.key;
+                const hasData = !!scenarioData[s.key];
+                return (
+                  <button
+                    key={s.key}
+                    onClick={() => hasData && switchScenario(s.key)}
+                    disabled={!hasData}
+                    className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
+                      isActive
+                        ? 'bg-amber-600 text-white shadow-sm'
+                        : hasData
+                          ? isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'
+                          : isDark ? 'text-gray-700 cursor-not-allowed' : 'text-gray-300 cursor-not-allowed'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : <div />}
+          <div className="flex items-center gap-2">
+            {depreciationShift && (
+              <button
+                onClick={() => setShowAmortSim(!showAmortSim)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                  showAmortSim
+                    ? isDark ? 'bg-violet-900/30 text-violet-400 border border-violet-800' : 'bg-violet-50 text-violet-700 border border-violet-200'
+                    : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
+                }`}
+              >
+                {showAmortSim ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                {t('Amort. Simulator')}
+                {showAmortSim && <span className={`text-[8px] px-1 py-0.5 rounded-full ${isDark ? 'bg-violet-900/50 text-violet-300' : 'bg-violet-100 text-violet-600'}`}>{t('from 2022')}</span>}
+              </button>
+            )}
+            {priorPeriodValues && (
+              <button
+                onClick={() => setShowExclContingencies(!showExclContingencies)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                  showExclContingencies
+                    ? isDark ? 'bg-cyan-900/30 text-cyan-400 border border-cyan-800' : 'bg-cyan-50 text-cyan-700 border border-cyan-200'
+                    : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
+                }`}
+              >
+                {showExclContingencies ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                {t('Excl. Past Contingencies')}
+              </button>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
       <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-6">
         {!rawData ? (
@@ -765,35 +796,6 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
           <>
             {activeKeyMetrics.length > 0 && (
               <>
-                <div className="flex items-center justify-end gap-2 flex-wrap">
-                  {depreciationShift && (
-                    <button
-                      onClick={() => setShowAmortSim(!showAmortSim)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                        showAmortSim
-                          ? isDark ? 'bg-violet-900/30 text-violet-400 border border-violet-800' : 'bg-violet-50 text-violet-700 border border-violet-200'
-                          : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
-                      }`}
-                    >
-                      {showAmortSim ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-                      {t('Amort. Simulator')}
-                      {showAmortSim && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-violet-900/50 text-violet-300' : 'bg-violet-100 text-violet-600'}`}>{t('from 2022')}</span>}
-                    </button>
-                  )}
-                  {priorPeriodValues && (
-                    <button
-                      onClick={() => setShowExclContingencies(!showExclContingencies)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                        showExclContingencies
-                          ? isDark ? 'bg-cyan-900/30 text-cyan-400 border border-cyan-800' : 'bg-cyan-50 text-cyan-700 border border-cyan-200'
-                          : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
-                      }`}
-                    >
-                      {showExclContingencies ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-                      {t('Excl. Past Contingencies')}
-                    </button>
-                  )}
-                </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   {activeKeyMetrics.map(metric => {
                     const lastActualIdx = Math.min(projIdx, metric.values.length) - 1;
