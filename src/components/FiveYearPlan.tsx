@@ -1029,6 +1029,45 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
               </div>
             )}
 
+            <div className={`${card} overflow-hidden`}>
+              <div className="px-5 py-3 flex items-center gap-2">
+                <Info size={14} className={isDark ? 'text-emerald-400' : 'text-emerald-600'} />
+                <span className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Our Cost Model')}</span>
+              </div>
+              <div className={`px-5 pb-5 border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                <p className={`text-[11px] leading-relaxed mt-3 mb-4 ${subtext}`}>
+                  {t('Our long-term cost structure is designed around predictability and operational discipline. Revenue-linked cost ratios ensure scalability while maintaining financial stability as the organization grows.')}
+                </p>
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 mb-4">
+                  {[
+                    { label: 'Basketball Operations', pct: '50%', desc: 'of total revenue, scaled over time', color: '#3b82f6' },
+                    { label: 'Youth Development (VB)', pct: '12.5%', desc: 'of total revenue at maturity', color: '#f97316' },
+                    { label: 'Labor', pct: '10%', desc: 'of total revenue', color: '#8b5cf6' },
+                    { label: 'Contingencies & Deferred', pct: '1%', desc: 'of total revenue', color: '#ef4444' },
+                    { label: 'Financial Charges', pct: '0.5%', desc: 'of total revenue', color: '#ec4899' },
+                    { label: 'Maintenance', pct: '1%', desc: 'of total revenue', color: '#14b8a6' },
+                  ].map(item => (
+                    <div key={item.label} className={`rounded-lg p-2.5 ${isDark ? 'bg-gray-800/40 border border-gray-700/40' : 'bg-gray-50 border border-gray-200/60'}`}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-[10px] font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{item.label}</span>
+                        <span className="text-[11px] font-bold" style={{ color: item.color }}>{item.pct}</span>
+                      </div>
+                      <p className={`text-[9px] ${subtext}`}>{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className={`rounded-lg p-3 flex items-start gap-2.5 ${isDark ? 'bg-emerald-900/15 border border-emerald-800/30' : 'bg-emerald-50 border border-emerald-200/60'}`}>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-[11px] font-bold text-white bg-emerald-600">75%+</div>
+                  <div>
+                    <p className={`text-[11px] font-semibold ${isDark ? 'text-emerald-300' : 'text-emerald-800'}`}>{t('Fixed Cost Ratio')}</p>
+                    <p className={`text-[10px] leading-[1.45] mt-0.5 ${subtext}`}>
+                      {t('More than 75% of our cost base is fixed, providing significant operating stability and earnings predictability across market cycles. This structure limits downside exposure while preserving full upside leverage on incremental revenue.')}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {filteredRevenueChartData.length > 0 && (
                 <div className={`${card} p-4`}>
