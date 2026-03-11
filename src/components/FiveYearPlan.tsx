@@ -289,16 +289,23 @@ function parseFiveYearData(raw: string[][]): FiveYearData | null {
       continue;
     }
 
-    if (!currentSection) {
-      const defaultName = r.statement === 'pnl' ? 'P&L' : r.statement === 'bs' ? 'Balance Sheet' : 'Cash Flow';
-      currentSection = { name: defaultName, rows: [], statement: r.statement };
-    }
-
     const isTotal = TOTAL_PATTERNS.test(r.label) || r.label.startsWith('Total ') || r.label.startsWith('TOTAL ');
     const isSummary = SUMMARY_KEYS.some(k => r.label.toUpperCase().startsWith(k));
 
     if (isSummary && r.statement === 'pnl') {
       keyMetrics.push({ label: r.label, values: r.values });
+    }
+
+    const STANDALONE_LABELS = /^(interest|taxes|tax)$/i;
+    if (!currentSection && r.statement === 'pnl') {
+      if (isSummary || isTotal || STANDALONE_LABELS.test(r.label.trim())) {
+        continue;
+      }
+    }
+
+    if (!currentSection) {
+      const defaultName = r.statement === 'pnl' ? 'P&L' : r.statement === 'bs' ? 'Balance Sheet' : 'Cash Flow';
+      currentSection = { name: defaultName, rows: [], statement: r.statement };
     }
 
     if (isTotal && currentSection) {
