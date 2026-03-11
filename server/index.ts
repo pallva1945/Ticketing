@@ -545,6 +545,65 @@ app.get("/api/revenue/sheet-data/:module", async (req, res) => {
   }
 });
 
+app.post("/api/revenue/sync-scenarios/:module", async (req, res) => {
+  try {
+    const mod = req.params.module;
+    if (!ALLOWED_REVENUE_MODULES.includes(mod)) return res.status(400).json({ success: false, message: 'Invalid module' });
+    const { scenarios } = req.body;
+    if (!scenarios || !Array.isArray(scenarios) || scenarios.length === 0) {
+      return res.status(400).json({ success: false, message: 'scenarios array is required' });
+    }
+    let sheetId = req.body.sheetId;
+    if (!sheetId) sheetId = await getSetting(`${mod}_sheet_id`);
+    if (!sheetId) {
+      return res.status(400).json({ success: false, message: 'No Google Sheet configured.' });
+    }
+    const sheets = await getUncachableGoogleSheetClient();
+    const results: Record<string, any> = {};
+    for (const scenario of scenarios) {
+      const { key, tabName } = scenario;
+      if (!key || !tabName) continue;
+      try {
+        const range = `'${tabName}'`;
+        const response = await sheets.spreadsheets.values.get({ spreadsheetId: sheetId, range });
+        const rows = response.data.values;
+        if (rows && rows.length > 0) {
+          await setSetting(`${mod}_scenario_${key}`, JSON.stringify(rows));
+          results[key] = { success: true, data: rows, rowCount: rows.length };
+        } else {
+          results[key] = { success: false, message: `Tab '${tabName}' is empty` };
+        }
+      } catch (tabErr: any) {
+        results[key] = { success: false, message: tabErr.message };
+      }
+    }
+    await setSetting(`${mod}_scenarios_config`, JSON.stringify(scenarios));
+    console.log(`Scenarios synced for '${mod}': ${Object.keys(results).join(', ')}`);
+    res.json({ success: true, results });
+  } catch (error: any) {
+    console.error(`Scenario sync error (${req.params.module}):`, error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+app.get("/api/revenue/scenarios-data/:module", async (req, res) => {
+  try {
+    const mod = req.params.module;
+    if (!ALLOWED_REVENUE_MODULES.includes(mod)) return res.status(400).json({ success: false, message: 'Invalid module' });
+    const configRaw = await getSetting(`${mod}_scenarios_config`);
+    if (!configRaw) return res.json({ success: true, scenarios: null });
+    const scenarios = JSON.parse(configRaw);
+    const data: Record<string, any> = {};
+    for (const s of scenarios) {
+      const raw = await getSetting(`${mod}_scenario_${s.key}`);
+      if (raw) data[s.key] = JSON.parse(raw);
+    }
+    res.json({ success: true, scenarios, data });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 
 const validateBigQueryRequest = (req: express.Request, res: express.Response): boolean => {
   const isInternalRequest = req.ip === '127.0.0.1' || req.ip === '::1' || req.ip?.includes('127.0.0.1') || req.ip === '::ffff:127.0.0.1';

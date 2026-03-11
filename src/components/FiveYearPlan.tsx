@@ -347,6 +347,16 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [soloCost, setSoloCost] = useState<string | null>(null);
   const [soloProfit, setSoloProfit] = useState<string | null>(null);
 
+  const DEFAULT_SCENARIOS = [
+    { key: 'base', tabName: 'Base', label: 'Base' },
+    { key: 'conservative', tabName: 'Conservative', label: 'Conservative' },
+    { key: 'optimistic', tabName: 'Optimistic', label: 'Optimistic' },
+  ];
+  const [scenarios, setScenarios] = useState(DEFAULT_SCENARIOS);
+  const [scenarioData, setScenarioData] = useState<Record<string, FiveYearData | null>>({});
+  const [activeScenario, setActiveScenario] = useState('base');
+  const [hasScenarios, setHasScenarios] = useState(false);
+
   useEffect(() => {
     fetch(`/api/revenue/sheet-config/${MODULE_KEY}`)
       .then(r => r.json())
@@ -357,34 +367,99 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
         }
       })
       .catch(() => {});
-    fetch(`/api/revenue/sheet-data/${MODULE_KEY}`)
+    fetch(`/api/revenue/scenarios-data/${MODULE_KEY}`)
       .then(r => r.json())
       .then(res => {
-        if (res.success && res.data) {
-          const parsed = parseFiveYearData(res.data);
-          if (parsed) setRawData(parsed);
+        if (res.success && res.scenarios && res.data) {
+          setScenarios(res.scenarios);
+          setHasScenarios(true);
+          const parsed: Record<string, FiveYearData | null> = {};
+          for (const s of res.scenarios) {
+            if (res.data[s.key]) {
+              parsed[s.key] = parseFiveYearData(res.data[s.key]);
+            }
+          }
+          setScenarioData(parsed);
+          const firstKey = res.scenarios[0]?.key;
+          if (firstKey && parsed[firstKey]) {
+            setRawData(parsed[firstKey]);
+            setActiveScenario(firstKey);
+          }
+        } else {
+          fetch(`/api/revenue/sheet-data/${MODULE_KEY}`)
+            .then(r => r.json())
+            .then(res2 => {
+              if (res2.success && res2.data) {
+                const parsed = parseFiveYearData(res2.data);
+                if (parsed) setRawData(parsed);
+              }
+            })
+            .catch(() => {});
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        fetch(`/api/revenue/sheet-data/${MODULE_KEY}`)
+          .then(r => r.json())
+          .then(res => {
+            if (res.success && res.data) {
+              const parsed = parseFiveYearData(res.data);
+              if (parsed) setRawData(parsed);
+            }
+          })
+          .catch(() => {});
+      });
   }, []);
 
   const handleSyncSheet = async () => {
     setIsSyncing(true);
     setSyncSuccess(false);
     try {
-      const res = await fetch(`/api/revenue/sync-sheet/${MODULE_KEY}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      });
-      const result = await res.json();
-      if (result.success) {
-        const parsed = parseFiveYearData(result.data);
-        if (parsed) setRawData(parsed);
-        setSyncSuccess(true);
-        setTimeout(() => setSyncSuccess(false), 3000);
+      if (hasScenarios || scenarios.some(s => s.tabName.trim())) {
+        const res = await fetch(`/api/revenue/sync-scenarios/${MODULE_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sheetId: sheetId.trim() || undefined, scenarios }),
+        });
+        const result = await res.json();
+        if (result.success) {
+          setHasScenarios(true);
+          const parsed: Record<string, FiveYearData | null> = {};
+          for (const s of scenarios) {
+            if (result.results[s.key]?.success && result.results[s.key]?.data) {
+              parsed[s.key] = parseFiveYearData(result.results[s.key].data);
+            }
+          }
+          setScenarioData(parsed);
+          if (parsed[activeScenario]) {
+            setRawData(parsed[activeScenario]);
+          } else {
+            const firstKey = scenarios.find(s => parsed[s.key])?.key;
+            if (firstKey) { setRawData(parsed[firstKey]); setActiveScenario(firstKey); }
+          }
+          const failed = scenarios.filter(s => !result.results[s.key]?.success);
+          if (failed.length > 0) {
+            alert(`Some tabs failed: ${failed.map(f => f.tabName).join(', ')}`);
+          }
+          setSyncSuccess(true);
+          setTimeout(() => setSyncSuccess(false), 3000);
+        } else {
+          alert(result.message || 'Sync failed');
+        }
       } else {
-        alert(result.message || 'Sync failed');
+        const res = await fetch(`/api/revenue/sync-sheet/${MODULE_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+        const result = await res.json();
+        if (result.success) {
+          const parsed = parseFiveYearData(result.data);
+          if (parsed) setRawData(parsed);
+          setSyncSuccess(true);
+          setTimeout(() => setSyncSuccess(false), 3000);
+        } else {
+          alert(result.message || 'Sync failed');
+        }
       }
     } catch (err) {
       console.error('Sheet sync failed:', err);
@@ -409,6 +484,13 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
       }
     } catch (err) {
       console.error('Config save failed:', err);
+    }
+  };
+
+  const switchScenario = (key: string) => {
+    setActiveScenario(key);
+    if (scenarioData[key]) {
+      setRawData(scenarioData[key]);
     }
   };
 
@@ -591,6 +673,33 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
           </div>
         </div>
       </div>
+
+      {hasScenarios && Object.keys(scenarioData).length > 0 && (
+        <div className="max-w-[1400px] mx-auto px-4 pt-4 pb-0">
+          <div className={`inline-flex rounded-lg p-1 ${isDark ? 'bg-gray-900/80 border border-gray-800' : 'bg-gray-100 border border-gray-200'}`}>
+            {scenarios.map(s => {
+              const isActive = activeScenario === s.key;
+              const hasData = !!scenarioData[s.key];
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => hasData && switchScenario(s.key)}
+                  disabled={!hasData}
+                  className={`px-4 py-2 rounded-md text-xs font-semibold transition-all ${
+                    isActive
+                      ? isDark ? 'bg-amber-600 text-white shadow-md' : 'bg-amber-600 text-white shadow-md'
+                      : hasData
+                        ? isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'
+                        : isDark ? 'text-gray-700 cursor-not-allowed' : 'text-gray-300 cursor-not-allowed'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-6">
         {!rawData ? (
@@ -1059,14 +1168,36 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                 <p className="text-[10px] text-gray-400 mt-1">{t('Found in the Google Sheets URL between /d/ and /edit')}</p>
               </div>
               <div>
-                <label className={`block text-xs font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Sheet Tab Name')}</label>
-                <input
-                  type="text"
-                  value={sheetName}
-                  onChange={e => setSheetName(e.target.value)}
-                  placeholder="Yearly"
-                  className={`w-full px-3 py-2 rounded-lg border text-sm ${isDark ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
-                />
+                <label className={`block text-xs font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Scenario Tabs')}</label>
+                <p className="text-[10px] text-gray-400 mb-2">{t('Enter the exact tab name in Google Sheets for each scenario')}</p>
+                <div className="space-y-2">
+                  {scenarios.map((s, idx) => (
+                    <div key={s.key} className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={s.label}
+                        onChange={e => {
+                          const updated = [...scenarios];
+                          updated[idx] = { ...updated[idx], label: e.target.value };
+                          setScenarios(updated);
+                        }}
+                        placeholder="Label"
+                        className={`w-28 px-2 py-1.5 rounded-lg border text-xs ${isDark ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
+                      />
+                      <input
+                        type="text"
+                        value={s.tabName}
+                        onChange={e => {
+                          const updated = [...scenarios];
+                          updated[idx] = { ...updated[idx], tabName: e.target.value };
+                          setScenarios(updated);
+                        }}
+                        placeholder="Tab name in Sheets"
+                        className={`flex-1 px-2 py-1.5 rounded-lg border text-xs ${isDark ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
             <div className={`flex justify-end gap-2 p-5 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
