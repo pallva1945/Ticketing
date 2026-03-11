@@ -348,13 +348,13 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [soloProfit, setSoloProfit] = useState<string | null>(null);
 
   const DEFAULT_SCENARIOS = [
-    { key: 'financial', tabName: 'Financial', label: 'Financial' },
     { key: 'base', tabName: 'Base', label: 'Base' },
-    { key: 'downside', tabName: 'Downside', label: 'Downside' },
+    { key: 'conservative', tabName: 'Conservative', label: 'Conservative' },
+    { key: 'optimistic', tabName: 'Optimistic', label: 'Optimistic' },
   ];
   const [scenarios, setScenarios] = useState(DEFAULT_SCENARIOS);
   const [scenarioData, setScenarioData] = useState<Record<string, FiveYearData | null>>({});
-  const [activeScenario, setActiveScenario] = useState('financial');
+  const [activeScenario, setActiveScenario] = useState('base');
   const [hasScenarios, setHasScenarios] = useState(false);
 
   useEffect(() => {
@@ -674,51 +674,29 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
         </div>
       </div>
 
-      {rawData && (
-        <div className="sticky top-[52px] z-20 backdrop-blur-xl border-b" style={{ borderColor: isDark ? '#1f2937' : '#e5e7eb', backgroundColor: isDark ? 'rgba(3,7,18,0.9)' : 'rgba(249,250,251,0.9)' }}>
-          <div className="max-w-[1400px] mx-auto px-4 py-2 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              {hasScenarios && Object.keys(scenarioData).length > 0 && (
-                <div className={`inline-flex rounded-lg p-0.5 ${isDark ? 'bg-gray-800/80 border border-gray-700' : 'bg-gray-100 border border-gray-200'}`}>
-                  {scenarios.map(s => {
-                    const isActive = activeScenario === s.key;
-                    const hasData = !!scenarioData[s.key];
-                    return (
-                      <button
-                        key={s.key}
-                        onClick={() => hasData && switchScenario(s.key)}
-                        disabled={!hasData}
-                        className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
-                          isActive
-                            ? 'bg-amber-600 text-white shadow-sm'
-                            : hasData
-                              ? isDark ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'
-                              : isDark ? 'text-gray-700 cursor-not-allowed' : 'text-gray-300 cursor-not-allowed'
-                        }`}
-                      >
-                        {s.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              {priorPeriodValues && (
+      {hasScenarios && Object.keys(scenarioData).length > 0 && (
+        <div className="max-w-[1400px] mx-auto px-4 pt-4 pb-0">
+          <div className={`inline-flex rounded-lg p-1 ${isDark ? 'bg-gray-900/80 border border-gray-800' : 'bg-gray-100 border border-gray-200'}`}>
+            {scenarios.map(s => {
+              const isActive = activeScenario === s.key;
+              const hasData = !!scenarioData[s.key];
+              return (
                 <button
-                  onClick={() => setShowAdjusted(!showAdjusted)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                    showAdjusted
-                      ? isDark ? 'bg-cyan-900/30 text-cyan-400 border border-cyan-800' : 'bg-cyan-50 text-cyan-700 border border-cyan-200'
-                      : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
+                  key={s.key}
+                  onClick={() => hasData && switchScenario(s.key)}
+                  disabled={!hasData}
+                  className={`px-4 py-2 rounded-md text-xs font-semibold transition-all ${
+                    isActive
+                      ? isDark ? 'bg-amber-600 text-white shadow-md' : 'bg-amber-600 text-white shadow-md'
+                      : hasData
+                        ? isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'
+                        : isDark ? 'text-gray-700 cursor-not-allowed' : 'text-gray-300 cursor-not-allowed'
                   }`}
                 >
-                  {showAdjusted ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-                  {showAdjusted ? t('Adjusted Performance') : t('Reported Performance')}
-                  {showAdjusted && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-cyan-900/50 text-cyan-300' : 'bg-cyan-100 text-cyan-600'}`}>{t('excl. Past Contingencies')}</span>}
+                  {s.label}
                 </button>
-              )}
-            </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -740,6 +718,23 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
           <>
             {activeKeyMetrics.length > 0 && (
               <>
+                <div className="flex items-center justify-between">
+                  <div />
+                  {priorPeriodValues && (
+                    <button
+                      onClick={() => setShowAdjusted(!showAdjusted)}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                        showAdjusted
+                          ? isDark ? 'bg-cyan-900/30 text-cyan-400 border border-cyan-800' : 'bg-cyan-50 text-cyan-700 border border-cyan-200'
+                          : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
+                      }`}
+                    >
+                      {showAdjusted ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                      {showAdjusted ? t('Adjusted Performance') : t('Reported Performance')}
+                      {showAdjusted && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-cyan-900/50 text-cyan-300' : 'bg-cyan-100 text-cyan-600'}`}>{t('excl. Past Contingencies')}</span>}
+                    </button>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   {activeKeyMetrics.map(metric => {
                     const lastActualIdx = Math.min(projIdx, metric.values.length) - 1;
