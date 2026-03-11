@@ -517,6 +517,15 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
     });
   }, [rawData, projIdx]);
 
+  const filteredCostBreakdownData = useMemo(() => {
+    if (!soloCost || soloCost === 'Gross Margin') return costBreakdownData;
+    return costBreakdownData.map(entry => ({
+      ...entry,
+      'Cost of Sales': soloCost === 'Cost of Sales' ? entry['Cost of Sales'] : 0,
+      'SG&A': soloCost === 'SG&A' ? entry['SG&A'] : 0,
+    }));
+  }, [costBreakdownData, soloCost]);
+
   const sections = activeTab === 'pnl' ? rawData?.pnl : activeTab === 'balance' ? rawData?.balanceSheet : rawData?.cashFlow;
 
   const REVENUE_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#f97316', '#ef4444', '#14b8a6', '#a855f7'];
@@ -865,12 +874,12 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
               )}
             </div>
 
-            {costBreakdownData.length > 0 && (
+            {filteredCostBreakdownData.length > 0 && (
               <div className={`${card} p-4`}>
                 <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Cost Structure & Gross Margin')}</h3>
                 <div className="h-[280px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={costBreakdownData} margin={{ top: 10, right: 40, bottom: 5, left: 5 }}>
+                    <ComposedChart data={filteredCostBreakdownData} margin={{ top: 10, right: 40, bottom: 5, left: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
                       <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                       <YAxis yAxisId="left" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
@@ -897,12 +906,12 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                         return (
                           <>
                             <Bar yAxisId="left" dataKey="Cost of Sales" fill={cosVisible ? '#ef4444' : 'transparent'} stackId="costs" opacity={0.7}>
-                              {costBreakdownData.map((entry, idx) => (
+                              {filteredCostBreakdownData.map((entry, idx) => (
                                 <Cell key={idx} fillOpacity={cosVisible ? (entry.isProjection ? 0.4 : 0.7) : 0} />
                               ))}
                             </Bar>
                             <Bar yAxisId="left" dataKey="SG&A" fill={sgaVisible ? '#8b5cf6' : 'transparent'} stackId="costs" radius={[3, 3, 0, 0]} opacity={0.7}>
-                              {costBreakdownData.map((entry, idx) => (
+                              {filteredCostBreakdownData.map((entry, idx) => (
                                 <Cell key={idx} fillOpacity={sgaVisible ? (entry.isProjection ? 0.4 : 0.7) : 0} />
                               ))}
                             </Bar>
