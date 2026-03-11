@@ -531,8 +531,10 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
     const original = depRow.values;
     const n = original.length;
     const SHIFT = 3;
-    const firstAmortIdx = original.findIndex(v => v > 0);
-    if (firstAmortIdx < SHIFT) return null;
+    const maxVal = Math.max(...original);
+    const threshold = maxVal * 0.1;
+    const firstAmortIdx = original.findIndex(v => v >= threshold);
+    if (firstAmortIdx < SHIFT || firstAmortIdx < 0) return null;
     const shifted = new Array(n).fill(0);
     for (let i = firstAmortIdx; i < n; i++) {
       shifted[i - SHIFT] = original[i];
