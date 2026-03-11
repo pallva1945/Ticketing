@@ -285,7 +285,9 @@ function parseFiveYearData(raw: string[][]): FiveYearData | null {
 
     if (isSectionHeader(idx)) {
       pushSection();
-      currentSection = { name: r.label, rows: [], statement: r.statement };
+      let sectionName = r.label;
+      if (/depreciation and amortization/i.test(sectionName)) sectionName = 'Depreciation';
+      currentSection = { name: sectionName, rows: [], statement: r.statement };
       continue;
     }
 
