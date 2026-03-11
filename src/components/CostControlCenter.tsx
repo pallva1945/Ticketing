@@ -3,6 +3,7 @@ import { Shield, Zap, Truck, Search, Sun, Moon, ArrowLeft, Home, FileSpreadsheet
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell, Legend, LineChart, Line } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { PV_LOGO_URL } from '../constants';
 
 const SEASON_MONTHS = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
@@ -551,6 +552,7 @@ interface CostControlCenterProps {
 export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLanding, onHome }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
+  const { isAdmin } = useAuth();
   const isDark = theme === 'dark';
 
   const [activeTab, setActiveTab] = useState<TabId>('energy');
@@ -881,21 +883,23 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {configured && (
+            {isAdmin && configured && (
               <button onClick={() => handleSyncSheet(mod)} disabled={isSyncing === mod}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${syncSuccess === mod ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-900/50'}`}>
                 {isSyncing === mod ? <Loader2 size={14} className="animate-spin" /> : syncSuccess === mod ? <Check size={14} /> : <RefreshCw size={14} />}
                 {syncSuccess === mod ? t('Synced') : t('Sync Sheet')}
               </button>
             )}
-            <button onClick={() => setShowConfigFn(!showConfig)}
-              className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
-              <Settings size={16} />
-            </button>
+            {isAdmin && (
+              <button onClick={() => setShowConfigFn(!showConfig)}
+                className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
+                <Settings size={16} />
+              </button>
+            )}
           </div>
         </div>
 
-        {showConfig && (
+        {isAdmin && showConfig && (
           <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
             <h4 className={`text-sm font-semibold mb-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('Google Sheet Configuration')}</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -920,11 +924,13 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             <FileSpreadsheet size={48} className="mx-auto text-gray-300 dark:text-gray-600 mb-4" />
             <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('No Data Connected')}</h3>
             <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-              {t('Connect a Google Sheet to start tracking')} {mod === 'energy' ? t('energy consumption') : t('van costs')}.
+              {isAdmin ? `${t('Connect a Google Sheet to start tracking')} ${mod === 'energy' ? t('energy consumption') : t('van costs')}.` : t('Data has not been configured yet.')}
             </p>
-            <button onClick={() => setShowConfigFn(true)} className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">
-              <FileSpreadsheet size={16} className="inline mr-1.5" />{t('Connect Sheet')}
-            </button>
+            {isAdmin && (
+              <button onClick={() => setShowConfigFn(true)} className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">
+                <FileSpreadsheet size={16} className="inline mr-1.5" />{t('Connect Sheet')}
+              </button>
+            )}
           </div>
         ) : (items.length === 0 && !isLtmMode) ? (
           <div className={`p-8 rounded-xl border text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
@@ -1261,21 +1267,23 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {configured && (
+            {isAdmin && configured && (
               <button onClick={() => handleSyncSheet('van')} disabled={isSyncing === 'van'}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${syncSuccess === 'van' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-900/50'}`}>
                 {isSyncing === 'van' ? <Loader2 size={14} className="animate-spin" /> : syncSuccess === 'van' ? <Check size={14} /> : <RefreshCw size={14} />}
                 {syncSuccess === 'van' ? t('Synced') : t('Sync Sheet')}
               </button>
             )}
-            <button onClick={() => setShowVanConfig(!showVanConfig)}
-              className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
-              <Settings size={16} />
-            </button>
+            {isAdmin && (
+              <button onClick={() => setShowVanConfig(!showVanConfig)}
+                className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
+                <Settings size={16} />
+              </button>
+            )}
           </div>
         </div>
 
-        {showVanConfig && (
+        {isAdmin && showVanConfig && (
           <div className={`p-4 rounded-xl border ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
             <h4 className={`text-sm font-semibold mb-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{t('Google Sheet Configuration')}</h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1307,7 +1315,7 @@ export const CostControlCenter: React.FC<CostControlCenterProps> = ({ onBackToLa
             <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
               {data ? t('Select a different season or sync the sheet with updated data.') : t('Connect a Google Sheet to start tracking') + ' ' + t('van costs') + '.'}
             </p>
-            {!configured && (
+            {isAdmin && !configured && (
               <button onClick={() => setShowVanConfig(true)} className="px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700">
                 <FileSpreadsheet size={16} className="inline mr-1.5" />{t('Connect Sheet')}
               </button>

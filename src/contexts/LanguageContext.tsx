@@ -287,6 +287,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Active Filters': { en: 'Active Filters', it: 'Filtri Attivi' },
   'Clear All': { en: 'Clear All', it: 'Cancella Tutto' },
   'Season': { en: 'Season', it: 'Stagione' },
+  'Data has not been configured yet.': { en: 'Data has not been configured yet.', it: 'I dati non sono ancora stati configurati.' },
   'League': { en: 'League', it: 'Campionato' },
   'Opponent': { en: 'Opponent', it: 'Avversario' },
   'Zone': { en: 'Zone', it: 'Zona' },

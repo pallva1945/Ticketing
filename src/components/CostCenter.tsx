@@ -3,6 +3,7 @@ import { Calendar, Flag, Activity, Landmark, ShoppingBag, Users, GraduationCap, 
 import { ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { PV_LOGO_URL } from '../constants';
 import { BOpsCostDashboard } from './BOpsCostDashboard';
 import { GameDayCostDashboard } from './GameDayCostDashboard';
@@ -47,6 +48,7 @@ function periodLabel(monthCount: number): string {
 export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome }) => {
   const { theme, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
+  const { isAdmin } = useAuth();
   const isDark = theme === 'dark';
   const [activeModule, setActiveModule] = useState<CostModule>('overview');
   const [costData, setCostData] = useState<CostData | null>(null);
@@ -275,28 +277,30 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('Season')} 2025/26</p>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  onClick={sheetConfigured ? handleSyncSheet : () => setShowSheetConfig(true)}
-                  disabled={isSyncing}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
-                    syncSuccess
-                      ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
-                      : isDark
-                        ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300'
-                        : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
-                  }`}
-                  title={sheetConfigured ? t('Sync from Google Sheets') : t('Connect Google Sheet')}
-                >
-                  {isSyncing ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : syncSuccess ? (
-                    <Check size={14} />
-                  ) : (
-                    <FileSpreadsheet size={14} className="text-green-600" />
-                  )}
-                  {isSyncing ? t('Syncing...') : syncSuccess ? t('Synced') : sheetConfigured ? t('Sync Sheet') : t('Connect Sheet')}
-                </button>
-                {sheetConfigured && (
+                {isAdmin && (
+                  <button
+                    onClick={sheetConfigured ? handleSyncSheet : () => setShowSheetConfig(true)}
+                    disabled={isSyncing}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
+                      syncSuccess
+                        ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
+                        : isDark
+                          ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300'
+                          : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+                    }`}
+                    title={sheetConfigured ? t('Sync from Google Sheets') : t('Connect Google Sheet')}
+                  >
+                    {isSyncing ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : syncSuccess ? (
+                      <Check size={14} />
+                    ) : (
+                      <FileSpreadsheet size={14} className="text-green-600" />
+                    )}
+                    {isSyncing ? t('Syncing...') : syncSuccess ? t('Synced') : sheetConfigured ? t('Sync Sheet') : t('Connect Sheet')}
+                  </button>
+                )}
+                {isAdmin && sheetConfigured && (
                   <button
                     onClick={() => setShowSheetConfig(true)}
                     className={`p-2 rounded-lg transition-all border ${isDark ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-400' : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-400'}`}
@@ -703,7 +707,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
         )}
       </main>
 
-      {showSheetConfig && (
+      {isAdmin && showSheetConfig && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowSheetConfig(false)}>
           <div className={`rounded-xl shadow-2xl w-full max-w-md mx-4 ${isDark ? 'bg-gray-900 border border-gray-700' : 'bg-white border border-gray-200'}`} onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-700">

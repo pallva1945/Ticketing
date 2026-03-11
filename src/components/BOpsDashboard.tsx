@@ -3,6 +3,7 @@ import { Activity, Euro, Target, AlertTriangle, TrendingUp, CheckCircle2, FileSp
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Cell } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const MODULE_KEY = 'bops';
 const SEASON_MONTHS = ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
@@ -163,6 +164,7 @@ export function parseBopsSheetData(rows: string[][]): BopsSheetData | null {
 export const BOpsDashboard: React.FC = () => {
   const { t } = useLanguage();
   const { theme } = useTheme();
+  const { isAdmin } = useAuth();
   const isDark = theme === 'dark';
 
   const [sheetData, setSheetData] = useState<BopsSheetData | null>(null);
@@ -287,22 +289,24 @@ export const BOpsDashboard: React.FC = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={sheetConfigured ? handleSyncSheet : () => setShowSheetConfig(true)}
-            disabled={isSyncing}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
-              syncSuccess
-                ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
-                : isDark
-                  ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300'
-                  : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
-            }`}
-            title={sheetConfigured ? t('Sync from Google Sheets') : t('Connect Google Sheet')}
-          >
-            {isSyncing ? <Loader2 size={14} className="animate-spin" /> : syncSuccess ? <Check size={14} /> : <FileSpreadsheet size={14} className="text-green-600" />}
-            {isSyncing ? t('Syncing...') : syncSuccess ? t('Synced') : sheetConfigured ? t('Sync Sheet') : t('Connect Sheet')}
-          </button>
-          {sheetConfigured && (
+          {isAdmin && (
+            <button
+              onClick={sheetConfigured ? handleSyncSheet : () => setShowSheetConfig(true)}
+              disabled={isSyncing}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
+                syncSuccess
+                  ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
+                  : isDark
+                    ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300'
+                    : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+              }`}
+              title={sheetConfigured ? t('Sync from Google Sheets') : t('Connect Google Sheet')}
+            >
+              {isSyncing ? <Loader2 size={14} className="animate-spin" /> : syncSuccess ? <Check size={14} /> : <FileSpreadsheet size={14} className="text-green-600" />}
+              {isSyncing ? t('Syncing...') : syncSuccess ? t('Synced') : sheetConfigured ? t('Sync Sheet') : t('Connect Sheet')}
+            </button>
+          )}
+          {isAdmin && sheetConfigured && (
             <button
               onClick={() => setShowSheetConfig(true)}
               className={`p-2 rounded-lg transition-all border ${isDark ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-400' : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-400'}`}
@@ -452,7 +456,7 @@ export const BOpsDashboard: React.FC = () => {
         ))}
       </div>
 
-      {showSheetConfig && (
+      {isAdmin && showSheetConfig && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowSheetConfig(false)}>
           <div className={`rounded-xl shadow-2xl w-full max-w-md mx-4 ${isDark ? 'bg-gray-900 border border-gray-700' : 'bg-white border border-gray-200'}`} onClick={e => e.stopPropagation()}>
             <div className={`flex items-center justify-between p-5 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>

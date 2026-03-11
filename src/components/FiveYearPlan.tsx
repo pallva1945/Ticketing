@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Home, FileSpreadsheet, Loader2, Check, X, RefreshCw, ChevronDown, ChevronRight, TrendingUp, TrendingDown, Info, AlertTriangle, ToggleLeft, ToggleRight } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { PV_LOGO_URL } from '../constants';
 import { ResponsiveContainer, ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Line, Area, ReferenceLine, Cell } from 'recharts';
 
@@ -330,6 +331,7 @@ type TabKey = 'pnl' | 'balance' | 'cashflow';
 export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onHome }) => {
   const { theme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
+  const { isAdmin } = useAuth();
   const isDark = theme === 'dark';
 
   const [rawData, setRawData] = useState<FiveYearData | null>(null);
@@ -809,19 +811,21 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={sheetConfigured ? handleSyncSheet : () => setShowSheetConfig(true)}
-              disabled={isSyncing}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                syncSuccess
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                  : isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
-              }`}
-            >
-              {isSyncing ? <Loader2 size={14} className="animate-spin" /> : syncSuccess ? <Check size={14} /> : <FileSpreadsheet size={14} />}
-              {isSyncing ? t('Syncing...') : syncSuccess ? t('Synced') : sheetConfigured ? t('Sync Sheet') : t('Connect Sheet')}
-            </button>
-            {sheetConfigured && (
+            {isAdmin && (
+              <button
+                onClick={sheetConfigured ? handleSyncSheet : () => setShowSheetConfig(true)}
+                disabled={isSyncing}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  syncSuccess
+                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                    : isDark ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-700' : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                {isSyncing ? <Loader2 size={14} className="animate-spin" /> : syncSuccess ? <Check size={14} /> : <FileSpreadsheet size={14} />}
+                {isSyncing ? t('Syncing...') : syncSuccess ? t('Synced') : sheetConfigured ? t('Sync Sheet') : t('Connect Sheet')}
+              </button>
+            )}
+            {isAdmin && sheetConfigured && (
               <button onClick={() => setShowSheetConfig(true)} className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800 text-gray-500' : 'hover:bg-gray-200 text-gray-400'}`}>
                 <RefreshCw size={14} />
               </button>
@@ -902,13 +906,15 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
           <div className={`${card} p-12 text-center`}>
             <FileSpreadsheet size={48} className={`mx-auto mb-4 ${subtext}`} />
             <h2 className="text-lg font-semibold mb-2">{t('No Data Connected')}</h2>
-            <p className={`text-sm ${subtext} mb-4`}>{t('Connect a Google Sheet to load your 5-year financial projections.')}</p>
-            <button
-              onClick={() => setShowSheetConfig(true)}
-              className="px-4 py-2 rounded-lg bg-amber-600 text-white font-medium text-sm hover:bg-amber-700 transition-colors"
-            >
-              {t('Connect Google Sheet')}
-            </button>
+            <p className={`text-sm ${subtext} mb-4`}>{isAdmin ? t('Connect a Google Sheet to load your 5-year financial projections.') : t('Data has not been configured yet.')}</p>
+            {isAdmin && (
+              <button
+                onClick={() => setShowSheetConfig(true)}
+                className="px-4 py-2 rounded-lg bg-amber-600 text-white font-medium text-sm hover:bg-amber-700 transition-colors"
+              >
+                {t('Connect Google Sheet')}
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -1485,7 +1491,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
         )}
       </div>
 
-      {showSheetConfig && (
+      {isAdmin && showSheetConfig && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowSheetConfig(false)}>
           <div className={`rounded-xl shadow-2xl w-full max-w-md mx-4 ${isDark ? 'bg-gray-900 border border-gray-700' : 'bg-white border border-gray-200'}`} onClick={e => e.stopPropagation()}>
             <div className={`flex items-center justify-between p-5 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>

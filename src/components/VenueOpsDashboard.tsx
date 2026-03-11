@@ -8,6 +8,7 @@ import {
   FileSpreadsheet, Loader2, Check, Settings, X
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -198,6 +199,7 @@ export function parseVenueOpsSheetData(rows: string[][]): VenueOpsSheetData | nu
 export const VenueOpsDashboard: React.FC = () => {
   const { t } = useLanguage();
   const { theme } = useTheme();
+  const { isAdmin } = useAuth();
   const isDark = theme === 'dark';
   const [expandedMonth, setExpandedMonth] = useState<string | null>('Dec');
   const [activeSection, setActiveSection] = useState<'overview' | 'pipeline'>('overview');
@@ -340,22 +342,24 @@ export const VenueOpsDashboard: React.FC = () => {
           <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Season 25-26 · {t('Monthly Revenue')} · {t('Through')} {SEASON_MONTHS[lastActiveMonth] || '—'}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={sheetConfigured ? handleSyncSheet : () => setShowSheetConfig(true)}
-            disabled={isSyncing}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
-              syncSuccess
-                ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
-                : isDark
-                  ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300'
-                  : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
-            }`}
-            title={sheetConfigured ? t('Sync from Google Sheets') : t('Connect Google Sheet')}
-          >
-            {isSyncing ? <Loader2 size={14} className="animate-spin" /> : syncSuccess ? <Check size={14} /> : <FileSpreadsheet size={14} className="text-green-600" />}
-            {isSyncing ? t('Syncing...') : syncSuccess ? t('Synced') : sheetConfigured ? t('Sync Sheet') : t('Connect Sheet')}
-          </button>
-          {sheetConfigured && (
+          {isAdmin && (
+            <button
+              onClick={sheetConfigured ? handleSyncSheet : () => setShowSheetConfig(true)}
+              disabled={isSyncing}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
+                syncSuccess
+                  ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'
+                  : isDark
+                    ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-300'
+                    : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600'
+              }`}
+              title={sheetConfigured ? t('Sync from Google Sheets') : t('Connect Google Sheet')}
+            >
+              {isSyncing ? <Loader2 size={14} className="animate-spin" /> : syncSuccess ? <Check size={14} /> : <FileSpreadsheet size={14} className="text-green-600" />}
+              {isSyncing ? t('Syncing...') : syncSuccess ? t('Synced') : sheetConfigured ? t('Sync Sheet') : t('Connect Sheet')}
+            </button>
+          )}
+          {isAdmin && sheetConfigured && (
             <button
               onClick={() => setShowSheetConfig(true)}
               className={`p-2 rounded-lg transition-all border ${isDark ? 'border-gray-700 bg-gray-800 hover:bg-gray-700 text-gray-400' : 'border-gray-200 bg-white hover:bg-gray-50 text-gray-400'}`}
@@ -765,7 +769,7 @@ export const VenueOpsDashboard: React.FC = () => {
         </>
       )}
 
-      {showSheetConfig && (
+      {isAdmin && showSheetConfig && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]" onClick={() => setShowSheetConfig(false)}>
           <div className={`rounded-xl shadow-2xl w-full max-w-md mx-4 ${isDark ? 'bg-gray-900 border border-gray-700' : 'bg-white border border-gray-200'}`} onClick={e => e.stopPropagation()}>
             <div className={`flex items-center justify-between p-5 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
