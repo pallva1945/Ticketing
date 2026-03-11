@@ -594,8 +594,12 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
       s.name.toLowerCase().includes('past contingenc')
     );
     if (!ppSection) return null;
-    const totalRow = ppSection.rows.find(r => r.isTotal);
-    return totalRow ? totalRow.values : ppSection.rows.reduce((acc, r) => {
+    const EXCLUDE_LABELS = ['interest', 'taxes'];
+    const relevantRows = ppSection.rows.filter(r =>
+      !r.isTotal && !r.isSummary && !EXCLUDE_LABELS.some(ex => r.label.toLowerCase() === ex)
+    );
+    if (relevantRows.length === 0) return null;
+    return relevantRows.reduce((acc, r) => {
       return r.values.map((v, i) => (acc[i] || 0) + v);
     }, new Array(rawData.headers.length).fill(0) as number[]);
   }, [rawData]);
