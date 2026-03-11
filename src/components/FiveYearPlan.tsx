@@ -348,6 +348,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [soloCost, setSoloCost] = useState<string | null>(null);
   const [soloProfit, setSoloProfit] = useState<string | null>(null);
   const [showAssumptions, setShowAssumptions] = useState(true);
+  const [showCostModel, setShowCostModel] = useState(true);
 
   const SCENARIO_ASSUMPTIONS_LIST: { title: string; description: string; color: string; sections: { label: string; icon: string; points: string[] }[] }[] = [
     {
@@ -1029,11 +1030,18 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
               </div>
             )}
 
-            <div className={`${card} overflow-hidden`}>
-              <div className="px-5 py-3 flex items-center gap-2">
-                <Info size={14} className={isDark ? 'text-emerald-400' : 'text-emerald-600'} />
-                <span className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Our Cost Model')}</span>
-              </div>
+            <div className={`${card} overflow-hidden transition-all`}>
+              <button
+                onClick={() => setShowCostModel(!showCostModel)}
+                className={`w-full flex items-center justify-between px-5 py-3 text-left transition-colors ${isDark ? 'hover:bg-gray-800/40' : 'hover:bg-gray-50'}`}
+              >
+                <div className="flex items-center gap-2">
+                  <Info size={14} className={isDark ? 'text-emerald-400' : 'text-emerald-600'} />
+                  <span className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Our Cost Model')}</span>
+                </div>
+                {showCostModel ? <ChevronDown size={14} className={subtext} /> : <ChevronRight size={14} className={subtext} />}
+              </button>
+              {showCostModel && (
               <div className={`px-5 pb-5 border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
                 <p className={`text-[11px] leading-relaxed mt-3 mb-4 ${subtext}`}>
                   {t('Our long-term cost structure is designed around predictability and operational discipline. Revenue-linked cost ratios ensure scalability while maintaining financial stability as the organization grows.')}
@@ -1066,6 +1074,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                   </div>
                 </div>
               </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
