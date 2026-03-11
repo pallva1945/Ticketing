@@ -301,6 +301,12 @@ function parseFiveYearData(raw: string[][]): FiveYearData | null {
       keyMetrics.push({ label: r.label, values: r.values });
     }
 
+    if (isTotal && currentSection) {
+      currentSection.rows.push({ label: r.label, depth: r.depth, values: r.values, isTotal, isSummary });
+      pushSection();
+      continue;
+    }
+
     if (r.allZero && !isTotal) continue;
 
     currentSection.rows.push({ label: r.label, depth: r.depth, values: r.values, isTotal, isSummary });
