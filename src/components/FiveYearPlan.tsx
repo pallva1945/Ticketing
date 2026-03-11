@@ -341,7 +341,8 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [sheetConfigured, setSheetConfigured] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<TabKey>('pnl');
-  const [showAdjusted, setShowAdjusted] = useState(false);
+  const [showAmortSim, setShowAmortSim] = useState(false);
+  const [showExclContingencies, setShowExclContingencies] = useState(false);
   const [showContext, setShowContext] = useState(true);
   const [soloRevenue, setSoloRevenue] = useState<string | null>(null);
   const [soloCost, setSoloCost] = useState<string | null>(null);
@@ -555,24 +556,21 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
     return { original, shifted, delta };
   }, [rawData]);
 
-  const adjustedKeyMetrics = useMemo(() => {
-    if (!rawData || !showAdjusted) return rawData?.keyMetrics || [];
+  const activeKeyMetrics = useMemo(() => {
+    if (!rawData) return [];
+    if (!showAmortSim && !showExclContingencies) return rawData.keyMetrics;
     return rawData.keyMetrics.map(m => {
       const label = m.label.toUpperCase();
       let values = [...m.values];
-      if (priorPeriodValues) {
+      if (showExclContingencies && priorPeriodValues) {
         values = values.map((v, i) => v + Math.abs(priorPeriodValues[i]));
       }
-      if (depreciationShift && (label.startsWith('EBIT') || label.startsWith('EBT') || label.startsWith('NI'))) {
-        if (!label.startsWith('EBITDA')) {
-          values = values.map((v, i) => v + depreciationShift.delta[i]);
-        }
+      if (showAmortSim && depreciationShift && (label.startsWith('EBIT') || label.startsWith('EBT') || label.startsWith('NI')) && !label.startsWith('EBITDA')) {
+        values = values.map((v, i) => v + depreciationShift.delta[i]);
       }
       return { ...m, values };
     });
-  }, [rawData, showAdjusted, priorPeriodValues, depreciationShift]);
-
-  const activeKeyMetrics = showAdjusted ? adjustedKeyMetrics : (rawData?.keyMetrics || []);
+  }, [rawData, showAmortSim, showExclContingencies, priorPeriodValues, depreciationShift]);
 
   const annotationYearIndices = useMemo(() => {
     if (!rawData) return new Map<string, number>();
@@ -765,20 +763,32 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
           <>
             {activeKeyMetrics.length > 0 && (
               <>
-                <div className="flex items-center justify-between">
-                  <div />
+                <div className="flex items-center justify-end gap-2 flex-wrap">
+                  {depreciationShift && (
+                    <button
+                      onClick={() => setShowAmortSim(!showAmortSim)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                        showAmortSim
+                          ? isDark ? 'bg-violet-900/30 text-violet-400 border border-violet-800' : 'bg-violet-50 text-violet-700 border border-violet-200'
+                          : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
+                      }`}
+                    >
+                      {showAmortSim ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                      {t('Amort. Simulator')}
+                      {showAmortSim && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-violet-900/50 text-violet-300' : 'bg-violet-100 text-violet-600'}`}>{t('from 2022')}</span>}
+                    </button>
+                  )}
                   {priorPeriodValues && (
                     <button
-                      onClick={() => setShowAdjusted(!showAdjusted)}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                        showAdjusted
+                      onClick={() => setShowExclContingencies(!showExclContingencies)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                        showExclContingencies
                           ? isDark ? 'bg-cyan-900/30 text-cyan-400 border border-cyan-800' : 'bg-cyan-50 text-cyan-700 border border-cyan-200'
                           : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
                       }`}
                     >
-                      {showAdjusted ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-                      {showAdjusted ? t('Adjusted Performance') : t('Reported Performance')}
-                      {showAdjusted && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-cyan-900/50 text-cyan-300' : 'bg-cyan-100 text-cyan-600'}`}>{t('excl. Past Contingencies + Amort. from 2022')}</span>}
+                      {showExclContingencies ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                      {t('Excl. Past Contingencies')}
                     </button>
                   )}
                 </div>
@@ -806,7 +816,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                     );
 
                     return (
-                      <div key={metric.label} className={`${card} p-4 ${showAdjusted ? (isDark ? 'ring-1 ring-cyan-800/50' : 'ring-1 ring-cyan-200') : ''}`}>
+                      <div key={metric.label} className={`${card} p-4 ${(showAmortSim || showExclContingencies) ? (isDark ? 'ring-1 ring-cyan-800/50' : 'ring-1 ring-cyan-200') : ''}`}>
                         <div className="flex items-center justify-between mb-2">
                           <p className={`text-[10px] font-semibold uppercase tracking-wider ${subtext}`}>{metric.label}</p>
                           <div className={`flex items-center gap-0.5 text-[10px] font-medium ${improving ? 'text-emerald-500' : 'text-red-500'}`}>
@@ -970,7 +980,8 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
                       <h3 className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Profitability Path')}</h3>
-                      {showAdjusted && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-cyan-900/30 text-cyan-400' : 'bg-cyan-50 text-cyan-700'}`}>{t('Adjusted')}</span>}
+                      {showAmortSim && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-violet-900/30 text-violet-400' : 'bg-violet-50 text-violet-700'}`}>{t('Amort. Sim')}</span>}
+                      {showExclContingencies && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-cyan-900/30 text-cyan-400' : 'bg-cyan-50 text-cyan-700'}`}>{t('Excl. Conting.')}</span>}
                     </div>
                     <div className="flex items-center gap-3 text-[9px]">
                       <span className={`flex items-center gap-1 ${subtext}`}><span className="w-6 border-t border-gray-400 inline-block" /> {t('Actual')}</span>
