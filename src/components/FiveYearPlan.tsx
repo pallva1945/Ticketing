@@ -1246,7 +1246,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                           const isVisible = !soloProfit || soloProfit === m.label;
                           return <Line key={m.label} type="monotone" dataKey={m.label} stroke={colors[i % colors.length]} strokeWidth={isVisible ? 2 : 0.5} dot={isVisible ? { r: 2.5 } : false} opacity={isVisible ? 1 : 0.1} />;
                         })}
-                        <Area type="monotone" dataKey={soloProfit || 'EBITDA'} fill={isDark ? '#f59e0b20' : '#f59e0b15'} stroke="transparent" />
+                        <Area type="monotone" dataKey={soloProfit || 'EBITDA'} fill={isDark ? '#f59e0b20' : '#f59e0b15'} stroke="transparent" legendType="none" />
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>
