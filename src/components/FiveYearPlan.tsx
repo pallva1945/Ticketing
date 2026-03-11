@@ -694,16 +694,28 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
     });
   }, [revenueChartData, revenueItems, soloRevenue]);
 
+  const winsHungryExtra = useMemo(() => {
+    if (!winsHungry || !rawData) return rawData?.headers.map(() => 0) || [];
+    const ebitdaMetric = rawData.keyMetrics.find(m => m.label === 'EBITDA');
+    if (!ebitdaMetric) return rawData.headers.map(() => 0);
+    return rawData.headers.map((_, hi) => {
+      if (hi === 0) return 0;
+      const prevEbitda = ebitdaMetric.values[hi - 1];
+      return prevEbitda > 0 ? prevEbitda : 0;
+    });
+  }, [rawData, winsHungry]);
+
   const profitabilityData = useMemo(() => {
     if (!rawData || activeKeyMetrics.length === 0) return [];
     return rawData.headers.map((h, hi) => {
       const entry: Record<string, any> = { name: h, isProjection: hi >= projIdx };
-      activeKeyMetrics.forEach(m => { entry[m.label] = m.values[hi]; });
+      const extra = winsHungryExtra[hi] || 0;
+      activeKeyMetrics.forEach(m => { entry[m.label] = m.values[hi] - extra; });
       const hasAnnotation = ANNOTATIONS.some(a => a.year === h);
       if (hasAnnotation) entry._annotated = true;
       return entry;
     });
-  }, [rawData, projIdx, activeKeyMetrics]);
+  }, [rawData, projIdx, activeKeyMetrics, winsHungryExtra]);
 
   const costBreakdownData = useMemo(() => {
     if (!rawData) return [];
@@ -716,7 +728,8 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
       const salesSection = rawData.pnl.find(s => s.name.toLowerCase().includes('sales') && !s.name.toLowerCase().includes('cost'));
       const salesTotal = salesSection?.rows.find(r => r.isTotal);
       const revenue = salesTotal ? salesTotal.values[hi] : 0;
-      const cos = cosTotal ? cosTotal.values[hi] : 0;
+      const extra = winsHungryExtra[hi] || 0;
+      const cos = (cosTotal ? cosTotal.values[hi] : 0) + extra;
       const sgna = sgnaTotal ? sgnaTotal.values[hi] : 0;
       return {
         name: h,
@@ -726,7 +739,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
         'Gross Margin': revenue > 0 ? ((revenue - cos) / revenue * 100) : 0,
       };
     });
-  }, [rawData, projIdx]);
+  }, [rawData, projIdx, winsHungryExtra]);
 
   const bopsChartData = useMemo(() => {
     if (!rawData) return [];
@@ -734,26 +747,18 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
     if (!cosSection) return [];
     const bopsRow = cosSection.rows.find(r => r.label.toLowerCase() === 'bops' || r.label.toLowerCase().includes('basketball op'));
     if (!bopsRow) return [];
-    const ebitdaMetric = rawData.keyMetrics.find(m => m.label === 'EBITDA');
     return rawData.headers.map((h, hi) => {
-      let bopsCost = bopsRow.values[hi];
-      let reinvested = 0;
-      if (winsHungry && ebitdaMetric && hi > 0) {
-        const prevEbitda = ebitdaMetric.values[hi - 1];
-        if (prevEbitda > 0) {
-          reinvested = prevEbitda;
-          bopsCost = bopsCost + reinvested;
-        }
-      }
+      const base = bopsRow.values[hi];
+      const reinvested = winsHungryExtra[hi] || 0;
       return {
         name: h,
         isProjection: hi >= projIdx,
-        'BOps Cost': bopsCost,
         'Reinvested EBITDA': reinvested,
-        'Base BOps': bopsRow.values[hi],
+        'Base BOps': base,
+        total: base + reinvested,
       };
     });
-  }, [rawData, projIdx, winsHungry]);
+  }, [rawData, projIdx, winsHungryExtra]);
 
   const filteredCostBreakdownData = useMemo(() => {
     if (!soloCost || soloCost === 'Gross Margin') return costBreakdownData;
@@ -1189,6 +1194,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                       <h3 className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Profitability Path')}</h3>
                       {showAmortSim && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-violet-900/30 text-violet-400' : 'bg-violet-50 text-violet-700'}`}>{t('Amort. Sim')}</span>}
                       {showExclContingencies && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-cyan-900/30 text-cyan-400' : 'bg-cyan-50 text-cyan-700'}`}>{t('Excl. Conting.')}</span>}
+                      {winsHungry && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-50 text-orange-700'}`}>{t('Wins Hungry')}</span>}
                     </div>
                     <div className="flex items-center gap-3 text-[9px]">
                       <span className={`flex items-center gap-1 ${subtext}`}><span className="w-6 border-t border-gray-400 inline-block" /> {t('Actual')}</span>
@@ -1249,7 +1255,10 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
 
               {filteredCostBreakdownData.length > 0 && (
                 <div className={`${card} p-4`}>
-                  <h3 className={`text-xs font-semibold mb-3 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Cost Structure & Gross Margin')}</h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <h3 className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Cost Structure & Gross Margin')}</h3>
+                    {winsHungry && <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isDark ? 'bg-orange-900/30 text-orange-400' : 'bg-orange-50 text-orange-700'}`}>{t('Wins Hungry')}</span>}
+                  </div>
                   <div className="h-[320px]">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={filteredCostBreakdownData} margin={{ top: 10, right: 40, bottom: 5, left: 5 }}>
@@ -1316,7 +1325,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                   </div>
                   <div className="h-[320px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={bopsChartData} margin={{ top: 10, right: 10, bottom: 5, left: 5 }}>
+                      <ComposedChart data={bopsChartData} margin={{ top: 25, right: 10, bottom: 5, left: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e5e7eb'} opacity={0.5} />
                         <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                         <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
@@ -1331,7 +1340,17 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                           ))}
                         </Bar>
                         {winsHungry && (
-                          <Bar dataKey="Reinvested EBITDA" fill="#f97316" stackId="bops" radius={[3, 3, 0, 0]}>
+                          <Bar dataKey="Reinvested EBITDA" fill="#f97316" stackId="bops" radius={[3, 3, 0, 0]}
+                            label={({ x, y, width, index }: any) => {
+                              const d = bopsChartData[index];
+                              if (!d || d['Reinvested EBITDA'] === 0) return <text />;
+                              return (
+                                <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={8} fontWeight={700} fill={isDark ? '#fdba74' : '#ea580c'}>
+                                  {fmt(d.total)}
+                                </text>
+                              );
+                            }}
+                          >
                             {bopsChartData.map((entry, idx) => (
                               <Cell key={idx} fillOpacity={entry.isProjection ? 0.5 : 0.85} />
                             ))}
