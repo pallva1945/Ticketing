@@ -347,7 +347,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [soloRevenue, setSoloRevenue] = useState<string | null>(null);
   const [soloCost, setSoloCost] = useState<string | null>(null);
   const [soloProfit, setSoloProfit] = useState<string | null>(null);
-  const [showAssumptions, setShowAssumptions] = useState(false);
+  const [showAssumptions, setShowAssumptions] = useState(true);
 
   const SCENARIO_ASSUMPTIONS_LIST: { title: string; description: string; color: string; sections: { label: string; icon: string; points: string[] }[] }[] = [
     {
