@@ -1334,7 +1334,17 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                         {projectionDividerHeader && (
                           <ReferenceLine x={projectionDividerHeader} stroke={isDark ? '#f59e0b' : '#d97706'} strokeDasharray="4 3" strokeWidth={1} />
                         )}
-                        <Bar dataKey="Base BOps" fill="#3b82f6" stackId="bops" radius={winsHungry ? [0, 0, 0, 0] : [3, 3, 0, 0]}>
+                        <Bar dataKey="Base BOps" fill="#3b82f6" stackId="bops" radius={winsHungry ? [0, 0, 0, 0] : [3, 3, 0, 0]}
+                          label={!winsHungry ? ({ x, y, width, index }: any) => {
+                            const d = bopsChartData[index];
+                            if (!d) return <text />;
+                            return (
+                              <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={8} fontWeight={700} fill={isDark ? '#93c5fd' : '#2563eb'}>
+                                {fmt(d.total)}
+                              </text>
+                            );
+                          } : undefined}
+                        >
                           {bopsChartData.map((entry, idx) => (
                             <Cell key={idx} fillOpacity={entry.isProjection ? 0.4 : 0.8} />
                           ))}
@@ -1343,7 +1353,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                           <Bar dataKey="Reinvested EBITDA" fill="#f97316" stackId="bops" radius={[3, 3, 0, 0]}
                             label={({ x, y, width, index }: any) => {
                               const d = bopsChartData[index];
-                              if (!d || d['Reinvested EBITDA'] === 0) return <text />;
+                              if (!d) return <text />;
                               return (
                                 <text x={x + width / 2} y={y - 6} textAnchor="middle" fontSize={8} fontWeight={700} fill={isDark ? '#fdba74' : '#ea580c'}>
                                   {fmt(d.total)}
