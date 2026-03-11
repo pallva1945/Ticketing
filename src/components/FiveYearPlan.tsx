@@ -473,6 +473,16 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
     return salesSection.rows.filter(r => !r.isTotal && !r.isSummary).map(r => r.label);
   }, [rawData]);
 
+  const filteredRevenueChartData = useMemo(() => {
+    if (!soloRevenue) return revenueChartData;
+    return revenueChartData.map(entry => {
+      const filtered: Record<string, any> = { name: entry.name, isProjection: entry.isProjection };
+      revenueItems.forEach(item => { filtered[item] = item === soloRevenue ? entry[item] : 0; });
+      filtered.total = entry.total;
+      return filtered;
+    });
+  }, [revenueChartData, revenueItems, soloRevenue]);
+
   const profitabilityData = useMemo(() => {
     if (!rawData || activeKeyMetrics.length === 0) return [];
     return rawData.headers.map((h, hi) => {
@@ -714,7 +724,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {revenueChartData.length > 0 && (
+              {filteredRevenueChartData.length > 0 && (
                 <div className={`${card} p-4`}>
                   <div className="flex items-center justify-between mb-3">
                     <h3 className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Revenue Breakdown')}</h3>
@@ -725,7 +735,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                   </div>
                   <div className="h-[320px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={revenueChartData} margin={{ top: 10, right: 10, bottom: 5, left: 5 }}>
+                      <ComposedChart data={filteredRevenueChartData} margin={{ top: 10, right: 10, bottom: 5, left: 5 }}>
                         <defs>
                           {revenueItems.map((item, i) => (
                             <React.Fragment key={item}>
@@ -777,7 +787,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                           const isVisible = !soloRevenue || soloRevenue === item;
                           return (
                             <Bar key={item} dataKey={item} name={item.replace(' Rev', '')} fill={isVisible ? REVENUE_COLORS[i % REVENUE_COLORS.length] : 'transparent'} stackId="a" radius={isVisible && (soloRevenue === item || (!soloRevenue && i === revenueItems.length - 1)) ? [3, 3, 0, 0] : [0, 0, 0, 0]}>
-                              {revenueChartData.map((entry, idx) => (
+                              {filteredRevenueChartData.map((entry, idx) => (
                                 <Cell key={idx} fillOpacity={isVisible ? (entry.isProjection ? 0.45 : 0.9) : 0} />
                               ))}
                             </Bar>
