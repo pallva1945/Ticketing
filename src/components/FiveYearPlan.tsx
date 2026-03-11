@@ -846,58 +846,11 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                   {t('Excl. Past Contingencies')}
                 </button>
               )}
-              {SCENARIO_ASSUMPTIONS[activeScenario] && (
-                <button
-                  onClick={() => setShowAssumptions(!showAssumptions)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
-                    showAssumptions
-                      ? isDark ? 'bg-amber-900/30 text-amber-400 border border-amber-800' : 'bg-amber-50 text-amber-700 border border-amber-200'
-                      : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
-                  }`}
-                >
-                  <Info size={13} />
-                  {t('Assumptions')}
-                  <ChevronDown size={12} className={`transition-transform ${showAssumptions ? 'rotate-180' : ''}`} />
-                </button>
-              )}
+            
             </div>
           </div>
         </div>
-        {showAssumptions && SCENARIO_ASSUMPTIONS[activeScenario] && (() => {
-          const a = SCENARIO_ASSUMPTIONS[activeScenario];
-          return (
-            <div className={`border-t ${isDark ? 'border-gray-800/60' : 'border-gray-200/60'}`}>
-              <div className="max-w-[1400px] mx-auto px-4 py-3">
-                <div className="flex items-start gap-2 mb-2.5">
-                  <div>
-                    <p className="text-[11px] font-bold tracking-wide uppercase" style={{ color: activeScenario === 'optimistic' ? '#22c55e' : activeScenario === 'conservative' ? '#ef4444' : '#f59e0b' }}>
-                      {a.title}
-                    </p>
-                    <p className={`text-[10px] mt-0.5 leading-relaxed ${subtext}`}>{a.description}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-                  {a.sections.map(sec => (
-                    <div key={sec.label} className={`rounded-lg p-2.5 ${isDark ? 'bg-gray-800/40 border border-gray-700/40' : 'bg-gray-50 border border-gray-200/60'}`}>
-                      <div className="flex items-center gap-1.5 mb-1.5">
-                        <span className="text-sm">{sec.icon}</span>
-                        <span className="text-[11px] font-semibold">{sec.label}</span>
-                      </div>
-                      <ul className="space-y-1">
-                        {sec.points.map((pt, i) => (
-                          <li key={i} className={`text-[10px] leading-[1.4] ${subtext} flex gap-1.5`}>
-                            <span className="mt-[3px] w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: activeScenario === 'optimistic' ? '#22c55e' : activeScenario === 'conservative' ? '#ef4444' : '#f59e0b' }} />
-                            {pt}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          );
-        })()}
+      
       </div>
 
       <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-6">
@@ -1022,6 +975,54 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                 </div>
               )}
             </div>
+
+            {SCENARIO_ASSUMPTIONS[activeScenario] && (
+              <div className={`${card} overflow-hidden transition-all`}>
+                <button
+                  onClick={() => setShowAssumptions(!showAssumptions)}
+                  className={`w-full flex items-center justify-between px-5 py-3 text-left transition-colors ${isDark ? 'hover:bg-gray-800/40' : 'hover:bg-gray-50'}`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Info size={14} style={{ color: activeScenario === 'optimistic' ? '#22c55e' : activeScenario === 'conservative' ? '#ef4444' : '#f59e0b' }} />
+                    <span className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Scenario Assumptions')}</span>
+                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium`} style={{
+                      backgroundColor: isDark
+                        ? activeScenario === 'optimistic' ? 'rgba(34,197,94,0.15)' : activeScenario === 'conservative' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)'
+                        : activeScenario === 'optimistic' ? '#dcfce7' : activeScenario === 'conservative' ? '#fef2f2' : '#fef3c7',
+                      color: activeScenario === 'optimistic' ? '#16a34a' : activeScenario === 'conservative' ? '#dc2626' : '#d97706',
+                    }}>{SCENARIO_ASSUMPTIONS[activeScenario].title}</span>
+                  </div>
+                  {showAssumptions ? <ChevronDown size={14} className={subtext} /> : <ChevronRight size={14} className={subtext} />}
+                </button>
+                {showAssumptions && (() => {
+                  const a = SCENARIO_ASSUMPTIONS[activeScenario];
+                  const accentColor = activeScenario === 'optimistic' ? '#22c55e' : activeScenario === 'conservative' ? '#ef4444' : '#f59e0b';
+                  return (
+                    <div className={`px-5 pb-5 border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+                      <p className={`text-[11px] leading-relaxed mt-3 mb-4 ${subtext}`}>{a.description}</p>
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                        {a.sections.map(sec => (
+                          <div key={sec.label} className={`rounded-lg p-3 ${isDark ? 'bg-gray-800/40 border border-gray-700/40' : 'bg-gray-50 border border-gray-200/60'}`}>
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <span className="text-sm">{sec.icon}</span>
+                              <span className={`text-[11px] font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{sec.label}</span>
+                            </div>
+                            <ul className="space-y-1.5">
+                              {sec.points.map((pt, i) => (
+                                <li key={i} className={`text-[10px] leading-[1.45] ${subtext} flex gap-1.5`}>
+                                  <span className="mt-[4px] w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: accentColor }} />
+                                  {pt}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {filteredRevenueChartData.length > 0 && (
