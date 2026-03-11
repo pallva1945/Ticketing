@@ -343,6 +343,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [activeTab, setActiveTab] = useState<TabKey>('pnl');
   const [showAdjusted, setShowAdjusted] = useState(false);
   const [showContext, setShowContext] = useState(true);
+  const [hiddenRevenue, setHiddenRevenue] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetch(`/api/revenue/sheet-config/${MODULE_KEY}`)
@@ -753,19 +754,40 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                           );
                         }} height={38} />
                         <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
-                        <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => [fmtFull(v), name]} />
-                        <Legend wrapperStyle={{ fontSize: 9 }} />
+                        <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string, props: any) => {
+                          if (hiddenRevenue.has(props.dataKey)) return [null, null];
+                          return [fmtFull(v), name];
+                        }} itemStyle={{ fontSize: 10 }} />
+                        <Legend wrapperStyle={{ fontSize: 9, cursor: 'pointer' }} onClick={(e: any) => {
+                          if (!e || !e.dataKey) return;
+                          const key = e.dataKey as string;
+                          if (key === 'total') return;
+                          setHiddenRevenue(prev => {
+                            const next = new Set(prev);
+                            if (next.has(key)) next.delete(key);
+                            else next.add(key);
+                            return next;
+                          });
+                        }} formatter={(value: string, entry: any) => {
+                          const isHidden = hiddenRevenue.has(entry.dataKey);
+                          return <span style={{ color: isHidden ? (isDark ? '#4b5563' : '#d1d5db') : (isDark ? '#d1d5db' : '#374151'), textDecoration: isHidden ? 'line-through' : 'none', cursor: 'pointer' }}>{value}</span>;
+                        }} />
                         {projectionDividerHeader && (
                           <ReferenceLine x={projectionDividerHeader} stroke={isDark ? '#f59e0b' : '#d97706'} strokeDasharray="4 3" strokeWidth={1} label={{ value: t('Projected'), position: 'top', fontSize: 8, fill: '#f59e0b' }} />
                         )}
-                        {revenueItems.map((item, i) => (
-                          <Bar key={item} dataKey={item} name={item.replace(' Rev', '')} fill={REVENUE_COLORS[i % REVENUE_COLORS.length]} stackId="a" radius={i === revenueItems.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}>
-                            {revenueChartData.map((entry, idx) => (
-                              <Cell key={idx} fillOpacity={entry.isProjection ? 0.45 : 0.9} />
-                            ))}
-                          </Bar>
-                        ))}
-                        <Line type="monotone" dataKey="total" name={t('Total Sales')} stroke={isDark ? '#fbbf24' : '#d97706'} strokeWidth={2.5} dot={{ r: 3, fill: isDark ? '#fbbf24' : '#d97706' }} />
+                        {revenueItems.map((item, i) => {
+                          const isHidden = hiddenRevenue.has(item);
+                          const visibleItems = revenueItems.filter(ri => !hiddenRevenue.has(ri));
+                          const isLastVisible = visibleItems.length > 0 && visibleItems[visibleItems.length - 1] === item;
+                          return (
+                            <Bar key={item} dataKey={item} name={item.replace(' Rev', '')} fill={isHidden ? 'transparent' : REVENUE_COLORS[i % REVENUE_COLORS.length]} stackId="a" radius={isLastVisible ? [3, 3, 0, 0] : [0, 0, 0, 0]}>
+                              {revenueChartData.map((entry, idx) => (
+                                <Cell key={idx} fillOpacity={isHidden ? 0 : entry.isProjection ? 0.45 : 0.9} />
+                              ))}
+                            </Bar>
+                          );
+                        })}
+                        <Line type="monotone" dataKey="total" name={t('Total Sales')} stroke={isDark ? '#fbbf24' : '#d97706'} strokeWidth={2.5} dot={{ r: 3, fill: isDark ? '#fbbf24' : '#d97706' }} hide={hiddenRevenue.size > 0} />
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>
