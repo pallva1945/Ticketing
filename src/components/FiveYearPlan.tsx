@@ -308,7 +308,28 @@ function parseFiveYearData(raw: string[][]): FiveYearData | null {
   }
   pushSection();
 
-  return { headers, pnl: pnlSections, balanceSheet: bsSections, cashFlow: cfSections, keyMetrics, projectionStartIndex };
+  const CF_TOTAL_KEYS = [
+    'ni', 'net income',
+    'cash flow from operations', 'cash from operations',
+    'cash flow from investing', 'cash flow from investing activities',
+    'cash flow before financing',
+    'cash flow from financing', 'cash flow from financing activities',
+    'increase in cash before mortgage', 'increase in cash before mortgage borrowings',
+    'increase in cash during the period', 'increase in cash during',
+    'ending balance', 'ending cash balance',
+  ];
+  const filteredCf: FinancialSection[] = [];
+  for (const sec of cfSections) {
+    const kept = sec.rows.filter(r => {
+      const lbl = r.label.toLowerCase().trim();
+      return CF_TOTAL_KEYS.some(k => lbl.startsWith(k) || lbl === k);
+    });
+    if (kept.length > 0) {
+      filteredCf.push({ ...sec, rows: kept.map(r => ({ ...r, isTotal: true, depth: 0 })) });
+    }
+  }
+
+  return { headers, pnl: pnlSections, balanceSheet: bsSections, cashFlow: filteredCf.length > 0 ? filteredCf : cfSections, keyMetrics, projectionStartIndex };
 }
 
 const fmt = (v: number) => {
