@@ -347,6 +347,79 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [soloRevenue, setSoloRevenue] = useState<string | null>(null);
   const [soloCost, setSoloCost] = useState<string | null>(null);
   const [soloProfit, setSoloProfit] = useState<string | null>(null);
+  const [showAssumptions, setShowAssumptions] = useState(false);
+
+  const SCENARIO_ASSUMPTIONS: Record<string, { title: string; description: string; sections: { label: string; icon: string; points: string[] }[] }> = {
+    optimistic: {
+      title: 'Financing Case',
+      description: 'Upside projection reflecting full Arena development potential, strong competitive positioning, and accelerated commercial growth.',
+      sections: [
+        { label: 'Sponsorship', icon: '🤝', points: [
+          'Extraordinary Assosom partnership concludes at contract expiry',
+          'Organic sponsorship growth sustained at current trajectory, driven by brand momentum and Arena premium inventory',
+        ]},
+        { label: 'Venue Operations', icon: '🏟️', points: [
+          'Incremental 50 third-party events phased in over 5 years through Arena repositioning',
+          'Full monetization of 2,000 sqm commercial footprint via passive rental income',
+        ]},
+        { label: 'Game Day', icon: '🎟️', points: [
+          'Playoff participation modeled at Semi-Final depth (up to 3 home games)',
+          'High-tier European competition (BCL / EuroCup)',
+          '1,500 additional seats commercialized at 80% sell-through (current baseline: 94%)',
+          '3 new premium products launched: VIP Lounge, Presidential Club, Extended Hospitality',
+        ]},
+        { label: 'Basketball Operations', icon: '🏀', points: [
+          'BCL revenue-sharing contribution and LBA distribution growth',
+          'Youth development program reaching full economic maturity',
+        ]},
+      ],
+    },
+    base: {
+      title: 'Base Case',
+      description: 'Core scenario reflecting moderate growth assumptions consistent with current operational performance and market conditions.',
+      sections: [
+        { label: 'Sponsorship', icon: '🤝', points: [
+          'Extraordinary Assosom partnership concludes at contract expiry',
+          'Modest sponsorship growth over the 5-year horizon in line with market norms',
+        ]},
+        { label: 'Venue Operations', icon: '🏟️', points: [
+          'Incremental 30 third-party events phased in over 5 years',
+          'Partial monetization of commercial space — 50% of the 2,000 sqm available footprint',
+        ]},
+        { label: 'Game Day', icon: '🎟️', points: [
+          'Playoff participation modeled at Quarter-Final depth (1–2 home games)',
+          'Mid-tier European competition (FIBA Europe Cup)',
+          '1,500 additional seats commercialized at 70% sell-through (current baseline: 94%)',
+          '3 new premium products launched: VIP Lounge, Presidential Club, Extended Hospitality',
+        ]},
+        { label: 'Basketball Operations', icon: '🏀', points: [
+          'LBA distribution growth and youth development program maturing',
+        ]},
+      ],
+    },
+    conservative: {
+      title: 'Downside Case',
+      description: 'Stress scenario with minimal upside capture, no post-season revenue, and limited commercial expansion.',
+      sections: [
+        { label: 'Sponsorship', icon: '🤝', points: [
+          'Extraordinary Assosom partnership concludes at contract expiry',
+          'Sponsorship growth limited to inflation-level adjustments only',
+        ]},
+        { label: 'Venue Operations', icon: '🏟️', points: [
+          'Minimal event growth — 5 incremental third-party events over 5 years',
+          'No commercial space monetization',
+        ]},
+        { label: 'Game Day', icon: '🎟️', points: [
+          'No Playoff participation, no Italian Cup',
+          '1,500 additional seats commercialized at 60% sell-through (current baseline: 94%)',
+          '3 new premium products launched: VIP Lounge, Presidential Club, Extended Hospitality',
+        ]},
+        { label: 'Basketball Operations', icon: '🏀', points: [
+          'LBA distribution growth and youth development program maturing',
+        ]},
+      ],
+    },
+  };
 
   const DEFAULT_SCENARIOS = [
     { key: 'base', tabName: 'Base', label: 'Base' },
@@ -773,9 +846,58 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                   {t('Excl. Past Contingencies')}
                 </button>
               )}
+              {SCENARIO_ASSUMPTIONS[activeScenario] && (
+                <button
+                  onClick={() => setShowAssumptions(!showAssumptions)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                    showAssumptions
+                      ? isDark ? 'bg-amber-900/30 text-amber-400 border border-amber-800' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                      : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
+                  }`}
+                >
+                  <Info size={13} />
+                  {t('Assumptions')}
+                  <ChevronDown size={12} className={`transition-transform ${showAssumptions ? 'rotate-180' : ''}`} />
+                </button>
+              )}
             </div>
           </div>
         </div>
+        {showAssumptions && SCENARIO_ASSUMPTIONS[activeScenario] && (() => {
+          const a = SCENARIO_ASSUMPTIONS[activeScenario];
+          return (
+            <div className={`border-t ${isDark ? 'border-gray-800/60' : 'border-gray-200/60'}`}>
+              <div className="max-w-[1400px] mx-auto px-4 py-3">
+                <div className="flex items-start gap-2 mb-2.5">
+                  <div>
+                    <p className="text-[11px] font-bold tracking-wide uppercase" style={{ color: activeScenario === 'optimistic' ? '#22c55e' : activeScenario === 'conservative' ? '#ef4444' : '#f59e0b' }}>
+                      {a.title}
+                    </p>
+                    <p className={`text-[10px] mt-0.5 leading-relaxed ${subtext}`}>{a.description}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+                  {a.sections.map(sec => (
+                    <div key={sec.label} className={`rounded-lg p-2.5 ${isDark ? 'bg-gray-800/40 border border-gray-700/40' : 'bg-gray-50 border border-gray-200/60'}`}>
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="text-sm">{sec.icon}</span>
+                        <span className="text-[11px] font-semibold">{sec.label}</span>
+                      </div>
+                      <ul className="space-y-1">
+                        {sec.points.map((pt, i) => (
+                          <li key={i} className={`text-[10px] leading-[1.4] ${subtext} flex gap-1.5`}>
+                            <span className="mt-[3px] w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: activeScenario === 'optimistic' ? '#22c55e' : activeScenario === 'conservative' ? '#ef4444' : '#f59e0b' }} />
+                            {pt}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       <div className="max-w-[1400px] mx-auto px-4 py-6 space-y-6">
