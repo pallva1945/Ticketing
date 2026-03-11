@@ -343,7 +343,9 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [activeTab, setActiveTab] = useState<TabKey>('pnl');
   const [showAdjusted, setShowAdjusted] = useState(false);
   const [showContext, setShowContext] = useState(true);
-  const [hiddenRevenue, setHiddenRevenue] = useState<Set<string>>(new Set());
+  const [soloRevenue, setSoloRevenue] = useState<string | null>(null);
+  const [soloCost, setSoloCost] = useState<string | null>(null);
+  const [soloProfit, setSoloProfit] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/revenue/sheet-config/${MODULE_KEY}`)
@@ -755,39 +757,33 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                         }} height={38} />
                         <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
                         <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string, props: any) => {
-                          if (hiddenRevenue.has(props.dataKey)) return [null, null];
+                          if (soloRevenue && props.dataKey !== soloRevenue && props.dataKey !== 'total') return [null, null];
                           return [fmtFull(v), name];
                         }} itemStyle={{ fontSize: 10 }} />
                         <Legend wrapperStyle={{ fontSize: 9, cursor: 'pointer' }} onClick={(e: any) => {
                           if (!e || !e.dataKey) return;
                           const key = e.dataKey as string;
                           if (key === 'total') return;
-                          setHiddenRevenue(prev => {
-                            const next = new Set(prev);
-                            if (next.has(key)) next.delete(key);
-                            else next.add(key);
-                            return next;
-                          });
+                          setSoloRevenue(prev => prev === key ? null : key);
                         }} formatter={(value: string, entry: any) => {
-                          const isHidden = hiddenRevenue.has(entry.dataKey);
-                          return <span style={{ color: isHidden ? (isDark ? '#4b5563' : '#d1d5db') : (isDark ? '#d1d5db' : '#374151'), textDecoration: isHidden ? 'line-through' : 'none', cursor: 'pointer' }}>{value}</span>;
+                          const isSolo = soloRevenue === entry.dataKey;
+                          const isDimmed = soloRevenue !== null && !isSolo && entry.dataKey !== 'total';
+                          return <span style={{ color: isDimmed ? (isDark ? '#4b5563' : '#d1d5db') : (isDark ? '#d1d5db' : '#374151'), fontWeight: isSolo ? 700 : 400, cursor: 'pointer' }}>{value}</span>;
                         }} />
                         {projectionDividerHeader && (
                           <ReferenceLine x={projectionDividerHeader} stroke={isDark ? '#f59e0b' : '#d97706'} strokeDasharray="4 3" strokeWidth={1} label={{ value: t('Projected'), position: 'top', fontSize: 8, fill: '#f59e0b' }} />
                         )}
                         {revenueItems.map((item, i) => {
-                          const isHidden = hiddenRevenue.has(item);
-                          const visibleItems = revenueItems.filter(ri => !hiddenRevenue.has(ri));
-                          const isLastVisible = visibleItems.length > 0 && visibleItems[visibleItems.length - 1] === item;
+                          const isVisible = !soloRevenue || soloRevenue === item;
                           return (
-                            <Bar key={item} dataKey={item} name={item.replace(' Rev', '')} fill={isHidden ? 'transparent' : REVENUE_COLORS[i % REVENUE_COLORS.length]} stackId="a" radius={isLastVisible ? [3, 3, 0, 0] : [0, 0, 0, 0]}>
+                            <Bar key={item} dataKey={item} name={item.replace(' Rev', '')} fill={isVisible ? REVENUE_COLORS[i % REVENUE_COLORS.length] : 'transparent'} stackId="a" radius={isVisible && (soloRevenue === item || (!soloRevenue && i === revenueItems.length - 1)) ? [3, 3, 0, 0] : [0, 0, 0, 0]}>
                               {revenueChartData.map((entry, idx) => (
-                                <Cell key={idx} fillOpacity={isHidden ? 0 : entry.isProjection ? 0.45 : 0.9} />
+                                <Cell key={idx} fillOpacity={isVisible ? (entry.isProjection ? 0.45 : 0.9) : 0} />
                               ))}
                             </Bar>
                           );
                         })}
-                        <Line type="monotone" dataKey="total" name={t('Total Sales')} stroke={isDark ? '#fbbf24' : '#d97706'} strokeWidth={2.5} dot={{ r: 3, fill: isDark ? '#fbbf24' : '#d97706' }} hide={hiddenRevenue.size > 0} />
+                        <Line type="monotone" dataKey="total" name={t('Total Sales')} stroke={isDark ? '#fbbf24' : '#d97706'} strokeWidth={2.5} dot={{ r: 3, fill: isDark ? '#fbbf24' : '#d97706' }} hide={!!soloRevenue} />
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>
@@ -830,17 +826,28 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                           );
                         }} height={40} />
                         <YAxis tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
-                        <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => [fmtFull(v), name]} />
-                        <Legend wrapperStyle={{ fontSize: 9 }} />
+                        <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string, props: any) => {
+                          if (soloProfit && props.dataKey !== soloProfit) return [null, null];
+                          return [fmtFull(v), name];
+                        }} itemStyle={{ fontSize: 10 }} />
+                        <Legend wrapperStyle={{ fontSize: 9, cursor: 'pointer' }} onClick={(e: any) => {
+                          if (!e || !e.dataKey) return;
+                          setSoloProfit(prev => prev === e.dataKey ? null : e.dataKey);
+                        }} formatter={(value: string, entry: any) => {
+                          const isSolo = soloProfit === entry.dataKey;
+                          const isDimmed = soloProfit !== null && !isSolo;
+                          return <span style={{ color: isDimmed ? (isDark ? '#4b5563' : '#d1d5db') : (isDark ? '#d1d5db' : '#374151'), fontWeight: isSolo ? 700 : 400, cursor: 'pointer' }}>{value}</span>;
+                        }} />
                         {projectionDividerHeader && (
                           <ReferenceLine x={projectionDividerHeader} stroke={isDark ? '#f59e0b' : '#d97706'} strokeDasharray="4 3" strokeWidth={1} />
                         )}
                         <ReferenceLine y={0} stroke={isDark ? '#4b5563' : '#9ca3af'} strokeWidth={1} />
                         {activeKeyMetrics.map((m, i) => {
                           const colors = ['#f59e0b', '#ef4444', '#8b5cf6', '#3b82f6'];
-                          return <Line key={m.label} type="monotone" dataKey={m.label} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 2.5 }} />;
+                          const isVisible = !soloProfit || soloProfit === m.label;
+                          return <Line key={m.label} type="monotone" dataKey={m.label} stroke={colors[i % colors.length]} strokeWidth={isVisible ? 2 : 0.5} dot={isVisible ? { r: 2.5 } : false} opacity={isVisible ? 1 : 0.1} />;
                         })}
-                        <Area type="monotone" dataKey="EBITDA" fill={isDark ? '#f59e0b20' : '#f59e0b15'} stroke="transparent" />
+                        <Area type="monotone" dataKey={soloProfit || 'EBITDA'} fill={isDark ? '#f59e0b20' : '#f59e0b15'} stroke="transparent" />
                       </ComposedChart>
                     </ResponsiveContainer>
                   </div>
@@ -858,22 +865,41 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                       <XAxis dataKey="name" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} />
                       <YAxis yAxisId="left" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => fmt(v)} />
                       <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 9, fill: isDark ? '#9ca3af' : '#6b7280' }} tickFormatter={(v: number) => `${v.toFixed(0)}%`} domain={['auto', 'auto']} />
-                      <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string) => name === 'Gross Margin' ? [`${v.toFixed(1)}%`, name] : [fmtFull(v), name]} />
-                      <Legend wrapperStyle={{ fontSize: 9 }} />
+                      <Tooltip contentStyle={tipStyle} formatter={(v: number, name: string, props: any) => {
+                        if (soloCost && props.dataKey !== soloCost) return [null, null];
+                        return name === 'Gross Margin' ? [`${v.toFixed(1)}%`, name] : [fmtFull(v), name];
+                      }} itemStyle={{ fontSize: 10 }} />
+                      <Legend wrapperStyle={{ fontSize: 9, cursor: 'pointer' }} onClick={(e: any) => {
+                        if (!e || !e.dataKey) return;
+                        setSoloCost(prev => prev === e.dataKey ? null : e.dataKey);
+                      }} formatter={(value: string, entry: any) => {
+                        const isSolo = soloCost === entry.dataKey;
+                        const isDimmed = soloCost !== null && !isSolo;
+                        return <span style={{ color: isDimmed ? (isDark ? '#4b5563' : '#d1d5db') : (isDark ? '#d1d5db' : '#374151'), fontWeight: isSolo ? 700 : 400, cursor: 'pointer' }}>{value}</span>;
+                      }} />
                       {projectionDividerHeader && (
                         <ReferenceLine yAxisId="left" x={projectionDividerHeader} stroke={isDark ? '#f59e0b' : '#d97706'} strokeDasharray="4 3" strokeWidth={1} />
                       )}
-                      <Bar yAxisId="left" dataKey="Cost of Sales" fill="#ef4444" stackId="costs" opacity={0.7}>
-                        {costBreakdownData.map((entry, idx) => (
-                          <Cell key={idx} fillOpacity={entry.isProjection ? 0.4 : 0.7} />
-                        ))}
-                      </Bar>
-                      <Bar yAxisId="left" dataKey="SG&A" fill="#8b5cf6" stackId="costs" radius={[3, 3, 0, 0]} opacity={0.7}>
-                        {costBreakdownData.map((entry, idx) => (
-                          <Cell key={idx} fillOpacity={entry.isProjection ? 0.4 : 0.7} />
-                        ))}
-                      </Bar>
-                      <Line yAxisId="right" type="monotone" dataKey="Gross Margin" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3, fill: '#10b981' }} />
+                      {(() => {
+                        const cosVisible = !soloCost || soloCost === 'Cost of Sales';
+                        const sgaVisible = !soloCost || soloCost === 'SG&A';
+                        const gmVisible = !soloCost || soloCost === 'Gross Margin';
+                        return (
+                          <>
+                            <Bar yAxisId="left" dataKey="Cost of Sales" fill={cosVisible ? '#ef4444' : 'transparent'} stackId="costs" opacity={0.7}>
+                              {costBreakdownData.map((entry, idx) => (
+                                <Cell key={idx} fillOpacity={cosVisible ? (entry.isProjection ? 0.4 : 0.7) : 0} />
+                              ))}
+                            </Bar>
+                            <Bar yAxisId="left" dataKey="SG&A" fill={sgaVisible ? '#8b5cf6' : 'transparent'} stackId="costs" radius={[3, 3, 0, 0]} opacity={0.7}>
+                              {costBreakdownData.map((entry, idx) => (
+                                <Cell key={idx} fillOpacity={sgaVisible ? (entry.isProjection ? 0.4 : 0.7) : 0} />
+                              ))}
+                            </Bar>
+                            <Line yAxisId="right" type="monotone" dataKey="Gross Margin" stroke="#10b981" strokeWidth={gmVisible ? 2.5 : 0.5} dot={gmVisible ? { r: 3, fill: '#10b981' } : false} opacity={gmVisible ? 1 : 0.1} />
+                          </>
+                        );
+                      })()}
                     </ComposedChart>
                   </ResponsiveContainer>
                 </div>
