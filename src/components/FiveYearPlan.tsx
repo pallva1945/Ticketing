@@ -349,9 +349,10 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [soloProfit, setSoloProfit] = useState<string | null>(null);
   const [showAssumptions, setShowAssumptions] = useState(false);
 
-  const SCENARIO_ASSUMPTIONS: Record<string, { title: string; description: string; sections: { label: string; icon: string; points: string[] }[] }> = {
-    optimistic: {
+  const SCENARIO_ASSUMPTIONS_LIST: { title: string; description: string; color: string; sections: { label: string; icon: string; points: string[] }[] }[] = [
+    {
       title: 'Financing Case',
+      color: '#22c55e',
       description: 'Upside projection reflecting full Arena development potential, strong competitive positioning, and accelerated commercial growth.',
       sections: [
         { label: 'Sponsorship', icon: '🤝', points: [
@@ -374,8 +375,9 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
         ]},
       ],
     },
-    base: {
+    {
       title: 'Base Case',
+      color: '#f59e0b',
       description: 'Core scenario reflecting moderate growth assumptions consistent with current operational performance and market conditions.',
       sections: [
         { label: 'Sponsorship', icon: '🤝', points: [
@@ -397,8 +399,9 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
         ]},
       ],
     },
-    conservative: {
+    {
       title: 'Downside Case',
+      color: '#ef4444',
       description: 'Stress scenario with minimal upside capture, no post-season revenue, and limited commercial expansion.',
       sections: [
         { label: 'Sponsorship', icon: '🤝', points: [
@@ -419,7 +422,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
         ]},
       ],
     },
-  };
+  ];
 
   const DEFAULT_SCENARIOS = [
     { key: 'base', tabName: 'Base', label: 'Base' },
@@ -430,6 +433,10 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [scenarioData, setScenarioData] = useState<Record<string, FiveYearData | null>>({});
   const [activeScenario, setActiveScenario] = useState('base');
   const [hasScenarios, setHasScenarios] = useState(false);
+
+  const activeScenarioIdx = scenarios.findIndex(s => s.key === activeScenario);
+  const activeAssumptions = activeScenarioIdx >= 0 && activeScenarioIdx < SCENARIO_ASSUMPTIONS_LIST.length
+    ? SCENARIO_ASSUMPTIONS_LIST[activeScenarioIdx] : null;
 
   useEffect(() => {
     fetch(`/api/revenue/sheet-config/${MODULE_KEY}`)
@@ -976,27 +983,25 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
               )}
             </div>
 
-            {SCENARIO_ASSUMPTIONS[activeScenario] && (
+            {activeAssumptions && (
               <div className={`${card} overflow-hidden transition-all`}>
                 <button
                   onClick={() => setShowAssumptions(!showAssumptions)}
                   className={`w-full flex items-center justify-between px-5 py-3 text-left transition-colors ${isDark ? 'hover:bg-gray-800/40' : 'hover:bg-gray-50'}`}
                 >
                   <div className="flex items-center gap-2">
-                    <Info size={14} style={{ color: activeScenario === 'optimistic' ? '#22c55e' : activeScenario === 'conservative' ? '#ef4444' : '#f59e0b' }} />
+                    <Info size={14} style={{ color: activeAssumptions.color }} />
                     <span className={`text-xs font-semibold ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{t('Scenario Assumptions')}</span>
                     <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium`} style={{
-                      backgroundColor: isDark
-                        ? activeScenario === 'optimistic' ? 'rgba(34,197,94,0.15)' : activeScenario === 'conservative' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)'
-                        : activeScenario === 'optimistic' ? '#dcfce7' : activeScenario === 'conservative' ? '#fef2f2' : '#fef3c7',
-                      color: activeScenario === 'optimistic' ? '#16a34a' : activeScenario === 'conservative' ? '#dc2626' : '#d97706',
-                    }}>{SCENARIO_ASSUMPTIONS[activeScenario].title}</span>
+                      backgroundColor: isDark ? `${activeAssumptions.color}26` : `${activeAssumptions.color}1a`,
+                      color: activeAssumptions.color,
+                    }}>{activeAssumptions.title}</span>
                   </div>
                   {showAssumptions ? <ChevronDown size={14} className={subtext} /> : <ChevronRight size={14} className={subtext} />}
                 </button>
                 {showAssumptions && (() => {
-                  const a = SCENARIO_ASSUMPTIONS[activeScenario];
-                  const accentColor = activeScenario === 'optimistic' ? '#22c55e' : activeScenario === 'conservative' ? '#ef4444' : '#f59e0b';
+                  const a = activeAssumptions;
+                  const accentColor = a.color;
                   return (
                     <div className={`px-5 pb-5 border-t ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
                       <p className={`text-[11px] leading-relaxed mt-3 mb-4 ${subtext}`}>{a.description}</p>
