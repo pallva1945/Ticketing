@@ -329,7 +329,7 @@ type TabKey = 'pnl' | 'balance' | 'cashflow';
 
 export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onHome }) => {
   const { theme } = useTheme();
-  const { t } = useLanguage();
+  const { language, toggleLanguage, t } = useLanguage();
   const isDark = theme === 'dark';
 
   const [rawData, setRawData] = useState<FiveYearData | null>(null);
@@ -826,6 +826,9 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                 <RefreshCw size={14} />
               </button>
             )}
+            <button onClick={toggleLanguage} className={`px-2 py-1.5 rounded-lg text-xs font-medium border ${isDark ? 'bg-gray-800 border-gray-700 text-gray-300' : 'bg-white border-gray-200 text-gray-700'}`}>
+              {language === 'en' ? 'IT' : 'EN'}
+            </button>
             {onHome && (
               <button onClick={onHome} className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-200'}`}>
                 <Home size={18} />
