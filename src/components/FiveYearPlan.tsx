@@ -285,27 +285,8 @@ function parseFiveYearData(raw: string[][]): FiveYearData | null {
 
     if (isSectionHeader(idx)) {
       pushSection();
-      let sectionName = r.label;
-      if (/depreciation and amortization/i.test(sectionName)) sectionName = 'Depreciation';
-      currentSection = { name: sectionName, rows: [], statement: r.statement };
+      currentSection = { name: r.label, rows: [], statement: r.statement };
       continue;
-    }
-
-    const isTotal = TOTAL_PATTERNS.test(r.label) || r.label.startsWith('Total ') || r.label.startsWith('TOTAL ');
-    const isSummary = SUMMARY_KEYS.some(k => r.label.toUpperCase().startsWith(k));
-
-    if (isSummary && r.statement === 'pnl') {
-      keyMetrics.push({ label: r.label, values: r.values });
-    }
-
-    if (!currentSection && r.statement === 'pnl') {
-      if (isSummary || isTotal) {
-        continue;
-      }
-      const STANDALONE_LABELS = /^(interest|taxes|tax|depreciation)$/i;
-      if (STANDALONE_LABELS.test(r.label.trim())) {
-        continue;
-      }
     }
 
     if (!currentSection) {
@@ -313,10 +294,11 @@ function parseFiveYearData(raw: string[][]): FiveYearData | null {
       currentSection = { name: defaultName, rows: [], statement: r.statement };
     }
 
-    if (isTotal && currentSection) {
-      currentSection.rows.push({ label: r.label, depth: r.depth, values: r.values, isTotal, isSummary });
-      pushSection();
-      continue;
+    const isTotal = TOTAL_PATTERNS.test(r.label) || r.label.startsWith('Total ') || r.label.startsWith('TOTAL ');
+    const isSummary = SUMMARY_KEYS.some(k => r.label.toUpperCase().startsWith(k));
+
+    if (isSummary && r.statement === 'pnl') {
+      keyMetrics.push({ label: r.label, values: r.values });
     }
 
     if (r.allZero && !isTotal) continue;
@@ -612,12 +594,8 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
       s.name.toLowerCase().includes('past contingenc')
     );
     if (!ppSection) return null;
-    const EXCLUDE_LABELS = ['interest', 'taxes'];
-    const relevantRows = ppSection.rows.filter(r =>
-      !r.isTotal && !r.isSummary && !EXCLUDE_LABELS.some(ex => r.label.toLowerCase() === ex)
-    );
-    if (relevantRows.length === 0) return null;
-    return relevantRows.reduce((acc, r) => {
+    const totalRow = ppSection.rows.find(r => r.isTotal);
+    return totalRow ? totalRow.values : ppSection.rows.reduce((acc, r) => {
       return r.values.map((v, i) => (acc[i] || 0) + v);
     }, new Array(rawData.headers.length).fill(0) as number[]);
   }, [rawData]);
