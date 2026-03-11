@@ -1453,7 +1453,20 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                     </tr>
                   </thead>
                   <tbody>
-                    {(sections || []).map((section, si) => {
+                    {activeTab === 'cashflow' ? (
+                      (sections || []).flatMap(sec => sec.rows).map((row, ri) => (
+                        <tr key={ri} className={`border-b transition-colors ${isDark ? 'border-gray-800 hover:bg-gray-800/40' : 'border-gray-100 hover:bg-gray-50/80'}`}>
+                          <td className={`py-2.5 px-3 font-semibold sticky left-0 z-10 ${isDark ? 'text-white bg-gray-900/90' : 'text-gray-900 bg-white/90'}`}>
+                            {row.label}
+                          </td>
+                          {row.values.map((v, vi) => (
+                            <td key={vi} className={`py-2.5 px-2 text-right tabular-nums font-semibold ${
+                              isCurrentYear(vi) ? (isDark ? 'bg-amber-500/5' : 'bg-amber-50') : ''
+                            } ${v < 0 ? 'text-red-500' : isProjectionCol(vi) ? (isDark ? 'text-gray-400' : 'text-gray-500') : isDark ? 'text-white' : 'text-gray-900'}`}>{v !== 0 ? fmt(v) : '—'}</td>
+                          ))}
+                        </tr>
+                      ))
+                    ) : (sections || []).map((section, si) => {
                       const sectionKey = `${activeTab}-${section.name}`;
                       const isExpanded = expandedSections.has(sectionKey);
                       const detailRows = section.rows.filter(r => !r.isTotal && !r.isSummary);
