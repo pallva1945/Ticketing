@@ -520,13 +520,13 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
 
   const depreciationShift = useMemo(() => {
     if (!rawData) return null;
-    const depSection = rawData.pnl.find(s =>
-      s.name.toLowerCase().includes('depreciation') || s.name.toLowerCase().includes('amortization')
-    );
-    if (!depSection) return null;
-    const depRow = depSection.rows.find(r =>
-      r.label.toLowerCase().includes('depreciation') || r.label.toLowerCase().includes('amortization')
-    );
+    let depRow: { values: number[] } | undefined;
+    for (const section of rawData.pnl) {
+      const found = section.rows.find(r =>
+        r.label.toLowerCase().includes('depreciation') || r.label.toLowerCase().includes('amortization')
+      );
+      if (found) { depRow = found; break; }
+    }
     if (!depRow) return null;
     const original = depRow.values;
     const n = original.length;
