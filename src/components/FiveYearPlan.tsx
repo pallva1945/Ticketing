@@ -683,7 +683,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gray-950 text-white' : 'bg-gray-50 text-gray-900'}`}>
       <div className="sticky top-0 z-30 backdrop-blur-xl border-b" style={{ borderColor: isDark ? '#1f2937' : '#e5e7eb', backgroundColor: isDark ? 'rgba(3,7,18,0.85)' : 'rgba(249,250,251,0.85)' }}>
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="max-w-[1400px] mx-auto px-4 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button onClick={onBackToLanding} className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-200'}`}>
               <ArrowLeft size={18} />
@@ -719,62 +719,61 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
             )}
           </div>
         </div>
-      </div>
-
-      <div className={`max-w-[1400px] mx-auto px-4 pt-4 pb-0`}>
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          {hasScenarios && Object.keys(scenarioData).length > 0 ? (
-            <div className={`inline-flex rounded-lg p-0.5 ${isDark ? 'bg-gray-900/80 border border-gray-800' : 'bg-gray-100 border border-gray-200'}`}>
-              {scenarios.map(s => {
-                const isActive = activeScenario === s.key;
-                const hasData = !!scenarioData[s.key];
-                return (
-                  <button
-                    key={s.key}
-                    onClick={() => hasData && switchScenario(s.key)}
-                    disabled={!hasData}
-                    className={`px-3 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
-                      isActive
-                        ? 'bg-amber-600 text-white shadow-sm'
-                        : hasData
-                          ? isDark ? 'text-gray-400 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'
-                          : isDark ? 'text-gray-700 cursor-not-allowed' : 'text-gray-300 cursor-not-allowed'
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                );
-              })}
+        <div className={`border-t ${isDark ? 'border-gray-800/60' : 'border-gray-200/60'}`}>
+          <div className="max-w-[1400px] mx-auto px-4 py-2 flex items-center justify-between gap-3 flex-wrap">
+            {hasScenarios && Object.keys(scenarioData).length > 0 ? (
+              <div className={`inline-flex rounded-lg p-0.5 ${isDark ? 'bg-gray-800/60 border border-gray-700/50' : 'bg-gray-100 border border-gray-200'}`}>
+                {scenarios.map(s => {
+                  const isActive = activeScenario === s.key;
+                  const hasData = !!scenarioData[s.key];
+                  return (
+                    <button
+                      key={s.key}
+                      onClick={() => hasData && switchScenario(s.key)}
+                      disabled={!hasData}
+                      className={`px-3 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                        isActive
+                          ? 'bg-amber-600 text-white shadow-sm'
+                          : hasData
+                            ? isDark ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200'
+                            : isDark ? 'text-gray-700 cursor-not-allowed' : 'text-gray-300 cursor-not-allowed'
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : <div />}
+            <div className="flex items-center gap-2">
+              {depreciationShift && (
+                <button
+                  onClick={() => setShowAmortSim(!showAmortSim)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                    showAmortSim
+                      ? isDark ? 'bg-violet-900/30 text-violet-400 border border-violet-800' : 'bg-violet-50 text-violet-700 border border-violet-200'
+                      : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
+                  }`}
+                >
+                  {showAmortSim ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                  {t('Amort. Simulator')}
+                  {showAmortSim && <span className={`text-[8px] px-1 py-0.5 rounded-full ${isDark ? 'bg-violet-900/50 text-violet-300' : 'bg-violet-100 text-violet-600'}`}>{t('from 2022')}</span>}
+                </button>
+              )}
+              {priorPeriodValues && (
+                <button
+                  onClick={() => setShowExclContingencies(!showExclContingencies)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all ${
+                    showExclContingencies
+                      ? isDark ? 'bg-cyan-900/30 text-cyan-400 border border-cyan-800' : 'bg-cyan-50 text-cyan-700 border border-cyan-200'
+                      : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
+                  }`}
+                >
+                  {showExclContingencies ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
+                  {t('Excl. Past Contingencies')}
+                </button>
+              )}
             </div>
-          ) : <div />}
-          <div className="flex items-center gap-2">
-            {depreciationShift && (
-              <button
-                onClick={() => setShowAmortSim(!showAmortSim)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                  showAmortSim
-                    ? isDark ? 'bg-violet-900/30 text-violet-400 border border-violet-800' : 'bg-violet-50 text-violet-700 border border-violet-200'
-                    : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
-                }`}
-              >
-                {showAmortSim ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-                {t('Amort. Simulator')}
-                {showAmortSim && <span className={`text-[8px] px-1 py-0.5 rounded-full ${isDark ? 'bg-violet-900/50 text-violet-300' : 'bg-violet-100 text-violet-600'}`}>{t('from 2022')}</span>}
-              </button>
-            )}
-            {priorPeriodValues && (
-              <button
-                onClick={() => setShowExclContingencies(!showExclContingencies)}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
-                  showExclContingencies
-                    ? isDark ? 'bg-cyan-900/30 text-cyan-400 border border-cyan-800' : 'bg-cyan-50 text-cyan-700 border border-cyan-200'
-                    : isDark ? 'bg-gray-800/60 text-gray-400 border border-gray-700' : 'bg-gray-100 text-gray-500 border border-gray-200'
-                }`}
-              >
-                {showExclContingencies ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
-                {t('Excl. Past Contingencies')}
-              </button>
-            )}
           </div>
         </div>
       </div>
