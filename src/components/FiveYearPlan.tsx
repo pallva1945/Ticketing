@@ -296,9 +296,12 @@ function parseFiveYearData(raw: string[][]): FiveYearData | null {
       keyMetrics.push({ label: r.label, values: r.values });
     }
 
-    const STANDALONE_LABELS = /^(interest|taxes|tax)$/i;
     if (!currentSection && r.statement === 'pnl') {
-      if (isSummary || isTotal || STANDALONE_LABELS.test(r.label.trim())) {
+      if (isSummary || isTotal) {
+        continue;
+      }
+      const STANDALONE_LABELS = /^(interest|taxes|tax|depreciation)$/i;
+      if (STANDALONE_LABELS.test(r.label.trim())) {
         continue;
       }
     }
