@@ -793,6 +793,31 @@ const computeCRMStats = (rawRows: any[]) => {
   const paymentBreakdown: Record<string, { count: number; revenue: number }> = {};
   const discountBreakdown: Record<string, { count: number; revenue: number }> = {};
   
+  // Fake 18 tracking: under-18 discount but person is 18+ at game date
+  const fake18Set = new Set<string>();
+  let fake18Tickets = 0;
+  const parseDob = (dob: string): Date | null => {
+    if (!dob || !dob.includes('/')) return null;
+    const parts = dob.split('/').map(Number);
+    if (parts.length < 3 || parts.some(isNaN)) return null;
+    const [d, m, y] = parts;
+    const fullYear = y < 100 ? (y > 30 ? 1900 + y : 2000 + y) : y;
+    return new Date(fullYear, m - 1, d);
+  };
+  const parseGameDate = (s: string): Date | null => {
+    if (!s || !s.includes('/')) return null;
+    const [datePart] = s.split(' ');
+    const [d, m, y] = datePart.split('/').map(Number);
+    if ([d, m, y].some(isNaN)) return null;
+    return new Date(y, m - 1, d);
+  };
+  const ageAtDate = (dob: Date, ref: Date): number => {
+    let age = ref.getFullYear() - dob.getFullYear();
+    const monthDiff = ref.getMonth() - dob.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && ref.getDate() < dob.getDate())) age--;
+    return age;
+  };
+
   // Corporate breakdown
   const corpBreakdown: Record<string, { count: number; revenue: number; value: number; zones: Record<string, number> }> = {};
   let corporateTickets = 0;
@@ -997,6 +1022,23 @@ const computeCRMStats = (rawRows: any[]) => {
     discountBreakdown[discountType].count += qty;
     discountBreakdown[discountType].revenue += rowRevenue;
     
+    // Fake 18 detection: under-18 discount type but person is 18+ at game date
+    const discLower = discountType.toLowerCase();
+    const isUnder18Discount = discLower.includes('18') || discLower.includes('under') || discLower.includes('ridotto') || discLower.includes('minor');
+    if (isUnder18Discount && row.dob) {
+      const dobDate = parseDob(row.dob);
+      const gmDateStr = row.Gm_Date_time || row.gm_date_time || '';
+      const gmDate = parseGameDate(gmDateStr);
+      if (dobDate && gmDate) {
+        const ageAtGame = ageAtDate(dobDate, gmDate);
+        if (ageAtGame >= 18) {
+          fake18Tickets += qty;
+          const custKey = `${(row.last_name || row.lastName || '').trim().toLowerCase()}|${(row.first_name || row.firstName || '').trim().toLowerCase()}|${row.dob}`;
+          fake18Set.add(custKey);
+        }
+      }
+    }
+
     // Purchase time breakdown (skip 00:00 as it indicates missing time data)
     const buyDateStr = row.buy_date || '';
     if (buyDateStr && buyDateStr.includes('/')) {
@@ -1119,6 +1161,7 @@ const computeCRMStats = (rawRows: any[]) => {
       topSellType,
       topDiscountType,
       discountTypes: Object.keys(c.discountTypes || {}),
+      isFake18: fake18Set.has(c.key),
       avgAdvance,
       gameCount,
       avgPerGame,
@@ -1167,6 +1210,7 @@ const computeCRMStats = (rawRows: any[]) => {
     zoneStats: zoneStatsDetailed,
     paymentBreakdown,
     discountBreakdown,
+    fake18: { count: fake18Set.size, tickets: fake18Tickets },
     topCorps,
     uniqueCorps,
     corporateTickets,

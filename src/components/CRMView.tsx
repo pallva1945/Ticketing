@@ -67,6 +67,7 @@ interface CRMStats {
   zoneStats?: Record<string, { totalValue: number; totalTickets: number; totalAdvanceDays: number; advanceCount: number }>;
   paymentBreakdown?: Record<string, { count: number; revenue: number }>;
   discountBreakdown?: Record<string, { count: number; revenue: number }>;
+  fake18?: { count: number; tickets: number };
   topCorps?: Array<{ name: string; count: number; revenue: number; value: number; principalZone: string; secondaryZone: string }>;
   uniqueCorps?: number;
   corporateTickets?: number;
@@ -153,6 +154,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
   const [selectedDiscountType, setSelectedDiscountType] = useState<string | null>(null);
+  const [fake18FilterActive, setFake18FilterActive] = useState(false);
   const [searchSelectedClient, setSearchSelectedClient] = useState<string | null>(null);
   const [searchGameFilter, setSearchGameFilter] = useState<string>('all');
   const [searchMode, setSearchMode] = useState<'client' | 'seat'>('client');
@@ -629,7 +631,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         return {
           uniqueEmails: 0, uniqueCustomers: 0, uniqueCorps: 0, totalRevenue: 0, totalCommercialValue: 0,
           corpCommercialValue: 0, totalTickets: 0, zoneBreakdown: {}, eventBreakdown: {}, rawSellTypeBreakdown: {},
-          groupedSellTypeBreakdown: {}, paymentBreakdown: {}, discountBreakdown: {}, topCorps: [], allCustomers: [],
+          groupedSellTypeBreakdown: {}, paymentBreakdown: {}, discountBreakdown: {}, fake18: { count: 0, tickets: 0 }, topCorps: [], allCustomers: [],
           ageBreakdown: {}, locationBreakdown: {}, zoneStats: {}, purchaseHourBreakdown: {}, purchaseDayBreakdown: {},
           advanceBookingBreakdown: {}, monthBreakdown: {}, zoneByAge: {}, zoneByLocation: {}, corporateTickets: 0,
           capacityBreakdown: { fixed: { tickets: 0, revenue: 0 }, flexible: { tickets: 0, revenue: 0 } }
@@ -685,6 +687,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         groupedSellTypeBreakdown,
         paymentBreakdown: serverPaymentBreakdown,
         discountBreakdown: statsToUse.discountBreakdown || {} as Record<string, { count: number; revenue: number }>,
+        fake18: statsToUse.fake18 || { count: 0, tickets: 0 },
         topCorps: statsToUse.topCorps || [],
         allCustomers: statsToUse.topCustomers || [],
         ageBreakdown: statsToUse.ageBreakdown || {},
@@ -858,6 +861,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           zones: {} as Record<string, number>,
           sellTypes: {} as Record<string, number>,
           discountTypesMap: {} as Record<string, number>,
+          isFake18: false,
           games: new Set<string>(),
           transactions: 0,
           age: profile.age || r.dob || '',
@@ -869,6 +873,23 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         const dt = (r.discountType || '').trim();
         if (dt) {
           acc[key].discountTypesMap[dt] = (acc[key].discountTypesMap[dt] || 0) + (Number(r.quantity) || 1);
+        }
+        const dtLower = (r.discountType || '').toLowerCase();
+        const isU18Disc = dtLower.includes('18') || dtLower.includes('under') || dtLower.includes('ridotto') || dtLower.includes('minor');
+        if (isU18Disc && r.dob && r.dob.includes('/')) {
+          const dobParts = r.dob.split('/').map(Number);
+          if (dobParts.length >= 3 && !dobParts.some(isNaN)) {
+            const [dd, mm, yy] = dobParts;
+            const fy = yy < 100 ? (yy > 30 ? 1900 + yy : 2000 + yy) : yy;
+            const dobD = new Date(fy, mm - 1, dd);
+            const gmD = r.gmDateTime && r.gmDateTime > 0 ? new Date(r.gmDateTime) : null;
+            if (gmD && !isNaN(gmD.getTime())) {
+              let ageAtGame = gmD.getFullYear() - dobD.getFullYear();
+              const mDiff = gmD.getMonth() - dobD.getMonth();
+              if (mDiff < 0 || (mDiff === 0 && gmD.getDate() < dobD.getDate())) ageAtGame--;
+              if (ageAtGame >= 18) acc[key].isFake18 = true;
+            }
+          }
         }
         acc[key].tickets += Number(r.quantity) || 1;
         acc[key].revenue += Number(r.commercialValue) || 0;
@@ -887,7 +908,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           }
         }
         return acc;
-      }, {} as Record<string, { name: string; email: string; company: string; tickets: number; revenue: number; value: number; zones: Record<string, number>; sellTypes: Record<string, number>; discountTypesMap: Record<string, number>; games: Set<string>; transactions: number; age: string; location: string; advanceDays: number[] }>)
+      }, {} as Record<string, { name: string; email: string; company: string; tickets: number; revenue: number; value: number; zones: Record<string, number>; sellTypes: Record<string, number>; discountTypesMap: Record<string, number>; isFake18: boolean; games: Set<string>; transactions: number; age: string; location: string; advanceDays: number[] }>)
     ).map(([key, val]) => {
       const sortedZones = Object.entries(val.zones).sort((a, b) => b[1] - a[1]);
       const principalZone = sortedZones[0]?.[0] || '—';
@@ -899,7 +920,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       const gameCount = val.games.size;
       const avgPerGame = gameCount > 0 ? val.value / gameCount : 0;
       const avgPerTxn = val.transactions > 0 ? val.value / val.transactions : 0;
-      return { key, ...val, principalZone, secondaryZone, topSellType, discountTypes, topDiscountType, avgAdvance, gameCount, avgPerGame, avgPerTxn };
+      return { key, ...val, principalZone, secondaryZone, topSellType, discountTypes, topDiscountType, isFake18: val.isFake18, avgAdvance, gameCount, avgPerGame, avgPerTxn };
     });
 
     const topCorps = Object.entries(corpBreakdown)
@@ -1059,6 +1080,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       groupedSellTypeBreakdown,
       paymentBreakdown,
       discountBreakdown,
+      fake18: { count: allCustomers.filter((c: any) => c.isFake18).length, tickets: 0 },
       allCustomers,
       topCorps,
       ageBreakdown,
@@ -1432,13 +1454,25 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   </h3>
                   <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('Click a bar to filter the customer list below')}</p>
                 </div>
-                {fullPriceStats && (
-                  <div className="text-right bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-2 border border-gray-100 dark:border-gray-700">
-                    <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Full Price')}</div>
-                    <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{fullPriceStats.pct.toFixed(1)}%</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">{fullPriceStats.count.toLocaleString()} {t('tickets')}</div>
-                  </div>
-                )}
+                <div className="flex items-start gap-3">
+                  {fullPriceStats && (
+                    <div className="text-right bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-2 border border-gray-100 dark:border-gray-700">
+                      <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Full Price')}</div>
+                      <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{fullPriceStats.pct.toFixed(1)}%</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{fullPriceStats.count.toLocaleString()} {t('tickets')}</div>
+                    </div>
+                  )}
+                  {(stats.fake18?.count ?? 0) > 0 && (
+                    <div 
+                      className={`text-right rounded-lg px-4 py-2 border cursor-pointer transition-all ${fake18FilterActive ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 ring-2 ring-red-400' : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700'}`}
+                      onClick={() => { setFake18FilterActive(prev => !prev); setSelectedDiscountType(null); }}
+                    >
+                      <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fake 18</div>
+                      <div className="text-xl font-bold text-red-600 dark:text-red-400">{stats.fake18!.count}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{t('people')}</div>
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
@@ -1457,6 +1491,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                       cursor="pointer"
                       onClick={(data: any) => {
                         if (data?.name) {
+                          setFake18FilterActive(false);
                           setSelectedDiscountType(prev => prev === data.name ? null : data.name);
                         }
                       }}
@@ -1478,12 +1513,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
               <Award size={20} className="text-amber-500" />
-              {selectedDiscountType ? t('Customers with Discount') + `: ${selectedDiscountType}` : t('Top Customers')}
+              {fake18FilterActive ? 'Fake 18' : selectedDiscountType ? t('Customers with Discount') + `: ${selectedDiscountType}` : t('Top Customers')}
               <span className="text-xs font-normal text-gray-400 dark:text-gray-500 ml-2">
                 ({t('sorted by')} {sortColumn === 'value' ? t('Total Paid') : sortColumn === 'tickets' ? t('Tickets') : sortColumn === 'avgPerGame' ? t('Avg/Gm') : sortColumn === 'avgPerTxn' ? t('Avg/Txn') : sortColumn === 'avgAdvance' ? t('Avg Advance') : sortColumn === 'age' ? t('Age') : sortColumn.replace(/([A-Z])/g, ' $1').trim()})
               </span>
-              {selectedDiscountType && (
-                <button onClick={() => setSelectedDiscountType(null)} className="text-xs text-red-500 hover:text-red-700 ml-2">✕ {t('Clear filter')}</button>
+              {(selectedDiscountType || fake18FilterActive) && (
+                <button onClick={() => { setSelectedDiscountType(null); setFake18FilterActive(false); }} className="text-xs text-red-500 hover:text-red-700 ml-2">✕ {t('Clear filter')}</button>
               )}
             </h3>
             <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
@@ -1567,6 +1602,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 </thead>
                 <tbody>
                   {[...stats.allCustomers].filter((c: any) => {
+                    if (fake18FilterActive) return c.isFake18;
                     if (!selectedDiscountType) return true;
                     return c.discountTypes && c.discountTypes.includes(selectedDiscountType);
                   }).sort((a, b) => {
@@ -1596,7 +1632,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
                     if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
                     return 0;
-                  }).slice(0, selectedDiscountType ? 500 : 100).map((c, i) => {
+                  }).slice(0, (selectedDiscountType || fake18FilterActive) ? 500 : 100).map((c, i) => {
                     let ageDisplay = '-';
                     if (c.age) {
                       const parts = c.age.split('/');

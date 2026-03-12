@@ -292,6 +292,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Customers with Discount': { en: 'Customers with Discount', it: 'Clienti con Sconto' },
   'Click a bar to filter the customer list below': { en: 'Click a bar to filter the customer list below', it: 'Clicca su una barra per filtrare la lista clienti sotto' },
   'Clear filter': { en: 'Clear filter', it: 'Rimuovi filtro' },
+  'people': { en: 'people', it: 'persone' },
   'League': { en: 'League', it: 'Campionato' },
   'Opponent': { en: 'Opponent', it: 'Avversario' },
   'Zone': { en: 'Zone', it: 'Zona' },
