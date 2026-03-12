@@ -1156,7 +1156,7 @@ const computeCRMStats = (rawRows: any[]) => {
     totalCommercialValue,
     corpCommercialValue,
     uniqueCustomers: allCustomers.length,
-    topCustomers: allCustomers.slice(0, 100),
+    topCustomers: allCustomers,
     zoneBreakdown: Object.entries(zoneStats).map(([zone, stats]) => ({ zone, ...stats })).sort((a, b) => b.revenue - a.revenue),
     sellTypeBreakdown: Object.entries(sellTypeStats).map(([type, stats]) => ({ type, ...stats })).sort((a, b) => b.revenue - a.revenue),
     ageBreakdown,
