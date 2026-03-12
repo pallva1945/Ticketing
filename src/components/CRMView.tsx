@@ -1483,7 +1483,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 </div>
                 <div className="flex items-start gap-3">
                   {fullPriceStats && (
-                    <div className="text-center bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-2 border border-gray-100 dark:border-gray-700">
+                    <div className="text-center bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-2 border border-gray-100 dark:border-gray-700 w-32">
                       <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Full Price')}</div>
                       <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{fullPriceStats.pct.toFixed(1)}%</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">{fullPriceStats.count.toLocaleString()} {t('tickets')}</div>
@@ -1491,7 +1491,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   )}
                   {(stats.fake18?.count ?? 0) > 0 && (
                     <div 
-                      className={`text-center rounded-lg px-4 py-2 border cursor-pointer transition-all ${fake18FilterActive ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 ring-2 ring-red-400' : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700'}`}
+                      className={`text-center rounded-lg px-4 py-2 border cursor-pointer transition-all w-32 ${fake18FilterActive ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 ring-2 ring-red-400' : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700'}`}
                       onClick={() => { setFake18FilterActive(prev => !prev); setSelectedDiscountType(null); }}
                     >
                       <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fake 18</div>
