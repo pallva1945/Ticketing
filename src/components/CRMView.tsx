@@ -687,7 +687,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         groupedSellTypeBreakdown,
         paymentBreakdown: serverPaymentBreakdown,
         discountBreakdown: statsToUse.discountBreakdown || {} as Record<string, { count: number; revenue: number }>,
-        fake18: statsToUse.fake18 || { count: 0, tickets: 0 },
+        fake18: { count: statsToUse.fake18?.count || 0, tickets: statsToUse.fake18?.tickets || 0, opportunityCost: (statsToUse.fake18 as any)?.opportunityCost || 0 },
         topCorps: statsToUse.topCorps || [],
         allCustomers: statsToUse.topCustomers || [],
         ageBreakdown: statsToUse.ageBreakdown || {},
@@ -1080,7 +1080,34 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       groupedSellTypeBreakdown,
       paymentBreakdown,
       discountBreakdown,
-      fake18: { count: allCustomers.filter((c: any) => c.isFake18).length, tickets: 0, opportunityCost: 0 },
+      fake18: (() => {
+        const fake18Custs = allCustomers.filter((c: any) => c.isFake18);
+        let f18Tickets = 0;
+        let f18Cost = 0;
+        filteredData.forEach(r => {
+          const dtL = (r.discountType || '').toLowerCase();
+          const isU18 = dtL.includes('18') || dtL.includes('under') || dtL.includes('ridotto') || dtL.includes('minor');
+          if (!isU18 || !r.dob || !r.dob.includes('/')) return;
+          const dp = r.dob.split('/').map(Number);
+          if (dp.length < 3 || dp.some(isNaN)) return;
+          const [dd, mm, yy] = dp;
+          const fy = yy < 100 ? (yy > 30 ? 1900 + yy : 2000 + yy) : yy;
+          const dobD = new Date(fy, mm - 1, dd);
+          const gmD = r.gmDateTime && r.gmDateTime > 0 ? new Date(r.gmDateTime) : null;
+          if (!gmD || isNaN(gmD.getTime())) return;
+          let age = gmD.getFullYear() - dobD.getFullYear();
+          const mD = gmD.getMonth() - dobD.getMonth();
+          if (mD < 0 || (mD === 0 && gmD.getDate() < dobD.getDate())) age--;
+          if (age >= 18) {
+            const qty = Number(r.quantity) || 1;
+            f18Tickets += qty;
+            const fullP = Number((r as any).price) || 0;
+            const discP = Number(r.commercialValue) || 0;
+            if (fullP > discP) f18Cost += (fullP - discP) * qty;
+          }
+        });
+        return { count: fake18Custs.length, tickets: f18Tickets, opportunityCost: f18Cost };
+      })(),
       allCustomers,
       topCorps,
       ageBreakdown,
