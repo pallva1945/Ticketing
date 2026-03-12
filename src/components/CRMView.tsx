@@ -1496,10 +1496,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     >
                       <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fake 18</div>
                       <div className="text-xl font-bold text-red-600 dark:text-red-400">{stats.fake18?.count ?? 0} {t('people')}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{(stats.fake18?.tickets ?? 0).toLocaleString()} {t('tickets')}</div>
-                      {((stats.fake18?.opportunityCost ?? 0) > 0) && (
-                        <div className="text-xs font-semibold text-orange-600 dark:text-orange-400 mt-1">-{formatCurrency(stats.fake18?.opportunityCost ?? 0)}</div>
-                      )}
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{(stats.fake18?.tickets ?? 0).toLocaleString()} {t('tickets')}{(stats.fake18?.opportunityCost ?? 0) > 0 ? ` · -${formatCurrency(stats.fake18?.opportunityCost ?? 0)}` : ''}</div>
                     </div>
                   )}
                 </div>
