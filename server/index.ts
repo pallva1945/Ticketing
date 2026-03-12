@@ -796,6 +796,7 @@ const computeCRMStats = (rawRows: any[]) => {
   // Fake 18 tracking: under-18 discount but person is 18+ at game date
   const fake18Set = new Set<string>();
   let fake18Tickets = 0;
+  let fake18OpportunityCost = 0;
   const parseDob = (dob: string): Date | null => {
     if (!dob || !dob.includes('/')) return null;
     const parts = dob.split('/').map(Number);
@@ -1033,8 +1034,12 @@ const computeCRMStats = (rawRows: any[]) => {
         const ageAtGame = ageAtDate(dobDate, gmDate);
         if (ageAtGame >= 18) {
           fake18Tickets += qty;
-          const custKey = `${(row.last_name || row.lastName || '').trim().toLowerCase()}|${(row.first_name || row.firstName || '').trim().toLowerCase()}|${row.dob}`;
-          fake18Set.add(custKey);
+          fake18Set.add(key);
+          const fullTicketPrice = parseNumber(row.price);
+          const discountedPrice = commercialValue;
+          if (fullTicketPrice > discountedPrice) {
+            fake18OpportunityCost += (fullTicketPrice - discountedPrice) * qty;
+          }
         }
       }
     }
@@ -1210,7 +1215,7 @@ const computeCRMStats = (rawRows: any[]) => {
     zoneStats: zoneStatsDetailed,
     paymentBreakdown,
     discountBreakdown,
-    fake18: { count: fake18Set.size, tickets: fake18Tickets },
+    fake18: { count: fake18Set.size, tickets: fake18Tickets, opportunityCost: fake18OpportunityCost },
     topCorps,
     uniqueCorps,
     corporateTickets,

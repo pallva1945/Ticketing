@@ -67,7 +67,7 @@ interface CRMStats {
   zoneStats?: Record<string, { totalValue: number; totalTickets: number; totalAdvanceDays: number; advanceCount: number }>;
   paymentBreakdown?: Record<string, { count: number; revenue: number }>;
   discountBreakdown?: Record<string, { count: number; revenue: number }>;
-  fake18?: { count: number; tickets: number };
+  fake18?: { count: number; tickets: number; opportunityCost: number };
   topCorps?: Array<{ name: string; count: number; revenue: number; value: number; principalZone: string; secondaryZone: string }>;
   uniqueCorps?: number;
   corporateTickets?: number;
@@ -631,7 +631,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         return {
           uniqueEmails: 0, uniqueCustomers: 0, uniqueCorps: 0, totalRevenue: 0, totalCommercialValue: 0,
           corpCommercialValue: 0, totalTickets: 0, zoneBreakdown: {}, eventBreakdown: {}, rawSellTypeBreakdown: {},
-          groupedSellTypeBreakdown: {}, paymentBreakdown: {}, discountBreakdown: {}, fake18: { count: 0, tickets: 0 }, topCorps: [], allCustomers: [],
+          groupedSellTypeBreakdown: {}, paymentBreakdown: {}, discountBreakdown: {}, fake18: { count: 0, tickets: 0, opportunityCost: 0 }, topCorps: [], allCustomers: [],
           ageBreakdown: {}, locationBreakdown: {}, zoneStats: {}, purchaseHourBreakdown: {}, purchaseDayBreakdown: {},
           advanceBookingBreakdown: {}, monthBreakdown: {}, zoneByAge: {}, zoneByLocation: {}, corporateTickets: 0,
           capacityBreakdown: { fixed: { tickets: 0, revenue: 0 }, flexible: { tickets: 0, revenue: 0 } }
@@ -1080,7 +1080,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       groupedSellTypeBreakdown,
       paymentBreakdown,
       discountBreakdown,
-      fake18: { count: allCustomers.filter((c: any) => c.isFake18).length, tickets: 0 },
+      fake18: { count: allCustomers.filter((c: any) => c.isFake18).length, tickets: 0, opportunityCost: 0 },
       allCustomers,
       topCorps,
       ageBreakdown,
@@ -1456,7 +1456,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                 </div>
                 <div className="flex items-start gap-3">
                   {fullPriceStats && (
-                    <div className="text-right bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-2 border border-gray-100 dark:border-gray-700">
+                    <div className="text-center bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-2 border border-gray-100 dark:border-gray-700">
                       <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Full Price')}</div>
                       <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{fullPriceStats.pct.toFixed(1)}%</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">{fullPriceStats.count.toLocaleString()} {t('tickets')}</div>
@@ -1464,12 +1464,15 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   )}
                   {(stats.fake18?.count ?? 0) > 0 && (
                     <div 
-                      className={`text-right rounded-lg px-4 py-2 border cursor-pointer transition-all ${fake18FilterActive ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 ring-2 ring-red-400' : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700'}`}
+                      className={`text-center rounded-lg px-4 py-2 border cursor-pointer transition-all ${fake18FilterActive ? 'bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700 ring-2 ring-red-400' : 'bg-gray-50 dark:bg-gray-800 border-gray-100 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700'}`}
                       onClick={() => { setFake18FilterActive(prev => !prev); setSelectedDiscountType(null); }}
                     >
                       <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">Fake 18</div>
-                      <div className="text-xl font-bold text-red-600 dark:text-red-400">{stats.fake18!.count}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">{t('people')}</div>
+                      <div className="text-xl font-bold text-red-600 dark:text-red-400">{stats.fake18?.count ?? 0} {t('people')}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{(stats.fake18?.tickets ?? 0).toLocaleString()} {t('tickets')}</div>
+                      {((stats.fake18?.opportunityCost ?? 0) > 0) && (
+                        <div className="text-xs font-semibold text-orange-600 dark:text-orange-400 mt-1">-{formatCurrency(stats.fake18?.opportunityCost ?? 0)}</div>
+                      )}
                     </div>
                   )}
                 </div>
