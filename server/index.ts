@@ -791,6 +791,7 @@ const computeCRMStats = (rawRows: any[]) => {
   const zoneByLocation: Record<string, Record<string, number>> = {};
   const zoneStatsDetailed: Record<string, { totalValue: number; totalTickets: number; totalAdvanceDays: number; advanceCount: number }> = {};
   const paymentBreakdown: Record<string, { count: number; revenue: number }> = {};
+  const discountBreakdown: Record<string, { count: number; revenue: number }> = {};
   
   // Corporate breakdown
   const corpBreakdown: Record<string, { count: number; revenue: number; value: number; zones: Record<string, number> }> = {};
@@ -990,6 +991,14 @@ const computeCRMStats = (rawRows: any[]) => {
     paymentBreakdown[payment].count += qty;
     paymentBreakdown[payment].revenue += rowRevenue;
     
+    // Discount type breakdown
+    const discountType = (row.discount_type || row.Discount_Type || row.DISCOUNT_TYPE || row.discountType || row.DiscountType || '').trim();
+    if (discountType) {
+      if (!discountBreakdown[discountType]) discountBreakdown[discountType] = { count: 0, revenue: 0 };
+      discountBreakdown[discountType].count += qty;
+      discountBreakdown[discountType].revenue += rowRevenue;
+    }
+    
     // Purchase time breakdown (skip 00:00 as it indicates missing time data)
     const buyDateStr = row.buy_date || '';
     if (buyDateStr && buyDateStr.includes('/')) {
@@ -1030,6 +1039,7 @@ const computeCRMStats = (rawRows: any[]) => {
         value: 0,
         zones: {} as Record<string, number>,
         sellTypes: {} as Record<string, number>,
+        discountTypes: {} as Record<string, number>,
         games: new Set<string>(),
         transactions: 0,
         age: row.dob || '',
@@ -1044,6 +1054,9 @@ const computeCRMStats = (rawRows: any[]) => {
     cust.transactions += 1;
     cust.zones[pvZone] = (cust.zones[pvZone] || 0) + qty;
     cust.sellTypes[sellType] = (cust.sellTypes[sellType] || 0) + qty;
+    if (discountType) {
+      cust.discountTypes[discountType] = (cust.discountTypes[discountType] || 0) + qty;
+    }
     if (row.game_id) cust.games.add(row.game_id);
     if (!cust.company && row.group) cust.company = row.group;
     
@@ -1095,6 +1108,7 @@ const computeCRMStats = (rawRows: any[]) => {
     const avgPerGame = gameCount > 0 ? c.value / gameCount : 0;
     const avgPerTxn = c.transactions > 0 ? c.value / c.transactions : 0;
     
+    const topDiscountType = Object.entries(c.discountTypes || {}).sort((a: any, b: any) => (b[1] as number) - (a[1] as number))[0]?.[0] || '';
     return {
       key: c.key,
       name: c.name,
@@ -1105,6 +1119,8 @@ const computeCRMStats = (rawRows: any[]) => {
       principalZone,
       secondaryZone,
       topSellType,
+      topDiscountType,
+      discountTypes: Object.keys(c.discountTypes || {}),
       avgAdvance,
       gameCount,
       avgPerGame,
@@ -1152,6 +1168,7 @@ const computeCRMStats = (rawRows: any[]) => {
     zoneByLocation,
     zoneStats: zoneStatsDetailed,
     paymentBreakdown,
+    discountBreakdown,
     topCorps,
     uniqueCorps,
     corporateTickets,

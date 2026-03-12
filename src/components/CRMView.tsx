@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, X, Filter, BarChart3, PieChart, Euro, Award, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, User, Loader2, Calendar } from 'lucide-react';
+import { Users, Building2, Mail, MapPin, Ticket, TrendingUp, Search, X, Filter, BarChart3, PieChart, Euro, Award, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, User, Loader2, Calendar, Tag } from 'lucide-react';
 import { CRMRecord, SponsorData } from '../types';
 import { ZONE_OPPORTUNITY_COST } from '../constants';
 import { MultiSelect } from './MultiSelect';
@@ -66,6 +66,7 @@ interface CRMStats {
   zoneByLocation?: Record<string, Record<string, number>>;
   zoneStats?: Record<string, { totalValue: number; totalTickets: number; totalAdvanceDays: number; advanceCount: number }>;
   paymentBreakdown?: Record<string, { count: number; revenue: number }>;
+  discountBreakdown?: Record<string, { count: number; revenue: number }>;
   topCorps?: Array<{ name: string; count: number; revenue: number; value: number; principalZone: string; secondaryZone: string }>;
   uniqueCorps?: number;
   corporateTickets?: number;
@@ -151,6 +152,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [activeView, setActiveView] = useState<'overview' | 'demographics' | 'behavior' | 'customers' | 'corporate' | 'giveaways' | 'search'>('overview');
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<string | null>(null);
+  const [selectedDiscountType, setSelectedDiscountType] = useState<string | null>(null);
   const [searchSelectedClient, setSearchSelectedClient] = useState<string | null>(null);
   const [searchGameFilter, setSearchGameFilter] = useState<string>('all');
   const [searchMode, setSearchMode] = useState<'client' | 'seat'>('client');
@@ -682,7 +684,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         rawSellTypeBreakdown,
         groupedSellTypeBreakdown,
         paymentBreakdown: serverPaymentBreakdown,
-        discountBreakdown: {} as Record<string, { count: number; revenue: number }>,
+        discountBreakdown: statsToUse.discountBreakdown || {} as Record<string, { count: number; revenue: number }>,
         topCorps: statsToUse.topCorps || [],
         allCustomers: statsToUse.topCustomers || [],
         ageBreakdown: statsToUse.ageBreakdown || {},
@@ -1137,6 +1139,12 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       .sort((a, b) => b.value - a.value),
   [stats.groupedSellTypeBreakdown]);
 
+  const discountChartData = useMemo(() => 
+    Object.entries(stats.discountBreakdown || {})
+      .map(([name, val]: [string, any]) => ({ name, tickets: val.count, revenue: val.revenue }))
+      .sort((a, b) => b.tickets - a.tickets),
+  [stats.discountBreakdown]);
+
   const customerDetail = useMemo(() => {
     if (!selectedCustomer) return null;
     const records = filteredData.filter(r => getCustomerKey(r) === selectedCustomer);
@@ -1393,13 +1401,64 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
             </div>
           </div>
 
+          {discountChartData.length > 0 && (
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
+                <Tag size={20} className="text-purple-500" />
+                {t('Discount Breakdown')}
+                {selectedDiscountType && (
+                  <span className="text-xs font-normal text-purple-600 ml-2">
+                    ({t('Filtered')}: {selectedDiscountType})
+                    <button onClick={() => setSelectedDiscountType(null)} className="ml-2 text-red-500 hover:text-red-700">✕</button>
+                  </span>
+                )}
+              </h3>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">{t('Click a bar to filter the customer list below')}</p>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={discountChartData} layout="vertical" style={{ cursor: 'pointer' }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={120} />
+                    <Tooltip 
+                      formatter={(value: number, name: string) => [name === 'tickets' ? value.toLocaleString() + ' tickets' : formatCurrency(value), name === 'tickets' ? t('Tickets') : t('Revenue')]}
+                      contentStyle={{ fontSize: '12px', borderRadius: '8px' }}
+                    />
+                    <Bar 
+                      dataKey="tickets" 
+                      fill="#8b5cf6" 
+                      radius={[0, 4, 4, 0]}
+                      cursor="pointer"
+                      onClick={(data: any) => {
+                        if (data?.name) {
+                          setSelectedDiscountType(prev => prev === data.name ? null : data.name);
+                        }
+                      }}
+                    >
+                      {discountChartData.map((entry) => (
+                        <Cell 
+                          key={entry.name}
+                          fill={selectedDiscountType === entry.name ? '#7c3aed' : '#8b5cf6'}
+                          opacity={selectedDiscountType && selectedDiscountType !== entry.name ? 0.3 : 1}
+                        />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
+
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
               <Award size={20} className="text-amber-500" />
-              {t('Top Customers')}
+              {selectedDiscountType ? t('Customers with Discount') + `: ${selectedDiscountType}` : t('Top Customers')}
               <span className="text-xs font-normal text-gray-400 dark:text-gray-500 ml-2">
                 ({t('sorted by')} {sortColumn === 'value' ? t('Total Paid') : sortColumn === 'tickets' ? t('Tickets') : sortColumn === 'avgPerGame' ? t('Avg/Gm') : sortColumn === 'avgPerTxn' ? t('Avg/Txn') : sortColumn === 'avgAdvance' ? t('Avg Advance') : sortColumn === 'age' ? t('Age') : sortColumn.replace(/([A-Z])/g, ' $1').trim()})
               </span>
+              {selectedDiscountType && (
+                <button onClick={() => setSelectedDiscountType(null)} className="text-xs text-red-500 hover:text-red-700 ml-2">✕ {t('Clear filter')}</button>
+              )}
             </h3>
             <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
               <table className="w-full text-sm">
@@ -1481,7 +1540,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                   </tr>
                 </thead>
                 <tbody>
-                  {[...stats.allCustomers].sort((a, b) => {
+                  {[...stats.allCustomers].filter((c: any) => {
+                    if (!selectedDiscountType) return true;
+                    return c.discountTypes && c.discountTypes.includes(selectedDiscountType);
+                  }).sort((a, b) => {
                     const getAgeNum = (dob: string) => {
                       if (!dob) return 0;
                       const parts = dob.split('/');
@@ -1508,7 +1570,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
                     if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
                     if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
                     return 0;
-                  }).slice(0, 100).map((c, i) => {
+                  }).slice(0, selectedDiscountType ? 500 : 100).map((c, i) => {
                     let ageDisplay = '-';
                     if (c.age) {
                       const parts = c.age.split('/');
