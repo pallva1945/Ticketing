@@ -776,7 +776,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       paymentBreakdown[payment].count += r.quantity;
       paymentBreakdown[payment].revenue += r.commercialValue;
 
-      const discount = r.discountType || r.ticketType || 'Unknown';
+      const discount = r.discountType || r.ticketType || 'Full Price';
       if (!discountBreakdown[discount]) discountBreakdown[discount] = { count: 0, revenue: 0 };
       discountBreakdown[discount].count += r.quantity;
       discountBreakdown[discount].revenue += r.commercialValue;

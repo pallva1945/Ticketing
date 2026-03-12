@@ -992,12 +992,10 @@ const computeCRMStats = (rawRows: any[]) => {
     paymentBreakdown[payment].revenue += rowRevenue;
     
     // Discount type breakdown
-    const discountType = (row.discount_type || row.Discount_Type || row.DISCOUNT_TYPE || row.discountType || row.DiscountType || '').trim();
-    if (discountType) {
-      if (!discountBreakdown[discountType]) discountBreakdown[discountType] = { count: 0, revenue: 0 };
-      discountBreakdown[discountType].count += qty;
-      discountBreakdown[discountType].revenue += rowRevenue;
-    }
+    const discountType = (row.discount_type || row.Discount_Type || row.DISCOUNT_TYPE || row.discountType || row.DiscountType || '').trim() || 'Full Price';
+    if (!discountBreakdown[discountType]) discountBreakdown[discountType] = { count: 0, revenue: 0 };
+    discountBreakdown[discountType].count += qty;
+    discountBreakdown[discountType].revenue += rowRevenue;
     
     // Purchase time breakdown (skip 00:00 as it indicates missing time data)
     const buyDateStr = row.buy_date || '';

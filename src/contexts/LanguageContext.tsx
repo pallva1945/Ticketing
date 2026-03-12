@@ -288,6 +288,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Clear All': { en: 'Clear All', it: 'Cancella Tutto' },
   'Season': { en: 'Season', it: 'Stagione' },
   'Data has not been configured yet.': { en: 'Data has not been configured yet.', it: 'I dati non sono ancora stati configurati.' },
+  'Full Price': { en: 'Full Price', it: 'Prezzo Pieno' },
   'Customers with Discount': { en: 'Customers with Discount', it: 'Clienti con Sconto' },
   'Click a bar to filter the customer list below': { en: 'Click a bar to filter the customer list below', it: 'Clicca su una barra per filtrare la lista clienti sotto' },
   'Clear filter': { en: 'Clear filter', it: 'Rimuovi filtro' },
