@@ -857,6 +857,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           value: 0,
           zones: {} as Record<string, number>,
           sellTypes: {} as Record<string, number>,
+          discountTypesMap: {} as Record<string, number>,
           games: new Set<string>(),
           transactions: 0,
           age: profile.age || r.dob || '',
@@ -865,6 +866,10 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
         };
         const sellType = r.sell || r.sellType || r.ticketType || 'Unknown';
         acc[key].sellTypes[sellType] = (acc[key].sellTypes[sellType] || 0) + (Number(r.quantity) || 1);
+        const dt = (r.discountType || '').trim();
+        if (dt) {
+          acc[key].discountTypesMap[dt] = (acc[key].discountTypesMap[dt] || 0) + (Number(r.quantity) || 1);
+        }
         acc[key].tickets += Number(r.quantity) || 1;
         acc[key].revenue += Number(r.commercialValue) || 0;
         acc[key].value += Number(r.commercialValue) || 0;
@@ -882,17 +887,19 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
           }
         }
         return acc;
-      }, {} as Record<string, { name: string; email: string; company: string; tickets: number; revenue: number; value: number; zones: Record<string, number>; sellTypes: Record<string, number>; games: Set<string>; transactions: number; age: string; location: string; advanceDays: number[] }>)
+      }, {} as Record<string, { name: string; email: string; company: string; tickets: number; revenue: number; value: number; zones: Record<string, number>; sellTypes: Record<string, number>; discountTypesMap: Record<string, number>; games: Set<string>; transactions: number; age: string; location: string; advanceDays: number[] }>)
     ).map(([key, val]) => {
       const sortedZones = Object.entries(val.zones).sort((a, b) => b[1] - a[1]);
       const principalZone = sortedZones[0]?.[0] || '—';
       const secondaryZone = sortedZones[1]?.[0] || '—';
       const topSellType = Object.entries(val.sellTypes).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unknown';
+      const discountTypes = Object.keys(val.discountTypesMap || {});
+      const topDiscountType = Object.entries(val.discountTypesMap || {}).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
       const avgAdvance = val.advanceDays.length > 0 ? Math.round(val.advanceDays.reduce((a, b) => a + b, 0) / val.advanceDays.length) : null;
       const gameCount = val.games.size;
       const avgPerGame = gameCount > 0 ? val.value / gameCount : 0;
       const avgPerTxn = val.transactions > 0 ? val.value / val.transactions : 0;
-      return { key, ...val, principalZone, secondaryZone, topSellType, avgAdvance, gameCount, avgPerGame, avgPerTxn };
+      return { key, ...val, principalZone, secondaryZone, topSellType, discountTypes, topDiscountType, avgAdvance, gameCount, avgPerGame, avgPerTxn };
     });
 
     const topCorps = Object.entries(corpBreakdown)
