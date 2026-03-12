@@ -1148,9 +1148,17 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
   const discountChartData = useMemo(() => 
     Object.entries(stats.discountBreakdown || {})
+      .filter(([name]) => name !== 'Full Price')
       .map(([name, val]: [string, any]) => ({ name, tickets: val.count, revenue: val.revenue }))
       .sort((a, b) => b.tickets - a.tickets),
   [stats.discountBreakdown]);
+
+  const fullPriceStats = useMemo(() => {
+    const fp = (stats.discountBreakdown as any)?.['Full Price'];
+    if (!fp) return null;
+    const totalTickets = Object.values(stats.discountBreakdown || {}).reduce((sum: number, v: any) => sum + v.count, 0);
+    return { count: fp.count, pct: totalTickets > 0 ? (fp.count / totalTickets * 100) : 0 };
+  }, [stats.discountBreakdown]);
 
   const customerDetail = useMemo(() => {
     if (!selectedCustomer) return null;
@@ -1410,17 +1418,28 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
 
           {discountChartData.length > 0 && (
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
-                <Tag size={20} className="text-purple-500" />
-                {t('Discount Breakdown')}
-                {selectedDiscountType && (
-                  <span className="text-xs font-normal text-purple-600 ml-2">
-                    ({t('Filtered')}: {selectedDiscountType})
-                    <button onClick={() => setSelectedDiscountType(null)} className="ml-2 text-red-500 hover:text-red-700">✕</button>
-                  </span>
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
+                    <Tag size={20} className="text-purple-500" />
+                    {t('Discount Breakdown')}
+                    {selectedDiscountType && (
+                      <span className="text-xs font-normal text-purple-600 ml-2">
+                        ({t('Filtered')}: {selectedDiscountType})
+                        <button onClick={() => setSelectedDiscountType(null)} className="ml-2 text-red-500 hover:text-red-700">✕</button>
+                      </span>
+                    )}
+                  </h3>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{t('Click a bar to filter the customer list below')}</p>
+                </div>
+                {fullPriceStats && (
+                  <div className="text-right bg-gray-50 dark:bg-gray-800 rounded-lg px-4 py-2 border border-gray-100 dark:border-gray-700">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('Full Price')}</div>
+                    <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{fullPriceStats.pct.toFixed(1)}%</div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400">{fullPriceStats.count.toLocaleString()} {t('tickets')}</div>
+                  </div>
                 )}
-              </h3>
-              <p className="text-xs text-gray-400 dark:text-gray-500 mb-3">{t('Click a bar to filter the customer list below')}</p>
+              </div>
               <div className="h-56">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={discountChartData} layout="vertical" style={{ cursor: 'pointer' }}>
