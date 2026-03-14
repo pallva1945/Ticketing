@@ -17,40 +17,51 @@ interface Annotation {
   color: string;
 }
 
-const ANNOTATIONS: Annotation[] = [
-  {
-    year: 'Jun-22',
-    marker: '1',
-    title: 'Previous Ownership Sponsorship Settlement',
-    description: 'Sponsorship revenue artificially inflated by a deal from previous owners to cover accumulated losses. This also distorted the Net Income figure for the period.',
-    impact: 'Sponsorship Rev & NI distorted',
-    color: '#f59e0b',
-  },
-  {
-    year: 'Jun-22',
-    marker: '2',
-    title: 'Legacy Contract Penalties (2016)',
-    description: 'Penalized for unpaid player contracts dating back to 2016 under prior management. Resulted in approximately €100K in legal costs and an estimated €300K in missed playoff revenue.',
-    impact: '~€400K total impact',
-    color: '#ef4444',
-  },
-  {
-    year: 'Jun-25',
-    marker: '3',
-    title: 'First Amortization Year',
-    description: 'Jun-25 was the first fiscal year that included depreciation/amortization charges. COVID-era regulations had allowed Italian basketball clubs to defer these costs to ease financial pressure. Use the "Amort. Simulator" toggle above to model what the P&L would have looked like had amortization started from 2022.',
-    impact: 'Explains Jun-24 → Jun-25 jump in costs',
-    color: '#8b5cf6',
-  },
-  {
-    year: 'Jun-22',
-    marker: '4',
-    title: 'Past Contingencies & Deferred',
-    description: 'P&L costs inherited from previous management, discovered and settled over time. These are non-recurring in nature and not reflective of current operational performance. Activate the "Excl. Past Contingencies" toggle above to view all key metrics with these items stripped out for a cleaner performance baseline.',
-    impact: 'Excluded in adjusted view',
-    color: '#06b6d4',
-  },
-];
+const getAnnotations = (lang: string): Annotation[] => {
+  const isEN = lang === 'en';
+  return [
+    {
+      year: 'Jun-22',
+      marker: '1',
+      title: isEN ? 'Previous Ownership Sponsorship Settlement' : 'Accordo Sponsorizzazione Proprietà Precedente',
+      description: isEN
+        ? 'Sponsorship revenue artificially inflated by a deal from previous owners to cover accumulated losses. This also distorted the Net Income figure for the period.'
+        : 'Ricavi da sponsorizzazione artificialmente gonfiati da un accordo dei precedenti proprietari per coprire perdite accumulate. Questo ha anche distorto il dato dell\'Utile Netto del periodo.',
+      impact: isEN ? 'Sponsorship Rev & NI distorted' : 'Ricavi Sponsor & UN distorti',
+      color: '#f59e0b',
+    },
+    {
+      year: 'Jun-22',
+      marker: '2',
+      title: isEN ? 'Legacy Contract Penalties (2016)' : 'Penalità Contratti Pregressi (2016)',
+      description: isEN
+        ? 'Penalized for unpaid player contracts dating back to 2016 under prior management. Resulted in approximately €100K in legal costs and an estimated €300K in missed playoff revenue.'
+        : 'Penalizzati per contratti giocatori non pagati risalenti al 2016 sotto la gestione precedente. Circa €100K in costi legali e circa €300K in mancati ricavi playoff.',
+      impact: isEN ? '~€400K total impact' : '~€400K impatto totale',
+      color: '#ef4444',
+    },
+    {
+      year: 'Jun-25',
+      marker: '3',
+      title: isEN ? 'First Amortization Year' : 'Primo Anno di Ammortamento',
+      description: isEN
+        ? 'Jun-25 was the first fiscal year that included depreciation/amortization charges. COVID-era regulations had allowed Italian basketball clubs to defer these costs to ease financial pressure. Use the "Amort. Simulator" toggle above to model what the P&L would have looked like had amortization started from 2022.'
+        : 'Giu-25 è stato il primo anno fiscale con ammortamenti. Le normative COVID avevano permesso ai club di basket italiani di differire questi costi. Usa il toggle "Sim. Ammort." sopra per simulare come sarebbe stato il C/E se gli ammortamenti fossero partiti dal 2022.',
+      impact: isEN ? 'Explains Jun-24 → Jun-25 jump in costs' : 'Spiega il salto costi Giu-24 → Giu-25',
+      color: '#8b5cf6',
+    },
+    {
+      year: 'Jun-22',
+      marker: '4',
+      title: isEN ? 'Past Contingencies & Deferred' : 'Contingenze Pregresse & Differite',
+      description: isEN
+        ? 'P&L costs inherited from previous management, discovered and settled over time. These are non-recurring in nature and not reflective of current operational performance. Activate the "Excl. Past Contingencies" toggle above to view all key metrics with these items stripped out for a cleaner performance baseline.'
+        : 'Costi di C/E ereditati dalla gestione precedente, scoperti e regolati nel tempo. Sono di natura non ricorrente e non riflettono la performance operativa attuale. Attiva il toggle "Escl. Cont. Pregresse" sopra per visualizzare le metriche chiave senza queste voci.',
+      impact: isEN ? 'Excluded in adjusted view' : 'Escluso nella vista rettificata',
+      color: '#06b6d4',
+    },
+  ];
+};
 
 interface FiveYearPlanProps {
   onBackToLanding: () => void;
@@ -354,6 +365,7 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const { language, toggleLanguage, t } = useLanguage();
   const { isAdmin } = useAuth();
   const isDark = theme === 'dark';
+  const ANNOTATIONS = useMemo(() => getAnnotations(language), [language]);
 
   const [rawData, setRawData] = useState<FiveYearData | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
