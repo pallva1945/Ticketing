@@ -386,76 +386,122 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
   const [showCostModel, setShowCostModel] = useState(true);
   const [winsHungry, setWinsHungry] = useState(false);
 
+  const isEN = language === 'en';
   const SCENARIO_ASSUMPTIONS_LIST: { title: string; description: string; color: string; sections: { label: string; icon: string; points: string[] }[] }[] = [
     {
-      title: 'Financing Case',
+      title: isEN ? 'Financing Case' : 'Caso Finanziamento',
       color: '#22c55e',
-      description: 'Upside projection reflecting full Arena development potential, strong competitive positioning, and accelerated commercial growth.',
+      description: isEN
+        ? 'Upside projection reflecting full Arena development potential, strong competitive positioning, and accelerated commercial growth.'
+        : 'Proiezione al rialzo che riflette il pieno potenziale di sviluppo dell\'Arena, forte posizionamento competitivo e crescita commerciale accelerata.',
       sections: [
-        { label: 'Sponsorship', icon: '🤝', points: [
+        { label: isEN ? 'Sponsorship' : 'Sponsorizzazione', icon: '🤝', points: isEN ? [
           'Extraordinary Assosom partnership concludes at contract expiry',
           'Organic sponsorship growth sustained at current trajectory, driven by brand momentum and Arena premium inventory',
+        ] : [
+          'La partnership straordinaria Assosom si conclude alla scadenza contrattuale',
+          'Crescita organica delle sponsorizzazioni sostenuta dalla traiettoria attuale, trainata dal momentum del brand e dall\'inventario premium dell\'Arena',
         ]},
-        { label: 'Venue Operations', icon: '🏟️', points: [
+        { label: isEN ? 'Venue Operations' : 'Gestione Impianto', icon: '🏟️', points: isEN ? [
           'Incremental 50 third-party events phased in over 5 years through Arena repositioning',
           'Full monetization of 2,000 sqm commercial footprint via passive rental income',
+        ] : [
+          '50 eventi di terzi incrementali distribuiti su 5 anni tramite riposizionamento dell\'Arena',
+          'Monetizzazione completa dei 2.000 mq commerciali tramite reddito locativo passivo',
         ]},
-        { label: 'Game Day', icon: '🎟️', points: [
+        { label: 'Game Day', icon: '🎟️', points: isEN ? [
           'Playoff participation modeled at Semi-Final depth (up to 3 home games)',
           'High-tier European competition (BCL / EuroCup)',
           '1,500 additional seats commercialized at 80% sell-through (current baseline: 94%)',
           '3 new premium products launched: VIP Lounge, Presidential Club, Extended Hospitality',
+        ] : [
+          'Partecipazione ai Playoff modellata fino alle Semifinali (fino a 3 partite casalinghe)',
+          'Competizione europea di alto livello (BCL / EuroCup)',
+          '1.500 posti aggiuntivi commercializzati all\'80% di vendita (baseline attuale: 94%)',
+          '3 nuovi prodotti premium lanciati: VIP Lounge, Presidential Club, Hospitality Estesa',
         ]},
-        { label: 'Basketball Operations', icon: '🏀', points: [
+        { label: isEN ? 'Basketball Operations' : 'Operazioni Basket', icon: '🏀', points: isEN ? [
           'BCL revenue-sharing contribution and LBA distribution growth',
           'Youth development program reaching full economic maturity',
+        ] : [
+          'Contributo BCL revenue-sharing e crescita distribuzione LBA',
+          'Programma giovanile che raggiunge la piena maturità economica',
         ]},
       ],
     },
     {
-      title: 'Base Case',
+      title: isEN ? 'Base Case' : 'Caso Base',
       color: '#f59e0b',
-      description: 'Core scenario reflecting moderate growth assumptions consistent with current operational performance and market conditions.',
+      description: isEN
+        ? 'Core scenario reflecting moderate growth assumptions consistent with current operational performance and market conditions.'
+        : 'Scenario centrale che riflette ipotesi di crescita moderata coerenti con la performance operativa attuale e le condizioni di mercato.',
       sections: [
-        { label: 'Sponsorship', icon: '🤝', points: [
+        { label: isEN ? 'Sponsorship' : 'Sponsorizzazione', icon: '🤝', points: isEN ? [
           'Extraordinary Assosom partnership concludes at contract expiry',
           'Modest sponsorship growth over the 5-year horizon in line with market norms',
+        ] : [
+          'La partnership straordinaria Assosom si conclude alla scadenza contrattuale',
+          'Crescita modesta delle sponsorizzazioni nell\'orizzonte quinquennale in linea con le norme di mercato',
         ]},
-        { label: 'Venue Operations', icon: '🏟️', points: [
+        { label: isEN ? 'Venue Operations' : 'Gestione Impianto', icon: '🏟️', points: isEN ? [
           'Incremental 30 third-party events phased in over 5 years',
           'Partial monetization of commercial space — 50% of the 2,000 sqm available footprint',
+        ] : [
+          '30 eventi di terzi incrementali distribuiti su 5 anni',
+          'Monetizzazione parziale dello spazio commerciale — 50% dei 2.000 mq disponibili',
         ]},
-        { label: 'Game Day', icon: '🎟️', points: [
+        { label: 'Game Day', icon: '🎟️', points: isEN ? [
           'Playoff participation modeled at Quarter-Final depth (1–2 home games)',
           'Mid-tier European competition (FIBA Europe Cup)',
           '1,500 additional seats commercialized at 70% sell-through (current baseline: 94%)',
           '3 new premium products launched: VIP Lounge, Presidential Club, Extended Hospitality',
+        ] : [
+          'Partecipazione ai Playoff modellata ai Quarti di Finale (1–2 partite casalinghe)',
+          'Competizione europea di medio livello (FIBA Europe Cup)',
+          '1.500 posti aggiuntivi commercializzati al 70% di vendita (baseline attuale: 94%)',
+          '3 nuovi prodotti premium lanciati: VIP Lounge, Presidential Club, Hospitality Estesa',
         ]},
-        { label: 'Basketball Operations', icon: '🏀', points: [
+        { label: isEN ? 'Basketball Operations' : 'Operazioni Basket', icon: '🏀', points: isEN ? [
           'LBA distribution growth and youth development program maturing',
+        ] : [
+          'Crescita distribuzione LBA e programma giovanile in fase di maturazione',
         ]},
       ],
     },
     {
-      title: 'Downside Case',
+      title: isEN ? 'Downside Case' : 'Caso Sfavorevole',
       color: '#ef4444',
-      description: 'Stress scenario with minimal upside capture, no post-season revenue, and limited commercial expansion.',
+      description: isEN
+        ? 'Stress scenario with minimal upside capture, no post-season revenue, and limited commercial expansion.'
+        : 'Scenario di stress con minimo potenziale al rialzo, nessun ricavo post-season e espansione commerciale limitata.',
       sections: [
-        { label: 'Sponsorship', icon: '🤝', points: [
+        { label: isEN ? 'Sponsorship' : 'Sponsorizzazione', icon: '🤝', points: isEN ? [
           'Extraordinary Assosom partnership concludes at contract expiry',
           'Sponsorship growth limited to inflation-level adjustments only',
+        ] : [
+          'La partnership straordinaria Assosom si conclude alla scadenza contrattuale',
+          'Crescita sponsorizzazioni limitata ai soli adeguamenti inflazionistici',
         ]},
-        { label: 'Venue Operations', icon: '🏟️', points: [
+        { label: isEN ? 'Venue Operations' : 'Gestione Impianto', icon: '🏟️', points: isEN ? [
           'Minimal event growth — 5 incremental third-party events over 5 years',
           'No commercial space monetization',
+        ] : [
+          'Crescita eventi minima — 5 eventi di terzi incrementali su 5 anni',
+          'Nessuna monetizzazione dello spazio commerciale',
         ]},
-        { label: 'Game Day', icon: '🎟️', points: [
+        { label: 'Game Day', icon: '🎟️', points: isEN ? [
           'No Playoff participation, no Italian Cup',
           '1,500 additional seats commercialized at 60% sell-through (current baseline: 94%)',
           '3 new premium products launched: VIP Lounge, Presidential Club, Extended Hospitality',
+        ] : [
+          'Nessuna partecipazione ai Playoff, nessuna Coppa Italia',
+          '1.500 posti aggiuntivi commercializzati al 60% di vendita (baseline attuale: 94%)',
+          '3 nuovi prodotti premium lanciati: VIP Lounge, Presidential Club, Hospitality Estesa',
         ]},
-        { label: 'Basketball Operations', icon: '🏀', points: [
+        { label: isEN ? 'Basketball Operations' : 'Operazioni Basket', icon: '🏀', points: isEN ? [
           'LBA distribution growth and youth development program maturing',
+        ] : [
+          'Crescita distribuzione LBA e programma giovanile in fase di maturazione',
         ]},
       ],
     },
@@ -1123,12 +1169,12 @@ export const FiveYearPlan: React.FC<FiveYearPlanProps> = ({ onBackToLanding, onH
                 </p>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 mb-4">
                   {[
-                    { label: 'Basketball Operations', pct: '50%', desc: 'of total revenue, scaled over time', color: '#3b82f6' },
-                    { label: 'Youth Development (VB)', pct: '12.5%', desc: 'of total revenue at maturity', color: '#f97316' },
-                    { label: 'Labor', pct: '10%', desc: 'of total revenue', color: '#8b5cf6' },
-                    { label: 'Contingencies & Deferred', pct: '1%', desc: 'of total revenue', color: '#ef4444' },
-                    { label: 'Financial Charges', pct: '0.5%', desc: 'of total revenue', color: '#ec4899' },
-                    { label: 'Maintenance', pct: '1%', desc: 'of total revenue', color: '#14b8a6' },
+                    { label: isEN ? 'Basketball Operations' : 'Operazioni Basket', pct: '50%', desc: isEN ? 'of total revenue, scaled over time' : 'dei ricavi totali, scalato nel tempo', color: '#3b82f6' },
+                    { label: isEN ? 'Youth Development (VB)' : 'Sviluppo Giovanile (VB)', pct: '12.5%', desc: isEN ? 'of total revenue at maturity' : 'dei ricavi totali a maturità', color: '#f97316' },
+                    { label: isEN ? 'Labor' : 'Personale', pct: '10%', desc: isEN ? 'of total revenue' : 'dei ricavi totali', color: '#8b5cf6' },
+                    { label: isEN ? 'Contingencies & Deferred' : 'Contingenze & Differite', pct: '1%', desc: isEN ? 'of total revenue' : 'dei ricavi totali', color: '#ef4444' },
+                    { label: isEN ? 'Financial Charges' : 'Oneri Finanziari', pct: '0.5%', desc: isEN ? 'of total revenue' : 'dei ricavi totali', color: '#ec4899' },
+                    { label: isEN ? 'Maintenance' : 'Manutenzione', pct: '1%', desc: isEN ? 'of total revenue' : 'dei ricavi totali', color: '#14b8a6' },
                   ].map(item => (
                     <div key={item.label} className={`rounded-lg p-2.5 ${isDark ? 'bg-gray-800/40 border border-gray-700/40' : 'bg-gray-50 border border-gray-200/60'}`}>
                       <div className="flex items-center justify-between mb-1">
