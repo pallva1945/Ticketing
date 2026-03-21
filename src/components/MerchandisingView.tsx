@@ -102,7 +102,7 @@ const getPaymentMethod = (order: ShopifyOrder): string => {
 };
 
 export const MerchandisingView: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [data, setData] = useState<MerchandisingData | null>(null);
   const [gameDayData, setGameDayData] = useState<GameDayData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -1416,7 +1416,50 @@ export const MerchandisingView: React.FC = () => {
       )}
 
       {activeTab === 'orders' && (
-        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
+        <div className="space-y-4">
+          {/* Scorecards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">{t('Orders')}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{searchedOrders.length.toLocaleString()}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{selectedSeason}{selectedMonth ? ` · ${selectedMonth}` : ''}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">{t('Total Items')}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{searchedOrders.reduce((s, o) => s + o.itemCount, 0).toLocaleString()}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{(searchedOrders.reduce((s, o) => s + o.itemCount, 0) / Math.max(searchedOrders.length, 1)).toFixed(1)} {t('avg per order')}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">{t('Net Revenue')}</p>
+              <p className="text-2xl font-bold text-green-600">{formatCurrency(searchedOrders.reduce((s, o) => s + o.totalPrice - (o.totalTax || 0), 0))}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{t('excl. IVA')}</p>
+            </div>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+              <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">{t('Avg Order Value')}</p>
+              <p className="text-2xl font-bold text-orange-600">{formatCurrency(searchedOrders.length > 0 ? searchedOrders.reduce((s, o) => s + o.totalPrice - (o.totalTax || 0), 0) / searchedOrders.length : 0)}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{t('net per order')}</p>
+            </div>
+          </div>
+          {/* Client Type Legend */}
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-3">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 font-semibold">{t('Client Type Classification')}</p>
+            <div className="flex flex-wrap gap-x-5 gap-y-1.5">
+              {[
+                { label: 'Champion', color: 'text-emerald-700 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-900/20', desc: language === 'en' ? '3+ orders & €100+ spent' : '3+ ordini & €100+ spesi' },
+                { label: 'Loyal', color: 'text-blue-700 dark:text-blue-400', bg: 'bg-blue-100 dark:bg-blue-900/20', desc: language === 'en' ? '2+ orders, active last 6 months' : '2+ ordini, attivo ultimi 6 mesi' },
+                { label: 'At Risk', color: 'text-red-700 dark:text-red-400', bg: 'bg-red-100 dark:bg-red-900/20', desc: language === 'en' ? '2+ orders, inactive 6+ months' : '2+ ordini, inattivo da 6+ mesi' },
+                { label: 'New Blood', color: 'text-violet-700 dark:text-violet-400', bg: 'bg-violet-100 dark:bg-violet-900/20', desc: language === 'en' ? 'First order in last 30 days' : 'Primo ordine negli ultimi 30 giorni' },
+                { label: 'One-Timer', color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-100 dark:bg-gray-800', desc: language === 'en' ? 'Single order, 30+ days ago' : 'Singolo ordine, 30+ giorni fa' },
+              ].map(seg => (
+                <div key={seg.label} className="flex items-center gap-1.5">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${seg.color} ${seg.bg}`}>{t(seg.label)}</span>
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400">{seg.desc}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Table */}
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
             <div className="relative">
               <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
@@ -1441,7 +1484,6 @@ export const MerchandisingView: React.FC = () => {
                   <SortableHeader label={t("Items")} sortKey="itemCount" currentSort={orderSort} onSort={() => handleSort(orderSort, 'itemCount', setOrderSort)} align="right" />
                   <SortableHeader label={t("Total")} sortKey="totalPrice" currentSort={orderSort} onSort={() => handleSort(orderSort, 'totalPrice', setOrderSort)} align="right" />
                   <SortableHeader label={t("Payment")} sortKey="paymentMethod" currentSort={orderSort} onSort={() => handleSort(orderSort, 'paymentMethod', setOrderSort)} align="center" />
-                  <SortableHeader label={t("Fulfillment")} sortKey="fulfillmentStatus" currentSort={orderSort} onSort={() => handleSort(orderSort, 'fulfillmentStatus', setOrderSort)} align="center" />
                   <th className="text-center px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">{t('Actions')}</th>
                 </tr>
               </thead>
@@ -1494,15 +1536,6 @@ export const MerchandisingView: React.FC = () => {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        order.fulfillmentStatus === 'fulfilled' ? 'bg-green-100 dark:bg-green-900/20 text-green-700' :
-                        order.fulfillmentStatus === 'partial' ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700' :
-                        'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
-                      }`}>
-                        {order.fulfillmentStatus || 'unfulfilled'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-center">
                       <button 
                         onClick={(e) => { e.stopPropagation(); setSelectedOrderId(order.id); }}
                         className="px-3 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors"
@@ -1513,19 +1546,6 @@ export const MerchandisingView: React.FC = () => {
                   </tr>
                 ))}
               </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-semibold">
-                  <td className="px-4 py-3 text-gray-800 dark:text-gray-100" colSpan={2}>{t('Total')}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">{searchedOrders.length} {t('orders')}</td>
-                  <td className="px-4 py-3"></td>
-                  <td className="px-4 py-3"></td>
-                  <td className="px-4 py-3 text-right text-gray-800 dark:text-gray-100">{searchedOrders.reduce((s, o) => s + o.itemCount, 0).toLocaleString()}</td>
-                  <td className="px-4 py-3 text-right text-gray-800 dark:text-gray-100">{formatCurrency(searchedOrders.reduce((s, o) => s + o.totalPrice - (o.totalTax || 0), 0))}</td>
-                  <td className="px-4 py-3"></td>
-                  <td className="px-4 py-3"></td>
-                  <td className="px-4 py-3"></td>
-                </tr>
-              </tfoot>
             </table>
           </div>
           {searchedOrders.length > ordersLimit ? (
@@ -1544,6 +1564,7 @@ export const MerchandisingView: React.FC = () => {
               {selectedMonth && ` in ${selectedMonth}`}
             </div>
           )}
+          </div>
         </div>
       )}
 
