@@ -127,7 +127,7 @@ export const MerchandisingView: React.FC = () => {
 
   // Sorting state for tables
   const [productSort, setProductSort] = useState<SortConfig<'title' | 'productType' | 'price' | 'inventory' | 'status'>>({ key: 'title', direction: null });
-  const [orderSort, setOrderSort] = useState<SortConfig<'orderNumber' | 'processedAt' | 'customerName' | 'itemCount' | 'totalPrice' | 'paymentMethod' | 'fulfillmentStatus'>>({ key: 'processedAt', direction: 'desc' });
+  const [orderSort, setOrderSort] = useState<SortConfig<'orderNumber' | 'processedAt' | 'customerName' | 'itemCount' | 'totalPrice' | 'paymentMethod' | 'fulfillmentStatus' | 'clientType'>>({ key: 'processedAt', direction: 'desc' });
   const [customerSort, setCustomerSort] = useState<SortConfig<'name' | 'email' | 'ordersCount' | 'totalSpent' | 'createdAt'>>({ key: 'totalSpent', direction: 'desc' });
 
   const handleSort = <T extends string>(currentSort: SortConfig<T>, key: T, setSort: React.Dispatch<React.SetStateAction<SortConfig<T>>>) => {
@@ -474,6 +474,52 @@ export const MerchandisingView: React.FC = () => {
     return result;
   }, [data, productSearch, productSort]);
 
+  const allOrdersForCommunity = useMemo(() => {
+    if (!data) return [];
+    return data.orders.filter(o => {
+      if (o.sourceName === 'shopify_draft_order' && o.totalPrice === 0) return false;
+      return true;
+    });
+  }, [data]);
+
+  const customerClassification = useMemo(() => {
+    if (!allOrdersForCommunity.length) return new Map<string, { segment: string; color: string; bg: string; orders: number; totalSpent: number }>();
+    const now = new Date();
+    const sixMonthsAgo = new Date(now); sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+    const thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const cMap: Record<string, { orders: number; totalSpent: number; firstOrder: Date; lastOrder: Date }> = {};
+    allOrdersForCommunity.forEach(order => {
+      const email = order.customerEmail;
+      if (!email) return;
+      const orderDate = new Date(order.processedAt);
+      const netAmount = order.totalPrice - (order.totalTax || 0);
+      if (!cMap[email]) {
+        cMap[email] = { orders: 0, totalSpent: 0, firstOrder: orderDate, lastOrder: orderDate };
+      }
+      cMap[email].orders++;
+      cMap[email].totalSpent += netAmount;
+      if (orderDate < cMap[email].firstOrder) cMap[email].firstOrder = orderDate;
+      if (orderDate > cMap[email].lastOrder) cMap[email].lastOrder = orderDate;
+    });
+    const result = new Map<string, { segment: string; color: string; bg: string; orders: number; totalSpent: number }>();
+    for (const [email, c] of Object.entries(cMap)) {
+      let segment: string, color: string, bg: string;
+      if (c.orders >= 3 && c.totalSpent >= 100) {
+        segment = 'Champion'; color = 'text-emerald-700 dark:text-emerald-400'; bg = 'bg-emerald-100 dark:bg-emerald-900/20';
+      } else if (c.orders >= 2 && c.lastOrder >= sixMonthsAgo) {
+        segment = 'Loyal'; color = 'text-blue-700 dark:text-blue-400'; bg = 'bg-blue-100 dark:bg-blue-900/20';
+      } else if (c.orders >= 2 && c.lastOrder < sixMonthsAgo) {
+        segment = 'At Risk'; color = 'text-red-700 dark:text-red-400'; bg = 'bg-red-100 dark:bg-red-900/20';
+      } else if (c.orders === 1 && c.firstOrder >= thirtyDaysAgo) {
+        segment = 'New Blood'; color = 'text-violet-700 dark:text-violet-400'; bg = 'bg-violet-100 dark:bg-violet-900/20';
+      } else {
+        segment = 'One-Timer'; color = 'text-gray-600 dark:text-gray-400'; bg = 'bg-gray-100 dark:bg-gray-800';
+      }
+      result.set(email, { segment, color, bg, orders: c.orders, totalSpent: c.totalSpent });
+    }
+    return result;
+  }, [allOrdersForCommunity]);
+
   const searchedOrders = useMemo(() => {
     let result = filteredOrders.filter(o => o.totalPrice > 0);
     if (orderSearch.trim()) {
@@ -540,6 +586,12 @@ export const MerchandisingView: React.FC = () => {
           case 'totalPrice': aVal = a.totalPrice - (a.totalTax || 0); bVal = b.totalPrice - (b.totalTax || 0); break;
           case 'paymentMethod': aVal = (a.paymentMethod || '').toLowerCase(); bVal = (b.paymentMethod || '').toLowerCase(); break;
           case 'fulfillmentStatus': aVal = a.fulfillmentStatus || ''; bVal = b.fulfillmentStatus || ''; break;
+          case 'clientType': {
+            const segOrder: Record<string, number> = { 'Champion': 5, 'Loyal': 4, 'New Blood': 3, 'At Risk': 2, 'One-Timer': 1 };
+            aVal = segOrder[customerClassification.get(a.customerEmail)?.segment || ''] || 0;
+            bVal = segOrder[customerClassification.get(b.customerEmail)?.segment || ''] || 0;
+            break;
+          }
           default: return 0;
         }
         if (aVal < bVal) return orderSort.direction === 'asc' ? -1 : 1;
@@ -548,7 +600,7 @@ export const MerchandisingView: React.FC = () => {
       });
     }
     return result;
-  }, [filteredOrders, orderSearch, orderSort]);
+  }, [filteredOrders, orderSearch, orderSort, customerClassification]);
 
   const filteredCustomers = useMemo(() => {
     if (!data) return [];
@@ -709,14 +761,6 @@ export const MerchandisingView: React.FC = () => {
       outOfStockVariants,
       avgPrice
     };
-  }, [data]);
-
-  const allOrdersForCommunity = useMemo(() => {
-    if (!data) return [];
-    return data.orders.filter(o => {
-      if (o.sourceName === 'shopify_draft_order' && o.totalPrice === 0) return false;
-      return true;
-    });
   }, [data]);
 
   const rfmData = useMemo(() => {
@@ -1392,6 +1436,8 @@ export const MerchandisingView: React.FC = () => {
                   <SortableHeader label={t("Order")} sortKey="orderNumber" currentSort={orderSort} onSort={() => handleSort(orderSort, 'orderNumber', setOrderSort)} />
                   <SortableHeader label={t("Date")} sortKey="processedAt" currentSort={orderSort} onSort={() => handleSort(orderSort, 'processedAt', setOrderSort)} />
                   <SortableHeader label={t("Customer")} sortKey="customerName" currentSort={orderSort} onSort={() => handleSort(orderSort, 'customerName', setOrderSort)} />
+                  <SortableHeader label={t("Client Type")} sortKey="clientType" currentSort={orderSort} onSort={() => handleSort(orderSort, 'clientType', setOrderSort)} align="center" />
+                  <th className="text-left px-4 py-3 font-semibold text-gray-700 dark:text-gray-200 min-w-[160px]">{t('Products')}</th>
                   <SortableHeader label={t("Items")} sortKey="itemCount" currentSort={orderSort} onSort={() => handleSort(orderSort, 'itemCount', setOrderSort)} align="right" />
                   <SortableHeader label={t("Total")} sortKey="totalPrice" currentSort={orderSort} onSort={() => handleSort(orderSort, 'totalPrice', setOrderSort)} align="right" />
                   <SortableHeader label={t("Payment")} sortKey="paymentMethod" currentSort={orderSort} onSort={() => handleSort(orderSort, 'paymentMethod', setOrderSort)} align="center" />
@@ -1411,6 +1457,29 @@ export const MerchandisingView: React.FC = () => {
                     <td className="px-4 py-3">
                       <p className="text-gray-800 dark:text-gray-100">{order.customerName}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{order.customerEmail}</p>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {(() => {
+                        const cls = customerClassification.get(order.customerEmail);
+                        if (!cls) return <span className="text-xs text-gray-400">—</span>;
+                        return (
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${cls.color} ${cls.bg}`} title={`${cls.orders} ${t('orders')} · ${formatCurrency(cls.totalSpent)}`}>
+                            {t(cls.segment)}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1 max-w-[220px]">
+                        {order.lineItems.slice(0, 2).map((li, i) => (
+                          <span key={i} className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded truncate max-w-[200px]" title={li.title}>
+                            {li.quantity > 1 ? `${li.quantity}× ` : ''}{li.title.length > 28 ? li.title.slice(0, 28) + '…' : li.title}
+                          </span>
+                        ))}
+                        {order.lineItems.length > 2 && (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded">+{order.lineItems.length - 2}</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-400">{order.itemCount}</td>
                     <td className="px-4 py-3 text-right font-medium text-gray-800 dark:text-gray-100">{formatCurrency(order.totalPrice - (order.totalTax || 0))}</td>
@@ -1444,6 +1513,19 @@ export const MerchandisingView: React.FC = () => {
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-semibold">
+                  <td className="px-4 py-3 text-gray-800 dark:text-gray-100" colSpan={2}>{t('Total')}</td>
+                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs">{searchedOrders.length} {t('orders')}</td>
+                  <td className="px-4 py-3"></td>
+                  <td className="px-4 py-3"></td>
+                  <td className="px-4 py-3 text-right text-gray-800 dark:text-gray-100">{searchedOrders.reduce((s, o) => s + o.itemCount, 0).toLocaleString()}</td>
+                  <td className="px-4 py-3 text-right text-gray-800 dark:text-gray-100">{formatCurrency(searchedOrders.reduce((s, o) => s + o.totalPrice - (o.totalTax || 0), 0))}</td>
+                  <td className="px-4 py-3"></td>
+                  <td className="px-4 py-3"></td>
+                  <td className="px-4 py-3"></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
           {searchedOrders.length > ordersLimit ? (
