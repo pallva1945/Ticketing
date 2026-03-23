@@ -3460,6 +3460,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                 contextData={aiContext} 
                 initialPrompt={aiInitialPrompt}
                 onPromptConsumed={() => setAiInitialPrompt(undefined)}
+                userEmail={userEmail || undefined}
               />
             </div>
           </div>

@@ -59,7 +59,7 @@ The application uses a modern web stack: React 18 and TypeScript for the fronten
 
 ## External Dependencies
 *   **Firebase**: Primary data source for ticketing, cloud storage.
-*   **Google Gemini AI**: For potential AI functionalities.
+*   **Google Gemini AI**: Powers the AI Consultant chatbot with persistent memory via PostgreSQL + pgvector. Server-side API at `/api/ai/chat` handles Gemini calls, embedding generation (`text-embedding-004`), and semantic memory retrieval. Conversation history stored in `chat_memory` table with 768-dim vector embeddings for relevance-based recall. Routes in `server/aiRoutes.ts`.
 *   **Replit App Storage**: For large file uploads, particularly CRM data.
 *   **BigQuery**: Data source for Ticketing, CRM, Sponsorship, GameDay, and VB Dashboard.
 *   **Shopify Admin API**: For merchandising analytics (orders, products, customers).

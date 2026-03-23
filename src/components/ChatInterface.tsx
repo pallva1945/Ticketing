@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Sparkles, Loader2, Brain, Ticket } from 'lucide-react';
+import { Send, Sparkles, Loader2, Brain, Ticket, Database } from 'lucide-react';
 import { ChatMessage } from '../types';
-import { sendMessageToGemini } from '../services/geminiService';
+import { sendMessageToGemini, getMemoryStats, clearMemory } from '../services/geminiService';
 import { useLanguage } from '../contexts/LanguageContext';
 
 const renderMarkdown = (text: string): React.ReactNode => {
@@ -40,6 +40,7 @@ interface ChatInterfaceProps {
   contextData: string;
   initialPrompt?: string;
   onPromptConsumed?: () => void;
+  userEmail?: string;
 }
 
 // Exported for use in App.tsx to maintain visual consistency
@@ -107,7 +108,7 @@ export const AIAvatar: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' 
   );
 };
 
-export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initialPrompt, onPromptConsumed }) => {
+export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initialPrompt, onPromptConsumed, userEmail }) => {
   const { t } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -118,8 +119,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [memoryCount, setMemoryCount] = useState<number>(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const initialPromptSent = useRef(false);
+
+  useEffect(() => {
+    if (userEmail) {
+      getMemoryStats(userEmail).then(stats => {
+        if (stats) setMemoryCount(parseInt(String(stats.total)) || 0);
+      });
+    }
+  }, [userEmail]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -141,7 +151,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
         setMessages(prev => [...prev, userMsg]);
         setIsLoading(true);
         try {
-          const responseText = await sendMessageToGemini(initialPrompt, contextData);
+          const responseText = await sendMessageToGemini(initialPrompt, contextData, userEmail);
           const botMsg: ChatMessage = {
             role: 'model',
             text: responseText,
@@ -173,7 +183,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
     setIsLoading(true);
 
     try {
-      const responseText = await sendMessageToGemini(userMsg.text, contextData);
+      const responseText = await sendMessageToGemini(userMsg.text, contextData, userEmail);
       
       const botMsg: ChatMessage = {
         role: 'model',
@@ -182,6 +192,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
       };
       
       setMessages(prev => [...prev, botMsg]);
+      setMemoryCount(c => c + 1);
     } catch (error) {
       console.error("Chat error", error);
     } finally {
@@ -212,7 +223,14 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ contextData, initi
               {t('Live')}
             </span>
           </h3>
-          <p className="text-xs text-red-100 font-medium">{t('Strategic Board Advisor • PV Engine')}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-xs text-red-100 font-medium">{t('Strategic Board Advisor • PV Engine')}</p>
+            {memoryCount > 0 && (
+              <span className="flex items-center gap-1 px-1.5 py-0.5 bg-white/10 border border-white/20 rounded text-[9px] text-white/80">
+                <Database size={8} /> {memoryCount} {t('memories')}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 

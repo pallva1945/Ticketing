@@ -13,6 +13,7 @@ import { initDatabase, upsertUser, getUserByEmail, getUserPermissions, createAcc
 import { getUncachableGoogleSheetClient } from "./googleSheets.js";
 import { registerAdminRoutes } from "./adminRoutes.js";
 import { registerXeroRoutes } from "./xeroRoutes.js";
+import aiRoutes from "./aiRoutes.js";
 import crypto from "crypto";
 
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE_NAME || 'pallacanestro-varese';
@@ -54,6 +55,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 registerObjectStorageRoutes(app);
 registerAdminRoutes(app);
 registerXeroRoutes(app);
+app.use('/api/ai', aiRoutes);
 
 const ADMIN_EMAIL = 'luisscola@pallacanestrovarese.it';
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
