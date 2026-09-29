@@ -2019,6 +2019,10 @@ if (isProduction) {
   const distPath = path.join(__dirname, '..', 'dist');
   app.use(express.static(distPath));
   app.use((req, res) => {
+    // Missing crawler resources must not be mistaken for the SPA's HTML shell.
+    if (req.path === '/robots.txt' || req.path === '/sitemap.xml') {
+      return res.sendStatus(404);
+    }
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }

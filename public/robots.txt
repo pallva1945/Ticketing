@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /campus/
+Disallow: /api/
+Disallow: /objects/
+
+Sitemap: https://www.pallva.it/sitemap.xml
