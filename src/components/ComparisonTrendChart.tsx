@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { ComparisonReportGroup } from './comparisonReport';
-import { COMPARISON_METRICS, ComparisonMetricKey, fitLinearTrend, getMetricValue, metricDisplayTitle } from './comparisonMetrics';
+import { COMPARISON_METRICS, ComparisonMetricKey, fitLinearTrend, getComparisonSeriesValues, isCagrMetric, metricDisplayTitle } from './comparisonMetrics';
 
 interface Props {
   groups: ComparisonReportGroup[];
@@ -24,11 +24,11 @@ export const ComparisonTrendChart: React.FC<Props> = ({ groups, metricKey, highl
     // Historical seasons read left to right; current season is the last column.
     const ordered = showTrend ? [...groups].reverse() : groups;
     const names = [...new Set(ordered.map(group => seriesName(group.label)))];
-    const actual = ordered.map(group => {
-      const value = getMetricValue(group.games, metricKey, perGame);
+    const values = getComparisonSeriesValues(ordered, metricKey, perGame, showTrend);
+    const actual = ordered.map((group, index) => {
       return {
         label: group.label,
-        value,
+        value: values[index],
         highlight: highlightLabels.includes(group.label),
       };
     });
@@ -51,7 +51,7 @@ export const ComparisonTrendChart: React.FC<Props> = ({ groups, metricKey, highl
     return {
       rows: data,
       trends: series,
-      minValue: Math.min(0, ...series.flatMap(trend => [trend.start, trend.end])),
+      minValue: Math.min(0, ...data.map(row => row.value ?? 0), ...series.flatMap(trend => [trend.start, trend.end])),
       maxValue: Math.max(1, ...data.map(row => row.value ?? 0), ...series.flatMap(trend => [trend.start, trend.end])),
     };
   }, [groups, metricKey, highlightLabels, showTrend, perGame]);
@@ -71,7 +71,7 @@ export const ComparisonTrendChart: React.FC<Props> = ({ groups, metricKey, highl
               angle={-35} textAnchor="end"
               tickFormatter={label => String(label).length > 19 ? `${String(label).slice(0, 17)}…` : String(label)}
               tick={{ fontSize: 10, fill: '#475569' }} axisLine={false} tickLine={false} />
-            <YAxis type="number" width={67} domain={[minValue, maxValue * 1.12]}
+            <YAxis type="number" width={67} domain={[minValue < 0 ? minValue * 1.12 : 0, maxValue * 1.12]}
               tickFormatter={metric.axisFormat}
               tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
             <Tooltip
@@ -107,7 +107,14 @@ export const ComparisonTrendChart: React.FC<Props> = ({ groups, metricKey, highl
           {trend.name === 'Season trend' ? 'Linear trend · oldest → newest' : `${trend.name} · linear trend`}
         </span>)}
       </div>}
-      {!rows.some(row => row.value !== null) && <p className="text-center text-xs text-gray-500">No data for this metric.</p>}
+      {isCagrMetric(metricKey) && showTrend && <p className="pt-1 text-center text-xs text-gray-500 dark:text-gray-400">
+        Annualized growth from the earliest matching season with a positive value.
+      </p>}
+      {!rows.some(row => row.value !== null) && <p className="text-center text-xs text-gray-500">
+        {isCagrMetric(metricKey) ? (showTrend
+          ? 'CAGR needs a later season with matching games and a positive baseline.'
+          : 'CAGR is only available in seasonal comparisons, not Custom A/B.') : 'No data for this metric.'}
+      </p>}
     </div>
   );
 };

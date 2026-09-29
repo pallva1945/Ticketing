@@ -1,4 +1,5 @@
 import { GameData, SalesChannel, TicketZone } from '../types';
+import type { ComparisonReportGroup } from './comparisonReport';
 import { calculateKPIs } from './StatsCards';
 
 export interface ComparisonMetrics {
@@ -44,6 +45,12 @@ const money = COMPARISON_METRICS[0];
 const people = COMPARISON_METRICS[1];
 const percent = COMPARISON_METRICS[3];
 COMPARISON_METRICS.push(
+  { ...percent, key: 'cagrRevenue', title: 'Revenue · Compound Annual Growth Rate (CAGR)', unit: 'annualized', category: 'Growth',
+    format: value => `${value > 0 ? '+' : ''}${value.toLocaleString(undefined, { maximumFractionDigits: 1, minimumFractionDigits: 1 })}%`,
+    axisFormat: value => `${Math.round(value)}%` },
+  { ...percent, key: 'cagrYield', title: 'Yield · Compound Annual Growth Rate (CAGR)', unit: 'annualized', category: 'Growth',
+    format: value => `${value > 0 ? '+' : ''}${value.toLocaleString(undefined, { maximumFractionDigits: 1, minimumFractionDigits: 1 })}%`,
+    axisFormat: value => `${Math.round(value)}%` },
   { ...money, key: 'revenuePerGame', title: 'Average revenue / game', category: 'Other KPIs' },
   { ...people, key: 'attendancePerGame', title: 'Average attendance / game', category: 'Other KPIs' },
   { ...money, key: 'revPas', title: 'RevPAS', unit: 'EUR / seat', category: 'Other KPIs',
@@ -97,6 +104,7 @@ export function getComparisonMetrics(games: GameData[]): ComparisonMetrics {
 export function metricDisplayTitle(key: ComparisonMetricKey, perGame = false): string {
   const title = COMPARISON_METRICS.find(metric => metric.key === key)?.title || key;
   if (!perGame) return title;
+  if (key === 'cagrRevenue') return 'Revenue / game · Compound Annual Growth Rate (CAGR)';
   if (key === 'revenue') return 'Average revenue / game';
   if (key === 'attendance') return 'Average attendance / game';
   if (['giveaways', 'ticketsSold', 'corpRevenue'].includes(key) || /^zone:.+:(revenue|attendance)$/.test(key))
@@ -152,4 +160,32 @@ export function getMetricValue(games: GameData[], key: ComparisonMetricKey, perG
   if (['revenue', 'attendance', 'giveaways', 'ticketsSold', 'corpRevenue'].includes(key) ||
     /^zone:.+:(revenue|attendance)$/.test(key)) return value / games.length;
   return value;
+}
+
+export const isCagrMetric = (key: ComparisonMetricKey) =>
+  key === 'cagrRevenue' || key === 'cagrYield';
+
+// Input groups are ordered oldest to newest. Each observed season's CAGR is
+// annualized against the earliest positive season for that same fixture.
+export function getComparisonSeriesValues(
+  groups: ComparisonReportGroup[], key: ComparisonMetricKey, perGame: boolean, showTrend: boolean,
+): (number | null)[] {
+  if (!isCagrMetric(key)) return groups.map(group => getMetricValue(group.games, key, perGame));
+  if (!showTrend) return groups.map(() => null); // Custom A/B is not a seasonal series.
+  const baseKey = key === 'cagrRevenue' ? 'revenue' : 'yield';
+  const series = groups.map(group => {
+    const match = /^(\d{2,4})[-/]\d{2,4}(?: · (.+))?$/.exec(group.label);
+    const year = match ? Number(match[1]) : NaN;
+    return {
+      year: year < 100 ? year + 2000 : year,
+      fixture: match?.[2] || '',
+      base: getMetricValue(group.games, baseKey, perGame),
+    };
+  });
+  return series.map(current => {
+    const baseline = series.find(row => row.fixture === current.fixture &&
+      Number.isFinite(row.year) && row.base !== null && row.base > 0);
+    if (current.base === null || current.base < 0 || !baseline || current.year <= baseline.year) return null;
+    return (Math.pow(current.base / baseline.base!, 1 / (current.year - baseline.year)) - 1) * 100;
+  });
 }

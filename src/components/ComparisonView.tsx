@@ -176,11 +176,16 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [metricSlots, setMetricSlots] = useState<ComparisonMetricKey[]>(() => {
     const all = COMPARISON_METRICS.map(metric => metric.key);
-    const defaults = ['revenue', 'attendance', 'yield', 'loadFactor'];
+    const defaults = ['revenue', 'attendance', 'yield', 'loadFactor', 'cagrRevenue', 'cagrYield'];
     try {
       const stored = JSON.parse(window.localStorage.getItem('ticketing-comparison-metrics') || 'null');
       const valid = Array.isArray(stored)
-        ? Array.from({ length: 4 }, (_, index) => all.includes(stored[index]) ? stored[index] : '')
+        ? defaults.map((key, index) => {
+          if (index >= stored.length) return key;
+          const selected = stored[index] === 'yoyRevenueGrowth' ? 'cagrRevenue'
+            : stored[index] === 'yoyYieldGrowth' ? 'cagrYield' : stored[index];
+          return all.includes(selected) ? selected : '';
+        })
         : [];
       return valid.some(Boolean) ? valid : defaults;
     } catch { return defaults; }
@@ -316,7 +321,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
 
         <div className="rounded-xl border border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-900">
           <span className="mb-3 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Metrics to display</span>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {metricSlots.map((key, index) => <label key={index} className="text-xs font-semibold text-gray-600 dark:text-gray-300">
               Chart {index + 1}
               <select value={key} onChange={event => setMetricSlot(index, event.target.value)}

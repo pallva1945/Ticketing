@@ -1,5 +1,5 @@
 import { GameData } from '../types';
-import { COMPARISON_METRICS, ComparisonMetricKey, fitLinearTrend, getMetricValue, metricDisplayTitle } from './comparisonMetrics';
+import { COMPARISON_METRICS, ComparisonMetricKey, fitLinearTrend, getComparisonSeriesValues, isCagrMetric, metricDisplayTitle } from './comparisonMetrics';
 
 export interface ComparisonReportGroup {
   label: string;
@@ -41,10 +41,12 @@ export function printComparisonReports(reports: ComparisonReport[], selectedMetr
   const charts = selectedMetrics.map(key => COMPARISON_METRICS.find(chart => chart.key === key))
     .filter((chart): chart is typeof COMPARISON_METRICS[number] => Boolean(chart));
   const pages = reports.map(({ title, subtitle, groups, highlightLabels, showTrend, perGame }, page) => {
-  const metrics = (showTrend ? [...groups].reverse() : groups)
-    .map(group => ({
+  const ordered = showTrend ? [...groups].reverse() : groups;
+  const values = Object.fromEntries(charts.map(chart =>
+    [chart.key, getComparisonSeriesValues(ordered, chart.key, perGame, showTrend)])) as Record<string, (number | null)[]>;
+  const metrics = ordered.map((group, index) => ({
       ...group,
-      values: Object.fromEntries(charts.map(chart => [chart.key, getMetricValue(group.games, chart.key, perGame)])) as Record<string, number | null>,
+      values: Object.fromEntries(charts.map(chart => [chart.key, values[chart.key][index]])) as Record<string, number | null>,
     }));
   const chartMarkup = charts.map(chart => {
     const names = [...new Set(metrics.map(group => seriesName(group.label)))];
@@ -59,23 +61,31 @@ export function printComparisonReports(reports: ComparisonReport[], selectedMetr
     }) : [];
     const max = Math.max(1, ...metrics.map(group => group.values[chart.key] ?? 0),
       ...trends.flatMap(trend => [trend.start, trend.end])) * 1.12;
+    const min = Math.min(0, ...metrics.map(group => group.values[chart.key] ?? 0),
+      ...trends.flatMap(trend => [trend.start, trend.end])) * 1.12;
+    const range = max - min;
+    const zero = -min / range * 100;
     const lines = trends.map(trend => {
       const color = trend.index % 2 === 0 ? '#0f766e' : '#7c3aed';
       const x1 = (trend.first + 0.5) * 100;
       const x2 = (trend.last + 0.5) * 100;
-      return `<line x1="${x1}" y1="${100 - trend.start / max * 100}" x2="${x2}" y2="${100 - trend.end / max * 100}" ` +
+      return `<line x1="${x1}" y1="${(max - trend.start) / range * 100}" x2="${x2}" y2="${(max - trend.end) / range * 100}" ` +
         `stroke="${color}" stroke-width="2.5" vector-effect="non-scaling-stroke"/>`;
     }).join('');
     const columns = metrics.map(group => {
         const value = group.values[chart.key];
-        const height = value === null ? 0 : Math.max(0, Math.min(100, value / max * 100));
-        return `<div class="column"><span class="column-value" style="bottom:${height}%">${value === null ? '—' : chart.format(value)}</span>` +
-          `<div class="column-bar ${highlightLabels.includes(group.label) ? 'current' : ''}" style="height:${height}%"></div></div>`;
+         const valuePosition = value === null ? zero : (value - min) / range * 100;
+         const height = Math.abs(valuePosition - zero);
+         return `<div class="column"><span class="column-value" style="bottom:${value === null ? zero : value < 0 ? valuePosition - 12 : valuePosition}%">${value === null ? '—' : chart.format(value)}</span>` +
+           `<div class="column-bar ${highlightLabels.includes(group.label) ? 'current' : ''}" style="bottom:${Math.min(zero, valuePosition)}%;height:${height}%"></div></div>`;
       }).join('');
     const labels = metrics.map(group => `<span title="${escapeHtml(group.label)}">${escapeHtml(group.label)}</span>`).join('');
-    return `<section class="chart"><h2>${escapeHtml(metricDisplayTitle(chart.key, perGame))}</h2><div class="plot">` + columns +
+    return `<section class="chart"><h2>${escapeHtml(metricDisplayTitle(chart.key, perGame))}</h2><div class="plot"><div class="zero-line" style="bottom:${zero}%"></div>` + columns +
       (lines ? `<svg class="trend-overlay" viewBox="0 0 ${metrics.length * 100} 100" preserveAspectRatio="none" aria-label="Linear season trend">${lines}</svg>` : '') +
-      `</div><div class="category-labels">${labels}</div></section>`;
+      `</div><div class="category-labels">${labels}</div>` +
+      (isCagrMetric(chart.key) && !metrics.some(group => group.values[chart.key] !== null)
+        ? `<p class="chart-note">${showTrend ? 'Requires a later matching season and a positive baseline.' : 'CAGR is unavailable for Custom A/B.'}</p>` : '') +
+      `</section>`;
   }).join('');
 
   return `<article class="report-page">
@@ -84,7 +94,8 @@ export function printComparisonReports(reports: ComparisonReport[], selectedMetr
     <div class="quadrant ${charts.length === 1 ? 'solo' : ''}">${chartMarkup}</div>
     <p class="note">“—” means no matching games or no available ticket/capacity data; it is not a zero result.
     Highlighted bars match the comparison view.${showTrend ? ' Straight lines are least-squares trends across observed seasons, not connections between data points.' : ''}
-    Figures reflect the selected Total or GameDay view.${perGame ? ' Volume metrics are averaged per matching game.' : ''}</p>
+    Figures reflect the selected Total or GameDay view.${perGame ? ' Volume metrics are averaged per matching game.' : ''}
+    ${charts.some(chart => isCagrMetric(chart.key)) && showTrend ? 'Compound Annual Growth Rate (CAGR) is calculated from the earliest matching season with a positive value.' : ''}</p>
     </article>`;
   }).join('');
   popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Ticketing comparison reports</title>
@@ -94,22 +105,24 @@ export function printComparisonReports(reports: ComparisonReport[], selectedMetr
       .report-page { break-after: page; page-break-after: always; break-inside: avoid; }
       .report-page:last-child { break-after: auto; page-break-after: auto; }
       .page-count { float: right; color: #5c6778; font-size: 10px; }
-      h1 { font-size: 22px; margin: 0 0 5px; } h2 { font-size: 15px; }
-      .subtitle { color: #5c6778; margin: 0 0 14px; white-space: pre-line; font-size: 11px; }
-      .quadrant { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      h1 { font-size: 20px; margin: 0 0 4px; } h2 { font-size: 13px; }
+      .subtitle { color: #5c6778; margin: 0 0 8px; white-space: pre-line; font-size: 10px; }
+      .quadrant { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
       .quadrant.solo { grid-template-columns: 1fr; }
-      .chart { border: 1px solid #dce1e8; border-radius: 10px; padding: 14px; break-inside: avoid; }
-      .chart h2 { margin: 0 0 10px; }
-      .plot { display: flex; position: relative; height: 130px; border-bottom: 1px solid #a9b3c0;
-        background: repeating-linear-gradient(to top, transparent 0, transparent 34px, #eef1f4 35px); }
+      .chart { border: 1px solid #dce1e8; border-radius: 8px; padding: 9px; break-inside: avoid; }
+      .chart h2 { margin: 0 0 6px; }
+      .plot { display: flex; position: relative; height: 105px;
+        background: repeating-linear-gradient(to top, transparent 0, transparent 25px, #eef1f4 26px); }
+      .zero-line { position: absolute; left: 0; right: 0; border-top: 1px solid #a9b3c0; }
       .column { flex: 1; min-width: 0; position: relative; height: 100%; display: flex; justify-content: center; align-items: flex-end; }
-      .column-value { position: absolute; transform: translateY(-3px); white-space: nowrap; font-size: 9px; font-weight: 700; }
-      .column-bar { width: 45%; min-width: 9px; max-width: 36px; background: #8993a3; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .column-value { position: absolute; transform: translateY(-3px); white-space: nowrap; font-size: 8px; font-weight: 700; }
+      .column-bar { position: absolute; width: 45%; min-width: 9px; max-width: 36px; background: #8993a3; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
       .column-bar.current { background: #bf303b; }
       .trend-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-      .category-labels { display: flex; margin-top: 5px; font-size: 9px; color: #5c6778; }
+      .category-labels { display: flex; margin-top: 4px; font-size: 8px; color: #5c6778; }
       .category-labels span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
-      .note { color: #5c6778; font-size: 10px; margin: 10px 0 0; }
+      .chart-note { margin: 4px 0 0; font-size: 8px; color: #5c6778; }
+      .note { color: #5c6778; font-size: 9px; margin: 8px 0 0; }
       @media screen { body { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
         .report-page { margin-bottom: 40px; } }
     </style></head><body>${pages}</body></html>`);
