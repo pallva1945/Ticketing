@@ -1,5 +1,5 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
-import { getFirestore, Firestore } from "firebase/firestore";
+import { initializeApp, getApps, getApp, FirebaseApp } from "@firebase/app";
+import { getFirestore, Firestore } from "@firebase/firestore";
 
 // Configuration from pv-sales-dashboard
 const firebaseConfig = {

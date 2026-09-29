@@ -1,5 +1,5 @@
 
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "@firebase/firestore";
 import { db } from "../firebaseConfig";
 
 const COLLECTION_NAME = "appData";

@@ -12,6 +12,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@firebase/app": "0.10.13",
+    "@firebase/firestore": "4.7.3",
     "@google-cloud/bigquery": "^8.1.1",
     "@google-cloud/storage": "^7.18.0",
     "@google/genai": "^0.2.0",
@@ -29,12 +31,11 @@
     "@uppy/react": "^5.1.1",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",
-    "concurrently": "^9.2.1",
+    "concurrently": "^10.0.5",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "crypto-random-string": "^5.0.0",
     "express": "^5.2.1",
-    "firebase": "^10.8.0",
     "google-auth-library": "^10.5.0",
     "googleapis": "^171.4.0",
     "jsonwebtoken": "^9.0.3",
@@ -60,5 +61,8 @@
     "tailwindcss": "^3.4.1",
     "typescript": "^5.2.2",
     "vite": "^5.1.4"
+  },
+  "overrides": {
+    "protobufjs": "7.5.5"
   }
 }
