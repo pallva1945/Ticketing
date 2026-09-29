@@ -285,7 +285,7 @@ export const BOpsDashboard: React.FC = () => {
           </div>
           <div>
             <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('BOps — Serie A')}</h2>
-            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Basketball Operations')} · {t('Monthly Revenue')} · 25/26</p>
+            <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{t('Basketball Operations')} · {t('Monthly Revenue')} · 26/27</p>
           </div>
         </div>
         <div className="flex items-center gap-2">

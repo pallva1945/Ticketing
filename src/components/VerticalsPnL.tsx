@@ -228,7 +228,7 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding, onH
             <BarChart3 size={28} className="text-blue-600" />
             {t('Verticals P&Ls')}
           </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">2025/26 · {period}{hasCsv ? ' · Google Sheet' : ''}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">2026/27 · {period}{hasCsv ? ' · Google Sheet' : ''}</p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

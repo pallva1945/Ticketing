@@ -5288,7 +5288,7 @@ function SearchTab({ sessions, players, profiles }: { sessions: VBSession[]; pla
   const getCurrentSeason = (): string => {
     const now = new Date();
     const season = getSeason(now.toISOString().split('T')[0]);
-    return season || allSeasons[0] || '2025/26';
+    return season || allSeasons[0] || '2026/27';
   };
 
   const getWeekDateRange = (weekNum: number, season?: string): { start: Date; end: Date } | null => {

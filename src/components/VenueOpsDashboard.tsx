@@ -339,7 +339,7 @@ export const VenueOpsDashboard: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{t('Venue Operations')}</h1>
-          <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Season 25-26 · {t('Monthly Revenue')} · {t('Through')} {SEASON_MONTHS[lastActiveMonth] || '—'}</p>
+          <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Season 26-27 · {t('Monthly Revenue')} · {t('Through')} {SEASON_MONTHS[lastActiveMonth] || '—'}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {isAdmin && (

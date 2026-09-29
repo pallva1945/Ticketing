@@ -304,7 +304,7 @@ export const InternalHub: React.FC<InternalHubProps> = ({ onNavigate, onBackToWe
 
         <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-all duration-1000 ${phase >= 3 ? 'opacity-100' : 'opacity-0'}`}>
           <div className={`flex items-center gap-4 text-[10px] tracking-[0.25em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
-            <span>{t('Season')} 2025/26</span>
+            <span>{t('Season')} 2026/27</span>
             <span className="w-px h-3 bg-current"></span>
             <span>pallva.it</span>
           </div>
@@ -893,7 +893,7 @@ export const PVUsPage: React.FC<PVUsPageProps> = ({ onBack, onHome }) => {
         <div className={`flex items-center gap-3 text-[9px] tracking-[0.2em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
           <span>Pallacanestro Varese</span>
           <span className="w-px h-2.5 bg-current"></span>
-          <span>{t('Season')} 2025/26</span>
+          <span>{t('Season')} 2026/27</span>
         </div>
       </div>
     </div>
@@ -1063,7 +1063,7 @@ export const BOpsHub: React.FC<{ onBack: () => void; onHome: () => void; onNavig
 
         <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 transition-all duration-1000 ${phase >= 3 ? 'opacity-100' : 'opacity-0'}`}>
           <div className={`flex items-center gap-4 text-[10px] tracking-[0.25em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
-            <span>{t('Season')} 2025/26</span>
+            <span>{t('Season')} 2026/27</span>
             <span className="w-px h-3 bg-current"></span>
             <span>pallva.it</span>
           </div>

@@ -167,7 +167,7 @@ export const VBHub: React.FC<VBHubProps> = ({ onNavigate, onBackToWelcome }) => 
           <div className={`flex items-center gap-4 text-[10px] tracking-[0.25em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
             <span>Varese Basketball</span>
             <span className="w-px h-3 bg-current"></span>
-            <span>{t('Season')} 2025/26</span>
+            <span>{t('Season')} 2026/27</span>
           </div>
         </div>
       </div>

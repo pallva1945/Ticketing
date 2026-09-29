@@ -415,6 +415,7 @@ const RevenueHome = ({
                             onChange={(e) => onSeasonChange(e.target.value)}
                             className="appearance-none bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 py-2 pl-4 pr-10 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-red-500 shadow-sm cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
                         >
+                            <option value="26-27">{t('Season')} 26-27</option>
                             <option value="25-26">{t('Season')} 25-26</option>
                             <option value="24-25">{t('Season')} 24-25</option>
                             <option value="23-24">{t('Season')} 23-24</option>
@@ -1115,7 +1116,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   const crmFileInputRef = useRef<HTMLInputElement>(null);
   
   // Filters (Arrays for Multi-Select)
-  const [selectedSeasons, setSelectedSeasons] = useState<string[]>(['25-26']);
+  const [selectedSeasons, setSelectedSeasons] = useState<string[]>(['26-27']);
   const [selectedLeagues, setSelectedLeagues] = useState<string[]>(['LBA']);
   const [selectedZones, setSelectedZones] = useState<string[]>(['All']);
   const [selectedOpponents, setSelectedOpponents] = useState<string[]>(['All']);
@@ -1141,7 +1142,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
     ? ALL_MODULES
     : ALL_MODULES.filter(m => permissions.includes(m.id));
 
-  const LOCAL_CACHE_KEY = 'pv_data_cache';
+  const LOCAL_CACHE_KEY = 'pv_data_cache_26_27';
   const CACHE_MAX_AGE = 24 * 60 * 60 * 1000; // 24 hours
 
   const saveToLocalCache = (key: string, data: any) => {
@@ -1182,7 +1183,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
       const cachedTicketing = getFromLocalCache('ticketing');
       const cachedGameDay = getFromLocalCache('gameday');
       const cachedSponsor = getFromLocalCache('sponsor');
-      const cachedMerch = getFromLocalCache('merch');
+      const cachedMerch = getFromLocalCache('merch-26-27');
 
       if (cachedTicketing && cachedGameDay && cachedSponsor) {
         console.log('Hydrating from local cache (instant load)');
@@ -1196,9 +1197,9 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
           fetch('/api/merch/season-revenue')
             .then(r => r.json())
             .then(res => {
-              if (res.success && res.revenue > 0) {
+              if (res.success) {
                 setMerchRevenue(res.revenue);
-                saveToLocalCache('merch', res.revenue);
+                saveToLocalCache('merch-26-27', res.revenue);
               }
             })
             .catch(() => {});
@@ -1358,9 +1359,9 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
     try {
         if (merchRevenueResponse && merchRevenueResponse.ok) {
             const revenueResult = await merchRevenueResponse.json();
-            if (revenueResult.success && revenueResult.revenue > 0) {
+            if (revenueResult.success) {
                 setMerchRevenue(revenueResult.revenue);
-                saveToLocalCache('merch', revenueResult.revenue);
+                saveToLocalCache('merch-26-27', revenueResult.revenue);
                 merchRevenueSet = true;
                 console.log(`Merch revenue (fast): ${revenueResult.revenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})} from ${revenueResult.orderCount} orders`);
             }
@@ -1384,13 +1385,13 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                             return `${String(year - 1).slice(2)}/${String(year).slice(2)}`;
                         }
                     };
-                    const seasonOrders = merchResult.orders.filter((o: any) => getSeasonFromDate(o.processedAt) === '25/26' && !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0));
+                    const seasonOrders = merchResult.orders.filter((o: any) => getSeasonFromDate(o.processedAt) === '26/27' && !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0));
                     const seasonRevenueWithTax = seasonOrders.reduce((sum: number, o: any) => sum + o.totalPrice, 0);
                     const seasonTax = seasonOrders.reduce((sum: number, o: any) => sum + (o.totalTax || 0), 0);
                     const seasonRevenue = seasonRevenueWithTax - seasonTax;
                     setMerchRevenue(seasonRevenue);
-                    saveToLocalCache('merch', seasonRevenue);
-                    console.log(`Merch loaded: ${merchResult.orders.length} total orders, ${seasonOrders.length} in 25/26 season - ${seasonRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}`);
+                    saveToLocalCache('merch-26-27', seasonRevenue);
+                    console.log(`Merch loaded: ${merchResult.orders.length} total orders, ${seasonOrders.length} in 26/27 season - ${seasonRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}`);
                 }
             }
         } catch(e) {
@@ -2279,7 +2280,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   // Sponsorship Stats for Executive Overview
   const sponsorshipStats = useMemo(() => {
       // Convert season filter format: "25-26" -> "25/26"
-      const seasonMatch = selectedSeasons[0]?.replace('-', '/') || '25/26';
+      const seasonMatch = selectedSeasons[0]?.replace('-', '/') || '26/27';
       const filteredSponsors = sponsorData.filter(s => s.season === seasonMatch);
       
       const totalSponsorRec = filteredSponsors.reduce((sum, d) => sum + d.sponsorReconciliation, 0);
@@ -2417,7 +2418,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
       return arr.sort();
   };
 
-  const seasons = useMemo(() => getAvailableOptions('season'), [data, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
+  const seasons = useMemo(() => Array.from(new Set(['26-27', ...getAvailableOptions('season')])).sort().reverse(), [data, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
   const leagues = useMemo(() => getAvailableOptions('league'), [data, selectedSeasons, selectedOpponents, selectedTiers, selectedDays]);
   const opponents = useMemo(() => getAvailableOptions('opponent'), [data, selectedSeasons, selectedLeagues, selectedTiers, selectedDays]);
   const tiers = useMemo(() => getAvailableOptions('tier'), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedDays]);
@@ -2575,7 +2576,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   }, [data]);
 
   const clearFilters = () => {
-    setSelectedSeasons(['25-26']);
+    setSelectedSeasons(['26-27']);
     setSelectedLeagues(['LBA']);
     setSelectedZones(['All']);
     setSelectedOpponents(['All']);
@@ -2609,7 +2610,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                     <UserX size={14} /> {ignoreOspiti ? t('Zona Ospiti Excluded') : t('Ignore Zona Ospiti')}
                 </button>
             )}
-            {(selectedSeasons.length > 1 || !selectedSeasons.includes('25-26') || !selectedLeagues.includes('LBA') || !selectedZones.includes('All') || !selectedOpponents.includes('All') || !selectedTiers.includes('All') || !selectedDays.includes('All') || !selectedChannels.includes('All') || ignoreOspiti) && (
+            {(selectedSeasons.length > 1 || !selectedSeasons.includes('26-27') || !selectedLeagues.includes('LBA') || !selectedZones.includes('All') || !selectedOpponents.includes('All') || !selectedTiers.includes('All') || !selectedDays.includes('All') || !selectedChannels.includes('All') || ignoreOspiti) && (
                 <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-red-700 dark:hover:text-red-400 transition-colors ml-2">
                     <X size={14} /> {t('Clear All')}
                 </button>

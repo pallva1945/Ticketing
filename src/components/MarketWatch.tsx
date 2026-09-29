@@ -48,7 +48,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
 
   const [data, setData] = useState<MarketPlayer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedSeason, setSelectedSeason] = useState('2025-26');
+  const [selectedSeason, setSelectedSeason] = useState('2026-27');
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('net_paid');
@@ -69,7 +69,7 @@ export const MarketWatch: React.FC<{ onBack: () => void; onHome: () => void }> =
       .finally(() => setLoading(false));
   }, []);
 
-  const seasons = useMemo(() => [...new Set(data.map(d => d.season))].sort().reverse(), [data]);
+  const seasons = useMemo(() => [...new Set(['2026-27', ...data.map(d => d.season)])].sort().reverse(), [data]);
 
   useEffect(() => {
     if (seasons.length > 0 && !seasons.includes(selectedSeason)) {

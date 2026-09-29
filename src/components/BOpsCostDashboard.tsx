@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 const formatCurrency = (val: number) => `€${val.toLocaleString('it-IT', { maximumFractionDigits: 0 })}`;
 const formatPct = (val: number) => `${val.toFixed(1)}%`;
 
-type Season = '22/23' | '23/24' | '24/25' | '25/26';
+type Season = '22/23' | '23/24' | '24/25' | '25/26' | '26/27';
 
 interface CategoryLine {
   name: string;
@@ -76,6 +76,8 @@ const SEASONS_DATA: SeasonData[] = [
   },
 ];
 
+const SEASON_OPTIONS: Season[] = [...SEASONS_DATA.map(s => s.season), '26/27'];
+
 const CATEGORY_COLORS: Record<string, string> = {
   Players: '#ef4444',
   Coaches: '#f97316',
@@ -94,7 +96,47 @@ const SUB_COLORS = {
 
 export const BOpsCostDashboard: React.FC = () => {
   const { t } = useLanguage();
-  const [selectedSeason, setSelectedSeason] = useState<Season>('25/26');
+  const [selectedSeason, setSelectedSeason] = useState<Season>('26/27');
+
+  const seasonSelector = (
+    <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+      {SEASON_OPTIONS.map(season => (
+        <button
+          key={season}
+          onClick={() => setSelectedSeason(season)}
+          className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+            selectedSeason === season
+              ? 'bg-red-600 text-white shadow-sm'
+              : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+          }`}
+        >
+          {season}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (selectedSeason === '26/27') {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-red-100 dark:bg-red-900/20 rounded-xl">
+              <Activity className="text-red-600" size={22} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('BOps — Cost Structure')}</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('Basketball Operations')} · {t('Full Season Cost Analysis')}</p>
+            </div>
+          </div>
+          {seasonSelector}
+        </div>
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-8 text-center text-gray-500 dark:text-gray-400">
+          {t('No data available')} — {selectedSeason}
+        </div>
+      </div>
+    );
+  }
 
   const current = SEASONS_DATA.find(s => s.season === selectedSeason)!;
   const currentIdx = SEASONS_DATA.findIndex(s => s.season === selectedSeason);
@@ -156,21 +198,7 @@ export const BOpsCostDashboard: React.FC = () => {
             <p className="text-xs text-gray-500 dark:text-gray-400">{t('Basketball Operations')} · {t('Full Season Cost Analysis')}</p>
           </div>
         </div>
-        <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-          {SEASONS_DATA.map(s => (
-            <button
-              key={s.season}
-              onClick={() => setSelectedSeason(s.season)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                selectedSeason === s.season
-                  ? 'bg-red-600 text-white shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              {s.season}
-            </button>
-          ))}
-        </div>
+        {seasonSelector}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

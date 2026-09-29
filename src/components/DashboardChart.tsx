@@ -15,8 +15,9 @@ interface DashboardChartProps {
 
 const SEASON_COLORS: Record<string, string> = {
   '23-24': '#94a3b8', // Slate (Historical)
-  '24-25': '#3b82f6', // Blue (Previous)
-  '25-26': '#dc2626', // Red (Current)
+  '24-25': '#3b82f6', // Blue (Historical)
+  '25-26': '#64748b', // Slate (Previous)
+  '26-27': '#dc2626', // Red (Current)
   'Unknown': '#cbd5e1'
 };
 

@@ -1092,6 +1092,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Loading data...': { en: 'Loading data...', it: 'Caricamento dati...' },
   'Loading...': { en: 'Loading...', it: 'Caricamento...' },
   'No data available': { en: 'No data available', it: 'Nessun dato disponibile' },
+  'Current Contract (26/27 Season)': { en: 'Current Contract (26/27 Season)', it: 'Contratto attuale (stagione 26/27)' },
   'Error': { en: 'Error', it: 'Errore' },
   'Retry': { en: 'Retry', it: 'Riprova' },
   'of': { en: 'of', it: 'di' },

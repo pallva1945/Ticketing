@@ -1153,7 +1153,7 @@ export const ProjectsHub: React.FC<ProjectsHubProps> = ({ onBackToWelcome }) => 
 
         <div className={`mt-10 text-center transition-all duration-1000 ease-out delay-300 ${phase >= 3 ? 'opacity-100' : 'opacity-0'}`}>
           <p className={`text-[10px] tracking-[0.25em] uppercase ${isDark ? 'text-gray-700' : 'text-gray-300'}`}>
-            {t('Season')} 2025/26 · pallva.it
+            {t('Season')} 2026/27 · pallva.it
           </p>
         </div>
       </div>

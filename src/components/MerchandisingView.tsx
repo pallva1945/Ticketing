@@ -110,7 +110,7 @@ export const MerchandisingView: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'customers' | 'inventory' | 'giveaways' | 'community'>('overview');
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   
-  const [selectedSeason, setSelectedSeason] = useState<string>('25/26');
+  const [selectedSeason, setSelectedSeason] = useState<string>('26/27');
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [excludeGameDayMerch, setExcludeGameDayMerch] = useState(true);
   const [excludeVB, setExcludeVB] = useState(false);
@@ -198,8 +198,8 @@ export const MerchandisingView: React.FC = () => {
   }, []);
 
   const availableSeasons = useMemo(() => {
-    if (!data) return ['25/26'];
-    const seasons = new Set<string>();
+    if (!data) return ['26/27'];
+    const seasons = new Set<string>(['26/27']);
     data.orders.forEach(order => {
       seasons.add(getSeasonFromDate(order.processedAt));
     });

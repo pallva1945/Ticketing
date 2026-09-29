@@ -157,7 +157,7 @@ export const FinancialCenter: React.FC<FinancialCenterProps> = ({ onNavigate, on
 
         <div className="mt-16 text-center">
           <p className="text-xs text-gray-400 dark:text-gray-600">
-            Pallacanestro Varese &middot; {t('Season')} 2025/26
+            Pallacanestro Varese &middot; {t('Season')} 2026/27
           </p>
         </div>
       </div>

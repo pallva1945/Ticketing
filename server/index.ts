@@ -1823,7 +1823,7 @@ app.get("/api/merch/season-revenue", async (req, res) => {
         return `${String(year - 1).slice(2)}/${String(year).slice(2)}`;
       };
       const seasonOrders = shopifyCache.orders.filter(o => 
-        getSeasonFromDate(o.processedAt) === '25/26' && 
+        getSeasonFromDate(o.processedAt) === '26/27' &&
         !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0)
       );
       const revenueWithTax = seasonOrders.reduce((sum, o) => sum + o.totalPrice, 0);

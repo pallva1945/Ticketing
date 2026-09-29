@@ -274,7 +274,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
                   <PieChart size={28} className="text-red-600" />
                   {t('Cost Center')} — {t('Executive Overview')}
                 </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('Season')} 2025/26</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('Season')} 2026/27</p>
               </div>
               <div className="flex items-center gap-2">
                 {isAdmin && (
@@ -690,7 +690,7 @@ export const CostCenter: React.FC<CostCenterProps> = ({ onBackToLanding, onHome 
                 <ActiveIcon size={28} className="text-red-600" />
                 {t('Cost Center')} — {activeModuleInfo?.label}
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('Season')} 2025/26</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('Season')} 2026/27</p>
             </div>
             <div className={`rounded-xl border p-12 text-center ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
               <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">

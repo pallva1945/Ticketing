@@ -1,0 +1,1 @@
+- [Season rollover without fabricated figures](season-rollover.md) — default to the requested season, but keep historical data intact and show no-data states where current figures are unavailable.

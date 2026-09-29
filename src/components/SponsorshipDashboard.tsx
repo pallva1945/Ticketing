@@ -96,7 +96,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 }) => {
   const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedSeason, setSelectedSeason] = useState<string>('25/26');
+  const [selectedSeason, setSelectedSeason] = useState<string>('26/27');
   const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
   const [excludeCorpTix, setExcludeCorpTix] = useState(true);
   const [excludeGameDay, setExcludeGameDay] = useState(true);
@@ -122,8 +122,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   };
 
   const seasons = useMemo(() => {
-    const s = Array.from(new Set(data.map(d => d.season))).filter(Boolean).sort().reverse();
-    return s.length > 0 ? s : ['24/25'];
+    return Array.from(new Set(['26/27', ...data.map(d => d.season)])).filter(Boolean).sort().reverse();
   }, [data]);
 
   // Combine sponsors with their _CM variants
@@ -406,7 +405,9 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     // Helper to extract start year from season (handles both "25-26" and "25/26" formats)
     const getSeasonYear = (season: string): number => {
       const match = season.match(/(\d+)/);
-      return match ? parseInt(match[1]) : 0;
+      if (!match) return 0;
+      const year = parseInt(match[1], 10);
+      return year >= 2000 ? year % 100 : year;
     };
     
     // Normalize company name for comparison (case-insensitive, trimmed)
@@ -418,8 +419,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       .filter(d => normalizeCompany(d.company) === selectedCompanyNorm)
       .sort((a, b) => getSeasonYear(a.season) - getSeasonYear(b.season));
     
-    // Current season is 25/26 (Jan 2026)
-    const currentSeasonYear = 25;
+    // Current season is 26/27
+    const currentSeasonYear = 26;
     
     const past = allContracts.filter(c => getSeasonYear(c.season) < currentSeasonYear);
     const current = allContracts.filter(c => getSeasonYear(c.season) === currentSeasonYear);
@@ -1444,7 +1445,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
               {sponsorHistory.current.length > 0 && (
                 <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-xl p-5">
                   <h3 className="text-sm font-semibold text-red-700 mb-4 flex items-center gap-2">
-                    <Clock size={16} /> {t('Current Contract (25/26 Season)')}
+                    <Clock size={16} /> {t('Current Contract (26/27 Season)')}
                   </h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
