@@ -1180,7 +1180,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   const loadData = async (forceRefresh = false) => {
     // Try instant hydration from localStorage cache first (only on non-forced loads)
     if (!forceRefresh) {
-      const cachedTicketing = getFromLocalCache('ticketing');
+      const cachedTicketing = getFromLocalCache('ticketing-capacity-26-27-v2');
       const cachedGameDay = getFromLocalCache('gameday');
       const cachedSponsor = getFromLocalCache('sponsor');
       const cachedMerch = getFromLocalCache('merch-26-27');
@@ -1400,7 +1400,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
     }
 
     // Save to localStorage for instant loading next time
-    if (loadedTicketing.length > 0) saveToLocalCache('ticketing', loadedTicketing);
+    if (loadedTicketing.length > 0) saveToLocalCache('ticketing-capacity-26-27-v2', loadedTicketing);
     if (loadedGameDay.length > 0) saveToLocalCache('gameday', loadedGameDay);
 
     // CRM is loaded lazily - see loadCRMData function
@@ -1746,7 +1746,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
             const loadedData = convertBigQueryToGameData(result.data, result.rawRows);
             setData(loadedData);
             setDataSources(prev => ({...prev, ticketing: 'bigquery'}));
-            saveToLocalCache('ticketing', loadedData);
+            saveToLocalCache('ticketing-capacity-26-27-v2', loadedData);
             results.ticketing = true;
             console.log(`Synced ${loadedData.length} ticketing games`);
           } else {

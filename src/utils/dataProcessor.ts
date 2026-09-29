@@ -111,6 +111,21 @@ const CAPACITIES_25_26: Record<TicketZone, number> = {
   [TicketZone.SKYBOX]: 60
 };
 
+// Expanded arena for 26-27 only. Earlier seasons retain their own capacities.
+const CAPACITIES_26_27: Record<TicketZone, number> = {
+  [TicketZone.TRIB_G]: 2113,
+  [TicketZone.PAR_O]: 396,
+  [TicketZone.PAR_E]: 266,
+  [TicketZone.TRIB_S]: 404,
+  [TicketZone.GALL_G]: 554,
+  [TicketZone.SKYBOX]: 100,
+  [TicketZone.PAR_EX]: 209,
+  [TicketZone.GALL_S]: 858,
+  [TicketZone.COURTSIDE]: 54,
+  [TicketZone.OSPITI]: 136,
+  [TicketZone.CURVA]: 458
+};
+
 export const processGameData = (csvContent: string): GameData[] => {
   const rows = parseCSV(csvContent);
   if (rows.length < 2) return [];
@@ -285,13 +300,15 @@ export const processGameData = (csvContent: string): GameData[] => {
     const gameIndex = seasonGameCounters[season];
 
     // Determine Season Capacity
-    let zoneCapacities = { ...CAPACITIES_25_26 }; // Default to latest
+    let zoneCapacities = { ...CAPACITIES_25_26 };
     if (season === '23-24') {
         zoneCapacities = { ...CAPACITIES_23_24 };
         // Specific override: Skybox was 0 for early games in 23-24
         if (gameIndex < 6) zoneCapacities[TicketZone.SKYBOX] = 0;
     } else if (season === '24-25') {
         zoneCapacities = { ...CAPACITIES_24_25 };
+    } else if (season === '26-27' || season === '26/27') {
+        zoneCapacities = { ...CAPACITIES_26_27 };
     }
 
     const currentTotalCapacity = Object.values(zoneCapacities).reduce((acc, cap) => acc + cap, 0);
@@ -941,6 +958,7 @@ export const convertBigQueryToGameData = (
   console.warn('BigQuery: Using aggregate data only (no zone breakdown)');
   return aggregateRows.map(row => {
     const getSeasonCapacity = (season: string): Record<TicketZone, number> => {
+      if (season.includes('26-27') || season.includes('26/27')) return CAPACITIES_26_27;
       if (season.includes('25-26') || season.includes('25/26')) return CAPACITIES_25_26;
       if (season.includes('24-25') || season.includes('24/25')) return CAPACITIES_24_25;
       return CAPACITIES_23_24;
@@ -954,7 +972,7 @@ export const convertBigQueryToGameData = (
       opponent: row.opponent,
       date: row.date,
       attendance: row.attendance,
-      capacity: row.capacity || totalCapacity,
+      capacity: row.season.includes('26-27') || row.season.includes('26/27') ? totalCapacity : row.capacity || totalCapacity,
       zoneCapacities: capacities as unknown as Record<string, number>,
       totalRevenue: row.total_revenue,
       corpRevenue: row.corp_revenue,
