@@ -3,9 +3,11 @@ import { GameData, TicketZone, SalesChannel } from '../types';
 import { MultiSelect } from './MultiSelect';
 import { calculateKPIs } from './StatsCards';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { ArrowLeftRight, TrendingUp, TrendingDown, Minus, AlertCircle, UserX } from 'lucide-react';
+import { ArrowLeftRight, TrendingUp, TrendingDown, Minus, AlertCircle, UserX, Printer } from 'lucide-react';
 import { FIXED_CAPACITY_25_26 } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
+import { SeasonComparison, SeasonComparisonMode } from './SeasonComparison';
+import { printComparisonReport } from './comparisonReport';
 
 interface ComparisonViewProps {
   fullData: GameData[];
@@ -199,6 +201,7 @@ const ComparisonMetric = ({ label, valA, valB, isCurrency = false, isPercent = f
 
 export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, options, viewMode }) => {
   const { t } = useLanguage();
+  const [comparisonType, setComparisonType] = useState<SeasonComparisonMode | 'custom'>('opponent');
   const [filtersA, setFiltersA] = useState<FilterState>({
      ...INITIAL_FILTERS,
      seasons: [options.seasons.length > 1 ? options.seasons[1] : options.seasons[0]], 
@@ -223,6 +226,10 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
       const setter = set === 'A' ? setFiltersA : setFiltersB;
       setter(prev => ({ ...prev, [field]: value }));
   };
+  const describeFilters = (label: string, filters: FilterState) =>
+    `${label}: ${filters.seasons.join(', ')} · ${filters.leagues.join(', ')} · ${filters.opponents.join(', ')}` +
+    ` · zones ${filters.zones.join(', ')}${filters.ignoreOspiti ? ' (no guests)' : ''}` +
+    ` · tiers ${filters.tiers.join(', ')} · dates ${filters.dates.join(', ')} · times ${filters.times.join(', ')}`;
 
   const FilterColumn = ({ label, filters, setFilter }: { label: string, filters: FilterState, setFilter: (f: keyof FilterState, v: any) => void }) => {
       const availSeasons = useMemo(() => getAvailableOptions(fullData, filters, 'seasons'), [filters]);
@@ -280,7 +287,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
 
   return (
     <div className="animate-fade-in max-w-7xl mx-auto space-y-6">
-       <div className="flex items-center gap-3 mb-6">
+        <div className="flex flex-wrap items-center gap-3 mb-6">
            <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-lg text-red-700">
                <ArrowLeftRight size={24} />
            </div>
@@ -292,8 +299,33 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
                     : t('Analyze performance variance between two distinct datasets.')}
                </p>
            </div>
+            {comparisonType === 'custom' && <button
+              onClick={() => printComparisonReport('Custom ticketing comparison',
+                `${viewMode === 'total' ? 'Total' : 'GameDay'} view · A vs B`,
+                [{ label: describeFilters('Scenario A', filtersA), games: dataA },
+                  { label: describeFilters('Scenario B', filtersB), games: dataB }])}
+              className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-sm font-semibold"
+            ><Printer size={16} /> {t('Print / Save PDF')}</button>}
        </div>
 
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Comparison type">
+          {([
+            ['opponent', 'Opponent vs opponent'],
+            ['week', 'Week vs week'],
+            ['ytd', 'Season to date'],
+            ['custom', 'Custom'],
+          ] as const).map(([value, label]) => (
+            <button key={value} type="button" role="tab" aria-selected={comparisonType === value}
+              onClick={() => setComparisonType(value)}
+              className={`rounded-lg px-4 py-2.5 text-sm font-semibold border transition-colors ${
+                comparisonType === value
+                  ? 'bg-red-600 border-red-600 text-white'
+                  : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-red-300'
+              }`}>{t(label)}</button>
+          ))}
+        </div>
+
+        {comparisonType !== 'custom' ? <SeasonComparison fullData={fullData} mode={comparisonType} viewMode={viewMode} /> : (
        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
            <div className="lg:col-span-1">
                <FilterColumn label="A" filters={filtersA} setFilter={(f: keyof FilterState, v: any) => updateFilter('A', f, v)} />
@@ -340,6 +372,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
                <FilterColumn label="B" filters={filtersB} setFilter={(f: keyof FilterState, v: any) => updateFilter('B', f, v)} />
            </div>
        </div>
+        )}
     </div>
   );
 };
