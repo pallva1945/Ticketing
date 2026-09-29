@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Printer } from 'lucide-react';
 import { GameData, SalesChannel } from '../types';
-import { calculateKPIs } from './StatsCards';
 import { printComparisonReport, ComparisonReportGroup } from './comparisonReport';
+import { ComparisonQuadrant } from './ComparisonQuadrant';
 import { useLanguage } from '../contexts/LanguageContext';
 import { FIXED_CAPACITY_25_26 } from '../constants';
 
@@ -45,8 +45,6 @@ const compareGame = (game: GameData, viewMode: Props['viewMode']): GameData => {
     capacity: Object.keys(game.zoneCapacities || {}).length ? capacities : game.capacity,
   };
 };
-
-const formatMoney = (value: number) => `€${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
 export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode }) => {
   const { t } = useLanguage();
@@ -98,7 +96,8 @@ export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode }) 
       ? `Home game week ${selectedWeek} in each season · ${league} · ${viewMode === 'total' ? 'Total' : 'GameDay'}`
       : `First ${currentCount} home ${currentCount === 1 ? 'game' : 'games'} in each season · ${league} · ${viewMode === 'total' ? 'Total' : 'GameDay'}`;
   const title = mode === 'opponent' ? 'Opponent comparison' : mode === 'week' ? 'Week-by-week comparison' : 'Season to date comparison';
-  const maxRevenue = Math.max(1, ...groups.map(group => calculateKPIs(group.games)?.totalRevenue || 0));
+  const currentLabels = groups.filter(group =>
+    group.label === currentSeason || group.label.startsWith(`${currentSeason} · `)).map(group => group.label);
 
   return (
     <div className="space-y-5">
@@ -136,7 +135,7 @@ export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode }) 
             </select>
           </label>}
         </div>
-        <button onClick={() => printComparisonReport(title, description, groups)} disabled={groups.length === 0}
+        <button onClick={() => printComparisonReport(title, description, groups, currentLabels)} disabled={groups.length === 0}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-sm font-semibold disabled:opacity-50">
           <Printer size={16} /> {t('Print / Save PDF')}
         </button>
@@ -153,48 +152,20 @@ export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode }) 
 
       {groups.length === 0 ? <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-10 text-center text-gray-500">
         No games are available for this comparison yet.
-      </div> : <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-        <table className="w-full min-w-[780px] text-sm">
-          <thead className="bg-gray-50 dark:bg-gray-800 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-300">
-            <tr><th className="text-left px-5 py-4">Season / selection</th><th className="text-left px-4 py-4 w-1/3">Revenue</th>
-              <th className="text-right px-4 py-4">Games</th><th className="text-right px-4 py-4">Revenue / game</th>
-              <th className="text-right px-4 py-4">Avg attendance</th><th className="text-right px-4 py-4">Load factor</th>
-              <th className="text-right px-5 py-4">Current vs row</th></tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-            {groups.map(group => {
-              const stats = calculateKPIs(group.games);
-              const isCurrent = group.label.startsWith(`${currentSeason} `) || group.label === currentSeason;
-              const selection = mode === 'opponent' ? group.label.split(' · ').slice(1).join(' · ') : '';
-              const currentGroup = groups.find(candidate => candidate.label ===
-                (mode === 'opponent' ? `${currentSeason} · ${selection}` : currentSeason));
-              const currentStats = currentGroup ? calculateKPIs(currentGroup.games) : null;
-              const variance = !isCurrent && stats && currentStats && stats.totalRevenue > 0
-                ? ((currentStats.totalRevenue - stats.totalRevenue) / stats.totalRevenue) * 100 : null;
-              return <tr key={group.label} className={isCurrent ? 'bg-red-50/60 dark:bg-red-900/10' : ''}>
-                <th scope="row" className="text-left px-5 py-4 font-semibold text-gray-900 dark:text-white">
-                  {group.label}{isCurrent && <span className="ml-2 text-xs font-normal text-red-700 dark:text-red-400">Current</span>}
-                  {mode !== 'ytd' && group.games.length > 0 && <span className="block text-xs font-normal text-gray-500 dark:text-gray-400 mt-1">
-                    {group.games.map(game => `${game.date} ${game.opponent}`).join(' · ')}
-                  </span>}
-                </th>
-                <td className="px-4 py-4">
-                  {stats ? <div className="flex items-center gap-3"><span className="font-semibold tabular-nums whitespace-nowrap text-gray-900 dark:text-white">{formatMoney(stats.totalRevenue)}</span>
-                    <div className="flex-1 rounded-full bg-gray-100 dark:bg-gray-700 h-2 min-w-12"><div className={`h-2 rounded-full ${isCurrent ? 'bg-red-600' : 'bg-gray-400'}`} style={{ width: `${Math.max(0, stats.totalRevenue / maxRevenue * 100)}%` }} /></div></div> : <span className="text-gray-400">No game</span>}
-                </td>
-                <td className="text-right px-4 py-4">{stats?.gameCount ?? '—'}</td>
-                <td className="text-right px-4 py-4">{stats ? formatMoney(stats.arpg) : '—'}</td>
-                <td className="text-right px-4 py-4">{stats ? Math.round(stats.totalAttendance / stats.gameCount).toLocaleString() : '—'}</td>
-                <td className="text-right px-4 py-4">{stats ? `${stats.occupancy.toFixed(1)}%` : '—'}</td>
-                <td className={`text-right px-5 py-4 font-semibold ${variance === null ? 'text-gray-400' : variance >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
-                  {variance === null ? '—' : `${variance > 0 ? '+' : ''}${variance.toFixed(1)}%`}
-                </td>
-              </tr>;
-            })}
-          </tbody>
-        </table>
-      </div>}
-      {viewMode === 'gameday' && <p className="text-xs text-gray-500">Games without channel-level ticket data are shown as missing in GameDay view.</p>}
+      </div> : <>
+        <ComparisonQuadrant groups={groups} highlightLabels={currentLabels} />
+        {mode !== 'ytd' && <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-5 py-4">
+          <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">Included fixtures</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1 text-xs text-gray-600 dark:text-gray-400">
+            {groups.map(group => <div key={group.label}>
+              <span className="font-semibold text-gray-800 dark:text-gray-200">{group.label}:</span>{' '}
+              {group.games.length ? group.games.map(game => `${game.date} ${game.opponent}`).join(' · ') : 'No matching game'}
+            </div>)}
+          </div>
+        </div>}
+      </>}
+      <p className="text-xs text-gray-500">— means no matching game or unavailable metric, not zero.
+        {viewMode === 'gameday' && ' Games without ticket-channel detail are excluded from GameDay comparisons.'}</p>
     </div>
   );
 };

@@ -1,13 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { GameData, TicketZone, SalesChannel } from '../types';
 import { MultiSelect } from './MultiSelect';
-import { calculateKPIs } from './StatsCards';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { ArrowLeftRight, TrendingUp, TrendingDown, Minus, AlertCircle, UserX, Printer } from 'lucide-react';
+import { ArrowLeftRight, UserX, Printer } from 'lucide-react';
 import { FIXED_CAPACITY_25_26 } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SeasonComparison, SeasonComparisonMode } from './SeasonComparison';
 import { printComparisonReport } from './comparisonReport';
+import { ComparisonQuadrant } from './ComparisonQuadrant';
 
 interface ComparisonViewProps {
   fullData: GameData[];
@@ -161,44 +160,6 @@ const getAvailableOptions = (allGames: GameData[], currentFilters: FilterState, 
 };
 
 
-const ComparisonMetric = ({ label, valA, valB, isCurrency = false, isPercent = false, inverse = false }: any) => {
-    let diff = valA > 0 ? ((valB - valA) / valA) * 100 : 0;
-    if (valA === 0 && valB > 0) diff = 100;
-    
-    let isPositive = diff > 0; 
-    if (inverse) isPositive = diff < 0;
-
-    const isNeutral = Math.abs(diff) < 0.1;
-
-    const format = (v: number) => {
-        if (isCurrency) return `€${v >= 1000 ? (v/1000).toFixed(1) + 'k' : v.toFixed(0)}`;
-        if (isPercent) return `${v.toFixed(1)}%`;
-        if (inverse) return `#${v.toFixed(1)}`;
-        return v.toLocaleString(undefined, { maximumFractionDigits: 1 });
-    };
-
-    return (
-        <div className="bg-white dark:bg-gray-900 p-4 rounded-xl border border-gray-100 dark:border-gray-800 shadow-sm flex items-center justify-between">
-            <div className="flex-1">
-                <p className="text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider mb-1">{label}</p>
-                <div className="flex items-baseline gap-3">
-                   <div className="text-right">
-                       <p className="text-sm font-semibold text-gray-500 dark:text-gray-400">A: {format(valA)}</p>
-                   </div>
-                   <div className="h-4 w-px bg-gray-200 dark:bg-gray-700"></div>
-                   <div className="text-left">
-                       <p className="text-lg font-bold text-gray-900 dark:text-white">B: {format(valB)}</p>
-                   </div>
-                </div>
-            </div>
-            <div className={`flex flex-col items-end ${isNeutral ? 'text-gray-400' : (isPositive ? 'text-green-600' : 'text-red-600')}`}>
-                {isNeutral ? <Minus size={20} /> : (isPositive ? <TrendingUp size={20} /> : <TrendingDown size={20} />)}
-                <span className="text-xs font-bold">{diff > 0 ? '+' : ''}{diff.toFixed(1)}%</span>
-            </div>
-        </div>
-    );
-};
-
 export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, options, viewMode }) => {
   const { t } = useLanguage();
   const [comparisonType, setComparisonType] = useState<SeasonComparisonMode | 'custom'>('opponent');
@@ -214,13 +175,6 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
 
   const dataA = useMemo(() => getFilteredData(fullData, filtersA, viewMode), [fullData, filtersA, viewMode]);
   const dataB = useMemo(() => getFilteredData(fullData, filtersB, viewMode), [fullData, filtersB, viewMode]);
-
-  const statsA = calculateKPIs(dataA);
-  const statsB = calculateKPIs(dataB);
-  
-  const chartData = [
-      { name: t('Total Revenue'), A: statsA?.totalRevenue || 0, B: statsB?.totalRevenue || 0 },
-  ];
 
   const updateFilter = (set: 'A'|'B', field: keyof FilterState, value: any) => {
       const setter = set === 'A' ? setFiltersA : setFiltersB;
@@ -241,7 +195,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
       const availTimes = useMemo(() => getAvailableOptions(fullData, filters, 'times'), [filters]);
 
       return (
-      <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-[calc(100vh-200px)] sticky top-6">
+      <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-80">
           <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
              <span className={`w-3 h-3 rounded-full ${label === 'A' ? 'bg-gray-400' : 'bg-red-600'}`}></span>
              <h3 className="font-bold text-gray-800 dark:text-white">{t('Scenario')} {label}</h3>
@@ -301,9 +255,9 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
            </div>
             {comparisonType === 'custom' && <button
               onClick={() => printComparisonReport('Custom ticketing comparison',
-                `${viewMode === 'total' ? 'Total' : 'GameDay'} view · A vs B`,
-                [{ label: describeFilters('Scenario A', filtersA), games: dataA },
-                  { label: describeFilters('Scenario B', filtersB), games: dataB }])}
+                `${viewMode === 'total' ? 'Total' : 'GameDay'} view · A vs B\n${describeFilters('Scenario A', filtersA)}\n${describeFilters('Scenario B', filtersB)}`,
+                [{ label: 'Scenario A', games: dataA },
+                  { label: 'Scenario B', games: dataB }], ['Scenario B'])}
               className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-sm font-semibold"
             ><Printer size={16} /> {t('Print / Save PDF')}</button>}
        </div>
@@ -326,51 +280,18 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
         </div>
 
         {comparisonType !== 'custom' ? <SeasonComparison fullData={fullData} mode={comparisonType} viewMode={viewMode} /> : (
-       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-           <div className="lg:col-span-1">
-               <FilterColumn label="A" filters={filtersA} setFilter={(f: keyof FilterState, v: any) => updateFilter('A', f, v)} />
-           </div>
-
-           <div className="lg:col-span-2 space-y-6">
-               {(!statsA || !statsB) ? (
-                   <div className="flex flex-col items-center justify-center h-full bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-10 text-center">
-                       <AlertCircle className="text-gray-300 dark:text-gray-600 mb-4" size={48} />
-                       <p className="text-gray-500 dark:text-gray-400">{t('Select filters to begin comparison.')}</p>
-                   </div>
-               ) : (
-                   <>
-                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                         <ComparisonMetric label={t("Total Revenue")} valA={statsA.totalRevenue} valB={statsB.totalRevenue} isCurrency />
-                         <ComparisonMetric label={t("Avg Revenue / Game")} valA={statsA.arpg} valB={statsB.arpg} isCurrency />
-                         <ComparisonMetric label={t("Avg Attendance")} valA={statsA.totalAttendance / (statsA.gameCount||1)} valB={statsB.totalAttendance / (statsB.gameCount||1)} />
-                         <ComparisonMetric label={t("Yield (ATP)")} valA={statsA.yield_atp} valB={statsB.yield_atp} isCurrency />
-                         <ComparisonMetric label={t("RevPAS")} valA={statsA.revPas} valB={statsB.revPas} isCurrency />
-                         <ComparisonMetric label={t("Load Factor")} valA={statsA.occupancy} valB={statsB.occupancy} isPercent />
-                     </div>
-                     
-                     <div className="bg-white dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                         <h4 className="font-bold text-gray-800 dark:text-white mb-4">{t('Revenue Comparison (Total)')}</h4>
-                         <div className="h-40">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={chartData} layout="vertical" margin={{top: 0, left: 0, right: 30, bottom: 0}}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                                    <XAxis type="number" tickFormatter={(v) => `€${v/1000}k`} />
-                                    <YAxis type="category" dataKey="name" hide width={10} />
-                                    <Tooltip formatter={(v:number) => `€${v.toLocaleString()}`} />
-                                    <Legend />
-                                    <Bar dataKey="A" name={t("Scenario A")} fill="#9CA3AF" radius={[0, 4, 4, 0]} barSize={20} />
-                                    <Bar dataKey="B" name={t("Scenario B")} fill="#DC2626" radius={[0, 4, 4, 0]} barSize={20} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                         </div>
-                     </div>
-                   </>
-               )}
-           </div>
-
-           <div className="lg:col-span-1">
-               <FilterColumn label="B" filters={filtersB} setFilter={(f: keyof FilterState, v: any) => updateFilter('B', f, v)} />
-           </div>
+        <div className="space-y-5">
+          <ComparisonQuadrant groups={[{ label: 'Scenario A', games: dataA }, { label: 'Scenario B', games: dataB }]} highlightLabels={['Scenario B']} />
+          <p className="text-xs text-gray-500">— means no matching game or unavailable metric, not zero.</p>
+          <details className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            <summary className="cursor-pointer px-5 py-4 font-semibold text-sm text-gray-800 dark:text-gray-100">
+              {t('Custom')} · A: {filtersA.seasons.join(', ')} · B: {filtersB.seasons.join(', ')} — Configure scenarios
+            </summary>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 pt-0">
+              <FilterColumn label="A" filters={filtersA} setFilter={(f: keyof FilterState, v: any) => updateFilter('A', f, v)} />
+              <FilterColumn label="B" filters={filtersB} setFilter={(f: keyof FilterState, v: any) => updateFilter('B', f, v)} />
+            </div>
+          </details>
        </div>
         )}
     </div>
