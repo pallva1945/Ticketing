@@ -3,15 +3,17 @@ import { Printer } from 'lucide-react';
 import { GameData, SalesChannel } from '../types';
 import { printComparisonReport, ComparisonReportGroup } from './comparisonReport';
 import { ComparisonQuadrant } from './ComparisonQuadrant';
+import { ComparisonMetricKey } from './comparisonMetrics';
 import { useLanguage } from '../contexts/LanguageContext';
 import { FIXED_CAPACITY_25_26 } from '../constants';
 
-export type SeasonComparisonMode = 'opponent' | 'week' | 'ytd';
+export type SeasonComparisonMode = 'opponent' | 'week' | 'ytd' | 'tier';
 
 interface Props {
   fullData: GameData[];
   mode: SeasonComparisonMode;
   viewMode: 'total' | 'gameday';
+  selectedMetrics: ComparisonMetricKey[];
 }
 
 const gameTimestamp = (date: string): number => {
@@ -33,8 +35,9 @@ const compareGame = (game: GameData, viewMode: Props['viewMode']): GameData => {
   const sales = viewMode === 'gameday'
     ? game.salesBreakdown.filter(s => [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel))
     : game.salesBreakdown;
-  const capacities = Object.entries(game.zoneCapacities || {}).reduce((sum, [zone, capacity]) =>
-    sum + (viewMode === 'gameday' ? Math.max(0, capacity - (FIXED_CAPACITY_25_26[zone] || 0)) : capacity), 0);
+  const zoneCapacities = Object.fromEntries(Object.entries(game.zoneCapacities || {}).map(([zone, capacity]) =>
+    [zone, viewMode === 'gameday' ? Math.max(0, capacity - (FIXED_CAPACITY_25_26[zone] || 0)) : capacity]));
+  const capacities = Object.values(zoneCapacities).reduce((sum, capacity) => sum + capacity, 0);
   return {
     ...game,
     salesBreakdown: sales,
@@ -43,21 +46,23 @@ const compareGame = (game: GameData, viewMode: Props['viewMode']): GameData => {
     attendance: hasBreakdown ? sales.reduce((sum, item) => sum + item.quantity, 0) :
       (viewMode === 'total' ? game.attendance : 0),
     capacity: Object.keys(game.zoneCapacities || {}).length ? capacities : game.capacity,
+    zoneCapacities,
   };
 };
 
-export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode }) => {
+export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode, selectedMetrics }) => {
   const { t } = useLanguage();
   const leagues = useMemo(() => Array.from(new Set(fullData.map(g => g.league))).sort(), [fullData]);
   const [league, setLeague] = useState('LBA');
   const [opponent, setOpponent] = useState('');
   const [secondOpponent, setSecondOpponent] = useState('');
+  const [firstTier, setFirstTier] = useState<number | null>(null);
   const [week, setWeek] = useState(1);
 
   const seasons = useMemo(() =>
     Array.from(new Set(fullData.filter(g => g.league === league).map(g => g.season)))
-      .sort((a, b) => seasonOrder(b) - seasonOrder(a)).slice(0, 4),
-    [fullData, league]
+      .sort((a, b) => seasonOrder(b) - seasonOrder(a)).slice(0, mode === 'tier' ? undefined : 4),
+    [fullData, league, mode]
   );
   const currentSeason = seasons[0];
   const seasonGames = useMemo(() => seasons.map(season => ({
@@ -69,6 +74,11 @@ export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode }) 
     Array.from(new Set(seasonGames.flatMap(s => s.games.map(g => g.opponent)))).sort(),
     [seasonGames]
   );
+  const tiers = useMemo(() =>
+    Array.from(new Set(seasonGames.flatMap(s => s.games.map(g => g.tier)))).sort((a, b) => a - b),
+    [seasonGames]
+  );
+  const selectedFirstTier = firstTier !== null && tiers.includes(firstTier) ? firstTier : tiers[0];
   const currentOpponents = seasonGames[0]?.games.map(g => g.opponent) || [];
   const selectedOpponent = opponents.includes(opponent) ? opponent : (currentOpponents[0] || opponents[0] || '');
   const selectedSecond = secondOpponent !== selectedOpponent && opponents.includes(secondOpponent) ? secondOpponent : '';
@@ -78,24 +88,30 @@ export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode }) 
 
   const groups: ComparisonReportGroup[] = useMemo(() => {
     if (mode === 'ytd' && currentCount === 0) return [];
+    if (mode === 'tier' && selectedFirstTier === undefined) return [];
     const chosen = mode === 'opponent'
       ? [selectedOpponent, ...(selectedSecond ? [selectedSecond] : [])].filter(Boolean)
+      : mode === 'tier' ? [String(selectedFirstTier)]
       : [''];
     return seasonGames.flatMap(({ season, games }) => chosen.map(name => ({
       label: mode === 'opponent' ? `${season} · ${name}` : season,
       games: (mode === 'opponent' ? games.filter(g => g.opponent === name) :
+        mode === 'tier' ? games.filter(g => g.tier === Number(name)) :
         mode === 'week' ? games.slice(selectedWeek - 1, selectedWeek) :
         games.slice(0, currentCount)).filter(g => viewMode === 'total' || g.salesBreakdown.length > 0)
         .map(g => compareGame(g, viewMode)),
     })));
-  }, [seasonGames, mode, selectedOpponent, selectedSecond, selectedWeek, currentCount, viewMode]);
+  }, [seasonGames, mode, selectedOpponent, selectedSecond, selectedFirstTier, selectedWeek, currentCount, viewMode]);
 
   const description = mode === 'opponent'
     ? `${selectedOpponent}${selectedSecond ? ` vs ${selectedSecond}` : ''} · ${league} · ${viewMode === 'total' ? 'Total' : 'GameDay'}`
+    : mode === 'tier'
+      ? `Tier ${selectedFirstTier ?? '—'} across seasons · per-game averages · ${league} · ${viewMode === 'total' ? 'Total' : 'GameDay'}`
     : mode === 'week'
       ? `Home game week ${selectedWeek} in each season · ${league} · ${viewMode === 'total' ? 'Total' : 'GameDay'}`
       : `First ${currentCount} home ${currentCount === 1 ? 'game' : 'games'} in each season · ${league} · ${viewMode === 'total' ? 'Total' : 'GameDay'}`;
-  const title = mode === 'opponent' ? 'Opponent comparison' : mode === 'week' ? 'Week-by-week comparison' : 'Season to date comparison';
+  const title = mode === 'opponent' ? 'Opponent comparison' : mode === 'tier' ? 'Tier over the years' :
+    mode === 'week' ? 'Week-by-week comparison' : 'Season to date comparison';
   const currentLabels = groups.filter(group =>
     group.label === currentSeason || group.label.startsWith(`${currentSeason} · `)).map(group => group.label);
 
@@ -105,7 +121,7 @@ export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode }) 
         <div className="flex flex-wrap gap-4 items-end">
           <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
             {t('League')}
-            <select value={league} onChange={event => { setLeague(event.target.value); setOpponent(''); setSecondOpponent(''); setWeek(1); }}
+            <select value={league} onChange={event => { setLeague(event.target.value); setOpponent(''); setSecondOpponent(''); setFirstTier(null); setWeek(1); }}
               className="block mt-1 min-w-32 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm">
               {leagues.map(value => <option key={value} value={value}>{value}</option>)}
             </select>
@@ -127,6 +143,15 @@ export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode }) 
               </select>
             </label>
           </>}
+          {mode === 'tier' && <>
+            <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+              {t('Tier')}
+              <select value={selectedFirstTier ?? ''} onChange={event => setFirstTier(Number(event.target.value))}
+                className="block mt-1 min-w-32 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm">
+                {tiers.map(value => <option key={value} value={value}>Tier {value}</option>)}
+              </select>
+            </label>
+          </>}
           {mode === 'week' && <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
             Home game week
             <select value={selectedWeek} onChange={event => setWeek(Number(event.target.value))}
@@ -135,7 +160,7 @@ export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode }) 
             </select>
           </label>}
         </div>
-        <button onClick={() => printComparisonReport(title, description, groups, currentLabels)} disabled={groups.length === 0}
+        <button onClick={() => printComparisonReport(title, description, groups, currentLabels, selectedMetrics, true, mode === 'tier')} disabled={groups.length === 0}
           className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-sm font-semibold disabled:opacity-50">
           <Printer size={16} /> {t('Print / Save PDF')}
         </button>
@@ -144,16 +169,17 @@ export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode }) 
       <div className="text-sm text-gray-600 dark:text-gray-400">
         <strong className="text-gray-900 dark:text-white">{description}</strong>
         <span className="block mt-1">
-          {mode === 'week' ? 'Weeks follow the chronological order of home league games within each season.' :
+          {mode === 'tier' ? 'The selected tier is compared with the same tier in earlier seasons. Volume metrics are averaged per matching game; rates and yield use all matching tickets.' :
+            mode === 'week' ? 'Weeks follow the chronological order of home league games within each season.' :
             mode === 'ytd' ? 'YTD aligns prior seasons to the number of games played this season, not their full-season totals.' :
             'Select one opponent to compare the same fixture across seasons, or add a second opponent.'}
         </span>
       </div>
 
       {groups.length === 0 ? <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-10 text-center text-gray-500">
-        No games are available for this comparison yet.
+        {mode === 'tier' && tiers.length === 0 ? 'No tiers are available in this league.' : 'No games are available for this comparison yet.'}
       </div> : <>
-        <ComparisonQuadrant groups={groups} highlightLabels={currentLabels} />
+        <ComparisonQuadrant groups={groups} highlightLabels={currentLabels} selectedMetrics={selectedMetrics} showTrend perGame={mode === 'tier'} />
         {mode !== 'ytd' && <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-5 py-4">
           <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">Included fixtures</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 gap-y-1 text-xs text-gray-600 dark:text-gray-400">

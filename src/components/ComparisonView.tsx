@@ -7,6 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { SeasonComparison, SeasonComparisonMode } from './SeasonComparison';
 import { printComparisonReport } from './comparisonReport';
 import { ComparisonQuadrant } from './ComparisonQuadrant';
+import { COMPARISON_METRICS, ComparisonMetricKey } from './comparisonMetrics';
 
 interface ComparisonViewProps {
   fullData: GameData[];
@@ -84,6 +85,11 @@ const getFilteredData = (allGames: GameData[], filters: FilterState, viewMode: '
       if (filters.ignoreOspiti) {
           delete filteredZoneCapacities[TicketZone.OSPITI];
       }
+       if (!filters.zones.includes('All')) {
+           Object.keys(filteredZoneCapacities).forEach(z => {
+               if (!filters.zones.includes(z)) delete filteredZoneCapacities[z];
+           });
+       }
 
       if (viewMode === 'gameday') {
           Object.keys(filteredZoneCapacities).forEach(z => {
@@ -163,6 +169,27 @@ const getAvailableOptions = (allGames: GameData[], currentFilters: FilterState, 
 export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, options, viewMode }) => {
   const { t } = useLanguage();
   const [comparisonType, setComparisonType] = useState<SeasonComparisonMode | 'custom'>('opponent');
+  const [metricSlots, setMetricSlots] = useState<ComparisonMetricKey[]>(() => {
+    const all = COMPARISON_METRICS.map(metric => metric.key);
+    const defaults = ['revenue', 'attendance', 'yield', 'loadFactor'];
+    try {
+      const stored = JSON.parse(window.localStorage.getItem('ticketing-comparison-metrics') || 'null');
+      const valid = Array.isArray(stored)
+        ? Array.from({ length: 4 }, (_, index) => all.includes(stored[index]) ? stored[index] : '')
+        : [];
+      return valid.some(Boolean) ? valid : defaults;
+    } catch { return defaults; }
+  });
+  const selectedMetrics = metricSlots.filter(Boolean);
+  const setMetricSlot = (index: number, key: ComparisonMetricKey) => {
+    setMetricSlots(current => {
+      const next = [...current];
+      next[index] = key;
+      if (!next.some(Boolean)) return current;
+      try { window.localStorage.setItem('ticketing-comparison-metrics', JSON.stringify(next)); } catch { /* storage may be unavailable */ }
+      return next;
+    });
+  };
   const [filtersA, setFiltersA] = useState<FilterState>({
      ...INITIAL_FILTERS,
      seasons: [options.seasons.length > 1 ? options.seasons[1] : options.seasons[0]], 
@@ -257,7 +284,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
               onClick={() => printComparisonReport('Custom ticketing comparison',
                 `${viewMode === 'total' ? 'Total' : 'GameDay'} view · A vs B\n${describeFilters('Scenario A', filtersA)}\n${describeFilters('Scenario B', filtersB)}`,
                 [{ label: 'Scenario A', games: dataA },
-                  { label: 'Scenario B', games: dataB }], ['Scenario B'])}
+                  { label: 'Scenario B', games: dataB }], ['Scenario B'], selectedMetrics)}
               className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-sm font-semibold"
             ><Printer size={16} /> {t('Print / Save PDF')}</button>}
        </div>
@@ -265,6 +292,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="Comparison type">
           {([
             ['opponent', 'Opponent vs opponent'],
+            ['tier', 'Tier over the years'],
             ['week', 'Week vs week'],
             ['ytd', 'Season to date'],
             ['custom', 'Custom'],
@@ -279,9 +307,27 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
           ))}
         </div>
 
-        {comparisonType !== 'custom' ? <SeasonComparison fullData={fullData} mode={comparisonType} viewMode={viewMode} /> : (
+        <div className="rounded-xl border border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-900">
+          <span className="mb-3 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Metrics to display</span>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {metricSlots.map((key, index) => <label key={index} className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+              Chart {index + 1}
+              <select value={key} onChange={event => setMetricSlot(index, event.target.value)}
+                className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+                <option value="">Hide chart</option>
+                {[...new Set(COMPARISON_METRICS.map(metric => metric.category))].map(category =>
+                  <optgroup key={category} label={category}>
+                    {COMPARISON_METRICS.filter(metric => metric.category === category)
+                      .map(metric => <option key={metric.key} value={metric.key}>{metric.title}</option>)}
+                  </optgroup>)}
+              </select>
+            </label>)}
+          </div>
+        </div>
+
+        {comparisonType !== 'custom' ? <SeasonComparison fullData={fullData} mode={comparisonType} viewMode={viewMode} selectedMetrics={selectedMetrics} /> : (
         <div className="space-y-5">
-          <ComparisonQuadrant groups={[{ label: 'Scenario A', games: dataA }, { label: 'Scenario B', games: dataB }]} highlightLabels={['Scenario B']} />
+          <ComparisonQuadrant groups={[{ label: 'Scenario A', games: dataA }, { label: 'Scenario B', games: dataB }]} highlightLabels={['Scenario B']} selectedMetrics={selectedMetrics} />
           <p className="text-xs text-gray-500">— means no matching game or unavailable metric, not zero.</p>
           <details className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <summary className="cursor-pointer px-5 py-4 font-semibold text-sm text-gray-800 dark:text-gray-100">
