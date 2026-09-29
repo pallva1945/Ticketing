@@ -4,8 +4,9 @@ import { MultiSelect } from './MultiSelect';
 import { ArrowLeftRight, UserX, Printer } from 'lucide-react';
 import { getFixedCapacityForSeason } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
-import { SeasonComparison, SeasonComparisonMode } from './SeasonComparison';
-import { printComparisonReport } from './comparisonReport';
+import { SeasonComparison, SeasonComparisonMode, SeasonComparisonSelection } from './SeasonComparison';
+import { ComparisonPrintDialog } from './ComparisonPrintDialog';
+import { ComparisonReport } from './comparisonReport';
 import { ComparisonQuadrant } from './ComparisonQuadrant';
 import { COMPARISON_METRICS, ComparisonMetricKey } from './comparisonMetrics';
 
@@ -169,6 +170,10 @@ const getAvailableOptions = (allGames: GameData[], currentFilters: FilterState, 
 export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, options, viewMode }) => {
   const { t } = useLanguage();
   const [comparisonType, setComparisonType] = useState<SeasonComparisonMode | 'custom'>('opponent');
+  const [seasonSelection, setSeasonSelection] = useState<SeasonComparisonSelection>({
+    league: 'LBA', opponent: '', secondOpponent: '', firstTier: null, week: 1,
+  });
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [metricSlots, setMetricSlots] = useState<ComparisonMetricKey[]>(() => {
     const all = COMPARISON_METRICS.map(metric => metric.key);
     const defaults = ['revenue', 'attendance', 'yield', 'loadFactor'];
@@ -211,6 +216,12 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
     `${label}: ${filters.seasons.join(', ')} · ${filters.leagues.join(', ')} · ${filters.opponents.join(', ')}` +
     ` · zones ${filters.zones.join(', ')}${filters.ignoreOspiti ? ' (no guests)' : ''}` +
     ` · tiers ${filters.tiers.join(', ')} · dates ${filters.dates.join(', ')} · times ${filters.times.join(', ')}`;
+  const customReport: ComparisonReport = {
+    title: 'Custom ticketing comparison',
+    subtitle: `${viewMode === 'total' ? 'Total' : 'GameDay'} view · A vs B\n${describeFilters('Scenario A', filtersA)}\n${describeFilters('Scenario B', filtersB)}`,
+    groups: [{ label: 'Scenario A', games: dataA }, { label: 'Scenario B', games: dataB }],
+    highlightLabels: ['Scenario B'], showTrend: false, perGame: false,
+  };
 
   const FilterColumn = ({ label, filters, setFilter }: { label: string, filters: FilterState, setFilter: (f: keyof FilterState, v: any) => void }) => {
       const availSeasons = useMemo(() => getAvailableOptions(fullData, filters, 'seasons'), [filters]);
@@ -280,13 +291,9 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
                     : t('Analyze performance variance between two distinct datasets.')}
                </p>
            </div>
-            {comparisonType === 'custom' && <button
-              onClick={() => printComparisonReport('Custom ticketing comparison',
-                `${viewMode === 'total' ? 'Total' : 'GameDay'} view · A vs B\n${describeFilters('Scenario A', filtersA)}\n${describeFilters('Scenario B', filtersB)}`,
-                [{ label: 'Scenario A', games: dataA },
-                  { label: 'Scenario B', games: dataB }], ['Scenario B'], selectedMetrics)}
+             <button onClick={() => setShowPrintDialog(true)}
               className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-sm font-semibold"
-            ><Printer size={16} /> {t('Print / Save PDF')}</button>}
+             ><Printer size={16} /> {t('Print / Save PDF')}</button>
        </div>
 
         <div className="flex flex-wrap gap-2" role="tablist" aria-label="Comparison type">
@@ -325,7 +332,8 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
           </div>
         </div>
 
-        {comparisonType !== 'custom' ? <SeasonComparison fullData={fullData} mode={comparisonType} viewMode={viewMode} selectedMetrics={selectedMetrics} /> : (
+         {comparisonType !== 'custom' ? <SeasonComparison fullData={fullData} mode={comparisonType} viewMode={viewMode}
+           selectedMetrics={selectedMetrics} selection={seasonSelection} onSelectionChange={setSeasonSelection} /> : (
         <div className="space-y-5">
           <ComparisonQuadrant groups={[{ label: 'Scenario A', games: dataA }, { label: 'Scenario B', games: dataB }]} highlightLabels={['Scenario B']} selectedMetrics={selectedMetrics} />
           <p className="text-xs text-gray-500">— means no matching game or unavailable metric, not zero.</p>
@@ -340,6 +348,9 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
           </details>
        </div>
         )}
+         {showPrintDialog && <ComparisonPrintDialog fullData={fullData} viewMode={viewMode}
+           selectedMetrics={selectedMetrics} initialMode={comparisonType} initialSelection={seasonSelection}
+           customReport={customReport} onClose={() => setShowPrintDialog(false)} />}
     </div>
   );
 };

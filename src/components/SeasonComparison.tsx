@@ -1,7 +1,6 @@
-import React, { useMemo, useState } from 'react';
-import { Printer } from 'lucide-react';
+import React from 'react';
 import { GameData, SalesChannel } from '../types';
-import { printComparisonReport, ComparisonReportGroup } from './comparisonReport';
+import { ComparisonReportGroup } from './comparisonReport';
 import { ComparisonQuadrant } from './ComparisonQuadrant';
 import { ComparisonMetricKey } from './comparisonMetrics';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -9,11 +8,21 @@ import { getFixedCapacityForSeason } from '../constants';
 
 export type SeasonComparisonMode = 'opponent' | 'week' | 'ytd' | 'tier';
 
+export interface SeasonComparisonSelection {
+  league: string;
+  opponent: string;
+  secondOpponent: string;
+  firstTier: number | null;
+  week: number;
+}
+
 interface Props {
   fullData: GameData[];
   mode: SeasonComparisonMode;
   viewMode: 'total' | 'gameday';
   selectedMetrics: ComparisonMetricKey[];
+  selection: SeasonComparisonSelection;
+  onSelectionChange: (selection: SeasonComparisonSelection) => void;
 }
 
 const gameTimestamp = (date: string): number => {
@@ -50,50 +59,38 @@ const compareGame = (game: GameData, viewMode: Props['viewMode']): GameData => {
   };
 };
 
-export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode, selectedMetrics }) => {
-  const { t } = useLanguage();
-  const leagues = useMemo(() => Array.from(new Set(fullData.map(g => g.league))).sort(), [fullData]);
-  const [league, setLeague] = useState('LBA');
-  const [opponent, setOpponent] = useState('');
-  const [secondOpponent, setSecondOpponent] = useState('');
-  const [firstTier, setFirstTier] = useState<number | null>(null);
-  const [week, setWeek] = useState(1);
-
-  const seasons = useMemo(() =>
+export function buildSeasonComparison(
+  fullData: GameData[], mode: SeasonComparisonMode, viewMode: Props['viewMode'],
+  selection: SeasonComparisonSelection,
+) {
+  const leagues = Array.from(new Set(fullData.map(g => g.league))).sort();
+  const league = leagues.includes(selection.league) ? selection.league : (leagues[0] || 'LBA');
+  const seasons =
     Array.from(new Set(fullData.filter(g => g.league === league).map(g => g.season)))
-      .sort((a, b) => seasonOrder(b) - seasonOrder(a)).slice(0, mode === 'tier' ? undefined : 4),
-    [fullData, league, mode]
-  );
+      .sort((a, b) => seasonOrder(b) - seasonOrder(a)).slice(0, mode === 'tier' ? undefined : 4);
   const currentSeason = seasons[0];
-  const seasonGames = useMemo(() => seasons.map(season => ({
+  const seasonGames = seasons.map(season => ({
     season,
     games: fullData.filter(g => g.league === league && g.season === season)
       .sort((a, b) => gameTimestamp(a.date) - gameTimestamp(b.date) || a.id.localeCompare(b.id)),
-  })), [fullData, league, seasons]);
-  const opponents = useMemo(() =>
-    Array.from(new Set(seasonGames.flatMap(s => s.games.map(g => g.opponent)))).sort(),
-    [seasonGames]
-  );
-  const tiers = useMemo(() =>
-    Array.from(new Set(seasonGames.flatMap(s => s.games.map(g => g.tier)))).sort((a, b) => a - b),
-    [seasonGames]
-  );
-  const selectedFirstTier = firstTier !== null && tiers.includes(firstTier) ? firstTier : tiers[0];
+  }));
+  const opponents = Array.from(new Set(seasonGames.flatMap(s => s.games.map(g => g.opponent)))).sort();
+  const tiers = Array.from(new Set(seasonGames.flatMap(s => s.games.map(g => g.tier)))).sort((a, b) => a - b);
+  const selectedFirstTier = selection.firstTier !== null && tiers.includes(selection.firstTier) ? selection.firstTier : tiers[0];
   const currentOpponents = seasonGames[0]?.games.map(g => g.opponent) || [];
-  const selectedOpponent = opponents.includes(opponent) ? opponent : (currentOpponents[0] || opponents[0] || '');
-  const selectedSecond = secondOpponent !== selectedOpponent && opponents.includes(secondOpponent) ? secondOpponent : '';
+  const selectedOpponent = opponents.includes(selection.opponent) ? selection.opponent : (currentOpponents[0] || opponents[0] || '');
+  const selectedSecond = selection.secondOpponent !== selectedOpponent && opponents.includes(selection.secondOpponent) ? selection.secondOpponent : '';
   const currentCount = seasonGames[0]?.games.length || 0;
   const maxWeek = Math.max(1, ...seasonGames.map(s => s.games.length));
-  const selectedWeek = Math.min(week, maxWeek);
+  const selectedWeek = Math.max(1, Math.min(selection.week, maxWeek));
 
-  const groups: ComparisonReportGroup[] = useMemo(() => {
-    if (mode === 'ytd' && currentCount === 0) return [];
-    if (mode === 'tier' && selectedFirstTier === undefined) return [];
-    const chosen = mode === 'opponent'
+  const chosen = mode === 'opponent'
       ? [selectedOpponent, ...(selectedSecond ? [selectedSecond] : [])].filter(Boolean)
       : mode === 'tier' ? [String(selectedFirstTier)]
       : [''];
-    return seasonGames.flatMap(({ season, games }) => chosen.map(name => ({
+  const groups: ComparisonReportGroup[] = ((mode === 'ytd' && currentCount === 0) ||
+    (mode === 'tier' && selectedFirstTier === undefined)) ? [] :
+    seasonGames.flatMap(({ season, games }) => chosen.map(name => ({
       label: mode === 'opponent' ? `${season} · ${name}` : season,
       games: (mode === 'opponent' ? games.filter(g => g.opponent === name) :
         mode === 'tier' ? games.filter(g => g.tier === Number(name)) :
@@ -101,7 +98,6 @@ export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode, se
         games.slice(0, currentCount)).filter(g => viewMode === 'total' || g.salesBreakdown.length > 0)
         .map(g => compareGame(g, viewMode)),
     })));
-  }, [seasonGames, mode, selectedOpponent, selectedSecond, selectedFirstTier, selectedWeek, currentCount, viewMode]);
 
   const description = mode === 'opponent'
     ? `${selectedOpponent}${selectedSecond ? ` vs ${selectedSecond}` : ''} · ${league} · ${viewMode === 'total' ? 'Total' : 'GameDay'}`
@@ -115,13 +111,27 @@ export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode, se
   const currentLabels = groups.filter(group =>
     group.label === currentSeason || group.label.startsWith(`${currentSeason} · `)).map(group => group.label);
 
+  return { leagues, league, opponents, tiers, selectedOpponent, selectedSecond, selectedFirstTier,
+    maxWeek, selectedWeek, currentCount, groups, description, title, currentLabels };
+}
+
+export const SeasonComparison: React.FC<Props> = ({
+  fullData, mode, viewMode, selectedMetrics, selection, onSelectionChange,
+}) => {
+  const { t } = useLanguage();
+  const { leagues, league, opponents, tiers, selectedOpponent, selectedSecond, selectedFirstTier,
+    maxWeek, selectedWeek, groups, description, currentLabels } =
+    React.useMemo(() => buildSeasonComparison(fullData, mode, viewMode, selection),
+      [fullData, mode, viewMode, selection]);
+  const update = (changes: Partial<SeasonComparisonSelection>) => onSelectionChange({ ...selection, ...changes });
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-4 rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 p-5">
         <div className="flex flex-wrap gap-4 items-end">
           <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
             {t('League')}
-            <select value={league} onChange={event => { setLeague(event.target.value); setOpponent(''); setSecondOpponent(''); setFirstTier(null); setWeek(1); }}
+            <select value={league} onChange={event => update({ league: event.target.value, opponent: '', secondOpponent: '', firstTier: null, week: 1 })}
               className="block mt-1 min-w-32 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm">
               {leagues.map(value => <option key={value} value={value}>{value}</option>)}
             </select>
@@ -129,14 +139,14 @@ export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode, se
           {mode === 'opponent' && <>
             <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
               {t('Opponent')}
-              <select value={selectedOpponent} onChange={event => setOpponent(event.target.value)}
+              <select value={selectedOpponent} onChange={event => update({ opponent: event.target.value, secondOpponent: '' })}
                 className="block mt-1 min-w-40 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm">
                 {opponents.map(value => <option key={value} value={value}>{value}</option>)}
               </select>
             </label>
             <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
               Compare with (optional)
-              <select value={selectedSecond} onChange={event => setSecondOpponent(event.target.value)}
+              <select value={selectedSecond} onChange={event => update({ secondOpponent: event.target.value })}
                 className="block mt-1 min-w-40 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm">
                 <option value="">Same fixture across seasons</option>
                 {opponents.filter(value => value !== selectedOpponent).map(value => <option key={value} value={value}>{value}</option>)}
@@ -146,7 +156,7 @@ export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode, se
           {mode === 'tier' && <>
             <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
               {t('Tier')}
-              <select value={selectedFirstTier ?? ''} onChange={event => setFirstTier(Number(event.target.value))}
+              <select value={selectedFirstTier ?? ''} onChange={event => update({ firstTier: Number(event.target.value) })}
                 className="block mt-1 min-w-32 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm">
                 {tiers.map(value => <option key={value} value={value}>Tier {value}</option>)}
               </select>
@@ -154,16 +164,12 @@ export const SeasonComparison: React.FC<Props> = ({ fullData, mode, viewMode, se
           </>}
           {mode === 'week' && <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
             Home game week
-            <select value={selectedWeek} onChange={event => setWeek(Number(event.target.value))}
+           <select value={selectedWeek} onChange={event => update({ week: Number(event.target.value) })}
               className="block mt-1 min-w-32 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm">
               {Array.from({ length: maxWeek }, (_, index) => <option key={index} value={index + 1}>W{index + 1}</option>)}
             </select>
           </label>}
         </div>
-        <button onClick={() => printComparisonReport(title, description, groups, currentLabels, selectedMetrics, true, mode === 'tier')} disabled={groups.length === 0}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-sm font-semibold disabled:opacity-50">
-          <Printer size={16} /> {t('Print / Save PDF')}
-        </button>
       </div>
 
       <div className="text-sm text-gray-600 dark:text-gray-400">
