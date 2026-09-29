@@ -25,14 +25,14 @@ const escapeHtml = (value: string): string =>
 const seriesName = (label: string) => label.includes(' · ') ? label.split(' · ').slice(1).join(' · ') : 'Season trend';
 
 const opponentLogos: Record<string, string> = {
-  Bologna: 'bologna.png', Brescia: 'brescia.png', Brindisi: 'brindisi.png',
+  Bahcesehir: 'bahcesehir.png', Bologna: 'bologna.png', Brescia: 'brescia.png', Brindisi: 'brindisi.png',
   Cantù: 'cantu.png', Chemnitz: 'chemnitz.jpg', Cremona: 'cremona.png',
   'CSM Oradea': 'csm-oradea.png', Gottingen: 'gottingen.jpg',
-  Keravnos: 'keravnos.svg', Milano: 'milano.png', Napoli: 'napoli.png',
+  Keravnos: 'keravnos.svg', Milano: 'milano.png', Napoli: 'napoli.png', Nymburk: 'nymburk.svg',
   Pesaro: 'pesaro.jpg', Pistoia: 'pistoia.png', 'Reggio Emilia': 'reggio-emilia.png',
   Sassari: 'sassari.png', Scafati: 'scafati.png', Tortona: 'tortona.png',
-  Trento: 'trento.png', Treviso: 'treviso.png', Trieste: 'trieste.png',
-  Udine: 'udine.png', Venezia: 'venezia.png', 'ZZ Leiden': 'zz-leiden.png',
+  Trapani: 'trapani.png', Trento: 'trento.png', Treviso: 'treviso.png', Trieste: 'trieste.png',
+  'TSU Tbilisi': 'tsu-tbilisi.png', Udine: 'udine.png', Venezia: 'venezia.png', 'ZZ Leiden': 'zz-leiden.png',
 };
 
 export const opponentLogoSrc = (name: string): string | null =>
@@ -67,7 +67,7 @@ export function printComparisonReports(reports: ComparisonReport[], selectedMetr
     : leagueCode ? `<span class="league-code">${escapeHtml(leagueCode)}</span>` : '';
   const opponentBadges = opponents.map(name => {
     const logo = opponentLogoSrc(name);
-    const image = logo ? `<img class="crest" src="${logo}" alt="${escapeHtml(name)} logo">` : '';
+    const image = logo ? `<img class="crest" src="${logo}" alt="" onerror="this.remove()">` : '';
     return `<div class="opponent">${image}<span>${escapeHtml(name)}</span></div>`;
   }).join('');
   const ordered = showTrend ? [...groups].reverse() : groups;
