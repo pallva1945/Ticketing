@@ -35,14 +35,18 @@ const opponentLogos: Record<string, string> = {
   'TSU Tbilisi': 'tsu-tbilisi.png', Udine: 'udine.png', Venezia: 'venezia.png', 'ZZ Leiden': 'zz-leiden.png',
 };
 
+const leagueLogos: Record<string, string> = {
+  LBA: 'lba.svg',
+  BCL: 'bcl.png',
+  FEC: 'fec.png',
+};
+
 export const opponentLogoSrc = (name: string): string | null =>
   opponentLogos[name] ? `/report-logos/${opponentLogos[name]}` : null;
 
 export const leagueLogoSrc = (league: string): string | null => {
   const code = league.trim().toUpperCase();
-  return code === 'LBA' ? '/report-logos/lba.svg'
-    : code === 'BCL' ? '/report-logos/bcl.png'
-    : code === 'FEC' ? '/report-logos/fec.png' : null;
+  return leagueLogos[code] ? `/report-logos/${leagueLogos[code]}` : null;
 };
 
 export function printComparisonReports(reports: ComparisonReport[], selectedMetrics: ComparisonMetricKey[]) {

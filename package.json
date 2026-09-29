@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "concurrently \"npm run server\" \"vite\"",
     "server": "npx tsx server/index.ts",
-    "build": "tsc && vite build",
+    "build": "npm run check:report-logos && tsc && vite build",
+    "check:report-logos": "node --test scripts/check-report-logos.test.mjs",
     "start": "NODE_ENV=production npx tsx server/index.ts",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
