@@ -37,6 +37,11 @@ const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const isProduction = process.env.NODE_ENV === 'production';
 
+// The detailed English proposal supersedes the older landing-page draft.
+app.get('/campus/Landing.html', (_req, res) => {
+  res.redirect(301, '/campus/index_english.html');
+});
+
 app.use((req, res, next) => {
   const host = req.hostname || req.headers.host || '';
   if (process.env.NODE_ENV !== 'development' && host.includes('replit.app')) {

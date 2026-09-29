@@ -4,3 +4,4 @@
 - [Post-merge dependency safety](post-merge-dependencies.md) — avoid unconditional clean installs when the lockfile contains firewall-blocked packages.
 - [Tier-over-years meaning](tier-over-years.md) — compare the same tier across seasons using per-game volume averages, not two different tiers side by side.
 - [GameDay capacity meaning](gameday-capacity.md) — 26/27 zone figures are final available GameDay seats; do not subtract additional corporate seats from them.
+- [Campus English proposal preference](campus-proposal-seo.md) — prefer the detailed English proposal; redirect the older draft rather than canonicalizing different content.
