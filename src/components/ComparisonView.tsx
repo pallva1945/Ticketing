@@ -226,6 +226,10 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
     subtitle: `${viewMode === 'total' ? 'Total' : 'GameDay'} view · A vs B\n${describeFilters('Scenario A', filtersA)}\n${describeFilters('Scenario B', filtersB)}`,
     groups: [{ label: 'Scenario A', games: dataA }, { label: 'Scenario B', games: dataB }],
     highlightLabels: ['Scenario B'], showTrend: false, perGame: false,
+    league: [...new Set([...dataA, ...dataB].map(game => game.league))].length === 1
+      ? [...dataA, ...dataB][0]?.league : undefined,
+    opponents: [...new Set([...dataA, ...dataB].map(game => game.opponent))].length === 1
+      ? [[...dataA, ...dataB][0]?.opponent].filter(Boolean) : [],
   };
 
   const FilterColumn = ({ label, filters, setFilter }: { label: string, filters: FilterState, setFilter: (f: keyof FilterState, v: any) => void }) => {

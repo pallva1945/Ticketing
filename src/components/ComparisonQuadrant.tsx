@@ -36,8 +36,9 @@ export const ComparisonQuadrant: React.FC<ComparisonQuadrantProps> = ({
               {metric.unit}
             </span>
           </div>
-          <ComparisonTrendChart groups={groups} metricKey={metric.key}
-            highlightLabels={highlightLabels} showTrend={showTrend} perGame={perGame} />
+           <ComparisonTrendChart groups={groups} metricKey={metric.key}
+             highlightLabels={highlightLabels} showTrend={showTrend} perGame={perGame}
+             showYoY={index < visible.length - 1} />
         </section>
       ))}
     </div>

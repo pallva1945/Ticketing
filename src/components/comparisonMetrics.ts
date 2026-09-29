@@ -189,3 +189,29 @@ export function getComparisonSeriesValues(
     return (Math.pow(current.base / baseline.base!, 1 / (current.year - baseline.year)) - 1) * 100;
   });
 }
+
+export function getYoYMarkers(
+  groups: ComparisonReportGroup[], key: ComparisonMetricKey, perGame: boolean, showTrend: boolean,
+): { from: string; to: string; fixture: string; value: number }[] {
+  if (!showTrend) return [];
+  const baseKey = key === 'cagrRevenue' ? 'revenue' : key === 'cagrYield' ? 'yield' : key;
+  const rows = groups.map(group => {
+    const match = /^(\d{2,4})[-/]\d{2,4}(?: · (.+))?$/.exec(group.label);
+    const year = match ? Number(match[1]) : NaN;
+    return {
+      label: group.label,
+      year: year < 100 ? year + 2000 : year,
+      fixture: match?.[2] || '',
+      value: getMetricValue(group.games, baseKey, perGame),
+    };
+  });
+  return rows.flatMap(current => {
+    const previous = rows.find(row => row.year === current.year - 1 && row.fixture === current.fixture);
+    if (!previous || previous.value === null || previous.value <= 0 ||
+      current.value === null || !Number.isFinite(current.year)) return [];
+    return [{
+      from: previous.label.split(' · ')[0], to: current.label.split(' · ')[0],
+      fixture: current.fixture, value: (current.value / previous.value - 1) * 100,
+    }];
+  });
+}

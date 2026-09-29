@@ -1,4 +1,5 @@
 - [Season rollover without fabricated figures](season-rollover.md) — default to the requested season, but keep historical data intact and show no-data states where current figures are unavailable.
 - [Ticketing comparison visual preference](ticketing-comparison-visual.md) — user affirmed vertical columns, calculated linear trends, and selectable metrics.
+- [Comparison PDF crests](comparison-pdf-crests.md) — use verified local logos and match badges to the report’s actual opponent and competition.
 - [Tier-over-years meaning](tier-over-years.md) — compare the same tier across seasons using per-game volume averages, not two different tiers side by side.
 - [GameDay capacity meaning](gameday-capacity.md) — 26/27 zone figures are final available GameDay seats; do not subtract additional corporate seats from them.

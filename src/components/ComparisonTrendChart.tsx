@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { ComparisonReportGroup } from './comparisonReport';
-import { COMPARISON_METRICS, ComparisonMetricKey, fitLinearTrend, getComparisonSeriesValues, isCagrMetric, metricDisplayTitle } from './comparisonMetrics';
+import { COMPARISON_METRICS, ComparisonMetricKey, fitLinearTrend, getComparisonSeriesValues, getYoYMarkers, isCagrMetric, metricDisplayTitle } from './comparisonMetrics';
 
 interface Props {
   groups: ComparisonReportGroup[];
@@ -12,14 +12,16 @@ interface Props {
   highlightLabels: string[];
   showTrend: boolean;
   perGame?: boolean;
+  showYoY?: boolean;
 }
 
 const lineColors = ['#0f766e', '#7c3aed'];
 const seriesName = (label: string) => label.includes(' · ') ? label.split(' · ').slice(1).join(' · ') : 'Season trend';
 
-export const ComparisonTrendChart: React.FC<Props> = ({ groups, metricKey, highlightLabels, showTrend, perGame = false }) => {
+export const ComparisonTrendChart: React.FC<Props> = ({ groups, metricKey, highlightLabels, showTrend, perGame = false, showYoY = false }) => {
   const metric = COMPARISON_METRICS.find(item => item.key === metricKey)!;
   const title = metricDisplayTitle(metricKey, perGame);
+  const yoy = showYoY ? getYoYMarkers([...groups].reverse(), metricKey, perGame, showTrend) : [];
   const { rows, trends, minValue, maxValue } = useMemo(() => {
     // Historical seasons read left to right; current season is the last column.
     const ordered = showTrend ? [...groups].reverse() : groups;
@@ -101,6 +103,16 @@ export const ComparisonTrendChart: React.FC<Props> = ({ groups, metricKey, highl
         </ResponsiveContainer>
       </div>
       </div>
+      {yoy.length > 0 && <div className="mt-2 flex flex-wrap gap-1.5 text-[10px]" aria-label="Year-over-year growth between seasons">
+        {yoy.map(({ from, to, fixture, value }) => <span key={`${from}-${to}-${fixture}`}
+          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-semibold ${
+            value >= 0 ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+              : 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-300'
+          }`}>
+          <span className="inline-block h-2.5 w-1 rounded-sm bg-current" aria-hidden="true" />
+          {fixture && `${fixture} · `}{from} → {to}: {value > 0 ? '+' : ''}{value.toFixed(1)}% YoY
+        </span>)}
+      </div>}
       {trends.length > 0 && <div className="flex flex-wrap justify-end gap-x-4 gap-y-1 pr-2 text-[10px] font-semibold text-gray-500 dark:text-gray-400">
         {trends.map((trend, index) => <span key={trend.key} className="flex items-center gap-1.5">
           <span className="inline-block w-4 border-t-2" style={{ borderColor: lineColors[index % lineColors.length] }} />

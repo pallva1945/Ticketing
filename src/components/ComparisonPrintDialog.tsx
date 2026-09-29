@@ -47,9 +47,14 @@ export const ComparisonPrintDialog: React.FC<Props> = ({
   const reports: ComparisonReport[] = slots.map(slot => {
     if (slot.mode === 'custom') return customReport;
     const result = buildSeasonComparison(fullData, slot.mode, viewMode, slot.selection);
+    const opponents = slot.mode === 'opponent'
+      ? [result.selectedOpponent, result.selectedSecond].filter(Boolean)
+      : [...new Set(result.groups.flatMap(group => group.games.map(game => game.opponent)))];
     return {
       title: result.title, subtitle: result.description, groups: result.groups,
       highlightLabels: result.currentLabels, showTrend: true, perGame: slot.mode === 'tier',
+      league: result.league, opponents: opponents.length <= 2 && slot.mode === 'opponent'
+        ? opponents : opponents.length === 1 ? opponents : [],
     };
   });
   const emptyReports = reports.flatMap((report, index) =>
