@@ -36,16 +36,16 @@
             text-align: left;
             border-collapse: collapse;
         }
-        .invoice-box table td {
+        .invoice-box table td, .invoice-box table th {
             padding: 8px;
             vertical-align: top;
         }
-        .invoice-box table tr.heading td {
+        .invoice-box table tr.heading td, .invoice-box table tr.heading th {
             background: #eee;
             border-bottom: 1px solid #ddd;
             font-weight: bold;
         }
-        .invoice-box table tr.item td {
+        .invoice-box table tr.item td, .invoice-box table tr.item th {
             border-bottom: 1px solid #eee;
         }
         .invoice-box table tr.total td:nth-child(2) {
@@ -107,44 +107,44 @@
         <table>
             <thead>
                 <tr class="heading">
-                    <td>Categoria di Lavoro</td>
-                    <td class="text-center">Unità</td>
-                    <td class="text-center">Quantità</td>
-                    <td class="text-right">Prezzo Unitario (€)</td>
-                    <td class="text-right">Importo Totale (€)</td>
+                    <th scope="col">Categoria di Lavoro</th>
+                    <th scope="col" class="text-center">Unità</th>
+                    <th scope="col" class="text-center">Quantità</th>
+                    <th scope="col" class="text-right">Prezzo Unitario (€)</th>
+                    <th scope="col" class="text-right">Importo Totale (€)</th>
                 </tr>
             </thead>
             <tbody>
                 <tr class="item">
-                    <td><strong>1. Ristrutturazione Piano Seminterrato</strong><br><span class="text-sm text-gray-600">Creazione nuova zona commerciale/negozi come da "Soluzione 2".</span></td>
+                    <th scope="row"><strong>1. Ristrutturazione Piano Seminterrato</strong><br><span class="text-sm text-gray-600">Creazione nuova zona commerciale/negozi come da "Soluzione 2".</span></th>
                     <td class="text-center">mq</td>
                     <td class="text-center">240</td>
                     <td class="text-right">850,00</td>
                     <td class="text-right">204.000,00</td>
                 </tr>
                 <tr class="item">
-                    <td><strong>2. Ampliamento e Ristrutturazione Piano Rialzato</strong><br><span class="text-sm text-gray-600">Modifiche distributive, ampliamento area ristorazione e servizi.</span></td>
+                    <th scope="row"><strong>2. Ampliamento e Ristrutturazione Piano Rialzato</strong><br><span class="text-sm text-gray-600">Modifiche distributive, ampliamento area ristorazione e servizi.</span></th>
                     <td class="text-center">mq</td>
                     <td class="text-center">1.050</td>
                     <td class="text-right">1.000,00</td>
                     <td class="text-right">1.050.000,00</td>
                 </tr>
                 <tr class="item">
-                    <td><strong>3. Nuova Copertura Campi da Basket</strong><br><span class="text-sm text-gray-600">Realizzazione struttura di copertura per i campi da gioco esterni.</span></td>
+                    <th scope="row"><strong>3. Nuova Copertura Campi da Basket</strong><br><span class="text-sm text-gray-600">Realizzazione struttura di copertura per i campi da gioco esterni.</span></th>
                     <td class="text-center">mq</td>
                     <td class="text-center">1.400</td>
                     <td class="text-right">550,00</td>
                     <td class="text-right">770.000,00</td>
                 </tr>
                 <tr class="item">
-                    <td><strong>4. Sistemazioni Esterne e Playground</strong><br><span class="text-sm text-gray-600">Realizzazione zona "Play Ground" e opere a verde.</span></td>
+                    <th scope="row"><strong>4. Sistemazioni Esterne e Playground</strong><br><span class="text-sm text-gray-600">Realizzazione zona "Play Ground" e opere a verde.</span></th>
                     <td class="text-center">a corpo</td>
                     <td class="text-center">1</td>
                     <td class="text-right">165.000,00</td>
                     <td class="text-right">165.000,00</td>
                 </tr>
                  <tr class="heading">
-                    <td colspan="4" class="text-right font-bold">Subtotale Lavori (A)</td>
+                    <th scope="row" colspan="4" class="text-right font-bold">Subtotale Lavori (A)</th>
                     <td class="text-right font-bold">2.189.000,00</td>
                 </tr>
             </tbody>

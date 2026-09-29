@@ -521,6 +521,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Fulfillment': { en: 'Fulfillment', it: 'Evasione' },
   'Name': { en: 'Name', it: 'Nome' },
   'Email': { en: 'Email', it: 'Email' },
+  'Password': { en: 'Password', it: 'Password' },
   'Spent': { en: 'Spent', it: 'Speso' },
   'Since': { en: 'Since', it: 'Da' },
   'Total Units': { en: 'Total Units', it: 'Unità Totali' },

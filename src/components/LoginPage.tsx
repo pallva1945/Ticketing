@@ -136,6 +136,7 @@ export const LoginPage: React.FC = () => {
         </button>
         <button
           onClick={toggleTheme}
+          aria-label={t(isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode')}
           className={`p-2 rounded-lg transition-all ${
             isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'
           }`}
@@ -205,14 +206,22 @@ export const LoginPage: React.FC = () => {
                 setIsSubmitting(false);
                 if (!result.success) setError(result.message || 'Login failed');
               }} className="space-y-3 mb-4">
+                <label htmlFor="external-access-email" className={`block text-left text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {t('Email')}
+                </label>
                 <input
+                  id="external-access-email"
                   type="email"
                   placeholder="Email"
                   value={passwordEmail}
                   onChange={e => setPasswordEmail(e.target.value)}
                   className={`w-full px-3 py-2 rounded-lg text-sm border ${isDark ? 'bg-gray-900 border-gray-800 text-white placeholder-gray-600' : 'bg-white border-gray-200 text-gray-900 placeholder-gray-400'}`}
                 />
+                <label htmlFor="external-access-password" className={`block text-left text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  {t('Password')}
+                </label>
                 <input
+                  id="external-access-password"
                   type="password"
                   placeholder="Password"
                   value={passwordValue}
