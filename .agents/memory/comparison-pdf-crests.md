@@ -14,3 +14,9 @@ For university-affiliated opponents, a university mark is suitable only when the
 **Why:** A school's institutional seal is not automatically the basketball club's crest.
 
 **How to apply:** Check the official team's own page before using a shared institution mark in a rival report.
+
+For FIBA Europe Cup branding, use the logo kit linked from FIBA's current competition downloads page (https://www.fiba.basketball/en/events/fiba-europe-cup-26-27/downloads), not images labeled “Europe Cup Women” or unrelated FIBA Europe marks. The positive circle variant remains identifiable at compact report-header dimensions.
+
+**Why:** Public image results conflate several FIBA competitions; the current official downloads page still links a kit with older file dates, so age alone is not grounds to replace it.
+
+**How to apply:** Check the current competition's downloads page and visually verify any replacement against its kit before changing the locally hosted badge.

@@ -41,7 +41,8 @@ export const opponentLogoSrc = (name: string): string | null =>
 export const leagueLogoSrc = (league: string): string | null => {
   const code = league.trim().toUpperCase();
   return code === 'LBA' ? '/report-logos/lba.svg'
-    : code === 'BCL' ? '/report-logos/bcl.png' : null;
+    : code === 'BCL' ? '/report-logos/bcl.png'
+    : code === 'FEC' ? '/report-logos/fec.png' : null;
 };
 
 export function printComparisonReports(reports: ComparisonReport[], selectedMetrics: ComparisonMetricKey[]) {
@@ -63,7 +64,7 @@ export function printComparisonReports(reports: ComparisonReport[], selectedMetr
   const pages = reports.map(({ title, subtitle, groups, highlightLabels, showTrend, perGame, league, opponents = [] }, page) => {
   const leagueCode = league?.trim().toUpperCase();
   const leagueBadge = leagueCode && leagueLogoSrc(leagueCode)
-    ? `<img class="league-logo" src="${leagueLogoSrc(leagueCode)}" alt="${leagueCode} league logo">`
+    ? `<img class="league-logo" src="${leagueLogoSrc(leagueCode)}" alt="${leagueCode} league logo" onerror="this.nextElementSibling.hidden=false;this.remove()"><span class="league-code" hidden>${escapeHtml(leagueCode)}</span>`
     : leagueCode ? `<span class="league-code">${escapeHtml(leagueCode)}</span>` : '';
   const opponentBadges = opponents.map(name => {
     const logo = opponentLogoSrc(name);
