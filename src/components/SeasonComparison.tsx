@@ -2,6 +2,7 @@ import React from 'react';
 import { GameData, SalesChannel } from '../types';
 import { ComparisonReportGroup } from './comparisonReport';
 import { ComparisonQuadrant } from './ComparisonQuadrant';
+import { ComparisonBadges } from './ComparisonBadges';
 import { ComparisonMetricKey } from './comparisonMetrics';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getFixedCapacityForSeason } from '../constants';
@@ -124,6 +125,10 @@ export const SeasonComparison: React.FC<Props> = ({
     React.useMemo(() => buildSeasonComparison(fullData, mode, viewMode, selection),
       [fullData, mode, viewMode, selection]);
   const update = (changes: Partial<SeasonComparisonSelection>) => onSelectionChange({ ...selection, ...changes });
+  const includedOpponents = [...new Set(groups.flatMap(group => group.games.map(game => game.opponent)))];
+  const visibleOpponents = mode === 'opponent'
+    ? [selectedOpponent, selectedSecond].filter(Boolean)
+    : includedOpponents.length === 1 ? includedOpponents : [];
 
   return (
     <div className="space-y-5">
@@ -171,6 +176,9 @@ export const SeasonComparison: React.FC<Props> = ({
           </label>}
         </div>
       </div>
+
+      {groups.some(group => group.games.length > 0) &&
+        <ComparisonBadges league={league} opponents={visibleOpponents} />}
 
       <div className="text-sm text-gray-600 dark:text-gray-400">
         <strong className="text-gray-900 dark:text-white">{description}</strong>

@@ -35,6 +35,15 @@ const opponentLogos: Record<string, string> = {
   Udine: 'udine.png', Venezia: 'venezia.png', 'ZZ Leiden': 'zz-leiden.png',
 };
 
+export const opponentLogoSrc = (name: string): string | null =>
+  opponentLogos[name] ? `/report-logos/${opponentLogos[name]}` : null;
+
+export const leagueLogoSrc = (league: string): string | null => {
+  const code = league.trim().toUpperCase();
+  return code === 'LBA' ? '/report-logos/lba.svg'
+    : code === 'BCL' ? '/report-logos/bcl.png' : null;
+};
+
 export function printComparisonReports(reports: ComparisonReport[], selectedMetrics: ComparisonMetricKey[]) {
   if (!reports.length) return;
   const popup = window.open('', '_blank');
@@ -53,11 +62,12 @@ export function printComparisonReports(reports: ComparisonReport[], selectedMetr
     .filter((chart): chart is typeof COMPARISON_METRICS[number] => Boolean(chart));
   const pages = reports.map(({ title, subtitle, groups, highlightLabels, showTrend, perGame, league, opponents = [] }, page) => {
   const leagueCode = league?.trim().toUpperCase();
-  const leagueBadge = leagueCode === 'LBA' || leagueCode === 'BCL'
-    ? `<img class="league-logo" src="/report-logos/${leagueCode.toLowerCase()}.${leagueCode === 'LBA' ? 'svg' : 'png'}" alt="${leagueCode} league logo">`
+  const leagueBadge = leagueCode && leagueLogoSrc(leagueCode)
+    ? `<img class="league-logo" src="${leagueLogoSrc(leagueCode)}" alt="${leagueCode} league logo">`
     : leagueCode ? `<span class="league-code">${escapeHtml(leagueCode)}</span>` : '';
   const opponentBadges = opponents.map(name => {
-    const image = opponentLogos[name] ? `<img class="crest" src="/report-logos/${opponentLogos[name]}" alt="${escapeHtml(name)} logo">` : '';
+    const logo = opponentLogoSrc(name);
+    const image = logo ? `<img class="crest" src="${logo}" alt="${escapeHtml(name)} logo">` : '';
     return `<div class="opponent">${image}<span>${escapeHtml(name)}</span></div>`;
   }).join('');
   const ordered = showTrend ? [...groups].reverse() : groups;

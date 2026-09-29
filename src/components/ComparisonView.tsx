@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { GameData, TicketZone, SalesChannel } from '../types';
 import { MultiSelect } from './MultiSelect';
-import { ArrowLeftRight, UserX, Printer } from 'lucide-react';
+import { UserX, Printer } from 'lucide-react';
 import { getFixedCapacityForSeason } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SeasonComparison, SeasonComparisonMode, SeasonComparisonSelection } from './SeasonComparison';
 import { ComparisonPrintDialog } from './ComparisonPrintDialog';
 import { ComparisonReport } from './comparisonReport';
 import { ComparisonQuadrant } from './ComparisonQuadrant';
+import { ComparisonBadges } from './ComparisonBadges';
 import { COMPARISON_METRICS, ComparisonMetricKey } from './comparisonMetrics';
 
 interface ComparisonViewProps {
@@ -289,8 +290,8 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
   return (
     <div className="animate-fade-in max-w-7xl mx-auto space-y-6">
         <div className="flex flex-wrap items-center gap-3 mb-6">
-           <div className="p-3 bg-red-50 dark:bg-red-900/30 rounded-lg text-red-700">
-               <ArrowLeftRight size={24} />
+            <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-red-50 p-1.5 dark:bg-red-900/30">
+                <img src="/favicon.png" alt="Pallacanestro Varese" className="h-full w-full object-contain" />
            </div>
            <div>
                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Comparative Analysis')}</h1>
@@ -344,6 +345,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
          {comparisonType !== 'custom' ? <SeasonComparison fullData={fullData} mode={comparisonType} viewMode={viewMode}
            selectedMetrics={selectedMetrics} selection={seasonSelection} onSelectionChange={setSeasonSelection} /> : (
         <div className="space-y-5">
+           <ComparisonBadges league={customReport.league} opponents={customReport.opponents} />
           <ComparisonQuadrant groups={[{ label: 'Scenario A', games: dataA }, { label: 'Scenario B', games: dataB }]} highlightLabels={['Scenario B']} selectedMetrics={selectedMetrics} />
           <p className="text-xs text-gray-500">— means no matching game or unavailable metric, not zero.</p>
           <details className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
