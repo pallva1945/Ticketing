@@ -24,7 +24,7 @@ import { MerchandisingView } from './components/MerchandisingView';
 import { VenueOpsDashboard, parseVenueOpsSheetData } from './components/VenueOpsDashboard';
 import { VareseBasketballDashboard, parseVbPnlSheetData } from './components/VareseBasketballDashboard';
 import { BOpsDashboard, parseBopsSheetData } from './components/BOpsDashboard';
-import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, FIXED_CAPACITY_25_26, FIXED_CORP_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
+import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, getFixedCapacityForSeason, isSeason26_27, FIXED_CORP_25_26, SEASON_TARGET_TOTAL, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL, SEASON_TARGET_TICKETING_DAY } from './constants';
 import { GameData, GameDayData, SponsorData, CRMRecord, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { PieChart as RechartsPie, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
@@ -2019,11 +2019,12 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
           
           Object.keys(filteredZoneCapacities).forEach(z => {
               // Deduct fixed capacity (ABB season tickets)
-              const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
+              const fixedDeduction = getFixedCapacityForSeason(game.season, z);
               // Calculate game-by-game CORP = Total CORP - Fixed CORP (summer season)
               const totalCorp = totalCorpPerZone[z] || 0;
               const fixedCorp = FIXED_CORP_25_26[z] || 0;
-              const gameByGameCorp = Math.max(0, totalCorp - fixedCorp);
+              // 26/27 GameDay capacities were supplied as the available seats themselves.
+              const gameByGameCorp = isSeason26_27(game.season) ? 0 : Math.max(0, totalCorp - fixedCorp);
               // Deduct game-by-game CORP from capacity
               filteredZoneCapacities[z] = Math.max(0, filteredZoneCapacities[z] - fixedDeduction - gameByGameCorp);
           });
@@ -2039,7 +2040,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
         ...game,
         attendance: hasSalesBreakdown ? zoneAttendance : game.attendance,
         totalRevenue: (hasSalesBreakdown || !noZoneFiltering) ? zoneRevenue : game.totalRevenue,
-        capacity: hasSalesBreakdown ? zoneCapacity : game.capacity,
+        capacity: hasSalesBreakdown || (viewMode === 'gameday' && isSeason26_27(game.season)) ? zoneCapacity : game.capacity,
         salesBreakdown: zoneSales,
         zoneCapacities: filteredZoneCapacities
       };
@@ -2122,7 +2123,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
       
       // GameDay capacity = Total - FIXED (ABB + CORP + PROTOCOL presold seats)
       Object.keys(filteredZoneCapacities).forEach(z => {
-          const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
+          const fixedDeduction = getFixedCapacityForSeason(game.season, z);
           gameDayCapacity += Math.max(0, filteredZoneCapacities[z] - fixedDeduction);
       });
 

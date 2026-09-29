@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { GameData, TicketZone, SalesChannel } from '../types';
 import { MultiSelect } from './MultiSelect';
 import { ArrowLeftRight, UserX, Printer } from 'lucide-react';
-import { FIXED_CAPACITY_25_26 } from '../constants';
+import { getFixedCapacityForSeason } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
 import { SeasonComparison, SeasonComparisonMode } from './SeasonComparison';
 import { printComparisonReport } from './comparisonReport';
@@ -93,7 +93,7 @@ const getFilteredData = (allGames: GameData[], filters: FilterState, viewMode: '
 
       if (viewMode === 'gameday') {
           Object.keys(filteredZoneCapacities).forEach(z => {
-              const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
+              const fixedDeduction = getFixedCapacityForSeason(game.season, z);
               filteredZoneCapacities[z] = Math.max(0, filteredZoneCapacities[z] - fixedDeduction);
           });
       }

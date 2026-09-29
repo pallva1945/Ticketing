@@ -5,7 +5,7 @@ import { printComparisonReport, ComparisonReportGroup } from './comparisonReport
 import { ComparisonQuadrant } from './ComparisonQuadrant';
 import { ComparisonMetricKey } from './comparisonMetrics';
 import { useLanguage } from '../contexts/LanguageContext';
-import { FIXED_CAPACITY_25_26 } from '../constants';
+import { getFixedCapacityForSeason } from '../constants';
 
 export type SeasonComparisonMode = 'opponent' | 'week' | 'ytd' | 'tier';
 
@@ -36,7 +36,7 @@ const compareGame = (game: GameData, viewMode: Props['viewMode']): GameData => {
     ? game.salesBreakdown.filter(s => [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel))
     : game.salesBreakdown;
   const zoneCapacities = Object.fromEntries(Object.entries(game.zoneCapacities || {}).map(([zone, capacity]) =>
-    [zone, viewMode === 'gameday' ? Math.max(0, capacity - (FIXED_CAPACITY_25_26[zone] || 0)) : capacity]));
+    [zone, viewMode === 'gameday' ? Math.max(0, capacity - getFixedCapacityForSeason(game.season, zone)) : capacity]));
   const capacities = Object.values(zoneCapacities).reduce((sum, capacity) => sum + capacity, 0);
   return {
     ...game,

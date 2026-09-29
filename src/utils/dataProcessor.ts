@@ -1,4 +1,5 @@
 import { GameData, GameDayData, CRMRecord, SalesChannel, SalesDataPoint, SponsorData, TicketTypeBreakdown, TicketZone } from '../types';
+import { CAPACITIES_26_27, isSeason26_27 } from '../constants';
 
 // --- HELPERS ---
 
@@ -109,21 +110,6 @@ const CAPACITIES_25_26: Record<TicketZone, number> = {
   [TicketZone.COURTSIDE]: 44,
   [TicketZone.OSPITI]: 233,
   [TicketZone.SKYBOX]: 60
-};
-
-// Expanded arena for 26-27 only. Earlier seasons retain their own capacities.
-const CAPACITIES_26_27: Record<TicketZone, number> = {
-  [TicketZone.TRIB_G]: 2113,
-  [TicketZone.PAR_O]: 396,
-  [TicketZone.PAR_E]: 266,
-  [TicketZone.TRIB_S]: 404,
-  [TicketZone.GALL_G]: 554,
-  [TicketZone.SKYBOX]: 100,
-  [TicketZone.PAR_EX]: 209,
-  [TicketZone.GALL_S]: 858,
-  [TicketZone.COURTSIDE]: 54,
-  [TicketZone.OSPITI]: 136,
-  [TicketZone.CURVA]: 458
 };
 
 export const processGameData = (csvContent: string): GameData[] => {
@@ -307,7 +293,7 @@ export const processGameData = (csvContent: string): GameData[] => {
         if (gameIndex < 6) zoneCapacities[TicketZone.SKYBOX] = 0;
     } else if (season === '24-25') {
         zoneCapacities = { ...CAPACITIES_24_25 };
-    } else if (season === '26-27' || season === '26/27') {
+    } else if (isSeason26_27(season)) {
         zoneCapacities = { ...CAPACITIES_26_27 };
     }
 
@@ -958,7 +944,7 @@ export const convertBigQueryToGameData = (
   console.warn('BigQuery: Using aggregate data only (no zone breakdown)');
   return aggregateRows.map(row => {
     const getSeasonCapacity = (season: string): Record<TicketZone, number> => {
-      if (season.includes('26-27') || season.includes('26/27')) return CAPACITIES_26_27;
+      if (isSeason26_27(season)) return CAPACITIES_26_27;
       if (season.includes('25-26') || season.includes('25/26')) return CAPACITIES_25_26;
       if (season.includes('24-25') || season.includes('24/25')) return CAPACITIES_24_25;
       return CAPACITIES_23_24;
@@ -972,7 +958,7 @@ export const convertBigQueryToGameData = (
       opponent: row.opponent,
       date: row.date,
       attendance: row.attendance,
-      capacity: row.season.includes('26-27') || row.season.includes('26/27') ? totalCapacity : row.capacity || totalCapacity,
+      capacity: isSeason26_27(row.season) ? totalCapacity : row.capacity || totalCapacity,
       zoneCapacities: capacities as unknown as Record<string, number>,
       totalRevenue: row.total_revenue,
       corpRevenue: row.corp_revenue,

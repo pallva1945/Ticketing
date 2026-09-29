@@ -162,6 +162,44 @@ export const FIXED_CAPACITY_25_26: Record<string, number> = {
   [TicketZone.PAR_EX]: 66     // Total 75 - Gameday 9 = 66 Fixed ABB
 };
 
+// 26/27 capacities supplied by zone. GameDay values are available seats, not fixed seats.
+export const CAPACITIES_26_27: Record<TicketZone, number> = {
+  [TicketZone.TRIB_G]: 2113,
+  [TicketZone.PAR_O]: 396,
+  [TicketZone.PAR_E]: 266,
+  [TicketZone.TRIB_S]: 404,
+  [TicketZone.GALL_G]: 554,
+  [TicketZone.SKYBOX]: 100,
+  [TicketZone.PAR_EX]: 209,
+  [TicketZone.GALL_S]: 858,
+  [TicketZone.COURTSIDE]: 54,
+  [TicketZone.OSPITI]: 136,
+  [TicketZone.CURVA]: 458
+};
+
+export const GAMEDAY_CAPACITIES_26_27: Record<TicketZone, number> = {
+  [TicketZone.PAR_O]: 179,
+  [TicketZone.PAR_EX]: 69,
+  [TicketZone.PAR_E]: 170,
+  [TicketZone.TRIB_G]: 801,
+  [TicketZone.TRIB_S]: 138,
+  [TicketZone.GALL_G]: 227,
+  [TicketZone.GALL_S]: 747,
+  [TicketZone.CURVA]: 106,
+  [TicketZone.COURTSIDE]: 8,
+  [TicketZone.OSPITI]: 136,
+  [TicketZone.SKYBOX]: 37
+};
+
+export const isSeason26_27 = (season: string) => season === '26-27' || season === '26/27';
+
+export const getFixedCapacityForSeason = (season: string, zone: string): number =>
+  isSeason26_27(season)
+    ? zone in CAPACITIES_26_27
+      ? CAPACITIES_26_27[zone as TicketZone] - GAMEDAY_CAPACITIES_26_27[zone as TicketZone]
+      : 0
+    : FIXED_CAPACITY_25_26[zone] || 0;
+
 // FIXED CORP (Summer season CORP tickets - same every game)
 // Game-by-game CORP = Total CORP in data - Fixed CORP
 export const FIXED_CORP_25_26: Record<string, number> = {

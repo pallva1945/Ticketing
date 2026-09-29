@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { DollarSign, Users, Ticket, TrendingUp, TrendingDown, Minus, Gift } from 'lucide-react';
 import { GameData, SalesChannel, StatsCardsProps } from '../types';
-import { FIXED_CAPACITY_25_26 } from '../constants';
+import { getFixedCapacityForSeason } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
 
 // Helper to calculate raw KPIs for any set of games
@@ -208,7 +208,7 @@ export const StatsCards: React.FC<StatsCardsProps> = ({ data, fullDataset, filte
                      let effectiveCap = cap as number;
                      // Deduct fixed capacity if in Game Day Mode
                      if (viewMode === 'gameday') {
-                         const fixedDeduction = FIXED_CAPACITY_25_26[z] || 0;
+                         const fixedDeduction = getFixedCapacityForSeason(game.season, z);
                          effectiveCap = Math.max(0, effectiveCap - fixedDeduction);
                      }
                      partialCapacity += effectiveCap;

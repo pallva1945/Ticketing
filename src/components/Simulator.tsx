@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { GameData, SalesChannel, TicketZone } from '../types';
-import { FIXED_CAPACITY_25_26 } from '../constants';
+import { getFixedCapacityForSeason } from '../constants';
 import { Calculator, TrendingUp, TrendingDown, RefreshCcw, Plus, Trash2, Sun, Snowflake, ArrowRight } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -74,6 +74,15 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
     }));
     return Object.fromEntries(Object.entries(totals).map(([zone, total]) => [zone, total / data.length]));
   }, [data]);
+  const availableCapacities = useMemo(() => {
+    if (!data.length) return Object.fromEntries(Object.entries(capacities).map(([zone, total]) =>
+      [zone, Math.max(0, total - getFixedCapacityForSeason('25-26', zone))]));
+    const totals: Record<string, number> = {};
+    data.forEach(game => Object.entries(game.zoneCapacities).forEach(([zone, capacity]) => {
+      totals[zone] = (totals[zone] || 0) + Math.max(0, capacity - getFixedCapacityForSeason(game.season, zone));
+    }));
+    return Object.fromEntries(Object.entries(totals).map(([zone, total]) => [zone, total / data.length]));
+  }, [data, capacities]);
 
   // Calculate Baseline for ALL zones (to show total impact)
   const baselineStats = useMemo(() => {
@@ -95,11 +104,7 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
       const gameCount = data.length || 1;
       
       // Use correct capacity based on mode
-      const availableCapacities = mode === 'SUMMER' ? capacities : Object.fromEntries(
-        Object.entries(capacities).map(([zone, total]) => [
-          zone, Math.max(0, total - (FIXED_CAPACITY_25_26[zone] || 0))
-        ])
-      );
+      const modeCapacities = mode === 'SUMMER' ? capacities : availableCapacities;
 
       const zoneBaselines: Record<string, { avgPrice: number, avgVol: number, avgRev: number, totalCapacity: number }> = {};
       
@@ -108,11 +113,11 @@ export const Simulator: React.FC<SimulatorProps> = ({ data }) => {
           const avgRev = val.totalRev / gameCount;
           const avgPrice = val.totalSold > 0 ? val.totalRev / val.totalSold : 0;
           // Use the mode-appropriate capacity
-          zoneBaselines[z] = { avgPrice, avgVol, avgRev, totalCapacity: availableCapacities[z] || 0 };
+          zoneBaselines[z] = { avgPrice, avgVol, avgRev, totalCapacity: modeCapacities[z] || 0 };
       });
 
       return zoneBaselines;
-  }, [processedData, data, mode, capacities]);
+  }, [processedData, data, mode, capacities, availableCapacities]);
 
   const addDecision = () => {
       const newDecision: Decision = {
