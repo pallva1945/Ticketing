@@ -153,12 +153,14 @@ const RevenueHome = ({
             '23-24': number,
             '24-25': number,
             '25-26': number,
+            '26-27': number | null,
             isProjected: boolean
         }>,
         corpTixBySeason: {
             '23-24': number,
             '24-25': number,
-            '25-26': number
+            '25-26': number,
+            '26-27': number
         }
     }
 }) => {
@@ -773,14 +775,15 @@ const RevenueHome = ({
                 </div>
             </div>
 
-            {/* YoY COMPARISON - 3 Season Chart */}
+            {/* YoY COMPARISON - 4 Season Chart */}
             <div className="mt-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                    <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('3-Season Revenue Trend')}</h3>
+                    <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('4-Season Revenue Trend')}</h3>
                     <div className="flex flex-wrap items-center gap-3 sm:gap-5 text-xs text-gray-600 dark:text-gray-400">
                         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-slate-300"></div> 23-24</div>
                         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-slate-500"></div> 24-25</div>
-                        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-600"></div> 25-26 ({t('Proj')})</div>
+                        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-600"></div> 25-26</div>
+                        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-800"></div> 26-27 ({t('Current')})</div>
                         <div className="flex items-center gap-1.5"><div className="w-6 h-0.5 bg-amber-500"></div> {t('Trend')}</div>
                     </div>
                 </div>
@@ -810,37 +813,29 @@ const RevenueHome = ({
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8">
                         {yoyStats.chartData.map((vertical) => {
                             const corpTix = yoyStats.corpTixBySeason;
-                            let adjustedVals = [vertical['23-24'], vertical['24-25'], vertical['25-26']];
-                            
-                            if (corpTixInSponsorship) {
-                                if (vertical.vertical === 'Ticketing') {
-                                    adjustedVals = [
-                                        vertical['23-24'] - corpTix['23-24'],
-                                        vertical['24-25'] - corpTix['24-25'],
-                                        vertical['25-26'] - corpTix['25-26']
-                                    ];
-                                } else if (vertical.vertical === 'Sponsorship') {
-                                    adjustedVals = [
-                                        vertical['23-24'] + corpTix['23-24'],
-                                        vertical['24-25'] + corpTix['24-25'],
-                                        vertical['25-26'] + corpTix['25-26']
-                                    ];
+                            const chartSeasons = ['23-24', '24-25', '25-26', '26-27'] as const;
+                            const vals = chartSeasons.map(season => {
+                                const value = vertical[season];
+                                if (value === null) {
+                                    return corpTixInSponsorship && vertical.vertical === 'Sponsorship' && corpTix[season] > 0 ? corpTix[season] : null;
                                 }
-                            }
-                            
-                            const vals = adjustedVals;
-                            const dataMax = Math.max(...vals);
-                            const maxVal = dataMax * 1.15;
+                                if (!corpTixInSponsorship) return value;
+                                if (vertical.vertical === 'Ticketing') return value - corpTix[season];
+                                if (vertical.vertical === 'Sponsorship') return value + corpTix[season];
+                                return value;
+                            });
+                            const isProjected = vertical.isProjected || (vertical.vertical === 'Sponsorship' && corpTixInSponsorship && yoyStats.seasons[3].isProjected && corpTix['26-27'] > 0);
+                            const maxVal = Math.max(...vals.map(v => v ?? 0)) * 1.15;
                             const MAX_BAR_HEIGHT = 115;
-                            const BAR_WIDTH = 48;
-                            const BAR_GAP = 16;
-                            const CHART_WIDTH = BAR_WIDTH * 3 + BAR_GAP * 2;
-                            const barCenters = [BAR_WIDTH / 2, BAR_WIDTH * 1.5 + BAR_GAP, BAR_WIDTH * 2.5 + BAR_GAP * 2];
+                            const BAR_WIDTH = 40;
+                            const BAR_GAP = 12;
+                            const CHART_WIDTH = BAR_WIDTH * 4 + BAR_GAP * 3;
+                            const barCenters = chartSeasons.map((_, index) => BAR_WIDTH / 2 + index * (BAR_WIDTH + BAR_GAP));
                             const getHeight = (val: number) => maxVal > 0 ? (val / maxVal) * MAX_BAR_HEIGHT : 0;
-                            const yoy = vals[1] > 0 
-                                ? ((vals[2] - vals[1]) / vals[1]) * 100 
-                                : 0;
-                            const trendY = vals.map(v => MAX_BAR_HEIGHT - getHeight(v));
+                            const yoy = vals[3] !== null && vals[2] !== null && vals[2] > 0
+                                ? ((vals[3] - vals[2]) / vals[2]) * 100
+                                : null;
+                            const trendY = vals.map(v => v === null ? null : MAX_BAR_HEIGHT - getHeight(v));
                             
                             return (
                                 <div key={vertical.vertical} className="text-center">
@@ -849,9 +844,9 @@ const RevenueHome = ({
                                         {vertical.vertical === 'GameDay' && <Calendar size={14} className="text-indigo-600" />}
                                         {vertical.vertical === 'Sponsorship' && <Flag size={14} className="text-blue-600" />}
                                         <span className="font-semibold text-gray-800 dark:text-gray-200 text-sm">{vertical.vertical}</span>
-                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${yoy >= 0 ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400'}`}>
+                                        {yoy !== null && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${yoy >= 0 ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400'}`}>
                                             {yoy >= 0 ? '+' : ''}{yoy.toFixed(0)}%
-                                        </span>
+                                        </span>}
                                     </div>
                                     <div className="relative bg-gray-50 dark:bg-gray-950 rounded-lg overflow-hidden mx-auto" style={{ height: `${MAX_BAR_HEIGHT + 55}px`, maxWidth: `${CHART_WIDTH + 60}px`, padding: '20px 12px 12px 12px' }}>
                                         <div className="absolute left-2 top-5 flex flex-col justify-between text-[9px] text-gray-400 dark:text-gray-500 w-7" style={{ height: `${MAX_BAR_HEIGHT}px` }}>
@@ -865,38 +860,34 @@ const RevenueHome = ({
                                         <div className="flex justify-center" style={{ paddingLeft: '28px' }}>
                                             <div className="relative" style={{ width: `${CHART_WIDTH}px`, height: `${MAX_BAR_HEIGHT}px` }}>
                                                 <div className="absolute bottom-0 left-0 flex items-end" style={{ gap: `${BAR_GAP}px` }}>
-                                                    <div 
-                                                        className="bg-slate-300 rounded-t cursor-pointer hover:bg-slate-400 transition-colors" 
-                                                        style={{ width: `${BAR_WIDTH}px`, height: `${Math.max(getHeight(vals[0]), 6)}px` }}
-                                                        title={`23-24: ${formatCompact(vals[0])}`}
-                                                    />
-                                                    <div 
-                                                        className="bg-slate-500 rounded-t cursor-pointer hover:bg-slate-600 transition-colors" 
-                                                        style={{ width: `${BAR_WIDTH}px`, height: `${Math.max(getHeight(vals[1]), 6)}px` }}
-                                                        title={`24-25: ${formatCompact(vals[1])}`}
-                                                    />
-                                                    <div 
-                                                        className="bg-red-600 rounded-t cursor-pointer hover:bg-red-700 transition-colors" 
-                                                        style={{ width: `${BAR_WIDTH}px`, height: `${Math.max(getHeight(vals[2]), 6)}px` }}
-                                                        title={`25-26 (Proj): ${formatCompact(vals[2])}`}
-                                                    />
+                                                     {vals.map((value, index) => (
+                                                         <div
+                                                             key={chartSeasons[index]}
+                                                             className={`${['bg-slate-300 hover:bg-slate-400', 'bg-slate-500 hover:bg-slate-600', 'bg-red-600 hover:bg-red-700', 'bg-red-800 hover:bg-red-900'][index]} rounded-t transition-colors`}
+                                                             style={{ width: `${BAR_WIDTH}px`, height: value === null ? 0 : `${Math.max(getHeight(value), 6)}px` }}
+                                                             title={`${chartSeasons[index]}${index === 3 && isProjected ? ` (${t('Proj')})` : ''}: ${value === null ? t('No data') : formatCompact(value)}`}
+                                                         />
+                                                     ))}
                                                 </div>
                                                 <svg className="absolute inset-0 pointer-events-none" style={{ width: `${CHART_WIDTH}px`, height: `${MAX_BAR_HEIGHT}px` }}>
-                                                    <line x1={barCenters[0]} y1={trendY[0]} x2={barCenters[1]} y2={trendY[1]} stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" />
-                                                    <line x1={barCenters[1]} y1={trendY[1]} x2={barCenters[2]} y2={trendY[2]} stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeDasharray={vertical.isProjected ? "4 3" : "0"} />
-                                                    <circle cx={barCenters[0]} cy={trendY[0]} r="4" fill="#f59e0b" />
-                                                    <circle cx={barCenters[1]} cy={trendY[1]} r="4" fill="#f59e0b" />
-                                                    <circle cx={barCenters[2]} cy={trendY[2]} r="5" fill="#f59e0b" stroke="white" strokeWidth="1.5" />
+                                                     {trendY.slice(1).map((y, i) => y !== null && trendY[i] !== null && (
+                                                         <line key={i} x1={barCenters[i]} y1={trendY[i]!} x2={barCenters[i + 1]} y2={y} stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeDasharray={i === 2 && isProjected ? "4 3" : undefined} />
+                                                     ))}
+                                                     {trendY.map((y, i) => y !== null && (
+                                                         <circle key={i} cx={barCenters[i]} cy={y} r={i === 3 ? 5 : 4} fill="#f59e0b" stroke={i === 3 ? 'white' : undefined} strokeWidth={i === 3 ? 1.5 : undefined} />
+                                                     ))}
                                                 </svg>
                                             </div>
                                         </div>
                                         <div className="flex justify-center mt-2" style={{ paddingLeft: '28px' }}>
                                             <div className="flex" style={{ width: `${CHART_WIDTH}px`, gap: `${BAR_GAP}px` }}>
-                                                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium text-center" style={{ width: `${BAR_WIDTH}px` }}>23-24</span>
-                                                <span className="text-[10px] text-gray-500 dark:text-gray-400 font-medium text-center" style={{ width: `${BAR_WIDTH}px` }}>24-25</span>
-                                                <span className="text-[10px] text-gray-600 dark:text-gray-300 font-semibold text-center" style={{ width: `${BAR_WIDTH}px` }}>25-26</span>
+                                                 {chartSeasons.map((season, index) => (
+                                                     <span key={season} className={`text-[10px] text-center ${index === 3 ? 'text-gray-600 dark:text-gray-300 font-semibold' : 'text-gray-500 dark:text-gray-400 font-medium'}`} style={{ width: `${BAR_WIDTH}px` }}>{season}</span>
+                                                 ))}
                                             </div>
                                         </div>
+                                         {vals[3] === null && <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2">26-27: {t('No data')}</p>}
+                                         {vals[3] !== null && isProjected && <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2">26-27: {t('Proj')}</p>}
                                     </div>
                                 </div>
                             );
@@ -2292,10 +2283,10 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
       return { pureSponsorship, totalCommercial, sponsorCount: filteredSponsors.length };
   }, [sponsorData, selectedSeasons]);
 
-  // YoY Comparison Stats (3 Seasons with Projections) - LBA only (excludes FEC)
+  // YoY Comparison Stats (4 Seasons with current-season projections) - LBA only (excludes FEC)
   const yoyComparisonStats = useMemo(() => {
       const TOTAL_GAMES = 15;
-      const seasons = ['23-24', '24-25', '25-26'];
+      const seasons = ['23-24', '24-25', '25-26', '26-27'];
       
       const getSeasonData = (season: string) => {
           // Ticketing - LBA only (exclude FEC)
@@ -2319,22 +2310,25 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
           const sponsors = sponsorData.filter(s => s.season === sponsorSeason);
           const sponsorRev = sponsors.reduce((sum, d) => sum + d.sponsorReconciliation + d.csrReconciliation, 0);
           
-          // Is current season (25-26)? Calculate projected values
-          const isCurrent = season === '25-26';
-          const gamesPlayed = ticketingGames;
+           // Project only the current season, and only where games are available.
+           const isCurrent = season === '26-27';
+           const projectTicketing = isCurrent && ticketingGames > 0 && ticketingGames < TOTAL_GAMES;
+           const projectGameDay = isCurrent && gdGames > 0 && gdGames < TOTAL_GAMES;
           
           return {
               season,
-              ticketing: isCurrent && gamesPlayed > 0 ? (ticketingRev / gamesPlayed) * TOTAL_GAMES : ticketingRev,
+               ticketing: projectTicketing ? (ticketingRev / ticketingGames) * TOTAL_GAMES : ticketingRev,
               ticketingActual: ticketingRev,
               ticketingGames,
               avgAtt,
-              gameDay: isCurrent && gdGames > 0 ? (gdRev / gdGames) * TOTAL_GAMES : gdRev,
+               gameDay: projectGameDay ? (gdRev / gdGames) * TOTAL_GAMES : gdRev,
               gameDayActual: gdRev,
               gameDayGames: gdGames,
               sponsorship: sponsorRev,
-              corpTix: corpTixRev,
-              isProjected: isCurrent && gamesPlayed < TOTAL_GAMES
+               corpTix: projectTicketing ? (corpTixRev / ticketingGames) * TOTAL_GAMES : corpTixRev,
+               hasSponsorship: sponsors.length > 0,
+               isProjected: projectTicketing,
+               gameDayProjected: projectGameDay
           };
       };
       
@@ -2348,27 +2342,31 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                   '23-24': seasonData[0].ticketing, 
                   '24-25': seasonData[1].ticketing, 
                   '25-26': seasonData[2].ticketing,
-                  isProjected: seasonData[2].isProjected
+                   '26-27': seasonData[3].ticketingGames > 0 ? seasonData[3].ticketing : null,
+                   isProjected: seasonData[3].isProjected
               },
               { 
                   vertical: 'GameDay', 
                   '23-24': seasonData[0].gameDay, 
                   '24-25': seasonData[1].gameDay, 
                   '25-26': seasonData[2].gameDay,
-                  isProjected: seasonData[2].isProjected
+                   '26-27': seasonData[3].gameDayGames > 0 ? seasonData[3].gameDay : null,
+                   isProjected: seasonData[3].gameDayProjected
               },
               { 
                   vertical: 'Sponsorship', 
                   '23-24': seasonData[0].sponsorship, 
                   '24-25': seasonData[1].sponsorship, 
                   '25-26': seasonData[2].sponsorship,
+                   '26-27': seasonData[3].hasSponsorship ? seasonData[3].sponsorship : null,
                   isProjected: false
               }
           ],
           corpTixBySeason: {
               '23-24': seasonData[0].corpTix,
               '24-25': seasonData[1].corpTix,
-              '25-26': seasonData[2].corpTix
+               '25-26': seasonData[2].corpTix,
+               '26-27': seasonData[3].corpTix
           }
       };
   }, [data, gameDayData, sponsorData]);

@@ -249,7 +249,7 @@ const translations: Record<string, Record<Language, string>> = {
   'Data Source': { en: 'Data Source', it: 'Fonte Dati' },
   'Latest Game': { en: 'Latest Game', it: 'Ultima Partita' },
   'Refresh Data': { en: 'Refresh Data', it: 'Aggiorna Dati' },
-  '3-Season Revenue Trend': { en: '3-Season Revenue Trend', it: 'Trend Ricavi 3 Stagioni' },
+  '4-Season Revenue Trend': { en: '4-Season Revenue Trend', it: 'Trend Ricavi 4 Stagioni' },
   'behind expected': { en: 'behind expected', it: 'sotto le attese' },
   'pace': { en: 'pace', it: 'ritmo' },
   'Gap': { en: 'Gap', it: 'Gap' },
