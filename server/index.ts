@@ -741,6 +741,8 @@ const slimCRMRows = (rawRows: any[]): any[] => {
     'ticket_type', 'Ticket_Type', 'TICKET_TYPE',
     'pv_zone', 'PV_Zone', 'PV_ZONE', 'zone', 'Zone', 'ZONE',
     'game', 'Game', 'GAME', 'gm', 'Gm', 'GM',
+    'game_id', 'Game_ID', 'GAME_ID', 'gameId', 'GameId',
+    'season', 'Season', 'SEASON',
     'price', 'Price', 'PRICE',
     'quantity', 'Quantity', 'QUANTITY', 'qty', 'Qty', 'QTY',
     'comercial_value', 'Comercial_Value', 'COMERCIAL_VALUE', 'commercial_value', 'Commercial_Value', 'COMMERCIAL_VALUE',

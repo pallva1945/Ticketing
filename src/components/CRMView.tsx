@@ -5,6 +5,7 @@ import { ZONE_OPPORTUNITY_COST } from '../constants';
 import { MultiSelect } from './MultiSelect';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
+import { crmGameDate, normalizeCRMSeason, prepareCRMRecords } from '../utils/crmGames';
 
 const COLORS = ['#dc2626', '#2563eb', '#16a34a', '#ca8a04', '#9333ea', '#0891b2', '#be185d', '#65a30d'];
 
@@ -82,6 +83,7 @@ interface GameInfo {
   id: string;
   opponent: string;
   date: string;
+  season: string;
 }
 
 interface CRMViewProps {
@@ -144,8 +146,12 @@ const cleanSeat = (seat: string): string => {
   return seat || '—';
 };
 
-export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoading = false, isLoadingSearch = false, serverStats = null, games = [], viewMode = 'total' }) => {
+export const CRMView: React.FC<CRMViewProps> = ({ data: sourceData, sponsorData = [], isLoading = false, isLoadingSearch = false, serverStats = null, games: sourceGames = [], viewMode = 'total' }) => {
   const { t } = useLanguage();
+  const [selectedSeasons, setSelectedSeasons] = useState<string[]>(['All']);
+  const normalizedData = useMemo(() => prepareCRMRecords(sourceData), [sourceData]);
+  const data = useMemo(() => selectedSeasons.includes('All') ? normalizedData : normalizedData.filter(r => selectedSeasons.includes(r.season)), [normalizedData, selectedSeasons]);
+  const games = useMemo(() => selectedSeasons.includes('All') ? sourceGames : sourceGames.filter(g => selectedSeasons.includes(normalizeCRMSeason(g.season))), [sourceGames, selectedSeasons]);
   const [selectedZones, setSelectedZones] = useState<string[]>(['All']);
   const [selectedGames, setSelectedGames] = useState<string[]>(['All']);
   const [selectedSellTypes, setSelectedSellTypes] = useState<string[]>(['All']);
@@ -174,7 +180,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const [personaSortCol, setPersonaSortCol] = useState<string>('total');
   const [personaSortDir, setPersonaSortDir] = useState<'asc' | 'desc'>('desc');
 
-  const hasActiveFilter = !selectedZones.includes('All') || !selectedGames.includes('All') || !selectedSellTypes.includes('All') || capacityView !== 'all';
+  const hasActiveFilter = !selectedSeasons.includes('All') || !selectedZones.includes('All') || !selectedGames.includes('All') || !selectedSellTypes.includes('All') || capacityView !== 'all';
 
   const getCapacityBucket = (r: CRMRecord): 'fixed' | 'flexible' => {
     // Fixed = event equals "ABBONAMENTO LBA 2025/26" (case-insensitive)
@@ -187,6 +193,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   };
 
   const clearAllFilters = () => {
+    setSelectedSeasons(['All']);
     setSelectedZones(['All']);
     setSelectedGames(['All']);
     setSelectedSellTypes(['All']);
@@ -195,6 +202,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   
   // Filter options from data
   const filterOptions = useMemo(() => {
+    const seasons = ['All', ...new Set(normalizedData.map(r => r.season).filter(Boolean))].sort((a, b) => a === 'All' ? -1 : b === 'All' ? 1 : b.localeCompare(a));
     const zones = ['All', ...new Set(data.map(r => r.pvZone).filter(Boolean))].sort((a, b) => a === 'All' ? -1 : b === 'All' ? 1 : a.localeCompare(b));
     const sellTypes = ['All', ...new Set(data.map(r => r.sell || r.sellType).filter(Boolean))].sort((a, b) => a === 'All' ? -1 : b === 'All' ? 1 : a.localeCompare(b));
     const gamesList = [...new Set(data.map(r => r.gm || r.game).filter(Boolean))];
@@ -210,8 +218,8 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       };
       return getDate(b) - getDate(a);
     });
-    return { zones, sellTypes, games: ['All', ...sortedGames] };
-  }, [data]);
+    return { seasons, zones, sellTypes, games: ['All', ...sortedGames] };
+  }, [data, normalizedData]);
 
   const searchSuggestions = useMemo(() => {
     const query = clientSearchQuery.toLowerCase().trim();
@@ -459,8 +467,11 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       const gameDate = game.date;
       
       const gameRecords = matchingRecords.filter((r: any) => {
-        const recordDate = (r.Gm_Date_time || r.gm_date_time || '').split(' ')[0];
-        if (recordDate && gameDate && recordDate === gameDate) return true;
+        if (r.season !== normalizeCRMSeason(game.season)) return false;
+        const recordDate = crmGameDate(r.gmDateTime);
+        const scheduleDate = crmGameDate(gameDate);
+        if (recordDate && scheduleDate && recordDate !== scheduleDate) return false;
+        if (r.gameId && r.gameId === game.id) return true;
         
         const recordGame = (r.gm || r.game || '').toLowerCase().trim();
         const gameOpp = game.opponent.toLowerCase().trim();
@@ -616,7 +627,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
   const stats = useMemo(() => {
     // Use server-computed stats when no complex filters (search, zone, event) are active
     // For capacity filter, we can use the pre-computed fixed/flexible stats from server
-    const hasComplexFilter = !selectedZones.includes('All') || !selectedGames.includes('All') || !selectedSellTypes.includes('All');
+    const hasComplexFilter = !selectedSeasons.includes('All') || !selectedZones.includes('All') || !selectedGames.includes('All') || !selectedSellTypes.includes('All');
     
     if (serverStats && !hasComplexFilter) {
       // Select the appropriate pre-computed stats based on capacityView
@@ -1245,7 +1256,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
     );
   }
 
-  if (data.length === 0 && !serverStats) {
+  if (sourceData.length === 0 && !serverStats) {
     return (
       <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8 animate-fade-in pt-6">
         <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6 shadow-inner relative overflow-hidden">
@@ -1295,7 +1306,16 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       </div>
 
       {/* Filter Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div><MultiSelect label={t('Season')} options={filterOptions.seasons} selected={selectedSeasons} onChange={(seasons) => {
+          setSelectedSeasons(seasons);
+          setSelectedGames(['All']);
+          setSearchGameFilter('all');
+          setSelectedGame(null);
+          setSelectedCustomer(null);
+          setSelectedCorporate(null);
+          setSearchSelectedClient(null);
+        }} /></div>
         <div><MultiSelect label={t('Game')} options={filterOptions.games} selected={selectedGames} onChange={setSelectedGames} /></div>
         <div><MultiSelect label={t('Zone')} options={filterOptions.zones} selected={selectedZones} onChange={setSelectedZones} /></div>
         {hasActiveFilter && (
@@ -1332,7 +1352,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data, sponsorData = [], isLoad
       {hasActiveFilter && (
         <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 rounded-xl p-3 shadow-sm">
           <p className="text-xs text-amber-600">
-            {t('Showing')} {filteredData.length.toLocaleString()} {t('of')} {data.length.toLocaleString()} {t('records')}
+            {t('Showing')} {filteredData.length.toLocaleString()} {t('of')} {sourceData.length.toLocaleString()} {t('records')}
           </p>
         </div>
       )}

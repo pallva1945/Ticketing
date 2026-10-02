@@ -677,6 +677,10 @@ export const processCRMData = (csvContent: string): CRMRecord[] => {
       gmDateTime: (() => {
         const raw = getVal(gmDateTimeIdx);
         if (!raw) return 0;
+         if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+           const timestamp = Date.parse(raw);
+           return Number.isFinite(timestamp) ? timestamp : 0;
+         }
         
         // Handle date string format: "DD/MM/YYYY HH.MM.SS" or "DD/MM/YYYY HH.MM"
         if (raw.includes('/')) {

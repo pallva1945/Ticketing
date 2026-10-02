@@ -3085,7 +3085,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
           ) : activeModule === 'ticketing' ? (
             <>
                 {/* EXISTING TICKETING LOGIC */}
-                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} isLoadingSearch={isLoadingCRMSearch} serverStats={crmStats} games={filteredGames.map(g => ({ id: g.id, opponent: g.opponent, date: g.date }))} viewMode={viewMode} />}
+                {activeTab === 'crm' && <CRMView data={crmData} sponsorData={sponsorData} isLoading={isLoadingCRM} isLoadingSearch={isLoadingCRMSearch} serverStats={crmStats} games={data.map(g => ({ id: g.id, opponent: g.opponent, date: g.date, season: g.season }))} viewMode={viewMode} />}
                 {activeTab === 'dashboard' && (
                     <div className="pt-6">
                     {/* DIRECTOR'S NOTE */}
