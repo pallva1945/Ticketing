@@ -150,6 +150,7 @@ const cleanSeat = (seat: string): string => {
 export const CRMView: React.FC<CRMViewProps> = ({ data: sourceData, sponsorData = [], isLoading = false, isLoadingSearch = false, serverStats = null, games: sourceGames = [], viewMode = 'total' }) => {
   const { t } = useLanguage();
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>(['All']);
+  const detailIncomplete = !!serverStats && sourceData.length !== serverStats.all.totalRecords;
   const normalizedData = useMemo(() => prepareCRMRecords(sourceData), [sourceData]);
   const data = useMemo(() => selectedSeasons.includes('All') ? normalizedData : normalizedData.filter(r => selectedSeasons.includes(r.season)), [normalizedData, selectedSeasons]);
   const games = useMemo(() => selectedSeasons.includes('All') ? sourceGames : sourceGames.filter(g => selectedSeasons.includes(normalizeCRMSeason(g.season))), [sourceGames, selectedSeasons]);
@@ -1237,6 +1238,19 @@ export const CRMView: React.FC<CRMViewProps> = ({ data: sourceData, sponsorData 
       records
     };
   }, [selectedCustomer, filteredData]);
+
+  // Never present filters/search computed from fallback or partially loaded rows
+  // alongside complete server totals from a different dataset.
+  if (detailIncomplete) {
+    return (
+      <div role="status" className="rounded-lg border border-amber-300 bg-amber-50 p-6 mt-6 text-amber-900">
+        {isLoadingSearch && <Loader2 size={24} className="animate-spin mb-3" />}
+        <p>{isLoadingSearch
+          ? t('Loading complete CRM details. Filters and searches will be available when loading finishes.')
+          : t('CRM details are incomplete. Refresh the CRM before applying filters or searching.')}</p>
+      </div>
+    );
+  }
 
   if (isLoading && data.length === 0 && !serverStats) {
     return (

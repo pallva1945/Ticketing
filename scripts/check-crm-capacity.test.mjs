@@ -143,8 +143,9 @@ test('CRM and both server cache paths use the shared classifier', () => {
   assert.match(view, /import \{ getCapacityBucket \} from '\.\.\/utils\/crmCapacity'/);
   assert.match(view, /getCapacityBucket\(r\) === capacityView/);
   assert.match(serverSource, /import \{ isRowFixedCapacity \} from "\.\.\/src\/utils\/crmCapacity"/);
-  assert.equal((serverSource.match(/\.filter\(isRowFixedCapacity\)/g) || []).length, 2);
-  assert.equal((serverSource.match(/!isRowFixedCapacity\(row\)/g) || []).length, 2);
+  assert.equal((serverSource.match(/\.filter\(isRowFixedCapacity\)/g) || []).length, 1);
+  assert.equal((serverSource.match(/!isRowFixedCapacity\(row\)/g) || []).length, 1);
+  assert.match(serverSource, /void loadCRMCache\(\)/);
 });
 
 test('live CRM history is unchanged and observed current subscriptions are Fixed', {

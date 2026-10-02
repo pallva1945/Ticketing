@@ -701,8 +701,8 @@ app.get("/api/ticketing", async (req, res) => {
 });
 
 // CRM BigQuery endpoint with server-side processing for faster loads
-let crmCache: { rawRows: any[]; processedStats: any; fixedStats: any; flexibleStats: any; timestamp: number } | null = null;
-let crmCacheWarmingPromise: Promise<void> | null = null;
+let crmCache: { rawRows: any[]; processedStats: any; fixedStats: any; flexibleStats: any; timestamp: number; complete: true; totalRows: number } | null = null;
+let crmCacheWarmingPromise: Promise<NonNullable<typeof crmCache>> | null = null;
 const CRM_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours cache — refresh manually or daily
 
 // Parse European number format (1.234,56) and American format (1,234.56)
@@ -1224,74 +1224,46 @@ const computeCRMStats = (rawRows: any[]) => {
   };
 };
 
+// Share cold-start and refresh work. Publish only after the entire snapshot and
+// all three sets are ready; a failed refresh leaves the previous cache intact.
+const loadCRMCache = () => {
+  if (crmCacheWarmingPromise) return crmCacheWarmingPromise;
+  crmCacheWarmingPromise = (async () => {
+    const result = await fetchCRMFromBigQuery();
+    if (!result.success || !result.complete || !result.rawRows || result.totalRows !== result.rawRows.length) {
+      throw new Error(result.message || 'Incomplete CRM data');
+    }
+    const processedStats = computeCRMStats(result.rawRows);
+    const fixedStats = computeCRMStats(result.rawRows.filter(isRowFixedCapacity));
+    const flexibleStats = computeCRMStats(result.rawRows.filter((row: any) => !isRowFixedCapacity(row)));
+    const nextCache = {
+      rawRows: slimCRMRows(result.rawRows),
+      processedStats, fixedStats, flexibleStats,
+      timestamp: Date.now(), complete: true as const, totalRows: result.totalRows,
+    };
+    crmCache = nextCache;
+    return nextCache;
+  })().finally(() => { crmCacheWarmingPromise = null; });
+  return crmCacheWarmingPromise;
+};
+
 app.get("/api/crm/bigquery", async (req, res) => {
   try {
     const now = Date.now();
     const forceRefresh = req.query.refresh === 'true';
     const fullData = req.query.full === 'true'; // Only return full rawRows if explicitly requested
     
-    // Wait for cache warming to complete if in progress (prevents race condition on cold start)
-    if (!forceRefresh && crmCacheWarmingPromise && !crmCache) {
-      console.log('CRM API: Waiting for cache warming to complete...');
-      await crmCacheWarmingPromise;
-      console.log('CRM API: Cache warming complete, continuing');
-    }
-    
-    console.log(`CRM API request: full=${fullData}, forceRefresh=${forceRefresh}, cacheValid=${crmCache && (now - crmCache.timestamp) < CRM_CACHE_TTL}`);
-    
-    if (!forceRefresh && crmCache && (now - crmCache.timestamp) < CRM_CACHE_TTL) {
-      // If full data requested but cache has no rawRows, fetch fresh instead of returning empty
-      if (fullData && (!crmCache.rawRows || crmCache.rawRows.length === 0)) {
-        console.log('CRM API: Cache exists but no rawRows, fetching fresh data...');
-        // Fall through to fresh fetch below
-      } else {
-        console.log(`CRM API: Returning from cache, rawRows=${fullData ? crmCache.rawRows?.length : 'not-requested'}`);
-        return res.json({ 
-          success: true, 
-          stats: crmCache.processedStats,
-          fixedStats: crmCache.fixedStats,
-          flexibleStats: crmCache.flexibleStats,
-          rawRows: fullData ? slimCRMRows(crmCache.rawRows) : undefined,
-          cached: true,
-          message: `Served CRM stats from cache (${crmCache.processedStats.totalRecords} records)` 
-        });
-      }
-    }
-    
-    const result = await fetchCRMFromBigQuery();
-    
-    if (result.success && result.rawRows) {
-      // Compute stats for all data
-      const processedStats = computeCRMStats(result.rawRows);
-      // Compute stats for full-season subscriptions only.
-      const fixedRows = result.rawRows.filter(isRowFixedCapacity);
-      const fixedStats = computeCRMStats(fixedRows);
-      // Compute stats for flexible capacity (everything else)
-      const flexibleRows = result.rawRows.filter((row: any) => !isRowFixedCapacity(row));
-      const flexibleStats = computeCRMStats(flexibleRows);
-      
-      crmCache = { 
-        rawRows: result.rawRows,
-        processedStats,
-        fixedStats,
-        flexibleStats,
-        timestamp: now 
-      };
-      
-      res.json({ 
-        success: true,
-        stats: processedStats,
-        fixedStats,
-        flexibleStats,
-        rawRows: fullData ? slimCRMRows(result.rawRows) : undefined,
-        cached: false,
-        message: `Processed ${result.rawRows.length} CRM records`
-      });
-    } else {
-      res.json(result);
-    }
+    const cached = !!(!forceRefresh && crmCache && (now - crmCache.timestamp) < CRM_CACHE_TTL);
+    const snapshot = cached ? crmCache! : await loadCRMCache();
+    res.json({
+      success: true, complete: snapshot.complete, totalRows: snapshot.totalRows,
+      stats: snapshot.processedStats, fixedStats: snapshot.fixedStats,
+      flexibleStats: snapshot.flexibleStats,
+      rawRows: fullData ? snapshot.rawRows : undefined,
+      cached, message: `Processed ${snapshot.totalRows} CRM records`,
+    });
   } catch (error: any) {
-    res.status(500).json({ success: false, rawRows: [], message: error.message });
+    res.status(500).json({ success: false, complete: false, message: error.message });
   }
 });
 
@@ -2030,25 +2002,8 @@ app.listen(PORT, '0.0.0.0', () => {
   
   // Pre-warm CRM cache in background for faster first load
   console.log('Pre-warming CRM cache in background...');
-  crmCacheWarmingPromise = fetchCRMFromBigQuery().then(result => {
-    if (result.success && result.rawRows) {
-      const processedStats = computeCRMStats(result.rawRows);
-      const fixedRows = result.rawRows.filter(isRowFixedCapacity);
-      const fixedStats = computeCRMStats(fixedRows);
-      const flexibleRows = result.rawRows.filter((row: any) => !isRowFixedCapacity(row));
-      const flexibleStats = computeCRMStats(flexibleRows);
-      
-      crmCache = { 
-        rawRows: result.rawRows,
-        processedStats,
-        fixedStats,
-        flexibleStats,
-        timestamp: Date.now() 
-      };
-      console.log(`CRM cache pre-warmed: ${result.rawRows.length} records ready`);
-    } else {
-      console.log('CRM pre-warm failed:', result.message);
-    }
+  void loadCRMCache().then(snapshot => {
+    console.log(`CRM cache pre-warmed: ${snapshot.totalRows} records ready`);
   }).catch(err => {
     console.log('CRM pre-warm error:', err.message);
   });

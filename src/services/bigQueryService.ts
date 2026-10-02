@@ -1,4 +1,5 @@
 import { BigQuery } from '@google-cloud/bigquery';
+import { readCompleteCRMQuery, CompleteCRMResult } from './crmPagination';
 
 const PROJECT_ID = process.env.BIGQUERY_PROJECT_ID || 'ticketing-migration';
 const DATASET_ID = process.env.BIGQUERY_DATASET_ID || 'ticketing_migration';
@@ -923,7 +924,7 @@ export async function fetchTicketingFromBigQuery(): Promise<{ success: boolean; 
 // Fetch CRM data from BigQuery
 const CRM_TABLE_ID = process.env.BIGQUERY_CRM_TABLE_ID || 'CRM_2526';
 
-export async function fetchCRMFromBigQuery(): Promise<{ success: boolean; rawRows?: any[]; message: string }> {
+export async function fetchCRMFromBigQuery(): Promise<Partial<Omit<CompleteCRMResult, 'complete'>> & { success: boolean; complete: boolean; message: string }> {
   try {
     const client = getBigQueryClient();
     
@@ -936,26 +937,22 @@ export async function fetchCRMFromBigQuery(): Promise<{ success: boolean; rawRow
       game_id, sell, giveawaytype, discount_type, season,
       IFNULL(area, '') as area,
       IFNULL(CAST(seat AS STRING), '') as seat
-    FROM \`${PROJECT_ID}.${DATASET_ID}.${CRM_TABLE_ID}\` LIMIT 100000`;
+    FROM \`${PROJECT_ID}.${DATASET_ID}.${CRM_TABLE_ID}\``;
     
-    const [rows] = await client.query({ query, useQueryCache: true });
-    
-    if (!rows || rows.length === 0) {
-      return {
-        success: false,
-        message: 'No CRM data found in BigQuery'
-      };
-    }
+    const [job] = await client.createQueryJob({ query, useQueryCache: true });
+    const completeResult = await readCompleteCRMQuery(job);
+    const rows = completeResult.rawRows;
     
     return {
       success: true,
-      rawRows: rows as any[],
+      ...completeResult,
       message: `Fetched ${rows.length} CRM records from BigQuery`
     };
   } catch (error: any) {
     console.error('BigQuery CRM fetch error:', error);
     return {
       success: false,
+      complete: false,
       message: error.message || 'Failed to fetch CRM from BigQuery'
     };
   }

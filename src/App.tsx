@@ -19,6 +19,7 @@ import { GameDayDashboard } from './components/GameDayDashboard';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
 import { BoardReportModal } from './components/BoardReportModal';
 import { CRMView } from './components/CRMView';
+import { assertCompleteCRMResponse } from './utils/crmResponse';
 import { SponsorshipDashboard } from './components/SponsorshipDashboard';
 import { MerchandisingView } from './components/MerchandisingView';
 import { VenueOpsDashboard, parseVenueOpsSheetData } from './components/VenueOpsDashboard';
@@ -1416,6 +1417,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
         const statsResponse = await fetch('/api/crm/bigquery');
         if (statsResponse && statsResponse.ok) {
           const statsResult = await statsResponse.json();
+          assertCompleteCRMResponse(statsResult);
           if (statsResult.success && statsResult.stats) {
             setCrmStats({
               all: statsResult.stats,
@@ -1447,9 +1449,11 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                 const crmResult = await crmResponse.json();
                 console.log('CRM full data result:', crmResult.success, 'rawRows:', crmResult.rawRows?.length || 0);
                 
-                if (crmResult.success && crmResult.rawRows && crmResult.rawRows.length > 0) {
+                assertCompleteCRMResponse(crmResult, true);
+                if (crmResult.success && crmResult.rawRows) {
                   const loadedCRM = convertBigQueryToCRMData(crmResult.rawRows);
                   setCrmData(loadedCRM);
+                  setCrmStats({ all: crmResult.stats, fixed: crmResult.fixedStats, flexible: crmResult.flexibleStats });
                   console.log(`CRM full data loaded: ${loadedCRM.length} records`);
                   crmFullDataLoadedRef.current = true;
                   return;
@@ -1684,11 +1688,13 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
       const response = await fetch('/api/crm/bigquery?refresh=true&full=true');
       if (response.ok) {
         const result = await response.json();
-        if (result.success && result.rawRows && result.rawRows.length > 0) {
+        assertCompleteCRMResponse(result, true);
+        if (result.success && result.rawRows) {
           const loadedCRM = convertBigQueryToCRMData(result.rawRows);
           
-          if (loadedCRM.length > 0) {
+          if (loadedCRM.length === result.totalRows) {
             setCrmData(loadedCRM);
+            setCrmStats({ all: result.stats, fixed: result.fixedStats, flexible: result.flexibleStats });
             setDataSources(prev => ({...prev, crm: 'bigquery'}));
             setLastUploadTimes(prev => ({...prev, crm: new Date().toISOString()}));
             console.log(`Refreshed ${loadedCRM.length} CRM records from BigQuery`);
@@ -1754,9 +1760,11 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
       try {
         if (crmRes.ok) {
           const result = await crmRes.json();
-          if (result.success && result.rawRows?.length > 0) {
+          assertCompleteCRMResponse(result, true);
+          if (result.success && result.rawRows) {
             const loadedCRM = convertBigQueryToCRMData(result.rawRows);
             setCrmData(loadedCRM);
+            setCrmStats({ all: result.stats, fixed: result.fixedStats, flexible: result.flexibleStats });
             setDataSources(prev => ({...prev, crm: 'bigquery'}));
             results.crm = true;
             console.log(`Synced ${loadedCRM.length} CRM records`);
@@ -1865,10 +1873,12 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
             console.log('CRM upload result:', result);
             
             setCrmData(crmRecords);
+            setCrmStats(null); // Uploaded CSV is a different complete dataset.
             alert(`Success! ${crmRecords.length} CRM records saved to cloud (${(result.size / 1024 / 1024).toFixed(1)}MB).`);
           } catch (uploadError: any) {
             console.error('Upload error:', uploadError);
             setCrmData(crmRecords);
+            setCrmStats(null);
             alert(`Loaded ${crmRecords.length} CRM records locally. Cloud sync failed: ${uploadError.message}`);
           }
         } else {

@@ -7,3 +7,4 @@
 - [Campus English proposal preference](campus-proposal-seo.md) — prefer the detailed English proposal; redirect the older draft rather than canonicalizing different content.
 - [CRM fixture scope](crm-fixture-scope.md) — repeated opponents are distinct matches; filter by match season, not purchase date.
 - [CRM full-season capacity](crm-full-season-capacity.md) — validate subscription names against real events; partial subscriptions and packs must retain historical Flexible classification.
+- [Complete CRM snapshots](crm-complete-snapshots.md) — full local search needs coherent complete detail; future detail pagination must move filtering and search together.
