@@ -15,6 +15,7 @@ import { registerAdminRoutes } from "./adminRoutes.js";
 import { registerXeroRoutes } from "./xeroRoutes.js";
 import aiRoutes from "./aiRoutes.js";
 import crypto from "crypto";
+import { isRowFixedCapacity } from "../src/utils/crmCapacity";
 
 const SHOPIFY_STORE = process.env.SHOPIFY_STORE_NAME || 'pallacanestro-varese';
 const SHOPIFY_ACCESS_TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
@@ -727,12 +728,6 @@ const parseNumber = (val: any): number => {
   return isNaN(num) ? 0 : num;
 };
 
-// Helper to determine if a row is fixed capacity
-const isRowFixedCapacity = (row: any): boolean => {
-  const eventRaw = (row.event || row.Event || row.EVENT || '').trim().toLowerCase();
-  return eventRaw === 'abbonamento lba 2025/26';
-};
-
 // Slim down CRM rows to only essential fields for frontend (reduces ~38MB to ~4MB)
 const slimCRMRows = (rawRows: any[]): any[] => {
   const essentialFields = [
@@ -974,11 +969,8 @@ const computeCRMStats = (rawRows: any[]) => {
     }
     
     // Fixed vs Flexible capacity breakdown
-    // Fixed = event equals "ABBONAMENTO LBA 2025/26" (case-insensitive)
-    // Flexible = everything else
-    const eventRaw = (row.event || row.Event || row.EVENT || '').trim().toLowerCase();
-    const isFixedCapacity = eventRaw === 'abbonamento lba 2025/26';
-    if (isFixedCapacity) {
+    // Use the same full-season event rule as precomputed stats and local filters.
+    if (isRowFixedCapacity(row)) {
       capacityBreakdown.fixed.tickets += qty;
       capacityBreakdown.fixed.revenue += rowRevenue;
     } else {
@@ -1271,7 +1263,7 @@ app.get("/api/crm/bigquery", async (req, res) => {
     if (result.success && result.rawRows) {
       // Compute stats for all data
       const processedStats = computeCRMStats(result.rawRows);
-      // Compute stats for fixed capacity only (event = "ABBONAMENTO LBA 2025/26")
+      // Compute stats for full-season subscriptions only.
       const fixedRows = result.rawRows.filter(isRowFixedCapacity);
       const fixedStats = computeCRMStats(fixedRows);
       // Compute stats for flexible capacity (everything else)

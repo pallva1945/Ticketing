@@ -6,3 +6,4 @@
 - [GameDay capacity meaning](gameday-capacity.md) — 26/27 zone figures are final available GameDay seats; do not subtract additional corporate seats from them.
 - [Campus English proposal preference](campus-proposal-seo.md) — prefer the detailed English proposal; redirect the older draft rather than canonicalizing different content.
 - [CRM fixture scope](crm-fixture-scope.md) — repeated opponents are distinct matches; filter by match season, not purchase date.
+- [CRM full-season capacity](crm-full-season-capacity.md) — validate subscription names against real events; partial subscriptions and packs must retain historical Flexible classification.

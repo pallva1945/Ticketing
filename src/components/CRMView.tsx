@@ -6,6 +6,7 @@ import { MultiSelect } from './MultiSelect';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, Legend } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { crmGameDate, normalizeCRMSeason, prepareCRMRecords } from '../utils/crmGames';
+import { getCapacityBucket } from '../utils/crmCapacity';
 
 const COLORS = ['#dc2626', '#2563eb', '#16a34a', '#ca8a04', '#9333ea', '#0891b2', '#be185d', '#65a30d'];
 
@@ -181,16 +182,6 @@ export const CRMView: React.FC<CRMViewProps> = ({ data: sourceData, sponsorData 
   const [personaSortDir, setPersonaSortDir] = useState<'asc' | 'desc'>('desc');
 
   const hasActiveFilter = !selectedSeasons.includes('All') || !selectedZones.includes('All') || !selectedGames.includes('All') || !selectedSellTypes.includes('All') || capacityView !== 'all';
-
-  const getCapacityBucket = (r: CRMRecord): 'fixed' | 'flexible' => {
-    // Fixed = event equals "ABBONAMENTO LBA 2025/26" (case-insensitive)
-    // Flexible = everything else
-    const eventLower = (r.event || '').trim().toLowerCase();
-    if (eventLower === 'abbonamento lba 2025/26') {
-      return 'fixed';
-    }
-    return 'flexible';
-  };
 
   const clearAllFilters = () => {
     setSelectedSeasons(['All']);
