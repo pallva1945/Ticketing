@@ -5,7 +5,7 @@ export type TicketingViewMode = 'total' | 'gameday';
 
 const ALL_CHANNELS = [
   SalesChannel.ABB, SalesChannel.CORP, SalesChannel.TIX, SalesChannel.MP,
-  SalesChannel.VB, SalesChannel.PROTOCOL, SalesChannel.GIVEAWAY,
+  SalesChannel.VB, SalesChannel.GIVEAWAY,
 ];
 const GAME_DAY_CHANNELS = [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY];
 
@@ -19,17 +19,30 @@ export interface UpcomingZoneRow extends SalesTotals {
   channels: Partial<Record<SalesChannel, SalesTotals>>;
 }
 
+const amountFormat = new Intl.NumberFormat('it-IT', {
+  useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2,
+});
+const quantityFormat = new Intl.NumberFormat('it-IT', { useGrouping: true, maximumFractionDigits: 0 });
+export const formatTicketingAmount = (value: number) => amountFormat.format(value);
+export const formatTicketingQuantity = (value: number) => quantityFormat.format(value);
+export const ticketingYield = (revenue: number, quantity: number): number | null =>
+  quantity > 0 ? revenue / quantity : null;
+
 // Inspection-only aggregation. Never changes the raw fixture or played cohort.
 export function upcomingTicketingSummary(game: GameData, viewMode: TicketingViewMode = 'total') {
   const channels = viewMode === 'gameday' ? GAME_DAY_CHANNELS : ALL_CHANNELS;
-  const sales = game.salesBreakdown.filter(sale => channels.includes(sale.channel));
+  const sales = game.salesBreakdown.filter(sale =>
+    channels.includes(sale.channel) || (viewMode === 'total' && sale.channel === SalesChannel.PROTOCOL));
   const byZone = new Map<string, UpcomingZoneRow>();
   for (const sale of sales) {
     const row = byZone.get(sale.zone) || { zone: sale.zone, channels: {}, revenue: 0, quantity: 0 };
-    const channel = row.channels[sale.channel] || { revenue: 0, quantity: 0 };
+    // Protocol is part of the GA display group in Total only. GameDay must
+    // continue excluding fixed Protocol allocations before grouping.
+    const displayChannel = sale.channel === SalesChannel.PROTOCOL ? SalesChannel.GIVEAWAY : sale.channel;
+    const channel = row.channels[displayChannel] || { revenue: 0, quantity: 0 };
     channel.revenue += sale.revenue;
     channel.quantity += sale.quantity;
-    row.channels[sale.channel] = channel;
+    row.channels[displayChannel] = channel;
     row.revenue += sale.revenue;
     row.quantity += sale.quantity;
     byZone.set(sale.zone, row);

@@ -1,6 +1,6 @@
 - [Season rollover without fabricated figures](season-rollover.md) — default to the requested season, but keep historical data intact and show no-data states where current figures are unavailable.
 - [Ticketing comparison visual preference](ticketing-comparison-visual.md) — user affirmed vertical columns, calculated linear trends, and selectable metrics.
-- [Comparison consistency](comparison-navigation-consistency.md) — use Ticketing terminology and selection logic in both modules; changes apply to both unless explicitly excepted.
+- [Terminology and comparison consistency](comparison-navigation-consistency.md) — preserve established wording app-wide; align Ticketing/GameDay comparisons unless explicitly excepted.
 - [Comparison crests](comparison-pdf-crests.md) — app and PDF use verified local badges for the actual opponents and competition.
 - [Post-merge dependency safety](post-merge-dependencies.md) — avoid unconditional clean installs when the lockfile contains firewall-blocked packages.
 - [Tier-over-years meaning](tier-over-years.md) — compare the same tier across seasons using per-game volume averages, not two different tiers side by side.

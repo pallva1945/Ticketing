@@ -4,7 +4,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { SalesChannel, TicketZone } from '../src/types.ts';
 import { CAPACITIES_26_27, GAMEDAY_CAPACITIES_26_27 } from '../src/constants.ts';
-import { upcomingTicketingSummary } from '../src/utils/upcomingTicketing.ts';
+import { upcomingTicketingSummary, formatTicketingAmount, formatTicketingQuantity, ticketingYield } from '../src/utils/upcomingTicketing.ts';
 import { UpcomingGames } from '../src/components/UpcomingGames.tsx';
 
 const sale = (channel, revenue, quantity, zone = TicketZone.PAR_O) => ({ zone, channel, revenue, quantity });
@@ -29,7 +29,9 @@ test('Total view sums repeated channels into one zone row with all channels', ()
   assert.equal(result.quantity, 46);
   assert.equal(result.rows[0].revenue, result.revenue);
   assert.equal(result.rows[0].quantity, result.quantity);
-  assert.deepEqual(result.channels, ['ABB', 'Corp', 'Tix', 'MP', 'VB', 'Protocol', 'GA']);
+  assert.deepEqual(result.channels, ['ABB', 'Corp', 'Tix', 'MP', 'VB', 'GA']);
+  assert.deepEqual(result.rows[0].channels[SalesChannel.GIVEAWAY], { revenue: 0, quantity: 10 });
+  assert.equal(result.rows[0].channels[SalesChannel.PROTOCOL], undefined);
 });
 
 test('GameDay view filters both totals and columns, retaining giveaways', () => {
@@ -41,6 +43,7 @@ test('GameDay view filters both totals and columns, retaining giveaways', () => 
   assert.deepEqual(Object.keys(result.rows[0].channels).sort(), ['GA', 'MP', 'Tix', 'VB']);
   assert.equal(result.rows[0].revenue, 440);
   assert.equal(result.rows[0].quantity, 22);
+  assert.equal(result.rows[0].channels[SalesChannel.GIVEAWAY].quantity, 2, 'Protocol remains excluded in GameDay');
 });
 
 test('zone totals remain distinct and inspecting does not mutate source fixtures', () => {
@@ -73,7 +76,7 @@ test('missing breakdown preserves Total totals but never fabricates GameDay figu
 
 const markup = (viewMode, ticketing = [game], module = 'ticketing') =>
   renderToStaticMarkup(React.createElement(UpcomingGames, { ticketing, module, viewMode }));
-const totalCurrency = (1240).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+const totalCurrency = (1240).toLocaleString('it-IT', { style: 'currency', currency: 'EUR', useGrouping: true });
 
 test('Ticketing markup renders one zone row with paired channel columns and final totals', () => {
   const html = markup('total');
@@ -82,8 +85,12 @@ test('Ticketing markup renders one zone row with paired channel columns and fina
   assert.match(html, /ABB #/);
   assert.match(html, /Corp €/);
   assert.match(html, /Corp #/);
-  assert.match(html, /Total €/);
-  assert.match(html, /Total #/);
+  assert.match(html, /Tot €/);
+  assert.match(html, /Tot #/);
+  assert.doesNotMatch(html, /Protocol €|Protocol #|GA €|GA #/);
+  assert.equal((html.match(/>GA<\/th>/g) || []).length, 1);
+  assert.ok(html.indexOf('Yield €') < html.indexOf('Tot €'));
+  assert.match(html, /26,96/);
   assert.ok(html.includes(totalCurrency));
   assert.match(html, /<strong>46<\/strong>/);
   assert.match(html, /overflow-x-auto/);
@@ -96,7 +103,50 @@ test('changing data view updates the rendered advance-sales summary and fixture 
   assert.match(html, /<strong>22<\/strong>/);
   assert.match(html, /Fixture totals \(GameDay tickets only\)/);
   assert.doesNotMatch(html, /ABB €|Corp €|Protocol €/);
-  assert.match(html, /GA #/);
+  assert.match(html, />GA<\/th>/);
+  assert.match(html, /20,00/);
+});
+
+test('amounts use two rounded decimals and counts use grouped integers, including four-digit values', () => {
+  assert.equal(formatTicketingAmount(1240), '1.240,00');
+  assert.equal(formatTicketingAmount(1234567.567), '1.234.567,57');
+  assert.equal(formatTicketingAmount(12.345), '12,35');
+  assert.equal(formatTicketingQuantity(1234), '1.234');
+  assert.equal(formatTicketingQuantity(1234567), '1.234.567');
+  assert.equal(formatTicketingAmount(0), '0,00');
+  assert.equal(formatTicketingQuantity(0), '0');
+});
+
+test('the single GA display group preserves Protocol revenue and quantity in totals', () => {
+  const source = { ...game, salesBreakdown: [
+    sale(SalesChannel.PROTOCOL, 25.5, 10),
+    sale(SalesChannel.GIVEAWAY, 0, 5),
+  ] };
+  const result = upcomingTicketingSummary(source, 'total');
+  assert.deepEqual(result.rows[0].channels[SalesChannel.GIVEAWAY], { revenue: 25.5, quantity: 15 });
+  assert.equal(result.revenue, 25.5);
+  assert.equal(result.quantity, 15);
+  assert.equal(upcomingTicketingSummary(source, 'gameday').revenue, 0);
+  assert.equal(upcomingTicketingSummary(source, 'gameday').quantity, 5);
+});
+
+test('footer yield is the weighted revenue per allocation, not an average of zone yields', () => {
+  const source = { ...game, salesBreakdown: [
+    ...game.salesBreakdown, sale(SalesChannel.TIX, 100, 100, TicketZone.TRIB_G),
+  ] };
+  const html = markup('total', [source]);
+  const footer = html.match(/<tfoot[\s\S]*?<\/tfoot>/)?.[0];
+  assert.ok(footer);
+  assert.ok(footer.includes(formatTicketingAmount(1340 / 146)));
+  assert.equal(ticketingYield(1340, 146), 1340 / 146);
+  assert.equal(ticketingYield(0, 10), 0);
+});
+
+test('zero-ticket yield is unavailable rather than Infinity or NaN', () => {
+  assert.equal(ticketingYield(100, 0), null);
+  const html = markup('total', [{ ...game, salesBreakdown: [sale(SalesChannel.TIX, 100, 0)] }]);
+  assert.match(html, /—/);
+  assert.doesNotMatch(html, /Infinity|NaN/);
 });
 
 test('unavailable and zero GameDay sales have distinct rendered empty states', () => {
@@ -108,4 +158,12 @@ test('commercial GameDay module does not inherit Ticketing data-view filtering',
   const html = markup('gameday', [game], 'gameday');
   assert.ok(html.includes(totalCurrency));
   assert.doesNotMatch(html, /ABB €|GameDay tickets only/);
+});
+
+test('upcoming sales retain the established Load Factor terminology in each view', () => {
+  for (const [viewMode, module] of [['total', 'ticketing'], ['gameday', 'ticketing'], ['total', 'gameday']]) {
+    const html = markup(viewMode, [game], module);
+    assert.match(html, /Load Factor %:/);
+    assert.doesNotMatch(html, /Allocated capacity/);
+  }
 });

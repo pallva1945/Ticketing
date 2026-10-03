@@ -9,7 +9,6 @@ const translations: Record<string, Record<Language, string>> = {
   'Open a game to inspect current sales. These figures are excluded from played-game averages, trends and projections.': { en: 'Open a game to inspect current sales. These figures are excluded from played-game averages, trends and projections.', it: 'Apri una partita per verificare le vendite attuali. Questi dati sono esclusi dalle medie, dai trend e dalle proiezioni delle partite disputate.' },
   'Ticket sales revenue': { en: 'Ticket sales revenue', it: 'Ricavi dalla vendita dei biglietti' },
   'Tickets / allocations to date': { en: 'Tickets / allocations to date', it: 'Biglietti / assegnazioni ad oggi' },
-  'Allocated capacity': { en: 'Allocated capacity', it: 'Capienza assegnata' },
   'Fixture totals (all zones and channels)': { en: 'Fixture totals (all zones and channels)', it: 'Totali della partita (tutti i settori e canali)' },
   'Fixture totals (GameDay tickets only)': { en: 'Fixture totals (GameDay tickets only)', it: 'Totali della partita (solo biglietti GameDay)' },
   'No channel breakdown available.': { en: 'No channel breakdown available.', it: 'Dettaglio per canale non disponibile.' },

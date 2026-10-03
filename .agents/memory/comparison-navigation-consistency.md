@@ -1,7 +1,13 @@
 ---
-name: Comparison navigation consistency
-description: Coaches need consistent terminology, comparison logic, and coordinated changes in Ticketing and GameDay.
+name: Terminology and comparison consistency
+description: Preserve established app-wide terminology and align comparison logic in Ticketing and GameDay.
 ---
+
+Preserve established terminology throughout this app. Do not introduce a new name for an existing concept unless the change is necessary.
+
+**Why:** The user explicitly said, “if we have one way to say something, we should stick to it,” after requesting that upcoming sales reuse Load Factor rather than Allocated capacity.
+
+**How to apply:** Check existing labels and translations before introducing wording in new or modified views. Reuse the established term for the same metric, including inspection panels.
 
 Keep Ticketing and GameDay comparisons consistent in terminology, selected fixture data, comparison logic, and presentation, not merely in tab appearance. Take Ticketing as the reference. Apply comparison changes to both modules unless the user explicitly requests a module-specific exception; their underlying revenue streams remain domain-specific.
 

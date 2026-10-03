@@ -1,9 +1,15 @@
 import React from 'react';
-import type { GameData, GameDayData } from '../types';
+import { SalesChannel, type GameData, type GameDayData } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { fixtureDay } from '../utils/fixtureEligibility';
 import { fixtureKey } from '../utils/gameDayComparison';
-import { upcomingTicketingSummary, type TicketingViewMode } from '../utils/upcomingTicketing';
+import {
+  formatTicketingAmount,
+  formatTicketingQuantity,
+  ticketingYield,
+  upcomingTicketingSummary,
+  type TicketingViewMode,
+} from '../utils/upcomingTicketing';
 
 interface Props {
   ticketing: GameData[];
@@ -25,9 +31,9 @@ export function UpcomingGames({ ticketing, gameDay = [], module, viewMode = 'tot
   const sorted = [...fixtures.entries()].sort(([, a], [, b]) =>
     fixtureDay((a.ticket || a.commercial)!.date).localeCompare(fixtureDay((b.ticket || b.commercial)!.date)));
   if (!sorted.length) return null;
-  const currency = (value: number) => value.toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
-  // Currency units are already in the column headings; keep table cells compact.
-  const tableRevenue = (value: number) => value.toLocaleString('it-IT', { maximumFractionDigits: 2 });
+  const currency = (value: number) => value.toLocaleString('it-IT', {
+    style: 'currency', currency: 'EUR', useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2,
+  });
   const ticketingSummaries = module === 'ticketing'
     ? ticketing.map(game => upcomingTicketingSummary(game, viewMode))
     : [];
@@ -35,7 +41,7 @@ export function UpcomingGames({ ticketing, gameDay = [], module, viewMode = 'tot
     ? ticketingSummaries.reduce((sum, summary) => sum + (summary.revenue ?? 0), 0)
     : null;
   const formatMetric = (value: number | null) => value === null ? '—' : currency(value);
-  const formatQuantity = (value: number | null) => value === null ? '—' : value.toLocaleString('it-IT');
+  const formatQuantity = (value: number | null) => value === null ? '—' : formatTicketingQuantity(value);
 
   return <section className="mb-6 rounded-xl border border-amber-200 bg-white p-4 dark:border-amber-800 dark:bg-gray-900" aria-label={t('Upcoming games / On sale')}>
     <h2 className="font-semibold text-gray-900 dark:text-white">{t('Upcoming games / On sale')} ({sorted.length})</h2>
@@ -68,14 +74,18 @@ export function UpcomingGames({ ticketing, gameDay = [], module, viewMode = 'tot
                 return <>
                   <p>{t('Ticket sales revenue')}: <strong>{formatMetric(summary.revenue)}</strong></p>
                   <p>{t('Tickets / allocations to date')}: <strong>{formatQuantity(summary.quantity)}</strong></p>
-                  <p>{t('Allocated capacity')}: <strong>{summary.quantity !== null && summary.capacity > 0
-                    ? `${(summary.quantity / summary.capacity * 100).toFixed(1)}%`
+                  <p>{t('Load Factor')} %: <strong>{summary.quantity !== null && summary.capacity > 0
+                    ? `${(summary.quantity / summary.capacity * 100).toLocaleString('it-IT', {
+                      useGrouping: true, minimumFractionDigits: 1, maximumFractionDigits: 1,
+                    })}%`
                     : '—'}</strong></p>
                 </>;
               })() : <>
                 <p>{t('Ticket sales revenue')}: <strong>{currency(ticket.totalRevenue)}</strong></p>
-                <p>{t('Tickets / allocations to date')}: <strong>{ticket.attendance.toLocaleString('it-IT')}</strong></p>
-                <p>{t('Allocated capacity')}: <strong>{ticket.capacity > 0 ? `${(ticket.attendance / ticket.capacity * 100).toFixed(1)}%` : '—'}</strong></p>
+                <p>{t('Tickets / allocations to date')}: <strong>{formatTicketingQuantity(ticket.attendance)}</strong></p>
+                <p>{t('Load Factor')} %: <strong>{ticket.capacity > 0 ? `${(ticket.attendance / ticket.capacity * 100).toLocaleString('it-IT', {
+                  useGrouping: true, minimumFractionDigits: 1, maximumFractionDigits: 1,
+                })}%` : '—'}</strong></p>
               </>}
             </div>}
             {module === 'ticketing' && ticket && (() => {
@@ -92,11 +102,16 @@ export function UpcomingGames({ ticketing, gameDay = [], module, viewMode = 'tot
                     <tr>
                       <th scope="col" className="sticky left-0 z-10 bg-gray-50 py-2 pl-2 pr-3 text-left font-semibold dark:bg-gray-800">{t('Zone')}</th>
                       {summary.channels.map(channel => <React.Fragment key={channel}>
-                        <th scope="col" aria-label={`${channel} revenue`} className="px-2 py-2 text-right font-semibold">{channel} €</th>
-                        <th scope="col" aria-label={`${channel} tickets`} className="px-2 py-2 text-right font-semibold">{channel} #</th>
+                        {channel === SalesChannel.GIVEAWAY
+                          ? <th scope="col" aria-label={`${channel} tickets`} className="px-2 py-2 text-right font-semibold">{channel}</th>
+                          : <>
+                            <th scope="col" aria-label={`${channel} revenue`} className="px-2 py-2 text-right font-semibold">{channel} €</th>
+                            <th scope="col" aria-label={`${channel} tickets`} className="px-2 py-2 text-right font-semibold">{channel} #</th>
+                          </>}
                       </React.Fragment>)}
-                      <th scope="col" aria-label={`${t('Total')} ${t('Revenue')}`} className="border-l border-gray-200 px-2 py-2 text-right font-semibold dark:border-gray-700">{t('Total')} €</th>
-                      <th scope="col" aria-label={`${t('Total')} ${t('Tickets')}`} className="px-2 py-2 pr-3 text-right font-semibold">{t('Total')} #</th>
+                      <th scope="col" aria-label={`${t('Yield')} €`} className="px-2 py-2 text-right font-semibold">{t('Yield')} €</th>
+                      <th scope="col" aria-label={`${t('Total')} ${t('Revenue')}`} className="border-l border-gray-200 px-2 py-2 text-right font-semibold dark:border-gray-700">Tot €</th>
+                      <th scope="col" aria-label={`${t('Total')} ${t('Tickets')}`} className="px-2 py-2 pr-3 text-right font-semibold">Tot #</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -105,17 +120,24 @@ export function UpcomingGames({ ticketing, gameDay = [], module, viewMode = 'tot
                       {summary.channels.map(channel => {
                         const sales = row.channels[channel] || { revenue: 0, quantity: 0 };
                         return <React.Fragment key={channel}>
-                          <td className="px-2 py-2 text-right whitespace-nowrap">{tableRevenue(sales.revenue)}</td>
-                          <td className="px-2 py-2 text-right whitespace-nowrap">{sales.quantity.toLocaleString('it-IT')}</td>
+                          {channel === SalesChannel.GIVEAWAY
+                            ? <td className="px-2 py-2 text-right whitespace-nowrap">{formatTicketingQuantity(sales.quantity)}</td>
+                            : <>
+                              <td className="px-2 py-2 text-right whitespace-nowrap">{formatTicketingAmount(sales.revenue)}</td>
+                              <td className="px-2 py-2 text-right whitespace-nowrap">{formatTicketingQuantity(sales.quantity)}</td>
+                            </>}
                         </React.Fragment>;
                       })}
-                      <td className="border-l border-gray-100 px-2 py-2 text-right whitespace-nowrap font-medium dark:border-gray-800">{tableRevenue(row.revenue)}</td>
-                      <td className="px-2 py-2 pr-3 text-right whitespace-nowrap font-medium">{row.quantity.toLocaleString('it-IT')}</td>
+                      <td className="px-2 py-2 text-right whitespace-nowrap">{ticketingYield(row.revenue, row.quantity) === null
+                        ? '—'
+                        : formatTicketingAmount(ticketingYield(row.revenue, row.quantity)!)}</td>
+                      <td className="border-l border-gray-100 px-2 py-2 text-right whitespace-nowrap font-medium dark:border-gray-800">{formatTicketingAmount(row.revenue)}</td>
+                      <td className="px-2 py-2 pr-3 text-right whitespace-nowrap font-medium">{formatTicketingQuantity(row.quantity)}</td>
                     </tr>)}
                   </tbody>
                   <tfoot className="border-t border-gray-200 bg-gray-50 font-semibold text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
                     <tr>
-                      <th scope="row" className="sticky left-0 z-[1] bg-gray-50 py-2 pl-2 pr-3 text-left dark:bg-gray-800">{t('Total')}</th>
+                      <th scope="row" className="sticky left-0 z-[1] bg-gray-50 py-2 pl-2 pr-3 text-left dark:bg-gray-800">Tot</th>
                       {summary.channels.map(channel => {
                         const totals = summary.rows.reduce((sum, row) => {
                           const sales = row.channels[channel];
@@ -125,12 +147,24 @@ export function UpcomingGames({ ticketing, gameDay = [], module, viewMode = 'tot
                           };
                         }, { revenue: 0, quantity: 0 });
                         return <React.Fragment key={channel}>
-                          <td className="px-2 py-2 text-right whitespace-nowrap">{tableRevenue(totals.revenue)}</td>
-                          <td className="px-2 py-2 text-right whitespace-nowrap">{totals.quantity.toLocaleString('it-IT')}</td>
+                          {channel === SalesChannel.GIVEAWAY
+                            ? <td className="px-2 py-2 text-right whitespace-nowrap">{formatTicketingQuantity(totals.quantity)}</td>
+                            : <>
+                              <td className="px-2 py-2 text-right whitespace-nowrap">{formatTicketingAmount(totals.revenue)}</td>
+                              <td className="px-2 py-2 text-right whitespace-nowrap">{formatTicketingQuantity(totals.quantity)}</td>
+                            </>}
                         </React.Fragment>;
                       })}
-                      <td className="border-l border-gray-200 px-2 py-2 text-right whitespace-nowrap dark:border-gray-700">{tableRevenue(summary.rows.reduce((sum, row) => sum + row.revenue, 0))}</td>
-                      <td className="px-2 py-2 pr-3 text-right whitespace-nowrap">{summary.rows.reduce((sum, row) => sum + row.quantity, 0).toLocaleString('it-IT')}</td>
+                      {(() => {
+                        const totalRevenue = summary.rows.reduce((sum, row) => sum + row.revenue, 0);
+                        const totalQuantity = summary.rows.reduce((sum, row) => sum + row.quantity, 0);
+                        const yieldValue = ticketingYield(totalRevenue, totalQuantity);
+                        return <>
+                          <td className="px-2 py-2 text-right whitespace-nowrap">{yieldValue === null ? '—' : formatTicketingAmount(yieldValue)}</td>
+                          <td className="border-l border-gray-200 px-2 py-2 text-right whitespace-nowrap dark:border-gray-700">{formatTicketingAmount(totalRevenue)}</td>
+                          <td className="px-2 py-2 pr-3 text-right whitespace-nowrap">{formatTicketingQuantity(totalQuantity)}</td>
+                        </>;
+                      })()}
                     </tr>
                   </tfoot>
                 </table>
