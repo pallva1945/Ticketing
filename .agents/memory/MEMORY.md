@@ -13,3 +13,4 @@
 - [Complete CRM snapshots](crm-complete-snapshots.md) — full local search needs coherent complete detail; future detail pagination must move filtering and search together.
 - [BOPs cost source access](bops-cost-source-access.md) — Google Sheet configuration and manual refresh are owner-only and distinct from revenue and SG&A sources.
 - [Preview authentication diagnostics](preview-auth-diagnostics.md) — diagnose Google sign-in at the real HTTPS preview origin; localhost capture errors can be misleading.
+- [Played-game performance](played-game-performance.md) — upcoming games stay accessible for sales monitoring but must not distort Ticketing, GameDay, or Executive performance.
