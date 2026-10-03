@@ -3,7 +3,7 @@ import { SalesChannel } from '../types';
 import { getFixedCapacityForSeason } from '../constants';
 import type { ComparisonReportGroup } from '../components/comparisonReport';
 import {
-  buildGameDayFixtures, buildGameDayGroups, fixtureKey, gameDaySeasons, selectGameDayCustom,
+  buildGameDayFixtures, buildGameDayGroups, fixtureKey, gameDaySeasons, selectGameDayCustom, resolveYtdReference,
   type GameDayComparisonGroup, type GameDayCustomFilters,
 } from './gameDayComparison';
 
@@ -15,6 +15,8 @@ export interface SeasonComparisonSelection {
   firstTier: number | null;
   week: number;
   seasons?: string[];
+  referenceSeason?: string;
+  ytdWeek?: number;
 }
 const allFilters: GameDayCustomFilters = {
   seasons: ['All'], leagues: ['All'], opponents: ['All'], tiers: ['All'], dates: ['All'],
@@ -57,7 +59,9 @@ export function buildSeasonComparison(
   const seasons = gameDaySeasons(scheduleData, fullData);
   const currentSeason = seasons[seasons.length - 1];
   const currentFixtures = leagueFixtures.filter(fixture => fixture.season === currentSeason);
-  const currentOpponents = [...new Set(currentFixtures.map(fixture => fixture.opponent))].sort();
+  const ytdReference = resolveYtdReference(fixtures, seasons, { ...selection, league });
+  const isYtd = mode === 'ytd' || mode === 'ytd-week' || mode === 'ytd-opponent';
+  const currentOpponents = isYtd ? ytdReference.opponents : [...new Set(currentFixtures.map(fixture => fixture.opponent))].sort();
   const opponents = [...new Set(leagueFixtures.map(fixture => fixture.opponent))].sort();
   const tiers = [...new Set(leagueFixtures.flatMap(fixture => fixture.tier === undefined ? [] : [fixture.tier]))].sort((a, b) => a - b);
   const selectedOpponent = opponents.includes(selection.opponent) ? selection.opponent : currentOpponents[0] || opponents[0] || '';
@@ -66,20 +70,21 @@ export function buildSeasonComparison(
   const maxWeek = Math.max(1, ...seasons.map(season => leagueFixtures.filter(fixture => fixture.season === season).length));
   const selectedWeek = Math.max(1, Math.min(selection.week, maxWeek));
   const groups = buildGameDayGroups(fixtures, seasons, mode,
-    { league, opponent: selectedOpponent, secondOpponent: selectedSecond, tier: String(selectedFirstTier ?? ''), week: selectedWeek },
+    { league, opponent: selectedOpponent, secondOpponent: selectedSecond, tier: String(selectedFirstTier ?? ''), week: selectedWeek,
+      referenceSeason: selection.referenceSeason, ytdWeek: selection.ytdWeek },
     allFilters, allFilters)
     .filter(group => !selection.seasons || selection.seasons.includes('All') || (group.season && selection.seasons.includes(group.season)))
     .map(group => ticketingGroup(group, fullData, viewMode));
-  const currentCount = currentFixtures.length;
+  const currentCount = isYtd ? ytdReference.count : currentFixtures.length;
   const title = mode === 'opponent' ? 'Opponent comparison' : mode === 'tier' ? 'Tier over the years' :
     mode === 'week' ? 'Week vs week' : mode === 'ytd-opponent' ? 'YTD by opponent' : 'YTD by week';
   const detail = mode === 'opponent' ? `${selectedOpponent}${selectedSecond ? ` vs ${selectedSecond}` : ''}` :
     mode === 'tier' ? `Tier ${selectedFirstTier ?? '—'}` : mode === 'week' ? `W${selectedWeek}` :
     mode === 'ytd-opponent' ? currentOpponents.join(' + ') || 'No opponents played' : currentCount ? `W1–W${currentCount}` : 'No weeks played';
   return { leagues, league, seasons, opponents, tiers, selectedOpponent, selectedSecond, selectedFirstTier,
-    maxWeek, selectedWeek, currentCount, currentOpponents, groups, title,
-    description: `${title} · ${detail} · per-game averages · ${league} · ${viewMode === 'total' ? 'Total' : 'GameDay'}`,
-    currentLabels: groups.filter(group => group.label.startsWith(`${currentSeason} · `)).map(group => group.label) };
+    maxWeek, selectedWeek, currentCount, currentOpponents, groups, title, ytdReference, ytdReferenceSeason: ytdReference.season,
+    description: `${title} · ${detail}${isYtd ? ` · Reference ${ytdReference.season} · ${currentCount ? `through W${currentCount}` : 'No eligible games'}` : ''} · per-game averages · ${league} · ${viewMode === 'total' ? 'Total' : 'GameDay'}`,
+    currentLabels: groups.filter(group => group.label.startsWith(`${isYtd ? ytdReference.season : currentSeason} · `)).map(group => group.label) };
 }
 export function buildTicketingCustomComparison(
   fullData: GameData[], viewMode: 'total' | 'gameday', filtersA: GameDayCustomFilters,

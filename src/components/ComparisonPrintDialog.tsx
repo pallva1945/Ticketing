@@ -4,6 +4,7 @@ import { ComparisonMetricKey } from './comparisonMetrics';
 import { ComparisonReport, printComparisonReports } from './comparisonReport';
 import type { SeasonComparisonMode, SeasonComparisonSelection } from '../utils/seasonComparison';
 import { buildSeasonComparison } from '../utils/seasonComparison';
+import { YtdReferenceControls } from './YtdReferenceControls';
 
 type ReportMode = SeasonComparisonMode | 'custom';
 type ReportSlot = { mode: ReportMode; selection: SeasonComparisonSelection };
@@ -99,7 +100,7 @@ export const ComparisonPrintDialog: React.FC<Props> = ({
                 {details && <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
                   League
                   <select className={selectClass} value={details.league}
-                    onChange={event => updateSelection({ league: event.target.value, opponent: '', secondOpponent: '', firstTier: null, week: 1 })}>
+                    onChange={event => updateSelection({ league: event.target.value, opponent: '', secondOpponent: '', firstTier: null, week: 1, ytdWeek: undefined })}>
                     {details.leagues.map(league => <option key={league} value={league}>{league}</option>)}
                   </select>
                 </label>}
@@ -137,6 +138,16 @@ export const ComparisonPrintDialog: React.FC<Props> = ({
                   </select>
                 </label>}
               </div>
+              {details && (slot.mode === 'ytd-week' || slot.mode === 'ytd-opponent' || slot.mode === 'ytd') && <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <YtdReferenceControls
+                  seasons={details.seasons}
+                  availableFixtures={details.ytdReference.availableFixtures}
+                  referenceSeason={slot.selection.referenceSeason}
+                  ytdWeek={slot.selection.ytdWeek}
+                  onReferenceSeasonChange={referenceSeason => updateSelection({ referenceSeason, ytdWeek: undefined })}
+                  onYtdWeekChange={ytdWeek => updateSelection({ ytdWeek })}
+                />
+              </div>}
               {slot.mode === 'custom' && <p className="mt-2 text-xs text-gray-500">
                 Uses the current Custom scenarios A and B.</p>}
             </fieldset>;

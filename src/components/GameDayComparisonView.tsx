@@ -8,10 +8,12 @@ import { ComparisonBadges } from './ComparisonBadges';
 import { GameDayComparisonChart } from './GameDayComparisonChart';
 import { printGameDayComparisonReport } from './GameDayComparisonReport';
 import { ComparisonModeTabs, type ComparisonMode } from './ComparisonModeTabs';
+import { YtdReferenceControls } from './YtdReferenceControls';
 import {
   buildGameDayFixtures, buildGameDayGroups, DEFAULT_GAMEDAY_METRICS,
   GAMEDAY_METRICS, gameDayChannelRows, gameDayCoverage, gameDayMetric,
   gameDaySeasons, gameDayFixtureLabel, gameDayDate, isGameDaySeason, selectGameDayCustom,
+  resolveYtdReference,
   type GameDayComparisonMode, type GameDayCustomFilters, type GameDayMetricKey,
   type GameDaySelection,
 } from '../utils/gameDayComparison';
@@ -79,6 +81,7 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
     week: 1,
       secondOpponent: '',
   });
+  const ytdReference = useMemo(() => resolveYtdReference(fixtures, seasons, selection), [fixtures, seasons, selection]);
   const leagueOpponents = useMemo(() => uniqueSorted(fixtures.filter(fixture => fixture.league === selection.league).map(fixture => fixture.opponent)), [fixtures, selection.league]);
   const selectedLeagueTiers = useMemo(() => uniqueSorted(fixtures.filter(fixture => fixture.league === selection.league && fixture.tier !== undefined)
     .map(fixture => String(fixture.tier))).sort((a, b) => Number(a) - Number(b)), [fixtures, selection.league]);
@@ -120,10 +123,10 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
     ? fullSeasonGroups
     : fullSeasonGroups.filter(group => seasonSelection.includes('All') || !group.season || seasonSelection.includes(group.season)),
   [fullSeasonGroups, mode, seasonSelection]);
-  const ytdReferenceCount = useMemo(() => {
-    const allYtd = buildGameDayGroups(fixtures, seasons, 'ytd', selection, customA, customB);
-    return allYtd.find(group => group.season === newestSeason)?.fixtureCount || 0;
-  }, [fixtures, seasons, selection, customA, customB, newestSeason]);
+  const ytdReferenceCount = ytdReference.count;
+  const ytdReferenceSeason = ytdReference.season;
+  const ytdReferenceOpponents = ytdReference.opponents;
+  const isYtdMode = mode === 'ytd-week' || mode === 'ytd-opponent';
   const selectedMetrics = metricSlots;
   const matchedFixtures = groups.reduce((sum, group) => sum + group.fixtureCount, 0);
   const knownGames = groups.reduce((sum, group) => sum + group.games.length, 0);
@@ -176,8 +179,8 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
       ...(mode === 'opponent' ? [`${t('Opponent')}: ${selection.opponent || '—'}${selection.secondOpponent ? ` vs ${selection.secondOpponent}` : ''}`] : []),
        ...(mode === 'week' ? [`${t('Home game week')}: W${selection.week}`] : []),
        ...(mode === 'tier' ? [`${t('Tier')}: ${selection.tier || '—'}`] : []),
-       ...(mode === 'ytd-week' ? [`${t('YTD by week')}: ${t('First')} ${ytdReferenceCount} ${t('fixtures')} in ${newestSeason || '—'}`] : []),
-       ...(mode === 'ytd-opponent' ? [`${t('YTD by opponent')}: ${currentOpponents.join(', ') || t('None yet')}`] : []),
+        ...(mode === 'ytd-week' ? [`${t('YTD by week')}: ${ytdReferenceSeason || '—'} · ${t('First')} ${ytdReferenceCount} ${t('fixtures')} · ${ytdReferenceOpponents.join(', ') || t('None yet')}`] : []),
+        ...(mode === 'ytd-opponent' ? [`${t('YTD by opponent')}: ${ytdReferenceSeason || '—'} · ${t('First')} ${ytdReferenceCount} ${t('fixtures')} · ${ytdReferenceOpponents.join(', ') || t('None yet')}`] : []),
     ].join(' · ');
 
   const onPrint = () => printGameDayComparisonReport({
@@ -187,13 +190,14 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
     mode,
     filterSummary,
     newestSeason,
+    ytdReferenceSeason,
     ytdReferenceCount,
     cagrBaseline,
     excludedRecords,
     league: badgeLeague,
     opponents: badgeOpponents,
     locale,
-    translate: t,
+    translate: label => t(label),
   });
 
   if (!fixtures.length) return (
@@ -223,7 +227,7 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
         </div>
         <div className="grid grid-cols-2 divide-x divide-slate-100 sm:grid-cols-4 dark:divide-slate-800">
           <div className="px-5 py-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('Newest season')}</p><p className="mt-1 font-mono text-sm font-bold text-slate-900 dark:text-slate-100">{newestSeason || '—'}</p></div>
-          <div className="px-5 py-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('YTD reference')}</p><p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">{t('First')} {ytdReferenceCount} {t('fixtures')}</p></div>
+          <div className="px-5 py-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('YTD reference')}</p><p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">{ytdReferenceSeason || '—'} · {t('First')} {ytdReferenceCount} {t('fixtures')}</p><p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">{ytdReferenceOpponents.join(', ') || t('None yet')}</p></div>
           <div className="px-5 py-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('Fixtures selected')}</p><p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">{matchedFixtures} <span className="font-normal text-slate-400 dark:text-slate-500">· {knownGames} {t('with commercial data')}</span></p></div>
           <div className="px-5 py-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{t('Ticketing')}</p><p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">{includeTicketing ? t('Included in commercial total') : t('Excluded from commercial total')}</p></div>
         </div>
@@ -248,12 +252,13 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
               const nextCurrentOpponents = uniqueSorted(fixtures.filter(fixture => fixture.league === league && fixture.season === newestSeason).map(fixture => fixture.opponent));
               const nextTiers = uniqueSorted(fixtures.filter(fixture => fixture.league === league && fixture.tier !== undefined).map(fixture => String(fixture.tier)))
                 .sort((a, b) => Number(a) - Number(b));
-              setSelection(current => ({
+               setSelection(current => ({
                 ...current, league,
                 opponent: nextCurrentOpponents[0] || nextOpponents[0] || '',
                 secondOpponent: '',
                 tier: nextTiers[0] || '',
                 week: 1,
+                 ytdWeek: undefined,
               }));
             }}
               className="mt-1 block min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
@@ -286,11 +291,20 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
               {selectedLeagueTiers.map(tier => <option key={tier} value={tier}>{t('Tier')} {tier}</option>)}
             </select>
           </label>}
-          {(mode === 'ytd-week' || mode === 'ytd-opponent') && <div className="flex items-center gap-3 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-900 sm:col-span-2 xl:col-span-2 dark:bg-rose-950/50 dark:text-rose-200">
-            <CalendarDays size={17} className="shrink-0" /><span>{mode === 'ytd-week'
-              ? t('YTD by week aligns to the latest season’s fixture count; changing display seasons does not change the reference.')
-              : t('YTD by opponent uses opponents already played in the latest season; changing display seasons does not change the reference.')}</span>
-          </div>}
+          {(mode === 'ytd-week' || mode === 'ytd-opponent') && <>
+            <YtdReferenceControls
+              tone="slate"
+              seasons={seasons}
+              availableFixtures={ytdReference.availableFixtures}
+              referenceSeason={selection.referenceSeason}
+              ytdWeek={selection.ytdWeek}
+              onReferenceSeasonChange={referenceSeason => setSelection(current => ({ ...current, referenceSeason, ytdWeek: undefined }))}
+              onYtdWeekChange={ytdWeek => setSelection(current => ({ ...current, ytdWeek }))}
+            />
+            <div className="flex items-center gap-3 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-900 sm:col-span-2 xl:col-span-2 dark:bg-rose-950/50 dark:text-rose-200">
+              <CalendarDays size={17} className="shrink-0" /><span>{t('YTD reference')}: {ytdReferenceSeason || '—'} · {t('First')} {ytdReferenceCount} {t('fixtures')} · {ytdReferenceOpponents.join(', ') || t('None yet')}. {t('Changing display seasons does not change the reference.')}</span>
+            </div>
+          </>}
         </div> : <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
           {(['A', 'B'] as const).map(side => {
             const filters = side === 'A' ? customA : customB;
@@ -351,7 +365,8 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
         </p>}
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           {selectedMetrics.map((key, index) => <GameDayComparisonChart key={`${index}-${key}`} groups={displayGroups} metricKey={key}
-            includeTicketing={includeTicketing} seasonal={mode !== 'custom'} translate={t} />)}
+            includeTicketing={includeTicketing} seasonal={mode !== 'custom'}
+            highlightSeason={isYtdMode ? ytdReferenceSeason : undefined} translate={t} />)}
         </div>
       </div>
 

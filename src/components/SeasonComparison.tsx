@@ -5,6 +5,7 @@ import { ComparisonBadges } from './ComparisonBadges';
 import type { ComparisonMetricKey } from './comparisonMetrics';
 import { useLanguage } from '../contexts/LanguageContext';
 import { MultiSelect } from './MultiSelect';
+import { YtdReferenceControls } from './YtdReferenceControls';
 import {
   buildSeasonComparison, type SeasonComparisonMode, type SeasonComparisonSelection,
 } from '../utils/seasonComparison';
@@ -31,7 +32,7 @@ export const SeasonComparison: React.FC<Props> = ({
   );
   const {
     leagues, league, seasons, opponents, tiers, selectedOpponent, selectedSecond, selectedFirstTier,
-    maxWeek, selectedWeek, currentCount, groups, description, currentLabels, currentOpponents,
+    maxWeek, selectedWeek, currentCount, groups, description, currentLabels, currentOpponents, ytdReference,
   } = result;
   const update = (changes: Partial<SeasonComparisonSelection>) => onSelectionChange({ ...selection, ...changes });
   const includedOpponents = [...new Set(groups.flatMap(group => group.games.map(game => game.opponent)))];
@@ -54,7 +55,7 @@ export const SeasonComparison: React.FC<Props> = ({
             onChange={values => update({ seasons: values })} />
           <label className="text-xs font-semibold text-gray-600 dark:text-gray-300">
             {t('League')}
-            <select value={league} onChange={event => update({ league: event.target.value, opponent: '', secondOpponent: '', firstTier: null, week: 1 })}
+              <select value={league} onChange={event => update({ league: event.target.value, opponent: '', secondOpponent: '', firstTier: null, week: 1, ytdWeek: undefined })}
               className="mt-1 block min-w-32 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-800">
               {leagues.map(value => <option key={value} value={value}>{value}</option>)}
             </select>
@@ -90,6 +91,14 @@ export const SeasonComparison: React.FC<Props> = ({
               {Array.from({ length: maxWeek }, (_, index) => <option key={index} value={index + 1}>W{index + 1}</option>)}
             </select>
           </label>}
+          {(mode === 'ytd-week' || mode === 'ytd-opponent') && <YtdReferenceControls
+            seasons={seasons}
+            availableFixtures={ytdReference.availableFixtures}
+            referenceSeason={selection.referenceSeason}
+            ytdWeek={selection.ytdWeek}
+            onReferenceSeasonChange={referenceSeason => update({ referenceSeason, ytdWeek: undefined })}
+            onYtdWeekChange={ytdWeek => update({ ytdWeek })}
+          />}
         </div>
       </div>
 

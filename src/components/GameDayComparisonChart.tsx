@@ -13,6 +13,7 @@ interface Props {
   metricKey: GameDayMetricKey;
   includeTicketing: boolean;
   seasonal: boolean;
+  highlightSeason?: string;
   translate?: (label: string) => string;
 }
 
@@ -34,7 +35,7 @@ const yearOf = (season?: string) => {
   return year < 100 ? 2000 + year : year;
 };
 
-export const GameDayComparisonChart: React.FC<Props> = ({ groups, metricKey, includeTicketing, seasonal, translate = label => label }) => {
+export const GameDayComparisonChart: React.FC<Props> = ({ groups, metricKey, includeTicketing, seasonal, highlightSeason, translate = label => label }) => {
   const values = gameDayMetricValues(groups, metricKey, includeTicketing, seasonal);
   const metricTitle = metricKey === 'totalRevenue' && seasonal
     ? translate('Average GameDay revenue / fixture')
@@ -103,7 +104,7 @@ export const GameDayComparisonChart: React.FC<Props> = ({ groups, metricKey, inc
                   </div>;
                 }} />
                 <Bar dataKey="value" name={metricTitle} maxBarSize={42} radius={[5, 5, 0, 0]} isAnimationActive={false}>
-                  {chartRows.map((row, index) => <Cell key={`${row.label}-${index}`} fill={row.value === null ? (dark ? '#344154' : '#e8edf2') : '#c84a52'} />)}
+                  {chartRows.map((row, index) => <Cell key={`${row.label}-${index}`} fill={row.value === null ? (dark ? '#344154' : '#e8edf2') : highlightSeason && row.group.season !== highlightSeason ? '#94a3b8' : '#c84a52'} />)}
                   <LabelList dataKey="value" position="top" formatter={(value: number | null) =>
                     value === null || value === undefined ? '—' : formatValue(Number(value), metricKey, locale)}
                     style={{ fontSize: 9, fill: dark ? '#cbd5e1' : '#49586a', fontWeight: 700 }} />

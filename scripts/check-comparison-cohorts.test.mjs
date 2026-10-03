@@ -1,6 +1,6 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildGameDayFixtures, buildGameDayGroups, gameDayMetric, gameDayFixtureLabel } from '../src/utils/gameDayComparison.ts';
+import { buildGameDayFixtures, buildGameDayGroups, gameDayMetric, gameDayFixtureLabel, resolveYtdReference } from '../src/utils/gameDayComparison.ts';
 import { buildSeasonComparison, buildTicketingCustomComparison } from '../src/utils/seasonComparison.ts';
 import { getComparisonSeriesValues, getMetricValue } from '../src/components/comparisonMetrics.ts';
 import { printComparisonReports } from '../src/components/comparisonReport.ts';
@@ -120,6 +120,55 @@ test('leagues absent this season cannot silently use a historical YTD reference'
     assert.deepEqual(ticket.groups.map(g => g.fixtureCount), [0, 0, 0, 0]);
     assert.deepEqual(ticket.groups.map(g => g.label), gd.map(g => g.label));
   }
+});
+test('historical reference and cutoff select identical YTD cohorts in both modules', () => {
+  const chosen = { referenceSeason: '25-26', ytdWeek: 2 };
+  for (const mode of ['ytd-week', 'ytd-opponent']) {
+    const ticket = buildSeasonComparison(tickets, mode, 'total', { ...selection, ...chosen }, source);
+    const gd = buildGameDayGroups(fixtures, seasons, mode, { ...gdSelection, ...chosen }, filters(), filters());
+    assert.deepEqual(ticket.groups.map(g => g.fixtures.map(f => `${f.season}|${f.date}|${f.opponent}`)),
+      gd.map(g => g.fixtures.map(f => `${f.season}|${f.date}|${f.opponent}`)));
+    assert.equal(ticket.ytdReferenceSeason, '25-26');
+    assert.equal(ticket.currentCount, 2);
+    assert.deepEqual(ticket.currentOpponents, ['Bologna', 'Other']);
+    assert.deepEqual(ticket.currentLabels, [ticket.groups[2].label]);
+    assert.deepEqual(ticket.groups.map(g => g.fixtureCount), mode === 'ytd-week' ? [2, 2, 2, 2] : [2, 1, 2, 1]);
+    assert.ok(ticket.description.includes('Reference 25-26'));
+    assert.ok(ticket.description.includes('through W2'));
+  }
+});
+test('all eligible games expands beyond one week and does not depend on display seasons', () => {
+  for (const mode of ['ytd-week', 'ytd-opponent']) {
+    const ticket = buildSeasonComparison(tickets, mode, 'total',
+      { ...selection, referenceSeason: '25-26', seasons: ['23-24'] }, source);
+    assert.equal(ticket.currentCount, 3);
+    assert.equal(ticket.groups.length, 1);
+    assert.equal(ticket.groups[0].fixtureCount, 2);
+    assert.deepEqual(ticket.currentOpponents, ['Bologna', 'Other', 'Trieste']);
+    assert.equal(ticket.ytdReference.availableFixtures.length, 3);
+  }
+});
+test('cutoffs clamp safely, remain league-scoped and never include future fixtures', () => {
+  assert.equal(resolveYtdReference(fixtures, seasons, { ...gdSelection, referenceSeason: '25-26', ytdWeek: 99 }).count, 3);
+  assert.equal(resolveYtdReference(fixtures, seasons, { ...gdSelection, ytdWeek: 99 }).count, 2);
+  assert.equal(resolveYtdReference(fixtures, seasons, { ...gdSelection, ytdWeek: -1 }).count, 1);
+  assert.equal(resolveYtdReference(fixtures, seasons, { ...gdSelection, ytdWeek: NaN }).count, 2);
+  assert.equal(resolveYtdReference(fixtures, seasons, { ...gdSelection, referenceSeason: '25-26', league: 'FEC' }).count, 0);
+  assert.equal(resolveYtdReference(fixtures, seasons, { ...gdSelection, referenceSeason: 'invalid' }).season, '26-27');
+});
+test('YTD opponent reference never includes its own later repeated encounters beyond cutoff', () => {
+  const repeated = row('25-26', '28/09/2025', 'Bologna', 700);
+  const repeatedTicket = { ...tickets[5], ...repeated, id: 'repeat-bologna' };
+  const data = [...source, repeated];
+  const ticketData = [...tickets, repeatedTicket];
+  const chosen = { referenceSeason: '25-26', ytdWeek: 2 };
+  const ticket = buildSeasonComparison(ticketData, 'ytd-opponent', 'total', { ...selection, ...chosen }, data);
+  const gd = buildGameDayGroups(buildGameDayFixtures(data, ticketData, '2026-10-03'), seasons,
+    'ytd-opponent', { ...gdSelection, ...chosen }, filters(), filters());
+  assert.deepEqual(ticket.groups.map(g => g.fixtureCount), [2, 1, 2, 1]);
+  assert.deepEqual(ticket.groups.map(g => g.fixtureCount), gd.map(g => g.fixtureCount));
+  assert.equal(getMetricValue(ticket.groups[2].games, 'revenue', true), 600);
+  assert.equal(gameDayMetric(gd[2], 'revenuePerGame', false), 600);
 });
 test('Ticketing PDF keeps averaged titles, chronological values and exact fixture provenance', () => {
   let html = '';

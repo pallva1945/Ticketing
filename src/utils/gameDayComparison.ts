@@ -39,6 +39,8 @@ export interface GameDaySelection {
   secondOpponent?: string;
   tier: string;
   week: number;
+  referenceSeason?: string;
+  ytdWeek?: number;
 }
 export interface GameDayCustomFilters {
   seasons: string[];
@@ -126,6 +128,25 @@ export function selectGameDayCustom(fixtures: GameDayFixture[], filters: GameDay
     (filters.dates.includes('All') || filters.dates.some(date => date.includes(' · ')
       ? date === gameDayFixtureLabel(fixture) : gameDayDate(date) === gameDayDate(fixture.date))));
 }
+// Displayed comparison seasons do not determine the reference cohort. Historical
+// references remain bounded by the selected cutoff, never by future fixtures.
+export function resolveYtdReference(
+  fixtures: GameDayFixture[], seasons: string[],
+  selection: Pick<GameDaySelection, 'league' | 'referenceSeason' | 'ytdWeek'>,
+) {
+  const orderedSeasons = [...seasons].sort();
+  const season = selection.referenceSeason && orderedSeasons.includes(selection.referenceSeason)
+    ? selection.referenceSeason : orderedSeasons[orderedSeasons.length - 1] || '';
+  const availableFixtures = fixtures
+    .filter(fixture => fixture.season === season && nameKey(fixture.league) === nameKey(selection.league))
+    .sort((a, b) => gameDayDate(a.date).localeCompare(gameDayDate(b.date)) || a.opponent.localeCompare(b.opponent));
+  const count = selection.ytdWeek === undefined || !Number.isFinite(selection.ytdWeek)
+    ? availableFixtures.length
+    : availableFixtures.length ? Math.max(1, Math.min(Math.floor(selection.ytdWeek), availableFixtures.length)) : 0;
+  const selectedFixtures = availableFixtures.slice(0, count);
+  return { season, availableFixtures, fixtures: selectedFixtures, count,
+    opponents: [...new Set(selectedFixtures.map(fixture => fixture.opponent))].sort() };
+}
 export function buildGameDayGroups(
   fixtures: GameDayFixture[], seasons: string[], mode: GameDayComparisonMode,
   selection: GameDaySelection, customA: GameDayCustomFilters, customB: GameDayCustomFilters,
@@ -135,9 +156,10 @@ export function buildGameDayGroups(
   const orderedSeasons = [...seasons].sort();
   const currentSeason = orderedSeasons[orderedSeasons.length - 1];
   const currentFixtures = leagueFixtures.filter(fixture => fixture.season === currentSeason);
-  const ytdCount = currentFixtures.length;
-  const referenceOpponents = new Set(currentFixtures.map(fixture => nameKey(fixture.opponent)));
   const opponentNames = [...new Set(currentFixtures.map(fixture => fixture.opponent))].sort();
+  const ytdReference = resolveYtdReference(fixtures, orderedSeasons, selection);
+  const ytdCount = ytdReference.count;
+  const referenceOpponents = new Set(ytdReference.opponents.map(nameKey));
   const availableOpponents = [...new Set(leagueFixtures.map(fixture => fixture.opponent))].sort();
   const primaryOpponent = availableOpponents.some(name => nameKey(name) === nameKey(selection.opponent))
     ? selection.opponent : opponentNames[0] || availableOpponents[0] || '';
@@ -160,8 +182,9 @@ export function buildGameDayGroups(
     if (mode === 'tier') {
       return [group(`${season} · Tier ${selection.tier || '—'}`, seasonFixtures.filter(fixture => fixture.tier !== undefined && String(fixture.tier) === selection.tier), season)];
     }
-    if (mode === 'ytd-opponent') return [group(`${season} · ${opponentNames.join(' + ') || 'No opponents played'}`,
-      seasonFixtures.filter(fixture => referenceOpponents.has(nameKey(fixture.opponent))), season)];
+    if (mode === 'ytd-opponent') return [group(`${season} · ${ytdReference.opponents.join(' + ') || 'No opponents played'}`,
+      season === ytdReference.season ? ytdReference.fixtures
+        : seasonFixtures.filter(fixture => referenceOpponents.has(nameKey(fixture.opponent))), season)];
     return [group(`${season} · ${ytdCount ? `W1–W${ytdCount}` : 'No weeks played'}`, seasonFixtures.slice(0, ytdCount), season)];
   });
 }

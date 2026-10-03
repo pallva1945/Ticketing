@@ -39,6 +39,7 @@ export interface GameDayReportOptions {
   mode: string;
   filterSummary: string;
   newestSeason: string;
+  ytdReferenceSeason?: string;
   ytdReferenceCount: number;
   cagrBaseline: string;
   excludedRecords?: number;
@@ -50,7 +51,7 @@ export interface GameDayReportOptions {
 
 export function printGameDayComparisonReport(options: GameDayReportOptions): boolean {
   const {
-    groups, includeTicketing, mode, filterSummary, newestSeason, ytdReferenceCount,
+    groups, includeTicketing, mode, filterSummary, newestSeason, ytdReferenceCount, ytdReferenceSeason = newestSeason,
     cagrBaseline, league, opponents = [], locale = 'en-GB', translate = label => label,
   } = options;
   const metrics = (options.metrics?.length ? options.metrics : DEFAULT_GAMEDAY_METRICS).slice(0, 6);
@@ -92,7 +93,8 @@ export function printGameDayComparisonReport(options: GameDayReportOptions): boo
       const y = value === null ? zeroY : (max - value) / range * 100;
       const height = value === null ? 0 : Math.abs(zeroY - y);
       const left = groups.length ? (index + 0.5) * 100 / groups.length : 50;
-       return `<g><rect x="${(left - Math.min(18, 38 / Math.max(groups.length, 1))) * 6}" y="${Math.min(y, zeroY) * 1.6}" width="${Math.min(36, 76 / Math.max(groups.length, 1)) * 6}" height="${height * 1.6}" fill="${value === null ? '#e4e9ef' : '#c84a52'}"/>` +
+      const isYtd = mode === 'ytd' || mode === 'ytd-week' || mode === 'ytd-opponent';
+       return `<g><rect x="${(left - Math.min(18, 38 / Math.max(groups.length, 1))) * 6}" y="${Math.min(y, zeroY) * 1.6}" width="${Math.min(36, 76 / Math.max(groups.length, 1)) * 6}" height="${height * 1.6}" fill="${value === null ? '#e4e9ef' : isYtd && group.season !== ytdReferenceSeason ? '#94a3b8' : '#c84a52'}"/>` +
         `<text x="${left * 6}" y="${Math.max(5, y - 2) * 1.6}" text-anchor="middle" class="value-label">${escapeHtml(formatMetric(value, key, locale))}</text></g>`;
     }).join('');
     const line = trend && forecasts.length > 1 ? (() => {
@@ -142,7 +144,7 @@ export function printGameDayComparisonReport(options: GameDayReportOptions): boo
   </style></head><body><article class="sheet"><header><div class="brand"><img src="/favicon.png" alt="Pallacanestro Varese"><div><strong>PALLACANESTRO VARESE</strong><small>GAMEDAY · COMMERCIAL COMPARISON</small></div></div><div class="badges">${badgeLogos}</div></header>
    <h1>${escapeHtml(translate('GameDay comparison'))}</h1><p class="sub">${escapeHtml(translate(reportModeLabels[mode] || mode))} · ${escapeHtml(filterSummary)}</p>
   ${options.excludedRecords ? `<p class="meta">${options.excludedRecords} ${escapeHtml(translate('source records excluded because their season or match date is invalid. No figures have been assigned to another season.'))}</p>` : ''}
-  <p class="meta">${escapeHtml(translate('Newest season'))}: ${escapeHtml(newestSeason || '—')} · ${escapeHtml(translate('YTD reference'))}: first ${ytdReferenceCount} fixtures in ${escapeHtml(newestSeason || '—')} · ${escapeHtml(translate('Include ticketing'))}: ${includeTicketing ? escapeHtml(translate('Yes')) : escapeHtml(translate('No'))} · ${escapeHtml(translate('CAGR baseline'))}: ${escapeHtml(cagrBaseline)} · ${escapeHtml(translate('Printed'))}: ${escapeHtml(printedAt)}</p>
+   <p class="meta">${escapeHtml(translate('Newest season'))}: ${escapeHtml(newestSeason || '—')} · ${escapeHtml(translate('YTD reference'))}: first ${ytdReferenceCount} fixtures in ${escapeHtml(ytdReferenceSeason || '—')} · ${escapeHtml(translate('Include ticketing'))}: ${includeTicketing ? escapeHtml(translate('Yes')) : escapeHtml(translate('No'))} · ${escapeHtml(translate('CAGR baseline'))}: ${escapeHtml(cagrBaseline)} · ${escapeHtml(translate('Printed'))}: ${escapeHtml(printedAt)}</p>
   <div class="charts">${charts}</div><p class="footnote">— ${escapeHtml(translate('means no matching fixture or unreported field, never zero. Columns use actual matching games; per-game and per-person ratios are weighted by actual game and attendance totals. Trend lines are least-squares fits against season year, not connections between fixtures.'))}</p></article>
   <article class="sheet"><header><div class="brand"><img src="/favicon.png" alt="Pallacanestro Varese"><div><strong>PALLACANESTRO VARESE</strong><small>CHANNEL PERFORMANCE · COVERAGE</small></div></div><div class="badges">${badgeLogos}</div></header>
   <h1>${escapeHtml(translate('Channel breakdown and data coverage'))}</h1><p class="sub">${escapeHtml(filterSummary)}</p>
