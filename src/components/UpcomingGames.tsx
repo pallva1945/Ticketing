@@ -74,7 +74,7 @@ export function UpcomingGames({ ticketing, gameDay = [], module, viewMode = 'tot
                 return <>
                   <p>{t('Ticket sales revenue')}: <strong>{formatMetric(summary.revenue)}</strong></p>
                   <p>{t('Tickets / allocations to date')}: <strong>{formatQuantity(summary.quantity)}</strong></p>
-                  <p>{t('Load Factor')} %: <strong>{summary.quantity !== null && summary.capacity > 0
+                  <p>{t('Load Factor')}: <strong>{summary.quantity !== null && summary.capacity > 0
                     ? `${(summary.quantity / summary.capacity * 100).toLocaleString('it-IT', {
                       useGrouping: true, minimumFractionDigits: 0, maximumFractionDigits: 0,
                     })}%`
@@ -83,7 +83,7 @@ export function UpcomingGames({ ticketing, gameDay = [], module, viewMode = 'tot
               })() : <>
                 <p>{t('Ticket sales revenue')}: <strong>{currency(ticket.totalRevenue)}</strong></p>
                 <p>{t('Tickets / allocations to date')}: <strong>{formatTicketingQuantity(ticket.attendance)}</strong></p>
-                <p>{t('Load Factor')} %: <strong>{ticket.capacity > 0 ? `${(ticket.attendance / ticket.capacity * 100).toLocaleString('it-IT', {
+                <p>{t('Load Factor')}: <strong>{ticket.capacity > 0 ? `${(ticket.attendance / ticket.capacity * 100).toLocaleString('it-IT', {
                   useGrouping: true, minimumFractionDigits: 0, maximumFractionDigits: 0,
                 })}%` : '—'}</strong></p>
               </>}

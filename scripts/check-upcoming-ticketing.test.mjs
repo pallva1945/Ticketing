@@ -168,7 +168,8 @@ test('commercial GameDay module does not inherit Ticketing data-view filtering',
 test('upcoming sales retain the established Load Factor terminology in each view', () => {
   for (const [viewMode, module] of [['total', 'ticketing'], ['gameday', 'ticketing'], ['total', 'gameday']]) {
     const html = markup(viewMode, [game], module);
-    assert.match(html, /Load Factor %:/);
+    assert.match(html, /Load Factor: <strong>\d+%<\/strong>/);
+    assert.doesNotMatch(html, /Load Factor %:/);
     assert.doesNotMatch(html, /Allocated capacity/);
   }
 });

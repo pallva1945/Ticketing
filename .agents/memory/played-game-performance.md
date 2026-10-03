@@ -13,4 +13,4 @@ For the Upcoming / On sale inspection view, display numbers with zero decimal pl
 
 **Why:** The user explicitly corrected the use of two decimal places and requested rounding to whole numbers.
 
-**How to apply:** Keep this presentation rule when modifying the panel, including revenue, yield, and Load Factor %. Round only displayed values; retain full precision in calculations and source data.
+**How to apply:** Keep this presentation rule when modifying the panel, including revenue, yield, and Load Factor. Round only displayed values; retain full precision in calculations and source data. The user explicitly requested the label “Load Factor” without a percent sign, since the displayed value already includes %.
