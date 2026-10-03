@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useRomeDay } from '../hooks/useRomeDay';
 import { CalendarDays, Printer, TrendingUp } from 'lucide-react';
 import type { GameData, GameDayData } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -56,7 +57,8 @@ const euros = (value: number | null, locale: string) =>
 const percentage = (value: number | null) => value === null ? '—' : `${value > 0 ? '+' : ''}${value.toFixed(1)}%`;
 export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, includeTicketing, isLoading = false }) => {
   const { t } = useLanguage();
-  const fixtures = useMemo(() => buildGameDayFixtures(data, ticketingData), [data, ticketingData]);
+  const asOf = useRomeDay();
+  const fixtures = useMemo(() => buildGameDayFixtures(data, ticketingData, asOf), [data, ticketingData, asOf]);
   const seasons = useMemo(() => gameDaySeasons(data, ticketingData), [data, ticketingData]);
   const newestSeason = seasons[seasons.length - 1] || '';
   const excludedRecords = useMemo(() => [...data, ...ticketingData]

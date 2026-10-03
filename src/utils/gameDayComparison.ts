@@ -1,4 +1,5 @@
 import type { GameData, GameDayData } from '../types';
+import { fixtureDay, romeDay } from './fixtureEligibility';
 
 export type GameDayComparisonMode = 'opponent' | 'week' | 'ytd' | 'ytd-week' | 'ytd-opponent' | 'tier' | 'custom';
 export type GameDayRevenueField = 'tixRevenue' | 'merchRevenue' | 'hospitalityRevenue' | 'parkingRevenue' | 'fbRevenue' | 'sponsorshipRevenue' | 'expRevenue';
@@ -77,21 +78,13 @@ export const isGameDaySeason = (season: string) => {
   return /^\d{2}-\d{2}$/.test(normalized) &&
     (Number(normalized.slice(0, 2)) + 1) % 100 === Number(normalized.slice(3, 5));
 };
-export const gameDayDate = (date: string): string => {
-  const italian = date.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (italian) return `${italian[3]}-${italian[2].padStart(2, '0')}-${italian[1].padStart(2, '0')}`;
-  const iso = date.match(/^(\d{4}-\d{2}-\d{2})/);
-  return iso ? iso[1] : '';
-};
+export const gameDayDate = fixtureDay;
 const nameKey = (value: string) => value.trim().toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 export const fixtureKey = (fixture: { season: string; league: string; date: string; opponent: string }) =>
   [gameDaySeason(fixture.season), nameKey(fixture.league), gameDayDate(fixture.date), nameKey(fixture.opponent)].join('|');
 export const gameDayFixtureLabel = (fixture: { date: string; season: string; league: string; opponent: string }) =>
   `${fixture.date} · ${fixture.opponent} · ${fixture.league} · ${fixture.season}`;
-export const gameDayToday = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-};
+export const gameDayToday = romeDay;
 
 // Join by encounter, never by opponent alone. Retain schedule rows without
 // commercial figures so a missing early game cannot shift historical YTD.
@@ -99,12 +92,12 @@ export function buildGameDayFixtures(data: GameDayData[], ticketing: GameData[],
   const fixtures = new Map<string, GameDayFixture>();
   ticketing.forEach(game => {
     const date = gameDayDate(game.date);
-    if (!isGameDaySeason(game.season) || !date || date > asOf) return;
+    if (!isGameDaySeason(game.season) || !date || date >= asOf) return;
     fixtures.set(fixtureKey(game), { date: game.date, season: gameDaySeason(game.season), league: game.league, opponent: game.opponent, tier: game.tier });
   });
   data.forEach(game => {
     const date = gameDayDate(game.date);
-    if (!isGameDaySeason(game.season) || !date || date > asOf) return;
+    if (!isGameDaySeason(game.season) || !date || date >= asOf) return;
     const key = fixtureKey(game);
     const previous = fixtures.get(key);
     fixtures.set(key, { ...previous, date: game.date, season: gameDaySeason(game.season), league: game.league, opponent: game.opponent, data: game });

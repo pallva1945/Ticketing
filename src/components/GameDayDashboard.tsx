@@ -83,6 +83,9 @@ export const GameDayDashboard: React.FC<GameDayDashboardProps> = ({ data, includ
   }));
 
   const formatCurrency = (val: number) => `€${val >= 1000 ? (val/1000).toFixed(1) + 'k' : val.toFixed(0)}`;
+  if (!data.length) return <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
+    {t('No games played yet for these filters. Open an upcoming game above to inspect sales progress.')}
+  </div>;
 
   // Top Row Card Component
   const KPICard = ({ label, value, subLabel, icon: Icon, color, borderTop = false }: any) => (

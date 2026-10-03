@@ -1,6 +1,7 @@
 import type { GameData, GameDayData } from '../types';
 import { SalesChannel } from '../types';
 import { getFixedCapacityForSeason } from '../constants';
+import { romeDay } from './fixtureEligibility';
 import type { ComparisonReportGroup } from '../components/comparisonReport';
 import {
   buildGameDayFixtures, buildGameDayGroups, fixtureKey, gameDaySeasons, selectGameDayCustom, resolveYtdReference,
@@ -48,9 +49,9 @@ function ticketingGroup(group: GameDayComparisonGroup, fullData: GameData[], vie
 }
 export function buildSeasonComparison(
   fullData: GameData[], mode: SeasonComparisonMode, viewMode: 'total' | 'gameday',
-  selection: SeasonComparisonSelection, scheduleData: GameDayData[] = [],
+  selection: SeasonComparisonSelection, scheduleData: GameDayData[] = [], asOf = romeDay(),
 ) {
-  const fixtures = buildGameDayFixtures(scheduleData, fullData);
+  const fixtures = buildGameDayFixtures(scheduleData, fullData, asOf);
   const leagues = [...new Set(fixtures.map(fixture => fixture.league))].sort();
   const league = leagues.includes(selection.league) ? selection.league : leagues.includes('LBA') ? 'LBA' : leagues[0] || 'LBA';
   const leagueFixtures = fixtures.filter(fixture => fixture.league === league);
@@ -88,9 +89,9 @@ export function buildSeasonComparison(
 }
 export function buildTicketingCustomComparison(
   fullData: GameData[], viewMode: 'total' | 'gameday', filtersA: GameDayCustomFilters,
-  filtersB: GameDayCustomFilters, scheduleData: GameDayData[] = [],
+  filtersB: GameDayCustomFilters, scheduleData: GameDayData[] = [], asOf = romeDay(),
 ): ComparisonReportGroup[] {
-  const fixtures = buildGameDayFixtures(scheduleData, fullData);
+  const fixtures = buildGameDayFixtures(scheduleData, fullData, asOf);
   return [filtersA, filtersB].map((filters, index) => {
     const chosen = selectGameDayCustom(fixtures, filters);
     return ticketingGroup({ label: index ? 'Scenario B' : 'Scenario A', games: [],

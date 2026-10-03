@@ -1,5 +1,6 @@
 import React from 'react';
 import { Target, TrendingUp, AlertTriangle } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface PacingWidgetProps {
   currentRevenue: number;
@@ -14,6 +15,13 @@ export const PacingWidget: React.FC<PacingWidgetProps> = ({
   gamesPlayed,
   totalGamesInSeason = 15
 }) => {
+  const { t } = useLanguage();
+  if (gamesPlayed === 0) return <div className="h-full rounded-xl border border-slate-700 bg-slate-900 p-5 text-white shadow-lg">
+    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">{t('Season Target (Budget)')}</h3>
+    <p className="mt-2 text-2xl font-bold">€{(seasonTarget / 1000000).toFixed(1)}M</p>
+    <p className="mt-3 text-sm text-slate-400">{t('No games played yet. Projection unavailable.')}</p>
+    <p className="mt-2 text-xs text-slate-400">0 / {totalGamesInSeason} {t('Games Played')}</p>
+  </div>;
   const progress = Math.min((currentRevenue / seasonTarget) * 100, 100);
   const projectedRevenue = (currentRevenue / (gamesPlayed || 1)) * totalGamesInSeason;
   const projectedProgress = Math.min((projectedRevenue / seasonTarget) * 100, 100);

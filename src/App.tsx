@@ -17,6 +17,10 @@ import { DistressedZones } from './components/DistressedZones';
 import { CompKillerWidget } from './components/CompKillerWidget';
 import { GameDayDashboard } from './components/GameDayDashboard';
 import { GameDayComparisonView } from './components/GameDayComparisonView';
+import { UpcomingGames } from './components/UpcomingGames';
+import { fixtureDay, isUpcomingFixture, playedFixtures } from './utils/fixtureEligibility';
+import { useRomeDay } from './hooks/useRomeDay';
+import { crmGameDate, getCRMSeason } from './utils/crmGames';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
 import { BoardReportModal } from './components/BoardReportModal';
 import { CRMView } from './components/CRMView';
@@ -77,9 +81,8 @@ import { getCsvFromFirebase, saveCsvToFirebase } from './services/dbService';
 import { isFirebaseConfigured } from './firebaseConfig';
 
 const getDayName = (dateStr: string) => {
-  const [day, month, year] = dateStr.split('/');
-  const date = new Date(Number(year), Number(month) - 1, Number(day));
-  return date.toLocaleDateString('en-US', { weekday: 'short' });
+  const day = fixtureDay(dateStr);
+  return day ? new Date(`${day}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' }) : '';
 };
 
 // --- PLACEHOLDER MODULE VIEW ---
@@ -260,7 +263,7 @@ const RevenueHome = ({
           current: ticketingRevenue, 
           target: 1650000, 
           pacingType: 'games' as const,
-          icon: Ticket, colorClass: 'text-red-600', bgClass: 'bg-red-50', barClass: 'bg-red-500', isVariable: true, isProrated: false, hasData: true 
+          icon: Ticket, colorClass: 'text-red-600', bgClass: 'bg-red-50', barClass: 'bg-red-500', isVariable: true, isProrated: false, hasData: gamesPlayed > 0
       },
       { 
           id: 'gameday', 
@@ -268,7 +271,7 @@ const RevenueHome = ({
           current: gameDayRevenue, 
           target: 1250000, 
           pacingType: 'games' as const,
-          icon: Calendar, colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50', barClass: 'bg-indigo-500', isVariable: true, isProrated: false, hasData: true 
+          icon: Calendar, colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50', barClass: 'bg-indigo-500', isVariable: true, isProrated: false, hasData: gamesPlayed > 0
       },
       { 
           id: 'sg', 
@@ -695,9 +698,9 @@ const RevenueHome = ({
                             <Target size={16} className="text-slate-400" />
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{t('Projected Finish')}</span>
                         </div>
-                        <p className="text-2xl font-bold">{formatCompact(totalRevenueProjected)}</p>
+                        <p className="text-2xl font-bold">{gamesPlayed > 0 ? formatCompact(totalRevenueProjected) : '—'}</p>
                         <p className={`text-sm font-medium mt-1 ${projectionDiff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {projectionDiff >= 0 ? '+' : ''}{formatCompact(projectionDiff)} {t('vs target')}
+                            {gamesPlayed > 0 ? `${projectionDiff >= 0 ? '+' : ''}${formatCompact(projectionDiff)} ${t('vs target')}` : t('No games played yet. Projection unavailable.')}
                         </p>
                         <div className="mt-3 pt-3 border-t border-slate-700 text-[10px] text-slate-500">
                             {t('Based on current run-rate extrapolation')}
@@ -715,7 +718,7 @@ const RevenueHome = ({
                                 <TrendingUp size={16} className="text-purple-600" />
                                 <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('GameDay Projection')}</span>
                             </div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompact(gameDayProjection)}</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{gamesPlayed > 0 ? formatCompact(gameDayProjection) : '—'}</p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Ticketing')} + {t('GameDay')} × {TOTAL_GAMES_SEASON} {t('games')}</p>
                             <div className="mt-3 flex items-center gap-2">
                                 <div className="flex-1 h-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-full overflow-hidden">
@@ -725,7 +728,7 @@ const RevenueHome = ({
                                     />
                                 </div>
                                 <span className="text-[10px] font-bold text-purple-600">
-                                    {gameDayPct.toFixed(0)}%
+                                     {gamesPlayed > 0 ? `${gameDayPct.toFixed(0)}%` : '—'}
                                 </span>
                             </div>
                         </div>
@@ -742,7 +745,7 @@ const RevenueHome = ({
                                 <Ticket size={16} className="text-blue-600" />
                                 <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('GameDay Tickets Projection')}</span>
                             </div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatCompact(projection)}</p>
+                             <p className="text-2xl font-bold text-gray-900 dark:text-white">{gamesPlayed > 0 ? formatCompact(projection) : '—'}</p>
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('GameDay view tickets')} × {TOTAL_GAMES_SEASON} {t('games')}</p>
                             <div className="mt-3 flex items-center gap-2">
                                 <div className="flex-1 h-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-full overflow-hidden">
@@ -752,7 +755,7 @@ const RevenueHome = ({
                                     />
                                 </div>
                                 <span className="text-[10px] font-bold text-blue-600">
-                                    {formatCompact(perGame)}/game
+                                     {gamesPlayed > 0 ? `${formatCompact(perGame)}/game` : '—'}
                                 </span>
                             </div>
                         </div>
@@ -1039,6 +1042,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   const { language, toggleLanguage, t } = useLanguage();
   const { userEmail, userName, userPicture, logout, isAdmin, accessLevel, permissions } = useAuth();
   const isDark = theme === 'dark';
+  const performanceDay = useRomeDay();
   
   // Navigation State - Defaults to HOME
   const [activeModule, setActiveModule] = useState<RevenueModule>(() => {
@@ -1924,7 +1928,12 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
     return result;
   };
 
-  const filteredGames = useMemo(() => getFilteredGames(), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
+  // Keep uploaded fixtures for navigation and advance-sales inspection, while
+  // every performance calculation downstream receives only played fixtures.
+  const matchingGames = useMemo(() => getFilteredGames(), [data, selectedSeasons, selectedLeagues, selectedOpponents, selectedTiers, selectedDays]);
+  const playedTicketingData = useMemo(() => playedFixtures(data, performanceDay), [data, performanceDay]);
+  const filteredGames = useMemo(() => playedFixtures(matchingGames, performanceDay), [matchingGames, performanceDay]);
+  const upcomingGames = useMemo(() => matchingGames.filter(game => isUpcomingFixture(game, performanceDay)), [matchingGames, performanceDay]);
   
   // Debug logging for data state
   useEffect(() => {
@@ -2057,7 +2066,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   }, [filteredGames, selectedZones, ignoreOspiti, viewMode, selectedChannels]);
 
   // GameDay Data Filtering
-  const filteredGameDayData = useMemo(() => {
+  const matchingGameDayData = useMemo(() => {
       return gameDayData.filter(d => {
           const matchSeason = selectedSeasons.includes('All') || selectedSeasons.includes(d.season);
           const matchLeague = selectedLeagues.includes('All') || selectedLeagues.includes(d.league);
@@ -2068,7 +2077,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
           let matchTier = true;
           if (!selectedTiers.includes('All')) {
               // Find the matching game in the main dataset to get the tier
-              const matchingGame = data.find(g => g.season === d.season && g.opponent === d.opponent);
+              const matchingGame = data.find(g => g.season === d.season && g.league === d.league && g.opponent === d.opponent && fixtureDay(g.date) === fixtureDay(d.date));
               if (matchingGame) {
                   matchTier = selectedTiers.includes(String(matchingGame.tier));
               } else {
@@ -2079,6 +2088,8 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
           return matchSeason && matchLeague && matchOpponent && matchDay && matchTier;
       });
   }, [gameDayData, data, selectedSeasons, selectedLeagues, selectedOpponents, selectedDays, selectedTiers]);
+  const filteredGameDayData = useMemo(() => playedFixtures(matchingGameDayData, performanceDay), [matchingGameDayData, performanceDay]);
+  const upcomingGameDayData = useMemo(() => matchingGameDayData.filter(game => isUpcomingFixture(game, performanceDay)), [matchingGameDayData, performanceDay]);
 
   const efficiencyData = useMemo(() => {
     return filteredGames.map(game => {
@@ -2161,6 +2172,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   const filteredCrmForCharts = useMemo(() => {
     if (!crmData.length) return [];
     const gameOpponents = new Set(filteredGames.map(g => g.opponent.toLowerCase().trim()));
+    const playedDates = new Set(filteredGames.map(game => `${game.season}|${fixtureDay(game.date)}`));
     const zoneAll = selectedZones.includes('All');
     const zoneSet = new Set(selectedZones);
     const channelAll = selectedChannels.includes('All');
@@ -2168,6 +2180,10 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
     const channelMap: Record<string, string> = { 'abb': 'abb', 'tix': 'tix', 'corp': 'corp', 'mp': 'mp', 'vb': 'vb', 'giveaway': 'giveaway', 'protocol': 'protocol' };
     const gameDayChannels = new Set(['tix', 'mp', 'vb', 'giveaway', 'giveaways', 'give away', 'ga']);
     return crmData.filter(r => {
+      // Match date, not purchase date: tickets bought for a future fixture
+      // must not enter played-game pricing charts, even for a repeat opponent.
+      const matchDate = crmGameDate(r.gmDateTime);
+      if (!matchDate || !playedDates.has(`${getCRMSeason(r)}|${matchDate}`)) return false;
       if (viewMode === 'gameday') {
         const sellRaw = (r.sell || r.sellType || '').trim().toLowerCase();
         if (!gameDayChannels.has(sellRaw)) return false;
@@ -2308,7 +2324,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
       
       const getSeasonData = (season: string) => {
           // Ticketing - LBA only (exclude FEC)
-          const ticketingData = data.filter(d => d.season === season && d.league === 'LBA');
+          const ticketingData = playedFixtures(data, performanceDay).filter(d => d.season === season && d.league === 'LBA');
           const ticketingRev = ticketingData.reduce((sum, g) => sum + g.totalRevenue, 0);
           const ticketingGames = ticketingData.length;
           const avgAtt = ticketingData.length > 0 
@@ -2316,7 +2332,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
               : 0;
           
           // GameDay - LBA only (exclude FEC)
-          const gdData = gameDayData.filter(d => d.season === season && d.league === 'LBA');
+          const gdData = playedFixtures(gameDayData, performanceDay).filter(d => d.season === season && d.league === 'LBA');
           const gdRev = gdData.reduce((acc, g) => acc + (g.totalRevenue - g.tixRevenue), 0);
           const gdGames = gdData.length;
           
@@ -2387,7 +2403,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                '26-27': seasonData[3].corpTix
           }
       };
-  }, [data, gameDayData, sponsorData]);
+  }, [data, gameDayData, sponsorData, performanceDay]);
 
   const getAvailableOptions = (targetField: 'season' | 'league' | 'opponent' | 'tier' | 'day' | 'zone') => {
       // ... logic same as previous block ...
@@ -2516,9 +2532,9 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
             targets: { ticketing: ticketingTarget, gameDay: gameDayTarget, sponsorship: sponsorshipTarget },
             actual: { ticketing: Math.round(totalLiveTix), gameDay: Math.round(totalLiveGD), sponsorship: 1130000 },
             pacing: {
-                ticketingVsTarget: Math.round((totalLiveTix / (ticketingTarget * pacePct)) * 100 - 100),
-                gameDayVsTarget: Math.round((totalLiveGD / (gameDayTarget * pacePct)) * 100 - 100),
-                sponsorshipVsTarget: Math.round((1130000 / (sponsorshipTarget * pacePct)) * 100 - 100)
+                ticketingVsTarget: gamesPlayed ? Math.round((totalLiveTix / (ticketingTarget * pacePct)) * 100 - 100) : null,
+                gameDayVsTarget: gamesPlayed ? Math.round((totalLiveGD / (gameDayTarget * pacePct)) * 100 - 100) : null,
+                sponsorshipVsTarget: gamesPlayed ? Math.round((1130000 / (sponsorshipTarget * pacePct)) * 100 - 100) : null
             },
             zoneBreakdown: zoneAnalysis.slice(0, 8),
             crmInsights: crmSummary
@@ -2552,7 +2568,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                 avgSpendPerHead: Math.round(sph * 100) / 100
             },
             target: 1250000,
-            pacing: Math.round((totalNet / (1250000 * (filteredGameDayData.length / 15))) * 100 - 100),
+            pacing: filteredGameDayData.length ? Math.round((totalNet / (1250000 * (filteredGameDayData.length / 15))) * 100 - 100) : null,
             topGames: byGame.slice(0, 5),
             worstGames: byGame.slice(-3).reverse()
         });
@@ -2574,7 +2590,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
         capacity: totalCapacity
       },
       target: viewMode === 'gameday' ? 495000 : 1650000,
-      pacing: Math.round((stats.totalRevenue / ((viewMode === 'gameday' ? 495000 : 1650000) * (viewData.length / 15))) * 100 - 100),
+      pacing: viewData.length ? Math.round((stats.totalRevenue / ((viewMode === 'gameday' ? 495000 : 1650000) * (viewData.length / 15))) * 100 - 100) : null,
       zoneBreakdown: zoneAnalysis,
       crmInsights: crmSummary,
       premiumZones: zoneAnalysis.filter(z => z.zone.toLowerCase().includes('parterre') || z.zone.toLowerCase().includes('courtside')),
@@ -2583,14 +2599,14 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, viewMode, activeModule, filteredGameDayData, filteredGameDayRevForPacing, totalStats, crmStats]);
 
   const lastGame = useMemo(() => {
-    if (data.length === 0) return null;
-    const sorted = [...data].sort((a, b) => {
+    if (playedTicketingData.length === 0) return null;
+    const sorted = [...playedTicketingData].sort((a, b) => {
          const [da, ma, ya] = a.date.split('/').map(Number);
          const [db, mb, yb] = b.date.split('/').map(Number);
          return new Date(yb, mb-1, db).getTime() - new Date(ya, ma-1, da).getTime();
     });
     return sorted[0];
-  }, [data]);
+  }, [playedTicketingData]);
 
   const clearFilters = () => {
     setSelectedSeasons(['26-27']);
@@ -3033,7 +3049,9 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
           
           {/* --- CONTENT AREA SWITCHER --- */}
           
-          {activeModule === 'home' ? (
+          {activeModule === 'home' ? (<>
+              <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t('Performance uses played games only. Games become eligible the following day (Europe/Rome).')}</p>
+              {filteredGames.length === 0 && <p className="mb-4 rounded-xl border border-gray-200 p-4 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">{t('No games played yet for these filters. Game-based averages and projections are unavailable.')}</p>}
               <RevenueHome 
                 modules={MODULES} 
                 ticketingRevenue={totalStats.totalRevenue}
@@ -3061,6 +3079,8 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                 }}
                 yoyStats={yoyComparisonStats}
               />
+              <UpcomingGames ticketing={upcomingGames} gameDay={upcomingGameDayData} module="ticketing" />
+              </>
           ) : activeModule === 'gameday' ? (
               <div className="pt-6">
                 {gameDayTab === 'comparison' ? (
@@ -3103,6 +3123,8 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                 )}
                 
                 <FilterBar />
+                <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t('Performance uses played games only. Games become eligible the following day (Europe/Rome).')}</p>
+                <UpcomingGames ticketing={upcomingGames} gameDay={upcomingGameDayData} module="gameday" />
                 
                 <GameDayDashboard data={filteredGameDayData} includeTicketing={gameDayIncludeTicketing} />
                 </>)}
@@ -3153,11 +3175,17 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
 
                     {/* Filter Bar */}
                     <FilterBar />
+                    <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t('Performance uses played games only. Games become eligible the following day (Europe/Rome).')}</p>
+                    <UpcomingGames ticketing={upcomingGames} module="ticketing" />
                     
                     {isLoadingData && data.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-96">
                             <Loader2 size={40} className="text-red-600 animate-spin mb-4" />
                             <p className="text-gray-500 dark:text-gray-400 font-medium">{t('Loading sales data...')}</p>
+                        </div>
+                    ) : viewData.length === 0 ? (
+                        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
+                          {t('No games played yet for these filters. Open an upcoming game above to inspect sales progress.')}
                         </div>
                     ) : (
                         <div className="animate-fade-in space-y-6">
@@ -3165,7 +3193,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                         <StatsCards 
                             stats={stats} 
                             data={viewData} 
-                            fullDataset={data} 
+                            fullDataset={playedTicketingData} 
                             filters={{ season: selectedSeasons, league: selectedLeagues, zone: selectedZones, opponent: selectedOpponents, tier: selectedTiers }} 
                             kpiConfig={{ ...kpiConfig, giveawayTarget: viewMode === 'gameday' ? 15 : 10 }}
                             viewMode={viewMode}
@@ -3194,7 +3222,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                                     <div className="flex-[7] min-h-0">
                                         <DistressedZones 
                                             data={viewData} 
-                                            fullDataset={data}
+                                            fullDataset={playedTicketingData}
                                             currentSeasons={selectedSeasons}
                                         />
                                     </div>

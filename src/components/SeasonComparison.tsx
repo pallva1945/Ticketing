@@ -6,6 +6,7 @@ import type { ComparisonMetricKey } from './comparisonMetrics';
 import { useLanguage } from '../contexts/LanguageContext';
 import { MultiSelect } from './MultiSelect';
 import { YtdReferenceControls } from './YtdReferenceControls';
+import { useRomeDay } from '../hooks/useRomeDay';
 import {
   buildSeasonComparison, type SeasonComparisonMode, type SeasonComparisonSelection,
 } from '../utils/seasonComparison';
@@ -26,9 +27,10 @@ export const SeasonComparison: React.FC<Props> = ({
   fullData, scheduleData = [], mode, viewMode, selectedMetrics, selection, onSelectionChange,
 }) => {
   const { t } = useLanguage();
+  const asOf = useRomeDay();
   const result = React.useMemo(
-    () => buildSeasonComparison(fullData, mode, viewMode, selection, scheduleData),
-    [fullData, mode, viewMode, selection, scheduleData],
+    () => buildSeasonComparison(fullData, mode, viewMode, selection, scheduleData, asOf),
+    [fullData, mode, viewMode, selection, scheduleData, asOf],
   );
   const {
     leagues, league, seasons, opponents, tiers, selectedOpponent, selectedSecond, selectedFirstTier,

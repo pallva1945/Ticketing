@@ -13,6 +13,7 @@ import { ComparisonCustomFiltersPanel } from './ComparisonCustomFilters';
 import type { GameDayCustomFilters } from '../utils/gameDayComparison';
 import { buildGameDayFixtures, gameDayFixtureLabel } from '../utils/gameDayComparison';
 import { buildTicketingCustomComparison } from '../utils/seasonComparison';
+import { useRomeDay } from '../hooks/useRomeDay';
 
 interface ComparisonViewProps {
   fullData: GameData[];
@@ -63,7 +64,8 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, schedu
     });
   };
 
-  const fixtures = useMemo(() => buildGameDayFixtures(scheduleData, fullData), [scheduleData, fullData]);
+  const asOf = useRomeDay();
+  const fixtures = useMemo(() => buildGameDayFixtures(scheduleData, fullData, asOf), [scheduleData, fullData, asOf]);
   const customOptions = useMemo(() => ({
     seasons: [...new Set(fixtures.map(fixture => fixture.season))].sort(),
     leagues: [...new Set(fixtures.map(fixture => fixture.league))].sort(),
@@ -86,8 +88,8 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, schedu
   }, [validSeasons, defaultLeague]);
 
   const customGroups = useMemo(
-    () => buildTicketingCustomComparison(fullData, viewMode, filtersA, filtersB, scheduleData),
-    [fullData, viewMode, filtersA, filtersB, scheduleData],
+    () => buildTicketingCustomComparison(fullData, viewMode, filtersA, filtersB, scheduleData, asOf),
+    [fullData, viewMode, filtersA, filtersB, scheduleData, asOf],
   );
   const customGames = customGroups.flatMap(group => group.games);
   const customLeagues = [...new Set(customGames.map(game => game.league))];

@@ -3,6 +3,20 @@ import React, { createContext, useContext, useState } from 'react';
 type Language = 'en' | 'it';
 
 const translations: Record<string, Record<Language, string>> = {
+  'Upcoming games / On sale': { en: 'Upcoming games / On sale', it: 'Prossime partite / In vendita' },
+  'Upcoming / On sale': { en: 'Upcoming / On sale', it: 'In programma / In vendita' },
+  'Advance ticket sales': { en: 'Advance ticket sales', it: 'Vendite anticipate dei biglietti' },
+  'Open a game to inspect current sales. These figures are excluded from played-game averages, trends and projections.': { en: 'Open a game to inspect current sales. These figures are excluded from played-game averages, trends and projections.', it: 'Apri una partita per verificare le vendite attuali. Questi dati sono esclusi dalle medie, dai trend e dalle proiezioni delle partite disputate.' },
+  'Ticket sales revenue': { en: 'Ticket sales revenue', it: 'Ricavi dalla vendita dei biglietti' },
+  'Tickets / allocations to date': { en: 'Tickets / allocations to date', it: 'Biglietti / assegnazioni ad oggi' },
+  'Allocated capacity': { en: 'Allocated capacity', it: 'Capienza assegnata' },
+  'Fixture totals (all zones and channels)': { en: 'Fixture totals (all zones and channels)', it: 'Totali della partita (tutti i settori e canali)' },
+  'GameDay figures have not been reported yet.': { en: 'GameDay figures have not been reported yet.', it: 'I dati GameDay non sono ancora stati comunicati.' },
+  'Sales progress only, not final attendance. Included in performance from the following day (Europe/Rome).': { en: 'Sales progress only, not final attendance. Included in performance from the following day (Europe/Rome).', it: 'Solo andamento delle vendite, non affluenza finale. Incluso nelle performance dal giorno successivo (Europe/Rome).' },
+  'Performance uses played games only. Games become eligible the following day (Europe/Rome).': { en: 'Performance uses played games only. Games become eligible the following day (Europe/Rome).', it: 'Le performance includono solo le partite disputate, dal giorno successivo (Europe/Rome).' },
+  'No games played yet for these filters. Game-based averages and projections are unavailable.': { en: 'No games played yet for these filters. Game-based averages and projections are unavailable.', it: 'Nessuna partita ancora disputata per questi filtri. Medie e proiezioni per partita non disponibili.' },
+  'No games played yet for these filters. Open an upcoming game above to inspect sales progress.': { en: 'No games played yet for these filters. Open an upcoming game above to inspect sales progress.', it: 'Nessuna partita ancora disputata per questi filtri. Apri una prossima partita qui sopra per verificare le vendite.' },
+  'No games played yet. Projection unavailable.': { en: 'No games played yet. Projection unavailable.', it: 'Nessuna partita ancora disputata. Proiezione non disponibile.' },
   'Revenue Intelligence': { en: 'Revenue Intelligence', it: 'Intelligence Ricavi' },
   'AI Advisor': { en: 'AI Advisor', it: 'Consulente AI' },
   'Season Pacing': { en: 'Season Pacing', it: 'Andamento Stagionale' },
