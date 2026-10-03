@@ -10,6 +10,7 @@ import { ComparisonReport } from './comparisonReport';
 import { ComparisonQuadrant } from './ComparisonQuadrant';
 import { ComparisonBadges } from './ComparisonBadges';
 import { COMPARISON_METRICS, ComparisonMetricKey } from './comparisonMetrics';
+import { ComparisonModeTabs } from './ComparisonModeTabs';
 
 interface ComparisonViewProps {
   fullData: GameData[];
@@ -306,23 +307,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
              ><Printer size={16} /> {t('Print / Save PDF')}</button>
        </div>
 
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Comparison type">
-          {([
-            ['opponent', 'Opponent vs opponent'],
-            ['tier', 'Tier over the years'],
-            ['week', 'Week vs week'],
-            ['ytd', 'Season to date'],
-            ['custom', 'Custom'],
-          ] as const).map(([value, label]) => (
-            <button key={value} type="button" role="tab" aria-selected={comparisonType === value}
-              onClick={() => setComparisonType(value)}
-              className={`rounded-lg px-4 py-2.5 text-sm font-semibold border transition-colors ${
-                comparisonType === value
-                  ? 'bg-red-600 border-red-600 text-white'
-                  : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-red-300'
-              }`}>{t(label)}</button>
-          ))}
-        </div>
+        <ComparisonModeTabs value={comparisonType} onChange={setComparisonType} />
 
         <div className="rounded-xl border border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-900">
           <span className="mb-3 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Metrics to display</span>

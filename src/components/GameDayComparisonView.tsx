@@ -6,6 +6,7 @@ import { MultiSelect } from './MultiSelect';
 import { ComparisonBadges } from './ComparisonBadges';
 import { GameDayComparisonChart } from './GameDayComparisonChart';
 import { printGameDayComparisonReport } from './GameDayComparisonReport';
+import { ComparisonModeTabs } from './ComparisonModeTabs';
 import {
   buildGameDayFixtures, buildGameDayGroups, DEFAULT_GAMEDAY_METRICS,
   GAMEDAY_METRICS, gameDayChannelRows, gameDayCoverage, gameDayMetric,
@@ -24,13 +25,13 @@ interface Props {
 const EMPTY_CUSTOM: GameDayCustomFilters = {
   seasons: ['All'], leagues: ['All'], opponents: ['All'], tiers: ['All'], dates: ['All'],
 };
-const modes: { key: GameDayComparisonMode; label: string; caption: string }[] = [
-  { key: 'opponent', label: 'Opponent', caption: 'Compare the same opponent across seasons' },
-  { key: 'week', label: 'Home game order', caption: 'Compare a numbered home fixture across seasons' },
-  { key: 'ytd', label: 'Aligned YTD', caption: 'Compare the same number of fixtures to date' },
-  { key: 'tier', label: 'Opponent tier', caption: 'Compare tier-level results across seasons' },
-  { key: 'custom', label: 'Custom A / B', caption: 'Build two fixture selections from real schedule identities' },
-];
+const modeCaptions: Record<GameDayComparisonMode, string> = {
+  opponent: 'Compare the same opponent across seasons',
+  week: 'Compare a numbered home fixture across seasons',
+  ytd: 'Compare the same number of fixtures to date',
+  tier: 'Compare tier-level results across seasons',
+  custom: 'Build two fixture selections from real schedule identities',
+};
 const fixtureIdentity = gameDayFixtureLabel;
 const uniqueSorted = (values: string[]) => [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
 const initialMetricSlots = (): GameDayMetricKey[] => {
@@ -249,16 +250,10 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 dark:border-slate-700 dark:bg-slate-900">
         <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
           <div><p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-400">{t('Comparison lens')}</p>
-            <h2 className="mt-1 text-base font-bold text-slate-900 dark:text-slate-100">{t(modes.find(item => item.key === mode)?.caption || '')}</h2></div>
+            <h2 className="mt-1 text-base font-bold text-slate-900 dark:text-slate-100">{t(modeCaptions[mode])}</h2></div>
           <p className="text-xs text-slate-500 dark:text-slate-400">{t('Filters and options use the full fixture dataset.')}</p>
         </div>
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label={t('Comparison mode')}>
-          {modes.map(item => <button key={item.key} type="button" role="tab" aria-selected={mode === item.key}
-            onClick={() => setMode(item.key)}
-            className={`min-h-10 rounded-xl border px-3.5 py-2 text-sm font-bold transition ${mode === item.key ? 'border-rose-700 bg-rose-700 text-white shadow-sm' : 'border-slate-200 bg-white text-slate-600 hover:border-rose-300 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-white'}`}>
-            {t(item.label)}
-          </button>)}
-        </div>
+        <ComparisonModeTabs value={mode} onChange={setMode} />
         {mode !== 'custom' ? <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MultiSelect label={t('Display seasons')} options={seasons} selected={seasonSelection} onChange={updateSeasonSelection} />
           <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('League')}
