@@ -11,3 +11,4 @@
 - [CRM fixture scope](crm-fixture-scope.md) — repeated opponents are distinct matches; filter by match season, not purchase date.
 - [CRM full-season capacity](crm-full-season-capacity.md) — validate subscription names against real events; partial subscriptions and packs must retain historical Flexible classification.
 - [Complete CRM snapshots](crm-complete-snapshots.md) — full local search needs coherent complete detail; future detail pagination must move filtering and search together.
+- [BOPs cost source access](bops-cost-source-access.md) — Google Sheet configuration and manual refresh are owner-only and distinct from revenue and SG&A sources.
