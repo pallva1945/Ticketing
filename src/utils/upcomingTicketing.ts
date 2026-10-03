@@ -20,7 +20,7 @@ export interface UpcomingZoneRow extends SalesTotals {
 }
 
 const amountFormat = new Intl.NumberFormat('it-IT', {
-  useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2,
+  useGrouping: true, minimumFractionDigits: 0, maximumFractionDigits: 0,
 });
 const quantityFormat = new Intl.NumberFormat('it-IT', { useGrouping: true, maximumFractionDigits: 0 });
 export const formatTicketingAmount = (value: number) => amountFormat.format(value);

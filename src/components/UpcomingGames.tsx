@@ -32,7 +32,7 @@ export function UpcomingGames({ ticketing, gameDay = [], module, viewMode = 'tot
     fixtureDay((a.ticket || a.commercial)!.date).localeCompare(fixtureDay((b.ticket || b.commercial)!.date)));
   if (!sorted.length) return null;
   const currency = (value: number) => value.toLocaleString('it-IT', {
-    style: 'currency', currency: 'EUR', useGrouping: true, minimumFractionDigits: 2, maximumFractionDigits: 2,
+    style: 'currency', currency: 'EUR', useGrouping: true, minimumFractionDigits: 0, maximumFractionDigits: 0,
   });
   const ticketingSummaries = module === 'ticketing'
     ? ticketing.map(game => upcomingTicketingSummary(game, viewMode))
@@ -76,7 +76,7 @@ export function UpcomingGames({ ticketing, gameDay = [], module, viewMode = 'tot
                   <p>{t('Tickets / allocations to date')}: <strong>{formatQuantity(summary.quantity)}</strong></p>
                   <p>{t('Load Factor')} %: <strong>{summary.quantity !== null && summary.capacity > 0
                     ? `${(summary.quantity / summary.capacity * 100).toLocaleString('it-IT', {
-                      useGrouping: true, minimumFractionDigits: 1, maximumFractionDigits: 1,
+                      useGrouping: true, minimumFractionDigits: 0, maximumFractionDigits: 0,
                     })}%`
                     : '—'}</strong></p>
                 </>;
@@ -84,7 +84,7 @@ export function UpcomingGames({ ticketing, gameDay = [], module, viewMode = 'tot
                 <p>{t('Ticket sales revenue')}: <strong>{currency(ticket.totalRevenue)}</strong></p>
                 <p>{t('Tickets / allocations to date')}: <strong>{formatTicketingQuantity(ticket.attendance)}</strong></p>
                 <p>{t('Load Factor')} %: <strong>{ticket.capacity > 0 ? `${(ticket.attendance / ticket.capacity * 100).toLocaleString('it-IT', {
-                  useGrouping: true, minimumFractionDigits: 1, maximumFractionDigits: 1,
+                  useGrouping: true, minimumFractionDigits: 0, maximumFractionDigits: 0,
                 })}%` : '—'}</strong></p>
               </>}
             </div>}

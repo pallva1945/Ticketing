@@ -76,7 +76,9 @@ test('missing breakdown preserves Total totals but never fabricates GameDay figu
 
 const markup = (viewMode, ticketing = [game], module = 'ticketing') =>
   renderToStaticMarkup(React.createElement(UpcomingGames, { ticketing, module, viewMode }));
-const totalCurrency = (1240).toLocaleString('it-IT', { style: 'currency', currency: 'EUR', useGrouping: true });
+const totalCurrency = (1240).toLocaleString('it-IT', {
+  style: 'currency', currency: 'EUR', useGrouping: true, minimumFractionDigits: 0, maximumFractionDigits: 0,
+});
 
 test('Ticketing markup renders one zone row with paired channel columns and final totals', () => {
   const html = markup('total');
@@ -90,7 +92,8 @@ test('Ticketing markup renders one zone row with paired channel columns and fina
   assert.doesNotMatch(html, /Protocol €|Protocol #|GA €|GA #/);
   assert.equal((html.match(/>GA<\/th>/g) || []).length, 1);
   assert.ok(html.indexOf('Yield €') < html.indexOf('Tot €'));
-  assert.match(html, /26,96/);
+  assert.match(html, />27<\/td>/);
+  assert.doesNotMatch(html, /\d,\d/);
   assert.ok(html.includes(totalCurrency));
   assert.match(html, /<strong>46<\/strong>/);
   assert.match(html, /overflow-x-auto/);
@@ -104,16 +107,18 @@ test('changing data view updates the rendered advance-sales summary and fixture 
   assert.match(html, /Fixture totals \(GameDay tickets only\)/);
   assert.doesNotMatch(html, /ABB €|Corp €|Protocol €/);
   assert.match(html, />GA<\/th>/);
-  assert.match(html, /20,00/);
+  assert.match(html, />20<\/td>/);
+  assert.doesNotMatch(html, /\d,\d/);
 });
 
-test('amounts use two rounded decimals and counts use grouped integers, including four-digit values', () => {
-  assert.equal(formatTicketingAmount(1240), '1.240,00');
-  assert.equal(formatTicketingAmount(1234567.567), '1.234.567,57');
-  assert.equal(formatTicketingAmount(12.345), '12,35');
+test('amounts and counts use rounded whole numbers with thousands separators', () => {
+  assert.equal(formatTicketingAmount(1240), '1.240');
+  assert.equal(formatTicketingAmount(1234567.567), '1.234.568');
+  assert.equal(formatTicketingAmount(12.345), '12');
+  assert.equal(formatTicketingAmount(12.5), '13');
   assert.equal(formatTicketingQuantity(1234), '1.234');
   assert.equal(formatTicketingQuantity(1234567), '1.234.567');
-  assert.equal(formatTicketingAmount(0), '0,00');
+  assert.equal(formatTicketingAmount(0), '0');
   assert.equal(formatTicketingQuantity(0), '0');
 });
 
