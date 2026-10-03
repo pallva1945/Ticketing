@@ -9,8 +9,8 @@ Diagnose Google sign-in using the actual HTTPS development preview origin before
 
 **How to apply:** Verify connectivity and the unauthenticated login screen separately from successful sign-in. Browser checks using mocked authentication verify dashboard behavior, not the real sign-in journey. Do not bypass authentication to make preview work.
 
-For “couldn't reach this app,” check the selected preview port and stale port mappings before investigating login.
+For “couldn't reach this app,” compare the exact reported URL with the platform's public preview URL before changing networking or authentication.
 
-**Why:** The main HTTPS app was healthy while inactive preview mappings remained configured, making a different preview target a plausible connectivity failure.
+**Why:** A healthy main preview did not reproduce the user's failure because their link appended the internal server port to the public HTTPS domain. Inactive mappings were also present, but were not the confirmed cause.
 
-**How to apply:** Compare configured mappings with live services, keep the main app as the primary preview, and remove obsolete mappings only after confirming their services are inactive. Do not keep restarting a healthy server.
+**How to apply:** Use the main public development URL without appending a local server port, preserving the requested path and fragment. A successful probe of a different URL does not verify the failing one. Do not keep restarting a healthy server.
