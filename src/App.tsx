@@ -1184,7 +1184,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
     if (!forceRefresh) {
       const cachedTicketing = getFromLocalCache('ticketing-capacity-26-27-v2');
       const cachedGameDay = getFromLocalCache('gameday');
-      const cachedSponsor = getFromLocalCache('sponsor');
+      const cachedSponsor = getFromLocalCache('sponsor-european-reconciliation');
       const cachedMerch = getFromLocalCache('merch-26-27');
 
       if (cachedTicketing && cachedGameDay?.length &&
@@ -1350,7 +1350,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
         setSponsorData(loadedSponsors);
         setSponsorDataSource(sponsorSource as any);
         setDataSources(prev => ({...prev, sponsorship: sponsorSource}));
-        if (loadedSponsors.length > 0) saveToLocalCache('sponsor', loadedSponsors);
+        if (loadedSponsors.length > 0) saveToLocalCache('sponsor-european-reconciliation', loadedSponsors);
     } catch(e) {
         console.error("Error loading Sponsor data", e);
         setSponsorData(processSponsorData(SPONSOR_CSV_CONTENT));
@@ -1819,7 +1819,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
             const loadedSponsors = processSponsorData(convertBigQueryRowsToSponsorCSV(result.rawRows));
             setSponsorData(loadedSponsors);
             setDataSources(prev => ({...prev, sponsor: 'bigquery'}));
-            saveToLocalCache('sponsor', loadedSponsors);
+            saveToLocalCache('sponsor-european-reconciliation', loadedSponsors);
             results.sponsor = true;
             console.log(`Synced ${loadedSponsors.length} Sponsor records`);
           } else {

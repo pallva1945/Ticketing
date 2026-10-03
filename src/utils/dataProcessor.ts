@@ -515,6 +515,8 @@ export const processSponsorData = (csvContent: string): SponsorData[] => {
   const bonusPlayoffIdx = getIndex(['bonus playoff']);
   const netOfTicketingIdx = getIndex(['net of ticketing']);
   const gamedayIdx = getIndex(['gameday reconciliation']);
+  const europeanByGameIdx = getIndex(['european competition bygame', 'european_competition_bygame']);
+  const europeanReconciliationIdx = getIndex(['european competition reconciliation', 'european_competition_reconciliation']);
   const hospitalityIdx = getIndex(['hospitality reconciliation', 'hospitality']);
   const parkingIdx = getIndex(['parking reconciliation', 'parking']);
   const vbIdx = getIndex(['vb reconciliaiton', 'vb reconciliation']);
@@ -558,6 +560,8 @@ export const processSponsorData = (csvContent: string): SponsorData[] => {
       bonusPlayoff: parseCurrency(getVal(bonusPlayoffIdx)),
       netOfTicketing: parseCurrency(getVal(netOfTicketingIdx)),
       gamedayReconciliation: parseCurrency(getVal(gamedayIdx)),
+      europeanCompetitionByGame: parseCurrency(getVal(europeanByGameIdx)),
+      europeanCompetitionReconciliation: parseCurrency(getVal(europeanReconciliationIdx)),
       hospitalityReconciliation: parseCurrency(getVal(hospitalityIdx)),
       parkingReconciliation: parseCurrency(getVal(parkingIdx)),
       vbReconciliation: parseCurrency(getVal(vbIdx)),

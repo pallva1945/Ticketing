@@ -7,6 +7,7 @@ import { SponsorData } from '../types';
 import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet, X, Filter, Target, Ticket, Award, TrendingUp, TrendingDown, Minus, Search, Calendar, Mail, User, Clock, History, ArrowRight, CheckCircle, Circle, Gift } from 'lucide-react';
 import { SEASON_TARGET_SPONSORSHIP } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
+import { totalSponsorGameDaySplit, splitSponsorGameDay } from '../utils/sponsorReconciliation';
 
 const SPONSOR_TIERS = {
   PLATINUM: { name: 'Platinum', min: 200000, color: '#475569', bgColor: 'bg-slate-600', textColor: 'text-white', borderColor: 'border-slate-600' },
@@ -77,6 +78,7 @@ const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('it-IT', {
     style: 'currency',
     currency: 'EUR',
+    useGrouping: true,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
@@ -148,6 +150,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
         existing.csrReconciliation += d.csrReconciliation;
         existing.corpTixReconciliation += d.corpTixReconciliation;
         existing.gamedayReconciliation += d.gamedayReconciliation;
+        existing.europeanCompetitionByGame = (existing.europeanCompetitionByGame ?? 0) + (d.europeanCompetitionByGame ?? 0);
+        existing.europeanCompetitionReconciliation = (existing.europeanCompetitionReconciliation ?? 0) + (d.europeanCompetitionReconciliation ?? 0);
         existing.hospitalityReconciliation += d.hospitalityReconciliation;
         existing.parkingReconciliation += d.parkingReconciliation;
         existing.bonusPlayoff += d.bonusPlayoff;
@@ -237,6 +241,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     
     // GameDay reconciliation is per-game, so multiply by 15 for season total
     const totalGameday = dataSource.reduce((sum, d) => sum + d.gamedayReconciliation, 0) * GAMES_PER_SEASON;
+    const gameDaySplit = totalSponsorGameDaySplit(dataSource);
     const totalVB = dataSource.reduce((sum, d) => sum + d.vbReconciliation, 0);
     const totalCSR = dataSource.reduce((sum, d) => sum + d.csrReconciliation, 0);
     const totalCorpTix = dataSource.reduce((sum, d) => sum + d.corpTixReconciliation, 0);
@@ -277,6 +282,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       totalSponsors,
       uniqueCompanies,
       totalGameday,
+      totalGamedayLBA: gameDaySplit.lba,
+      totalEuropeanCompetition: gameDaySplit.european,
       totalVB,
       totalCSR,
       totalCorpTix,
@@ -324,10 +331,11 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       { name: 'VB (Youth)', value: stats.totalVB, fill: COLORS.quaternary },
       { name: 'CSR', value: stats.totalCSR, fill: COLORS.gray },
       { name: 'Corp Tickets', value: stats.totalCorpTix, fill: COLORS.secondary },
-      { name: 'Game Day', value: stats.totalGameday, fill: COLORS.tertiary }
+      { name: t('GameDay LBA'), value: stats.totalGamedayLBA, fill: COLORS.tertiary },
+      { name: t('European Competition'), value: stats.totalEuropeanCompetition, fill: COLORS.cm }
     ];
     return items.filter(d => d.value > 0);
-  }, [stats]);
+  }, [stats, t]);
 
   const monthlyData = useMemo(() => {
     const months = ['july', 'august', 'september', 'october', 'november', 'december', 
@@ -478,6 +486,8 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
     }
     return null;
   };
+
+  const selectedSponsorGameDaySplit = selectedSponsor ? splitSponsorGameDay(selectedSponsor) : null;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -1048,12 +1058,12 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">{t('Revenue Reconciliation')}</h3>
-          <div className="h-64">
+          <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={reconciliationData} layout="vertical" margin={{ left: 10, right: 30 }}>
+              <BarChart data={reconciliationData} layout="vertical" margin={{ left: 0, right: 24 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
                 <XAxis type="number" tickFormatter={formatCompactCurrency} tick={{ fontSize: 10 }} />
-                <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 10 }} />
+                <YAxis type="category" dataKey="name" width={170} tick={{ fontSize: 10 }} />
                 <Tooltip 
                   formatter={(value: number) => [formatCurrency(value), 'Value']}
                   contentStyle={{ fontSize: '12px' }}
@@ -1306,20 +1316,24 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                     { label: t('VB (Youth)'), desc: t('Youth team sponsorship, academy branding'), value: selectedSponsor.vbReconciliation, color: 'bg-amber-100 dark:bg-amber-900/20 text-amber-700', icon: '⭐' },
                     { label: t('CSR'), desc: t('Corporate social responsibility activities'), value: selectedSponsor.csrReconciliation, color: 'bg-slate-100 dark:bg-slate-900/20 text-slate-700', icon: '🤝' },
                     { label: t('Corporate Tickets'), desc: t('Tickets, parking, VIP access, hospitality (x15 games)'), value: selectedSponsor.corpTixReconciliation + ((selectedSponsor.hospitalityReconciliation + selectedSponsor.parkingReconciliation) * 15), color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700', icon: '🎟️' },
-                    { label: t('GameDay Visibility'), desc: t('LED displays, naming rights, jersey, banners (x15 games)'), value: selectedSponsor.gamedayReconciliation * 15, color: 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700', icon: '📺' }
+                    { label: t('GameDay LBA'), desc: t('LED displays, naming rights, jersey, banners (LBA)'), value: selectedSponsorGameDaySplit?.lba ?? 0, color: 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700', icon: 'LBA' },
+                    { label: t('European Competition'), desc: t('European competition visibility'), value: selectedSponsorGameDaySplit?.european ?? 0, perGame: selectedSponsor.europeanCompetitionByGame ?? 0, color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700', icon: 'EU' }
                   ].filter(item => item.value > 0).map(item => (
                     <div key={item.label} className={`rounded-lg p-4 ${item.color} flex items-center justify-between`}>
                       <div className="flex items-center gap-3">
-                        <span className="text-xl">{item.icon}</span>
+                        <span className={item.icon.length > 2 ? 'text-xs font-bold tracking-wide' : 'text-xl'}>{item.icon}</span>
                         <div>
                           <p className="font-semibold">{item.label}</p>
                           <p className="text-xs opacity-75">{item.desc}</p>
+                          {'perGame' in item && typeof item.perGame === 'number' && item.perGame > 0 && (
+                            <p className="text-xs opacity-75">{formatCurrency(item.perGame)} {t('per game')}</p>
+                          )}
                         </div>
                       </div>
                       <p className="text-xl font-bold">{formatCurrency(item.value)}</p>
                     </div>
                   ))}
-                  {[selectedSponsor.sponsorReconciliation, selectedSponsor.vbReconciliation, selectedSponsor.csrReconciliation, selectedSponsor.corpTixReconciliation, selectedSponsor.gamedayReconciliation, selectedSponsor.hospitalityReconciliation, selectedSponsor.parkingReconciliation].every(v => v === 0) && (
+                  {[selectedSponsor.sponsorReconciliation, selectedSponsor.vbReconciliation, selectedSponsor.csrReconciliation, selectedSponsor.corpTixReconciliation, selectedSponsor.gamedayReconciliation, selectedSponsor.hospitalityReconciliation, selectedSponsor.parkingReconciliation, selectedSponsor.europeanCompetitionReconciliation ?? 0].every(v => v === 0) && (
                     <p className="text-gray-500 dark:text-gray-400 text-sm italic">{t('No benefits breakdown available for this contract')}</p>
                   )}
                 </div>
