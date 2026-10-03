@@ -3176,7 +3176,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                     {/* Filter Bar */}
                     <FilterBar />
                     <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t('Performance uses played games only. Games become eligible the following day (Europe/Rome).')}</p>
-                    <UpcomingGames ticketing={upcomingGames} module="ticketing" />
+                    <UpcomingGames ticketing={upcomingGames} module="ticketing" viewMode={viewMode} />
                     
                     {isLoadingData && data.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-96">
