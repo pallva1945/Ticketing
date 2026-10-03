@@ -4,6 +4,8 @@
 - [Post-merge dependency safety](post-merge-dependencies.md) — avoid unconditional clean installs when the lockfile contains firewall-blocked packages.
 - [Tier-over-years meaning](tier-over-years.md) — compare the same tier across seasons using per-game volume averages, not two different tiers side by side.
 - [GameDay capacity meaning](gameday-capacity.md) — 26/27 zone figures are final available GameDay seats; do not subtract additional corporate seats from them.
+- [GameDay comparison semantics](gameday-comparison-semantics.md) — operational spending excludes Sponsorship; commercial totals honor the Ticketing toggle and comparisons normalize unequal samples.
+- [Dashboard cold-start independence](dashboard-cold-start.md) — uncached dashboards must not wait for unrelated slow provider downloads.
 - [Campus English proposal preference](campus-proposal-seo.md) — prefer the detailed English proposal; redirect the older draft rather than canonicalizing different content.
 - [CRM fixture scope](crm-fixture-scope.md) — repeated opponents are distinct matches; filter by match season, not purchase date.
 - [CRM full-season capacity](crm-full-season-capacity.md) — validate subscription names against real events; partial subscriptions and packs must retain historical Flexible classification.

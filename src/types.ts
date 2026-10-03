@@ -87,6 +87,8 @@ export interface GameDayData {
   sponsorshipRevenue: number;
   tvRevenue: number;
   expRevenue: number;
+  // Preserve unknown inputs separately from genuine numeric zero.
+  reported?: Partial<Record<'attendance' | 'totalRevenue' | 'tixRevenue' | 'merchRevenue' | 'hospitalityRevenue' | 'parkingRevenue' | 'fbRevenue' | 'sponsorshipRevenue' | 'tvRevenue' | 'expRevenue', boolean>>;
 }
 
 export interface ChatMessage {

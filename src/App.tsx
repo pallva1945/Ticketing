@@ -16,6 +16,7 @@ import { PacingWidget } from './components/PacingWidget';
 import { DistressedZones } from './components/DistressedZones';
 import { CompKillerWidget } from './components/CompKillerWidget';
 import { GameDayDashboard } from './components/GameDayDashboard';
+import { GameDayComparisonView } from './components/GameDayComparisonView';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
 import { BoardReportModal } from './components/BoardReportModal';
 import { CRMView } from './components/CRMView';
@@ -1093,6 +1094,11 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   // View Mode
   const [viewMode, setViewMode] = useState<'total' | 'gameday'>('gameday');
   const [gameDayIncludeTicketing, setGameDayIncludeTicketing] = useState(false);
+  const [gameDayTab, setGameDayTab] = useState<'dashboard' | 'comparison'>(() =>
+    localStorage.getItem('gameday-active-tab') === 'comparison' ? 'comparison' : 'dashboard');
+  useEffect(() => {
+    localStorage.setItem('gameday-active-tab', gameDayTab);
+  }, [gameDayTab]);
 
   // KPI Configuration (Hardcoded)
   const [kpiConfig] = useState<KPIConfig>({
@@ -1177,7 +1183,8 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
       const cachedSponsor = getFromLocalCache('sponsor');
       const cachedMerch = getFromLocalCache('merch-26-27');
 
-      if (cachedTicketing && cachedGameDay && cachedSponsor) {
+      if (cachedTicketing && cachedGameDay?.length &&
+          cachedGameDay.every((game: GameDayData) => !!game.reported) && cachedSponsor) {
         console.log('Hydrating from local cache (instant load)');
         setData(cachedTicketing);
         setGameDayData(cachedGameDay);
@@ -1210,12 +1217,12 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
     let loadedGameDay: GameDayData[] = [];
     
     const refreshParam = forceRefresh ? '?refresh=true' : '';
-    const [ticketingResponse, gdResponse, sponsorResponse, merchRevenueResponse, merchResponse] = await Promise.all([
+    const merchRevenuePromise = fetch('/api/merch/season-revenue')
+      .catch(e => { console.warn('Merch revenue fetch failed:', e); return null; });
+    const [ticketingResponse, gdResponse, sponsorResponse] = await Promise.all([
       fetch(`/api/ticketing${refreshParam}`).catch(e => { console.warn('Ticketing fetch failed:', e); return null; }),
       fetch(`/api/gameday/bigquery${refreshParam}`).catch(e => { console.warn('GameDay fetch failed:', e); return null; }),
       fetch(`/api/sponsorship/bigquery${refreshParam}`).catch(e => { console.warn('Sponsorship fetch failed:', e); return null; }),
-      fetch(`/api/merch/season-revenue`).catch(e => { console.warn('Merch revenue fetch failed:', e); return null; }),
-      fetch(`/api/shopify/data${forceRefresh ? '?refresh=true' : ''}`).catch(e => { console.warn('Merch fetch failed:', e); return null; })
     ]);
     
     // 1. TICKETING DATA - Process first (most critical for Executive Overview)
@@ -1346,7 +1353,13 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
         setSponsorDataSource('local');
     }
 
+    // Primary dashboards must not wait for an unrelated full Shopify download.
+    if (loadedTicketing.length > 0) saveToLocalCache('ticketing-capacity-26-27-v2', loadedTicketing);
+    if (loadedGameDay.length > 0) saveToLocalCache('gameday', loadedGameDay);
+    setIsLoadingData(false);
+
     // 4. MERCHANDISING DATA - Use pre-computed season revenue (fast), fallback to full data
+    const merchRevenueResponse = await merchRevenuePromise;
     let merchRevenueSet = false;
     try {
         if (merchRevenueResponse && merchRevenueResponse.ok) {
@@ -1364,6 +1377,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
 
     if (!merchRevenueSet) {
         try {
+            const merchResponse = await fetch(`/api/shopify/data${forceRefresh ? '?refresh=true' : ''}`);
             if (merchResponse && merchResponse.ok) {
                 const merchResult = await merchResponse.json();
                 if (merchResult.orders?.length > 0) {
@@ -1391,12 +1405,6 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
         }
     }
 
-    // Save to localStorage for instant loading next time
-    if (loadedTicketing.length > 0) saveToLocalCache('ticketing-capacity-26-27-v2', loadedTicketing);
-    if (loadedGameDay.length > 0) saveToLocalCache('gameday', loadedGameDay);
-
-    // CRM is loaded lazily - see loadCRMData function
-    setIsLoadingData(false);
   };
 
   // Lazy load CRM data only when user navigates to CRM tab
@@ -2848,8 +2856,11 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
             {activeModule === 'gameday' && (
                 <div className="animate-in slide-in-from-left-2 duration-300 space-y-1">
                     <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3 px-2">{t('GameDay Tools')}</p>
-                    <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 text-indigo-700 font-bold border border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800 mb-4">
+                    <button onClick={() => { setGameDayTab('dashboard'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all ${gameDayTab === 'dashboard' ? 'bg-indigo-50 text-indigo-700 font-bold border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800' : 'text-gray-600 border-transparent hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'}`}>
                         <LayoutDashboard size={18} /> <span className="inline md:hidden lg:inline text-sm">{t('Dashboard')}</span>
+                    </button>
+                    <button onClick={() => { setGameDayTab('comparison'); setIsMobileMenuOpen(false); }} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all mb-4 ${gameDayTab === 'comparison' ? 'bg-indigo-50 text-indigo-700 font-bold border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800' : 'text-gray-600 border-transparent hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800'}`}>
+                        <ArrowLeftRight size={18} /> <span className="inline md:hidden lg:inline text-sm">{t('Comparison')}</span>
                     </button>
                     
                     <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-xl border border-gray-100 dark:border-gray-700">
@@ -3052,6 +3063,9 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
               />
           ) : activeModule === 'gameday' ? (
               <div className="pt-6">
+                {gameDayTab === 'comparison' ? (
+                  <GameDayComparisonView data={gameDayData} ticketingData={data} includeTicketing={gameDayIncludeTicketing} isLoading={isLoadingData} />
+                ) : (<>
                 {!isLoadingData && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                         <div className="hidden md:block lg:col-span-2 relative bg-gradient-to-br from-indigo-800 to-slate-900 rounded-xl p-6 text-white shadow-lg overflow-hidden border border-indigo-700">
@@ -3091,6 +3105,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                 <FilterBar />
                 
                 <GameDayDashboard data={filteredGameDayData} includeTicketing={gameDayIncludeTicketing} />
+                </>)}
               </div>
           ) : activeModule === 'ticketing' ? (
             <>

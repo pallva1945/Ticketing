@@ -465,6 +465,13 @@ export const processGameDayData = (csvContent: string): GameDayData[] => {
           sponsorshipRevenue: parseCurrency(getVal(sponsValIdx)),
           tvRevenue: parseCurrency(getVal(tvRevIdx)),
           expRevenue: parseCurrency(getVal(expRevIdx)),
+          reported: Object.fromEntries([
+            ['attendance', totalNumIdx], ['totalRevenue', totalRevIdx],
+            ['tixRevenue', tixRevIdx], ['merchRevenue', merchRevIdx],
+            ['hospitalityRevenue', hospRevIdx], ['parkingRevenue', parkRevIdx],
+            ['fbRevenue', fbRevIdx], ['sponsorshipRevenue', sponsValIdx],
+            ['tvRevenue', tvRevIdx], ['expRevenue', expRevIdx],
+          ].map(([field, index]) => [field, /\d/.test(getVal(Number(index))) && !/#(?:VALUE|REF|N\/A|DIV)/i.test(getVal(Number(index)))])),
       };
   });
 
@@ -472,7 +479,7 @@ export const processGameDayData = (csvContent: string): GameDayData[] => {
   const uniqueMap = new Map<string, typeof gameDayEntries[0]>();
   gameDayEntries.forEach(entry => {
     if (entry.date && entry.opponent) {
-      const key = `${entry.date}-${entry.opponent}`;
+      const key = `${entry.season}-${entry.league}-${entry.date}-${entry.opponent}`;
       uniqueMap.set(key, entry);
     }
   });
