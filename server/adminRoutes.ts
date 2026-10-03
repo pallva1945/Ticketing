@@ -29,7 +29,7 @@ function isProduction(): boolean {
   return process.env.NODE_ENV === 'production';
 }
 
-function authenticateAdmin(req: express.Request, res: express.Response): any | null {
+export function authenticateAdmin(req: express.Request, res: express.Response): any | null {
   const token = req.cookies?.pv_auth;
   if (!token) {
     res.status(401).json({ success: false, message: 'Not authenticated' });
@@ -48,7 +48,7 @@ function authenticateAdmin(req: express.Request, res: express.Response): any | n
   }
 }
 
-function authenticateUser(req: express.Request): any | null {
+export function authenticateUser(req: express.Request): any | null {
   const token = req.cookies?.pv_auth;
   if (!token) return null;
   try {

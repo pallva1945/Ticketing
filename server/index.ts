@@ -12,6 +12,7 @@ import { syncTicketingToBigQuery, testBigQueryConnection, fetchTicketingFromBigQ
 import { initDatabase, upsertUser, getUserByEmail, getUserPermissions, createAccessRequest, getAccessRequestByEmail, saveCostCenterData, getLatestCostCenterData, getSetting, setSetting } from "./db.js";
 import { getUncachableGoogleSheetClient } from "./googleSheets.js";
 import { registerAdminRoutes } from "./adminRoutes.js";
+import { registerBopsCostRoutes } from "./bopsCostRoutes.js";
 import { registerXeroRoutes } from "./xeroRoutes.js";
 import aiRoutes from "./aiRoutes.js";
 import crypto from "crypto";
@@ -60,6 +61,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 registerObjectStorageRoutes(app);
 registerAdminRoutes(app);
+registerBopsCostRoutes(app);
 registerXeroRoutes(app);
 app.use('/api/ai', aiRoutes);
 
