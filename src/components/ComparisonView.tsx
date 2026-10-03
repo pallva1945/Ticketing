@@ -1,19 +1,22 @@
-import React, { useState, useMemo } from 'react';
-import { GameData, TicketZone, SalesChannel } from '../types';
-import { MultiSelect } from './MultiSelect';
-import { UserX, Printer } from 'lucide-react';
-import { getFixedCapacityForSeason } from '../constants';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type { GameData, GameDayData } from '../types';
+import { Printer } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { SeasonComparison, SeasonComparisonMode, SeasonComparisonSelection } from './SeasonComparison';
+import { SeasonComparison, type SeasonComparisonMode, type SeasonComparisonSelection } from './SeasonComparison';
 import { ComparisonPrintDialog } from './ComparisonPrintDialog';
 import { ComparisonReport } from './comparisonReport';
 import { ComparisonQuadrant } from './ComparisonQuadrant';
 import { ComparisonBadges } from './ComparisonBadges';
-import { COMPARISON_METRICS, ComparisonMetricKey } from './comparisonMetrics';
-import { ComparisonModeTabs } from './ComparisonModeTabs';
+import { COMPARISON_METRICS, ComparisonMetricKey, metricDisplayTitle } from './comparisonMetrics';
+import { ComparisonModeTabs, type ComparisonMode } from './ComparisonModeTabs';
+import { ComparisonCustomFiltersPanel } from './ComparisonCustomFilters';
+import type { GameDayCustomFilters } from '../utils/gameDayComparison';
+import { buildGameDayFixtures, gameDayFixtureLabel } from '../utils/gameDayComparison';
+import { buildTicketingCustomComparison } from '../utils/seasonComparison';
 
 interface ComparisonViewProps {
   fullData: GameData[];
+  scheduleData?: GameDayData[];
   options: {
     seasons: string[];
     leagues: string[];
@@ -24,154 +27,13 @@ interface ComparisonViewProps {
   viewMode: 'total' | 'gameday';
 }
 
-interface FilterState {
-    seasons: string[];
-    leagues: string[];
-    opponents: string[];
-    tiers: string[];
-    zones: string[];
-    times: string[];
-    dates: string[];
-    ignoreOspiti: boolean;
-}
-
-const INITIAL_FILTERS: FilterState = {
-    seasons: ['All'],
-    leagues: ['LBA'],
-    opponents: ['All'],
-    tiers: ['All'],
-    zones: ['All'],
-    times: ['All'],
-    dates: ['All'],
-    ignoreOspiti: false,
+const EMPTY_FILTERS: GameDayCustomFilters = {
+  seasons: ['All'], leagues: ['All'], opponents: ['All'], tiers: ['All'], dates: ['All'],
 };
 
-const getFilteredData = (allGames: GameData[], filters: FilterState, viewMode: 'total' | 'gameday') => {
-    const filteredGames = allGames.filter(d => {
-      const matchSeason = filters.seasons.includes('All') || filters.seasons.includes(d.season);
-      const matchLeague = filters.leagues.includes('All') || filters.leagues.includes(d.league);
-      const matchOpponent = filters.opponents.includes('All') || filters.opponents.includes(d.opponent);
-      const matchTier = filters.tiers.includes('All') || filters.tiers.includes(String(d.tier));
-      
-      const matchDate = filters.dates.includes('All') || filters.dates.includes(d.date);
-      
-      const timePart = d.id.split('-')[3]; 
-      const formattedTime = timePart ? `${timePart.slice(0,2)}.${timePart.slice(2)}` : '00.00';
-      const matchTimeDerived = filters.times.includes('All') || filters.times.includes(formattedTime);
-
-      return matchSeason && matchLeague && matchOpponent && matchTier && matchDate && matchTimeDerived;
-    });
-
-    return filteredGames.map(game => {
-      let zoneSales = game.salesBreakdown;
-
-      if (filters.ignoreOspiti) {
-          zoneSales = zoneSales.filter(s => s.zone !== TicketZone.OSPITI);
-      }
-
-      if (!filters.zones.includes('All')) {
-          zoneSales = zoneSales.filter(s => filters.zones.includes(s.zone));
-      }
-
-      if (viewMode === 'gameday') {
-          zoneSales = zoneSales.filter(s => 
-              [SalesChannel.TIX, SalesChannel.MP, SalesChannel.VB, SalesChannel.GIVEAWAY].includes(s.channel)
-          );
-      }
-
-      const zoneRevenue = zoneSales.reduce((acc, curr) => acc + curr.revenue, 0);
-      const zoneAttendance = zoneSales.reduce((acc, curr) => acc + curr.quantity, 0);
-      
-      let zoneCapacity = 0;
-      const filteredZoneCapacities = { ...game.zoneCapacities };
-      
-      if (filters.ignoreOspiti) {
-          delete filteredZoneCapacities[TicketZone.OSPITI];
-      }
-       if (!filters.zones.includes('All')) {
-           Object.keys(filteredZoneCapacities).forEach(z => {
-               if (!filters.zones.includes(z)) delete filteredZoneCapacities[z];
-           });
-       }
-
-      if (viewMode === 'gameday') {
-          Object.keys(filteredZoneCapacities).forEach(z => {
-              const fixedDeduction = getFixedCapacityForSeason(game.season, z);
-              filteredZoneCapacities[z] = Math.max(0, filteredZoneCapacities[z] - fixedDeduction);
-          });
-      }
-
-      if (game.zoneCapacities) {
-        Object.entries(filteredZoneCapacities).forEach(([z, cap]) => {
-             if (filters.zones.includes('All') || filters.zones.includes(z)) {
-                 zoneCapacity += (cap as number);
-             }
-        });
-      }
-
-      return {
-        ...game,
-        attendance: zoneAttendance,
-        totalRevenue: zoneRevenue,
-        capacity: zoneCapacity,
-        salesBreakdown: zoneSales,
-        zoneCapacities: filteredZoneCapacities
-      };
-    });
-};
-
-const getAvailableOptions = (allGames: GameData[], currentFilters: FilterState, targetField: keyof FilterState): string[] => {
-    
-    const relevantData = allGames.filter(d => {
-        const timePart = d.id.split('-')[3]; 
-        const formattedTime = timePart ? `${timePart.slice(0,2)}.${timePart.slice(2)}` : '00.00';
-
-        if (targetField !== 'seasons' && !currentFilters.seasons.includes('All') && !currentFilters.seasons.includes(d.season)) return false;
-        if (targetField !== 'leagues' && !currentFilters.leagues.includes('All') && !currentFilters.leagues.includes(d.league)) return false;
-        if (targetField !== 'opponents' && !currentFilters.opponents.includes('All') && !currentFilters.opponents.includes(d.opponent)) return false;
-        if (targetField !== 'tiers' && !currentFilters.tiers.includes('All') && !currentFilters.tiers.includes(String(d.tier))) return false;
-        
-        if (targetField !== 'dates' && !currentFilters.dates.includes('All') && !currentFilters.dates.includes(d.date)) return false;
-        if (targetField !== 'times' && !currentFilters.times.includes('All') && !currentFilters.times.includes(formattedTime)) return false;
-
-        return true;
-    });
-
-    const uniqueValues = new Set<string>();
-    relevantData.forEach(d => {
-        if (targetField === 'seasons') uniqueValues.add(d.season);
-        if (targetField === 'leagues') uniqueValues.add(d.league);
-        if (targetField === 'opponents') uniqueValues.add(d.opponent);
-        if (targetField === 'tiers') uniqueValues.add(String(d.tier));
-        if (targetField === 'dates') uniqueValues.add(d.date);
-        if (targetField === 'times') {
-             const timePart = d.id.split('-')[3]; 
-             const formattedTime = timePart ? `${timePart.slice(0,2)}.${timePart.slice(2)}` : '00.00';
-             uniqueValues.add(formattedTime);
-        }
-        if (targetField === 'zones') {
-             d.salesBreakdown.forEach(s => uniqueValues.add(s.zone));
-        }
-    });
-
-    if (targetField === 'tiers') {
-        return Array.from(uniqueValues).sort((a, b) => Number(a) - Number(b));
-    }
-    if (targetField === 'dates') {
-         return Array.from(uniqueValues).sort((a, b) => {
-             const [da, ma, ya] = a.split('/').map(Number);
-             const [db, mb, yb] = b.split('/').map(Number);
-             return new Date(ya, ma-1, da).getTime() - new Date(yb, mb-1, db).getTime();
-         });
-    }
-
-    return Array.from(uniqueValues).sort();
-};
-
-
-export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, options, viewMode }) => {
+export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, scheduleData = [], viewMode }) => {
   const { t } = useLanguage();
-  const [comparisonType, setComparisonType] = useState<SeasonComparisonMode | 'custom'>('opponent');
+  const [comparisonType, setComparisonType] = useState<ComparisonMode>('opponent');
   const [seasonSelection, setSeasonSelection] = useState<SeasonComparisonSelection>({
     league: 'LBA', opponent: '', secondOpponent: '', firstTier: null, week: 1,
   });
@@ -181,14 +43,12 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
     const defaults = ['revenue', 'attendance', 'yield', 'loadFactor', 'cagrRevenue', 'cagrYield'];
     try {
       const stored = JSON.parse(window.localStorage.getItem('ticketing-comparison-metrics') || 'null');
-      const valid = Array.isArray(stored)
-        ? defaults.map((key, index) => {
-          if (index >= stored.length) return key;
-          const selected = stored[index] === 'yoyRevenueGrowth' ? 'cagrRevenue'
-            : stored[index] === 'yoyYieldGrowth' ? 'cagrYield' : stored[index];
-          return all.includes(selected) ? selected : '';
-        })
-        : [];
+      const valid = Array.isArray(stored) ? defaults.map((key, index) => {
+        if (index >= stored.length) return key;
+        const selected = stored[index] === 'yoyRevenueGrowth' ? 'cagrRevenue'
+          : stored[index] === 'yoyYieldGrowth' ? 'cagrYield' : stored[index];
+        return all.includes(selected) ? selected : '';
+      }) : [];
       return valid.some(Boolean) ? valid : defaults;
     } catch { return defaults; }
   });
@@ -202,151 +62,120 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({ fullData, option
       return next;
     });
   };
-  const [filtersA, setFiltersA] = useState<FilterState>({
-     ...INITIAL_FILTERS,
-     seasons: [options.seasons.length > 1 ? options.seasons[1] : options.seasons[0]], 
-  });
 
-  const [filtersB, setFiltersB] = useState<FilterState>({
-     ...INITIAL_FILTERS,
-     seasons: [options.seasons[0]],
-  });
+  const fixtures = useMemo(() => buildGameDayFixtures(scheduleData, fullData), [scheduleData, fullData]);
+  const customOptions = useMemo(() => ({
+    seasons: [...new Set(fixtures.map(fixture => fixture.season))].sort(),
+    leagues: [...new Set(fixtures.map(fixture => fixture.league))].sort(),
+    opponents: [...new Set(fixtures.map(fixture => fixture.opponent))].sort(),
+    tiers: [...new Set(fixtures.flatMap(fixture => fixture.tier === undefined ? [] : [String(fixture.tier)]))]
+      .sort((a, b) => Number(a) - Number(b)),
+    dates: fixtures.map(gameDayFixtureLabel),
+  }), [fixtures]);
+  const validSeasons = customOptions.seasons;
+  const defaultLeague = customOptions.leagues.includes('LBA') ? 'LBA' : customOptions.leagues[0] || '';
+  const customDefaultsReady = useRef(false);
+  const [filtersA, setFiltersA] = useState<GameDayCustomFilters>(EMPTY_FILTERS);
+  const [filtersB, setFiltersB] = useState<GameDayCustomFilters>(EMPTY_FILTERS);
+  useEffect(() => {
+    if (customDefaultsReady.current || !validSeasons.length || !defaultLeague) return;
+    customDefaultsReady.current = true;
+    const ordered = [...validSeasons].sort();
+    setFiltersA({ ...EMPTY_FILTERS, seasons: [ordered[Math.max(0, ordered.length - 2)]], leagues: [defaultLeague] });
+    setFiltersB({ ...EMPTY_FILTERS, seasons: [ordered[ordered.length - 1]], leagues: [defaultLeague] });
+  }, [validSeasons, defaultLeague]);
 
-  const dataA = useMemo(() => getFilteredData(fullData, filtersA, viewMode), [fullData, filtersA, viewMode]);
-  const dataB = useMemo(() => getFilteredData(fullData, filtersB, viewMode), [fullData, filtersB, viewMode]);
-
-  const updateFilter = (set: 'A'|'B', field: keyof FilterState, value: any) => {
-      const setter = set === 'A' ? setFiltersA : setFiltersB;
-      setter(prev => ({ ...prev, [field]: value }));
-  };
-  const describeFilters = (label: string, filters: FilterState) =>
-    `${label}: ${filters.seasons.join(', ')} · ${filters.leagues.join(', ')} · ${filters.opponents.join(', ')}` +
-    ` · zones ${filters.zones.join(', ')}${filters.ignoreOspiti ? ' (no guests)' : ''}` +
-    ` · tiers ${filters.tiers.join(', ')} · dates ${filters.dates.join(', ')} · times ${filters.times.join(', ')}`;
+  const customGroups = useMemo(
+    () => buildTicketingCustomComparison(fullData, viewMode, filtersA, filtersB, scheduleData),
+    [fullData, viewMode, filtersA, filtersB, scheduleData],
+  );
+  const customGames = customGroups.flatMap(group => group.games);
+  const customLeagues = [...new Set(customGames.map(game => game.league))];
+  const customOpponents = [...new Set(customGames.map(game => game.opponent))];
+  const filterCaption = (side: string, filters: GameDayCustomFilters) =>
+    `${side}: ${filters.seasons.join(', ')} · ${filters.leagues.join(', ')} · ${filters.opponents.join(', ')} · ${filters.tiers.join(', ')} · ${filters.dates.join(', ')}`;
   const customReport: ComparisonReport = {
     title: 'Custom ticketing comparison',
-    subtitle: `${viewMode === 'total' ? 'Total' : 'GameDay'} view · A vs B\n${describeFilters('Scenario A', filtersA)}\n${describeFilters('Scenario B', filtersB)}`,
-    groups: [{ label: 'Scenario A', games: dataA }, { label: 'Scenario B', games: dataB }],
-    highlightLabels: ['Scenario B'], showTrend: false, perGame: false,
-    league: [...new Set([...dataA, ...dataB].map(game => game.league))].length === 1
-      ? [...dataA, ...dataB][0]?.league : undefined,
-    opponents: [...new Set([...dataA, ...dataB].map(game => game.opponent))].length === 1
-      ? [[...dataA, ...dataB][0]?.opponent].filter(Boolean) : [],
+    subtitle: `${viewMode === 'total' ? 'Total' : 'GameDay'} view · A vs B\n${filterCaption('A', filtersA)}\n${filterCaption('B', filtersB)}`,
+    groups: customGroups,
+    highlightLabels: ['Scenario B'], showTrend: false, perGame: true,
+    league: customLeagues.length === 1 ? customLeagues[0] : undefined,
+    opponents: customOpponents.length <= 4 ? customOpponents : [],
   };
-
-  const FilterColumn = ({ label, filters, setFilter }: { label: string, filters: FilterState, setFilter: (f: keyof FilterState, v: any) => void }) => {
-      const availSeasons = useMemo(() => getAvailableOptions(fullData, filters, 'seasons'), [filters]);
-      const availLeagues = useMemo(() => getAvailableOptions(fullData, filters, 'leagues'), [filters]);
-      const availOpponents = useMemo(() => getAvailableOptions(fullData, filters, 'opponents'), [filters]);
-      const availTiers = useMemo(() => getAvailableOptions(fullData, filters, 'tiers'), [filters]);
-      const availZones = useMemo(() => getAvailableOptions(fullData, filters, 'zones'), [filters]);
-      const availDates = useMemo(() => getAvailableOptions(fullData, filters, 'dates'), [filters]);
-      const availTimes = useMemo(() => getAvailableOptions(fullData, filters, 'times'), [filters]);
-
-      return (
-      <div className="bg-white dark:bg-gray-900 p-5 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-80">
-          <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
-             <span className={`w-3 h-3 rounded-full ${label === 'A' ? 'bg-gray-400' : 'bg-red-600'}`}></span>
-             <h3 className="font-bold text-gray-800 dark:text-white">{t('Scenario')} {label}</h3>
-             <span className="text-xs text-gray-400 dark:text-gray-500 ml-auto">
-                 {label === 'A' ? t('Baseline') : t('Comparison')}
-             </span>
-          </div>
-          
-          <div className="overflow-y-auto space-y-4 flex-1 pr-2 custom-scrollbar">
-            <button 
-                onClick={() => setFilter('ignoreOspiti', !filters.ignoreOspiti)}
-                className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors border ${
-                    filters.ignoreOspiti 
-                    ? 'bg-red-50 dark:bg-red-900/30 text-red-700 border-red-200' 
-                    : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
-                }`}
-            >
-                <UserX size={14} />
-                {filters.ignoreOspiti ? t('Zona Ospiti Excluded') : t('Ignore Zona Ospiti')}
-            </button>
-
-            <MultiSelect label={t("Season")} options={availSeasons} selected={filters.seasons} onChange={(v) => setFilter('seasons', v)} />
-            <MultiSelect label={t("League")} options={availLeagues} selected={filters.leagues} onChange={(v) => setFilter('leagues', v)} />
-            <MultiSelect label={t("Opponent")} options={availOpponents} selected={filters.opponents} onChange={(v) => setFilter('opponents', v)} />
-            <MultiSelect label={t("Tier")} options={availTiers} selected={filters.tiers} onChange={(v) => setFilter('tiers', v)} />
-            
-            <div className="border-t border-gray-100 dark:border-gray-800 my-2"></div>
-            
-            <MultiSelect label={t("Date")} options={availDates} selected={filters.dates} onChange={(v) => setFilter('dates', v)} />
-            <MultiSelect label={t("Time")} options={availTimes} selected={filters.times} onChange={(v) => setFilter('times', v)} />
-            
-            <div className="border-t border-gray-100 dark:border-gray-800 my-2"></div>
-
-            <MultiSelect label={t("Zone")} options={availZones} selected={filters.zones} onChange={(v) => setFilter('zones', v)} />
-          </div>
-
-          <div className="pt-4 text-xs text-center text-gray-400 dark:text-gray-500 border-t border-gray-100 dark:border-gray-800 mt-2 flex-shrink-0">
-             {label === 'A' ? dataA.length : dataB.length} {t('Games matched')}
-          </div>
-      </div>
-      );
+  const updateCustomFilter = (side: 'A' | 'B', field: keyof GameDayCustomFilters, values: string[]) => {
+    const setter = side === 'A' ? setFiltersA : setFiltersB;
+    setter(previous => ({ ...previous, [field]: values }));
   };
+  const matchedOpponentNames = comparisonType === 'custom'
+    ? customReport.opponents || [] : [];
 
   return (
-    <div className="animate-fade-in max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-            <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-red-50 p-1.5 dark:bg-red-900/30">
-                <img src="/favicon.png" alt="Pallacanestro Varese" className="h-full w-full object-contain" />
-           </div>
-           <div>
-               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Comparative Analysis')}</h1>
-               <p className="text-gray-500 dark:text-gray-400 text-sm">
-                   {viewMode === 'gameday' 
-                    ? t('Analyzing GameDay revenue only (Variable)') 
-                    : t('Analyze performance variance between two distinct datasets.')}
-               </p>
-           </div>
-             <button onClick={() => setShowPrintDialog(true)}
-              className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-900 text-white dark:bg-white dark:text-gray-900 text-sm font-semibold"
-             ><Printer size={16} /> {t('Print / Save PDF')}</button>
-       </div>
-
-        <ComparisonModeTabs value={comparisonType} onChange={setComparisonType} />
-
-        <div className="rounded-xl border border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-900">
-          <span className="mb-3 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Metrics to display</span>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {metricSlots.map((key, index) => <label key={index} className="text-xs font-semibold text-gray-600 dark:text-gray-300">
-              Chart {index + 1}
-              <select value={key} onChange={event => setMetricSlot(index, event.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
-                <option value="">Hide chart</option>
-                {[...new Set(COMPARISON_METRICS.map(metric => metric.category))].map(category =>
-                  <optgroup key={category} label={category}>
-                    {COMPARISON_METRICS.filter(metric => metric.category === category)
-                      .map(metric => <option key={metric.key} value={metric.key}>{metric.title}</option>)}
-                  </optgroup>)}
-              </select>
-            </label>)}
-          </div>
+    <div className="animate-fade-in mx-auto max-w-7xl space-y-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-red-50 p-1.5 dark:bg-red-900/30">
+          <img src="/favicon.png" alt="Pallacanestro Varese" className="h-full w-full object-contain" />
         </div>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Comparative Analysis')}</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {viewMode === 'gameday' ? t('Analyzing GameDay revenue only (Variable)') : t('Analyze performance variance between two distinct datasets.')}
+          </p>
+        </div>
+        <button onClick={() => setShowPrintDialog(true)}
+          className="ml-auto flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-gray-900">
+          <Printer size={16} /> {t('Print / Save PDF')}
+        </button>
+      </div>
 
-         {comparisonType !== 'custom' ? <SeasonComparison fullData={fullData} mode={comparisonType} viewMode={viewMode}
-           selectedMetrics={selectedMetrics} selection={seasonSelection} onSelectionChange={setSeasonSelection} /> : (
-        <div className="space-y-5">
-           <ComparisonBadges league={customReport.league} opponents={customReport.opponents} />
-          <ComparisonQuadrant groups={[{ label: 'Scenario A', games: dataA }, { label: 'Scenario B', games: dataB }]} highlightLabels={['Scenario B']} selectedMetrics={selectedMetrics} />
-          <p className="text-xs text-gray-500">— means no matching game or unavailable metric, not zero.</p>
-          <details className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-            <summary className="cursor-pointer px-5 py-4 font-semibold text-sm text-gray-800 dark:text-gray-100">
-              {t('Custom')} · A: {filtersA.seasons.join(', ')} · B: {filtersB.seasons.join(', ')} — Configure scenarios
-            </summary>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 pt-0">
-              <FilterColumn label="A" filters={filtersA} setFilter={(f: keyof FilterState, v: any) => updateFilter('A', f, v)} />
-              <FilterColumn label="B" filters={filtersB} setFilter={(f: keyof FilterState, v: any) => updateFilter('B', f, v)} />
-            </div>
-          </details>
-       </div>
-        )}
-         {showPrintDialog && <ComparisonPrintDialog fullData={fullData} viewMode={viewMode}
-           selectedMetrics={selectedMetrics} initialMode={comparisonType} initialSelection={seasonSelection}
-           customReport={customReport} onClose={() => setShowPrintDialog(false)} />}
+      <ComparisonModeTabs value={comparisonType} onChange={setComparisonType} />
+
+      <div className="rounded-xl border border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-900">
+        <span className="mb-3 block text-xs font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400">Metrics to display</span>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {metricSlots.map((key, index) => <label key={index} className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+            Chart {index + 1}
+            <select value={key} onChange={event => setMetricSlot(index, event.target.value as ComparisonMetricKey)}
+              className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white">
+              <option value="">Hide chart</option>
+              {[...new Set(COMPARISON_METRICS.map(metric => metric.category))].map(category =>
+                <optgroup key={category} label={category}>
+                  {COMPARISON_METRICS.filter(metric => metric.category === category)
+                    .map(metric => <option key={metric.key} value={metric.key}>{metricDisplayTitle(metric.key, true)}</option>)}
+                </optgroup>)}
+            </select>
+          </label>)}
+        </div>
+      </div>
+
+      {comparisonType !== 'custom' ? <SeasonComparison
+        fullData={fullData} scheduleData={scheduleData} mode={comparisonType as SeasonComparisonMode}
+        viewMode={viewMode} selectedMetrics={selectedMetrics} selection={seasonSelection}
+        onSelectionChange={setSeasonSelection}
+      /> : <div className="space-y-5">
+        <ComparisonBadges league={customReport.league} opponents={matchedOpponentNames} />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          {(['A', 'B'] as const).map((side, index) => {
+            const group = customGroups[index];
+            return <ComparisonCustomFiltersPanel key={side} side={side}
+              filters={side === 'A' ? filtersA : filtersB} options={customOptions}
+              onChange={(field, values) => updateCustomFilter(side, field, values)}
+              fixturesSelected={group?.fixtureCount ?? 0} fixturesWithData={group?.games.length ?? 0} />;
+          })}
+        </div>
+        <div className="text-xs text-gray-500 dark:text-gray-400">
+          {customGroups.map(group => <p key={group.label}>
+            <strong className="text-gray-700 dark:text-gray-200">{group.label} · {group.games.length}/{group.fixtureCount} fixtures:</strong>{' '}
+            {group.fixtures?.length ? group.fixtures.map(fixture => `${fixture.date} ${fixture.opponent}`).join(' · ') : 'No matching fixtures'}
+          </p>)}
+        </div>
+        <ComparisonQuadrant groups={customReport.groups} highlightLabels={customReport.highlightLabels}
+          selectedMetrics={selectedMetrics} perGame />
+        <p className="text-xs text-gray-500">— means no matching game or unavailable metric, not zero.</p>
+      </div>}
+
+      {showPrintDialog && <ComparisonPrintDialog fullData={fullData} scheduleData={scheduleData} viewMode={viewMode}
+        selectedMetrics={selectedMetrics} initialMode={comparisonType} initialSelection={seasonSelection}
+        customReport={customReport} onClose={() => setShowPrintDialog(false)} />}
     </div>
   );
 };

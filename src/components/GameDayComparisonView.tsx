@@ -3,10 +3,11 @@ import { CalendarDays, Printer, TrendingUp } from 'lucide-react';
 import type { GameData, GameDayData } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 import { MultiSelect } from './MultiSelect';
+import { ComparisonCustomFiltersPanel } from './ComparisonCustomFilters';
 import { ComparisonBadges } from './ComparisonBadges';
 import { GameDayComparisonChart } from './GameDayComparisonChart';
 import { printGameDayComparisonReport } from './GameDayComparisonReport';
-import { ComparisonModeTabs } from './ComparisonModeTabs';
+import { ComparisonModeTabs, type ComparisonMode } from './ComparisonModeTabs';
 import {
   buildGameDayFixtures, buildGameDayGroups, DEFAULT_GAMEDAY_METRICS,
   GAMEDAY_METRICS, gameDayChannelRows, gameDayCoverage, gameDayMetric,
@@ -27,9 +28,11 @@ const EMPTY_CUSTOM: GameDayCustomFilters = {
 };
 const modeCaptions: Record<GameDayComparisonMode, string> = {
   opponent: 'Compare the same opponent across seasons',
-  week: 'Compare a numbered home fixture across seasons',
-  ytd: 'Compare the same number of fixtures to date',
   tier: 'Compare tier-level results across seasons',
+  week: 'Compare the same home-game week across seasons',
+  'ytd-week': 'Compare year-to-date results by home-game week',
+  'ytd-opponent': 'Compare year-to-date results by reference opponent',
+  ytd: 'Compare the same number of fixtures to date',
   custom: 'Build two fixture selections from real schedule identities',
 };
 const fixtureIdentity = gameDayFixtureLabel;
@@ -60,20 +63,21 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
   const opponents = useMemo(() => uniqueSorted(fixtures.map(fixture => fixture.opponent)), [fixtures]);
   const tiers = useMemo(() => uniqueSorted(fixtures.flatMap(fixture => fixture.tier === undefined ? [] : [String(fixture.tier)]))
     .sort((a, b) => Number(a) - Number(b)), [fixtures]);
-  const dates = useMemo(() => uniqueSorted(fixtures.map(fixtureIdentity)), [fixtures]);
+  const dates = useMemo(() => fixtures.map(fixtureIdentity), [fixtures]);
   const defaultLeague = leagues.includes('LBA') ? 'LBA' : leagues[0] || '';
   const defaultLeagueOpponents = uniqueSorted(fixtures.filter(fixture => fixture.league === defaultLeague).map(fixture => fixture.opponent));
-  const currentOpponents = uniqueSorted(fixtures.filter(fixture => fixture.season === newestSeason && fixture.league === defaultLeague && fixture.data).map(game => game.opponent));
+  const currentOpponents = uniqueSorted(fixtures.filter(fixture => fixture.season === newestSeason && fixture.league === defaultLeague).map(game => game.opponent));
   const defaultOpponent = currentOpponents[0] || defaultLeagueOpponents[0] || '';
   const leagueTiers = uniqueSorted(fixtures.filter(fixture => fixture.league === defaultLeague && fixture.tier !== undefined).map(fixture => String(fixture.tier)))
     .sort((a, b) => Number(a) - Number(b));
-  const [mode, setMode] = useState<GameDayComparisonMode>('opponent');
+  const [mode, setMode] = useState<ComparisonMode>('opponent');
   const [seasonSelection, setSeasonSelection] = useState<string[]>(['All']);
   const [selection, setSelection] = useState<GameDaySelection>({
     league: defaultLeague,
     opponent: defaultOpponent,
-    tier: leagueTiers[0] || tiers[0] || '',
+      tier: leagueTiers[0] || tiers[0] || '',
     week: 1,
+      secondOpponent: '',
   });
   const leagueOpponents = useMemo(() => uniqueSorted(fixtures.filter(fixture => fixture.league === selection.league).map(fixture => fixture.opponent)), [fixtures, selection.league]);
   const selectedLeagueTiers = useMemo(() => uniqueSorted(fixtures.filter(fixture => fixture.league === selection.league && fixture.tier !== undefined)
@@ -169,10 +173,11 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
     : [
       `${t('League')}: ${selection.league || '—'}`,
       `${t('Display seasons')}: ${describeFilterValues(seasonSelection)}`,
-      ...(mode === 'opponent' ? [`${t('Opponent')}: ${selection.opponent || '—'}`] : []),
-      ...(mode === 'week' ? [`${t('Home game')}: ${selection.week}`] : []),
-      ...(mode === 'tier' ? [`${t('Tier')}: ${selection.tier || '—'}`] : []),
-      ...(mode === 'ytd' ? [`${t('YTD reference')}: ${t('First')} ${ytdReferenceCount} ${t('fixtures')} in ${newestSeason || '—'}`] : []),
+      ...(mode === 'opponent' ? [`${t('Opponent')}: ${selection.opponent || '—'}${selection.secondOpponent ? ` vs ${selection.secondOpponent}` : ''}`] : []),
+       ...(mode === 'week' ? [`${t('Home game week')}: W${selection.week}`] : []),
+       ...(mode === 'tier' ? [`${t('Tier')}: ${selection.tier || '—'}`] : []),
+       ...(mode === 'ytd-week' ? [`${t('YTD by week')}: ${t('First')} ${ytdReferenceCount} ${t('fixtures')} in ${newestSeason || '—'}`] : []),
+       ...(mode === 'ytd-opponent' ? [`${t('YTD by opponent')}: ${currentOpponents.join(', ') || t('None yet')}`] : []),
     ].join(' · ');
 
   const onPrint = () => printGameDayComparisonReport({
@@ -200,26 +205,6 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
   );
 
   const updateSeasonSelection = (values: string[]) => setSeasonSelection(values);
-  const renderCustomFilters = (side: 'A' | 'B', filters: GameDayCustomFilters) => (
-    <section className={`rounded-2xl border p-4 ${side === 'A' ? 'border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-800/60' : 'border-rose-200 bg-rose-50/40 dark:border-rose-900 dark:bg-rose-950/30'}`}>
-      <div className="mb-4 flex items-center gap-2">
-        <span className={`grid h-7 w-7 place-items-center rounded-lg text-xs font-black ${side === 'A' ? 'bg-slate-800 text-white' : 'bg-rose-700 text-white'}`}>{side}</span>
-        <div><h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">{t('Scenario')} {side}</h3>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">{side === 'A' ? t('Baseline selection') : t('Comparison selection')}</p></div>
-        <span className="ml-auto text-xs font-semibold text-slate-500 dark:text-slate-400">{customSelect(filters).filter(fixture => fixture.data).length}/{customSelect(filters).length} {t('fixtures')}</span>
-      </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <MultiSelect label={t('Seasons')} options={seasons} selected={filters.seasons} onChange={values => setCustomFilter(side, 'seasons', values)} />
-        <MultiSelect label={t('Leagues')} options={leagues} selected={filters.leagues} onChange={values => setCustomFilter(side, 'leagues', values)} />
-        <MultiSelect label={t('Opponents')} options={opponents} selected={filters.opponents} onChange={values => setCustomFilter(side, 'opponents', values)} />
-        <MultiSelect label={t('Tiers')} options={tiers} selected={filters.tiers} onChange={values => setCustomFilter(side, 'tiers', values)} />
-        <div className="sm:col-span-2">
-          <MultiSelect label={t('Fixture identity · date / opponent / league / season')} options={dates} selected={filters.dates} onChange={values => setCustomFilter(side, 'dates', values)} />
-        </div>
-      </div>
-    </section>
-  );
-
   return (
     <main className="mx-auto max-w-[1500px] space-y-6 pb-10">
       <header className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
@@ -260,12 +245,15 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
             <select value={selection.league} onChange={event => {
               const league = event.target.value;
               const nextOpponents = uniqueSorted(fixtures.filter(fixture => fixture.league === league).map(fixture => fixture.opponent));
+              const nextCurrentOpponents = uniqueSorted(fixtures.filter(fixture => fixture.league === league && fixture.season === newestSeason).map(fixture => fixture.opponent));
               const nextTiers = uniqueSorted(fixtures.filter(fixture => fixture.league === league && fixture.tier !== undefined).map(fixture => String(fixture.tier)))
                 .sort((a, b) => Number(a) - Number(b));
               setSelection(current => ({
                 ...current, league,
-                opponent: nextOpponents.includes(current.opponent) ? current.opponent : nextOpponents[0] || '',
-                tier: nextTiers.includes(current.tier) ? current.tier : nextTiers[0] || '',
+                opponent: nextCurrentOpponents[0] || nextOpponents[0] || '',
+                secondOpponent: '',
+                tier: nextTiers[0] || '',
+                week: 1,
               }));
             }}
               className="mt-1 block min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
@@ -273,36 +261,65 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
             </select>
           </label>
           {mode === 'opponent' && <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('Opponent')}
-            <select value={selection.opponent} onChange={event => setSelection(current => ({ ...current, opponent: event.target.value }))}
+            <select value={selection.opponent} onChange={event => setSelection(current => ({ ...current, opponent: event.target.value, secondOpponent: '' }))}
               className="mt-1 block min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
               {leagueOpponents.map(opponent => <option key={opponent} value={opponent}>{opponent}</option>)}
             </select>
           </label>}
-          {mode === 'week' && <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('Home game number')}
+          {mode === 'opponent' && <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('Compare with (optional)')}
+            <select value={selection.secondOpponent || ''} onChange={event => setSelection(current => ({ ...current, secondOpponent: event.target.value }))}
+              className="mt-1 block min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+              <option value="">{t('Same fixture across seasons')}</option>
+              {leagueOpponents.filter(opponent => opponent !== selection.opponent).map(opponent => <option key={opponent} value={opponent}>{opponent}</option>)}
+            </select>
+          </label>}
+          {mode === 'week' && <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('Home game week')}
             <select value={selection.week} onChange={event => setSelection(current => ({ ...current, week: Number(event.target.value) }))}
               className="mt-1 block min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
               {Array.from({ length: Math.max(1, ...seasons.map(season => fixtures.filter(fixture => fixture.season === season && fixture.league === selection.league).length)) }, (_, index) => index + 1)
-                .map(week => <option key={week} value={week}>{t('Game')} {week}</option>)}
+                 .map(week => <option key={week} value={week}>W{week}</option>)}
             </select>
           </label>}
-          {mode === 'tier' && <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('Opponent tier')}
+          {mode === 'tier' && <label className="text-xs font-semibold text-slate-500 dark:text-slate-400">{t('Tier')}
             <select value={selection.tier} onChange={event => setSelection(current => ({ ...current, tier: event.target.value }))}
               className="mt-1 block min-h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
               {selectedLeagueTiers.map(tier => <option key={tier} value={tier}>{t('Tier')} {tier}</option>)}
             </select>
           </label>}
-          {mode === 'ytd' && <div className="flex items-center gap-3 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-900 sm:col-span-2 xl:col-span-2 dark:bg-rose-950/50 dark:text-rose-200">
-            <CalendarDays size={17} className="shrink-0" /><span>{t('YTD always aligns to the latest available season reference. Changing display seasons does not change the reference count.')}</span>
+          {(mode === 'ytd-week' || mode === 'ytd-opponent') && <div className="flex items-center gap-3 rounded-xl bg-rose-50 px-3 py-2 text-xs text-rose-900 sm:col-span-2 xl:col-span-2 dark:bg-rose-950/50 dark:text-rose-200">
+            <CalendarDays size={17} className="shrink-0" /><span>{mode === 'ytd-week'
+              ? t('YTD by week aligns to the latest season’s fixture count; changing display seasons does not change the reference.')
+              : t('YTD by opponent uses opponents already played in the latest season; changing display seasons does not change the reference.')}</span>
           </div>}
         </div> : <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
-          {renderCustomFilters('A', customA)}
-          {renderCustomFilters('B', customB)}
+          {(['A', 'B'] as const).map(side => {
+            const filters = side === 'A' ? customA : customB;
+            const matches = customSelect(filters);
+            return <ComparisonCustomFiltersPanel key={side} side={side} filters={filters}
+              options={{ seasons, leagues, opponents, tiers, dates }}
+              onChange={(field, values) => setCustomFilter(side, field, values)}
+              fixturesSelected={matches.length} fixturesWithData={matches.filter(fixture => fixture.data).length} />;
+          })}
         </div>}
         <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-slate-100 pt-3 text-[11px] text-slate-500 dark:border-slate-800 dark:text-slate-400">
           <span>{t('GameDay commercial definition:')}</span>
           <span className="font-semibold text-slate-700 dark:text-slate-300">{t('Operational')} = F&B + Merchandising + Hospitality + Parking + Experience</span>
           <span>{t('Commercial total adds Sponsorship')}{includeTicketing ? ` + ${t('Ticketing')}` : ''}.</span>
           <span>{t('TV excluded; no costs or margin inferred.')}</span>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+        <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">{t('Included fixtures')}</h2>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {displayGroups.map((group, index) => <div key={`${group.label}-${index}`} className="min-w-0 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-800/70">
+            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{group.label}
+              <span className="ml-2 font-mono font-semibold text-slate-500 dark:text-slate-400">{group.games.length}/{group.fixtureCount}</span>
+            </p>
+            <p className="mt-1 break-words text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+              {group.fixtures?.length ? group.fixtures.map(fixtureIdentity).join(' · ') : t('No matching fixtures')}
+            </p>
+          </div>)}
         </div>
       </section>
 
@@ -363,6 +380,10 @@ export const GameDayComparisonView: React.FC<Props> = ({ data, ticketingData, in
             </summary>
             <div className="border-t border-slate-100 dark:border-slate-800">
               <p className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">{group.games.length} {t('reported GameDay records')} · {group.missingFixtures} {t('fixture records missing')} · {t('Attendance field coverage')} {gameDayCoverage(group, 'attendance')}/{group.fixtureCount}</p>
+              {group.fixtures && group.fixtures.length > 0 && <p className="border-t border-slate-100 px-4 py-3 text-xs leading-relaxed text-slate-600 dark:border-slate-800 dark:text-slate-400">
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{t('Included fixtures')}: </span>
+                {group.fixtures.map(fixtureIdentity).join(' · ')}
+              </p>}
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[900px] border-collapse text-left text-xs">
                   <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400">

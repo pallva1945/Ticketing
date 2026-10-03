@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 
-export type ComparisonMode = 'opponent' | 'tier' | 'week' | 'ytd' | 'custom';
+export type ComparisonMode = 'opponent' | 'tier' | 'week' | 'ytd-week' | 'ytd-opponent' | 'custom';
 
 interface ComparisonModeTabsProps {
   value: ComparisonMode;
@@ -12,7 +12,8 @@ const modes: { value: ComparisonMode; label: string }[] = [
   { value: 'opponent', label: 'Opponent vs opponent' },
   { value: 'tier', label: 'Tier over the years' },
   { value: 'week', label: 'Week vs week' },
-  { value: 'ytd', label: 'Season to date' },
+  { value: 'ytd-week', label: 'YTD by week' },
+  { value: 'ytd-opponent', label: 'YTD by opponent' },
   { value: 'custom', label: 'Custom' },
 ];
 

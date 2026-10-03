@@ -8,3 +8,13 @@ Keep Ticketing and GameDay comparisons consistent in terminology, selected fixtu
 **Why:** The user explicitly said identical tabs are easier for coaches to understand and use, then clarified that terminology and compared data must also match and future changes must apply to both unless specifically excepted.
 
 **How to apply:** When changing comparison modes, selection rules, or presentation, implement the same behavior in both modules. Differences in revenue metrics do not justify different fixture cohorts, mode meanings, names, or ordering.
+
+Approved comparison definitions:
+- YTD by week matches the chronological home-game positions played in the current season (W1, W2, etc.) with the same positions in previous seasons.
+- YTD by opponent matches current-season played opponents with those opponents in each historical season. An absent historical opponent is omitted, not assigned a zero or included in the averaging denominator.
+- Custom uses freely chosen A/B fixture sets with the same chart information as the preset tabs.
+- Multiple selected games use per-game averages for revenue and volume; yield, €/person, and percentages retain their aggregate ratio definitions.
+
+**Why:** The user approved these definitions specifically to make unequal match selections comparable and to distinguish calendar progress from opponent mix.
+
+**How to apply:** Keep selected fixture counts and identities visible, preserve scheduled historical fixtures with missing financial data rather than shifting week positions, and exclude future matches from played-YTD references. Screen and PDF must use the same cohorts and metric definitions.

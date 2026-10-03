@@ -16,7 +16,8 @@ interface Props {
 }
 
 const lineColors = ['#0f766e', '#7c3aed'];
-const seriesName = (label: string) => label.includes(' · ') ? label.split(' · ').slice(1).join(' · ') : 'Season trend';
+const seriesName = (label: string) => /^W\d+ · /.test(label.split(' · ').slice(1).join(' · '))
+  ? label.split(' · ')[1] : label.includes(' · ') ? label.split(' · ').slice(1).join(' · ') : 'Season trend';
 
 export const ComparisonTrendChart: React.FC<Props> = ({ groups, metricKey, highlightLabels, showTrend, perGame = false, showYoY = false }) => {
   const metric = COMPARISON_METRICS.find(item => item.key === metricKey)!;
@@ -24,7 +25,7 @@ export const ComparisonTrendChart: React.FC<Props> = ({ groups, metricKey, highl
   const yoy = showYoY ? getYoYMarkers([...groups].reverse(), metricKey, perGame, showTrend) : [];
   const { rows, trends, minValue, maxValue } = useMemo(() => {
     // Historical seasons read left to right; current season is the last column.
-    const ordered = showTrend ? [...groups].reverse() : groups;
+    const ordered = showTrend ? [...groups].sort((a, b) => parseInt(a.label, 10) - parseInt(b.label, 10)) : groups;
     const names = [...new Set(ordered.map(group => seriesName(group.label)))];
     const values = getComparisonSeriesValues(ordered, metricKey, perGame, showTrend);
     const actual = ordered.map((group, index) => {

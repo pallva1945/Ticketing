@@ -3412,7 +3412,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
 
                 {activeTab === 'comparison' && (
                     <div className="pt-6">
-                        <ComparisonView fullData={data} options={{ seasons: allSeasons, leagues: allLeagues, opponents: allOpponents, tiers: allTiers, zones: allZones }} viewMode={viewMode} />
+                        <ComparisonView fullData={data} scheduleData={gameDayData} options={{ seasons: allSeasons, leagues: allLeagues, opponents: allOpponents, tiers: allTiers, zones: allZones }} viewMode={viewMode} />
                     </div>
                 )}
 

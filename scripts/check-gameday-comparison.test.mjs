@@ -44,7 +44,7 @@ test('per-person ratios are weighted by attendance and volume comparisons are pe
   assert.equal(gameDayMetric(group([game('26-27', '27/09/2026', 'Bologna', { attendance: 0 })]), 'fbPerPerson', false), null);
 });
 
-test('same opponent encounters stay distinct and tiers join by season, date and league', () => {
+test('same opponent encounters are averaged together and tiers join by season, date and league', () => {
   const source = [
     game('25/26', '12/10/2025', 'Bologna'),
     game('26-27', '27/09/2026', 'Bologna'),
@@ -56,9 +56,10 @@ test('same opponent encounters stay distinct and tiers join by season, date and 
   assert.equal(fixtures.length, 4);
   assert.deepEqual(fixtures.map(fixture => fixture.tier), [1, 2, 3, 4]);
   const compared = groups(fixtures, ['25-26', '26-27'], 'opponent');
-  assert.equal(compared.length, 3);
-  assert.deepEqual(compared.map(value => value.fixtureCount), [1, 1, 1]);
-  assert.notEqual(compared[1].label, compared[2].label);
+  assert.equal(compared.length, 2);
+  assert.deepEqual(compared.map(value => value.fixtureCount), [1, 2]);
+  assert.equal(compared[1].fixtures.length, 2);
+  assert.notEqual(compared[1].fixtures[0].date, compared[1].fixtures[1].date);
   const tiers = groups(fixtures, ['25-26', '26-27'], 'tier', { tier: '3' });
   assert.deepEqual(tiers.map(value => value.fixtureCount), [0, 1]);
 });

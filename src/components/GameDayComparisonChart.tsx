@@ -36,7 +36,9 @@ const yearOf = (season?: string) => {
 
 export const GameDayComparisonChart: React.FC<Props> = ({ groups, metricKey, includeTicketing, seasonal, translate = label => label }) => {
   const values = gameDayMetricValues(groups, metricKey, includeTicketing, seasonal);
-  const metricTitle = translate(GAMEDAY_METRICS.find(metric => metric.key === metricKey)?.label || metricKey);
+  const metricTitle = metricKey === 'totalRevenue' && seasonal
+    ? translate('Average GameDay revenue / fixture')
+    : translate(GAMEDAY_METRICS.find(metric => metric.key === metricKey)?.label || metricKey);
   const chartRows = useMemo(() => {
     const base = groups.map((group, index) => ({
       label: group.label,

@@ -1,6 +1,6 @@
 import type { GameData, GameDayData } from '../types';
 
-export type GameDayComparisonMode = 'opponent' | 'week' | 'ytd' | 'tier' | 'custom';
+export type GameDayComparisonMode = 'opponent' | 'week' | 'ytd' | 'ytd-week' | 'ytd-opponent' | 'tier' | 'custom';
 export type GameDayRevenueField = 'tixRevenue' | 'merchRevenue' | 'hospitalityRevenue' | 'parkingRevenue' | 'fbRevenue' | 'sponsorshipRevenue' | 'expRevenue';
 export type GameDayValueField = GameDayRevenueField | 'attendance' | 'tvRevenue' | 'totalRevenue';
 export const GAMEDAY_CHANNELS: { field: GameDayRevenueField; label: string; operational: boolean }[] = [
@@ -19,7 +19,7 @@ export const GAMEDAY_METRICS = [
   { key: 'fbPerPerson', label: 'F&B / person', format: 'currency' },
   { key: 'merchPerPerson', label: 'Merchandising / person', format: 'currency' },
   { key: 'hospitalityPerGame', label: 'Hospitality / game', format: 'currency' },
-  { key: 'totalRevenue', label: 'Total GameDay revenue', format: 'currency' },
+  { key: 'totalRevenue', label: 'GameDay revenue / game (selection average)', format: 'currency' },
   { key: 'operationalPerGame', label: 'Operational revenue / game', format: 'currency' },
   { key: 'totalPerPerson', label: 'Total GameDay revenue / person', format: 'currency' },
   { key: 'fbPerGame', label: 'F&B / game', format: 'currency' },
@@ -36,6 +36,7 @@ export const DEFAULT_GAMEDAY_METRICS: GameDayMetricKey[] = ['revenuePerGame', 'a
 export interface GameDaySelection {
   league: string;
   opponent: string;
+  secondOpponent?: string;
   tier: string;
   week: number;
 }
@@ -52,6 +53,9 @@ export interface GameDayComparisonGroup {
   games: GameDayData[];
   fixtureCount: number;
   missingFixtures: number;
+  fixtures?: GameDayFixture[];
+  averageVolumes?: boolean;
+  seriesKey?: string;
 }
 export interface GameDayFixture {
   date: string;
@@ -78,7 +82,7 @@ export const gameDayDate = (date: string): string => {
   return iso ? iso[1] : '';
 };
 const nameKey = (value: string) => value.trim().toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-const fixtureKey = (fixture: { season: string; league: string; date: string; opponent: string }) =>
+export const fixtureKey = (fixture: { season: string; league: string; date: string; opponent: string }) =>
   [gameDaySeason(fixture.season), nameKey(fixture.league), gameDayDate(fixture.date), nameKey(fixture.opponent)].join('|');
 export const gameDayFixtureLabel = (fixture: { date: string; season: string; league: string; opponent: string }) =>
   `${fixture.date} · ${fixture.opponent} · ${fixture.league} · ${fixture.season}`;
@@ -110,6 +114,7 @@ export const gameDaySeasons = (data: GameDayData[], ticketing: GameData[]) =>
 const group = (label: string, fixtures: GameDayFixture[], season?: string): GameDayComparisonGroup => ({
   label, season, games: fixtures.flatMap(fixture => fixture.data ? [fixture.data] : []),
   fixtureCount: fixtures.length, missingFixtures: fixtures.filter(fixture => !fixture.data).length,
+  fixtures, averageVolumes: true,
 });
 const includes = (values: string[], value: string) => values.includes('All') || values.some(selected => nameKey(selected) === nameKey(value));
 export function selectGameDayCustom(fixtures: GameDayFixture[], filters: GameDayCustomFilters): GameDayFixture[] {
@@ -129,22 +134,35 @@ export function buildGameDayGroups(
   const leagueFixtures = fixtures.filter(fixture => nameKey(fixture.league) === nameKey(selection.league));
   const orderedSeasons = [...seasons].sort();
   const currentSeason = orderedSeasons[orderedSeasons.length - 1];
-  const ytdCount = leagueFixtures.filter(fixture => fixture.season === currentSeason).length;
+  const currentFixtures = leagueFixtures.filter(fixture => fixture.season === currentSeason);
+  const ytdCount = currentFixtures.length;
+  const referenceOpponents = new Set(currentFixtures.map(fixture => nameKey(fixture.opponent)));
+  const opponentNames = [...new Set(currentFixtures.map(fixture => fixture.opponent))].sort();
+  const availableOpponents = [...new Set(leagueFixtures.map(fixture => fixture.opponent))].sort();
+  const primaryOpponent = availableOpponents.some(name => nameKey(name) === nameKey(selection.opponent))
+    ? selection.opponent : opponentNames[0] || availableOpponents[0] || '';
+  const maxWeek = Math.max(1, ...orderedSeasons.map(season => leagueFixtures.filter(fixture => fixture.season === season).length));
+  const selectedWeek = Math.max(1, Math.min(selection.week, maxWeek));
   return [...seasons].sort().flatMap(season => {
     const seasonFixtures = leagueFixtures.filter(fixture => fixture.season === season);
     if (mode === 'opponent') {
-      const matches = seasonFixtures.filter(fixture => nameKey(fixture.opponent) === nameKey(selection.opponent));
-      return matches.length ? matches.map(fixture => group(`${season} · ${fixture.opponent} · ${fixture.date}`, [fixture], season))
-        : [group(`${season} · ${selection.opponent || 'Select opponent'}`, [], season)];
+      const selected = [primaryOpponent, selection.secondOpponent]
+        .filter((name): name is string => Boolean(name))
+        .filter(name => availableOpponents.some(value => nameKey(value) === nameKey(name)))
+        .filter((name, index, names) => names.findIndex(value => nameKey(value) === nameKey(name)) === index);
+      return selected.map(opponent => group(`${season} · ${opponent}`,
+        seasonFixtures.filter(fixture => nameKey(fixture.opponent) === nameKey(opponent)), season));
     }
     if (mode === 'week') {
-      const fixture = seasonFixtures[Math.max(1, selection.week) - 1];
-      return [group(`${season} · Game ${selection.week}${fixture ? ` · ${fixture.opponent} · ${fixture.date}` : ''}`, fixture ? [fixture] : [], season)];
+      const fixture = seasonFixtures[selectedWeek - 1];
+      return [{ ...group(`${season} · W${selectedWeek}${fixture ? ` · ${fixture.opponent} · ${fixture.date}` : ''}`, fixture ? [fixture] : [], season), seriesKey: `W${selectedWeek}` }];
     }
     if (mode === 'tier') {
       return [group(`${season} · Tier ${selection.tier || '—'}`, seasonFixtures.filter(fixture => fixture.tier !== undefined && String(fixture.tier) === selection.tier), season)];
     }
-    return [group(`${season} · First ${ytdCount} games`, seasonFixtures.slice(0, ytdCount), season)];
+    if (mode === 'ytd-opponent') return [group(`${season} · ${opponentNames.join(' + ') || 'No opponents played'}`,
+      seasonFixtures.filter(fixture => referenceOpponents.has(nameKey(fixture.opponent))), season)];
+    return [group(`${season} · ${ytdCount ? `W1–W${ytdCount}` : 'No weeks played'}`, seasonFixtures.slice(0, ytdCount), season)];
   });
 }
 export const hasGameDayValue = (game: GameDayData, field: GameDayValueField) =>
@@ -163,7 +181,7 @@ export function gameDayMetric(group: GameDayComparisonGroup, key: GameDayMetricK
   const perGame = (fields: GameDayValueField[]) => ratio(sumGameDay(group, fields), group.fixtureCount);
   const perPerson = (fields: GameDayValueField[]) => ratio(sumGameDay(group, fields), sumGameDay(group, ['attendance']));
   switch (key) {
-    case 'totalRevenue': return sumGameDay(group, gameDayRevenueFields(includeTicketing));
+    case 'totalRevenue': return group.averageVolumes ? perGame(gameDayRevenueFields(includeTicketing)) : sumGameDay(group, gameDayRevenueFields(includeTicketing));
     case 'revenuePerGame': return perGame(gameDayRevenueFields(includeTicketing));
     case 'avgAttendance': return perGame(['attendance']);
     case 'operationalPerGame': return perGame(operationalFields);
@@ -186,14 +204,17 @@ export function gameDayMetricValues(groups: GameDayComparisonGroup[], key: GameD
   if (!temporal) return groups.map(() => null);
   const underlying = key === 'cagrRevenue' ? 'revenuePerGame' : 'operationalPerPerson';
   const values = groups.map(group => gameDayMetric(group, underlying, includeTicketing));
-  const baselineIndex = values.findIndex(value => value !== null && value > 0);
-  if (baselineIndex < 0) return groups.map(() => null);
-  const baselineYear = Number(groups[baselineIndex].season?.slice(0, 2));
+  const series = (group: GameDayComparisonGroup) => group.seriesKey ??
+    (group.label.includes(' · ') ? group.label.split(' · ').slice(1).join(' · ') : '');
   return groups.map((group, index) => {
+    const baselineIndex = groups.findIndex((candidate, i) => series(candidate) === series(group) && values[i] !== null && values[i]! > 0);
+    if (baselineIndex < 0) return null;
+    const baselineYear = Number(groups[baselineIndex].season?.slice(0, 2));
     const years = Number(group.season?.slice(0, 2)) - baselineYear;
     const value = values[index];
     // A repeated encounter in one season is not an annual growth series.
-    if (groups.filter(other => other.season === group.season).length > 1 || groups.filter(other => other.season === groups[baselineIndex].season).length > 1) return null;
+    if (groups.filter(other => other.season === group.season && series(other) === series(group)).length > 1 ||
+      groups.filter(other => other.season === groups[baselineIndex].season && series(other) === series(group)).length > 1) return null;
     return years > 0 && value !== null && value >= 0
       ? 100 * ((value / values[baselineIndex]!) ** (1 / years) - 1) : null;
   });

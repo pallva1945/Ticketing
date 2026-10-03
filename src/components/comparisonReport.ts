@@ -4,6 +4,10 @@ import { COMPARISON_METRICS, ComparisonMetricKey, fitLinearTrend, getComparisonS
 export interface ComparisonReportGroup {
   label: string;
   games: GameData[];
+  fixtureCount?: number;
+  missingFixtures?: number;
+  seriesKey?: string;
+  fixtures?: { season: string; league: string; date: string; opponent: string }[];
 }
 
 export interface ComparisonReport {
@@ -22,7 +26,8 @@ const escapeHtml = (value: string): string =>
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[character] || character);
 
-const seriesName = (label: string) => label.includes(' · ') ? label.split(' · ').slice(1).join(' · ') : 'Season trend';
+const seriesName = (label: string) => /^W\d+ · /.test(label.split(' · ').slice(1).join(' · '))
+  ? label.split(' · ')[1] : label.includes(' · ') ? label.split(' · ').slice(1).join(' · ') : 'Season trend';
 
 const opponentLogos: Record<string, string> = {
   Bahcesehir: 'bahcesehir.png', Bologna: 'bologna.png', Brescia: 'brescia.png', Brindisi: 'brindisi.png',
@@ -75,7 +80,7 @@ export function printComparisonReports(reports: ComparisonReport[], selectedMetr
     const image = logo ? `<img class="crest" src="${logo}" alt="" onerror="this.remove()">` : '';
     return `<div class="opponent">${image}<span>${escapeHtml(name)}</span></div>`;
   }).join('');
-  const ordered = showTrend ? [...groups].reverse() : groups;
+  const ordered = showTrend ? [...groups].sort((a, b) => parseInt(a.label, 10) - parseInt(b.label, 10)) : groups;
   const values = Object.fromEntries(charts.map(chart =>
     [chart.key, getComparisonSeriesValues(ordered, chart.key, perGame, showTrend)])) as Record<string, (number | null)[]>;
   const metrics = ordered.map((group, index) => ({
@@ -134,18 +139,24 @@ export function printComparisonReports(reports: ComparisonReport[], selectedMetr
       </div>
       <div class="header-right">${opponentBadges}${leagueBadge}<span class="page-count">${String(page + 1).padStart(2, '0')} / ${String(reports.length).padStart(2, '0')}</span></div>
     </header>
-    <div class="report-heading"><h1>${escapeHtml(title)}</h1><p class="subtitle">${escapeHtml(subtitle)}</p></div>
+    <div class="report-heading"><h1>${escapeHtml(title)}</h1><p class="subtitle">${escapeHtml(subtitle)}</p>
+      <p class="note">${groups.map(group => `${escapeHtml(group.label)}: ${group.games.length}/${group.fixtureCount ?? group.games.length} fixtures with data`).join(' · ')}</p></div>
     <div class="quadrant ${charts.length === 1 ? 'solo' : ''} ${charts.length === 6 ? 'six' : ''}">${chartMarkup}</div>
     <p class="note">“—” means no matching games or no available ticket/capacity data; it is not a zero result.
     Highlighted bars match the comparison view.${showTrend ? ' Straight lines are least-squares trends across observed seasons, not connections between data points.' : ''}
     Figures reflect the selected Total or GameDay view.${perGame ? ' Volume metrics are averaged per matching game.' : ''}
     ${charts.some(chart => isCagrMetric(chart.key)) && showTrend ? 'Compound Annual Growth Rate (CAGR) is calculated from the earliest matching season with a positive value.' : ''}</p>
-    </article>`;
+    </article>${groups.some(group => group.fixtures?.length) ? `<section class="fixture-appendix"><h2>${escapeHtml(title)} · Included fixtures</h2>${groups.map(group =>
+      `<div class="fixture-group"><strong>${escapeHtml(group.label)} · ${group.games.length}/${group.fixtureCount ?? group.games.length} with data</strong><p>${(group.fixtures || []).map(fixture =>
+        escapeHtml(`${fixture.date} · ${fixture.opponent} · ${fixture.league} · ${fixture.season}`)).join('<br>') || 'No matching fixtures'}${group.missingFixtures ? `<br>${group.missingFixtures} fixture records missing; no figures invented.` : ''}</p></div>`).join('')}</section>` : ''}`;
   }).join('');
   popup.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Ticketing comparison reports</title>
     <style>
       @page { size: A4 landscape; margin: 9mm; }
       body { font: 12px Arial, sans-serif; color: #192333; margin: 0; }
+      .fixture-appendix { font-size: 10px; break-after: page; }
+      .fixture-appendix:last-child { break-after: auto; }
+      .fixture-group { break-inside: avoid; margin: 10px 0; }
       .report-page { box-sizing: border-box; height: 192mm; display: flex; flex-direction: column;
         break-after: page; page-break-after: always; break-inside: avoid; }
       .report-page:last-child { break-after: auto; page-break-after: auto; }

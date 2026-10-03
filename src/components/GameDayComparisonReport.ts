@@ -22,6 +22,15 @@ const formatMetric = (value: number | null, key: GameDayMetricKey, locale: strin
   if (key.startsWith('cagr')) return `${value > 0 ? '+' : ''}${value.toFixed(1)}%`;
   return formatMoney(value, locale);
 };
+const reportModeLabels: Record<string, string> = {
+  opponent: 'Opponent vs opponent',
+  tier: 'Tier over the years',
+  week: 'Week vs week',
+  'ytd-week': 'YTD by week',
+  'ytd-opponent': 'YTD by opponent',
+  ytd: 'YTD by week',
+  custom: 'Custom',
+};
 
 export interface GameDayReportOptions {
   groups: GameDayComparisonGroup[];
@@ -93,7 +102,9 @@ export function printGameDayComparisonReport(options: GameDayReportOptions): boo
     })() : '';
     const labels = groups.map(group => `<span title="${escapeHtml(group.label)}">${escapeHtml(group.label)}</span>`).join('');
     const definition = GAMEDAY_METRICS.find(metric => metric.key === key);
-    return `<section class="chart"><h2>${escapeHtml(translate(definition?.label || key))}</h2><div class="plot"><div class="zero" style="top:${zeroY}%"></div><svg class="bars" viewBox="0 0 600 160" preserveAspectRatio="none" aria-label="${escapeHtml(translate('GameDay comparison columns'))}">${bars}${line}</svg></div><div class="labels">${labels}</div>${groups.every((_, i) => values[i] === null) ? `<p class="empty">${escapeHtml(translate('No reported values for this metric.'))}</p>` : ''}${key.startsWith('cagr') && mode === 'custom' ? `<p class="empty">${escapeHtml(translate('CAGR is not applicable to Custom A/B.'))}</p>` : ''}${key === 'ticketingPerGame' && !includeTicketing ? `<p class="empty">${escapeHtml(translate('Ticketing is excluded from this comparison.'))}</p>` : ''}</section>`;
+    const metricLabel = key === 'totalRevenue' && mode !== 'custom'
+      ? 'Average GameDay revenue / fixture' : definition?.label || key;
+    return `<section class="chart"><h2>${escapeHtml(translate(metricLabel))}</h2><div class="plot"><div class="zero" style="top:${zeroY}%"></div><svg class="bars" viewBox="0 0 600 160" preserveAspectRatio="none" aria-label="${escapeHtml(translate('GameDay comparison columns'))}">${bars}${line}</svg></div><div class="labels">${labels}</div>${groups.every((_, i) => values[i] === null) ? `<p class="empty">${escapeHtml(translate('No reported values for this metric.'))}</p>` : ''}${key.startsWith('cagr') && mode === 'custom' ? `<p class="empty">${escapeHtml(translate('CAGR is not applicable to Custom A/B.'))}</p>` : ''}${key === 'ticketingPerGame' && !includeTicketing ? `<p class="empty">${escapeHtml(translate('Ticketing is excluded from this comparison.'))}</p>` : ''}</section>`;
   }).join('');
 
   const channelTables = groups.map((group, groupIndex) => {
@@ -105,7 +116,13 @@ export function printGameDayComparisonReport(options: GameDayReportOptions): boo
         ? null : (row.perGame - previous) / Math.abs(previous) * 100;
       return `<tr><th>${escapeHtml(translate(row.label))}</th><td>${formatMoney(row.revenue, locale)}</td><td>${formatMoney(row.perGame, locale)}</td><td>${formatMoney(row.perPerson, locale)}</td><td>${row.share === null ? '—' : `${row.share.toFixed(1)}%`}</td><td>${change === null ? '—' : `${change > 0 ? '+' : ''}${change.toFixed(1)}%`}</td><td>${row.coverage}/${group.fixtureCount}</td></tr>`;
     }).join('');
-    return `<section class="channel-section"><h2>${escapeHtml(group.label)} <small>${group.games.length}/${group.fixtureCount} ${escapeHtml(translate('games with data'))}${group.missingFixtures ? ` · ${group.missingFixtures} ${escapeHtml(translate('missing'))}` : ''} · ${escapeHtml(translate('Attendance coverage'))} ${gameDayCoverage(group, 'attendance')}/${group.fixtureCount}</small></h2><div class="table-wrap"><table><thead><tr><th>${escapeHtml(translate('Channel'))}</th><th>${escapeHtml(translate('Revenue'))}</th><th>${escapeHtml(translate('€/game'))}</th><th>${escapeHtml(translate('€/person'))}</th><th>${escapeHtml(translate('Share'))}</th><th>${escapeHtml(translate('Change in €/game vs prior group'))}</th><th>${escapeHtml(translate('Coverage'))}</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
+    const fixtures = group.fixtures?.length
+      ? group.fixtures.map(fixture => `${fixture.date} · ${fixture.opponent} · ${fixture.league} · ${fixture.season}`)
+      : group.games.map(game => `${game.date} · ${game.opponent} · ${game.league} · ${game.season}`);
+    const fixtureList = fixtures.length
+      ? `<p class="fixture-list">${escapeHtml(translate('Included fixtures'))}: ${fixtures.map(escapeHtml).join(' · ')}</p>`
+      : `<p class="fixture-list">${escapeHtml(translate('No matching fixtures'))}</p>`;
+    return `<section class="channel-section"><h2>${escapeHtml(group.label)} <small>${group.games.length}/${group.fixtureCount} ${escapeHtml(translate('games with data'))}${group.missingFixtures ? ` · ${group.missingFixtures} ${escapeHtml(translate('missing'))}` : ''} · ${escapeHtml(translate('Attendance coverage'))} ${gameDayCoverage(group, 'attendance')}/${group.fixtureCount}</small></h2>${fixtureList}<div class="table-wrap"><table><thead><tr><th>${escapeHtml(translate('Channel'))}</th><th>${escapeHtml(translate('Revenue'))}</th><th>${escapeHtml(translate('€/game'))}</th><th>${escapeHtml(translate('€/person'))}</th><th>${escapeHtml(translate('Share'))}</th><th>${escapeHtml(translate('Change in €/game vs prior group'))}</th><th>${escapeHtml(translate('Coverage'))}</th></tr></thead><tbody>${body}</tbody></table></div></section>`;
   }).join('');
   const printedAt = new Date().toLocaleString(locale);
   const page = `<!doctype html><html lang="${locale.startsWith('it') ? 'it' : 'en'}"><head><meta charset="utf-8"><title>${escapeHtml(translate('GameDay comparison report'))}</title>
@@ -120,10 +137,10 @@ export function printGameDayComparisonReport(options: GameDayReportOptions): boo
   .chart h2,.channel-section h2{font-size:11px;margin:0 0 4px}.plot{position:relative;flex:1;min-height:40px;background:repeating-linear-gradient(to bottom,transparent 0,transparent 23px,#edf1f4 24px)}.zero{position:absolute;border-top:1px solid #aab4c0;left:0;right:0}.bars{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.bars text{font:14px Arial;fill:#384658}.labels{display:flex;gap:1px;margin-top:4px}.labels span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;font-size:7px;color:#617083}
   .empty{margin:3px 0 0;font-size:8px;color:#657386}.footnote{font-size:8px;color:#647386;margin:7px 0 0}.channel-section{margin:7px 0 12px;break-inside:avoid}.channel-section h2 small{font-size:8px;font-weight:normal;color:#718093;margin-left:5px}
   .table-wrap{overflow:visible}table{width:100%;border-collapse:collapse;font-size:8px}th,td{border-bottom:1px solid #e6eaee;padding:4px 5px;text-align:right;white-space:nowrap}th:first-child,td:first-child{text-align:left}thead{background:#f2f5f7}thead th{font-size:7px;text-transform:uppercase;letter-spacing:.04em;color:#59687a}
-  .coverage-note{font-size:8px;color:#607083;margin-top:6px}
+   .coverage-note{font-size:8px;color:#607083;margin-top:6px}.fixture-list{font-size:7px;color:#607083;margin:3px 0 5px;line-height:1.45}
   @media screen{body{max-width:1200px;margin:20px auto;padding:0 20px}.sheet{padding:9mm;border:1px solid #dce3e9;margin-bottom:24px;min-height:210mm}.charts{height:143mm}}
   </style></head><body><article class="sheet"><header><div class="brand"><img src="/favicon.png" alt="Pallacanestro Varese"><div><strong>PALLACANESTRO VARESE</strong><small>GAMEDAY · COMMERCIAL COMPARISON</small></div></div><div class="badges">${badgeLogos}</div></header>
-  <h1>${escapeHtml(translate('GameDay comparison'))}</h1><p class="sub">${escapeHtml(mode)} · ${escapeHtml(filterSummary)}</p>
+   <h1>${escapeHtml(translate('GameDay comparison'))}</h1><p class="sub">${escapeHtml(translate(reportModeLabels[mode] || mode))} · ${escapeHtml(filterSummary)}</p>
   ${options.excludedRecords ? `<p class="meta">${options.excludedRecords} ${escapeHtml(translate('source records excluded because their season or match date is invalid. No figures have been assigned to another season.'))}</p>` : ''}
   <p class="meta">${escapeHtml(translate('Newest season'))}: ${escapeHtml(newestSeason || '—')} · ${escapeHtml(translate('YTD reference'))}: first ${ytdReferenceCount} fixtures in ${escapeHtml(newestSeason || '—')} · ${escapeHtml(translate('Include ticketing'))}: ${includeTicketing ? escapeHtml(translate('Yes')) : escapeHtml(translate('No'))} · ${escapeHtml(translate('CAGR baseline'))}: ${escapeHtml(cagrBaseline)} · ${escapeHtml(translate('Printed'))}: ${escapeHtml(printedAt)}</p>
   <div class="charts">${charts}</div><p class="footnote">— ${escapeHtml(translate('means no matching fixture or unreported field, never zero. Columns use actual matching games; per-game and per-person ratios are weighted by actual game and attendance totals. Trend lines are least-squares fits against season year, not connections between fixtures.'))}</p></article>

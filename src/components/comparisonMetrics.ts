@@ -170,7 +170,7 @@ export const isCagrMetric = (key: ComparisonMetricKey) =>
 export function getComparisonSeriesValues(
   groups: ComparisonReportGroup[], key: ComparisonMetricKey, perGame: boolean, showTrend: boolean,
 ): (number | null)[] {
-  if (!isCagrMetric(key)) return groups.map(group => getMetricValue(group.games, key, perGame));
+  if (!isCagrMetric(key)) return groups.map(group => group.missingFixtures ? null : getMetricValue(group.games, key, perGame));
   if (!showTrend) return groups.map(() => null); // Custom A/B is not a seasonal series.
   const baseKey = key === 'cagrRevenue' ? 'revenue' : 'yield';
   const series = groups.map(group => {
@@ -178,8 +178,8 @@ export function getComparisonSeriesValues(
     const year = match ? Number(match[1]) : NaN;
     return {
       year: year < 100 ? year + 2000 : year,
-      fixture: match?.[2] || '',
-      base: getMetricValue(group.games, baseKey, perGame),
+      fixture: group.seriesKey ?? match?.[2] ?? '',
+      base: group.missingFixtures ? null : getMetricValue(group.games, baseKey, perGame),
     };
   });
   return series.map(current => {
@@ -201,8 +201,8 @@ export function getYoYMarkers(
     return {
       label: group.label,
       year: year < 100 ? year + 2000 : year,
-      fixture: match?.[2] || '',
-      value: getMetricValue(group.games, baseKey, perGame),
+      fixture: group.seriesKey ?? match?.[2] ?? '',
+      value: group.missingFixtures ? null : getMetricValue(group.games, baseKey, perGame),
     };
   });
   return rows.flatMap(current => {

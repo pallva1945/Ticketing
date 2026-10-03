@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { GameData } from '../types';
+import { GameData, GameDayData } from '../types';
 import { ComparisonMetricKey } from './comparisonMetrics';
 import { ComparisonReport, printComparisonReports } from './comparisonReport';
-import {
-  buildSeasonComparison, SeasonComparisonMode, SeasonComparisonSelection,
-} from './SeasonComparison';
+import type { SeasonComparisonMode, SeasonComparisonSelection } from '../utils/seasonComparison';
+import { buildSeasonComparison } from '../utils/seasonComparison';
 
 type ReportMode = SeasonComparisonMode | 'custom';
 type ReportSlot = { mode: ReportMode; selection: SeasonComparisonSelection };
@@ -13,12 +12,14 @@ const modes: { value: ReportMode; label: string }[] = [
   { value: 'opponent', label: 'Opponent vs opponent' },
   { value: 'tier', label: 'Tier over the years' },
   { value: 'week', label: 'Week vs week' },
-  { value: 'ytd', label: 'Season to date' },
+  { value: 'ytd-week', label: 'YTD by week' },
+  { value: 'ytd-opponent', label: 'YTD by opponent' },
   { value: 'custom', label: 'Custom' },
 ];
 
 interface Props {
   fullData: GameData[];
+  scheduleData?: GameDayData[];
   viewMode: 'total' | 'gameday';
   selectedMetrics: ComparisonMetricKey[];
   initialMode: ReportMode;
@@ -28,7 +29,7 @@ interface Props {
 }
 
 export const ComparisonPrintDialog: React.FC<Props> = ({
-  fullData, viewMode, selectedMetrics, initialMode, initialSelection, customReport, onClose,
+  fullData, scheduleData = [], viewMode, selectedMetrics, initialMode, initialSelection, customReport, onClose,
 }) => {
   const [slots, setSlots] = useState<ReportSlot[]>([{ mode: initialMode, selection: { ...initialSelection } }]);
   const selectClass = 'mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-white';
@@ -46,13 +47,13 @@ export const ComparisonPrintDialog: React.FC<Props> = ({
   };
   const reports: ComparisonReport[] = slots.map(slot => {
     if (slot.mode === 'custom') return customReport;
-    const result = buildSeasonComparison(fullData, slot.mode, viewMode, slot.selection);
+    const result = buildSeasonComparison(fullData, slot.mode, viewMode, slot.selection, scheduleData);
     const opponents = slot.mode === 'opponent'
       ? [result.selectedOpponent, result.selectedSecond].filter(Boolean)
       : [...new Set(result.groups.flatMap(group => group.games.map(game => game.opponent)))];
     return {
       title: result.title, subtitle: result.description, groups: result.groups,
-      highlightLabels: result.currentLabels, showTrend: true, perGame: slot.mode === 'tier',
+      highlightLabels: result.currentLabels, showTrend: true, perGame: true,
       league: result.league, opponents: opponents.length <= 2 && slot.mode === 'opponent'
         ? opponents : opponents.length === 1 ? opponents : [],
     };
@@ -80,7 +81,7 @@ export const ComparisonPrintDialog: React.FC<Props> = ({
           </label>
           {slots.map((slot, index) => {
             const details = slot.mode !== 'custom'
-              ? buildSeasonComparison(fullData, slot.mode, viewMode, slot.selection) : null;
+              ? buildSeasonComparison(fullData, slot.mode, viewMode, slot.selection, scheduleData) : null;
             const updateSelection = (update: Partial<SeasonComparisonSelection>) =>
               updateSlot(index, { selection: { ...slot.selection, ...update } });
             return <fieldset key={index} className="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
