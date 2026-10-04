@@ -5,7 +5,8 @@ import ts from 'typescript';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { compareRevenueForecast } from '../src/utils/revenueForecast.ts';
-import { getRevenueSeasonGames } from '../src/utils/revenueSeasonGames.ts';
+import { getRevenueSeasonGames, getDefaultRevenueLeagues } from '../src/utils/revenueSeasonGames.ts';
+import { playedFixtures } from '../src/utils/fixtureEligibility.ts';
 
 test('an above-budget forecast has a positive currency and percentage variance', () => {
   const forecast = compareRevenueForecast(7170000, 6720000);
@@ -23,6 +24,23 @@ test('26/27 Ticketing and GameDay forecasts use 19 games, without changing histo
   assert.equal(getRevenueSeasonGames('25-26'), 15);
   assert.equal(getRevenueSeasonGames('24/25'), 15);
   assert.equal(getRevenueSeasonGames('26-27', 20), 20);
+});
+
+test('the completed friendly and LBA match count together, without future BCL/LBA sales', () => {
+  const games = [
+    { date: '19/09/2026', league: 'LBA - Pre Season', season: '26-27', revenue: 20000 },
+    { date: '27/09/2026', league: 'LBA', season: '26-27', revenue: 100000 },
+    { date: '10/10/2026', league: 'LBA', season: '26-27', revenue: 90000 },
+    { date: '13/10/2026', league: 'BCL', season: '26-27', revenue: 60000 },
+  ];
+  const leagues = getDefaultRevenueLeagues('26-27');
+  const completed = playedFixtures(games.filter(g => leagues.includes('All') || leagues.includes(g.league)), '2026-10-04');
+  assert.equal(completed.length, 2);
+  assert.equal(completed.reduce((sum, g) => sum + g.revenue, 0), 120000);
+  assert.equal(120000 / completed.length * getRevenueSeasonGames('26-27'), 1140000);
+  assert.deepEqual(getDefaultRevenueLeagues('26/27'), ['All']);
+  assert.deepEqual(getDefaultRevenueLeagues('25-26'), ['LBA']);
+  assert.equal(playedFixtures(games.filter(g => g.league === 'LBA'), '2026-10-04').length, 1);
 });
 
 test('below-budget and exactly on-budget forecasts use consistent signs', () => {

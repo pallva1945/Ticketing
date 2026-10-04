@@ -21,7 +21,7 @@ import { UpcomingGames } from './components/UpcomingGames';
 import { fixtureDay, isUpcomingFixture, playedFixtures } from './utils/fixtureEligibility';
 import { useRomeDay } from './hooks/useRomeDay';
 import { compareRevenueForecast } from './utils/revenueForecast';
-import { getRevenueSeasonGames } from './utils/revenueSeasonGames';
+import { getRevenueSeasonGames, getDefaultRevenueLeagues } from './utils/revenueSeasonGames';
 import { crmGameDate, getCRMSeason } from './utils/crmGames';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
 import { BoardReportModal } from './components/BoardReportModal';
@@ -239,6 +239,8 @@ const RevenueHome = ({
 
     // Constants
     const TOTAL_GAMES_SEASON = getRevenueSeasonGames(seasonFilter, gamesPlayed);
+    const hasLeagueFilter = activeFilters.leagues.length !== 1
+        || activeFilters.leagues[0] !== getDefaultRevenueLeagues(seasonFilter)[0];
     const gamesCount = Math.max(gamesPlayed, 1);
     const seasonProgressPct = (gamesPlayed / TOTAL_GAMES_SEASON) * 100;
 
@@ -439,10 +441,10 @@ const RevenueHome = ({
             </div>
 
             {/* Active Filters Indicator */}
-            {(activeFilters.leagues[0] !== 'LBA' || !activeFilters.opponents.includes('All') || !activeFilters.zones.includes('All')) && (
+            {(hasLeagueFilter || !activeFilters.opponents.includes('All') || !activeFilters.zones.includes('All')) && (
                 <div className="flex flex-wrap items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg">
                     <span className="text-xs font-bold text-amber-700 dark:text-amber-400">{t('Active Filters')}:</span>
-                    {activeFilters.leagues[0] !== 'LBA' && (
+                    {hasLeagueFilter && (
                         <span className="text-xs bg-amber-100 dark:bg-amber-800/40 text-amber-800 dark:text-amber-300 px-2 py-1 rounded-full">{t('League')}: {activeFilters.leagues.join(', ')}</span>
                     )}
                     {!activeFilters.opponents.includes('All') && (
@@ -1146,12 +1148,16 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   
   // Filters (Arrays for Multi-Select)
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>(['26-27']);
-  const [selectedLeagues, setSelectedLeagues] = useState<string[]>(['LBA']);
+  const [selectedLeagues, setSelectedLeagues] = useState<string[]>(() => getDefaultRevenueLeagues(selectedSeasons[0]));
   const [selectedZones, setSelectedZones] = useState<string[]>(['All']);
   const [selectedOpponents, setSelectedOpponents] = useState<string[]>(['All']);
   const [selectedTiers, setSelectedTiers] = useState<string[]>(['All']);
   const [selectedDays, setSelectedDays] = useState<string[]>(['All']);
   const [selectedChannels, setSelectedChannels] = useState<string[]>(['All']);
+  const changeSelectedSeasons = (seasons: string[]) => {
+    setSelectedSeasons(seasons);
+    setSelectedLeagues(getDefaultRevenueLeagues(seasons[0] || ''));
+  };
   // Strategy Filters
   const [ignoreOspiti, setIgnoreOspiti] = useState(false);
 
@@ -2637,7 +2643,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
 
   const clearFilters = () => {
     setSelectedSeasons(['26-27']);
-    setSelectedLeagues(['LBA']);
+    setSelectedLeagues(getDefaultRevenueLeagues('26-27'));
     setSelectedZones(['All']);
     setSelectedOpponents(['All']);
     setSelectedTiers(['All']);
@@ -2678,7 +2684,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
         </div>
         </div>
         <div className={`grid grid-cols-2 ${activeModule === 'ticketing' ? 'lg:grid-cols-7' : 'lg:grid-cols-6'} gap-4`}>
-        <div><MultiSelect label={t('Season')} options={seasons} selected={selectedSeasons} onChange={setSelectedSeasons} /></div>
+        <div><MultiSelect label={t('Season')} options={seasons} selected={selectedSeasons} onChange={changeSelectedSeasons} /></div>
         <div><MultiSelect label={t('League')} options={leagues} selected={selectedLeagues} onChange={setSelectedLeagues} /></div>
         <div><MultiSelect label={t('Tier')} options={tiers} selected={selectedTiers} onChange={setSelectedTiers} /></div>
         <div><MultiSelect label={t('Opponent')} options={opponents} selected={selectedOpponents} onChange={setSelectedOpponents} /></div>
@@ -3092,7 +3098,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                 onAiClick={(prompt: string) => openAIWithPrompt(prompt)}
                 gamesPlayed={filteredGames.length}
                 seasonFilter={selectedSeasons[0]}
-                onSeasonChange={(s) => setSelectedSeasons([s])}
+                onSeasonChange={(s) => changeSelectedSeasons([s])}
                 activeFilters={{ 
                     seasons: selectedSeasons, 
                     leagues: selectedLeagues, 
@@ -3100,7 +3106,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                     zones: selectedZones 
                 }}
                 onClearFilters={() => {
-                    setSelectedLeagues(['LBA']);
+                    setSelectedLeagues(getDefaultRevenueLeagues(selectedSeasons[0]));
                     setSelectedOpponents(['All']);
                     setSelectedZones(['All']);
                 }}

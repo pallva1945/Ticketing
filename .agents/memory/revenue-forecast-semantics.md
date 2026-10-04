@@ -14,3 +14,9 @@ The 2026/27 Ticketing and GameDay revenue baseline is 19 home fixtures: 15 LBA, 
 **Why:** The user explicitly confirmed the three guaranteed BCL fixtures and the revenue-generating friendly, and said both Ticketing and GameDay must count them.
 
 **How to apply:** Use this baseline consistently in revenue pacing and forecasts without increasing revenue budgets or inventing additional games. Keep historical season assumptions intact. Upcoming sales must still be excluded from played-game averages. If more than the baseline have actually been played, forecasts must not project less than already earned revenue.
+
+The friendly is already played, not merely an extra future fixture. Include its actual revenue and its completed-game count together.
+
+**Why:** The user corrected counting it only in the 19-game denominator while the played count still excluded it. Its source competition is `LBA - Pre Season`, so the previous LBA-only default silently excluded it.
+
+**How to apply:** Default 2026/27 revenue views to all competitions, including the friendly and BCL. Keep historical default LBA scope intact and preserve explicit competition filtering. Never add a synthetic played game without including its corresponding source revenue.
