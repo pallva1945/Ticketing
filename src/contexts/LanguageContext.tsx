@@ -34,6 +34,7 @@ const translations: Record<string, Record<Language, string>> = {
   'surplus': { en: 'surplus', it: 'surplus' },
   'gap': { en: 'gap', it: 'gap' },
   'Revenue Verticals': { en: 'Revenue Verticals', it: 'Verticali Ricavi' },
+  'Projected Revenue': { en: 'Projected Revenue', it: 'Ricavi previsti' },
   'Strategic Signals': { en: 'Strategic Signals', it: 'Segnali Strategici' },
   'Projected Finish': { en: 'Projected Finish', it: 'Proiezione Fine Stagione' },
   'GameDay Projection': { en: 'GameDay Projection', it: 'Proiezione GameDay' },

@@ -492,7 +492,7 @@ const RevenueHome = ({
 
             {/* MAIN PACE WIDGET (Stacked Bar) */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm relative overflow-hidden">
-                <div className="flex justify-between items-end mb-4">
+                <div className="flex flex-wrap justify-between items-end gap-3 mb-4">
                     <div>
                         <h2 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1">{t('Season Pacing')}</h2>
                         <div className="flex items-baseline gap-3">
@@ -500,13 +500,19 @@ const RevenueHome = ({
                             <span className="text-lg text-gray-400 dark:text-gray-500 font-medium">/ {formatCompact(totalTarget)}</span>
                         </div>
                     </div>
-                    <div className={`text-right px-4 py-2 rounded-lg ${isAhead ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}>
+                    <div className={`ml-auto text-right px-4 py-2 rounded-lg ${isAhead ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}>
                         <p className={`text-xs font-bold uppercase ${isAhead ? 'text-green-600' : 'text-red-600'}`}>
                             {isAhead ? t('Ahead of Pace') : t('Behind Pace')}
                         </p>
                         <p className={`text-2xl font-bold ${isAhead ? 'text-green-700' : 'text-red-700'}`}>
                             {isAhead ? '+' : ''}{pacingDelta.toFixed(1)}%
                         </p>
+                        <div className="mt-1 mb-2">
+                            <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('Projected Revenue')}</p>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                                {gamesPlayed > 0 ? formatCompact(totalRevenueProjected) : '—'}
+                            </p>
+                        </div>
                         <p className={`text-xs font-medium ${isAhead ? 'text-green-600' : 'text-red-600'}`}>
                             {formatCompact(Math.abs(totalRevenueYTD - totalExpected))} {isAhead ? t('surplus') : t('gap')}
                         </p>
@@ -617,6 +623,10 @@ const RevenueHome = ({
                                         <span className="text-[10px] text-gray-400 dark:text-gray-500">{t(v.name)}</span>
                                         <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">—</span>
                                     </div>
+                                    <div className="mt-2 text-right">
+                                        <p className="text-[10px] text-gray-400 dark:text-gray-500">{t('Projected Revenue')}</p>
+                                        <p className="text-sm font-semibold text-gray-400 dark:text-gray-500">—</p>
+                                    </div>
                                 </div>
                             );
                         }
@@ -661,6 +671,10 @@ const RevenueHome = ({
                                     <span className={`text-[10px] font-bold ${isOnTrack ? 'text-green-600' : 'text-red-600'}`}>
                                         {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(0)}%
                                     </span>
+                                </div>
+                                <div className="mt-2 text-right">
+                                    <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('Projected Revenue')}</p>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatCompact(v.projectedFinish)}</p>
                                 </div>
 
                                 {/* Hover Tooltip */}
