@@ -20,6 +20,8 @@ import { GameDayComparisonView } from './components/GameDayComparisonView';
 import { UpcomingGames } from './components/UpcomingGames';
 import { fixtureDay, isUpcomingFixture, playedFixtures } from './utils/fixtureEligibility';
 import { useRomeDay } from './hooks/useRomeDay';
+import { compareRevenueForecast } from './utils/revenueForecast';
+import { getRevenueSeasonGames } from './utils/revenueSeasonGames';
 import { crmGameDate, getCRMSeason } from './utils/crmGames';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
 import { BoardReportModal } from './components/BoardReportModal';
@@ -236,7 +238,7 @@ const RevenueHome = ({
     }, []);
 
     // Constants
-    const TOTAL_GAMES_SEASON = 15;
+    const TOTAL_GAMES_SEASON = getRevenueSeasonGames(seasonFilter, gamesPlayed);
     const gamesCount = Math.max(gamesPlayed, 1);
     const seasonProgressPct = (gamesPlayed / TOTAL_GAMES_SEASON) * 100;
 
@@ -364,7 +366,8 @@ const RevenueHome = ({
             projectedFinish = v.current;
         }
         
-        return { ...v, pacePct, expectedAtThisPoint, projectedFinish, paceMarkerPct };
+        return { ...v, pacePct, expectedAtThisPoint, projectedFinish, paceMarkerPct,
+            forecast: compareRevenueForecast(projectedFinish, v.target, v.hasData && (!v.isProrated || projectedFinish > 0)) };
     });
 
     // Filter verticals with actual data for aggregates
@@ -373,7 +376,6 @@ const RevenueHome = ({
     // SORTED VERTICALS (Only those with data, highest YTD first)
     const sortedVerticals = [...verticalsWithData].sort((a, b) => b.current - a.current);
     const worstPacingVertical = [...verticalsWithData].sort((a, b) => a.pacePct - b.pacePct)[0];
-    const bestPacingVertical = [...verticalsWithData].sort((a, b) => b.pacePct - a.pacePct)[0];
 
     // AGGREGATES (Only verticals with actual data)
     const totalRevenueYTD = verticalsWithData.reduce((acc, v) => acc + v.current, 0);
@@ -385,10 +387,11 @@ const RevenueHome = ({
     const weightedAccountedPct = totalTarget > 0
         ? verticalsWithData.reduce((acc, v) => acc + (v.paceMarkerPct * (v.target / totalTarget)), 0)
         : seasonProgressPct;
-    const revenueProgressPct = totalTarget > 0 ? (totalRevenueYTD / totalTarget) * 100 : 0;
-    const pacingDelta = revenueProgressPct - weightedAccountedPct;
-    const isAhead = pacingDelta >= 0;
-    const projectionDiff = totalRevenueProjected - totalTarget;
+    const ytdDifference = totalRevenueYTD - totalExpected;
+    // Known annual/monthly forecasts remain available even before the first game.
+    const seasonForecast = compareRevenueForecast(totalRevenueProjected, totalTarget,
+        verticalsWithData.some(v => v.forecast.available));
+    const projectionDiff = seasonForecast.difference ?? 0;
 
     const fixedTicketing = ticketingRevenue - gameDayTicketing;
     const variableYTD = gameDayTicketing + gameDayRevenue;
@@ -413,6 +416,7 @@ const RevenueHome = ({
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Executive Overview')}</h1>
                     <p className="text-gray-500 dark:text-gray-400 text-sm">{t('Season')} {seasonFilter} • {gamesPlayed} {t('of')} {TOTAL_GAMES_SEASON} {t('games played')}</p>
+                    {isSeason26_27(seasonFilter) && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('Baseline: 15 LBA + 3 guaranteed BCL + 1 friendly')}</p>}
                 </div>
                 
                 <div className="flex items-center gap-3">
@@ -467,10 +471,13 @@ const RevenueHome = ({
                             <MessageSquare size={16} /> {t('Strategic Assessment')}
                         </h3>
                         <p className="text-white/90 text-lg font-medium leading-relaxed">
-                            {isAhead 
-                                ? `YTD pacing is strong (+${pacingDelta.toFixed(1)}% vs Time). ${bestPacingVertical.name} leads at ${bestPacingVertical.pacePct >= 0 ? '+' : ''}${bestPacingVertical.pacePct.toFixed(0)}% pace. Forecast: ${formatCompact(totalRevenueProjected)}.` 
-                                : `Alert: Collections trail timeline by ${Math.abs(pacingDelta).toFixed(1)}%. ${worstPacingVertical.name} needs attention (${worstPacingVertical.pacePct.toFixed(0)}% pace). Focus on variable revenue acceleration.`
-                            }
+                            {seasonForecast.available ? (
+                                <>
+                                    {t('Projected Revenue')}: <strong>{formatCompact(totalRevenueProjected)}</strong>
+                                    {' '}({projectionDiff >= 0 ? '+' : ''}{formatCompact(projectionDiff)} {t('vs season target')}).
+                                    <span className="text-slate-300"> {t('YTD vs Expected')}: {ytdDifference >= 0 ? '+' : ''}{formatCompact(ytdDifference)}.</span>
+                                </>
+                            ) : t('No revenue projection available.')}
                         </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -499,22 +506,26 @@ const RevenueHome = ({
                             <span className="text-4xl font-extrabold text-gray-900 dark:text-white">{formatCompact(totalRevenueYTD)}</span>
                             <span className="text-lg text-gray-400 dark:text-gray-500 font-medium">/ {formatCompact(totalTarget)}</span>
                         </div>
-                    </div>
-                    <div className={`ml-auto text-right px-4 py-2 rounded-lg ${isAhead ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}>
-                        <p className={`text-xs font-bold uppercase ${isAhead ? 'text-green-600' : 'text-red-600'}`}>
-                            {isAhead ? t('Ahead of Pace') : t('Behind Pace')}
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('Revenue YTD / Season Target')}</p>
+                        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                            {t('YTD vs Expected')}: {ytdDifference >= 0 ? '+' : ''}{formatCompact(ytdDifference)}
                         </p>
-                        <p className={`text-2xl font-bold ${isAhead ? 'text-green-700' : 'text-red-700'}`}>
-                            {isAhead ? '+' : ''}{pacingDelta.toFixed(1)}%
+                    </div>
+                    <div className={`ml-auto text-right px-4 py-2 rounded-lg ${!seasonForecast.available ? 'bg-gray-50 dark:bg-gray-800' : seasonForecast.onTarget ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}>
+                        <p className="text-xs font-bold uppercase text-gray-500 dark:text-gray-400">
+                            {t('Forecast vs Target')}
+                        </p>
+                        <p className={`text-2xl font-bold ${!seasonForecast.available ? 'text-gray-400' : seasonForecast.onTarget ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                            {seasonForecast.percent === null ? '—' : `${seasonForecast.percent >= 0 ? '+' : ''}${seasonForecast.percent.toFixed(1)}%`}
                         </p>
                         <div className="mt-1 mb-2">
                             <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('Projected Revenue')}</p>
                             <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                                {gamesPlayed > 0 ? formatCompact(totalRevenueProjected) : '—'}
+                                {seasonForecast.available ? formatCompact(totalRevenueProjected) : '—'}
                             </p>
                         </div>
-                        <p className={`text-xs font-medium ${isAhead ? 'text-green-600' : 'text-red-600'}`}>
-                            {formatCompact(Math.abs(totalRevenueYTD - totalExpected))} {isAhead ? t('surplus') : t('gap')}
+                        <p className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                            {seasonForecast.available ? `${projectionDiff >= 0 ? '+' : ''}${formatCompact(projectionDiff)} ${t('vs season target')}` : t('No revenue projection available.')}
                         </p>
                     </div>
                 </div>
@@ -577,7 +588,7 @@ const RevenueHome = ({
                                         {(v.isVariable || v.isProrated) && (
                                             <div className="flex justify-between">
                                                 <span className="text-slate-400">{v.isProrated ? t('Full Year') : t('Projected')}:</span>
-                                                <span className="font-mono text-purple-400">{formatCompact(v.projectedFinish)}</span>
+                                                <span className="font-mono text-purple-400">{v.forecast.available ? formatCompact(v.projectedFinish) : '—'}</span>
                                             </div>
                                         )}
                                     </div>
@@ -605,7 +616,7 @@ const RevenueHome = ({
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     {verticalsWithPacing.map((v) => {
                         const progressPct = v.hasData ? Math.min((v.current / v.target) * 100, 100) : 0;
-                        const isOnTrack = v.pacePct >= -5;
+                        const isOnTrack = v.forecast.onTarget;
                         
                         // Card for verticals WITHOUT data - Coming Soon
                         if (!v.hasData) {
@@ -624,6 +635,7 @@ const RevenueHome = ({
                                         <span className="text-[10px] font-medium text-gray-400 dark:text-gray-500">—</span>
                                     </div>
                                     <div className="mt-2 text-right">
+                                        <p className="text-[9px] text-gray-400 dark:text-gray-500">{t('Forecast vs Target')}</p>
                                         <p className="text-[10px] text-gray-400 dark:text-gray-500">{t('Projected Revenue')}</p>
                                         <p className="text-sm font-semibold text-gray-400 dark:text-gray-500">—</p>
                                     </div>
@@ -665,16 +677,17 @@ const RevenueHome = ({
                                     />
                                 </div>
                                 
-                                {/* Pace Indicator */}
+                                {/* Full-season forecast compared with the full-season target */}
                                 <div className="flex items-center justify-between">
                                     <span className="text-[10px] text-gray-500 dark:text-gray-400">{t(v.name)}</span>
-                                    <span className={`text-[10px] font-bold ${isOnTrack ? 'text-green-600' : 'text-red-600'}`}>
-                                        {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(0)}%
+                                    <span className={`text-[10px] font-bold ${!v.forecast.available ? 'text-gray-400' : isOnTrack ? 'text-green-600' : 'text-red-600'}`}>
+                                        {v.forecast.percent === null ? '—' : `${v.forecast.percent >= 0 ? '+' : ''}${v.forecast.percent.toFixed(1)}%`}
                                     </span>
                                 </div>
                                 <div className="mt-2 text-right">
+                                    <p className="text-[9px] text-gray-500 dark:text-gray-400">{t('Forecast vs Target')}</p>
                                     <p className="text-[10px] text-gray-500 dark:text-gray-400">{t('Projected Revenue')}</p>
-                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatCompact(v.projectedFinish)}</p>
+                                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{v.forecast.available ? formatCompact(v.projectedFinish) : '—'}</p>
                                 </div>
 
                                 {/* Hover Tooltip */}
@@ -690,9 +703,9 @@ const RevenueHome = ({
                                         {t('Accounted')}: {v.paceMarkerPct.toFixed(0)}%
                                     </p>
                                     <p className={v.pacePct >= 0 ? 'text-green-400' : 'text-red-400'}>
-                                        {t('Pace')}: {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(1)}%
+                                        {t('YTD Pace')}: {v.pacePct >= 0 ? '+' : ''}{v.pacePct.toFixed(1)}%
                                     </p>
-                                    <p className="text-purple-400">{t('Proj')}: {formatCompact(v.projectedFinish)}</p>
+                                    <p className="text-purple-400">{t('Proj')}: {v.forecast.available ? formatCompact(v.projectedFinish) : '—'}</p>
                                     <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-slate-900"></div>
                                 </div>
                             </div>
@@ -712,9 +725,9 @@ const RevenueHome = ({
                             <Target size={16} className="text-slate-400" />
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">{t('Projected Finish')}</span>
                         </div>
-                        <p className="text-2xl font-bold">{gamesPlayed > 0 ? formatCompact(totalRevenueProjected) : '—'}</p>
+                        <p className="text-2xl font-bold">{seasonForecast.available ? formatCompact(totalRevenueProjected) : '—'}</p>
                         <p className={`text-sm font-medium mt-1 ${projectionDiff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {gamesPlayed > 0 ? `${projectionDiff >= 0 ? '+' : ''}${formatCompact(projectionDiff)} ${t('vs target')}` : t('No games played yet. Projection unavailable.')}
+                            {seasonForecast.available ? `${projectionDiff >= 0 ? '+' : ''}${formatCompact(projectionDiff)} ${t('vs season target')}` : t('No revenue projection available.')}
                         </p>
                         <div className="mt-3 pt-3 border-t border-slate-700 text-[10px] text-slate-500">
                             {t('Based on current run-rate extrapolation')}
@@ -780,14 +793,14 @@ const RevenueHome = ({
                     <div className={`rounded-xl p-5 shadow-sm border ${worstPacingVertical.pacePct < -10 ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800'}`}>
                         <div className="flex items-center gap-2 mb-3">
                             <Bell size={16} className={worstPacingVertical.pacePct < -10 ? 'text-red-600' : 'text-amber-600'} />
-                            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('Attention Required')}</span>
+                            <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('YTD Pace Watch')}</span>
                         </div>
                         <p className="text-lg font-bold text-gray-900 dark:text-white">{t(worstPacingVertical.name)}</p>
                         <p className={`text-2xl font-bold ${worstPacingVertical.pacePct < -10 ? 'text-red-600' : 'text-amber-600'}`}>
-                            {worstPacingVertical.pacePct.toFixed(0)}% {t('pace')}
+                            {worstPacingVertical.pacePct >= 0 ? '+' : ''}{worstPacingVertical.pacePct.toFixed(1)}% {t('YTD Pace')}
                         </p>
                         <p className="text-[10px] text-gray-500 dark:text-gray-400 mt-2">
-                            {t('Gap')}: {formatCompact(worstPacingVertical.expectedAtThisPoint - worstPacingVertical.current)} {t('behind expected')}
+                            {t('YTD vs Expected')}: {worstPacingVertical.current >= worstPacingVertical.expectedAtThisPoint ? '+' : ''}{formatCompact(worstPacingVertical.current - worstPacingVertical.expectedAtThisPoint)}
                         </p>
                     </div>
 
@@ -3130,7 +3143,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                                 currentRevenue={filteredGameDayRevForPacing} 
                                 gamesPlayed={filteredGameDayData.length} 
                                 seasonTarget={gameDayIncludeTicketing ? SEASON_TARGET_GAMEDAY_TOTAL : SEASON_TARGET_GAMEDAY} 
-                                totalGamesInSeason={15} 
+                                totalGamesInSeason={getRevenueSeasonGames(selectedSeasons[0], filteredGameDayData.length)}
                             />
                         </div>
                     </div>
@@ -3181,7 +3194,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                                     currentRevenue={stats.totalRevenue} 
                                     gamesPlayed={viewData.length} 
                                     seasonTarget={viewMode === 'gameday' ? SEASON_TARGET_TICKETING_DAY : SEASON_TARGET_TOTAL} 
-                                    totalGamesInSeason={15} // Approx
+                                    totalGamesInSeason={getRevenueSeasonGames(selectedSeasons[0], viewData.length)}
                                 />
                             </div>
                         </div>

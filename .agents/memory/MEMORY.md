@@ -15,4 +15,5 @@
 - [Preview authentication diagnostics](preview-auth-diagnostics.md) — diagnose Google sign-in at the real HTTPS preview origin; localhost capture errors can be misleading.
 - [Preview hot-reload verification](preview-hot-reload.md) — shared translation edits can briefly fail during hot reload; distinguish those errors from fresh-load failures.
 - [Played-game performance](played-game-performance.md) — upcoming games stay accessible for sales monitoring but must not distort Ticketing, GameDay, or Executive performance.
+- [Revenue forecast semantics](revenue-forecast-semantics.md) — compare forecasts with season targets; 2026/27 Ticketing and GameDay have 19 baseline revenue fixtures.
 - [Sponsor European reconciliation](sponsor-european-reconciliation.md) — European revenue is already in GameDay; split it only in Sponsor reconciliation and details without double counting.

@@ -1,12 +1,13 @@
 import React from 'react';
 import { Target, TrendingUp, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { compareRevenueForecast } from '../utils/revenueForecast';
 
 interface PacingWidgetProps {
   currentRevenue: number;
   seasonTarget: number;
   gamesPlayed: number;
-  totalGamesInSeason: number; // Regular season usually 15 home games
+  totalGamesInSeason: number; // Guaranteed season revenue fixtures, including BCL/friendly where applicable
 }
 
 export const PacingWidget: React.FC<PacingWidgetProps> = ({ 
@@ -28,13 +29,14 @@ export const PacingWidget: React.FC<PacingWidgetProps> = ({
   
   const isOnTrack = projectedRevenue >= seasonTarget;
   const variance = projectedRevenue - seasonTarget;
+  const forecast = compareRevenueForecast(projectedRevenue, seasonTarget);
 
   return (
     <div className="bg-slate-900 rounded-xl p-5 text-white shadow-lg border border-slate-700 relative overflow-hidden h-full flex flex-col justify-center">
       {/* Background Pulse for urgency if off track */}
       {!isOnTrack && <div className="absolute top-0 right-0 w-20 h-20 bg-red-600/20 blur-3xl rounded-full"></div>}
       
-      <div className="flex justify-between items-start mb-4 z-10">
+      <div className="flex flex-wrap justify-between items-start gap-3 mb-4 z-10">
         <div>
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
             <Target size={14} /> Season Target (Budget)
@@ -44,8 +46,11 @@ export const PacingWidget: React.FC<PacingWidgetProps> = ({
              <span className="text-sm text-slate-500">/ €{(seasonTarget / 1000000).toFixed(1)}M</span>
           </div>
         </div>
-        <div className={`px-2 py-1 rounded text-[10px] font-bold uppercase border ${isOnTrack ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-red-500/20 border-red-500 text-red-400'}`}>
-            {isOnTrack ? 'On Track' : 'Risk'}
+        <div className={`ml-auto px-2 py-1 rounded text-right border ${isOnTrack ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-red-500/20 border-red-500 text-red-400'}`}>
+            <p className="text-[9px] font-bold uppercase">{t('Forecast vs Target')}</p>
+            <p className="text-lg font-bold">{forecast.percent === null ? '—' : `${forecast.percent >= 0 ? '+' : ''}${forecast.percent.toFixed(1)}%`}</p>
+            <p className="text-[9px] text-slate-400">{t('Projected Revenue')}</p>
+            <p className="text-sm font-semibold">€{(projectedRevenue / 1000000).toFixed(2)}M</p>
         </div>
       </div>
 
@@ -67,7 +72,7 @@ export const PacingWidget: React.FC<PacingWidgetProps> = ({
          <span className="text-slate-400">{gamesPlayed} / {totalGamesInSeason} Games Played</span>
          <span className={`${isOnTrack ? 'text-green-400' : 'text-red-400'} flex items-center gap-1`}>
             {isOnTrack ? <TrendingUp size={12} /> : <AlertTriangle size={12} />}
-            Proj: €{(projectedRevenue/1000000).toFixed(2)}M ({variance > 0 ? '+' : ''}€{(variance/1000).toFixed(0)}k)
+            {variance >= 0 ? '+' : '-'}€{(Math.abs(variance)/1000).toFixed(0)}k {t('vs season target')}
          </span>
       </div>
     </div>
