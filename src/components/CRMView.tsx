@@ -2637,6 +2637,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data: sourceData, sponsorData 
                           <tr>
                             <th className="text-left py-3 px-4 font-medium">#</th>
                             <th className="text-left py-3 px-4 font-medium">{t('Name')}</th>
+                            <th className="text-left py-3 px-4 font-medium">{t('Company')}</th>
                             <th className="text-right py-3 px-4 font-medium">{t('Tickets')}</th>
                             <th className="text-right py-3 px-4 font-medium">{t('Games')}</th>
                             <th className="text-left py-3 px-4 font-medium">{t('Zones')}</th>
@@ -2655,6 +2656,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data: sourceData, sponsorData 
                             >
                               <td className="py-3 px-4 text-gray-400 dark:text-gray-500">{i + 1}</td>
                               <td className="py-3 px-4 font-medium text-purple-700 hover:text-purple-900">{r.name}</td>
+                              <td className="py-3 px-4 text-gray-600 dark:text-gray-400">{r.company || '—'}</td>
                               <td className="py-3 px-4 text-right font-medium">{r.tickets}</td>
                               <td className="py-3 px-4 text-right">{r.games.length}</td>
                               <td className="py-3 px-4">
@@ -2677,7 +2679,7 @@ export const CRMView: React.FC<CRMViewProps> = ({ data: sourceData, sponsorData 
                           ))}
                           {filteredByType.length === 0 && (
                             <tr>
-                              <td colSpan={9} className="py-8 text-center text-gray-400 dark:text-gray-500">
+                              <td colSpan={10} className="py-8 text-center text-gray-400 dark:text-gray-500">
                                 {t('No recipients found for this type')}
                               </td>
                             </tr>
