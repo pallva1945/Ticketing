@@ -8,6 +8,7 @@ import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, Refre
 import { SEASON_TARGET_SPONSORSHIP } from '../constants';
 import { useLanguage } from '../contexts/LanguageContext';
 import { totalSponsorGameDaySplit, splitSponsorGameDay } from '../utils/sponsorReconciliation';
+import { leagueLogoSrc } from './comparisonReport';
 
 const SPONSOR_TIERS = {
   PLATINUM: { name: 'Platinum', min: 200000, color: '#475569', bgColor: 'bg-slate-600', textColor: 'text-white', borderColor: 'border-slate-600' },
@@ -332,7 +333,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
       { name: 'CSR', value: stats.totalCSR, fill: COLORS.gray },
       { name: 'Corp Tickets', value: stats.totalCorpTix, fill: COLORS.secondary },
       { name: t('GameDay LBA'), value: stats.totalGamedayLBA, fill: COLORS.tertiary },
-      { name: t('European Competition'), value: stats.totalEuropeanCompetition, fill: COLORS.cm }
+      { name: t('GameDay BCL'), value: stats.totalEuropeanCompetition, fill: COLORS.cm }
     ];
     return items.filter(d => d.value > 0);
   }, [stats, t]);
@@ -1316,12 +1317,20 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
                     { label: t('VB (Youth)'), desc: t('Youth team sponsorship, academy branding'), value: selectedSponsor.vbReconciliation, color: 'bg-amber-100 dark:bg-amber-900/20 text-amber-700', icon: '⭐' },
                     { label: t('CSR'), desc: t('Corporate social responsibility activities'), value: selectedSponsor.csrReconciliation, color: 'bg-slate-100 dark:bg-slate-900/20 text-slate-700', icon: '🤝' },
                     { label: t('Corporate Tickets'), desc: t('Tickets, parking, VIP access, hospitality (x15 games)'), value: selectedSponsor.corpTixReconciliation + ((selectedSponsor.hospitalityReconciliation + selectedSponsor.parkingReconciliation) * 15), color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700', icon: '🎟️' },
-                    { label: t('GameDay LBA'), desc: t('LED displays, naming rights, jersey, banners (LBA)'), value: selectedSponsorGameDaySplit?.lba ?? 0, color: 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700', icon: 'LBA' },
-                    { label: t('European Competition'), desc: t('European competition visibility'), value: selectedSponsorGameDaySplit?.european ?? 0, perGame: selectedSponsor.europeanCompetitionByGame ?? 0, color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700', icon: 'EU' }
+                    { label: t('GameDay LBA'), desc: t('LED displays, naming rights, jersey, banners (LBA)'), value: selectedSponsorGameDaySplit?.lba ?? 0, color: 'bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700', icon: '', competition: 'LBA' },
+                    { label: t('GameDay BCL'), desc: t('European competition visibility'), value: selectedSponsorGameDaySplit?.european ?? 0, perGame: selectedSponsor.europeanCompetitionByGame ?? 0, color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700', icon: '', competition: 'BCL' }
                   ].filter(item => item.value > 0).map(item => (
                     <div key={item.label} className={`rounded-lg p-4 ${item.color} flex items-center justify-between`}>
                       <div className="flex items-center gap-3">
-                        <span className={item.icon.length > 2 ? 'text-xs font-bold tracking-wide' : 'text-xl'}>{item.icon}</span>
+                        {item.competition ? (
+                          <img
+                            src={leagueLogoSrc(item.competition) ?? undefined}
+                            alt={`${item.competition} competition logo`}
+                            className="h-10 w-10 shrink-0 rounded bg-white p-1 object-contain"
+                          />
+                        ) : (
+                          <span className={item.icon.length > 2 ? 'text-xs font-bold tracking-wide' : 'text-xl'}>{item.icon}</span>
+                        )}
                         <div>
                           <p className="font-semibold">{item.label}</p>
                           <p className="text-xs opacity-75">{item.desc}</p>

@@ -5,7 +5,7 @@ type Language = 'en' | 'it';
 const translations: Record<string, Record<Language, string>> = {
   'Upcoming games / On sale': { en: 'Upcoming games / On sale', it: 'Prossime partite / In vendita' },
   'GameDay LBA': { en: 'GameDay LBA', it: 'GameDay LBA' },
-  'European Competition': { en: 'European Competition', it: 'Competizione europea' },
+  'GameDay BCL': { en: 'GameDay BCL', it: 'GameDay BCL' },
   'LED displays, naming rights, jersey, banners (LBA)': { en: 'LED displays, naming rights, jersey, banners (LBA)', it: 'LED, naming rights, maglia e banner (LBA)' },
   'European competition visibility': { en: 'European competition visibility', it: 'Visibilità nella competizione europea' },
   'Upcoming / On sale': { en: 'Upcoming / On sale', it: 'In programma / In vendita' },
