@@ -17,3 +17,4 @@
 - [Played-game performance](played-game-performance.md) — upcoming games stay accessible for sales monitoring but must not distort Ticketing, GameDay, or Executive performance.
 - [Revenue forecast semantics](revenue-forecast-semantics.md) — compare forecasts with season targets; 2026/27 Ticketing and GameDay have 19 baseline revenue fixtures.
 - [Sponsor European reconciliation](sponsor-european-reconciliation.md) — European revenue is already in GameDay; split it only in Sponsor reconciliation and details without double counting.
+- [Merchandising provider transition](merchandising-provider-transition.md) — user reports sales moved to XShop; migrate analytics, not the storefront or checkout.
