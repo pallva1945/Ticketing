@@ -6,67 +6,9 @@ type SortDirection = 'asc' | 'desc' | null;
 type SortConfig<T extends string> = { key: T; direction: SortDirection };
 import { GameDayData } from '../types';
 import { processGameDayData } from '../utils/dataProcessor';
+import { getMerchSeason, isMerchSale, isMerchGiveaway, merchLineNetRevenue } from '../types/merchandising';
+import type { MerchOrder, MerchProduct, MerchCustomer, MerchandisingData } from '../types/merchandising';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line } from 'recharts';
-
-interface ShopifyOrder {
-  id: string;
-  orderNumber: string;
-  createdAt: string;
-  processedAt: string;
-  totalPrice: number;
-  currency: string;
-  customerName: string;
-  customerEmail: string;
-  itemCount: number;
-  paymentMethod: string;
-  lineItems: {
-    title: string;
-    quantity: number;
-    price: number;
-    sku: string;
-    productId: string;
-  }[];
-  financialStatus: string;
-  fulfillmentStatus: string;
-  sourceName?: string;
-  tags?: string;
-  totalTax?: number;
-}
-
-interface ShopifyProduct {
-  id: string;
-  title: string;
-  productType: string;
-  vendor: string;
-  status: string;
-  totalInventory: number;
-  variants: {
-    id: string;
-    title: string;
-    price: number;
-    inventoryQuantity: number;
-    sku: string;
-  }[];
-  images: { src: string }[];
-}
-
-interface ShopifyCustomer {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  ordersCount: number;
-  totalSpent: number;
-  createdAt: string;
-  tags: string[];
-}
-
-interface MerchandisingData {
-  orders: ShopifyOrder[];
-  products: ShopifyProduct[];
-  customers: ShopifyCustomer[];
-  lastUpdated: string;
-}
 
 const COLORS = ['#dc2626', '#ea580c', '#d97706', '#ca8a04', '#65a30d', '#16a34a', '#0d9488', '#0891b2', '#0284c7', '#2563eb', '#7c3aed', '#c026d3'];
 
@@ -80,24 +22,14 @@ const formatCurrency = (value: number) => {
   return `${formatted} €`;
 };
 
-const getSeasonFromDate = (dateStr: string): string => {
-  const date = new Date(dateStr);
-  const year = date.getFullYear();
-  const month = date.getMonth(); // 0-indexed: January=0, July=6
-  // Season runs July 1st to June 30th
-  if (month >= 6) { // July (6) or later
-    return `${String(year).slice(2)}/${String(year + 1).slice(2)}`;
-  } else { // January-June belongs to previous season
-    return `${String(year - 1).slice(2)}/${String(year).slice(2)}`;
-  }
-};
+const getSeasonFromDate = getMerchSeason;
 
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr);
   return date.toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
-const getPaymentMethod = (order: ShopifyOrder): string => {
+const getPaymentMethod = (order: MerchOrder): string => {
   return order.paymentMethod || 'Unknown';
 };
 
@@ -157,21 +89,25 @@ export const MerchandisingView: React.FC = () => {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
-  const loadData = async () => {
+  const loadData = async (refresh = false) => {
     setIsLoading(true);
     setError(null);
     try {
-      const [shopifyResponse, gameDayResponse] = await Promise.all([
-        fetch('/api/shopify/data'),
+      const [merchResponse, gameDayResponse] = await Promise.all([
+        fetch(`/api/merch/data${refresh ? '?refresh=true' : ''}`),
         fetch('/api/gameday/bigquery')
       ]);
       
-      if (!shopifyResponse.ok) {
-        const errData = await shopifyResponse.json();
-        throw new Error(errData.message || 'Failed to fetch Shopify data');
+      if (!merchResponse.ok) {
+        const errData = await merchResponse.json();
+        throw new Error(errData.message || 'Failed to fetch XShop data');
       }
-      const shopifyResult = await shopifyResponse.json();
-      setData(shopifyResult);
+      const merchResult = await merchResponse.json();
+      if (merchResult.source !== 'XShop' || merchResult.complete !== true
+        || !Array.isArray(merchResult.orders) || !Array.isArray(merchResult.products) || !Array.isArray(merchResult.customers)) {
+        throw new Error('XShop returned an incomplete merchandising snapshot');
+      }
+      setData(merchResult);
       
       if (gameDayResponse.ok) {
         const gdResult = await gameDayResponse.json();
@@ -192,9 +128,9 @@ export const MerchandisingView: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const handleShopifyRefresh = () => loadData();
-    window.addEventListener('shopify-refresh', handleShopifyRefresh);
-    return () => window.removeEventListener('shopify-refresh', handleShopifyRefresh);
+    const handleMerchRefresh = () => loadData(true);
+    window.addEventListener('merchandising-refresh', handleMerchRefresh);
+    return () => window.removeEventListener('merchandising-refresh', handleMerchRefresh);
   }, []);
 
   const availableSeasons = useMemo(() => {
@@ -269,8 +205,8 @@ export const MerchandisingView: React.FC = () => {
   const stats = useMemo(() => {
     if (!data) return null;
     
-    const salesOrders = filteredOrders.filter(o => !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0));
-    const giveawayOrders = filteredOrders.filter(o => o.totalPrice === 0);
+    const salesOrders = filteredOrders.filter(isMerchSale);
+    const giveawayOrders = filteredOrders.filter(isMerchGiveaway);
     const parseTag = (tags: string, prefix: string): string | null => {
       if (!tags) return null;
       const regex = new RegExp(prefix + ':\\s*([^,]+)', 'i');
@@ -319,15 +255,6 @@ export const MerchandisingView: React.FC = () => {
     const totalProducts = data.products.length;
     const totalInventory = data.products.filter(p => (p.productType || '').toLowerCase() !== 'servizio').reduce((sum, p) => sum + p.totalInventory, 0);
     
-    const getNetPrice = (order: ShopifyOrder, amount: number) => {
-      const tax = order.totalTax || 0;
-      const total = order.totalPrice;
-      if (total > 0 && tax > 0) {
-        return amount * (1 - tax / total);
-      }
-      return amount;
-    };
-
     const productSales: Record<string, { title: string; revenue: number; quantity: number; type: string }> = {};
     filteredOrders.forEach(order => {
       order.lineItems.forEach(item => {
@@ -335,7 +262,7 @@ export const MerchandisingView: React.FC = () => {
           const product = data.products.find(p => p.id === item.productId);
           productSales[item.productId] = { title: item.title, revenue: 0, quantity: 0, type: product?.productType || 'Other' };
         }
-        productSales[item.productId].revenue += getNetPrice(order, item.price * item.quantity);
+        productSales[item.productId].revenue += merchLineNetRevenue(order, item);
         productSales[item.productId].quantity += item.quantity;
       });
     });
@@ -356,7 +283,7 @@ export const MerchandisingView: React.FC = () => {
         const product = data.products.find(p => p.id === item.productId);
         const category = product?.productType || '';
         if (!category || !validCategories.has(category)) return;
-        categoryRevenue[category] = (categoryRevenue[category] || 0) + getNetPrice(order, item.price * item.quantity);
+        categoryRevenue[category] = (categoryRevenue[category] || 0) + merchLineNetRevenue(order, item);
       });
     });
     
@@ -365,7 +292,7 @@ export const MerchandisingView: React.FC = () => {
       .sort((a, b) => b.value - a.value)
       .slice(0, 8);
     
-    const getOrderDate = (order: ShopifyOrder) => new Date(order.processedAt);
+    const getOrderDate = (order: MerchOrder) => new Date(order.processedAt);
     
     const monthlyRevenue: Record<string, number> = {};
     const allSeasonOrders = data.orders.filter(order => getSeasonFromDate(order.processedAt) === selectedSeason);
@@ -476,10 +403,7 @@ export const MerchandisingView: React.FC = () => {
 
   const allOrdersForCommunity = useMemo(() => {
     if (!data) return [];
-    return data.orders.filter(o => {
-      if (o.sourceName === 'shopify_draft_order' && o.totalPrice === 0) return false;
-      return true;
-    });
+    return data.orders.filter(isMerchSale);
   }, [data]);
 
   const customerClassification = useMemo(() => {
@@ -664,8 +588,8 @@ export const MerchandisingView: React.FC = () => {
     const totalSold = orders.reduce((sum, o) => 
       sum + o.purchasedItems.reduce((s, item) => s + item.quantity, 0), 0
     );
-    const totalRevenue = orders.reduce((sum, o) => 
-      sum + o.purchasedItems.reduce((s, item) => s + item.price * item.quantity, 0), 0
+    const totalRevenue = orders.reduce((sum, o) =>
+      sum + o.purchasedItems.reduce((s, item) => s + merchLineNetRevenue(o, item), 0), 0
     );
     
     const monthlySales: Record<string, { month: string; quantity: number; revenue: number }> = {};
@@ -675,11 +599,9 @@ export const MerchandisingView: React.FC = () => {
       if (!monthlySales[monthKey]) {
         monthlySales[monthKey] = { month: monthKey, quantity: 0, revenue: 0 };
       }
-      const taxRate = (order.totalPrice > 0 && (order.totalTax || 0) > 0) ? (order.totalTax || 0) / order.totalPrice : 0;
       order.purchasedItems.forEach(item => {
         monthlySales[monthKey].quantity += item.quantity;
-        const gross = item.price * item.quantity;
-        monthlySales[monthKey].revenue += gross * (1 - taxRate);
+        monthlySales[monthKey].revenue += merchLineNetRevenue(order, item);
       });
     });
     
@@ -695,7 +617,8 @@ export const MerchandisingView: React.FC = () => {
   const inventoryStats = useMemo(() => {
     if (!data) return null;
     
-    const products = data.products.filter(p => (p.productType || '').toLowerCase() !== 'servizio');
+    const products = data.products.filter(p => (p.productType || '').toLowerCase() !== 'servizio'
+      && p.variants.some(v => v.inventoryTracked !== false));
     const totalUnits = products.reduce((sum, p) => sum + p.totalInventory, 0);
     const totalValue = products.reduce((sum, p) => {
       return sum + p.variants.reduce((vSum, v) => vSum + (v.price * v.inventoryQuantity), 0);
@@ -726,7 +649,7 @@ export const MerchandisingView: React.FC = () => {
       .slice(0, 10);
     
     const allVariants = products.flatMap(p => 
-      p.variants.map(v => ({
+      p.variants.filter(v => v.inventoryTracked !== false).map(v => ({
         productTitle: p.title,
         productType: p.productType,
         variantTitle: v.title,
@@ -839,7 +762,7 @@ export const MerchandisingView: React.FC = () => {
 
   const gatewayData = useMemo(() => {
     if (!allOrdersForCommunity.length) return { entryProducts: [] as { title: string; count: number }[], bundles: [] as { product1: string; product2: string; count: number }[] };
-    const customerFirstOrders: Record<string, ShopifyOrder> = {};
+    const customerFirstOrders: Record<string, MerchOrder> = {};
     allOrdersForCommunity.forEach(order => {
       const email = order.customerEmail;
       if (!email) return;
@@ -940,7 +863,7 @@ export const MerchandisingView: React.FC = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <RefreshCw size={32} className="animate-spin text-orange-600 mx-auto mb-3" />
-          <p className="text-gray-600 dark:text-gray-400">{t('Loading Shopify data...')}</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('Loading XShop data...')}</p>
         </div>
       </div>
     );
@@ -952,7 +875,7 @@ export const MerchandisingView: React.FC = () => {
         <AlertCircle size={32} className="text-red-500 mx-auto mb-3" />
         <h3 className="text-lg font-semibold text-red-800 mb-2">{t('Failed to Load Merchandising Data')}</h3>
         <p className="text-red-600 mb-4">{error}</p>
-        <button onClick={loadData} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+        <button onClick={() => loadData(true)} className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
           <RefreshCw size={16} className="inline mr-2" /> {t('Retry')}
         </button>
       </div>
@@ -964,7 +887,7 @@ export const MerchandisingView: React.FC = () => {
       <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 text-center">
         <Package size={32} className="text-gray-400 dark:text-gray-500 mx-auto mb-3" />
         <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200">{t('No Merchandising Data Available')}</h3>
-        <p className="text-gray-500 dark:text-gray-400">{t('Connect your Shopify store to see merchandising analytics.')}</p>
+        <p className="text-gray-500 dark:text-gray-400">{t('Connect your XShop store to see merchandising analytics.')}</p>
       </div>
     );
   }
@@ -984,6 +907,7 @@ export const MerchandisingView: React.FC = () => {
           </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {stats.totalOrders.toLocaleString()} {t('orders')} | {formatCurrency(stats.totalRevenue)} {t('revenue')}
+            <span className="ml-2">• XShop</span>
             {selectedMonth && <span className="ml-2 text-orange-600">• {t('Filtered')}: {selectedMonth}</span>}
             {data.lastUpdated && <span className="ml-2">• {t('Updated')} {formatDate(data.lastUpdated)}</span>}
           </p>
@@ -1372,8 +1296,8 @@ export const MerchandisingView: React.FC = () => {
                         }
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className={product.totalInventory <= 0 ? 'text-red-600 font-semibold' : product.totalInventory < 10 ? 'text-amber-600' : 'text-gray-800 dark:text-gray-100'}>
-                          {product.totalInventory}
+                        <span className={product.variants.every(v => v.inventoryTracked === false) ? 'text-gray-400' : product.totalInventory <= 0 ? 'text-red-600 font-semibold' : product.totalInventory < 10 ? 'text-amber-600' : 'text-gray-800 dark:text-gray-100'}>
+                          {product.variants.every(v => v.inventoryTracked === false) ? '—' : product.totalInventory}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-center">

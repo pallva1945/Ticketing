@@ -22,6 +22,7 @@ import { fixtureDay, isUpcomingFixture, playedFixtures } from './utils/fixtureEl
 import { useRomeDay } from './hooks/useRomeDay';
 import { compareRevenueForecast } from './utils/revenueForecast';
 import { getRevenueSeasonGames, getDefaultRevenueLeagues } from './utils/revenueSeasonGames';
+import { getMerchSeason, isMerchSale } from './types/merchandising';
 import { crmGameDate, getCRMSeason } from './utils/crmGames';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
 import { BoardReportModal } from './components/BoardReportModal';
@@ -1218,7 +1219,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
       const cachedTicketing = getFromLocalCache('ticketing-capacity-26-27-v2');
       const cachedGameDay = getFromLocalCache('gameday');
       const cachedSponsor = getFromLocalCache('sponsor-european-reconciliation');
-      const cachedMerch = getFromLocalCache('merch-26-27');
+      const cachedMerch = getFromLocalCache('merch-xshop-26-27');
 
       if (cachedTicketing && cachedGameDay?.length &&
           cachedGameDay.every((game: GameDayData) => !!game.reported) && cachedSponsor) {
@@ -1235,7 +1236,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
             .then(res => {
               if (res.success) {
                 setMerchRevenue(res.revenue);
-                saveToLocalCache('merch-26-27', res.revenue);
+                saveToLocalCache('merch-xshop-26-27', res.revenue);
               }
             })
             .catch(() => {});
@@ -1390,7 +1391,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
         setSponsorDataSource('local');
     }
 
-    // Primary dashboards must not wait for an unrelated full Shopify download.
+    // Primary dashboards must not wait for an unrelated full merchandising download.
     if (loadedTicketing.length > 0) saveToLocalCache('ticketing-capacity-26-27-v2', loadedTicketing);
     if (loadedGameDay.length > 0) saveToLocalCache('gameday', loadedGameDay);
     setIsLoadingData(false);
@@ -1403,7 +1404,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
             const revenueResult = await merchRevenueResponse.json();
             if (revenueResult.success) {
                 setMerchRevenue(revenueResult.revenue);
-                saveToLocalCache('merch-26-27', revenueResult.revenue);
+                saveToLocalCache('merch-xshop-26-27', revenueResult.revenue);
                 merchRevenueSet = true;
                 console.log(`Merch revenue (fast): ${revenueResult.revenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})} from ${revenueResult.orderCount} orders`);
             }
@@ -1414,26 +1415,16 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
 
     if (!merchRevenueSet) {
         try {
-            const merchResponse = await fetch(`/api/shopify/data${forceRefresh ? '?refresh=true' : ''}`);
+            const merchResponse = await fetch(`/api/merch/data${forceRefresh ? '?refresh=true' : ''}`);
             if (merchResponse && merchResponse.ok) {
                 const merchResult = await merchResponse.json();
                 if (merchResult.orders?.length > 0) {
-                    const getSeasonFromDate = (dateStr: string): string => {
-                        const date = new Date(dateStr);
-                        const year = date.getFullYear();
-                        const month = date.getMonth();
-                        if (month >= 6) {
-                            return `${String(year).slice(2)}/${String(year + 1).slice(2)}`;
-                        } else {
-                            return `${String(year - 1).slice(2)}/${String(year).slice(2)}`;
-                        }
-                    };
-                    const seasonOrders = merchResult.orders.filter((o: any) => getSeasonFromDate(o.processedAt) === '26/27' && !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0));
+                    const seasonOrders = merchResult.orders.filter((o: any) => getMerchSeason(o.processedAt) === '26/27' && isMerchSale(o));
                     const seasonRevenueWithTax = seasonOrders.reduce((sum: number, o: any) => sum + o.totalPrice, 0);
                     const seasonTax = seasonOrders.reduce((sum: number, o: any) => sum + (o.totalTax || 0), 0);
                     const seasonRevenue = seasonRevenueWithTax - seasonTax;
                     setMerchRevenue(seasonRevenue);
-                    saveToLocalCache('merch-26-27', seasonRevenue);
+                    saveToLocalCache('merch-xshop-26-27', seasonRevenue);
                     console.log(`Merch loaded: ${merchResult.orders.length} total orders, ${seasonOrders.length} in 26/27 season - ${seasonRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}`);
                 }
             }
@@ -2971,21 +2962,21 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                             {t('Current Source')}: 
                             <strong className="flex items-center gap-1 text-orange-600 dark:text-orange-400">
                                 <ShoppingBag size={10} />
-                                SHOPIFY
+                                XSHOP
                             </strong>
                         </div>
                         <div className="text-center py-2 px-3 text-[10px] text-orange-600 bg-orange-50 border border-orange-200 rounded-lg dark:text-orange-400 dark:bg-orange-900/30 dark:border-orange-800">
-                          {t('Live from Shopify Admin API')}
+                          {t('Live from XShop API')}
                         </div>
                         <button
                           onClick={() => {
-                            const event = new CustomEvent('shopify-refresh');
+                            const event = new CustomEvent('merchandising-refresh');
                             window.dispatchEvent(event);
                           }}
                           className="w-full mt-2 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-orange-700 bg-white border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors dark:text-orange-400 dark:bg-gray-800 dark:border-orange-700 dark:hover:bg-gray-700"
                         >
                           <RefreshCw size={14} />
-                          {t('Refresh Shopify Data')}
+                          {t('Refresh XShop Data')}
                         </button>
                      </>
                  ) : activeModule !== 'home' ? (

@@ -96,11 +96,11 @@ export const VerticalsPnL: React.FC<VerticalsPnLProps> = ({ onBackToLanding, onH
     Promise.all([
       fetch('/api/merch/season-revenue').then(r => r.json()).catch(() => ({ success: false })),
       fetch('/api/gameday/merch-revenue').then(r => r.json()).catch(() => ({ success: false })),
-    ]).then(([shopifyRes, gdMerchRes]) => {
-      const totalShopify = shopifyRes.success && shopifyRes.revenue > 0 ? shopifyRes.revenue : 0;
+    ]).then(([merchRes, gdMerchRes]) => {
+      const totalMerch = merchRes.success && merchRes.revenue > 0 ? merchRes.revenue : 0;
       const gdMerch = gdMerchRes.success ? gdMerchRes.revenue : 0;
-      if (totalShopify > 0) {
-        setMerchSales(Math.round(Math.max(0, totalShopify - gdMerch)));
+      if (totalMerch > 0) {
+        setMerchSales(Math.round(Math.max(0, totalMerch - gdMerch)));
       }
     });
   }, []);

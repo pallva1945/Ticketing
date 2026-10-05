@@ -54,7 +54,7 @@ The application uses a modern web stack: React 18 and TypeScript for the fronten
     *   Features Team Performance, Player Performance (with advanced stats like eFG%, TS%, USG%, PPP, Win Shares), and a powerful Stats Search engine.
     *   Includes a `Skill Score (Talent)` metric, NBA-benchmarked, derived from game stats (3PT%, FT%, AST/TO, USG%, Intensity, Win Shares per game), which feeds into the PVB Potential Score.
     *   Data fetched via `/api/vb/ind-games` with a 10-minute server-side cache.
-*   **Community Intelligence Hub**: Integrates Shopify order history for behavioral insights, including RFM segmentation, gateway analysis, bundle analysis, and cohort retention heatmaps.
+*   **Community Intelligence Hub**: Integrates XShop/WooCommerce order history (including imported Shopify orders) for behavioral insights, including RFM segmentation, gateway analysis, bundle analysis, and cohort retention heatmaps.
 *   **Market Watch (BOps)**: LBA player market intelligence dashboard sourced from BigQuery `european_market` table (954 rows, 4 seasons, 41 teams). Five tabs: Overview (league stats, payroll charts, salary distribution, payroll trends), Teams (spending analysis with Gini coefficient, Top 1/3/5 salary concentration, Max/Avg ratio, Cost/WS efficiency, Top 3 Salary vs WS Share scatter, Gini vs Cost/WS scatter), Players (searchable/sortable/filterable player database), Value Map (Net Paid vs performance scatter, best/worst value rankings by Cost/WS = net_paid÷ws), Varese (detailed roster breakdown with salary/performance analysis). Route: `#market-watch`, API: `/api/market` with 10-min cache. Component: `src/components/MarketWatch.tsx`.
 
 ## External Dependencies
@@ -62,7 +62,7 @@ The application uses a modern web stack: React 18 and TypeScript for the fronten
 *   **Google Gemini AI**: Powers the AI Consultant chatbot with persistent memory via PostgreSQL + pgvector. Server-side API at `/api/ai/chat` handles Gemini calls, embedding generation (`text-embedding-004`), and semantic memory retrieval. Conversation history stored in `chat_memory` table with 768-dim vector embeddings for relevance-based recall. Routes in `server/aiRoutes.ts`.
 *   **Replit App Storage**: For large file uploads, particularly CRM data.
 *   **BigQuery**: Data source for Ticketing, CRM, Sponsorship, GameDay, and VB Dashboard.
-*   **Shopify Admin API**: For merchandising analytics (orders, products, customers).
+*   **XShop / WooCommerce REST API**: Read-only merchandising analytics (orders, products, customers), including the historical orders migrated from Shopify. Uses server-side Consumer Key/Secret authentication; XShop is the sole active sales source.
 *   **Resend API**: For sending access request notification emails.
 *   **Google OAuth**: For internal user authentication.
 *   **`google-auth-library`**: Backend verification of Google ID tokens.

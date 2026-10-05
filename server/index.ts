@@ -14,6 +14,8 @@ import { getUncachableGoogleSheetClient } from "./googleSheets.js";
 import { registerAdminRoutes } from "./adminRoutes.js";
 import { registerBopsCostRoutes } from "./bopsCostRoutes.js";
 import { registerXeroRoutes } from "./xeroRoutes.js";
+import { registerXShopRoutes } from "./xshopRoutes.js";
+import { loadXShopData, clearXShopCache, getXShopCacheStatus } from "./xshopApi.js";
 import aiRoutes from "./aiRoutes.js";
 import crypto from "crypto";
 import { isRowFixedCapacity } from "../src/utils/crmCapacity";
@@ -1780,35 +1782,8 @@ async function fetchAllShopifyCustomers(): Promise<ShopifyCustomer[]> {
   return customers;
 }
 
-app.get("/api/merch/season-revenue", async (req, res) => {
-  try {
-    if (!forceRefresh(req) && shopifyWarmingPromise && !shopifyCache) {
-      const timeout = new Promise<null>(r => setTimeout(() => r(null), 15000));
-      await Promise.race([shopifyWarmingPromise, timeout]);
-    }
-
-    if (shopifyCache) {
-      const getSeasonFromDate = (dateStr: string): string => {
-        const date = new Date(dateStr);
-        const year = date.getFullYear();
-        const month = date.getMonth();
-        if (month >= 6) return `${String(year).slice(2)}/${String(year + 1).slice(2)}`;
-        return `${String(year - 1).slice(2)}/${String(year).slice(2)}`;
-      };
-      const seasonOrders = shopifyCache.orders.filter(o => 
-        getSeasonFromDate(o.processedAt) === '26/27' &&
-        !(o.sourceName === 'shopify_draft_order' && o.totalPrice === 0)
-      );
-      const revenueWithTax = seasonOrders.reduce((sum, o) => sum + o.totalPrice, 0);
-      const tax = seasonOrders.reduce((sum, o) => sum + (o.totalTax || 0), 0);
-      return res.json({ success: true, revenue: revenueWithTax - tax, orderCount: seasonOrders.length });
-    }
-
-    return res.json({ success: false, revenue: 0, message: 'Shopify data not yet available' });
-  } catch (error: any) {
-    res.status(500).json({ success: false, revenue: 0, message: error.message });
-  }
-});
+// XShop is the sole active merchandising source, including imported historical orders.
+registerXShopRoutes(app);
 
 function forceRefresh(req: express.Request): boolean {
   return req.query.refresh === 'true';
@@ -1965,6 +1940,7 @@ app.post("/api/cache/clear", (req, res) => {
   sponsorshipCache = null;
   gameDayCache = null;
   shopifyCache = null;
+  clearXShopCache();
   marketCache = null;
   console.log('All server caches cleared by user request');
   res.json({ success: true, message: 'All caches cleared' });
@@ -1978,6 +1954,7 @@ app.get("/api/cache/status", (req, res) => {
     sponsorship: sponsorshipCache ? { age: now - sponsorshipCache.timestamp, stale: (now - sponsorshipCache.timestamp) > CACHE_TTL } : null,
     gameday: gameDayCache ? { age: now - gameDayCache.timestamp, stale: (now - gameDayCache.timestamp) > CACHE_TTL } : null,
     shopify: shopifyCache ? { age: now - shopifyCache.timestamp, stale: (now - shopifyCache.timestamp) > SHOPIFY_CACHE_TTL } : null,
+    merchandising: getXShopCacheStatus(),
   };
   res.json({ success: true, caches: status });
 });
@@ -2010,22 +1987,8 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log('CRM pre-warm error:', err.message);
   });
 
-  if (SHOPIFY_ACCESS_TOKEN) {
-    console.log('Pre-warming Shopify cache in background...');
-    shopifyWarmingPromise = (async () => {
-      const orders = await fetchAllShopifyOrders();
-      const products = await fetchAllShopifyProducts();
-      const customers = await fetchAllShopifyCustomers();
-      shopifyCache = {
-        orders,
-        products,
-        customers,
-        lastUpdated: new Date().toISOString(),
-        timestamp: Date.now()
-      };
-      console.log(`Shopify cache pre-warmed: ${orders.length} orders, ${products.length} products, ${customers.length} customers`);
-    })().catch(err => {
-      console.log('Shopify pre-warm error:', err.message);
-    });
+  if (process.env.XSHOP_CONSUMER_KEY && process.env.XSHOP_CONSUMER_SECRET) {
+    console.log('Pre-warming XShop merchandising snapshot in background...');
+    void loadXShopData().catch(err => console.log('XShop pre-warm error:', err.message));
   }
 });
