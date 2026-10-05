@@ -32,3 +32,9 @@ An older complete merchandising snapshot is acceptable after a restart or during
 **Why:** The user explicitly requested faster reopening after restart using a private saved copy, rather than waiting for every resource to download again.
 
 **How to apply:** Preserve stale-while-revalidate behavior even for manual refresh. Do not claim an older copy is current, or introduce partial collections to make cold startup appear faster.
+
+Verify live XShop access separately in preview and production; a working dashboard backed by a saved snapshot does not prove the provider refresh works.
+
+**Why:** The published server received HTML instead of API JSON while a direct preview-side orders request succeeded. The published bundle also lacked the newer saved-snapshot behavior, despite that behavior working in preview.
+
+**How to apply:** Check deployment logs and the actual published version before attributing the failure to credentials or the browser. Distinguish a usable saved snapshot from successful live refresh; do not promise that republishing alone removes a provider-side block.
