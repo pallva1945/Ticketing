@@ -14,3 +14,9 @@ The user believes the store migration is already complete and historical sales a
 **Why:** The user corrected the proposed approach of keeping a separate Shopify history alongside XShop; combining both may duplicate the same orders.
 
 **How to apply:** Verify the historical coverage available from XShop and use it as the intended unified sales source. Do not automatically merge Shopify orders with XShop orders. If historical coverage proves incomplete, explain the evidence before introducing a second source.
+
+“XShop” is the user's name for the replacement store, whose public platform is WordPress/WooCommerce.
+
+**Why:** Investigating the user-supplied store revealed WooCommerce's current orders API. Searching only for a separate vendor called XShop did not identify the actual integration.
+
+**How to apply:** Use WooCommerce documentation and read-only consumer-key authentication for this sales connection, while preserving the user's XShop terminology where appropriate. Do not request a WordPress login password for API access.
