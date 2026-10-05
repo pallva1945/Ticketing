@@ -1,12 +1,10 @@
 import type { MerchandisingData } from '../src/types/merchandising';
 import { isRecognizedOrder, mapXShopOrder, mapXShopProduct, mapXShopCustomers } from './xshopMapping';
+import { createXShopSnapshotCache } from './xshopSnapshotCache';
+import { xshopSnapshotStore } from './xshopSnapshotStore';
 
 type Row = Record<string, any>;
 const ROOT = 'https://store.pallacanestrovarese.it/wp-json/wc/v3/';
-const TTL = 30 * 60 * 1000;
-let cache: MerchandisingData | null = null;
-let cacheTime = 0;
-let inFlight: Promise<MerchandisingData> | null = null;
 
 export async function fetchXShopAPI(resource: string, params: Record<string, string> = {}) {
   const key = process.env.XSHOP_CONSUMER_KEY;
@@ -29,7 +27,12 @@ export async function fetchXShopAPI(resource: string, params: Record<string, str
     }
     // Never forward raw provider errors, credentials, headers or payment metadata to the browser/logs.
     if (!response.ok) throw new Error(`XShop API ${response.status} while reading ${resource.split('?')[0]}`);
-    const data = await response.json();
+    if (!response.headers.get('content-type')?.includes('application/json')) {
+      throw new Error(`XShop returned a non-JSON response (HTTP ${response.status}); the API may be blocked by store protection`);
+    }
+    let data: unknown;
+    try { data = await response.json(); }
+    catch { throw new Error('XShop returned invalid JSON; no snapshot was published'); }
     if (!Array.isArray(data)) throw new Error('XShop returned an invalid API collection');
     const total = Number(response.headers.get('x-wp-total'));
     const pages = Number(response.headers.get('x-wp-totalpages'));
@@ -65,7 +68,7 @@ export async function fetchAllXShop(resource: string, request = fetchXShopAPI): 
   const rows = first.data.concat(...remaining.map(page => page.data));
   const ids = new Set(rows.map(row => row.id));
   if (ids.size !== rows.length || rows.length !== first.total
-    || remaining.some(page => page.total !== first.total)) {
+    || remaining.some(page => page.total !== first.total || page.pages !== first.pages)) {
     throw new Error(`XShop ${resource} changed during pagination; refresh to obtain a complete snapshot`);
   }
   return rows;
@@ -98,18 +101,7 @@ async function fetchSnapshot(): Promise<MerchandisingData> {
   return snapshot;
 }
 
-export function loadXShopData(refresh = false): Promise<MerchandisingData> {
-  if (inFlight) return inFlight;
-  if (!refresh && cache && Date.now() - cacheTime < TTL) return Promise.resolve(cache);
-  inFlight = fetchSnapshot().then(snapshot => {
-    cache = snapshot;
-    cacheTime = Date.now();
-    return snapshot;
-  }).finally(() => { inFlight = null; });
-  return inFlight;
-}
-
-export function clearXShopCache() { cache = null; cacheTime = 0; }
-export function getXShopCacheStatus() {
-  return cache ? { age: Date.now() - cacheTime, stale: Date.now() - cacheTime > TTL, source: 'XShop' } : null;
-}
+const snapshotCache = createXShopSnapshotCache(fetchSnapshot, xshopSnapshotStore);
+export const loadXShopData = snapshotCache.load;
+export const clearXShopCache = snapshotCache.clear;
+export const getXShopCacheStatus = snapshotCache.status;

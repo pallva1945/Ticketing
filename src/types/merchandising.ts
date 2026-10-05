@@ -64,6 +64,15 @@ export interface MerchandisingData {
   complete: true;
   sourceOrderCount: number;
   excludedOrderCount: number;
+  snapshotStatus?: MerchSnapshotStatus;
+}
+
+export interface MerchSnapshotStatus {
+  stale: boolean;
+  restored: boolean;
+  refreshing: boolean;
+  refreshError: string | null;
+  persistenceError: string | null;
 }
 
 export function getMerchSeason(dateStr: string): string {

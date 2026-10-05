@@ -37,7 +37,7 @@ export function registerXShopRoutes(app: express.Application) {
       res.setHeader('Cache-Control', 'private, no-store');
       res.json({ success: true, source: data.source, complete: data.complete,
         revenue: Math.round(orders.reduce((sum, order) => sum + order.totalPrice - order.totalTax, 0) * 100) / 100,
-        orderCount: orders.length, season, lastUpdated: data.lastUpdated });
+        orderCount: orders.length, season, lastUpdated: data.lastUpdated, snapshotStatus: data.snapshotStatus });
     } catch (error) {
       res.status(502).json({ success: false, revenue: 0, message: error instanceof Error ? error.message : 'XShop data is unavailable' });
     }

@@ -26,3 +26,9 @@ Imported orders can have a newer WooCommerce creation date than their original s
 **Why:** A creation-date lookup suggested history started in October 2025, but the complete snapshot's original payment dates confirmed sales from November 2023. Treating the import timestamp as the sale date would move historical revenue into the wrong seasons.
 
 **How to apply:** Use original payment dates for revenue-season attribution when available, with Rome timezone boundaries, and verify the date span across the complete collection. Keep record-creation timestamps distinct from original sale timestamps.
+
+An older complete merchandising snapshot is acceptable after a restart or during refresh, provided its original date and refresh status remain visible. Failed refreshes must not remove that usable copy.
+
+**Why:** The user explicitly requested faster reopening after restart using a private saved copy, rather than waiting for every resource to download again.
+
+**How to apply:** Preserve stale-while-revalidate behavior even for manual refresh. Do not claim an older copy is current, or introduce partial collections to make cold startup appear faster.

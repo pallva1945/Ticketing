@@ -22,7 +22,8 @@ import { fixtureDay, isUpcomingFixture, playedFixtures } from './utils/fixtureEl
 import { useRomeDay } from './hooks/useRomeDay';
 import { compareRevenueForecast } from './utils/revenueForecast';
 import { getRevenueSeasonGames, getDefaultRevenueLeagues } from './utils/revenueSeasonGames';
-import { getMerchSeason, isMerchSale } from './types/merchandising';
+import type { MerchSnapshotStatus } from './types/merchandising';
+import { MerchSnapshotNotice } from './components/MerchSnapshotNotice';
 import { crmGameDate, getCRMSeason } from './utils/crmGames';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
 import { BoardReportModal } from './components/BoardReportModal';
@@ -1111,6 +1112,34 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   const [sponsorDataSource, setSponsorDataSource] = useState<'local' | 'cloud'>('local');
   const [sponsorLastUpdated, setSponsorLastUpdated] = useState<string | null>(null);
   const [merchRevenue, setMerchRevenue] = useState<number>(0);
+  const [merchSnapshot, setMerchSnapshot] = useState<{ lastUpdated: string; snapshotStatus: MerchSnapshotStatus } | null>(null);
+  const [merchError, setMerchError] = useState<string | null>(null);
+  const merchLoadingRef = React.useRef(false);
+
+  const loadMerchRevenue = async (refresh = false) => {
+    if (merchLoadingRef.current) return;
+    merchLoadingRef.current = true;
+    try {
+      const response = await fetch(`/api/merch/season-revenue${refresh ? '?refresh=true' : ''}`);
+      const result = await response.json();
+      if (!response.ok || !result.success || result.source !== 'XShop' || result.complete !== true) {
+        throw new Error('XShop revenue is unavailable');
+      }
+      setMerchRevenue(result.revenue);
+      setMerchSnapshot({ lastUpdated: result.lastUpdated, snapshotStatus: result.snapshotStatus });
+      setMerchError(null);
+      saveToLocalCache('merch-xshop-26-27', result.revenue);
+    } catch {
+      setMerchError('XShop revenue could not be updated');
+    } finally {
+      merchLoadingRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    const timer = window.setInterval(() => { void loadMerchRevenue(); }, merchSnapshot?.snapshotStatus?.refreshing ? 5000 : 60000);
+    return () => window.clearInterval(timer);
+  }, [merchSnapshot?.snapshotStatus?.refreshing]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   
   // Sources separated by vertical
@@ -1230,17 +1259,8 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
         if (cachedMerch) setMerchRevenue(cachedMerch);
         setDataSources({ ticketing: 'bigquery', gameday: 'bigquery', sponsorship: 'bigquery', crm: 'bigquery' });
         setIsLoadingData(false);
-        if (!cachedMerch) {
-          fetch('/api/merch/season-revenue')
-            .then(r => r.json())
-            .then(res => {
-              if (res.success) {
-                setMerchRevenue(res.revenue);
-                saveToLocalCache('merch-xshop-26-27', res.revenue);
-              }
-            })
-            .catch(() => {});
-        }
+        // Always revalidate browser revenue against the private server snapshot.
+        void loadMerchRevenue();
         return;
       }
     }
@@ -1255,8 +1275,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
     let loadedGameDay: GameDayData[] = [];
     
     const refreshParam = forceRefresh ? '?refresh=true' : '';
-    const merchRevenuePromise = fetch('/api/merch/season-revenue')
-      .catch(e => { console.warn('Merch revenue fetch failed:', e); return null; });
+    void loadMerchRevenue(forceRefresh);
     const [ticketingResponse, gdResponse, sponsorResponse] = await Promise.all([
       fetch(`/api/ticketing${refreshParam}`).catch(e => { console.warn('Ticketing fetch failed:', e); return null; }),
       fetch(`/api/gameday/bigquery${refreshParam}`).catch(e => { console.warn('GameDay fetch failed:', e); return null; }),
@@ -1391,47 +1410,11 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
         setSponsorDataSource('local');
     }
 
-    // Primary dashboards must not wait for an unrelated full merchandising download.
+    // Primary dashboards must not wait for the full XShop download.
     if (loadedTicketing.length > 0) saveToLocalCache('ticketing-capacity-26-27-v2', loadedTicketing);
     if (loadedGameDay.length > 0) saveToLocalCache('gameday', loadedGameDay);
     setIsLoadingData(false);
 
-    // 4. MERCHANDISING DATA - Use pre-computed season revenue (fast), fallback to full data
-    const merchRevenueResponse = await merchRevenuePromise;
-    let merchRevenueSet = false;
-    try {
-        if (merchRevenueResponse && merchRevenueResponse.ok) {
-            const revenueResult = await merchRevenueResponse.json();
-            if (revenueResult.success) {
-                setMerchRevenue(revenueResult.revenue);
-                saveToLocalCache('merch-xshop-26-27', revenueResult.revenue);
-                merchRevenueSet = true;
-                console.log(`Merch revenue (fast): ${revenueResult.revenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})} from ${revenueResult.orderCount} orders`);
-            }
-        }
-    } catch(e) {
-        console.warn("Merch revenue endpoint failed:", e);
-    }
-
-    if (!merchRevenueSet) {
-        try {
-            const merchResponse = await fetch(`/api/merch/data${forceRefresh ? '?refresh=true' : ''}`);
-            if (merchResponse && merchResponse.ok) {
-                const merchResult = await merchResponse.json();
-                if (merchResult.orders?.length > 0) {
-                    const seasonOrders = merchResult.orders.filter((o: any) => getMerchSeason(o.processedAt) === '26/27' && isMerchSale(o));
-                    const seasonRevenueWithTax = seasonOrders.reduce((sum: number, o: any) => sum + o.totalPrice, 0);
-                    const seasonTax = seasonOrders.reduce((sum: number, o: any) => sum + (o.totalTax || 0), 0);
-                    const seasonRevenue = seasonRevenueWithTax - seasonTax;
-                    setMerchRevenue(seasonRevenue);
-                    saveToLocalCache('merch-xshop-26-27', seasonRevenue);
-                    console.log(`Merch loaded: ${merchResult.orders.length} total orders, ${seasonOrders.length} in 26/27 season - ${seasonRevenue.toLocaleString('it-IT', {style:'currency', currency:'EUR'})}`);
-                }
-            }
-        } catch(e) {
-            console.error("Error loading Merch data", e);
-        }
-    }
 
   };
 
@@ -3074,6 +3057,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
           {/* --- CONTENT AREA SWITCHER --- */}
           
           {activeModule === 'home' ? (<>
+              <MerchSnapshotNotice lastUpdated={merchSnapshot?.lastUpdated} status={merchSnapshot?.snapshotStatus} error={merchError} />
               <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t('Performance uses played games only. Games become eligible the following day (Europe/Rome).')}</p>
               {filteredGames.length === 0 && <p className="mb-4 rounded-xl border border-gray-200 p-4 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">{t('No games played yet for these filters. Game-based averages and projections are unavailable.')}</p>}
               <RevenueHome 

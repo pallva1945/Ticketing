@@ -8,6 +8,7 @@ import { GameDayData } from '../types';
 import { processGameDayData } from '../utils/dataProcessor';
 import { getMerchSeason, isMerchSale, isMerchGiveaway, merchLineNetRevenue } from '../types/merchandising';
 import type { MerchOrder, MerchProduct, MerchCustomer, MerchandisingData } from '../types/merchandising';
+import { MerchSnapshotNotice } from './MerchSnapshotNotice';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line } from 'recharts';
 
 const COLORS = ['#dc2626', '#ea580c', '#d97706', '#ca8a04', '#65a30d', '#16a34a', '#0d9488', '#0891b2', '#0284c7', '#2563eb', '#7c3aed', '#c026d3'];
@@ -88,15 +89,15 @@ export const MerchandisingView: React.FC = () => {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const loadingRef = React.useRef(false);
 
   const loadData = async (refresh = false) => {
-    setIsLoading(true);
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    if (!data) setIsLoading(true);
     setError(null);
     try {
-      const [merchResponse, gameDayResponse] = await Promise.all([
-        fetch(`/api/merch/data${refresh ? '?refresh=true' : ''}`),
-        fetch('/api/gameday/bigquery')
-      ]);
+      const merchResponse = await fetch(`/api/merch/data${refresh ? '?refresh=true' : ''}`);
       
       if (!merchResponse.ok) {
         const errData = await merchResponse.json();
@@ -108,30 +109,38 @@ export const MerchandisingView: React.FC = () => {
         throw new Error('XShop returned an incomplete merchandising snapshot');
       }
       setData(merchResult);
-      
-      if (gameDayResponse.ok) {
-        const gdResult = await gameDayResponse.json();
-        if (gdResult.success && gdResult.csvContent) {
-          const processedGD = processGameDayData(gdResult.csvContent);
-          setGameDayData(processedGD);
-        }
-      }
     } catch (err: any) {
       setError(err.message);
     } finally {
+      loadingRef.current = false;
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
     loadData();
+    // GameDay may be slow; it must not delay displaying the saved XShop snapshot.
+    let cancelled = false;
+    fetch('/api/gameday/bigquery').then(async response => {
+      if (!response.ok) return;
+      const result = await response.json();
+      if (!cancelled && result.success && result.csvContent) {
+        setGameDayData(processGameDayData(result.csvContent));
+      }
+    }).catch(() => {});
+    return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => { void loadData(); }, data?.snapshotStatus?.refreshing ? 5000 : 60000);
+    return () => window.clearInterval(timer);
+  }, [data?.snapshotStatus?.refreshing, !!data]);
 
   useEffect(() => {
     const handleMerchRefresh = () => loadData(true);
     window.addEventListener('merchandising-refresh', handleMerchRefresh);
     return () => window.removeEventListener('merchandising-refresh', handleMerchRefresh);
-  }, []);
+  }, [!!data]);
 
   const availableSeasons = useMemo(() => {
     if (!data) return ['26/27'];
@@ -858,7 +867,7 @@ export const MerchandisingView: React.FC = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
@@ -869,7 +878,7 @@ export const MerchandisingView: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error && !data) {
     return (
       <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 rounded-xl p-6 text-center">
         <AlertCircle size={32} className="text-red-500 mx-auto mb-3" />
@@ -899,6 +908,7 @@ export const MerchandisingView: React.FC = () => {
 
   return (
     <div className="space-y-6 pt-6 animate-fade-in">
+      <MerchSnapshotNotice lastUpdated={data.lastUpdated} status={data.snapshotStatus} error={error} />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">

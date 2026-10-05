@@ -71,6 +71,10 @@ export function registerObjectStorageRoutes(app: Express): void {
     try {
       const splat = (req.params as any).splat;
       const objectPath = "/objects/" + (Array.isArray(splat) ? splat.join('/') : splat);
+      // Provider snapshots contain customer data and are exclusively server-readable.
+      if (objectPath.split('/').includes('server-snapshots')) {
+        return res.status(404).json({ error: 'Object not found' });
+      }
       const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
       await objectStorageService.downloadObject(objectFile, res);
     } catch (error) {
