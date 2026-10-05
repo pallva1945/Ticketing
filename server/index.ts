@@ -1961,6 +1961,10 @@ app.get("/api/cache/status", (req, res) => {
 
 if (isProduction) {
   app.set('trust proxy', 1);
+  // An unknown API path must never receive the SPA's HTML as a successful response.
+  app.use('/api', (_req, res) => {
+    res.status(404).json({ success: false, message: 'API endpoint not found. Reload the page after publishing the current version.' });
+  });
   const distPath = path.join(__dirname, '..', 'dist');
   app.use(express.static(distPath));
   app.use((req, res) => {

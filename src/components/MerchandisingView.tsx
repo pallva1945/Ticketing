@@ -9,6 +9,7 @@ import { processGameDayData } from '../utils/dataProcessor';
 import { getMerchSeason, isMerchSale, isMerchGiveaway, merchLineNetRevenue } from '../types/merchandising';
 import type { MerchOrder, MerchProduct, MerchCustomer, MerchandisingData } from '../types/merchandising';
 import { MerchSnapshotNotice } from './MerchSnapshotNotice';
+import { readMerchandisingResponse } from '../utils/merchandisingResponse';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line } from 'recharts';
 
 const COLORS = ['#dc2626', '#ea580c', '#d97706', '#ca8a04', '#65a30d', '#16a34a', '#0d9488', '#0891b2', '#0284c7', '#2563eb', '#7c3aed', '#c026d3'];
@@ -98,16 +99,7 @@ export const MerchandisingView: React.FC = () => {
     setError(null);
     try {
       const merchResponse = await fetch(`/api/merch/data${refresh ? '?refresh=true' : ''}`);
-      
-      if (!merchResponse.ok) {
-        const errData = await merchResponse.json();
-        throw new Error(errData.message || 'Failed to fetch XShop data');
-      }
-      const merchResult = await merchResponse.json();
-      if (merchResult.source !== 'XShop' || merchResult.complete !== true
-        || !Array.isArray(merchResult.orders) || !Array.isArray(merchResult.products) || !Array.isArray(merchResult.customers)) {
-        throw new Error('XShop returned an incomplete merchandising snapshot');
-      }
+      const merchResult = await readMerchandisingResponse(merchResponse);
       setData(merchResult);
     } catch (err: any) {
       setError(err.message);
