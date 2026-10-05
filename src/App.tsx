@@ -22,7 +22,7 @@ import { fixtureDay, isUpcomingFixture, playedFixtures } from './utils/fixtureEl
 import { useRomeDay } from './hooks/useRomeDay';
 import { compareRevenueForecast } from './utils/revenueForecast';
 import { getRevenueSeasonGames, getDefaultRevenueLeagues } from './utils/revenueSeasonGames';
-import type { MerchSnapshotStatus } from './types/merchandising';
+import type { MerchSnapshotStatus, MerchandisingData } from './types/merchandising';
 import { MerchSnapshotNotice } from './components/MerchSnapshotNotice';
 import { crmGameDate, getCRMSeason } from './utils/crmGames';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
@@ -1114,6 +1114,12 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   const [merchRevenue, setMerchRevenue] = useState<number>(0);
   const [merchSnapshot, setMerchSnapshot] = useState<{ lastUpdated: string; snapshotStatus: MerchSnapshotStatus } | null>(null);
   const [merchError, setMerchError] = useState<string | null>(null);
+  const handleMerchSnapshot = React.useCallback((snapshot: MerchandisingData | null, error: string | null) => {
+    if (snapshot?.snapshotStatus) {
+      setMerchSnapshot({ lastUpdated: snapshot.lastUpdated, snapshotStatus: snapshot.snapshotStatus });
+    }
+    setMerchError(error);
+  }, []);
   const merchLoadingRef = React.useRef(false);
 
   const loadMerchRevenue = async (refresh = false) => {
@@ -2929,6 +2935,9 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
               <Database size={14} />
               <span>{t('Data Management')}</span>
            </div>
+           {(activeModule === 'merchandising' || activeModule === 'home') && <div className="mb-3">
+             <MerchSnapshotNotice compact lastUpdated={merchSnapshot?.lastUpdated} status={merchSnapshot?.snapshotStatus} error={merchError} />
+           </div>}
            
            <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden" />
            <input type="file" ref={crmFileInputRef} onChange={handleCRMFileUpload} accept=".csv" className="hidden" />
@@ -2947,9 +2956,6 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                                 <ShoppingBag size={10} />
                                 XSHOP
                             </strong>
-                        </div>
-                        <div className="text-center py-2 px-3 text-[10px] text-orange-600 bg-orange-50 border border-orange-200 rounded-lg dark:text-orange-400 dark:bg-orange-900/30 dark:border-orange-800">
-                          {t('Live from XShop API')}
                         </div>
                         <button
                           onClick={() => {
@@ -3057,7 +3063,6 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
           {/* --- CONTENT AREA SWITCHER --- */}
           
           {activeModule === 'home' ? (<>
-              <MerchSnapshotNotice lastUpdated={merchSnapshot?.lastUpdated} status={merchSnapshot?.snapshotStatus} error={merchError} />
               <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t('Performance uses played games only. Games become eligible the following day (Europe/Rome).')}</p>
               {filteredGames.length === 0 && <p className="mb-4 rounded-xl border border-gray-200 p-4 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-300">{t('No games played yet for these filters. Game-based averages and projections are unavailable.')}</p>}
               <RevenueHome 
@@ -3477,7 +3482,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                 />
               </div>
           ) : activeModule === 'merchandising' ? (
-              <MerchandisingView />
+              <MerchandisingView onSnapshotChange={handleMerchSnapshot} />
           ) : activeModule === 'venue_ops' ? (
               <VenueOpsDashboard />
           ) : activeModule === 'bops' ? (

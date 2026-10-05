@@ -1,6 +1,6 @@
 import type { MerchandisingData, MerchSnapshotStatus } from '../src/types/merchandising';
 
-export const XSHOP_SNAPSHOT_VERSION = 1;
+export const XSHOP_SNAPSHOT_VERSION = 2;
 export const XSHOP_SNAPSHOT_TTL = 30 * 60 * 1000;
 
 // A restored file must represent the same complete, recognized-order collection

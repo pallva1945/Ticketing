@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { ShoppingBag, Package, Users, TrendingUp, DollarSign, BarChart3, RefreshCw, AlertCircle, ChevronDown, ChevronUp, Calendar, Tag, Layers, Search, Target, X, CreditCard, Eye, ToggleLeft, ToggleRight, ArrowUp, ArrowDown, Heart, Sparkles, AlertTriangle, Gift } from 'lucide-react';
 
@@ -7,9 +7,10 @@ type SortConfig<T extends string> = { key: T; direction: SortDirection };
 import { GameDayData } from '../types';
 import { processGameDayData } from '../utils/dataProcessor';
 import { getMerchSeason, isMerchSale, isMerchGiveaway, merchLineNetRevenue } from '../types/merchandising';
-import type { MerchOrder, MerchProduct, MerchCustomer, MerchandisingData } from '../types/merchandising';
-import { MerchSnapshotNotice } from './MerchSnapshotNotice';
+import type { MerchOrder, MerchProduct, MerchCustomer, MerchandisingData, MerchFamily } from '../types/merchandising';
+import { formatMerchDate } from '../utils/merchandisingDate';
 import { readMerchandisingResponse } from '../utils/merchandisingResponse';
+import { MERCH_FAMILIES, buildMerchFamilyRevenue, productFamily, scopeMerchOrders } from '../utils/merchandisingFamilies';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line } from 'recharts';
 
 const COLORS = ['#dc2626', '#ea580c', '#d97706', '#ca8a04', '#65a30d', '#16a34a', '#0d9488', '#0891b2', '#0284c7', '#2563eb', '#7c3aed', '#c026d3'];
@@ -26,26 +27,40 @@ const formatCurrency = (value: number) => {
 
 const getSeasonFromDate = getMerchSeason;
 
-const formatDate = (dateStr: string) => {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' });
-};
-
 const getPaymentMethod = (order: MerchOrder): string => {
   return order.paymentMethod || 'Unknown';
 };
 
-export const MerchandisingView: React.FC = () => {
+export const MerchandisingView: React.FC<{
+  onSnapshotChange?: (snapshot: MerchandisingData | null, error: string | null) => void;
+}> = ({ onSnapshotChange }) => {
   const { t, language } = useLanguage();
+  const dateLocale = language === 'it' ? 'it-IT' : 'en-GB';
+  const formatDate = useCallback((dateStr: string) => formatMerchDate(dateStr, language), [language]);
   const [data, setData] = useState<MerchandisingData | null>(null);
   const [gameDayData, setGameDayData] = useState<GameDayData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => { onSnapshotChange?.(data, error); }, [data, error, onSnapshotChange]);
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders' | 'customers' | 'inventory' | 'giveaways' | 'community'>('overview');
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   
   const [selectedSeason, setSelectedSeason] = useState<string>('26/27');
+  const [selectedFamily, setSelectedFamily] = useState<MerchFamily | 'all'>('all');
+  const selectFamily = (family: MerchFamily) => {
+    setSelectedFamily(current => current === family ? 'all' : family);
+    setTopProductCategoryFilter('all');
+    setSelectedCategory(null);
+    setSelectedProductId(null);
+    setSelectedCustomerId(null);
+    setSelectedOrderId(null);
+    setProductsLimit(50);
+    setOrdersLimit(50);
+    setCustomersLimit(50);
+  };
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
+  const selectedMonthLabel = selectedMonth
+    ? new Date(selectedMonth).toLocaleDateString(dateLocale, { month: 'short', year: 'numeric' }) : null;
   const [excludeGameDayMerch, setExcludeGameDayMerch] = useState(true);
   const [excludeVB, setExcludeVB] = useState(false);
   
@@ -143,7 +158,7 @@ export const MerchandisingView: React.FC = () => {
     return Array.from(seasons).sort().reverse();
   }, [data]);
 
-  const filteredOrders = useMemo(() => {
+  const baseFilteredOrders = useMemo(() => {
     if (!data) return [];
     let orders = data.orders.filter(order => getSeasonFromDate(order.processedAt) === selectedSeason);
     
@@ -161,6 +176,19 @@ export const MerchandisingView: React.FC = () => {
     
     return orders;
   }, [data, selectedSeason, selectedMonth, excludeVB]);
+  const filteredOrders = useMemo(() => scopeMerchOrders(baseFilteredOrders, data?.products || [], selectedFamily),
+    [baseFilteredOrders, data, selectedFamily]);
+  const scopedProducts = useMemo(() => (data?.products || [])
+    .filter(product => selectedFamily === 'all' || productFamily(product) === selectedFamily), [data, selectedFamily]);
+  const scopedCustomers = useMemo(() => {
+    if (!data) return [];
+    if (selectedFamily === 'all') return data.customers;
+    return data.customers.flatMap(customer => {
+      const orders = filteredOrders.filter(order => isMerchSale(order) && order.customerEmail === customer.email);
+      return orders.length ? [{ ...customer, ordersCount: orders.length,
+        totalSpent: orders.reduce((sum, order) => sum + order.totalPrice - order.totalTax, 0) }] : [];
+    });
+  }, [data, filteredOrders, selectedFamily]);
 
   const gameDayMerchByMonth = useMemo(() => {
     const merchByMonth: Record<string, number> = {};
@@ -246,22 +274,22 @@ export const MerchandisingView: React.FC = () => {
     const grossRevenueWithTax = salesOrders.reduce((sum, o) => sum + o.totalPrice, 0);
     const totalIVA = salesOrders.reduce((sum, o) => sum + (o.totalTax || 0), 0);
     const grossRevenue = grossRevenueWithTax - totalIVA;
-    const gameDayDeduction = excludeGameDayMerch ? totalGameDayMerch : 0;
+    const gameDayDeduction = excludeGameDayMerch && selectedFamily === 'all' ? totalGameDayMerch : 0;
     const totalRevenue = Math.max(0, grossRevenue - gameDayDeduction);
     const totalOrders = salesOrders.length;
     const avgOrderValue = totalOrders > 0 ? grossRevenue / totalOrders : 0;
-    const totalCustomers = data.customers.length;
-    const realisticRevenue = Math.max(0, grossRevenue - totalGameDayMerch);
+    const totalCustomers = scopedCustomers.length;
+    const realisticRevenue = selectedFamily === 'all' ? Math.max(0, grossRevenue - totalGameDayMerch) : grossRevenue;
     const goalProgress = adjustedSeasonGoal > 0 ? (totalRevenue / adjustedSeasonGoal) * 100 : 0;
-    const totalProducts = data.products.length;
-    const totalInventory = data.products.filter(p => (p.productType || '').toLowerCase() !== 'servizio').reduce((sum, p) => sum + p.totalInventory, 0);
+    const totalProducts = scopedProducts.length;
+    const totalInventory = scopedProducts.filter(p => productFamily(p) !== 'Experiences & Services').reduce((sum, p) => sum + p.totalInventory, 0);
     
     const productSales: Record<string, { title: string; revenue: number; quantity: number; type: string }> = {};
     filteredOrders.forEach(order => {
       order.lineItems.forEach(item => {
         if (!productSales[item.productId]) {
           const product = data.products.find(p => p.id === item.productId);
-          productSales[item.productId] = { title: item.title, revenue: 0, quantity: 0, type: product?.productType || 'Other' };
+          productSales[item.productId] = { title: item.title, revenue: 0, quantity: 0, type: productFamily(product) };
         }
         productSales[item.productId].revenue += merchLineNetRevenue(order, item);
         productSales[item.productId].quantity += item.quantity;
@@ -273,30 +301,14 @@ export const MerchandisingView: React.FC = () => {
       .filter(p => !p.title.toLowerCase().startsWith('robur') && !p.title.toLowerCase().startsWith('vb') && p.title.toLowerCase() !== 'vendita di prova')
       .sort((a, b) => b.revenue - a.revenue);
     
-    const validCategories = new Set(
-      data.products
-        .filter(p => (p.productType || '').toLowerCase() !== 'servizio' && p.productType)
-        .map(p => p.productType)
-    );
-    const categoryRevenue: Record<string, number> = {};
-    filteredOrders.forEach(order => {
-      order.lineItems.forEach(item => {
-        const product = data.products.find(p => p.id === item.productId);
-        const category = product?.productType || '';
-        if (!category || !validCategories.has(category)) return;
-        categoryRevenue[category] = (categoryRevenue[category] || 0) + merchLineNetRevenue(order, item);
-      });
-    });
-    
-    const categoryData = Object.entries(categoryRevenue)
-      .map(([name, value]) => ({ name: name || 'Uncategorized', value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 8);
+    const familyRevenue = buildMerchFamilyRevenue(baseFilteredOrders, data.products);
+    const categoryData = familyRevenue.categories;
     
     const getOrderDate = (order: MerchOrder) => new Date(order.processedAt);
     
     const monthlyRevenue: Record<string, number> = {};
-    const allSeasonOrders = data.orders.filter(order => getSeasonFromDate(order.processedAt) === selectedSeason);
+    const allSeasonOrders = scopeMerchOrders(data.orders.filter(order => getSeasonFromDate(order.processedAt) === selectedSeason
+      && (!excludeVB || !order.customerName.toLowerCase().includes('varese basketball'))), data.products, selectedFamily);
     allSeasonOrders.forEach(order => {
       const d = getOrderDate(order);
       const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -337,16 +349,16 @@ export const MerchandisingView: React.FC = () => {
       let current = new Date(startDate);
       while (current <= endDate) {
         const monthKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
-        const displayMonth = current.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+        const displayMonth = current.toLocaleDateString(dateLocale, { year: 'numeric', month: 'short' });
         const totalMonthRevenue = monthlyRevenue[monthKey] || 0;
-        const gameDayMerch = gameDayMerchByMonth[monthKey] || 0;
-        const onlineRevenue = excludeGameDayMerch ? Math.max(0, totalMonthRevenue - gameDayMerch) : totalMonthRevenue;
+        const gameDayMerch = selectedFamily === 'all' ? gameDayMerchByMonth[monthKey] || 0 : 0;
+        const onlineRevenue = excludeGameDayMerch && selectedFamily === 'all' ? Math.max(0, totalMonthRevenue - gameDayMerch) : totalMonthRevenue;
         allMonths.push({ 
           month: displayMonth, 
           revenue: totalMonthRevenue,
           gameDayMerch: gameDayMerch,
           onlineRevenue: onlineRevenue,
-          monthKey: displayMonth 
+          monthKey: current.toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
         });
         current.setMonth(current.getMonth() + 1);
       }
@@ -364,16 +376,17 @@ export const MerchandisingView: React.FC = () => {
       totalInventory,
       topProducts,
       categoryData,
+      familyRevenue,
       monthlyData: allMonths,
       topCustomers,
       goalProgress,
       giveawayClients
     };
-  }, [data, filteredOrders, selectedSeason, excludeGameDayMerch, totalGameDayMerch, gameDayMerchByMonth, adjustedSeasonGoal]);
+  }, [data, filteredOrders, baseFilteredOrders, scopedProducts, scopedCustomers, selectedFamily, excludeVB, selectedSeason, excludeGameDayMerch, totalGameDayMerch, gameDayMerchByMonth, adjustedSeasonGoal, dateLocale]);
 
   const filteredProducts = useMemo(() => {
     if (!data) return [];
-    let result = data.products;
+    let result = scopedProducts;
     if (productSearch.trim()) {
       const searchLower = productSearch.toLowerCase();
       result = result.filter(p => 
@@ -400,12 +413,12 @@ export const MerchandisingView: React.FC = () => {
       });
     }
     return result;
-  }, [data, productSearch, productSort]);
+  }, [data, scopedProducts, productSearch, productSort]);
 
   const allOrdersForCommunity = useMemo(() => {
     if (!data) return [];
-    return data.orders.filter(isMerchSale);
-  }, [data]);
+    return scopeMerchOrders(data.orders, data.products, selectedFamily).filter(isMerchSale);
+  }, [data, selectedFamily]);
 
   const customerClassification = useMemo(() => {
     if (!allOrdersForCommunity.length) return new Map<string, { segment: string; color: string; bg: string; orders: number; totalSpent: number }>();
@@ -525,11 +538,11 @@ export const MerchandisingView: React.FC = () => {
       });
     }
     return result;
-  }, [filteredOrders, orderSearch, orderSort, customerClassification]);
+  }, [filteredOrders, orderSearch, orderSort, customerClassification, formatDate]);
 
   const filteredCustomers = useMemo(() => {
     if (!data) return [];
-    let result = data.customers;
+    let result = scopedCustomers;
     if (customerSearch.trim()) {
       const searchLower = customerSearch.toLowerCase().trim();
       const searchWords = searchLower.split(/\s+/).filter(w => w.length > 0);
@@ -561,7 +574,7 @@ export const MerchandisingView: React.FC = () => {
       });
     }
     return result;
-  }, [data, customerSearch, customerSort]);
+  }, [data, scopedCustomers, customerSearch, customerSort]);
 
   const getProductOrders = (productId: string) => {
     if (!data) return [];
@@ -576,7 +589,7 @@ export const MerchandisingView: React.FC = () => {
   const getCustomerOrders = (email: string) => {
     if (!data) return [];
     // Show ALL orders for this customer, not just filtered by season
-    return data.orders
+    return scopeMerchOrders(data.orders, data.products, selectedFamily)
       .filter(order => order.customerEmail === email)
       .sort((a, b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime());
   };
@@ -596,7 +609,7 @@ export const MerchandisingView: React.FC = () => {
     const monthlySales: Record<string, { month: string; quantity: number; revenue: number }> = {};
     orders.forEach(order => {
       const d = new Date(order.processedAt);
-      const monthKey = d.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
+      const monthKey = d.toLocaleDateString(dateLocale, { year: 'numeric', month: 'short' });
       if (!monthlySales[monthKey]) {
         monthlySales[monthKey] = { month: monthKey, quantity: 0, revenue: 0 };
       }
@@ -618,7 +631,7 @@ export const MerchandisingView: React.FC = () => {
   const inventoryStats = useMemo(() => {
     if (!data) return null;
     
-    const products = data.products.filter(p => (p.productType || '').toLowerCase() !== 'servizio'
+    const products = scopedProducts.filter(p => productFamily(p) !== 'Experiences & Services'
       && p.variants.some(v => v.inventoryTracked !== false));
     const totalUnits = products.reduce((sum, p) => sum + p.totalInventory, 0);
     const totalValue = products.reduce((sum, p) => {
@@ -685,7 +698,7 @@ export const MerchandisingView: React.FC = () => {
       outOfStockVariants,
       avgPrice
     };
-  }, [data]);
+  }, [data, scopedProducts]);
 
   const rfmData = useMemo(() => {
     if (!allOrdersForCommunity.length) return null;
@@ -829,13 +842,13 @@ export const MerchandisingView: React.FC = () => {
         const active = customers.filter(c => c.orderMonths.has(month)).length;
         retention.push({ month, monthIndex: idx, rate: total > 0 ? (active / total) * 100 : 0, count: active });
       });
-      const label = new Date(cohortMonth + '-01').toLocaleDateString('en-US', { year: '2-digit', month: 'short' });
+      const label = new Date(cohortMonth + '-01').toLocaleDateString(dateLocale, { year: '2-digit', month: 'short' });
       return { cohortMonth, label, total, retention };
     });
     const maxLen = Math.max(...cohorts.map(c => c.retention.length), 0);
     const months = Array.from({ length: Math.min(maxLen, 12) }, (_, i) => i === 0 ? 'M0' : `M+${i}`);
     return { cohorts, months };
-  }, [allOrdersForCommunity]);
+  }, [allOrdersForCommunity, dateLocale]);
 
   const getHeatmapColor = (rate: number) => {
     if (rate === 0) return 'bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500';
@@ -852,10 +865,12 @@ export const MerchandisingView: React.FC = () => {
   };
 
   const handleMonthClick = (monthData: any) => {
-    if (selectedMonth === monthData.month) {
+    const monthKey = monthData?.monthKey || monthData?.month;
+    if (!monthKey) return;
+    if (selectedMonth === monthKey) {
       setSelectedMonth(null);
     } else {
-      setSelectedMonth(monthData.month);
+      setSelectedMonth(monthKey);
     }
   };
 
@@ -896,11 +911,10 @@ export const MerchandisingView: React.FC = () => {
   const selectedProductStats = selectedProductId ? getProductStats(selectedProductId) : null;
   const selectedCustomerOrders = selectedCustomerId ? getCustomerOrders(selectedCustomerId) : [];
   const selectedOrder = selectedOrderId ? (data?.orders.find(o => o.id === selectedOrderId) || filteredOrders.find(o => o.id === selectedOrderId)) : null;
-  const selectedCustomer = selectedCustomerId ? data.customers.find(c => c.email === selectedCustomerId) : null;
+  const selectedCustomer = selectedCustomerId ? scopedCustomers.find(c => c.email === selectedCustomerId) : null;
 
   return (
     <div className="space-y-6 pt-6 animate-fade-in">
-      <MerchSnapshotNotice lastUpdated={data.lastUpdated} status={data.snapshotStatus} error={error} />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2">
@@ -910,14 +924,15 @@ export const MerchandisingView: React.FC = () => {
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             {stats.totalOrders.toLocaleString()} {t('orders')} | {formatCurrency(stats.totalRevenue)} {t('revenue')}
             <span className="ml-2">• XShop</span>
-            {selectedMonth && <span className="ml-2 text-orange-600">• {t('Filtered')}: {selectedMonth}</span>}
-            {data.lastUpdated && <span className="ml-2">• {t('Updated')} {formatDate(data.lastUpdated)}</span>}
+            {selectedMonth && <span className="ml-2 text-orange-600">• {t('Filtered')}: {selectedMonthLabel}</span>}
+            {data.lastUpdated && <span className="ml-2 whitespace-nowrap">• {t('Updated')} {formatDate(data.lastUpdated)}</span>}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <button
+            disabled={selectedFamily !== 'all'}
             onClick={() => setExcludeGameDayMerch(!excludeGameDayMerch)}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed ${
               excludeGameDayMerch 
                 ? 'bg-red-100 dark:bg-red-900/20 text-red-700 border border-red-200' 
                 : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
@@ -950,6 +965,15 @@ export const MerchandisingView: React.FC = () => {
             </button>
           )}
           <select
+            aria-label={t('Product Family')}
+            value={selectedFamily}
+            onChange={event => event.target.value === 'all' ? setSelectedFamily('all') : selectFamily(event.target.value as MerchFamily)}
+            className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
+          >
+            <option value="all">{t('All Product Families')}</option>
+            {MERCH_FAMILIES.map(family => <option key={family} value={family}>{t(family)}</option>)}
+          </select>
+          <select
             value={selectedSeason}
             onChange={(e) => { setSelectedSeason(e.target.value); setSelectedMonth(null); }}
             className="px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
@@ -960,6 +984,13 @@ export const MerchandisingView: React.FC = () => {
           </select>
         </div>
       </div>
+
+      {selectedFamily !== 'all' && <div className="flex flex-wrap items-center gap-3 rounded-lg border border-orange-200 bg-orange-50 p-3 dark:border-orange-800 dark:bg-orange-900/20">
+        <button onClick={() => setSelectedFamily('all')} className="flex items-center gap-2 text-sm font-semibold text-orange-700 dark:text-orange-300">
+          <X size={14} /> {t('Product Family')}: {t(selectedFamily)} · {t('Clear Filter')}
+        </button>
+        <span className="text-xs text-gray-600 dark:text-gray-400">{t('Figures use matching items only. Shipping, fees and the aggregate GameDay deduction are excluded.')}</span>
+      </div>}
 
       <div className="flex items-center gap-2 flex-wrap">
         {(['overview', 'products', 'orders', 'customers', 'inventory', 'giveaways', 'community'] as const).map(tab => (
@@ -1043,7 +1074,7 @@ export const MerchandisingView: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-xl p-5 shadow-lg text-white">
+          {selectedFamily === 'all' && <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-xl p-5 shadow-lg text-white">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-white dark:bg-gray-900/20 rounded-lg flex items-center justify-center">
@@ -1069,12 +1100,14 @@ export const MerchandisingView: React.FC = () => {
               <span className="text-white/80">{stats.goalProgress.toFixed(1)}% {t('achieved')}</span>
               <span className="text-white/80">{formatCurrency(Math.max(0, adjustedSeasonGoal - stats.totalRevenue))} {t('remaining')}</span>
             </div>
-          </div>
-
+          </div>}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
-              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">{t('Revenue by Category')}</h3>
-              <ResponsiveContainer width="100%" height={300}>
+              <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('Revenue by Product Family')}</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Product revenue excluding VAT, shipping and fees.')}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Click a family to filter the page; click again to clear.')}</p>
+              <p className="text-lg font-semibold text-gray-800 dark:text-gray-100 mt-2">{formatCurrency(stats.familyRevenue.total)}</p>
+              {stats.categoryData.length > 0 ? <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie
                     data={stats.categoryData}
@@ -1085,22 +1118,54 @@ export const MerchandisingView: React.FC = () => {
                     paddingAngle={2}
                     dataKey="value"
                     nameKey="name"
-                    label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    label={false}
+                    labelLine={false}
+                    onClick={(entry) => selectFamily(entry.name as MerchFamily)}
+                    cursor="pointer"
                   >
-                    {stats.categoryData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    {stats.categoryData.map((category, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]}
+                        opacity={selectedFamily === 'all' || selectedFamily === category.name ? 1 : 0.3} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Tooltip formatter={(value: number, name: string) => [formatCurrency(value), t(name)]} />
                 </PieChart>
-              </ResponsiveContainer>
+              </ResponsiveContainer> : <p className="py-12 text-center text-sm text-gray-500">{t('No product revenue for this selection.')}</p>}
+              <ul className="space-y-2 text-sm">
+                {stats.categoryData.map((category, index) => (
+                  <li key={category.name}>
+                    <button onClick={() => selectFamily(category.name)}
+                      aria-label={`${t('Filter by family')}: ${t(category.name)}`}
+                      aria-pressed={selectedFamily === category.name}
+                      className={`w-full flex items-center justify-between gap-3 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-orange-50 dark:hover:bg-orange-900/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-500 ${selectedFamily === category.name ? 'bg-orange-50 ring-1 ring-orange-300 dark:bg-orange-900/20' : ''}`}>
+                    <span className="flex items-center gap-2 text-gray-700 dark:text-gray-200">
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                      {t(category.name)}
+                    </span>
+                    <span className="text-gray-600 dark:text-gray-300 whitespace-nowrap">
+                      {formatCurrency(category.value)} · {(category.value / stats.familyRevenue.total * 100).toFixed(1)}%
+                    </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {excludeGameDayMerch && totalGameDayMerch > 0 && <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">{t('Before the aggregate GameDay deduction; no product-level allocation is available.')}</p>}
+              {stats.familyRevenue.allocatedTaxOrders > 0 && <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                {stats.familyRevenue.allocatedTaxOrders} {t('imported orders: actual order VAT allocated proportionally to products and shipping.')}
+              </p>}
+              {stats.familyRevenue.allocatedDiscountOrders > 0 && <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                {stats.familyRevenue.allocatedDiscountOrders} {t('POS orders: order-level discounts allocated proportionally to products.')}
+              </p>}
+              {stats.familyRevenue.unreconciledOrders > 0 && <p className="mt-2 text-xs text-amber-700 dark:text-amber-400">
+                {stats.familyRevenue.unreconciledOrders} {t('orders pending reconciliation; their net revenue is included in Unclassified, not assigned to products.')}
+              </p>}
             </div>
 
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('Monthly Revenue Trend')}</h3>
-                  {excludeGameDayMerch && totalGameDayMerch > 0 && (
+                  {excludeGameDayMerch && selectedFamily === 'all' && totalGameDayMerch > 0 && (
                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
                       <span className="inline-block w-2 h-2 bg-red-400 rounded mr-1"></span>
                       {t('GameDay merch shown in red (excluded from totals)')}
@@ -1120,7 +1185,7 @@ export const MerchandisingView: React.FC = () => {
                       name === 'Online Sales' ? 'Online' : name === 'GameDay Sales' ? 'GameDay' : 'Revenue'
                     ]}
                   />
-                  {excludeGameDayMerch ? (
+                  {excludeGameDayMerch && selectedFamily === 'all' ? (
                     <>
                       <Bar 
                         dataKey="onlineRevenue" 
@@ -1132,7 +1197,7 @@ export const MerchandisingView: React.FC = () => {
                         {stats.monthlyData.map((entry, index) => (
                           <Cell 
                             key={`online-${index}`} 
-                            fill={selectedMonth === entry.month ? '#c2410c' : '#ea580c'} 
+                            fill={selectedMonth === entry.monthKey ? '#c2410c' : '#ea580c'}
                           />
                         ))}
                       </Bar>
@@ -1147,7 +1212,7 @@ export const MerchandisingView: React.FC = () => {
                         {stats.monthlyData.map((entry, index) => (
                           <Cell 
                             key={`gameday-${index}`} 
-                            fill={selectedMonth === entry.month ? '#dc2626' : '#fca5a5'} 
+                            fill={selectedMonth === entry.monthKey ? '#dc2626' : '#fca5a5'}
                           />
                         ))}
                       </Bar>
@@ -1162,14 +1227,14 @@ export const MerchandisingView: React.FC = () => {
                       {stats.monthlyData.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
-                          fill={selectedMonth === entry.month ? '#c2410c' : '#ea580c'} 
-                          stroke={selectedMonth === entry.month ? '#9a3412' : 'none'}
-                          strokeWidth={selectedMonth === entry.month ? 2 : 0}
+                          fill={selectedMonth === entry.monthKey ? '#c2410c' : '#ea580c'}
+                          stroke={selectedMonth === entry.monthKey ? '#9a3412' : 'none'}
+                          strokeWidth={selectedMonth === entry.monthKey ? 2 : 0}
                         />
                       ))}
                     </Bar>
                   )}
-                  {excludeGameDayMerch && <Legend />}
+                  {excludeGameDayMerch && selectedFamily === 'all' && <Legend />}
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -1186,7 +1251,7 @@ export const MerchandisingView: React.FC = () => {
                 >
                   <option value="all">{t('All Categories')}</option>
                   {stats.categoryData.map(cat => (
-                    <option key={cat.name} value={cat.name}>{cat.name}</option>
+                    <option key={cat.name} value={cat.name}>{t(cat.name)}</option>
                   ))}
                 </select>
               </div>
@@ -1290,7 +1355,10 @@ export const MerchandisingView: React.FC = () => {
                           <span className="font-medium text-gray-800 dark:text-gray-100">{product.title}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{product.productType || '-'}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-400">
+                        {t(productFamily(product))}
+                        {!!product.collections?.length && <p className="text-xs text-gray-400 mt-1">{product.collections.join(' · ')}</p>}
+                      </td>
                       <td className="px-4 py-3 text-right text-gray-800 dark:text-gray-100">
                         {product.variants.length === 1 
                           ? formatCurrency(product.variants[0].price)
@@ -1348,7 +1416,7 @@ export const MerchandisingView: React.FC = () => {
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
               <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">{t('Orders')}</p>
               <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{searchedOrders.length.toLocaleString()}</p>
-              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{selectedSeason}{selectedMonth ? ` · ${selectedMonth}` : ''}</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">{selectedSeason}{selectedMonth ? ` · ${selectedMonthLabel}` : ''}</p>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
               <p className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">{t('Total Items')}</p>
@@ -1487,7 +1555,7 @@ export const MerchandisingView: React.FC = () => {
           ) : (
             <div className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center text-sm text-gray-500 dark:text-gray-400">
               {t('Showing all')} {searchedOrders.length} {t('orders')} {t('for season')} {selectedSeason}
-              {selectedMonth && ` in ${selectedMonth}`}
+              {selectedMonth && ` in ${selectedMonthLabel}`}
             </div>
           )}
           </div>
@@ -1877,7 +1945,7 @@ export const MerchandisingView: React.FC = () => {
                             <td className="px-2 py-2 text-right text-orange-600">{formatCurrency(item.cost)}</td>
                             <td className="px-2 py-2 text-left text-gray-700 dark:text-gray-300 text-xs">{item.authorizedBy || '—'}</td>
                             <td className="px-2 py-2 text-left text-gray-700 dark:text-gray-300 text-xs">{item.detail || '—'}</td>
-                            <td className="px-2 py-2 text-right text-gray-500 dark:text-gray-400 text-xs">{new Date(item.date).toLocaleDateString()}</td>
+                            <td className="px-2 py-2 text-right text-gray-500 dark:text-gray-400 text-xs">{formatDate(item.date)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -2273,7 +2341,13 @@ export const MerchandisingView: React.FC = () => {
                 )}
                 <div className="flex-1">
                   <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">{selectedProductStats.product.title}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{selectedProductStats.product.productType || t('No category')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t(productFamily(selectedProductStats.product))}</p>
+                  {!!selectedProductStats.product.collections?.length && <p className="text-xs text-gray-400 mt-1">
+                    {t('Collections')}: {selectedProductStats.product.collections.join(' · ')}
+                  </p>}
+                  {!!selectedProductStats.product.promotions?.length && <p className="text-xs text-gray-400 mt-1">
+                    {t('Promotions')}: {selectedProductStats.product.promotions.join(' · ')}
+                  </p>}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
                     <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 text-center">
                       <p className="text-xs text-green-600">{t('Revenue')}</p>

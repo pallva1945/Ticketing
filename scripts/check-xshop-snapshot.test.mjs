@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
-import { createXShopSnapshotCache, validateXShopSnapshot, XSHOP_SNAPSHOT_TTL } from '../server/xshopSnapshotCache.ts';
+import { createXShopSnapshotCache, validateXShopSnapshot, XSHOP_SNAPSHOT_TTL, XSHOP_SNAPSHOT_VERSION } from '../server/xshopSnapshotCache.ts';
 import { mapXShopOrder } from '../server/xshopMapping.ts';
 import { fetchAllXShop } from '../server/xshopApi.ts';
 import { createXShopSnapshotStore } from '../server/xshopSnapshotStore.ts';
@@ -179,13 +179,13 @@ test('storage writes only the versioned complete payload with private metadata a
   }));
   const current = snapshot({ snapshotStatus: { stale: true, refreshing: true } });
   await store.write(current);
-  assert.equal(JSON.parse(content).version, 1);
+  assert.equal(JSON.parse(content).version, XSHOP_SNAPSHOT_VERSION);
   assert.equal(JSON.parse(content).data.snapshotStatus, undefined);
   assert.equal(options.metadata.cacheControl, 'private, no-store');
   assert.equal(JSON.parse(options.metadata.metadata['custom:aclPolicy']).visibility, 'private');
   assert.equal((await store.read()).lastUpdated, current.lastUpdated);
   content = JSON.stringify({ version: 0, data: current });
   await assert.rejects(store.read(), /Unsupported/);
-  content = '{"version":1,"data":{"complete":true}}';
+  content = JSON.stringify({ version: XSHOP_SNAPSHOT_VERSION, data: { complete: true } });
   await assert.rejects(store.read(), /incomplete/);
 });

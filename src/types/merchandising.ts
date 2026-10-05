@@ -15,6 +15,10 @@ export interface MerchOrder {
   fulfillmentStatus: string;
   sourceName: string;
   tags: string;
+  shippingRevenue?: number;
+  feeRevenue?: number;
+  unallocatedRevenue?: number;
+  revenueAllocation?: 'exact' | 'order-vat' | 'order-discount' | 'unreconciled';
 }
 
 export interface MerchLineItem {
@@ -26,10 +30,15 @@ export interface MerchLineItem {
   netRevenue?: number;
 }
 
+export type MerchFamily = 'Game Jerseys' | 'Apparel' | 'Accessories' | 'Bundles' | 'Experiences & Services' | 'Unclassified';
+
 export interface MerchProduct {
   id: string;
   title: string;
   productType: string;
+  storeCategories?: string[];
+  collections?: string[];
+  promotions?: string[];
   vendor: string;
   status: string;
   totalInventory: number;

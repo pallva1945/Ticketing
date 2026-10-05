@@ -1,4 +1,6 @@
 import type { MerchOrder, MerchProduct, MerchCustomer } from '../src/types/merchandising';
+import { classifyMerchFamily } from '../src/utils/merchandisingFamilies';
+import { normalizeImportedLineTax, normalizeOrderDiscounts, allocateMoney } from './xshopLineTax';
 
 type Row = Record<string, any>;
 const amount = (value: unknown): number => {
@@ -36,6 +38,10 @@ export function normalizeXShopPayment(method: string): string {
 }
 
 export function mapXShopOrder(order: Row, refunds: Row[] = []): MerchOrder {
+  const normalized = normalizeImportedLineTax(order, refunds);
+  const discounts = normalizeOrderDiscounts(normalized.order);
+  order = discounts.order;
+  refunds = normalized.refunds;
   const originalTotal = amount(order.total);
   const refunded = (order.refunds || []).reduce((sum: number, r: Row) => sum + Math.abs(amount(r.total)), 0);
   const fullyRefunded = order.status === 'refunded' || meta(order, '_shopify_financial_status') === 'refunded'
@@ -63,7 +69,7 @@ export function mapXShopOrder(order: Row, refunds: Row[] = []): MerchOrder {
     const returnedQty = lineRefunds.reduce((sum: number, r: Row) => sum + Math.abs(amount(r.quantity)), 0);
     const quantity = fullyRefunded ? 0 : Math.max(0, amount(li.quantity) - returnedQty);
     const discountAdjustedNet = amount(li.total);
-    const netRevenue = fullyRefunded ? 0 : money(Math.max(0, unallocatedRefund
+    const netRevenue = fullyRefunded || originalTotal === 0 ? 0 : money(Math.max(0, unallocatedRefund
       ? discountAdjustedNet * remainingRatio
       : discountAdjustedNet - lineRefunds.reduce((sum: number, r: Row) => sum + Math.abs(amount(r.total)), 0)));
     const tax = fullyRefunded ? 0 : Math.max(0, unallocatedRefund
@@ -74,6 +80,36 @@ export function mapXShopOrder(order: Row, refunds: Row[] = []): MerchOrder {
       sku: String(li.sku || ''), productId: String(li.product_id || ''), netRevenue,
     };
   });
+  const componentRevenue = (original: number, refundLines: Row[]) => fullyRefunded || originalTotal === 0 ? 0
+    : money(Math.max(0, unallocatedRefund ? original * remainingRatio
+      : original - refundLines.reduce((sum, row) => sum + Math.abs(amount(row.total)), 0)));
+  let shippingRevenue = componentRevenue(amount(order.shipping_total), refunds.flatMap(r => r.shipping_lines || []));
+  let feeRevenue = componentRevenue((order.fee_lines || []).reduce((sum: number, row: Row) => sum + amount(row.total), 0),
+    refunds.flatMap(r => r.fee_lines || []));
+  if (unallocatedRefund && totalPrice >= totalTax) {
+    const values = allocateMoney(totalPrice - totalTax, [
+      ...lineItems.map((row: Row) => row.netRevenue), shippingRevenue, feeRevenue,
+    ]);
+    lineItems.forEach((row: Row, index: number) => { row.netRevenue = values[index]; });
+    shippingRevenue = values[lineItems.length];
+    feeRevenue = values[lineItems.length + 1];
+  }
+  const target = money(totalPrice - totalTax - shippingRevenue - feeRevenue);
+  const difference = money(target - lineItems.reduce((sum: number, row: Row) => sum + row.netRevenue, 0));
+  let revenueAllocation: MerchOrder['revenueAllocation'] = normalized.allocated ? 'order-vat'
+    : discounts.allocated ? 'order-discount' : 'exact';
+  let unallocatedRevenue = 0;
+  if (Math.abs(difference) <= 0.02 && difference !== 0) {
+    const largest = [...lineItems].sort((a, b) => b.netRevenue - a.netRevenue)[0];
+    if (largest && largest.netRevenue + difference >= 0) largest.netRevenue = money(largest.netRevenue + difference);
+  } else if (Math.abs(difference) > 0.02) {
+    // The header remains authoritative; do not assign inconsistent item amounts to product families.
+    revenueAllocation = 'unreconciled';
+    lineItems.forEach((row: Row) => { row.netRevenue = 0; });
+    shippingRevenue = 0;
+    feeRevenue = 0;
+    unallocatedRevenue = money(totalPrice - totalTax);
+  }
   const tags = meta(order, '_shopify_order_tags') || meta(order, '_shopify_tags') || meta(order, 'tags') || '';
   return {
     id: String(order.id),
@@ -90,10 +126,12 @@ export function mapXShopOrder(order: Row, refunds: Row[] = []): MerchOrder {
     fulfillmentStatus: order.status === 'completed' ? 'fulfilled' : 'unfulfilled',
     sourceName: String(order.created_via || 'woocommerce'),
     tags: Array.isArray(tags) ? tags.join(', ') : String(tags),
+    shippingRevenue, feeRevenue, unallocatedRevenue, revenueAllocation,
   };
 }
 
 export function mapXShopProduct(product: Row, variations: Row[] = []): MerchProduct {
+  const storeCategories = (product.categories || []).map((c: Row) => String(c.name || ''));
   const variants = (variations.length ? variations : [product]).map(v => ({
     id: String(v.id), title: (v.attributes || []).map((a: Row) => a.option).filter(Boolean).join(' / ') || 'Default',
     price: amount(v.price), inventoryQuantity: v.stock_quantity === null ? 0 : amount(v.stock_quantity),
@@ -102,7 +140,10 @@ export function mapXShopProduct(product: Row, variations: Row[] = []): MerchProd
   }));
   return {
     id: String(product.id), title: String(product.name || ''),
-    productType: (product.categories || []).map((c: Row) => c.name).join(', '),
+    productType: classifyMerchFamily(String(product.name || ''), storeCategories),
+    storeCategories,
+    collections: storeCategories.filter((name: string) => /\b\d{2}\/\d{2}\b|collezione|fashion line/i.test(name)),
+    promotions: storeCategories.filter((name: string) => /outlet|aste|pack festa/i.test(name)),
     vendor: (product.brands || []).map((b: Row) => b.name).join(', ') || String(meta(product, '_shopify_vendor') || ''),
     status: product.status === 'publish' ? 'active' : product.status === 'draft' ? 'draft' : 'archived',
     totalInventory: variants.reduce((sum, v) => sum + v.inventoryQuantity, 0),
