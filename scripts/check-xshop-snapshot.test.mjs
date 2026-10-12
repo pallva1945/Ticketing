@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
-import { createXShopSnapshotCache, validateXShopSnapshot, XSHOP_SNAPSHOT_TTL, XSHOP_SNAPSHOT_VERSION } from '../server/xshopSnapshotCache.ts';
+import { createXShopSnapshotCache as createCache, validateXShopSnapshot, XSHOP_SNAPSHOT_TTL, XSHOP_SNAPSHOT_VERSION } from '../server/xshopSnapshotCache.ts';
 import { mapXShopOrder } from '../server/xshopMapping.ts';
 import { fetchAllXShop } from '../server/xshopApi.ts';
-import { createXShopSnapshotStore } from '../server/xshopSnapshotStore.ts';
+import { cacheUnitStore, snapshotObject } from './helpers/xshopSnapshotFake.mjs';
 import { XShopReadError } from '../server/xshopRead.ts';
 
 const snapshot = (extra = {}) => ({
@@ -17,6 +17,7 @@ const deferred = () => {
   return { promise, resolve, reject };
 };
 const tick = () => new Promise(resolve => setImmediate(resolve));
+const createXShopSnapshotCache = (fetch, store, ...args) => createCache(fetch, cacheUnitStore(store), ...args);
 
 test('explicit refresh polls wait for completion and share one download; ordinary dashboards stay immediate', async () => {
   const old = snapshot({ lastUpdated: '2026-01-01T00:00:00Z' });
@@ -197,16 +198,15 @@ test('broken saved copy is rejected and replaced only by a complete live snapsho
   assert.equal(cache.status().restored, false);
 });
 
-test('storage failure is visible without losing current data or leaking storage errors', async () => {
+test('storage commit failure fails explicitly without leaking storage errors or publishing unsaved data', async () => {
   const current = snapshot();
   const cache = createXShopSnapshotCache(async () => current, {
     read: async () => { throw new Error('private-bucket-name'); },
     write: async () => { throw new Error('private-bucket-name'); },
   });
-  const response = await cache.load();
-  assert.equal(response.lastUpdated, current.lastUpdated);
-  assert.ok(response.snapshotStatus.persistenceError);
-  assert.doesNotMatch(JSON.stringify(response), /private-bucket-name/);
+  await assert.rejects(cache.load(), /Please retry/);
+  assert.ok(cache.status().persistenceError);
+  assert.doesNotMatch(JSON.stringify(cache.status()), /private-bucket-name/);
 });
 
 test('TTL uses original snapshot time; manual clear preserves usable old data', async () => {
@@ -261,20 +261,19 @@ test('snapshots are private, versioned and inaccessible through generic object d
 });
 
 test('storage writes only the versioned complete payload with private metadata and restores it', async () => {
-  let content, options;
-  const store = createXShopSnapshotStore(() => ({
-    save: async (data, settings) => { content = data; options = settings; },
-    download: async () => [Buffer.from(content)],
-  }));
+  const object = snapshotObject();
+  const store = object.store();
   const current = snapshot({ snapshotStatus: { stale: true, refreshing: true } });
-  await store.write(current);
+  await store.acquire('worker', 120000, null, true);
+  await store.commit('worker', current);
+  const content = JSON.stringify(object.content()), options = object.options();
   assert.equal(JSON.parse(content).version, XSHOP_SNAPSHOT_VERSION);
   assert.equal(JSON.parse(content).data.snapshotStatus, undefined);
   assert.equal(options.metadata.cacheControl, 'private, no-store');
   assert.equal(JSON.parse(options.metadata.metadata['custom:aclPolicy']).visibility, 'private');
-  assert.equal((await store.read()).lastUpdated, current.lastUpdated);
-  content = JSON.stringify({ version: 0, data: current });
-  await assert.rejects(store.read(), /Unsupported/);
-  content = JSON.stringify({ version: XSHOP_SNAPSHOT_VERSION, data: { complete: true } });
-  await assert.rejects(store.read(), /incomplete/);
+  assert.equal((await store.readState()).data.lastUpdated, current.lastUpdated);
+  object.replace({ version: 0, data: current });
+  await assert.rejects(store.readState(), /Unsupported/);
+  object.replace({ version: XSHOP_SNAPSHOT_VERSION, data: { complete: true } });
+  assert.equal((await store.readState()).data, null);
 });

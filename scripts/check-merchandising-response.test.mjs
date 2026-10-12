@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readMerchandisingResponse } from '../src/utils/merchandisingResponse.ts';
 import { createXShopSnapshotCache } from '../server/xshopSnapshotCache.ts';
+import { cacheUnitStore } from './helpers/xshopSnapshotFake.mjs';
 
 const snapshot = {
   source: 'XShop', complete: true, orders: [], products: [], customers: [],
@@ -41,7 +42,7 @@ test('a provider HTML failure cannot remove the complete saved snapshot after re
   let writes = 0;
   const cache = createXShopSnapshotCache(async () => {
     throw new Error('XShop returned a non-JSON response');
-  }, { read: async () => snapshot, write: async () => { writes++; } });
+  }, cacheUnitStore({ read: async () => snapshot, write: async () => { writes++; } }));
   const initial = await readMerchandisingResponse(json(await cache.load()));
   assert.equal(initial.complete, true);
   await new Promise(resolve => setImmediate(resolve));

@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
-import { createXShopSnapshotCache } from '../server/xshopSnapshotCache.ts';
+import { createXShopSnapshotCache as createCache } from '../server/xshopSnapshotCache.ts';
+import { cacheUnitStore } from './helpers/xshopSnapshotFake.mjs';
 import { createXShopSnapshotStore } from '../server/xshopSnapshotStore.ts';
 import { sanitizeXShopHistory, mergeXShopHistory, XSHOP_HISTORY_LIMIT } from '../server/xshopRefreshHistory.ts';
 import { XShopReadError } from '../server/xshopRead.ts';
@@ -12,6 +13,7 @@ const old = {
   source: 'XShop', complete: true, orders: [], products: [], customers: [],
   lastUpdated: '2026-01-01T00:00:00Z', sourceOrderCount: 0, excludedOrderCount: 0,
 };
+const createXShopSnapshotCache = (fetch, store, ...args) => createCache(fetch, cacheUnitStore(store), ...args);
 const row = (extra = {}) => ({
   id: randomUUID(),
   startedAt: '2026-01-01T01:00:00Z', finishedAt: '2026-01-01T01:01:00Z',
@@ -131,7 +133,7 @@ test('history storage failure is visible but never hides download results or ove
 
 test('private store roundtrips a bounded, whitelisted history, rejects malformed records and invalid versions', async () => {
   let content, options;
-  const store = createXShopSnapshotStore(() => { throw new Error('Snapshot must not be accessed'); }, () => ({
+  const store = createXShopSnapshotStore(() => { throw new Error('Snapshot must not be accessed'); }, Date.now, () => ({
     getMetadata: async () => {
       if (!content) throw Object.assign(new Error('Not found'), { code: 404 });
       return [{ generation: '1' }];
@@ -173,8 +175,8 @@ test('concurrent history writers merge independent attempts and cannot replace f
       generation++;
     },
   };
-  const storeA = createXShopSnapshotStore(undefined, () => file);
-  const storeB = createXShopSnapshotStore(undefined, () => file);
+  const storeA = createXShopSnapshotStore(undefined, Date.now, () => file);
+  const storeB = createXShopSnapshotStore(undefined, Date.now, () => file);
   const a = row(), b = row({ failureCode: 'timeout' });
   await Promise.all([storeA.writeHistory([a]), storeB.writeHistory([b])]);
   assert.equal((await storeA.readHistory()).length, 2);

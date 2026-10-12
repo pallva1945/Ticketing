@@ -23,6 +23,14 @@ The shop's hosting protection can answer WooCommerce API calls with HTTP 202 and
 
 **How to apply:** Preserve the last complete snapshot, identify the protection block explicitly, and avoid aggressive automatic retries. Ask the shop/hosting administrator to allow authenticated WooCommerce API traffic while retaining API authentication and other store protections. Do not treat the challenge as financial data or attempt to circumvent it.
 
+
+## Multi-worker coordination safety
+
+Do not fall back to uncoordinated provider downloads when shared coordination storage is unavailable. An expired worker must be unable to publish or clear a successor's lease.
+
+**Why:** Published servers can run concurrently or pause independently. A process-local promise cannot prevent duplicate downloads, and checking lease ownership separately from snapshot publication leaves a race where a resumed old worker can overwrite newer data.
+
+**How to apply:** Keep ownership checks and snapshot publication in one atomic persistence operation. Preserve last complete data on coordination failure; allow recovery only through a newly acquired expiring lease. Any future separation of lease metadata and payload must retain this fencing guarantee.
 ## Interpreting refresh history
 
 An attempt with no recorded finish is not proof of a timeout or an interrupted download. Report it as unfinished, not as a fabricated provider failure.

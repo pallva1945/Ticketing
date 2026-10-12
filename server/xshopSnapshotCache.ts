@@ -25,18 +25,31 @@ export function validateXShopSnapshot(value: unknown): asserts value is Merchand
   }
 }
 
+export interface XShopRefreshState {
+  data: MerchandisingData | null;
+  revision: string | null;
+  lease: { owner: string; expiresAt: number } | null;
+  retryAfter: number;
+}
+
 export interface XShopSnapshotStore {
-  read(): Promise<MerchandisingData | null>;
-  write(data: MerchandisingData): Promise<void>;
   readHistory?(): Promise<MerchRefreshAttempt[]>;
   writeHistory?(attempts: MerchRefreshAttempt[]): Promise<void>;
+  readState(): Promise<XShopRefreshState>;
+  acquire(owner: string, ttl: number, revision: string | null, force: boolean): Promise<XShopRefreshState>;
+  renew(owner: string, ttl: number): Promise<boolean>;
+  commit(owner: string, data: MerchandisingData): Promise<boolean>;
+  release(owner: string, retryAfter?: number): Promise<void>;
 }
+
+export const XSHOP_LEASE_TTL = 120000;
 
 export function createXShopSnapshotCache(
   fetchSnapshot: () => Promise<MerchandisingData>,
   store: XShopSnapshotStore,
   now = Date.now,
   pollWaitMs = 20000,
+  coordination = { leaseTtlMs: XSHOP_LEASE_TTL, heartbeatMs: 30000, followPollMs: 1000 },
 ) {
   let cache: MerchandisingData | null = null;
   let restored = false;
@@ -46,6 +59,8 @@ export function createXShopSnapshotCache(
   let refreshError: string | null = null;
   let refreshErrorCode: MerchRefreshErrorCode | null = null;
   let persistenceError: string | null = null;
+  let revision: string | null = null;
+  let lastCoordinationCheck = -Infinity;
   let attempts: MerchRefreshAttempt[] = [];
   let historyPersistenceError = false;
   let historyReadFailed = false;
@@ -57,14 +72,17 @@ export function createXShopSnapshotCache(
   const response = () => ({ ...cache!, snapshotStatus: status() });
 
   function hydrate() {
-    if (!hydration) hydration = Promise.all([store.read().then(snapshot => {
+    if (!hydration) hydration = Promise.all([store.readState().then(state => {
+      const snapshot = state.data;
+      revision = state.revision;
+      retryAfter = Math.max(retryAfter, state.retryAfter);
       if (snapshot) {
         validateXShopSnapshot(snapshot);
         cache = snapshot;
         restored = true;
       }
     }).catch(() => {
-      persistenceError = 'The saved XShop snapshot could not be read; downloading a complete snapshot.';
+      persistenceError = 'The saved XShop snapshot could not be read. Please retry.';
       console.warn('XShop private snapshot could not be restored');
     }), (async () => {
       if (!store.readHistory) return;
@@ -78,7 +96,7 @@ export function createXShopSnapshotCache(
             refreshError = 'The last XShop refresh failed. The last complete snapshot has been retained if available.';
             refreshErrorCode = latest.failureCode === 'unknown' ? null : latest.failureCode as MerchRefreshErrorCode;
             const permanent = ['blocked', 'access', 'credentials'].includes(latest.failureCode!);
-            retryAfter = Date.parse(latest.finishedAt!) + (permanent ? XSHOP_SNAPSHOT_TTL : 60000);
+            retryAfter = Math.max(retryAfter, Date.parse(latest.finishedAt!) + (permanent ? XSHOP_SNAPSHOT_TTL : 60000));
           }
         }
       } catch {
@@ -94,9 +112,8 @@ export function createXShopSnapshotCache(
     if (!store.writeHistory) return;
     try {
       if (historyReadFailed) {
-        // Never overwrite unreadable durable history with only this process's rows.
-        const saved = sanitizeXShopHistory(await store.readHistory!());
-        attempts = [...saved, ...attempts].slice(-XSHOP_HISTORY_LIMIT);
+        // Do not replace unreadable durable history with only local records.
+        attempts = mergeXShopHistory(await store.readHistory!(), attempts);
         historyReadFailed = false;
       }
       await store.writeHistory(sanitizeXShopHistory(attempts));
@@ -107,44 +124,101 @@ export function createXShopSnapshotCache(
     }
   }
 
-  function refresh() {
+  function refresh(force = false) {
     if (inFlight) return inFlight;
     refreshError = null;
     refreshErrorCode = null;
-    const attempt: MerchRefreshAttempt = {
-      id: randomUUID(),
-      startedAt: new Date(now()).toISOString(), finishedAt: null, outcome: 'unfinished', failureCode: null,
-      lastSuccessfulSnapshotAt: cache?.lastUpdated ?? null, recognizedOrderCount: cache?.orders.length ?? null,
-    };
-    attempts = [...attempts, attempt].slice(-XSHOP_HISTORY_LIMIT);
-    // Persist the start before downloading so a process interruption stays visible.
-    inFlight = persistHistory().then(() => fetchSnapshot()).then(async snapshot => {
-      validateXShopSnapshot(snapshot);
-      // Storage replaces the object atomically. Failed downloads never reach write().
+    lastCoordinationCheck = now();
+    const owner = randomUUID();
+    let attempt: MerchRefreshAttempt | null = null;
+    let persistenceFailed = false;
+    inFlight = (async () => {
+      // Followers keep active bounded poll requests, never download independently.
+      const baseline = revision;
+      while (true) {
+        const state = await store.acquire(owner, coordination.leaseTtlMs, baseline, force);
+        if (state.data && (state.revision !== revision || !state.lease)) {
+          validateXShopSnapshot(state.data);
+          cache = state.data;
+          restored = false;
+          revision = state.revision;
+          persistenceError = null;
+        }
+        if (state.lease?.owner === owner) break;
+        retryAfter = state.retryAfter;
+        if (!state.lease || state.lease.expiresAt <= now()) {
+          if (cache) return cache;
+          throw new Error('No complete XShop snapshot available');
+        }
+        await new Promise(resolve => setTimeout(resolve, coordination.followPollMs));
+      }
+
+      // Only the distributed lease owner records an actual provider attempt.
+      // Followers and fresh-cache no-ops must not create fabricated history.
+      attempt = {
+        id: owner, startedAt: new Date(now()).toISOString(), finishedAt: null,
+        outcome: 'unfinished', failureCode: null,
+        lastSuccessfulSnapshotAt: cache?.lastUpdated ?? null,
+        recognizedOrderCount: cache?.orders.length ?? null,
+      };
+      attempts = [...attempts, attempt].slice(-XSHOP_HISTORY_LIMIT);
+      let lostLease = false;
+      let heartbeat: Promise<void> | null = null;
+      const timer = setInterval(() => {
+        if (heartbeat) return;
+        heartbeat = store.renew(owner, coordination.leaseTtlMs).then(owned => {
+          if (!owned) lostLease = true;
+        }).catch(() => { lostLease = true; }).finally(() => { heartbeat = null; });
+      }, coordination.heartbeatMs);
+      timer.unref?.();
       try {
-        await store.write(snapshot);
+        await persistHistory();
+        const snapshot = await fetchSnapshot();
+        validateXShopSnapshot(snapshot);
+        clearInterval(timer);
+        if (heartbeat) await heartbeat;
+        // Fencing is checked atomically by storage, not only by the heartbeat.
+        let committed = false;
+        try {
+          committed = !lostLease && await store.commit(owner, snapshot);
+        } catch {
+          persistenceFailed = true;
+          persistenceError = 'The XShop snapshot could not be saved. The last complete snapshot has been retained.';
+          throw new Error('XShop snapshot persistence failed');
+        }
+        if (!committed) {
+          persistenceFailed = true;
+          const latest = await store.readState();
+          if (latest.data) {
+            cache = latest.data;
+            revision = latest.revision;
+          }
+          throw new Error('XShop refresh lease expired or was superseded');
+        }
+        cache = snapshot;
+        revision = owner;
+        restored = false;
+        retryAfter = 0;
         persistenceError = null;
         attempt.outcome = 'success';
-      } catch {
-        persistenceError = 'XShop data is current, but its private copy could not be saved for the next restart.';
-        console.warn('XShop complete snapshot could not be persisted');
-        attempt.outcome = 'failure';
-        attempt.failureCode = 'persistence';
+        attempt.lastSuccessfulSnapshotAt = snapshot.lastUpdated;
+        attempt.recognizedOrderCount = snapshot.orders.length;
+        return snapshot;
+      } finally {
+        clearInterval(timer);
+        if (heartbeat) await heartbeat;
       }
-      cache = snapshot;
-      restored = false;
-      retryAfter = 0;
-      attempt.lastSuccessfulSnapshotAt = snapshot.lastUpdated;
-      attempt.recognizedOrderCount = snapshot.orders.length;
-      return snapshot;
-    }).catch(error => {
+    })().catch(async error => {
       // Do not expose provider errors, URLs, storage paths or credentials.
       refreshError = cache
         ? 'XShop could not be updated. The last complete snapshot has been retained.'
         : 'XShop could not be updated. No complete snapshot is available yet.';
       refreshErrorCode = error instanceof XShopReadError ? error.code : null;
-      attempt.outcome = 'failure';
-      attempt.failureCode = error instanceof XShopReadError ? safeXShopHistoryCode(error.code) : 'unknown';
+      if (attempt) {
+        attempt.outcome = 'failure';
+        attempt.failureCode = persistenceFailed ? 'persistence'
+          : error instanceof XShopReadError ? safeXShopHistoryCode(error.code) : 'unknown';
+      }
       console.warn('XShop snapshot refresh failed:', error instanceof XShopReadError
         ? error.message : 'A complete snapshot could not be loaded.');
       // Repeated downloads cannot solve hosting challenges or missing access.
@@ -153,10 +227,17 @@ export function createXShopSnapshotCache(
       const permanent = error instanceof XShopReadError
         && ['blocked', 'access', 'credentials'].includes(error.code);
       retryAfter = now() + (permanent ? XSHOP_SNAPSHOT_TTL : 60000);
+      try {
+        await store.release(owner, retryAfter);
+      } catch {
+        persistenceError = 'XShop refresh coordination could not be saved. The last complete snapshot has been retained.';
+      }
       throw new Error('XShop could not load a complete snapshot. Please retry.');
     }).finally(async () => {
-      attempt.finishedAt = new Date(now()).toISOString();
-      await persistHistory();
+      if (attempt) {
+        attempt.finishedAt = new Date(now()).toISOString();
+        await persistHistory();
+      }
       inFlight = null;
     });
     return inFlight;
@@ -166,8 +247,9 @@ export function createXShopSnapshotCache(
     async load(forceRefresh = false, waitForRefresh = false): Promise<MerchandisingData> {
       await hydrate();
       if (cache) {
-        if (forceRefresh || (status().stale && now() >= retryAfter)) {
-          void refresh().catch(() => {});
+        if (forceRefresh || waitForRefresh || (now() >= retryAfter
+          && (status().stale || now() - lastCoordinationCheck >= 5000))) {
+          void refresh(forceRefresh).catch(() => {});
         }
         // Normal dashboards remain immediate. Explicit refresh/poll requests hold
         // the connection for a bounded interval so Autoscale has active requests
@@ -185,7 +267,7 @@ export function createXShopSnapshotCache(
         }
         return response();
       }
-      await refresh();
+      await refresh(forceRefresh);
       return response();
     },
     status,
@@ -194,8 +276,6 @@ export function createXShopSnapshotCache(
       let visible = sanitizeXShopHistory(attempts), unavailable = historyPersistenceError;
       if (store.readHistory) {
         try {
-          // Other instances may have added records since this process hydrated.
-          // Keep local unsaved entries visible without replacing active references.
           visible = mergeXShopHistory(await store.readHistory(), attempts);
         } catch {
           unavailable = true;
