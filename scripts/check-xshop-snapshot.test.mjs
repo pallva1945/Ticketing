@@ -121,6 +121,7 @@ test('restart serves a saved snapshot immediately while one complete update runs
     assert.equal(response.lastUpdated, old.lastUpdated);
     assert.deepEqual(response.snapshotStatus, {
       stale: true, restored: true, refreshing: true, refreshError: null, refreshErrorCode: null, persistenceError: null,
+      historyPersistenceError: false,
     });
   }
   const current = snapshot();

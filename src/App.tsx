@@ -24,6 +24,7 @@ import { compareRevenueForecast } from './utils/revenueForecast';
 import { getRevenueSeasonGames, getDefaultRevenueLeagues } from './utils/revenueSeasonGames';
 import type { MerchSnapshotStatus, MerchandisingData } from './types/merchandising';
 import { MerchSnapshotNotice } from './components/MerchSnapshotNotice';
+import { MerchRefreshHistory } from './components/MerchRefreshHistory';
 import { crmGameDate, getCRMSeason } from './utils/crmGames';
 import { MobileTicker, TickerItem } from './components/MobileTicker';
 import { BoardReportModal } from './components/BoardReportModal';
@@ -2941,6 +2942,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
            </div>
            {(activeModule === 'merchandising' || activeModule === 'home') && <div className="mb-3">
              <MerchSnapshotNotice compact lastUpdated={merchSnapshot?.lastUpdated} status={merchSnapshot?.snapshotStatus} error={merchError} />
+             {(isAdmin || accessLevel === 'full' || permissions.includes('merchandising')) && <MerchRefreshHistory />}
            </div>}
            
            <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden" />

@@ -1,17 +1,11 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import type { MerchSnapshotStatus } from '../types/merchandising';
+import type { MerchSnapshotStatus, MerchHistoryFailureCode } from '../types/merchandising';
 import { formatMerchDate } from '../utils/merchandisingDate';
 
-export function MerchSnapshotNotice({ lastUpdated, status, error, compact = false }: {
-  lastUpdated?: string; status?: MerchSnapshotStatus; error?: string | null; compact?: boolean;
-}) {
+export function MerchFailureReason({ code }: { code: MerchHistoryFailureCode }) {
   const { language } = useLanguage();
   const it = language === 'it';
-  const warning = error || status?.refreshError || status?.persistenceError;
-  const previous = status?.stale || status?.restored;
-  const expiredSession = error === 'Please sign in again to load merchandising data.';
-  const deniedAccess = error === 'Your account does not have access to merchandising data.';
   const failureReasons = {
     timeout: it ? 'XShop non ha risposto entro il tempo previsto, anche dopo i tentativi automatici.' : 'XShop timed out after automatic retries.',
     connection: it ? 'La connessione a XShop è stata interrotta, anche dopo i tentativi automatici.' : 'The connection to XShop was interrupted after automatic retries.',
@@ -22,7 +16,21 @@ export function MerchSnapshotNotice({ lastUpdated, status, error, compact = fals
     response: it ? 'XShop ha restituito una risposta API non valida.' : 'XShop returned an invalid API response.',
     pagination: it ? 'I dati XShop sono cambiati durante il download; nessuna copia parziale è stata pubblicata.' : 'XShop changed during download; no partial snapshot was published.',
     credentials: it ? 'Le credenziali API XShop non sono configurate.' : 'XShop API credentials are not configured.',
+    persistence: it ? 'Download completo, ma salvataggio della copia privata non riuscito.' : 'Download completed, but the private snapshot could not be saved.',
+    unknown: it ? 'Non è stato possibile ottenere uno snapshot completo. Nessuna copia parziale è stata pubblicata.' : 'A complete snapshot could not be obtained. No partial snapshot was published.',
   };
+  return <>{failureReasons[code]}</>;
+}
+
+export function MerchSnapshotNotice({ lastUpdated, status, error, compact = false }: {
+  lastUpdated?: string; status?: MerchSnapshotStatus; error?: string | null; compact?: boolean;
+}) {
+  const { language } = useLanguage();
+  const it = language === 'it';
+  const warning = error || status?.refreshError || status?.persistenceError || status?.historyPersistenceError;
+  const previous = status?.stale || status?.restored;
+  const expiredSession = error === 'Please sign in again to load merchandising data.';
+  const deniedAccess = error === 'Your account does not have access to merchandising data.';
   return (
     <div role="status" className={`rounded-lg border ${compact ? 'p-2.5 text-[10px] leading-relaxed' : 'p-3 text-sm mb-4'} ${
       warning || previous ? 'border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-900/20 dark:text-amber-200'
@@ -44,11 +52,14 @@ export function MerchSnapshotNotice({ lastUpdated, status, error, compact = fals
           : 'Update failed. The previous complete snapshot is still available; you can retry.')
         : (it ? 'Download non riuscito; puoi riprovare.' : 'Download failed; you can retry.')}</span>}
        {status?.refreshError && status.refreshErrorCode && !expiredSession && !deniedAccess && <span className="block mt-1">
-         {failureReasons[status.refreshErrorCode]}
+         <MerchFailureReason code={status.refreshErrorCode} />
        </span>}
       {status?.persistenceError && <span> {it
         ? 'Archiviazione privata non disponibile: la copia salvata potrebbe non essere aggiornata al prossimo riavvio.'
         : 'Private storage is unavailable: the saved copy may not be current at the next restart.'}</span>}
+      {status?.historyPersistenceError && <span className="block mt-1">{it
+        ? 'Storico aggiornamenti non salvato o non leggibile: lo storico potrebbe essere incompleto.'
+        : 'Refresh history could not be saved or read: the history may be incomplete.'}</span>}
     </div>
   );
 }

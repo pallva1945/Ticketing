@@ -1,16 +1,37 @@
 import type express from 'express';
 import { authenticateUser } from './adminRoutes';
-import { loadXShopData } from './xshopApi';
+import { loadXShopData, getXShopRefreshHistory } from './xshopApi';
 import { getMerchSeason, isMerchSale } from '../src/types/merchandising';
 
+export function hasMerchandisingAccess(user: { role?: string; accessLevel?: string; permissions?: string[] }) {
+  return user.role === 'admin' || user.accessLevel === 'full' || !!user.permissions?.includes('merchandising');
+}
+
 export function registerXShopRoutes(app: express.Application) {
+  app.get('/api/merch/refresh-history', async (req, res) => {
+    res.setHeader('Cache-Control', 'private, no-store');
+    const user = authenticateUser(req);
+    if (!user) {
+      res.status(401).json({ success: false, message: 'Not authenticated' });
+      return;
+    }
+    if (!hasMerchandisingAccess(user)) {
+      res.status(403).json({ success: false, message: 'Merchandising access required' });
+      return;
+    }
+    try {
+      res.json({ success: true, ...await getXShopRefreshHistory() });
+    } catch {
+      res.status(503).json({ success: false, message: 'XShop refresh history is unavailable' });
+    }
+  });
   app.get('/api/merch/data', async (req, res) => {
     const user = authenticateUser(req);
     if (!user) {
       res.status(401).json({ success: false, message: 'Not authenticated' });
       return;
     }
-    if (user.role !== 'admin' && user.accessLevel !== 'full' && !user.permissions?.includes('merchandising')) {
+    if (!hasMerchandisingAccess(user)) {
       res.status(403).json({ success: false, message: 'Merchandising access required' });
       return;
     }

@@ -80,6 +80,22 @@ export interface MerchandisingData {
 export type MerchRefreshErrorCode = 'timeout' | 'connection' | 'access' | 'blocked' | 'temporary'
   | 'response' | 'pagination' | 'credentials';
 
+export type MerchHistoryFailureCode = MerchRefreshErrorCode | 'persistence' | 'unknown';
+export interface MerchRefreshAttempt {
+  id: string;
+  startedAt: string;
+  finishedAt: string | null;
+  outcome: 'success' | 'failure' | 'unfinished';
+  failureCode: MerchHistoryFailureCode | null;
+  lastSuccessfulSnapshotAt: string | null;
+  recognizedOrderCount: number | null;
+}
+export interface MerchRefreshHistory {
+  attempts: MerchRefreshAttempt[];
+  persistenceUnavailable: boolean;
+  refreshing: boolean;
+}
+
 export interface MerchSnapshotStatus {
   stale: boolean;
   restored: boolean;
@@ -87,6 +103,7 @@ export interface MerchSnapshotStatus {
   refreshError: string | null;
   refreshErrorCode?: MerchRefreshErrorCode | null;
   persistenceError: string | null;
+  historyPersistenceError?: boolean;
 }
 
 export function getMerchSeason(dateStr: string): string {

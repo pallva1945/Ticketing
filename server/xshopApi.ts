@@ -112,3 +112,4 @@ const snapshotCache = createXShopSnapshotCache(fetchSnapshot, xshopSnapshotStore
 export const loadXShopData = snapshotCache.load;
 export const clearXShopCache = snapshotCache.clear;
 export const getXShopCacheStatus = snapshotCache.status;
+export const getXShopRefreshHistory = snapshotCache.history;

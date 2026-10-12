@@ -22,3 +22,11 @@ The shop's hosting protection can answer WooCommerce API calls with HTTP 202 and
 **Why:** Both preview and published refreshes failed after earlier complete downloads; a direct read-only probe confirmed the HTML challenge on all three primary API resources.
 
 **How to apply:** Preserve the last complete snapshot, identify the protection block explicitly, and avoid aggressive automatic retries. Ask the shop/hosting administrator to allow authenticated WooCommerce API traffic while retaining API authentication and other store protections. Do not treat the challenge as financial data or attempt to circumvent it.
+
+## Interpreting refresh history
+
+An attempt with no recorded finish is not proof of a timeout or an interrupted download. Report it as unfinished, not as a fabricated provider failure.
+
+**Why:** Another server instance may still be downloading, or a completed download may have been unable to persist its result. Durable diagnostic records must not imply more certainty than they provide.
+
+**How to apply:** Distinguish fixed provider failures, snapshot persistence failures, history-storage unavailability, and unfinished records. Never infer a specific cause solely from a restart or elapsed time.
