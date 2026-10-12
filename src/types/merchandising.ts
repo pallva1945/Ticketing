@@ -76,11 +76,15 @@ export interface MerchandisingData {
   snapshotStatus?: MerchSnapshotStatus;
 }
 
+export type MerchRefreshErrorCode = 'timeout' | 'connection' | 'access' | 'temporary'
+  | 'response' | 'pagination' | 'credentials';
+
 export interface MerchSnapshotStatus {
   stale: boolean;
   restored: boolean;
   refreshing: boolean;
   refreshError: string | null;
+  refreshErrorCode?: MerchRefreshErrorCode | null;
   persistenceError: string | null;
 }
 

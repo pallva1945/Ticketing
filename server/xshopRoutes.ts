@@ -16,7 +16,7 @@ export function registerXShopRoutes(app: express.Application) {
     }
     try {
       res.setHeader('Cache-Control', 'private, no-store');
-      res.json(await loadXShopData(req.query.refresh === 'true'));
+      res.json(await loadXShopData(req.query.refresh === 'true', req.query.refresh === 'true' || req.query.wait === 'true'));
     } catch (error) {
       res.status(502).json({ success: false, message: error instanceof Error ? error.message : 'XShop data is unavailable' });
     }
@@ -32,7 +32,7 @@ export function registerXShopRoutes(app: express.Application) {
         res.status(400).json({ success: false, message: 'Invalid merchandising season' });
         return;
       }
-      const data = await loadXShopData(req.query.refresh === 'true');
+      const data = await loadXShopData(req.query.refresh === 'true', req.query.refresh === 'true' || req.query.wait === 'true');
       const orders = data.orders.filter(order => isMerchSale(order) && getMerchSeason(order.processedAt) === season);
       res.setHeader('Cache-Control', 'private, no-store');
       res.json({ success: true, source: data.source, complete: data.complete,

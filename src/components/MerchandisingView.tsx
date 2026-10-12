@@ -112,12 +112,22 @@ export const MerchandisingView: React.FC<{
     loadingRef.current = true;
     if (!data) setIsLoading(true);
     setError(null);
+    if (refresh) setData(current => current ? {
+      ...current,
+      snapshotStatus: {
+        stale: false, restored: false, persistenceError: null, ...current.snapshotStatus,
+        refreshing: true, refreshError: null, refreshErrorCode: null,
+      },
+    } : current);
     try {
-      const merchResponse = await fetch(`/api/merch/data${refresh ? '?refresh=true' : ''}`);
+      const merchResponse = await fetch(`/api/merch/data${refresh ? '?refresh=true' : data?.snapshotStatus?.refreshing ? '?wait=true' : ''}`);
       const merchResult = await readMerchandisingResponse(merchResponse);
       setData(merchResult);
     } catch (err: any) {
       setError(err.message);
+      setData(current => current?.snapshotStatus ? {
+        ...current, snapshotStatus: { ...current.snapshotStatus, refreshing: false },
+      } : current);
     } finally {
       loadingRef.current = false;
       setIsLoading(false);

@@ -1126,7 +1126,9 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
     if (merchLoadingRef.current) return;
     merchLoadingRef.current = true;
     try {
-      const response = await fetch(`/api/merch/season-revenue${refresh ? '?refresh=true' : ''}`);
+      const response = await fetch(`/api/merch/season-revenue${refresh ? '?refresh=true' : merchSnapshot?.snapshotStatus?.refreshing ? '?wait=true' : ''}`);
+      if (response.status === 401) throw new Error('Please sign in again to load merchandising data.');
+      if (response.status === 403) throw new Error('Your account does not have access to merchandising data.');
       const result = await response.json();
       if (!response.ok || !result.success || result.source !== 'XShop' || result.complete !== true) {
         throw new Error('XShop revenue is unavailable');
@@ -1135,8 +1137,10 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
       setMerchSnapshot({ lastUpdated: result.lastUpdated, snapshotStatus: result.snapshotStatus });
       setMerchError(null);
       saveToLocalCache('merch-xshop-26-27', result.revenue);
-    } catch {
-      setMerchError('XShop revenue could not be updated');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      setMerchError(['Please sign in again to load merchandising data.', 'Your account does not have access to merchandising data.'].includes(message)
+        ? message : 'XShop revenue could not be updated');
     } finally {
       merchLoadingRef.current = false;
     }
@@ -2958,13 +2962,14 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                             </strong>
                         </div>
                         <button
+                          disabled={merchSnapshot?.snapshotStatus?.refreshing}
                           onClick={() => {
                             const event = new CustomEvent('merchandising-refresh');
                             window.dispatchEvent(event);
                           }}
-                          className="w-full mt-2 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-orange-700 bg-white border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors dark:text-orange-400 dark:bg-gray-800 dark:border-orange-700 dark:hover:bg-gray-700"
+                          className="w-full mt-2 flex items-center justify-center gap-2 py-2 px-4 text-xs font-medium text-orange-700 bg-white border border-orange-300 rounded-lg hover:bg-orange-50 transition-colors dark:text-orange-400 dark:bg-gray-800 dark:border-orange-700 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-wait"
                         >
-                          <RefreshCw size={14} />
+                          <RefreshCw size={14} className={merchSnapshot?.snapshotStatus?.refreshing ? 'animate-spin' : ''} />
                           {t('Refresh XShop Data')}
                         </button>
                      </>

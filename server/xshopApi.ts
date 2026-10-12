@@ -2,6 +2,7 @@ import type { MerchandisingData } from '../src/types/merchandising';
 import { isRecognizedOrder, mapXShopOrder, mapXShopProduct, mapXShopCustomers } from './xshopMapping';
 import { createXShopSnapshotCache } from './xshopSnapshotCache';
 import { xshopSnapshotStore } from './xshopSnapshotStore';
+import { XShopReadError, withXShopRetries, xshopRetryDelay } from './xshopRead';
 
 type Row = Record<string, any>;
 const ROOT = 'https://store.pallacanestrovarese.it/wp-json/wc/v3/';
@@ -9,51 +10,60 @@ const ROOT = 'https://store.pallacanestrovarese.it/wp-json/wc/v3/';
 export async function fetchXShopAPI(resource: string, params: Record<string, string> = {}) {
   const key = process.env.XSHOP_CONSUMER_KEY;
   const secret = process.env.XSHOP_CONSUMER_SECRET;
-  if (!key || !secret) throw new Error('XShop API credentials are not configured');
+  if (!key || !secret) throw new XShopReadError('credentials');
   const url = new URL(resource, ROOT);
   if (!url.href.startsWith(ROOT)) throw new Error('Invalid XShop API resource');
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
-  for (let attempt = 0; attempt < 3; attempt++) {
+  return withXShopRetries(async () => {
     const response = await fetch(url, {
       method: 'GET', redirect: 'error', signal: AbortSignal.timeout(30000),
       headers: { Authorization: `Basic ${Buffer.from(`${key}:${secret}`).toString('base64')}`, Accept: 'application/json' },
     });
     if (response.status === 429 || response.status >= 500) {
-      if (attempt < 2) {
-        const delay = Math.min(10000, Math.max(1000, Number(response.headers.get('retry-after') || '2') * 1000));
-        await new Promise(resolve => setTimeout(resolve, delay));
-        continue;
-      }
+      throw new XShopReadError('temporary', xshopRetryDelay(response.headers.get('retry-after')));
     }
     // Never forward raw provider errors, credentials, headers or payment metadata to the browser/logs.
-    if (!response.ok) throw new Error(`XShop API ${response.status} while reading ${resource.split('?')[0]}`);
+    if (!response.ok) throw new XShopReadError(
+      response.status === 401 || response.status === 403 ? 'access' : 'response');
     if (!response.headers.get('content-type')?.includes('application/json')) {
-      throw new Error(`XShop returned a non-JSON response (HTTP ${response.status}); the API may be blocked by store protection`);
+      throw new XShopReadError('response');
     }
     let data: unknown;
     try { data = await response.json(); }
-    catch { throw new Error('XShop returned invalid JSON; no snapshot was published'); }
-    if (!Array.isArray(data)) throw new Error('XShop returned an invalid API collection');
+    catch (error) {
+      if (error instanceof TypeError || (error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name))) throw error;
+      throw new XShopReadError('response');
+    }
+    if (!Array.isArray(data)) throw new XShopReadError('response');
     const total = Number(response.headers.get('x-wp-total'));
     const pages = Number(response.headers.get('x-wp-totalpages'));
     if (!response.headers.has('x-wp-total') || !response.headers.has('x-wp-totalpages')
       || !Number.isInteger(total) || !Number.isInteger(pages) || total < 0 || pages < 0) {
-      throw new Error('XShop pagination totals are missing or invalid');
+      throw new XShopReadError('response');
     }
     return { data: data as Row[], total, pages };
-  }
-  throw new Error('XShop API retry limit reached');
+  });
 }
 
 export async function mapConcurrent<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const result = new Array<R>(items.length);
   let next = 0;
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (next < items.length) {
+  let failed = false;
+  const workers = await Promise.allSettled(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (!failed && next < items.length) {
       const index = next++;
-      result[index] = await fn(items[index]);
+      try {
+        result[index] = await fn(items[index]);
+      } catch (error) {
+        failed = true;
+        throw error;
+      }
     }
   }));
+  // Drain outstanding reads before another refresh can start; failed workers
+  // must not keep downloading while a new request starts a second snapshot.
+  const rejection = workers.find(worker => worker.status === 'rejected');
+  if (rejection?.status === 'rejected') throw rejection.reason;
   return result;
 }
 
@@ -69,7 +79,7 @@ export async function fetchAllXShop(resource: string, request = fetchXShopAPI): 
   const ids = new Set(rows.map(row => row.id));
   if (ids.size !== rows.length || rows.length !== first.total
     || remaining.some(page => page.total !== first.total || page.pages !== first.pages)) {
-    throw new Error(`XShop ${resource} changed during pagination; refresh to obtain a complete snapshot`);
+    throw new XShopReadError('pagination');
   }
   return rows;
 }

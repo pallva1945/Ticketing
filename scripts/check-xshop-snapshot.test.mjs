@@ -5,6 +5,7 @@ import { createXShopSnapshotCache, validateXShopSnapshot, XSHOP_SNAPSHOT_TTL, XS
 import { mapXShopOrder } from '../server/xshopMapping.ts';
 import { fetchAllXShop } from '../server/xshopApi.ts';
 import { createXShopSnapshotStore } from '../server/xshopSnapshotStore.ts';
+import { XShopReadError } from '../server/xshopRead.ts';
 
 const snapshot = (extra = {}) => ({
   source: 'XShop', complete: true, orders: [], customers: [], products: [],
@@ -16,6 +17,69 @@ const deferred = () => {
   return { promise, resolve, reject };
 };
 const tick = () => new Promise(resolve => setImmediate(resolve));
+
+test('explicit refresh polls wait for completion and share one download; ordinary dashboards stay immediate', async () => {
+  const old = snapshot({ lastUpdated: '2026-01-01T00:00:00Z' });
+  const current = snapshot();
+  const pending = deferred();
+  let downloads = 0;
+  const cache = createXShopSnapshotCache(() => {
+    downloads++;
+    return pending.promise;
+  }, { read: async () => old, write: async () => {} });
+  let finished = false;
+  const manual = cache.load(true, true).then(result => { finished = true; return result; });
+  await tick();
+  assert.equal(finished, false);
+  const ordinary = await cache.load();
+  assert.equal(ordinary.lastUpdated, old.lastUpdated);
+  const poll = cache.load(false, true);
+  assert.equal(downloads, 1);
+  pending.resolve(current);
+  for (const result of await Promise.all([manual, poll])) {
+    assert.equal(result.lastUpdated, current.lastUpdated);
+    assert.equal(result.snapshotStatus.refreshing, false);
+  }
+  assert.equal(downloads, 1);
+});
+
+test('bounded polling retains complete old data while a slow download continues', async () => {
+  const old = snapshot({ lastUpdated: '2026-01-01T00:00:00Z' });
+  const pending = deferred();
+  const cache = createXShopSnapshotCache(() => pending.promise, {
+    read: async () => old, write: async () => {},
+  }, Date.now, 5);
+  const response = await cache.load(true, true);
+  assert.equal(response.lastUpdated, old.lastUpdated);
+  assert.equal(response.snapshotStatus.refreshing, true);
+  pending.resolve(snapshot());
+  await tick();
+  assert.equal(cache.status().refreshing, false);
+});
+
+test('failed refresh preserves saved data and exposes only a safe reason; retry clears it', async () => {
+  const old = snapshot({ lastUpdated: '2026-01-01T00:00:00Z' });
+  let fail = true, writes = 0;
+  const cache = createXShopSnapshotCache(async () => {
+    if (fail) throw new XShopReadError('timeout');
+    return snapshot();
+  }, { read: async () => old, write: async () => { writes++; } });
+  await cache.load();
+  await tick();
+  const failed = await cache.load();
+  assert.equal(failed.lastUpdated, old.lastUpdated);
+  assert.equal(failed.snapshotStatus.refreshErrorCode, 'timeout');
+  assert.equal(writes, 0);
+  fail = false;
+  const retry = await cache.load(true);
+  assert.equal(retry.snapshotStatus.refreshing, true);
+  assert.equal(retry.snapshotStatus.refreshErrorCode, null);
+  await tick();
+  const current = await cache.load();
+  assert.equal(current.snapshotStatus.refreshError, null);
+  assert.equal(current.snapshotStatus.refreshErrorCode, null);
+  assert.equal(writes, 1);
+});
 
 test('restart serves a saved snapshot immediately while one complete update runs in background', async () => {
   const old = snapshot({ lastUpdated: '2026-01-01T00:00:00Z' });
@@ -32,7 +96,7 @@ test('restart serves a saved snapshot immediately while one complete update runs
   for (const response of responses) {
     assert.equal(response.lastUpdated, old.lastUpdated);
     assert.deepEqual(response.snapshotStatus, {
-      stale: true, restored: true, refreshing: true, refreshError: null, persistenceError: null,
+      stale: true, restored: true, refreshing: true, refreshError: null, refreshErrorCode: null, persistenceError: null,
     });
   }
   const current = snapshot();

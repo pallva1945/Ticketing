@@ -19,3 +19,4 @@
 - [Sponsor European reconciliation](sponsor-european-reconciliation.md) — European revenue is already in GameDay; split it only in Sponsor reconciliation and details without double counting.
 - [Merchandising provider transition](merchandising-provider-transition.md) — user reports sales moved to XShop; migrate analytics, not the storefront or checkout.
 - [Imported XShop line VAT](xshop-imported-line-vat.md) — imported line totals can include VAT despite zero line taxes; reconcile before category and product reporting.
+- [XShop refresh continuity](xshop-refresh-continuity.md) — Autoscale refreshes need active bounded polling; distinguish preview downloads from published and authenticated verification.
