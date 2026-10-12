@@ -1,6 +1,7 @@
 import type { MerchOrder, MerchProduct, MerchCustomer } from '../src/types/merchandising';
 import { classifyMerchFamily } from '../src/utils/merchandisingFamilies';
 import { normalizeImportedLineTax, normalizeOrderDiscounts, allocateMoney } from './xshopLineTax';
+import { buildMerchCustomers } from '../src/utils/merchandisingCustomers';
 
 type Row = Record<string, any>;
 const amount = (value: unknown): number => {
@@ -152,27 +153,8 @@ export function mapXShopProduct(product: Row, variations: Row[] = []): MerchProd
 }
 
 export function mapXShopCustomers(rows: Row[], orders: MerchOrder[]): MerchCustomer[] {
-  const customers = new Map<string, MerchCustomer>();
-  for (const row of rows) {
-    const email = String(row.email || '').trim().toLowerCase();
-    if (!email) continue;
-    customers.set(email, {
-      id: String(row.id), email, firstName: row.first_name || '', lastName: row.last_name || '',
+  return buildMerchCustomers(rows.filter(row => String(row.email || '').trim()).map(row => ({
+      id: String(row.id), email: String(row.email || ''), firstName: row.first_name || '', lastName: row.last_name || '',
       ordersCount: 0, totalSpent: 0, createdAt: isoDate(row.date_created_gmt), tags: [],
-    });
-  }
-  for (const order of orders) {
-    if (!order.customerEmail || order.financialStatus === 'refunded') continue;
-    let customer = customers.get(order.customerEmail);
-    if (!customer) {
-      const [firstName, ...rest] = order.customerName.split(' ');
-      customer = { id: `guest-${order.id}`, email: order.customerEmail, firstName, lastName: rest.join(' '),
-        ordersCount: 0, totalSpent: 0, createdAt: order.createdAt, tags: [] };
-      customers.set(order.customerEmail, customer);
-    }
-    customer.ordersCount++;
-    customer.totalSpent = money(customer.totalSpent + order.totalPrice - order.totalTax);
-    if (order.createdAt < customer.createdAt) customer.createdAt = order.createdAt;
-  }
-  return [...customers.values()];
+  })), orders);
 }

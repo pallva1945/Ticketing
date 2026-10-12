@@ -1,6 +1,22 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { XShopReadError, withXShopRetries, xshopRetryDelay } from '../server/xshopRead.ts';
+import { XShopReadError, withXShopRetries, xshopRetryDelay, xshopHttpError } from '../server/xshopRead.ts';
+test('HTML bot challenges are identified separately from API authentication or temporary failures', async () => {
+  assert.equal(xshopHttpError(202, 'text/html'), 'blocked');
+  assert.equal(xshopHttpError(403, 'text/html; charset=UTF-8'), 'blocked');
+  assert.equal(xshopHttpError(403, 'application/json'), 'access');
+  assert.equal(xshopHttpError(401, 'application/json'), 'access');
+  assert.equal(xshopHttpError(429, 'application/json'), 'temporary');
+  assert.equal(xshopHttpError(503, 'text/html'), 'temporary');
+  assert.equal(xshopHttpError(200, 'application/json'), null);
+  assert.equal(xshopHttpError(202, 'application/json'), null);
+  let attempts = 0;
+  await assert.rejects(withXShopRetries(async () => {
+    attempts++;
+    throw new XShopReadError('blocked');
+  }), /bot protection/);
+  assert.equal(attempts, 1);
+});
 import { mapConcurrent } from '../server/xshopApi.ts';
 
 test('timeout and interrupted connections retry with bounded backoff', async () => {

@@ -81,6 +81,30 @@ test('failed refresh preserves saved data and exposes only a safe reason; retry 
   assert.equal(writes, 1);
 });
 
+test('bot protection failures retain complete data without automatic retry storms; manual retry overrides cooldown', async () => {
+  const old = snapshot({ lastUpdated: '2026-01-01T00:00:00Z' });
+  let time = Date.now(), downloads = 0, writes = 0, blocked = true;
+  const cache = createXShopSnapshotCache(async () => {
+    downloads++;
+    if (blocked) throw new XShopReadError('blocked');
+    return snapshot();
+  }, { read: async () => old, write: async () => { writes++; } }, () => time);
+  await cache.load();
+  await tick();
+  time += 2 * 60 * 1000;
+  const retained = await cache.load();
+  assert.equal(downloads, 1);
+  assert.equal(writes, 0);
+  assert.equal(retained.lastUpdated, old.lastUpdated);
+  assert.equal(retained.snapshotStatus.refreshErrorCode, 'blocked');
+  assert.equal(retained.snapshotStatus.refreshing, false);
+  blocked = false;
+  await cache.load(true, true);
+  assert.equal(downloads, 2);
+  assert.equal(writes, 1);
+  assert.equal(cache.status().refreshErrorCode, null);
+});
+
 test('restart serves a saved snapshot immediately while one complete update runs in background', async () => {
   const old = snapshot({ lastUpdated: '2026-01-01T00:00:00Z' });
   const pending = deferred();

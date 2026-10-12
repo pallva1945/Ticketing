@@ -10,6 +10,7 @@ import { getMerchSeason, isMerchSale, isMerchGiveaway, merchLineNetRevenue } fro
 import type { MerchOrder, MerchProduct, MerchCustomer, MerchandisingData, MerchFamily } from '../types/merchandising';
 import { formatMerchDate } from '../utils/merchandisingDate';
 import { readMerchandisingResponse } from '../utils/merchandisingResponse';
+import { buildMerchCustomers, merchCustomerKey, normalizeMerchEmail } from '../utils/merchandisingCustomers';
 import { MERCH_FAMILIES, buildMerchFamilyRevenue, productFamily, scopeMerchOrders } from '../utils/merchandisingFamilies';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend, LineChart, Line } from 'recharts';
 
@@ -190,15 +191,16 @@ export const MerchandisingView: React.FC<{
     [baseFilteredOrders, data, selectedFamily]);
   const scopedProducts = useMemo(() => (data?.products || [])
     .filter(product => selectedFamily === 'all' || productFamily(product) === selectedFamily), [data, selectedFamily]);
+  const unifiedCustomers = useMemo(() => data ? buildMerchCustomers(data.customers, data.orders) : [], [data]);
   const scopedCustomers = useMemo(() => {
     if (!data) return [];
-    if (selectedFamily === 'all') return data.customers;
-    return data.customers.flatMap(customer => {
-      const orders = filteredOrders.filter(order => isMerchSale(order) && order.customerEmail === customer.email);
+    if (selectedFamily === 'all') return unifiedCustomers;
+    return unifiedCustomers.flatMap(customer => {
+      const orders = filteredOrders.filter(order => isMerchSale(order) && merchCustomerKey(order) === customer.id);
       return orders.length ? [{ ...customer, ordersCount: orders.length,
         totalSpent: orders.reduce((sum, order) => sum + order.totalPrice - order.totalTax, 0) }] : [];
     });
-  }, [data, filteredOrders, selectedFamily]);
+  }, [data, unifiedCustomers, filteredOrders, selectedFamily]);
 
   const gameDayMerchByMonth = useMemo(() => {
     const merchByMonth: Record<string, number> = {};
@@ -326,24 +328,8 @@ export const MerchandisingView: React.FC<{
       monthlyRevenue[monthKey] = (monthlyRevenue[monthKey] || 0) + orderNetRevenue;
     });
     
-    const customerSpending: Record<string, { email: string; firstName: string; lastName: string; spent: number; orders: number }> = {};
-    filteredOrders.forEach(order => {
-      const email = order.customerEmail || 'guest';
-      if (!customerSpending[email]) {
-        const nameParts = order.customerName.split(' ');
-        customerSpending[email] = {
-          email,
-          firstName: nameParts[0] || '',
-          lastName: nameParts.slice(1).join(' ') || '',
-          spent: 0,
-          orders: 0
-        };
-      }
-      customerSpending[email].spent += order.totalPrice - (order.totalTax || 0);
-      customerSpending[email].orders += 1;
-    });
-    
-    const topCustomers = Object.values(customerSpending)
+    const topCustomers = buildMerchCustomers([], filteredOrders.filter(isMerchSale))
+      .map(customer => ({ ...customer, spent: customer.totalSpent, orders: customer.ordersCount }))
       .sort((a, b) => b.spent - a.spent)
       .slice(0, 10);
     
@@ -437,7 +423,7 @@ export const MerchandisingView: React.FC<{
     const thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const cMap: Record<string, { orders: number; totalSpent: number; firstOrder: Date; lastOrder: Date }> = {};
     allOrdersForCommunity.forEach(order => {
-      const email = order.customerEmail;
+      const email = normalizeMerchEmail(order.customerEmail);
       if (!email) return;
       const orderDate = new Date(order.processedAt);
       const netAmount = order.totalPrice - (order.totalTax || 0);
@@ -536,8 +522,8 @@ export const MerchandisingView: React.FC<{
           case 'fulfillmentStatus': aVal = a.fulfillmentStatus || ''; bVal = b.fulfillmentStatus || ''; break;
           case 'clientType': {
             const segOrder: Record<string, number> = { 'Champion': 5, 'Loyal': 4, 'New Blood': 3, 'At Risk': 2, 'One-Timer': 1 };
-            aVal = segOrder[customerClassification.get(a.customerEmail)?.segment || ''] || 0;
-            bVal = segOrder[customerClassification.get(b.customerEmail)?.segment || ''] || 0;
+            aVal = segOrder[customerClassification.get(normalizeMerchEmail(a.customerEmail))?.segment || ''] || 0;
+            bVal = segOrder[customerClassification.get(normalizeMerchEmail(b.customerEmail))?.segment || ''] || 0;
             break;
           }
           default: return 0;
@@ -560,7 +546,7 @@ export const MerchandisingView: React.FC<{
         const fullName = `${c.firstName || ''} ${c.lastName || ''}`.toLowerCase();
         const email = (c.email || '').toLowerCase();
         const tagsStr = (c.tags || []).join(' ').toLowerCase();
-        const searchableText = `${fullName} ${email} ${tagsStr}`;
+        const searchableText = `${fullName} ${email} ${tagsStr} ${(c.nameAliases || []).join(' ').toLowerCase()}`;
         
         // All search words must match somewhere in the searchable text
         return searchWords.every(word => searchableText.includes(word));
@@ -596,11 +582,11 @@ export const MerchandisingView: React.FC<{
     }));
   };
 
-  const getCustomerOrders = (email: string) => {
+  const getCustomerOrders = (customerId: string) => {
     if (!data) return [];
     // Show ALL orders for this customer, not just filtered by season
     return scopeMerchOrders(data.orders, data.products, selectedFamily)
-      .filter(order => order.customerEmail === email)
+      .filter(order => merchCustomerKey(order) === customerId)
       .sort((a, b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime());
   };
 
@@ -717,7 +703,7 @@ export const MerchandisingView: React.FC<{
     const thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const customerMap: Record<string, { email: string; name: string; orders: number; totalSpent: number; firstOrder: Date; lastOrder: Date }> = {};
     allOrdersForCommunity.forEach(order => {
-      const email = order.customerEmail;
+      const email = normalizeMerchEmail(order.customerEmail);
       if (!email) return;
       const orderDate = new Date(order.processedAt);
       const netAmount = order.totalPrice - (order.totalTax || 0);
@@ -764,7 +750,7 @@ export const MerchandisingView: React.FC<{
       allOrdersForCommunity.forEach(o => {
         const d = new Date(o.processedAt);
         if (d > endDate) return;
-        const email = o.customerEmail;
+        const email = normalizeMerchEmail(o.customerEmail);
         if (!email) return;
         const net = o.totalPrice - (o.totalTax || 0);
         if (!custMap[email]) custMap[email] = { orders: 0, totalSpent: 0, firstOrder: d, lastOrder: d };
@@ -788,7 +774,7 @@ export const MerchandisingView: React.FC<{
     if (!allOrdersForCommunity.length) return { entryProducts: [] as { title: string; count: number }[], bundles: [] as { product1: string; product2: string; count: number }[] };
     const customerFirstOrders: Record<string, MerchOrder> = {};
     allOrdersForCommunity.forEach(order => {
-      const email = order.customerEmail;
+      const email = normalizeMerchEmail(order.customerEmail);
       if (!email) return;
       const orderDate = new Date(order.processedAt).getTime();
       if (!customerFirstOrders[email] || orderDate < new Date(customerFirstOrders[email].processedAt).getTime()) {
@@ -822,7 +808,7 @@ export const MerchandisingView: React.FC<{
     if (!allOrdersForCommunity.length) return { cohorts: [] as any[], months: [] as string[] };
     const customerOrders: Record<string, Date[]> = {};
     allOrdersForCommunity.forEach(order => {
-      const email = order.customerEmail;
+      const email = normalizeMerchEmail(order.customerEmail);
       if (!email) return;
       if (!customerOrders[email]) customerOrders[email] = [];
       customerOrders[email].push(new Date(order.processedAt));
@@ -921,7 +907,7 @@ export const MerchandisingView: React.FC<{
   const selectedProductStats = selectedProductId ? getProductStats(selectedProductId) : null;
   const selectedCustomerOrders = selectedCustomerId ? getCustomerOrders(selectedCustomerId) : [];
   const selectedOrder = selectedOrderId ? (data?.orders.find(o => o.id === selectedOrderId) || filteredOrders.find(o => o.id === selectedOrderId)) : null;
-  const selectedCustomer = selectedCustomerId ? scopedCustomers.find(c => c.email === selectedCustomerId) : null;
+  const selectedCustomer = selectedCustomerId ? unifiedCustomers.find(c => c.id === selectedCustomerId) : null;
 
   return (
     <div className="space-y-6 pt-6 animate-fade-in">
@@ -1296,9 +1282,17 @@ export const MerchandisingView: React.FC<{
               <div className="space-y-3">
                 {stats.topCustomers.slice(0, 5).map((customer, i) => (
                   <div 
-                    key={customer.email} 
+                    key={customer.id}
                     className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    onClick={() => setSelectedCustomerId(customer.email)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={event => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        setSelectedCustomerId(customer.id);
+                      }
+                    }}
+                    onClick={() => setSelectedCustomerId(customer.id)}
                   >
                     <div className="flex items-center gap-3">
                       <span className="w-6 h-6 bg-blue-100 dark:bg-blue-900/20 text-blue-700 rounded-full flex items-center justify-center text-xs font-bold">{i + 1}</span>
@@ -1506,7 +1500,7 @@ export const MerchandisingView: React.FC<{
                     </td>
                     <td className="px-4 py-3 text-center">
                       {(() => {
-                        const cls = customerClassification.get(order.customerEmail);
+                        const cls = customerClassification.get(normalizeMerchEmail(order.customerEmail));
                         if (!cls) return <span className="text-xs text-gray-400">—</span>;
                         return (
                           <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${cls.color} ${cls.bg}`} title={`${cls.orders} ${t('orders')} · ${formatCurrency(cls.totalSpent)}`}>
@@ -1604,7 +1598,7 @@ export const MerchandisingView: React.FC<{
                   <tr 
                     key={customer.id} 
                     className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                    onClick={() => setSelectedCustomerId(customer.email)}
+                    onClick={() => setSelectedCustomerId(customer.id)}
                   >
                     <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">{customer.firstName} {customer.lastName}</td>
                     <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{customer.email}</td>
@@ -1623,7 +1617,7 @@ export const MerchandisingView: React.FC<{
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button 
-                        onClick={(e) => { e.stopPropagation(); setSelectedCustomerId(customer.email); }}
+                        onClick={(e) => { e.stopPropagation(); setSelectedCustomerId(customer.id); }}
                         className="px-3 py-1 bg-orange-100 dark:bg-orange-900/20 text-orange-700 rounded-lg text-xs font-medium hover:bg-orange-200 transition-colors"
                       >
                         <Eye size={12} className="inline mr-1" /> {t('View')}
@@ -2464,7 +2458,7 @@ export const MerchandisingView: React.FC<{
                   <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">
                     {selectedCustomer ? `${selectedCustomer.firstName} ${selectedCustomer.lastName}` : selectedCustomerOrders[0]?.customerName || t('Guest')}
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{selectedCustomer?.email || selectedCustomerId}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{selectedCustomer?.email || t('Guest')}</p>
                   {selectedCustomer?.tags && selectedCustomer.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
                       {selectedCustomer.tags.map((tag, i) => (
@@ -2476,12 +2470,12 @@ export const MerchandisingView: React.FC<{
                     <div className="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 text-center">
                       <p className="text-xs text-green-600">{t('Total Spent')}</p>
                       <p className="text-lg font-bold text-green-700">
-                        {formatCurrency(selectedCustomer?.totalSpent || selectedCustomerOrders.reduce((sum, o) => sum + o.totalPrice - (o.totalTax || 0), 0))}
+                        {formatCurrency(selectedCustomerOrders.filter(isMerchSale).reduce((sum, o) => sum + o.totalPrice - (o.totalTax || 0), 0))}
                       </p>
                     </div>
                     <div className="bg-orange-50 dark:bg-orange-900/30 rounded-lg p-3 text-center">
                       <p className="text-xs text-orange-600">{t('Orders')}</p>
-                      <p className="text-lg font-bold text-orange-700">{selectedCustomer?.ordersCount || selectedCustomerOrders.length}</p>
+                      <p className="text-lg font-bold text-orange-700">{selectedCustomerOrders.filter(isMerchSale).length}</p>
                     </div>
                     <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 text-center">
                       <p className="text-xs text-blue-600">{t('This Season')}</p>
@@ -2504,7 +2498,14 @@ export const MerchandisingView: React.FC<{
                     <div key={order.id} className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-100">{t('Order')} #{order.orderNumber}</p>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrderId(order.id)}
+                            className="text-sm font-medium text-gray-800 dark:text-gray-100 hover:text-orange-600 inline-flex items-center gap-2"
+                          >
+                            {t('Order')} #{order.orderNumber}
+                            <Eye size={14} />
+                          </button>
                           <p className="text-xs text-gray-500 dark:text-gray-400">{formatDate(order.processedAt)}</p>
                         </div>
                         <div className="text-right">

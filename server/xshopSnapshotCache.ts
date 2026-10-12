@@ -89,7 +89,12 @@ export function createXShopSnapshotCache(
       refreshErrorCode = error instanceof XShopReadError ? error.code : null;
       console.warn('XShop snapshot refresh failed:', error instanceof XShopReadError
         ? error.message : 'A complete snapshot could not be loaded.');
-      retryAfter = now() + 60000;
+      // Repeated downloads cannot solve hosting challenges or missing access.
+      // Cool down automatic attempts; an explicit retry still works immediately
+      // after the shop administrator restores API access.
+      const permanent = error instanceof XShopReadError
+        && ['blocked', 'access', 'credentials'].includes(error.code);
+      retryAfter = now() + (permanent ? XSHOP_SNAPSHOT_TTL : 60000);
       throw new Error('XShop could not load a complete snapshot. Please retry.');
     }).finally(() => { inFlight = null; });
     return inFlight;

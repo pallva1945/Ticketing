@@ -62,6 +62,7 @@ export interface MerchCustomer {
   totalSpent: number;
   createdAt: string;
   tags: string[];
+  nameAliases?: string[];
 }
 
 export interface MerchandisingData {
@@ -76,7 +77,7 @@ export interface MerchandisingData {
   snapshotStatus?: MerchSnapshotStatus;
 }
 
-export type MerchRefreshErrorCode = 'timeout' | 'connection' | 'access' | 'temporary'
+export type MerchRefreshErrorCode = 'timeout' | 'connection' | 'access' | 'blocked' | 'temporary'
   | 'response' | 'pagination' | 'credentials';
 
 export interface MerchSnapshotStatus {

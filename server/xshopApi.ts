@@ -2,7 +2,7 @@ import type { MerchandisingData } from '../src/types/merchandising';
 import { isRecognizedOrder, mapXShopOrder, mapXShopProduct, mapXShopCustomers } from './xshopMapping';
 import { createXShopSnapshotCache } from './xshopSnapshotCache';
 import { xshopSnapshotStore } from './xshopSnapshotStore';
-import { XShopReadError, withXShopRetries, xshopRetryDelay } from './xshopRead';
+import { XShopReadError, withXShopRetries, xshopRetryDelay, xshopHttpError } from './xshopRead';
 
 type Row = Record<string, any>;
 const ROOT = 'https://store.pallacanestrovarese.it/wp-json/wc/v3/';
@@ -19,12 +19,9 @@ export async function fetchXShopAPI(resource: string, params: Record<string, str
       method: 'GET', redirect: 'error', signal: AbortSignal.timeout(30000),
       headers: { Authorization: `Basic ${Buffer.from(`${key}:${secret}`).toString('base64')}`, Accept: 'application/json' },
     });
-    if (response.status === 429 || response.status >= 500) {
-      throw new XShopReadError('temporary', xshopRetryDelay(response.headers.get('retry-after')));
-    }
+    const httpError = xshopHttpError(response.status, response.headers.get('content-type'));
     // Never forward raw provider errors, credentials, headers or payment metadata to the browser/logs.
-    if (!response.ok) throw new XShopReadError(
-      response.status === 401 || response.status === 403 ? 'access' : 'response');
+    if (httpError) throw new XShopReadError(httpError, xshopRetryDelay(response.headers.get('retry-after')));
     if (!response.headers.get('content-type')?.includes('application/json')) {
       throw new XShopReadError('response');
     }

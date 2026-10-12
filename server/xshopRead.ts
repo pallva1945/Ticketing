@@ -6,6 +6,7 @@ const messages: Record<MerchRefreshErrorCode, string> = {
   timeout: 'XShop did not respond within the request time limit.',
   connection: 'The connection to XShop was interrupted.',
   access: 'XShop rejected API access. Check the connection and store permissions.',
+  blocked: 'XShop bot protection is blocking API requests. The shop administrator must allow authenticated WooCommerce API access.',
   temporary: 'XShop is temporarily unavailable or limiting API requests.',
   response: 'XShop returned an invalid API response.',
   pagination: 'XShop changed during pagination; retry to obtain a complete snapshot. No partial snapshot was published.',
@@ -17,6 +18,17 @@ export class XShopReadError extends Error {
     super(messages[code]);
     this.name = 'XShopReadError';
   }
+}
+
+export function xshopHttpError(status: number, contentType: string | null): MerchRefreshErrorCode | null {
+  // Hosting bot challenges can return a successful 202 but contain an HTML
+  // JavaScript page. They are not WooCommerce data or bad API credentials.
+  const html = contentType?.toLowerCase().includes('text/html');
+  if (html && (status === 202 || status === 403)) return 'blocked';
+  if (status === 429 || status >= 500) return 'temporary';
+  if (status === 401 || status === 403) return 'access';
+  if (status < 200 || status >= 300) return 'response';
+  return null;
 }
 
 export async function withXShopRetries<T>(

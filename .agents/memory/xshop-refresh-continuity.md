@@ -14,3 +14,11 @@ Do not describe a preview fix as already applied to production, or browser-only 
 **Why:** Published code only changes after the user republishes. Simulated authentication can validate interface behavior but cannot prove a real session or production refresh works.
 
 **How to apply:** State which environment and layer were verified; confirm a fresh complete live snapshot before claiming the published refresh is resolved.
+
+## Hosting bot challenges
+
+The shop's hosting protection can answer WooCommerce API calls with HTTP 202 and an HTML JavaScript challenge, rather than JSON. This is distinct from API credential denial and from Autoscale interruptions.
+
+**Why:** Both preview and published refreshes failed after earlier complete downloads; a direct read-only probe confirmed the HTML challenge on all three primary API resources.
+
+**How to apply:** Preserve the last complete snapshot, identify the protection block explicitly, and avoid aggressive automatic retries. Ask the shop/hosting administrator to allow authenticated WooCommerce API traffic while retaining API authentication and other store protections. Do not treat the challenge as financial data or attempt to circumvent it.

@@ -16,6 +16,8 @@ export function MerchSnapshotNotice({ lastUpdated, status, error, compact = fals
     timeout: it ? 'XShop non ha risposto entro il tempo previsto, anche dopo i tentativi automatici.' : 'XShop timed out after automatic retries.',
     connection: it ? 'La connessione a XShop è stata interrotta, anche dopo i tentativi automatici.' : 'The connection to XShop was interrupted after automatic retries.',
     access: it ? 'XShop ha rifiutato l’accesso API. Verifica la connessione e i permessi del negozio.' : 'XShop rejected API access. Check the connection and store permissions.',
+    blocked: it ? 'La protezione anti-bot del negozio blocca le chiamate API. L’amministratore del negozio deve consentire l’accesso autenticato alle API WooCommerce. I tentativi automatici sono sospesi per 30 minuti; riprova dopo la correzione.'
+      : 'The shop’s bot protection is blocking API calls. The shop administrator must allow authenticated WooCommerce API access. Automatic retries are paused for 30 minutes; retry after the shop settings are corrected.',
     temporary: it ? 'XShop è temporaneamente non disponibile o sta limitando le richieste API.' : 'XShop is temporarily unavailable or limiting API requests.',
     response: it ? 'XShop ha restituito una risposta API non valida.' : 'XShop returned an invalid API response.',
     pagination: it ? 'I dati XShop sono cambiati durante il download; nessuna copia parziale è stata pubblicata.' : 'XShop changed during download; no partial snapshot was published.',
