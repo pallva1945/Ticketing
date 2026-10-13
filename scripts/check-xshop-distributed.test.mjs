@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
-import { createXShopSnapshotCache, XSHOP_SNAPSHOT_VERSION } from '../server/xshopSnapshotCache.ts';
+import { createXShopSnapshotCache, XSHOP_SNAPSHOT_VERSION, XSHOP_REFRESH_MAX_MS } from '../server/xshopSnapshotCache.ts';
 import { snapshotObject } from './helpers/xshopSnapshotFake.mjs';
 import { XShopReadError } from '../server/xshopRead.ts';
 
@@ -22,6 +22,86 @@ const until = async condition => {
   assert.ok(condition(), 'Condition did not settle');
 };
 const timing = { leaseTtlMs: 2000, heartbeatMs: 500, followPollMs: 2 };
+
+test('a hung download times out, aborts, releases its lease and allows another explicit retry', async () => {
+  const object = objectWithOld(), pending = deferred();
+  let signal, calls = 0;
+  const cache = createXShopSnapshotCache(async currentSignal => {
+    calls++;
+    signal = currentSignal;
+    return calls === 1 ? pending.promise : snapshot();
+  }, object.store(), Date.now, 5, timing, 80);
+  await cache.load(true, true);
+  for (let i = 0; i < 150 && cache.status().refreshing; i++) await new Promise(r => setTimeout(r, 3));
+  assert.equal(cache.status().refreshing, false);
+  assert.equal(cache.status().refreshErrorCode, 'timeout');
+  assert.equal(signal.aborted, true);
+  assert.equal(object.content().lease, null);
+  assert.equal(object.content().data.lastUpdated, old().lastUpdated);
+  await cache.load(true, true);
+  await until(() => !cache.status().refreshing);
+  const latest = object.content().data.lastUpdated;
+  pending.resolve(old());
+  await tick();
+  assert.equal(object.content().data.lastUpdated, latest, 'Timed-out worker must never commit late');
+  assert.equal((await cache.history()).attempts.find(a => a.outcome === 'failure').failureCode, 'timeout');
+});
+
+test('hung history storage cannot leave the refresh permanently running', async () => {
+  const object = objectWithOld();
+  const store = object.store();
+  store.writeHistory = () => new Promise(() => {});
+  const cache = createXShopSnapshotCache(async () => snapshot(), store, Date.now, 5, timing, 40);
+  await cache.load(true, true);
+  for (let i = 0; i < 150 && cache.status().refreshing; i++) await new Promise(r => setTimeout(r, 3));
+  assert.equal(cache.status().refreshing, false);
+  assert.equal(cache.status().historyPersistenceError, true);
+  assert.equal(object.content().lease, null);
+  assert.equal(object.content().data.lastUpdated, old().lastUpdated);
+});
+
+test('legacy endlessly renewed leases are recoverable from their private history start time', async () => {
+  const clock = Date.now();
+  const legacyOwner = '11111111-1111-4111-8111-111111111111';
+  const object = snapshotObject({
+    version: XSHOP_SNAPSHOT_VERSION, data: old(), revision: null,
+    lease: { owner: legacyOwner, expiresAt: clock + 120000 },
+  });
+  const store = object.store(() => clock);
+  await store.writeHistory([{
+    id: legacyOwner, startedAt: new Date(clock - XSHOP_REFRESH_MAX_MS - 1).toISOString(),
+    finishedAt: null, outcome: 'unfinished', failureCode: null,
+    lastSuccessfulSnapshotAt: old().lastUpdated, recognizedOrderCount: 0,
+  }]);
+  const state = await store.acquire('new-worker', 120000, null, true);
+  assert.equal(state.lease.owner, 'new-worker');
+  assert.equal(state.lease.startedAt, clock);
+  assert.equal(await store.renew(legacyOwner, 120000), false);
+  assert.equal(await store.commit(legacyOwner, snapshot()), false);
+  assert.equal(state.data.lastUpdated, old().lastUpdated);
+});
+
+test('legacy active leases without proof of an overlong attempt are not stolen', async () => {
+  const clock = Date.now();
+  const object = snapshotObject({
+    version: XSHOP_SNAPSHOT_VERSION, data: old(), revision: null,
+    lease: { owner: 'unknown-active-worker', expiresAt: clock + 120000 },
+  });
+  const state = await object.store(() => clock).acquire('new-worker', 120000, null, true);
+  assert.equal(state.lease.owner, 'unknown-active-worker');
+});
+
+test('heartbeats cannot extend a lease beyond the absolute refresh deadline', async () => {
+  let clock = Date.now();
+  const start = clock, object = objectWithOld(), store = object.store(() => clock);
+  await store.acquire('bounded-worker', XSHOP_REFRESH_MAX_MS, null, true);
+  clock += XSHOP_REFRESH_MAX_MS - 1;
+  assert.equal(await store.renew('bounded-worker', 120000), true);
+  assert.equal(object.content().lease.expiresAt, start + XSHOP_REFRESH_MAX_MS);
+  clock++;
+  assert.equal(await store.renew('bounded-worker', 120000), false);
+  assert.equal(await store.commit('bounded-worker', snapshot()), false);
+});
 
 test('two independent servers share one refresh and both adopt its committed result', async () => {
   const object = objectWithOld(), pending = deferred();

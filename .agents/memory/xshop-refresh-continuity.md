@@ -23,6 +23,14 @@ The shop's hosting protection can answer WooCommerce API calls with HTTP 202 and
 
 **How to apply:** Preserve the last complete snapshot, identify the protection block explicitly, and avoid aggressive automatic retries. Ask the shop/hosting administrator to allow authenticated WooCommerce API traffic while retaining API authentication and other store protections. Do not treat the challenge as financial data or attempt to circumvent it.
 
+## Renewable locks need an absolute deadline
+
+A refresh heartbeat must never keep a distributed reservation alive indefinitely. Bound the whole attempt, including storage/history work, abort provider reads on expiry, and fence late results against the current owner.
+
+**Why:** A live attempt remained unfinished into the following day while its heartbeat continued renewing the reservation. New refreshes waited behind it even after the shop API was responding normally.
+
+**How to apply:** Limit both attempt duration and heartbeat extensions. Recover legacy reservations only when their matching private history proves they exceeded the limit; never discard an active reservation without that evidence. Keep the last complete financial snapshot throughout recovery.
+
 
 ## Multi-worker coordination safety
 

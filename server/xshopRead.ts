@@ -34,11 +34,14 @@ export function xshopHttpError(status: number, contentType: string | null): Merc
 export async function withXShopRetries<T>(
   read: () => Promise<T>,
   pause: (ms: number) => Promise<void> = ms => new Promise(resolve => setTimeout(resolve, ms)),
+  signal?: AbortSignal,
 ): Promise<T> {
   for (let attempt = 0; attempt < 3; attempt++) {
+    signal?.throwIfAborted();
     try {
       return await read();
     } catch (cause) {
+      signal?.throwIfAborted();
       let error = cause;
       if (cause instanceof Error && ['TimeoutError', 'AbortError'].includes(cause.name)) {
         error = new XShopReadError('timeout');
@@ -52,6 +55,20 @@ export async function withXShopRetries<T>(
     }
   }
   throw new XShopReadError('temporary');
+}
+
+export async function withXShopDeadline<T>(work: Promise<T>, ms: number, expire?: () => void): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([work, new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        expire?.();
+        reject(new XShopReadError('timeout'));
+      }, ms);
+    })]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 export function xshopRetryDelay(value: string | null, now = Date.now()): number {

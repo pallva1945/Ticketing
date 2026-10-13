@@ -1,5 +1,5 @@
 import { ObjectStorageService, objectStorageClient } from './replit_integrations/object_storage/objectStorage';
-import { validateXShopSnapshot, XSHOP_SNAPSHOT_VERSION, XSHOP_SNAPSHOT_TTL, type XShopSnapshotStore, type XShopRefreshState } from './xshopSnapshotCache';
+import { validateXShopSnapshot, XSHOP_SNAPSHOT_VERSION, XSHOP_SNAPSHOT_TTL, XSHOP_REFRESH_MAX_MS, type XShopSnapshotStore, type XShopRefreshState } from './xshopSnapshotCache';
 import type { File } from '@google-cloud/storage';
 import { sanitizeXShopHistory, mergeXShopHistory, XSHOP_HISTORY_VERSION } from './xshopRefreshHistory';
 
@@ -73,7 +73,8 @@ export function createXShopSnapshotStore(
           lease: envelope.lease ?? null,
           retryAfter: envelope.retryAfter ?? 0,
         };
-        if ((state.lease && (typeof state.lease.owner !== 'string' || !Number.isFinite(state.lease.expiresAt)))
+        if ((state.lease && (typeof state.lease.owner !== 'string' || !Number.isFinite(state.lease.expiresAt)
+          || (state.lease.startedAt !== undefined && !Number.isFinite(state.lease.startedAt))))
           || !Number.isFinite(state.retryAfter)
           || (state.revision !== null && typeof state.revision !== 'string')) {
           throw new Error('Invalid XShop coordination state');
@@ -90,10 +91,10 @@ export function createXShopSnapshotStore(
     throw new Error('XShop snapshot read contention');
   }
 
-  async function mutate(change: (state: XShopRefreshState) => boolean) {
+  async function mutate(change: (state: XShopRefreshState) => boolean | Promise<boolean>) {
     for (let attempt = 0; attempt < 12; attempt++) {
       const { state, generation } = await read();
-      if (!change(state)) return { changed: false, state };
+      if (!await change(state)) return { changed: false, state };
       const data = state.data;
       const snapshot = data ? (({ snapshotStatus: _status, ...rest }) => rest)(data) : null;
       try {
@@ -155,20 +156,35 @@ export function createXShopSnapshotStore(
     },
     async readState() { return (await read()).state; },
     async acquire(owner, ttl, revision, force) {
-      return (await mutate(state => {
-        if (state.lease && state.lease.expiresAt > now()) return false;
+      return (await mutate(async state => {
+        let clearedStuckLease = false;
+        if (state.lease && state.lease.expiresAt > now()) {
+          // Older deployments had renewable leases without an absolute bound.
+          // Only recover one when private history proves its actual start time.
+          let startedAt = state.lease.startedAt;
+          if (startedAt === undefined) {
+            const history = await this.readHistory!();
+            const recorded = history?.find(attempt => attempt.id === state.lease!.owner);
+            if (recorded) startedAt = Date.parse(recorded.startedAt);
+          }
+          if (startedAt === undefined || now() - startedAt < XSHOP_REFRESH_MAX_MS) return false;
+          state.lease = null;
+          clearedStuckLease = true;
+        }
         // A peer already completed the refresh requested against this revision.
-        if (state.data && state.revision !== revision) return false;
+        if (state.data && state.revision !== revision) return clearedStuckLease;
         if (!force && (state.retryAfter > now()
-          || (state.data && now() - Date.parse(state.data.lastUpdated) < XSHOP_SNAPSHOT_TTL))) return false;
-        state.lease = { owner, expiresAt: now() + ttl };
+          || (state.data && now() - Date.parse(state.data.lastUpdated) < XSHOP_SNAPSHOT_TTL))) return clearedStuckLease;
+        state.lease = { owner, startedAt: now(), expiresAt: now() + Math.min(ttl, XSHOP_REFRESH_MAX_MS) };
         return true;
       })).state;
     },
     async renew(owner, ttl) {
       return (await mutate(state => {
         if (state.lease?.owner !== owner || state.lease.expiresAt <= now()) return false;
-        state.lease.expiresAt = now() + ttl;
+        const deadline = (state.lease.startedAt ?? now()) + XSHOP_REFRESH_MAX_MS;
+        if (now() >= deadline) return false;
+        state.lease.expiresAt = Math.min(now() + ttl, deadline);
         return true;
       })).changed;
     },
@@ -176,6 +192,7 @@ export function createXShopSnapshotStore(
       validateXShopSnapshot(data);
       return (await mutate(state => {
         if (state.lease?.owner !== owner || state.lease.expiresAt <= now()
+          || (state.lease.startedAt !== undefined && now() - state.lease.startedAt >= XSHOP_REFRESH_MAX_MS)
           || (state.data && Date.parse(data.lastUpdated) < Date.parse(state.data.lastUpdated))) return false;
         state.data = data;
         state.revision = owner;

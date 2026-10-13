@@ -7,7 +7,8 @@ import { XShopReadError, withXShopRetries, xshopRetryDelay, xshopHttpError } fro
 type Row = Record<string, any>;
 const ROOT = 'https://store.pallacanestrovarese.it/wp-json/wc/v3/';
 
-export async function fetchXShopAPI(resource: string, params: Record<string, string> = {}) {
+export async function fetchXShopAPI(resource: string, params: Record<string, string> = {}, signal?: AbortSignal) {
+  signal?.throwIfAborted();
   const key = process.env.XSHOP_CONSUMER_KEY;
   const secret = process.env.XSHOP_CONSUMER_SECRET;
   if (!key || !secret) throw new XShopReadError('credentials');
@@ -16,7 +17,8 @@ export async function fetchXShopAPI(resource: string, params: Record<string, str
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
   return withXShopRetries(async () => {
     const response = await fetch(url, {
-      method: 'GET', redirect: 'error', signal: AbortSignal.timeout(30000),
+      method: 'GET', redirect: 'error',
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000),
       headers: { Authorization: `Basic ${Buffer.from(`${key}:${secret}`).toString('base64')}`, Accept: 'application/json' },
     });
     const httpError = xshopHttpError(response.status, response.headers.get('content-type'));
@@ -39,7 +41,7 @@ export async function fetchXShopAPI(resource: string, params: Record<string, str
       throw new XShopReadError('response');
     }
     return { data: data as Row[], total, pages };
-  });
+  }, undefined, signal);
 }
 
 export async function mapConcurrent<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
@@ -64,13 +66,14 @@ export async function mapConcurrent<T, R>(items: T[], limit: number, fn: (item: 
   return result;
 }
 
-export async function fetchAllXShop(resource: string, request = fetchXShopAPI): Promise<Row[]> {
+export async function fetchAllXShop(resource: string, request = fetchXShopAPI, signal?: AbortSignal): Promise<Row[]> {
+  signal?.throwIfAborted();
   const params = { per_page: '100', orderby: 'id', order: 'asc' };
-  const first = await request(resource, { ...params, page: '1' });
+  const first = await request(resource, { ...params, page: '1' }, signal);
   if (first.pages > 1000) throw new Error(`XShop ${resource} exceeds the safe pagination limit`);
   const remaining = await mapConcurrent(
     Array.from({ length: Math.max(0, first.pages - 1) }, (_, index) => index + 2), 3,
-    page => request(resource, { ...params, page: String(page) }),
+    page => request(resource, { ...params, page: String(page) }, signal),
   );
   const rows = first.data.concat(...remaining.map(page => page.data));
   const ids = new Set(rows.map(row => row.id));
@@ -81,22 +84,22 @@ export async function fetchAllXShop(resource: string, request = fetchXShopAPI): 
   return rows;
 }
 
-async function fetchSnapshot(): Promise<MerchandisingData> {
+async function fetchSnapshot(signal?: AbortSignal): Promise<MerchandisingData> {
   const started = Date.now();
   // Orders are the financial source; failure of any resource must not publish a partial snapshot.
-  const rawOrders = await fetchAllXShop('orders');
+  const rawOrders = await fetchAllXShop('orders', fetchXShopAPI, signal);
   const recognized = rawOrders.filter(isRecognizedOrder);
-  const rawProducts = await fetchAllXShop('products');
-  const rawCustomers = await fetchAllXShop('customers');
+  const rawProducts = await fetchAllXShop('products', fetchXShopAPI, signal);
+  const rawCustomers = await fetchAllXShop('customers', fetchXShopAPI, signal);
   const refundedOrders = recognized.filter(o => o.refunds?.length);
   const refundRows = await mapConcurrent(refundedOrders, 3, async order => ({
-    id: order.id, refunds: await fetchAllXShop(`orders/${order.id}/refunds`),
+    id: order.id, refunds: await fetchAllXShop(`orders/${order.id}/refunds`, fetchXShopAPI, signal),
   }));
   const refunds = new Map(refundRows.map(row => [row.id, row.refunds]));
   const orders = recognized.map(order => mapXShopOrder(order, refunds.get(order.id)));
   if (orders.some(order => order.currency !== 'EUR')) throw new Error('XShop contains non-EUR orders; currency conversion is required');
   const products = await mapConcurrent(rawProducts, 3, async product => mapXShopProduct(
-    product, product.type === 'variable' ? await fetchAllXShop(`products/${product.id}/variations`) : [],
+    product, product.type === 'variable' ? await fetchAllXShop(`products/${product.id}/variations`, fetchXShopAPI, signal) : [],
   ));
   const snapshot: MerchandisingData = {
     orders, products, customers: mapXShopCustomers(rawCustomers, orders),
