@@ -8,13 +8,15 @@ interface PacingWidgetProps {
   seasonTarget: number;
   gamesPlayed: number;
   totalGamesInSeason: number; // Guaranteed season revenue fixtures, including BCL/friendly where applicable
+  projectedRevenue?: number | null; // Explicit summed forecast; null means insufficient data.
 }
 
 export const PacingWidget: React.FC<PacingWidgetProps> = ({ 
   currentRevenue, 
   seasonTarget = 4800000, // €4.8M Target
   gamesPlayed,
-  totalGamesInSeason = 15
+  totalGamesInSeason = 15,
+  projectedRevenue: suppliedProjection
 }) => {
   const { t } = useLanguage();
   const currency = (value: number) => `€${value.toLocaleString('en-GB', { maximumFractionDigits: 0 })}`;
@@ -22,14 +24,14 @@ export const PacingWidget: React.FC<PacingWidgetProps> = ({
     <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">{t('Season Target (Budget)')}</h3>
     <p className="mt-3 text-sm text-slate-400">{t('No target configured for the selected competitions.')}</p>
   </div>;
-  if (gamesPlayed === 0) return <div className="h-full rounded-xl border border-slate-700 bg-slate-900 p-5 text-white shadow-lg">
+  if (gamesPlayed === 0 || suppliedProjection === null) return <div className="h-full rounded-xl border border-slate-700 bg-slate-900 p-5 text-white shadow-lg">
     <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">{t('Season Target (Budget)')}</h3>
-    <p className="mt-2 text-2xl font-bold">{currency(seasonTarget)}</p>
-    <p className="mt-3 text-sm text-slate-400">{t('No games played yet. Projection unavailable.')}</p>
-    <p className="mt-2 text-xs text-slate-400">0 / {totalGamesInSeason} {t('Games Played')}</p>
+    <p className="mt-2 text-2xl font-bold">{gamesPlayed > 0 ? `${currency(currentRevenue)} / ` : ''}{currency(seasonTarget)}</p>
+    <p className="mt-3 text-sm text-slate-400">{t(gamesPlayed === 0 ? 'No games played yet. Projection unavailable.' : 'Projection unavailable until every selected competition has completed-game data.')}</p>
+    <p className="mt-2 text-xs text-slate-400">{gamesPlayed} / {totalGamesInSeason} {t('Games Played')}</p>
   </div>;
   const progress = Math.min((currentRevenue / seasonTarget) * 100, 100);
-  const projectedRevenue = (currentRevenue / (gamesPlayed || 1)) * totalGamesInSeason;
+  const projectedRevenue = suppliedProjection ?? (currentRevenue / gamesPlayed) * totalGamesInSeason;
   const projectedProgress = Math.min((projectedRevenue / seasonTarget) * 100, 100);
   
   const isOnTrack = projectedRevenue >= seasonTarget;

@@ -23,6 +23,7 @@ const translations: Record<string, Record<Language, string>> = {
   'No games played yet for these filters. Game-based averages and projections are unavailable.': { en: 'No games played yet for these filters. Game-based averages and projections are unavailable.', it: 'Nessuna partita ancora disputata per questi filtri. Medie e proiezioni per partita non disponibili.' },
   'No games played yet for these filters. Open an upcoming game above to inspect sales progress.': { en: 'No games played yet for these filters. Open an upcoming game above to inspect sales progress.', it: 'Nessuna partita ancora disputata per questi filtri. Apri una prossima partita qui sopra per verificare le vendite.' },
   'No games played yet. Projection unavailable.': { en: 'No games played yet. Projection unavailable.', it: 'Nessuna partita ancora disputata. Proiezione non disponibile.' },
+  'Projection unavailable until every selected competition has completed-game data.': { en: 'Projection unavailable until every selected competition has completed-game data.', it: 'Proiezione non disponibile finché non ci sono dati di partite disputate per ogni competizione selezionata.' },
   'No target configured for the selected competitions.': { en: 'No target configured for the selected competitions.', it: 'Nessun obiettivo configurato per le competizioni selezionate.' },
   'Revenue Intelligence': { en: 'Revenue Intelligence', it: 'Intelligence Ricavi' },
   'AI Advisor': { en: 'AI Advisor', it: 'Consulente AI' },

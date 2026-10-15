@@ -26,3 +26,9 @@ The friendly is already played, not merely an extra future fixture. Include its 
 **Why:** The user corrected counting it only in the 19-game denominator while the played count still excluded it. Its source competition is `LBA - Pre Season`, so the previous LBA-only default silently excluded it.
 
 **How to apply:** Default 2026/27 revenue views to all competitions, including the friendly and BCL. Keep historical default LBA scope intact and preserve explicit competition filtering. Never add a synthetic played game without including its corresponding source revenue.
+
+GameDay multi-competition forecasts must add the individual competition forecasts, never extrapolate one pooled average across all fixtures.
+
+**Why:** Different revenue levels and unequal numbers of played fixtures produced a red combined forecast even when every individual league was green.
+
+**How to apply:** Extrapolate each competition's completed-game average against its own guaranteed fixture count, then sum forecasts and budgets. If a selected competition has no completed-game data, show a neutral unavailable forecast rather than inventing revenue. Keep historical budgets intact.

@@ -23,7 +23,7 @@ import { useRomeDay } from './hooks/useRomeDay';
 import { compareRevenueForecast } from './utils/revenueForecast';
 import { getRevenueSeasonGames, getDefaultRevenueLeagues } from './utils/revenueSeasonGames';
 import { getTicketingSeasonPlan } from './utils/ticketingTargets';
-import { getGameDaySeasonPlan } from './utils/gameDayTargets';
+import { getGameDaySeasonPlan, getGameDayRevenueForecast } from './utils/gameDayTargets';
 import type { MerchSnapshotStatus, MerchandisingData } from './types/merchandising';
 import { MerchSnapshotNotice } from './components/MerchSnapshotNotice';
 import { MerchRefreshHistory } from './components/MerchRefreshHistory';
@@ -2122,12 +2122,13 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   }, [gameDayData, data, selectedSeasons, selectedLeagues, selectedOpponents, selectedDays, selectedTiers]);
   const filteredGameDayData = useMemo(() => playedFixtures(matchingGameDayData, performanceDay), [matchingGameDayData, performanceDay]);
   const upcomingGameDayData = useMemo(() => matchingGameDayData.filter(game => isUpcomingFixture(game, performanceDay)), [matchingGameDayData, performanceDay]);
-  const gameDaySeasonPlan = useMemo(() => getGameDaySeasonPlan(
-    selectedSeasons.includes('All') ? [...new Set(gameDayData.map(game => game.season))] : selectedSeasons,
-    selectedLeagues,
-    gameDayIncludeTicketing,
-    filteredGameDayData.length,
-  ), [gameDayData, selectedSeasons, selectedLeagues, gameDayIncludeTicketing, filteredGameDayData.length]);
+  const gameDaySeasonPlan = useMemo(() => {
+    const seasons = selectedSeasons.includes('All') ? [...new Set(gameDayData.map(game => game.season))] : selectedSeasons;
+    return {
+      ...getGameDaySeasonPlan(seasons, selectedLeagues, gameDayIncludeTicketing, filteredGameDayData.length),
+      ...getGameDayRevenueForecast(seasons, selectedLeagues, gameDayIncludeTicketing, filteredGameDayData),
+    };
+  }, [gameDayData, selectedSeasons, selectedLeagues, gameDayIncludeTicketing, filteredGameDayData]);
 
   const efficiencyData = useMemo(() => {
     return filteredGames.map(game => {
@@ -2611,7 +2612,9 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                 avgSpendPerHead: Math.round(sph * 100) / 100
             },
             target: gameDaySeasonPlan.target,
-            pacing: filteredGameDayData.length && gameDaySeasonPlan.target > 0 ? Math.round((filteredGameDayRevForPacing / (gameDaySeasonPlan.target * (filteredGameDayData.length / gameDaySeasonPlan.games))) * 100 - 100) : null,
+            projectedRevenue: gameDaySeasonPlan.projectedRevenue,
+            projectionMethod: 'sum_of_competition_forecasts',
+            pacing: gameDaySeasonPlan.projectedRevenue !== null && gameDaySeasonPlan.target > 0 ? Math.round((gameDaySeasonPlan.projectedRevenue / gameDaySeasonPlan.target - 1) * 100) : null,
             topGames: byGame.slice(0, 5),
             worstGames: byGame.slice(-3).reverse()
         });
@@ -3164,6 +3167,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                                 gamesPlayed={filteredGameDayData.length} 
                                 seasonTarget={gameDaySeasonPlan.target}
                                 totalGamesInSeason={gameDaySeasonPlan.games}
+                                projectedRevenue={gameDaySeasonPlan.projectedRevenue}
                             />
                         </div>
                     </div>
