@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { LayoutDashboard, MessageSquare, Upload, Filter, X, Loader2, ArrowLeftRight, UserX, Cloud, Database, Settings, ExternalLink, ShieldAlert, Calendar, Briefcase, Calculator, Ticket, ShoppingBag, Landmark, Flag, Activity, GraduationCap, Construction, PieChart, TrendingUp, ArrowRight, Menu, Clock, ToggleLeft, ToggleRight, Bell, Users, FileText, ChevronDown, Target, Shield, RefreshCw, Sun, Moon, LogOut } from 'lucide-react';
 import { useTheme } from './contexts/ThemeContext';
@@ -47,6 +46,7 @@ import { CRM_CSV_CONTENT } from './data/crmData';
 import { processGameData, processGameDayData, processSponsorData, processCRMData, convertBigQueryToGameData, convertBigQueryToCRMData, BigQueryTicketingRow } from './utils/dataProcessor';
 
 // Client-safe CSV converters (avoid importing server-side BigQuery code)
+import { getExecutiveRevenue } from './utils/executiveRevenue';
 function convertBigQueryRowsToGameDayCSV(rows: any[]): string {
   if (!rows || rows.length === 0) return '';
   const columns = Object.keys(rows[0]);
@@ -120,11 +120,14 @@ const RevenueHome = ({
     gameDayViewTicketing,
     gameDayRevenue, 
     sponsorshipRevenue,
+    sponsorshipHasData,
     merchRevenue,
     merchGameDayRevenue,
     onNavigate,
     onAiClick,
     gamesPlayed,
+    executiveRevenue,
+    onExecutiveContext,
     seasonFilter,
     onSeasonChange,
     activeFilters,
@@ -137,11 +140,14 @@ const RevenueHome = ({
     gameDayViewTicketing: number,
     gameDayRevenue: number, 
     sponsorshipRevenue: number,
+    sponsorshipHasData: boolean,
     merchRevenue: number,
     merchGameDayRevenue: number,
     onNavigate: (id: RevenueModule) => void,
     onAiClick: (prompt: string) => void,
     gamesPlayed: number,
+    executiveRevenue: ReturnType<typeof getExecutiveRevenue>,
+    onExecutiveContext: (context: string) => void,
     seasonFilter: string,
     onSeasonChange: (s: string) => void,
     activeFilters: { seasons: string[]; leagues: string[]; opponents: string[]; zones: string[] },
@@ -243,14 +249,15 @@ const RevenueHome = ({
     }, []);
 
     // Constants
-    const TOTAL_GAMES_SEASON = getRevenueSeasonGames(seasonFilter, gamesPlayed);
+    const TOTAL_GAMES_SEASON = executiveRevenue.ticketing.games;
     const hasLeagueFilter = activeFilters.leagues.length !== 1
         || activeFilters.leagues[0] !== getDefaultRevenueLeagues(seasonFilter)[0];
     const gamesCount = Math.max(gamesPlayed, 1);
-    const seasonProgressPct = (gamesPlayed / TOTAL_GAMES_SEASON) * 100;
+    const seasonProgressPct = TOTAL_GAMES_SEASON > 0 ? (gamesPlayed / TOTAL_GAMES_SEASON) * 100 : 0;
 
-    // Season progress fraction (0 to 1) for prorating
-    const seasonProgressFraction = gamesPlayed / TOTAL_GAMES_SEASON;
+    // Annual sponsorship recognition retains its existing season denominator;
+    // selecting one competition must not recognize an entire annual contract.
+    const seasonProgressFraction = gamesPlayed / getRevenueSeasonGames(seasonFilter, gamesPlayed);
 
     // 7 Revenue Verticals with actual data for Ticketing, GameDay, Sponsorship
     // isProrated: Sponsorship contracts are signed for the full year but recognized over time
@@ -264,13 +271,14 @@ const RevenueHome = ({
           current: sponsorshipRevenue * seasonProgressFraction,
           target: 2100000,
           pacingType: 'monthly' as const,
-          icon: Flag, colorClass: 'text-blue-600', bgClass: 'bg-blue-50', barClass: 'bg-blue-500', isVariable: false, isProrated: true, hasData: true 
+          icon: Flag, colorClass: 'text-blue-600', bgClass: 'bg-blue-50', barClass: 'bg-blue-500', isVariable: false, isProrated: true, hasData: sponsorshipHasData
       },
       { 
           id: 'ticketing', 
           name: 'Ticketing', 
           current: ticketingRevenue, 
-          target: 1650000, 
+          target: executiveRevenue.ticketing.target,
+          revenueStream: executiveRevenue.ticketing,
           pacingType: 'games' as const,
           icon: Ticket, colorClass: 'text-red-600', bgClass: 'bg-red-50', barClass: 'bg-red-500', isVariable: true, isProrated: false, hasData: gamesPlayed > 0
       },
@@ -278,9 +286,10 @@ const RevenueHome = ({
           id: 'gameday', 
           name: 'GameDay', 
           current: gameDayRevenue, 
-          target: 1250000, 
+          target: executiveRevenue.gameDay.target,
+          revenueStream: executiveRevenue.gameDay,
           pacingType: 'games' as const,
-          icon: Calendar, colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50', barClass: 'bg-indigo-500', isVariable: true, isProrated: false, hasData: gamesPlayed > 0
+          icon: Calendar, colorClass: 'text-indigo-600', bgClass: 'bg-indigo-50', barClass: 'bg-indigo-500', isVariable: true, isProrated: false, hasData: executiveRevenue.gameDay.hasData
       },
       { 
           id: 'sg', 
@@ -336,14 +345,15 @@ const RevenueHome = ({
         
         switch (v.pacingType) {
             case 'games':
-                // Games-based: pace by games played out of 15
-                expectedAtThisPoint = (v.target / TOTAL_GAMES_SEASON) * gamesPlayed;
-                paceMarkerPct = (gamesPlayed / TOTAL_GAMES_SEASON) * 100;
+                // Each provider's actuals and completed-game count stay together.
+                paceMarkerPct = v.revenueStream && v.revenueStream.games > 0
+                    ? v.revenueStream.played / v.revenueStream.games * 100 : 0;
+                expectedAtThisPoint = v.target * paceMarkerPct / 100;
                 break;
             case 'monthly':
                 // Monthly/time-based: even distribution across the season
                 expectedAtThisPoint = v.target * seasonProgressFraction;
-                paceMarkerPct = seasonProgressPct;
+                paceMarkerPct = seasonProgressFraction * 100;
                 break;
             case 'monthClosed':
                 // Month-closed: pace by last closed month (Jan=7/12, Feb=8/12, etc.)
@@ -362,7 +372,7 @@ const RevenueHome = ({
         // Projected finish calculation
         let projectedFinish: number;
         if (v.pacingType === 'games') {
-            projectedFinish = (v.current / gamesCount) * TOTAL_GAMES_SEASON;
+            projectedFinish = v.revenueStream?.projectedFinish ?? 0;
         } else if (v.isProrated && 'signedValue' in v) {
             projectedFinish = v.signedValue as number;
         } else if (v.pacingType === 'monthClosed') {
@@ -374,7 +384,7 @@ const RevenueHome = ({
         }
         
         return { ...v, pacePct, expectedAtThisPoint, projectedFinish, paceMarkerPct,
-            forecast: compareRevenueForecast(projectedFinish, v.target, v.hasData && (!v.isProrated || projectedFinish > 0)) };
+            forecast: compareRevenueForecast(projectedFinish, v.target, v.hasData) };
     });
 
     // Filter verticals with actual data for aggregates
@@ -400,6 +410,30 @@ const RevenueHome = ({
         verticalsWithData.some(v => v.forecast.available));
     const projectionDiff = seasonForecast.difference ?? 0;
 
+    // Share the exact displayed calculations (including independent sheet streams)
+    // with the advisor, rather than maintaining another set of budgets in App.
+    const executiveContext = JSON.stringify({
+        module: 'EXECUTIVE_OVERVIEW',
+        seasons: activeFilters.seasons, leagues: activeFilters.leagues,
+        gamesPlayed, totalGames: TOTAL_GAMES_SEASON,
+        definitions: 'Ticketing includes all ticket sales. GameDay is total revenue minus Ticketing. YTD pace and full-season forecast variance are separate. Aggregate totals include only connected streams; missing forecasts are null, not zero.',
+        streams: verticalsWithPacing.map(v => ({
+            id: v.id, target: v.target, hasData: v.hasData,
+            actual: v.hasData ? v.current : null,
+            projectedFinish: v.forecast.available ? v.projectedFinish : null,
+            forecastVsTarget: v.forecast,
+            ytdPacingPercent: v.hasData ? v.pacePct : null,
+            ...('signedValue' in v ? { signedValue: v.signedValue } : {}),
+            ...(v.revenueStream ? { gamesPlayed: v.revenueStream.played, totalGames: v.revenueStream.games } : {}),
+        })),
+        totals: { actual: totalRevenueYTD, target: totalTarget,
+            projectedFinish: seasonForecast.available ? totalRevenueProjected : null,
+            forecastVsTarget: seasonForecast, ytdDifference },
+        ticketingAndGameDay: { ...executiveRevenue.combined,
+            projectedFinish: executiveRevenue.combined.forecast.available ? executiveRevenue.combined.projectedFinish : null },
+    });
+    useEffect(() => onExecutiveContext(executiveContext), [executiveContext, onExecutiveContext]);
+
     const fixedTicketing = ticketingRevenue - gameDayTicketing;
     const variableYTD = gameDayTicketing + gameDayRevenue;
     const sponsorshipProrated = verticalsWithData.find(v => v.id === 'sponsorship')?.current || 0;
@@ -423,7 +457,7 @@ const RevenueHome = ({
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('Executive Overview')}</h1>
                     <p className="text-gray-500 dark:text-gray-400 text-sm">{t('Season')} {seasonFilter} • {gamesPlayed} {t('of')} {TOTAL_GAMES_SEASON} {t('games played')}</p>
-                    {isSeason26_27(seasonFilter) && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('Baseline: 15 LBA + 3 guaranteed BCL + 1 friendly')}</p>}
+                    {isSeason26_27(seasonFilter) && activeFilters.leagues.includes('All') && <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('Baseline: 15 LBA + 3 guaranteed BCL + 1 friendly')}</p>}
                 </div>
                 
                 <div className="flex items-center gap-3">
@@ -551,7 +585,7 @@ const RevenueHome = ({
 
                     {/* Stacked Segments (YTD) */}
                     {sortedVerticals.map((v) => {
-                        const widthPct = (v.current / totalTarget) * 100;
+                        const widthPct = totalTarget > 0 ? (v.current / totalTarget) * 100 : 0;
                         if (widthPct <= 0) return null;
                         return (
                             <div 
@@ -584,7 +618,7 @@ const RevenueHome = ({
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-slate-400">{t('Achievement')}:</span>
-                                            <span className="font-mono text-blue-400">{((v.current / v.target) * 100).toFixed(1)}%</span>
+                                            <span className="font-mono text-blue-400">{v.target > 0 ? `${((v.current / v.target) * 100).toFixed(1)}%` : '—'}</span>
                                         </div>
                                         <div className="flex justify-between border-t border-slate-700 pt-2 mt-1">
                                             <span className="text-slate-400">{t('Pace vs Time')}:</span>
@@ -622,7 +656,7 @@ const RevenueHome = ({
                 <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">{t('Revenue Verticals')}</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
                     {verticalsWithPacing.map((v) => {
-                        const progressPct = v.hasData ? Math.min((v.current / v.target) * 100, 100) : 0;
+                        const progressPct = v.hasData && v.target > 0 ? Math.min((v.current / v.target) * 100, 100) : 0;
                         const isOnTrack = v.forecast.onTarget;
                         
                         // Card for verticals WITHOUT data - Coming Soon
@@ -705,7 +739,7 @@ const RevenueHome = ({
                                     )}
                                     <p>{v.isProrated ? t('Recognized') : t('Collected')}: {formatCompact(v.current)}</p>
                                     <p>{t('Target')}: {formatCompact(v.target)}</p>
-                                    <p>{t('Progress')}: {((v.current / v.target) * 100).toFixed(1)}%</p>
+                                    <p>{t('Progress')}: {v.target > 0 ? `${((v.current / v.target) * 100).toFixed(1)}%` : '—'}</p>
                                     <p className="text-cyan-400">
                                         {t('Accounted')}: {v.paceMarkerPct.toFixed(0)}%
                                     </p>
@@ -743,17 +777,18 @@ const RevenueHome = ({
 
                     {/* Signal 2: GameDay Projection */}
                     {(() => {
-                        const gameDayProjection = ((ticketingRevenue + gameDayRevenue) / gamesCount) * TOTAL_GAMES_SEASON;
-                        const gameDayTarget = 1650000 + 1250000;
-                        const gameDayPct = (gameDayProjection / gameDayTarget) * 100;
+                        const gameDayProjection = executiveRevenue.combined.projectedFinish;
+                        const gameDayPct = executiveRevenue.combined.forecast.percent === null ? 0
+                            : executiveRevenue.combined.forecast.percent + 100;
+                        const combinedAvailable = executiveRevenue.combined.forecast.available;
                         return (
                         <div className="bg-white dark:bg-gray-900 border border-purple-200 dark:border-purple-800 rounded-xl p-5 shadow-sm">
                             <div className="flex items-center gap-2 mb-3">
                                 <TrendingUp size={16} className="text-purple-600" />
                                 <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('GameDay Projection')}</span>
                             </div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{gamesPlayed > 0 ? formatCompact(gameDayProjection) : '—'}</p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Ticketing')} + {t('GameDay')} × {TOTAL_GAMES_SEASON} {t('games')}</p>
+                            <p className="text-2xl font-bold text-gray-900 dark:text-white">{combinedAvailable ? formatCompact(gameDayProjection) : '—'}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('Ticketing')} + {t('GameDay')} • {t('Projected Revenue')}</p>
                             <div className="mt-3 flex items-center gap-2">
                                 <div className="flex-1 h-1.5 bg-purple-100 dark:bg-purple-900/40 rounded-full overflow-hidden">
                                     <div 
@@ -762,7 +797,7 @@ const RevenueHome = ({
                                     />
                                 </div>
                                 <span className="text-[10px] font-bold text-purple-600">
-                                     {gamesPlayed > 0 ? `${gameDayPct.toFixed(0)}%` : '—'}
+                                     {combinedAvailable ? `${gameDayPct.toFixed(0)}%` : '—'}
                                 </span>
                             </div>
                         </div>
@@ -785,7 +820,7 @@ const RevenueHome = ({
                                 <div className="flex-1 h-1.5 bg-blue-100 dark:bg-blue-900/40 rounded-full overflow-hidden">
                                     <div 
                                         className="h-full bg-blue-500" 
-                                        style={{ width: `${Math.min((projection / 450000) * 100, 100)}%` }}
+                                        style={{ width: `${Math.min((projection / (isSeason26_27(seasonFilter) ? executiveRevenue.ticketing.target || 1 : 450000)) * 100, 100)}%` }}
                                     />
                                 </div>
                                 <span className="text-[10px] font-bold text-blue-600">
@@ -797,6 +832,7 @@ const RevenueHome = ({
                     })()}
 
                     {/* Signal 4: Attention Required */}
+                    {worstPacingVertical ? (
                     <div className={`rounded-xl p-5 shadow-sm border ${worstPacingVertical.pacePct < -10 ? 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800' : 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800'}`}>
                         <div className="flex items-center gap-2 mb-3">
                             <Bell size={16} className={worstPacingVertical.pacePct < -10 ? 'text-red-600' : 'text-amber-600'} />
@@ -810,6 +846,7 @@ const RevenueHome = ({
                             {t('YTD vs Expected')}: {worstPacingVertical.current >= worstPacingVertical.expectedAtThisPoint ? '+' : ''}{formatCompact(worstPacingVertical.current - worstPacingVertical.expectedAtThisPoint)}
                         </p>
                     </div>
+                    ) : <div className="rounded-xl border border-gray-200 p-5 text-gray-500">{t('No revenue projection available.')}</div>}
 
                 </div>
             </div>
@@ -1094,6 +1131,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   });
   const [showAIAdvisor, setShowAIAdvisor] = useState(false);
   const [aiInitialPrompt, setAiInitialPrompt] = useState<string | undefined>(undefined);
+  const [executiveAIContext, setExecutiveAIContext] = useState('');
   
   const openAIWithPrompt = (prompt: string) => {
     setAiInitialPrompt(prompt);
@@ -2325,6 +2363,13 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
       }, 0);
   }, [filteredGameDayData]);
 
+  const executiveRevenue = useMemo(() => getExecutiveRevenue(
+      selectedSeasons.includes('All') ? [...new Set([...data, ...gameDayData].map(game => game.season))] : selectedSeasons,
+      selectedLeagues, totalStats.totalRevenue, filteredGames.length,
+      gameDayRevenueNet, filteredGameDayData.length,
+  ), [selectedSeasons, selectedLeagues, data, gameDayData, totalStats.totalRevenue,
+      filteredGames.length, gameDayRevenueNet, filteredGameDayData.length]);
+
   // GameDay Merchandising Revenue (for Executive Overview calculation)
   const gameDayMerchRevenue = useMemo(() => {
       return filteredGameDayData.reduce((acc, game) => acc + game.merchRevenue, 0);
@@ -2554,29 +2599,8 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
     } : null;
 
     if (activeModule === 'home') {
-        const totalLiveTix = totalStats.totalRevenue;
-        const totalLiveGD = filteredGameDayRevForPacing;
-        const ticketingTarget = 1650000;
-        const gameDayTarget = 1250000;
-        const sponsorshipTarget = 2100000;
-        const gamesPlayed = viewData.length;
-        const totalGames = 15;
-        const pacePct = gamesPlayed / totalGames;
-        
-        return JSON.stringify({
-            module: 'EXECUTIVE_OVERVIEW',
-            season: selectedSeasons[0],
-            gamesPlayed,
-            totalGames,
-            targets: { ticketing: ticketingTarget, gameDay: gameDayTarget, sponsorship: sponsorshipTarget },
-            actual: { ticketing: Math.round(totalLiveTix), gameDay: Math.round(totalLiveGD), sponsorship: 1130000 },
-            pacing: {
-                ticketingVsTarget: gamesPlayed ? Math.round((totalLiveTix / (ticketingTarget * pacePct)) * 100 - 100) : null,
-                gameDayVsTarget: gamesPlayed ? Math.round((totalLiveGD / (gameDayTarget * pacePct)) * 100 - 100) : null,
-                sponsorshipVsTarget: gamesPlayed ? Math.round((1130000 / (sponsorshipTarget * pacePct)) * 100 - 100) : null
-            },
-            zoneBreakdown: zoneAnalysis.slice(0, 8),
-            crmInsights: crmSummary
+        return executiveAIContext || JSON.stringify({
+            module: 'EXECUTIVE_OVERVIEW', status: 'Revenue context is loading; do not infer missing figures.',
         });
     }
 
@@ -2643,7 +2667,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
       premiumZones: zoneAnalysis.filter(z => z.zone.toLowerCase().includes('parterre') || z.zone.toLowerCase().includes('courtside')),
       volumeZones: zoneAnalysis.filter(z => z.zone.toLowerCase().includes('curva') || z.zone.toLowerCase().includes('galleria'))
     });
-  }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, viewMode, activeModule, filteredGameDayData, filteredGameDayRevForPacing, totalStats, crmStats, ticketingSeasonPlan, gameDaySeasonPlan, gameDayIncludeTicketing]);
+  }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, viewMode, activeModule, filteredGameDayData, filteredGameDayRevForPacing, totalStats, crmStats, ticketingSeasonPlan, gameDaySeasonPlan, gameDayIncludeTicketing, executiveAIContext]);
 
   const lastGame = useMemo(() => {
     if (playedTicketingData.length === 0) return null;
@@ -3109,11 +3133,14 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                 gameDayViewTicketing={gameDayViewTicketingRevenue}
                 gameDayRevenue={gameDayRevenueNet} 
                 sponsorshipRevenue={sponsorshipStats.pureSponsorship}
+                sponsorshipHasData={sponsorshipStats.sponsorCount > 0}
                 merchRevenue={merchRevenue}
                 merchGameDayRevenue={gameDayMerchRevenue}
                 onNavigate={(id) => { setActiveModule(id); setActiveTab('dashboard'); }}
                 onAiClick={(prompt: string) => openAIWithPrompt(prompt)}
                 gamesPlayed={filteredGames.length}
+                executiveRevenue={executiveRevenue}
+                onExecutiveContext={setExecutiveAIContext}
                 seasonFilter={selectedSeasons[0]}
                 onSeasonChange={(s) => changeSelectedSeasons([s])}
                 activeFilters={{ 

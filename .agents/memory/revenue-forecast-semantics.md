@@ -9,6 +9,12 @@ Ticketing and GameDay's new competition-specific goals apply only to 2026/27; do
 
 **How to apply:** Keep historical total and day-sales budgets intact. For 2026/27, add the selected competitions' budgets and guaranteed fixture counts together, then use that same scope for pace, forecasts, reports and AI context.
 
+Competition goals apply only where the revenue definition matches. Do not replace independent Google Sheet budgets or change accounting definitions to make their totals match the competition plans.
+
+**Why:** Executive alignment was explicitly scoped to the same Ticketing and GameDay revenue streams, not a re-budgeting of Sponsorship, BOps, Venue Ops, or Varese Basketball.
+
+**How to apply:** Check the actual revenue components before sharing a target. Keep annual contract recognition and monthly source budgets independent of competition selection.
+
 Revenue Verticals and Season Pacing must compare the full-season forecast with the full-season target in their headline percentage, currency variance, and status colour. Any year-to-date versus expected-to-date measure must be explicitly labelled YTD and presented separately.
 
 **Why:** The user rejected a display that called performance behind while the adjacent full-season forecast exceeded its target. They requested one consistent interpretation rather than making readers reconcile different periods.
