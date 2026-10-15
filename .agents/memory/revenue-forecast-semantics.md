@@ -3,9 +3,9 @@ name: Revenue forecast semantics and guaranteed fixtures
 description: Keep headline forecasts comparable with season targets; the 2026/27 revenue fixture baseline includes BCL and a paid friendly.
 ---
 
-Ticketing's new competition-specific goals apply only to 2026/27; do not rebase last season's goals when changing the selected competition or sales view.
+Ticketing and GameDay's new competition-specific goals apply only to 2026/27; do not rebase last season's goals when changing the selected competition or sales view.
 
-**Why:** The user explicitly required dynamic current-season budgets and separately emphasized that last season's goal must not change.
+**Why:** The user explicitly required dynamic current-season budgets, separately emphasized that last season's goal must not change, and then supplied GameDay goals using the same competition breakdown.
 
 **How to apply:** Keep historical total and day-sales budgets intact. For 2026/27, add the selected competitions' budgets and guaranteed fixture counts together, then use that same scope for pace, forecasts, reports and AI context.
 

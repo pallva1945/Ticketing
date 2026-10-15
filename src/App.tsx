@@ -23,6 +23,7 @@ import { useRomeDay } from './hooks/useRomeDay';
 import { compareRevenueForecast } from './utils/revenueForecast';
 import { getRevenueSeasonGames, getDefaultRevenueLeagues } from './utils/revenueSeasonGames';
 import { getTicketingSeasonPlan } from './utils/ticketingTargets';
+import { getGameDaySeasonPlan } from './utils/gameDayTargets';
 import type { MerchSnapshotStatus, MerchandisingData } from './types/merchandising';
 import { MerchSnapshotNotice } from './components/MerchSnapshotNotice';
 import { MerchRefreshHistory } from './components/MerchRefreshHistory';
@@ -36,7 +37,7 @@ import { MerchandisingView } from './components/MerchandisingView';
 import { VenueOpsDashboard, parseVenueOpsSheetData } from './components/VenueOpsDashboard';
 import { VareseBasketballDashboard, parseVbPnlSheetData } from './components/VareseBasketballDashboard';
 import { BOpsDashboard, parseBopsSheetData } from './components/BOpsDashboard';
-import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, getFixedCapacityForSeason, isSeason26_27, FIXED_CORP_25_26, SEASON_TARGET_GAMEDAY, SEASON_TARGET_GAMEDAY_TOTAL } from './constants';
+import { TEAM_NAME, GOOGLE_SHEET_CSV_URL, PV_LOGO_URL, getFixedCapacityForSeason, isSeason26_27, FIXED_CORP_25_26 } from './constants';
 import { GameData, GameDayData, SponsorData, CRMRecord, DashboardStats, SalesChannel, TicketZone, KPIConfig, RevenueModule } from './types';
 import { PieChart as RechartsPie, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { FALLBACK_CSV_CONTENT } from './data/csvData';
@@ -2121,6 +2122,12 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
   }, [gameDayData, data, selectedSeasons, selectedLeagues, selectedOpponents, selectedDays, selectedTiers]);
   const filteredGameDayData = useMemo(() => playedFixtures(matchingGameDayData, performanceDay), [matchingGameDayData, performanceDay]);
   const upcomingGameDayData = useMemo(() => matchingGameDayData.filter(game => isUpcomingFixture(game, performanceDay)), [matchingGameDayData, performanceDay]);
+  const gameDaySeasonPlan = useMemo(() => getGameDaySeasonPlan(
+    selectedSeasons.includes('All') ? [...new Set(gameDayData.map(game => game.season))] : selectedSeasons,
+    selectedLeagues,
+    gameDayIncludeTicketing,
+    filteredGameDayData.length,
+  ), [gameDayData, selectedSeasons, selectedLeagues, gameDayIncludeTicketing, filteredGameDayData.length]);
 
   const efficiencyData = useMemo(() => {
     return filteredGames.map(game => {
@@ -2590,16 +2597,21 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
 
         return JSON.stringify({
             module: 'GAMEDAY',
+            season: selectedSeasons,
+            leagues: selectedLeagues,
+            includeTicketing: gameDayIncludeTicketing,
             gamesCount: filteredGameDayData.length,
+            totalSeasonGames: gameDaySeasonPlan.games,
             totals: {
+                pacingRevenue: Math.round(filteredGameDayRevForPacing),
                 netRevenue: Math.round(totalNet),
                 merchRevenue: Math.round(totalMerch),
                 fbRevenue: Math.round(totalFb),
                 attendance: totalAtt,
                 avgSpendPerHead: Math.round(sph * 100) / 100
             },
-            target: 1250000,
-            pacing: filteredGameDayData.length ? Math.round((totalNet / (1250000 * (filteredGameDayData.length / 15))) * 100 - 100) : null,
+            target: gameDaySeasonPlan.target,
+            pacing: filteredGameDayData.length && gameDaySeasonPlan.target > 0 ? Math.round((filteredGameDayRevForPacing / (gameDaySeasonPlan.target * (filteredGameDayData.length / gameDaySeasonPlan.games))) * 100 - 100) : null,
             topGames: byGame.slice(0, 5),
             worstGames: byGame.slice(-3).reverse()
         });
@@ -2628,7 +2640,7 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
       premiumZones: zoneAnalysis.filter(z => z.zone.toLowerCase().includes('parterre') || z.zone.toLowerCase().includes('courtside')),
       volumeZones: zoneAnalysis.filter(z => z.zone.toLowerCase().includes('curva') || z.zone.toLowerCase().includes('galleria'))
     });
-  }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, viewMode, activeModule, filteredGameDayData, filteredGameDayRevForPacing, totalStats, crmStats, ticketingSeasonPlan]);
+  }, [viewData, stats, selectedSeasons, selectedLeagues, selectedZones, viewMode, activeModule, filteredGameDayData, filteredGameDayRevForPacing, totalStats, crmStats, ticketingSeasonPlan, gameDaySeasonPlan, gameDayIncludeTicketing]);
 
   const lastGame = useMemo(() => {
     if (playedTicketingData.length === 0) return null;
@@ -3150,8 +3162,8 @@ const App: React.FC<{ onBackToLanding?: () => void; onHome?: () => void }> = ({ 
                             <PacingWidget 
                                 currentRevenue={filteredGameDayRevForPacing} 
                                 gamesPlayed={filteredGameDayData.length} 
-                                seasonTarget={gameDayIncludeTicketing ? SEASON_TARGET_GAMEDAY_TOTAL : SEASON_TARGET_GAMEDAY} 
-                                totalGamesInSeason={getRevenueSeasonGames(selectedSeasons[0], filteredGameDayData.length)}
+                                seasonTarget={gameDaySeasonPlan.target}
+                                totalGamesInSeason={gameDaySeasonPlan.games}
                             />
                         </div>
                     </div>
