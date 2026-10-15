@@ -3,7 +3,7 @@ import { SEASON_TARGET_TOTAL, SEASON_TARGET_TICKETING_DAY } from '../constants';
 /** Ticketing budgets for 2026/27 only. Historical budgets remain unchanged. */
 export const TICKETING_TARGETS_26_27 = {
   LBA: { target: 1850000, games: 15 },
-  BCL: { target: 585000, games: 3 },
+  BCL: { target: 210000, games: 3 },
   'LBA - Pre Season': { target: 12500, games: 1 },
 } as const;
 

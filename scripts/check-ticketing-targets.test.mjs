@@ -10,13 +10,13 @@ import { playedFixtures } from '../src/utils/fixtureEligibility.ts';
 
 const combinations = [
   [['LBA'], 1850000, 15],
-  [['BCL'], 585000, 3],
+  [['BCL'], 210000, 3],
   [['LBA - Pre Season'], 12500, 1],
-  [['LBA', 'BCL'], 2435000, 18],
+  [['LBA', 'BCL'], 2060000, 18],
   [['LBA', 'LBA - Pre Season'], 1862500, 16],
-  [['BCL', 'LBA - Pre Season'], 597500, 4],
-  [['LBA', 'BCL', 'LBA - Pre Season'], 2447500, 19],
-  [['All'], 2447500, 19],
+  [['BCL', 'LBA - Pre Season'], 222500, 4],
+  [['LBA', 'BCL', 'LBA - Pre Season'], 2072500, 19],
+  [['All'], 2072500, 19],
 ];
 for (const [leagues, target, games] of combinations) {
   test(`2026/27 ${leagues.join(' + ')} uses the matching target and fixture count`, () => {
@@ -40,7 +40,7 @@ test('aliases, duplicate selections and absent budgets never duplicate or invent
   assert.deepEqual(getTicketingSeasonPlan(['26/27', '2026-2027', '26-27'], ['LBA', 'LBA'], 'total'), { target: 1850000, games: 15 });
   assert.deepEqual(getTicketingSeasonPlan(['26-27'], [], 'total'), { target: 0, games: 0 });
   assert.deepEqual(getTicketingSeasonPlan(['26-27'], ['Unknown competition'], 'total'), { target: 0, games: 0 });
-  assert.deepEqual(getTicketingSeasonPlan(['26-27'], ['BCL'], 'total', 5), { target: 585000, games: 5 });
+  assert.deepEqual(getTicketingSeasonPlan(['26-27'], ['BCL'], 'total', 5), { target: 210000, games: 5 });
 });
 
 // Render the actual widget source, stubbing only translations and icon components.
