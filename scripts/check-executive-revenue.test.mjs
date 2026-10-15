@@ -8,6 +8,7 @@ import { getExecutiveRevenue } from '../src/utils/executiveRevenue.ts';
 import { compareRevenueForecast } from '../src/utils/revenueForecast.ts';
 import { getRevenueSeasonGames, getDefaultRevenueLeagues } from '../src/utils/revenueSeasonGames.ts';
 import { isSeason26_27 } from '../src/constants.ts';
+import { getSponsorshipSeasonTarget } from '../src/utils/sponsorshipTargets.ts';
 
 const combinations = [
   [['LBA'], 1850000, 1275000, 15],
@@ -38,7 +39,7 @@ function renderExecutive({ season = '26-27', leagues = ['All'], tix = 100000, ti
     React, useLanguage: () => ({ t: key => key }),
     useState: initial => [sheetState ? sheetState[hook++] : initial, () => {}],
     useEffect: fn => effects.push(fn),
-    compareRevenueForecast, getRevenueSeasonGames, getDefaultRevenueLeagues, isSeason26_27,
+    compareRevenueForecast, getRevenueSeasonGames, getDefaultRevenueLeagues, isSeason26_27, getSponsorshipSeasonTarget,
     AIAvatar: () => null,
     ...Object.fromEntries(icons.map(name => [name, () => null])),
   };
@@ -128,14 +129,14 @@ test('annual and independent sheet forecasts survive before the first game witho
     sponsorship: 2300000, sponsorData: true,
     sheetState: [true, 100000, 50000, 200000, true, 6] });
   const stream = id => context.streams.find(v => v.id === id);
-  assert.equal(stream('sponsorship').target, 2100000);
+  assert.equal(stream('sponsorship').target, 2400000);
   assert.equal(stream('sponsorship').projectedFinish, 2300000);
   assert.equal(stream('sponsorship').actual, 0); // Existing recognition, not the signed annual total.
   assert.equal(stream('bops').target, 525000);
   assert.equal(stream('venue_ops').target, 262364);
   assert.equal(stream('sg').target, 930465);
   assert.equal(context.totals.projectedFinish, 3000000);
-  assert.equal(context.totals.target, 3817829);
+  assert.equal(context.totals.target, 4117829);
   assert.equal(context.totals.forecastVsTarget.available, true);
 });
 
@@ -144,7 +145,7 @@ test('competition goals do not change annual sponsorship recognition', () => {
   const sponsor = context.streams.find(v => v.id === 'sponsorship');
   assert.ok(Math.abs(sponsor.actual - 2300000 / 19) < 1e-6);
   assert.equal(sponsor.projectedFinish, 2300000);
-  assert.equal(sponsor.target, 2100000);
+  assert.equal(sponsor.target, 2400000);
 });
 
 test('unknown competitions do not fabricate target variance; season aliases share the new plan', () => {

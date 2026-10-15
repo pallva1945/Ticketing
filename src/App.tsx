@@ -23,6 +23,7 @@ import { compareRevenueForecast } from './utils/revenueForecast';
 import { getRevenueSeasonGames, getDefaultRevenueLeagues } from './utils/revenueSeasonGames';
 import { getTicketingSeasonPlan } from './utils/ticketingTargets';
 import { getGameDaySeasonPlan, getGameDayRevenueForecast } from './utils/gameDayTargets';
+import { getSponsorshipSeasonTarget } from './utils/sponsorshipTargets';
 import type { MerchSnapshotStatus, MerchandisingData } from './types/merchandising';
 import { MerchSnapshotNotice } from './components/MerchSnapshotNotice';
 import { MerchRefreshHistory } from './components/MerchRefreshHistory';
@@ -269,7 +270,7 @@ const RevenueHome = ({
           name: 'Sponsorship', 
           signedValue: sponsorshipRevenue,
           current: sponsorshipRevenue * seasonProgressFraction,
-          target: 2100000,
+          target: getSponsorshipSeasonTarget(seasonFilter),
           pacingType: 'monthly' as const,
           icon: Flag, colorClass: 'text-blue-600', bgClass: 'bg-blue-50', barClass: 'bg-blue-500', isVariable: false, isProrated: true, hasData: sponsorshipHasData
       },

@@ -5,7 +5,7 @@ import {
 } from 'recharts';
 import { SponsorData } from '../types';
 import { Flag, DollarSign, Building2, ArrowUpRight, ChevronDown, Banknote, RefreshCw, FileSpreadsheet, X, Filter, Target, Ticket, Award, TrendingUp, TrendingDown, Minus, Search, Calendar, Mail, User, Clock, History, ArrowRight, CheckCircle, Circle, Gift } from 'lucide-react';
-import { SEASON_TARGET_SPONSORSHIP } from '../constants';
+import { getSponsorshipSeasonTarget } from '../utils/sponsorshipTargets';
 import { useLanguage } from '../contexts/LanguageContext';
 import { totalSponsorGameDaySplit, splitSponsorGameDay } from '../utils/sponsorReconciliation';
 import { leagueLogoSrc } from './comparisonReport';
@@ -100,6 +100,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
   const { t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedSeason, setSelectedSeason] = useState<string>('26/27');
+  const seasonTarget = getSponsorshipSeasonTarget(selectedSeason);
   const [showSeasonDropdown, setShowSeasonDropdown] = useState(false);
   const [excludeCorpTix, setExcludeCorpTix] = useState(true);
   const [excludeGameDay, setExcludeGameDay] = useState(true);
@@ -645,10 +646,10 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
 
       {/* Season Target Pacing Widget */}
       {(() => {
-        const progress = Math.min((stats.pureSponsorship / SEASON_TARGET_SPONSORSHIP) * 100, 100);
-        const isOnTrack = stats.pureSponsorship >= SEASON_TARGET_SPONSORSHIP * 0.8;
-        const variance = stats.pureSponsorship - SEASON_TARGET_SPONSORSHIP;
-        const variancePercent = ((stats.pureSponsorship / SEASON_TARGET_SPONSORSHIP) - 1) * 100;
+        const progress = Math.min((stats.pureSponsorship / seasonTarget) * 100, 100);
+        const isOnTrack = stats.pureSponsorship >= seasonTarget * 0.8;
+        const variance = stats.pureSponsorship - seasonTarget;
+        const variancePercent = ((stats.pureSponsorship / seasonTarget) - 1) * 100;
         
         return (
           <div className="bg-slate-900 rounded-xl p-6 text-white shadow-lg border border-slate-700 relative overflow-hidden">
@@ -674,7 +675,7 @@ export const SponsorshipDashboard: React.FC<SponsorshipDashboardProps> = ({
             
             <div className="flex items-baseline gap-3 mb-4">
               <span className="text-4xl font-extrabold">{formatCompactCurrency(stats.pureSponsorship)}</span>
-              <span className="text-lg text-slate-400 font-medium">/ {formatCompactCurrency(SEASON_TARGET_SPONSORSHIP)}</span>
+              <span className="text-lg text-slate-400 font-medium">/ {formatCompactCurrency(seasonTarget)}</span>
             </div>
             
             <div className="relative h-3 bg-slate-800 rounded-full overflow-hidden mb-3">

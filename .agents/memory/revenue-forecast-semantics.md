@@ -9,6 +9,12 @@ Ticketing and GameDay's new competition-specific goals apply only to 2026/27; do
 
 **How to apply:** Keep historical total and day-sales budgets intact. For 2026/27, add the selected competitions' budgets and guaranteed fixture counts together, then use that same scope for pace, forecasts, reports and AI context.
 
+Sponsorship goals measure Sponsorship plus CSR only, excluding corporate tickets, GameDay and VB; changes to the current season's goal must not rebase historical goals.
+
+**Why:** The user explicitly excluded those three streams when setting the 2026/27 Sponsorship goal.
+
+**How to apply:** Use the same season-specific goal and pure sponsorship revenue in the Sponsorship dashboard and Executive Overview, regardless of other commercial revenue display toggles.
+
 Competition goals apply only where the revenue definition matches. Do not replace independent Google Sheet budgets or change accounting definitions to make their totals match the competition plans.
 
 **Why:** Executive alignment was explicitly scoped to the same Ticketing and GameDay revenue streams, not a re-budgeting of Sponsorship, BOps, Venue Ops, or Varese Basketball.
