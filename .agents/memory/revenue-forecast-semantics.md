@@ -3,6 +3,12 @@ name: Revenue forecast semantics and guaranteed fixtures
 description: Keep headline forecasts comparable with season targets; the 2026/27 revenue fixture baseline includes BCL and a paid friendly.
 ---
 
+Ticketing's new competition-specific goals apply only to 2026/27; do not rebase last season's goals when changing the selected competition or sales view.
+
+**Why:** The user explicitly required dynamic current-season budgets and separately emphasized that last season's goal must not change.
+
+**How to apply:** Keep historical total and day-sales budgets intact. For 2026/27, add the selected competitions' budgets and guaranteed fixture counts together, then use that same scope for pace, forecasts, reports and AI context.
+
 Revenue Verticals and Season Pacing must compare the full-season forecast with the full-season target in their headline percentage, currency variance, and status colour. Any year-to-date versus expected-to-date measure must be explicitly labelled YTD and presented separately.
 
 **Why:** The user rejected a display that called performance behind while the adjacent full-season forecast exceeded its target. They requested one consistent interpretation rather than making readers reconcile different periods.

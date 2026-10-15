@@ -10,14 +10,15 @@ interface BoardReportModalProps {
   data: GameData[];
   onClose: () => void;
   seasonTarget: number;
+  totalGamesInSeason?: number;
 }
 
-export const BoardReportModal: React.FC<BoardReportModalProps> = ({ stats, data, onClose, seasonTarget }) => {
+export const BoardReportModal: React.FC<BoardReportModalProps> = ({ stats, data, onClose, seasonTarget, totalGamesInSeason = 15 }) => {
   const { t } = useLanguage();
   const dateStr = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-  const projectedRev = (stats.totalRevenue / (data.length || 1)) * 15;
+  const projectedRev = (stats.totalRevenue / (data.length || 1)) * totalGamesInSeason;
   const variance = projectedRev - seasonTarget;
-  const variancePct = (variance / seasonTarget) * 100;
+  const variancePct = seasonTarget > 0 ? (variance / seasonTarget) * 100 : 0;
 
   const handlePrint = () => {
     window.print();
@@ -71,7 +72,7 @@ export const BoardReportModal: React.FC<BoardReportModalProps> = ({ stats, data,
             <p className="text-slate-800 dark:text-slate-200 text-xl leading-relaxed font-serif">
                 As of <strong>{dateStr}</strong>, {TEAM_NAME} has recognized <strong>€{(stats.totalRevenue/1000).toFixed(1)}k</strong> in revenue across <strong>{data.length}</strong> matches tracked. 
                 The current pacing indicates a projected season finish of <strong>€{(projectedRev/1000000).toFixed(2)}M</strong>. 
-                This represents a variance of <span className={variance >= 0 ? "text-green-700 font-bold" : "text-red-700 font-bold"}>{variance >= 0 ? '+' : ''}{variancePct.toFixed(1)}%</span> against the budget target of <strong>€{(seasonTarget/1000000).toFixed(2)}M</strong>.
+                This represents a variance of <span className={variance >= 0 ? "text-green-700 font-bold" : "text-red-700 font-bold"}>{variance >= 0 ? '+' : ''}{variancePct.toFixed(1)}%</span> against the budget target of <strong>€{seasonTarget.toLocaleString('en-GB')}</strong>.
             </p>
           </div>
 

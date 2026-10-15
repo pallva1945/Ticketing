@@ -17,9 +17,14 @@ export const PacingWidget: React.FC<PacingWidgetProps> = ({
   totalGamesInSeason = 15
 }) => {
   const { t } = useLanguage();
+  const currency = (value: number) => `€${value.toLocaleString('en-GB', { maximumFractionDigits: 0 })}`;
+  if (seasonTarget <= 0 || totalGamesInSeason <= 0) return <div className="h-full rounded-xl border border-slate-700 bg-slate-900 p-5 text-white shadow-lg">
+    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">{t('Season Target (Budget)')}</h3>
+    <p className="mt-3 text-sm text-slate-400">{t('No target configured for the selected competitions.')}</p>
+  </div>;
   if (gamesPlayed === 0) return <div className="h-full rounded-xl border border-slate-700 bg-slate-900 p-5 text-white shadow-lg">
     <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">{t('Season Target (Budget)')}</h3>
-    <p className="mt-2 text-2xl font-bold">€{(seasonTarget / 1000000).toFixed(1)}M</p>
+    <p className="mt-2 text-2xl font-bold">{currency(seasonTarget)}</p>
     <p className="mt-3 text-sm text-slate-400">{t('No games played yet. Projection unavailable.')}</p>
     <p className="mt-2 text-xs text-slate-400">0 / {totalGamesInSeason} {t('Games Played')}</p>
   </div>;
@@ -42,15 +47,15 @@ export const PacingWidget: React.FC<PacingWidgetProps> = ({
             <Target size={14} /> Season Target (Budget)
           </h3>
           <div className="flex items-baseline gap-2 mt-1">
-             <span className="text-2xl font-bold text-white">€{(currentRevenue / 1000000).toFixed(2)}M</span>
-             <span className="text-sm text-slate-500">/ €{(seasonTarget / 1000000).toFixed(1)}M</span>
+             <span className="text-2xl font-bold text-white">{currency(currentRevenue)}</span>
+             <span className="text-sm text-slate-400">/ {currency(seasonTarget)}</span>
           </div>
         </div>
         <div className={`ml-auto px-2 py-1 rounded text-right border ${isOnTrack ? 'bg-green-500/20 border-green-500 text-green-400' : 'bg-red-500/20 border-red-500 text-red-400'}`}>
             <p className="text-[9px] font-bold uppercase">{t('Forecast vs Target')}</p>
             <p className="text-lg font-bold">{forecast.percent === null ? '—' : `${forecast.percent >= 0 ? '+' : ''}${forecast.percent.toFixed(1)}%`}</p>
             <p className="text-[9px] text-slate-400">{t('Projected Revenue')}</p>
-            <p className="text-sm font-semibold">€{(projectedRevenue / 1000000).toFixed(2)}M</p>
+            <p className="text-sm font-semibold">{currency(projectedRevenue)}</p>
         </div>
       </div>
 
